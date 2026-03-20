@@ -1,0 +1,13 @@
+{
+  "name": "@nimbus-pos/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Nimbus POS — Desktop shell (deferred to later milestones)",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "echo \"Desktop app not yet scaffolded\"",
+    "build": "echo \"Desktop app not yet scaffolded\"",
+    "lint": "echo \"No lint targets yet\"",
+    "test": "echo \"No tests yet\""
+  }
+}

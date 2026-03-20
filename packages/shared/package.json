@@ -1,0 +1,16 @@
+{
+  "name": "@nimbus-pos/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Nimbus POS — Shared types, enums, DTOs, and utilities",
+  "license": "UNLICENSED",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "lint": "echo \"No lint targets yet\"",
+    "test": "echo \"No tests yet\""
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

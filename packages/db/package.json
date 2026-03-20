@@ -1,0 +1,13 @@
+{
+  "name": "@nimbus-pos/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Nimbus POS — Prisma DB package (wired in M1)",
+  "license": "UNLICENSED",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo \"DB package build — no-op until M1\"",
+    "lint": "echo \"No lint targets yet\"",
+    "test": "echo \"No tests yet\""
+  }
+}

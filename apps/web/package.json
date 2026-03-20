@@ -1,0 +1,13 @@
+{
+  "name": "@nimbus-pos/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Nimbus POS — Web UI (Next.js, deferred to M43+)",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "echo \"Web app not yet scaffolded — see ROADMAP M43+\"",
+    "build": "echo \"Web app not yet scaffolded\"",
+    "lint": "echo \"No lint targets yet\"",
+    "test": "echo \"No tests yet\""
+  }
+}

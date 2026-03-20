@@ -1,0 +1,84 @@
+# Nimbus POS Rebuild — Repo File Tree
+
+```text
+nimbus-pos/
+├── .editorconfig
+├── .env.example
+├── .gitignore
+├── package.json
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── prettier.config.cjs
+├── tsconfig.base.json
+├── turbo.json
+├── README.md
+├── ROADMAP.md
+├── repo file tree.txt
+│
+├── ai/
+│   ├── AI_CLAUDE_SONNET_PROMPTS.md
+│   ├── AI_COMPLETION_REPORT_TEMPLATE.md
+│   ├── AI_CONTEXT.md
+│   ├── AI_ERROR_PROTOCOL.md
+│   ├── AI_GOVERNANCE_PROMPT_UPDATED.md
+│   ├── AI_STATUS.md
+│   ├── M0_FIRST_PROMPT.md
+│   └── M0_COMPLETION_REPORT.md
+│
+├── apps/
+│   ├── api/
+│   │   ├── .env.example
+│   │   ├── .eslintrc.js
+│   │   ├── nest-cli.json
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.build.json
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── app.module.ts
+│   │   │   ├── app.controller.ts
+│   │   │   ├── app.controller.spec.ts
+│   │   │   ├── app.service.ts
+│   │   │   ├── common/
+│   │   │   │   ├── config/
+│   │   │   │   ├── filters/
+│   │   │   │   ├── guards/
+│   │   │   │   └── interceptors/
+│   │   │   └── modules/
+│   │   └── test/
+│   │       ├── jest-e2e.json
+│   │       └── app.e2e-spec.ts
+│   ├── web/
+│   │   ├── package.json
+│   │   └── src/
+│   ├── desktop/
+│   │   ├── package.json
+│   │   └── src/
+│   └── mobile/
+│       ├── package.json
+│       └── src/
+│
+├── packages/
+│   ├── db/
+│   │   ├── .env.example
+│   │   ├── package.json
+│   │   └── src/
+│   │       └── index.ts
+│   └── shared/
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── src/
+│           └── index.ts
+│
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── API_CONVENTIONS.md
+│   └── MODULES.md
+│
+└── postman/
+    ├── POSTMAN_GUIDE.md
+    ├── collections/
+    │   └── M0-Repo-Bootstrap.postman_collection.json
+    └── environments/
+        └── dev.postman_environment.json
+```
