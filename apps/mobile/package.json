@@ -1,13 +1,13 @@
 {
-  "name": "@nimbus-pos/mobile",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Nimbus POS — Mobile companion (deferred to later milestones)",
-  "license": "UNLICENSED",
-  "scripts": {
-    "dev": "echo \"Mobile app not yet scaffolded\"",
-    "build": "echo \"Mobile app not yet scaffolded\"",
-    "lint": "echo \"No lint targets yet\"",
-    "test": "echo \"No tests yet\""
-  }
+    "name": "@nimbus-pos/mobile",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Nimbus POS — Mobile companion (deferred to later milestones)",
+    "license": "UNLICENSED",
+    "scripts": {
+        "dev": "echo \"Mobile app not yet scaffolded\"",
+        "build": "echo \"Mobile app not yet scaffolded\"",
+        "lint": "echo \"No lint targets yet\"",
+        "test": "echo \"No tests yet\""
+    }
 }

@@ -3,16 +3,17 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M0 ✅
-- Last completed milestone: M0 — Repo Bootstrap + Workspace Tooling
-- Next milestone: M1 — Neon + Prisma Baseline + Seed Framework
+- Current milestone: M1 ✅
+- Last completed milestone: M1 — Neon + Prisma Baseline + Seed Framework
+- Next milestone: M2 — Auth v1 (Email/Password/PIN) + JWT Sessions + RBAC
 - Date updated: 2026-03-20
 
 ## Environment
 
 - Node target: 22.x (verified: v22.14.0)
 - pnpm target: 8.x (verified: 8.15.0)
-- Database target: Neon Postgres (wired in M1)
+- Database target: Neon Postgres (wired in M1 ✅)
+- Prisma version: 5.22.0
 - Redis target: docker-compose for local dev (wired later)
 - API port target: 3001
 - Web port target: 3000
@@ -43,12 +44,18 @@
 
 ### M1 — Neon + Prisma Baseline + Seed Framework
 
-- [ ] Prisma configured
-- [ ] Neon connection works
-- [ ] migration pipeline works
-- [ ] seed runner idempotent
-- [ ] DB-backed /health passes
-- [ ] DONE checks passed
+- [x] Prisma configured (schema.prisma with AppConfig + SeedHistory)
+- [x] Neon connection works (via DATABASE_URL env var)
+- [x] Migration pipeline works (20260320000000_m1_baseline committed)
+- [x] Seed runner idempotent (safe to run multiple times)
+- [x] DB-backed /health passes (SELECT 1 check)
+- [x] PrismaModule + PrismaService in apps/api/src/common/prisma/
+- [x] Root db:generate / db:migrate / db:seed / db:studio scripts wired
+- [x] Postman M1-Health-DB collection created
+- [x] Docs updated (README, ARCHITECTURE, MODULES, repo file tree)
+- [x] pnpm lint clean
+- [x] pnpm test clean (2 unit + 2 e2e tests passing)
+- [x] DONE checks passed
 
 ### M2 — Auth v1 + Sessions + RBAC
 

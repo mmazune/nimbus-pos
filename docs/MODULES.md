@@ -7,7 +7,8 @@
 
 | Module                              | Location                             | Milestone | Status         |
 | ----------------------------------- | ------------------------------------ | --------- | -------------- |
-| **Health / Bootstrap**              | `apps/api/src/app.*`                 | M0        | ✅ Implemented |
+| **Health / Bootstrap**              | `apps/api/src/app.*`                 | M0–M1   | ✅ Implemented |
+| **Prisma (shared DB access)**       | `apps/api/src/common/prisma/`        | M1      | ✅ Implemented |
 | **Auth**                            | `apps/api/src/modules/auth/`         | M2        | ⬜ Planned     |
 | **Org / Branch / Membership**       | `apps/api/src/modules/org/`          | M3        | ⬜ Planned     |
 | **Settings / Numbering**            | `apps/api/src/modules/settings/`     | M4        | ⬜ Planned     |

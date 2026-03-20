@@ -1,0 +1,69 @@
+{
+	"info": {
+		"_postman_id": "m1-health-db-001",
+		"name": "M1-Health-DB",
+		"description": "Nimbus POS — M1 milestone: Health endpoint with DB connectivity check.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "health"]
+				},
+				"description": "Returns API and database health status. No auth required."
+			},
+			"response": [
+				{
+					"name": "200 — Healthy",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "health"]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"body": "{\n  \"status\": \"ok\",\n  \"db\": \"ok\",\n  \"timestamp\": \"2026-03-20T12:00:00.000Z\"\n}"
+				}
+			],
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('status is ok', function () {",
+							"    var json = pm.response.json();",
+							"    pm.expect(json.status).to.eql('ok');",
+							"});",
+							"",
+							"pm.test('db is ok', function () {",
+							"    var json = pm.response.json();",
+							"    pm.expect(json.db).to.eql('ok');",
+							"});",
+							"",
+							"pm.test('timestamp exists', function () {",
+							"    var json = pm.response.json();",
+							"    pm.expect(json.timestamp).to.be.a('string');",
+							"});"
+						]
+					}
+				}
+			]
+		}
+	]
+}

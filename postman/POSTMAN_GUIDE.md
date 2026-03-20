@@ -6,7 +6,8 @@
 postman/
 ├── POSTMAN_GUIDE.md
 ├── collections/
-│   └── M0-Repo-Bootstrap.postman_collection.json
+│   ├── M0-Repo-Bootstrap.postman_collection.json
+│   └── M1-Health-DB.postman_collection.json
 └── environments/
     └── dev.postman_environment.json
 ```
@@ -36,7 +37,7 @@ postman/
 | Milestone | Collection          | Auth Required              |
 | --------- | ------------------- | -------------------------- |
 | M0        | `M0-Repo-Bootstrap` | No                         |
-| M1        | (future)            | No                         |
+| M1        | `M1-Health-DB`       | No                         |
 | M2+       | (future)            | Yes — token capture begins |
 
 ## Manual Checklist — M0
@@ -46,3 +47,15 @@ postman/
 - [ ] Select `Nimbus POS — Dev` environment
 - [ ] Run `GET {{baseUrl}}/api/health` — expect `200` with `{ "status": "ok" }`
 - [ ] Confirm no auth headers are required
+
+## Manual Checklist — M1
+
+- [ ] Import `dev.postman_environment.json` (if not already imported)
+- [ ] Import `M1-Health-DB.postman_collection.json`
+- [ ] Select `Nimbus POS — Dev` environment
+- [ ] Run `GET {{baseUrl}}/api/health` — expect `200`
+- [ ] Verify `status` = `"ok"`
+- [ ] Verify `db` = `"ok"`
+- [ ] Verify `timestamp` exists and is a valid ISO string
+- [ ] Confirm no auth headers required
+- [ ] Note: auth/token capture starts in M2, not M1

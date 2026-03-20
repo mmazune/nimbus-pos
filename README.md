@@ -42,7 +42,16 @@ nimbus-pos/
 # Install dependencies
 pnpm install
 
-# Start API in dev mode
+# Generate Prisma client
+pnpm db:generate
+
+# Run migrations against Neon (requires DATABASE_URL in packages/db/.env)
+pnpm db:migrate
+
+# Seed the database (idempotent — safe to run multiple times)
+pnpm db:seed
+
+# Start API in dev mode (requires DATABASE_URL in apps/api/.env)
 pnpm dev:api
 
 # Run tests
@@ -53,18 +62,27 @@ pnpm lint
 
 # Format
 pnpm format
+
+# Open Prisma Studio
+pnpm db:studio
 ```
+
+## Environment Setup
+
+1. Copy `.env.example` files to `.env` in `packages/db/` and `apps/api/`.
+2. Fill in your Neon Postgres `DATABASE_URL` and `DIRECT_DATABASE_URL`.
+3. Never commit `.env` files — only `.env.example` is tracked.
 
 ## Milestones
 
 See [ROADMAP.md](ROADMAP.md) for the full milestone index (M0–M47).
 
-| Milestone                   | Status         |
-| --------------------------- | -------------- |
-| M0 — Repo Bootstrap         | ✅ Complete    |
-| M1 — Neon + Prisma Baseline | ⬜ Not started |
-| M2 — Auth v1 + RBAC         | ⬜ Not started |
-| M3+                         | ⬜ Not started |
+| Milestone                    | Status         |
+| ---------------------------- | -------------- |
+| M0 — Repo Bootstrap          | ✅ Complete    |
+| M1 — Neon + Prisma Baseline  | ✅ Complete    |
+| M2 — Auth v1 + RBAC          | ⬜ Not started |
+| M3+                          | ⬜ Not started |
 
 ## Documentation
 

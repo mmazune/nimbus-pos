@@ -23,7 +23,8 @@ nimbus-pos/
 │   ├── AI_GOVERNANCE_PROMPT_UPDATED.md
 │   ├── AI_STATUS.md
 │   ├── M0_FIRST_PROMPT.md
-│   └── M0_COMPLETION_REPORT.md
+│   ├── M0_COMPLETION_REPORT.md
+│   └── M1_COMPLETION_REPORT.md
 │
 ├── apps/
 │   ├── api/
@@ -43,7 +44,11 @@ nimbus-pos/
 │   │   │   │   ├── config/
 │   │   │   │   ├── filters/
 │   │   │   │   ├── guards/
-│   │   │   │   └── interceptors/
+│   │   │   │   ├── interceptors/
+│   │   │   │   └── prisma/
+│   │   │   │       ├── index.ts
+│   │   │   │       ├── prisma.module.ts
+│   │   │   │       └── prisma.service.ts
 │   │   │   └── modules/
 │   │   └── test/
 │   │       ├── jest-e2e.json
@@ -62,7 +67,16 @@ nimbus-pos/
 │   ├── db/
 │   │   ├── .env.example
 │   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma
+│   │   │   ├── seed.ts
+│   │   │   └── migrations/
+│   │   │       ├── migration_lock.toml
+│   │   │       └── 20260320000000_m1_baseline/
+│   │   │           └── migration.sql
 │   │   └── src/
+│   │       ├── client.ts
 │   │       └── index.ts
 │   └── shared/
 │       ├── package.json
@@ -78,7 +92,8 @@ nimbus-pos/
 └── postman/
     ├── POSTMAN_GUIDE.md
     ├── collections/
-    │   └── M0-Repo-Bootstrap.postman_collection.json
+    │   ├── M0-Repo-Bootstrap.postman_collection.json
+    │   └── M1-Health-DB.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```

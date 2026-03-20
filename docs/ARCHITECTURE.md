@@ -10,12 +10,28 @@ nimbus-pos/
 │   ├── desktop/             # Optional POS desktop shell (deferred)
 │   └── mobile/              # Optional mobile companion (deferred)
 ├── packages/
-│   ├── db/                  # Prisma schema, migrations, seed, client (M1+)
+│   ├── db/                  # Prisma schema, migrations, seed, client
 │   └── shared/              # Shared types, enums, DTOs, constants
 ├── ai/                      # AI governance docs, status, reports
 ├── docs/                    # Architecture & convention documentation
 └── postman/                 # Postman collections & environments
 ```
+
+### Database Package (`packages/db`)
+
+The Prisma schema, migrations, client, and seed all live in `packages/db`.
+
+- Schema: `packages/db/prisma/schema.prisma`
+- Migrations: `packages/db/prisma/migrations/`
+- Seed: `packages/db/prisma/seed.ts` — idempotent by design
+- Client: `packages/db/src/client.ts` — singleton Prisma client export
+
+The API app consumes Prisma through a shared NestJS `PrismaModule` / `PrismaService`
+located at `apps/api/src/common/prisma/`. This handles lifecycle (`$connect` / `$disconnect`)
+and is registered as a global module so all business modules can inject it via DI.
+
+Neon Postgres is used via `DATABASE_URL` and `DIRECT_DATABASE_URL` environment variables only.
+No connection strings are ever committed to source control.
 
 ### Future packages (added as milestones require)
 
@@ -55,7 +71,7 @@ Every business domain gets:
 
 | Layer                        | Location                            | Added in |
 | ---------------------------- | ----------------------------------- | -------- |
-| PrismaModule / PrismaService | `apps/api/src/common/prisma/`       | M1       |
+| PrismaModule / PrismaService | `apps/api/src/common/prisma/`       | M1 ✅   |
 | Auth guards                  | `apps/api/src/common/guards/`       | M2       |
 | Permission guards            | `apps/api/src/common/guards/`       | M2       |
 | Tenant / branch guards       | `apps/api/src/common/guards/`       | M3       |
