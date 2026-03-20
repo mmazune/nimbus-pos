@@ -1,36 +1,229 @@
 // ── Nimbus POS — Prisma Schema ──
-// Baseline models for M1: AppConfig + SeedHistory
+// M1 models: AppConfig + SeedHistory
+// M2 models: User, Role, Permission, RolePermission, UserRole, Session, RefreshToken, AuditLog
 // All IDs use cuid2-compatible strings.
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_DATABASE_URL")
 }
+
+// ── Enums (M2) ──
+
+enum RoleLevel {
+    L1
+    L2
+    L3
+    L4
+    L5
+}
+
+enum JobRole {
+    OWNER
+    MANAGER
+    ACCOUNTANT
+    PROCUREMENT
+    STOCK_MANAGER
+    SUPERVISOR
+    CASHIER
+    CHEF
+    WAITER
+    BARTENDER
+    EVENT_MANAGER
+}
+
+enum SessionPlatform {
+    WEB_BACKOFFICE
+    POS_DESKTOP
+    MOBILE_APP
+    KDS_SCREEN
+    DEV_PORTAL
+    OTHER
+}
+
+enum SessionSource {
+    PASSWORD
+    PIN
+    API_KEY
+    SSO
+    WEBAUTHN
+}
+
+// ── M1 Models ──
 
 /// Key/value configuration store for system bootstrap.
 model AppConfig {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+    id        String   @id @default(cuid())
+    key       String   @unique
+    value     String
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("app_config")
+    @@map("app_config")
 }
 
 /// Records idempotent seed runs so seeds can detect prior execution.
 model SeedHistory {
-  id        String   @id @default(cuid())
-  seedName  String   @map("seed_name")
-  runAt     DateTime @default(now()) @map("run_at")
-  status    String   @default("completed")
-  details   String?
+    id       String   @id @default(cuid())
+    seedName String   @map("seed_name")
+    runAt    DateTime @default(now()) @map("run_at")
+    status   String   @default("completed")
+    details  String?
 
-  @@unique([seedName])
-  @@map("seed_history")
+    @@unique([seedName])
+    @@map("seed_history")
+}
+
+// ── M2 Models ──
+
+/// System user. Supports email/password and optional PIN login.
+model User {
+    id           String   @id @default(cuid())
+    email        String   @unique
+    passwordHash String   @map("password_hash")
+    pinHash      String?  @map("pin_hash")
+    firstName    String   @map("first_name")
+    lastName     String   @map("last_name")
+    isActive     Boolean  @default(true) @map("is_active")
+    createdAt    DateTime @default(now()) @map("created_at")
+    updatedAt    DateTime @updatedAt @map("updated_at")
+
+    // Relations
+    userRoles     UserRole[]
+    sessions      Session[]
+    refreshTokens RefreshToken[]
+    auditLogs     AuditLog[]     @relation("AuditActor")
+
+    @@map("users")
+}
+
+/// Named role with a hierarchical level and optional job role.
+model Role {
+    id          String    @id @default(cuid())
+    name        String    @unique
+    description String?
+    level       RoleLevel
+    jobRole     JobRole?  @map("job_role")
+    isActive    Boolean   @default(true) @map("is_active")
+    createdAt   DateTime  @default(now()) @map("created_at")
+    updatedAt   DateTime  @updatedAt @map("updated_at")
+
+    // Relations
+    userRoles       UserRole[]
+    rolePermissions RolePermission[]
+
+    @@map("roles")
+}
+
+/// A named permission string (resource:action pattern).
+model Permission {
+    id          String   @id @default(cuid())
+    action      String   @unique
+    description String?
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    // Relations
+    rolePermissions RolePermission[]
+
+    @@map("permissions")
+}
+
+/// Many-to-many: role ↔ permission.
+model RolePermission {
+    id           String   @id @default(cuid())
+    roleId       String   @map("role_id")
+    permissionId String   @map("permission_id")
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+    permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+    @@unique([roleId, permissionId])
+    @@map("role_permissions")
+}
+
+/// Many-to-many: user ↔ role assignment.
+/// orgId/branchId nullable now; will be scoped in M3.
+model UserRole {
+    id        String   @id @default(cuid())
+    userId    String   @map("user_id")
+    roleId    String   @map("role_id")
+    orgId     String?  @map("org_id")
+    branchId  String?  @map("branch_id")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, roleId, orgId, branchId])
+    @@map("user_roles")
+}
+
+/// Tracks an active login session.
+model Session {
+    id             String          @id @default(cuid())
+    userId         String          @map("user_id")
+    orgId          String?         @map("org_id")
+    branchId       String?         @map("branch_id")
+    jti            String          @unique
+    platform       SessionPlatform
+    source         SessionSource
+    ipAddress      String?         @map("ip_address")
+    userAgent      String?         @map("user_agent")
+    lastActivityAt DateTime        @default(now()) @map("last_activity_at")
+    expiresAt      DateTime        @map("expires_at")
+    revokedAt      DateTime?       @map("revoked_at")
+    revokedById    String?         @map("revoked_by_id")
+    revokedReason  String?         @map("revoked_reason")
+    createdAt      DateTime        @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@map("sessions")
+}
+
+/// Persisted refresh token supporting rotation and revocation.
+model RefreshToken {
+    id          String    @id @default(cuid())
+    userId      String    @map("user_id")
+    tokenHash   String    @unique @map("token_hash")
+    family      String
+    sessionId   String    @map("session_id")
+    expiresAt   DateTime  @map("expires_at")
+    revokedAt   DateTime? @map("revoked_at")
+    replacedById String?  @map("replaced_by_id")
+    createdAt   DateTime  @default(now()) @map("created_at")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([family])
+    @@map("refresh_tokens")
+}
+
+/// Immutable audit trail for security and sensitive events.
+model AuditLog {
+    id           String   @id @default(cuid())
+    actorUserId  String?  @map("actor_user_id")
+    action       String
+    entityType   String   @map("entity_type")
+    entityId     String?  @map("entity_id")
+    metadata     Json?
+    ipAddress    String?  @map("ip_address")
+    userAgent    String?  @map("user_agent")
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+    @@index([actorUserId])
+    @@index([action])
+    @@index([entityType])
+    @@map("audit_logs")
 }

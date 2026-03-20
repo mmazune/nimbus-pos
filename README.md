@@ -81,7 +81,7 @@ See [ROADMAP.md](ROADMAP.md) for the full milestone index (M0–M47).
 | ---------------------------- | -------------- |
 | M0 — Repo Bootstrap          | ✅ Complete    |
 | M1 — Neon + Prisma Baseline  | ✅ Complete    |
-| M2 — Auth v1 + RBAC          | ⬜ Not started |
+| M2 — Auth v1 + RBAC          | ✅ Complete    |
 | M3+                          | ⬜ Not started |
 
 ## Documentation

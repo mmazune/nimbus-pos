@@ -8,12 +8,30 @@
 - Use branch context explicitly in auth/session or header where needed
 - Every response should include enough IDs for client chaining
 
-## Auth (M2+)
+## Auth (M2) ✅
 
-- Bearer JWT access token
-- Refresh token flow via dedicated endpoint
-- PIN login allowed for POS flow
-- MSR endpoints deferred until late hardware wave (M46)
+- Bearer JWT access token (`Authorization: Bearer <token>`)
+- Refresh token rotation via `POST /api/auth/refresh`
+- PIN login for POS flow via `POST /api/auth/pin-login`
+- MSR endpoints deferred until M46
+
+### Auth Endpoints
+
+| Method | Path                  | Auth | Description                          |
+| ------ | --------------------- | ---- | ------------------------------------ |
+| POST   | `/api/auth/login`     | No   | Email + password login               |
+| POST   | `/api/auth/pin-login` | No   | Email + 4-6 digit PIN login          |
+| POST   | `/api/auth/refresh`   | No   | Rotate refresh token, get new pair   |
+| POST   | `/api/auth/logout`    | Yes  | Revoke current session               |
+| POST   | `/api/auth/logout-all`| Yes  | Revoke all sessions for current user |
+| GET    | `/api/auth/me`        | Yes  | Current user profile + session       |
+| GET    | `/api/auth/sessions`  | Yes  | List active sessions                 |
+
+### Platform Header
+
+`X-Platform` header identifies the calling platform. Guarded endpoints validate this against the user's role level.
+
+Values: `WEB_BACKOFFICE`, `MOBILE_APP`, `POS_DESKTOP`, `KDS_SCREEN`, `SELF_KIOSK`, `DRIVER_APP`
 
 ## Validation
 
@@ -64,7 +82,7 @@ Required or strongly recommended for:
 
 Header: `Idempotency-Key: <unique-client-key>`
 
-## Audit (M2+)
+## Audit (M2) ✅
 
 All sensitive writes must capture:
 

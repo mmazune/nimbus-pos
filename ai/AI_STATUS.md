@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M1 ✅
-- Last completed milestone: M1 — Neon + Prisma Baseline + Seed Framework
-- Next milestone: M2 — Auth v1 (Email/Password/PIN) + JWT Sessions + RBAC
+- Current milestone: M2 ✅
+- Last completed milestone: M2 — Auth v1 + JWT Sessions + RBAC + Audit Log
+- Next milestone: M3 — Multi-Tenancy Core (Org / Branch / Membership)
 - Date updated: 2026-03-20
 
 ## Environment
@@ -59,13 +59,24 @@
 
 ### M2 — Auth v1 + Sessions + RBAC
 
-- [ ] users / roles / permissions tables
-- [ ] JWT access + refresh
-- [ ] PIN login
-- [ ] session persistence
-- [ ] permission guard
-- [ ] audit on auth writes
-- [ ] DONE checks passed
+- [x] Prisma schema: User, Role, Permission, RolePermission, UserRole, Session, RefreshToken, AuditLog
+- [x] Migration: 20260320065959_m2_auth_rbac_sessions committed
+- [x] JWT access (15m) + opaque refresh (7d) with rotation + family revocation
+- [x] PIN login (4–6 digit, bcrypt hashed)
+- [x] Session persistence (jti, platform, source, IP, user-agent, lastActivityAt)
+- [x] RBAC: 5 levels (L1–L5), 11 job roles, 6 permissions
+- [x] PermissionGuard (decorator-driven)
+- [x] PlatformAccessGuard (X-Platform header, level-based matrix)
+- [x] AuditService (global module, 10 action types)
+- [x] Common decorators (@CurrentUser, @Permissions, @Roles)
+- [x] Seed: 11 roles, 6 permissions, 27 role-permission mappings, 6 demo users (idempotent)
+- [x] Unit tests: 20 passing (auth.service, permission.guard, platform-access.guard)
+- [x] E2e tests: 16 passing (auth flows, RBAC denial, platform denial)
+- [x] pnpm lint clean (0 errors)
+- [x] Manual API verification (health, login, me, pin-login, 403s)
+- [x] Postman M2-Auth-RBAC collection + environment + guide
+- [x] Docs updated (ARCHITECTURE, API_CONVENTIONS, MODULES, README, repo file tree)
+- [x] DONE checks passed
 
 ### M3 — Multi-Tenancy Core
 

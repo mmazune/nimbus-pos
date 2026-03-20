@@ -24,7 +24,8 @@ nimbus-pos/
 │   ├── AI_STATUS.md
 │   ├── M0_FIRST_PROMPT.md
 │   ├── M0_COMPLETION_REPORT.md
-│   └── M1_COMPLETION_REPORT.md
+│   ├── M1_COMPLETION_REPORT.md
+│   └── M2_COMPLETION_REPORT.md
 │
 ├── apps/
 │   ├── api/
@@ -41,18 +42,43 @@ nimbus-pos/
 │   │   │   ├── app.controller.spec.ts
 │   │   │   ├── app.service.ts
 │   │   │   ├── common/
+│   │   │   │   ├── audit/
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   ├── audit.module.ts
+│   │   │   │   │   └── audit.service.ts
 │   │   │   │   ├── config/
+│   │   │   │   ├── decorators/
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   ├── current-user.decorator.ts
+│   │   │   │   │   ├── permissions.decorator.ts
+│   │   │   │   │   └── roles.decorator.ts
 │   │   │   │   ├── filters/
 │   │   │   │   ├── guards/
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   ├── jwt-auth.guard.ts
+│   │   │   │   │   ├── permission.guard.ts
+│   │   │   │   │   └── platform-access.guard.ts
 │   │   │   │   ├── interceptors/
 │   │   │   │   └── prisma/
 │   │   │   │       ├── index.ts
 │   │   │   │       ├── prisma.module.ts
 │   │   │   │       └── prisma.service.ts
 │   │   │   └── modules/
+│   │   │       └── auth/
+│   │   │           ├── auth.controller.ts
+│   │   │           ├── auth.module.ts
+│   │   │           ├── auth.service.ts
+│   │   │           ├── auth.service.spec.ts
+│   │   │           ├── jwt.strategy.ts
+│   │   │           └── dto/
+│   │   │               ├── index.ts
+│   │   │               ├── login.dto.ts
+│   │   │               ├── pin-login.dto.ts
+│   │   │               └── refresh.dto.ts
 │   │   └── test/
 │   │       ├── jest-e2e.json
-│   │       └── app.e2e-spec.ts
+│   │       ├── app.e2e-spec.ts
+│   │       └── auth.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -75,6 +101,8 @@ nimbus-pos/
 │   │   │       ├── migration_lock.toml
 │   │   │       └── 20260320000000_m1_baseline/
 │   │   │           └── migration.sql
+│   │   │       └── 20260320065959_m2_auth_rbac_sessions/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -93,7 +121,8 @@ nimbus-pos/
     ├── POSTMAN_GUIDE.md
     ├── collections/
     │   ├── M0-Repo-Bootstrap.postman_collection.json
-    │   └── M1-Health-DB.postman_collection.json
+    │   ├── M1-Health-DB.postman_collection.json
+    │   └── M2-Auth-RBAC.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```
