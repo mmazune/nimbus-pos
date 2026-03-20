@@ -10,8 +10,9 @@
 | **Health / Bootstrap**              | `apps/api/src/app.*`                 | M0–M1   | ✅ Implemented |
 | **Prisma (shared DB access)**       | `apps/api/src/common/prisma/`        | M1      | ✅ Implemented |
 | **Auth**                            | `apps/api/src/modules/auth/`         | M2        | ✅ Implemented |
-| **Org / Branch / Membership**       | `apps/api/src/modules/org/`          | M3        | ⬜ Planned     |
-| **Settings / Numbering**            | `apps/api/src/modules/settings/`     | M4        | ⬜ Planned     |
+| **Auth — Quick PIN Login**          | `apps/api/src/modules/auth/`         | M3.1      | ✅ Implemented |
+| **Tenancy (Org/Branch/Membership)** | `apps/api/src/modules/tenancy/`      | M3        | ✅ Implemented |
+| **Settings / Numbering**            | `apps/api/src/modules/settings/`     | M4        | ✅ Implemented |
 | **Floor / Tables / Areas**          | `apps/api/src/modules/floor/`        | M5        | ⬜ Planned     |
 | **Menu Catalog**                    | `apps/api/src/modules/menu/`         | M6–M7     | ⬜ Planned     |
 | **Recipes / Costing**               | `apps/api/src/modules/recipes/`      | M8        | ⬜ Planned     |

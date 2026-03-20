@@ -1,6 +1,9 @@
 // ── Nimbus POS — Prisma Schema ──
 // M1 models: AppConfig + SeedHistory
 // M2 models: User, Role, Permission, RolePermission, UserRole, Session, RefreshToken, AuditLog
+// M3 models: Organization, Branch, Membership
+// M3.1 additions: QuickPinTier enum, quick PIN fields on User
+// M4 models: OrgSettings, ExchangeRate
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -54,6 +57,33 @@ enum SessionSource {
     WEBAUTHN
 }
 
+// ── Enums (M3.1) ──
+
+enum QuickPinTier {
+    LOW_6
+    HIGH_8
+}
+
+// ── Enums (M3) ──
+
+enum OrganizationStatus {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+}
+
+enum BranchStatus {
+    ACTIVE
+    INACTIVE
+    CLOSED
+}
+
+enum MembershipStatus {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+}
+
 // ── M1 Models ──
 
 /// Key/value configuration store for system bootstrap.
@@ -81,7 +111,7 @@ model SeedHistory {
 
 // ── M2 Models ──
 
-/// System user. Supports email/password and optional PIN login.
+/// System user. Supports email/password, optional PIN login, and quick PIN login.
 model User {
     id           String   @id @default(cuid())
     email        String   @unique
@@ -93,11 +123,27 @@ model User {
     createdAt    DateTime @default(now()) @map("created_at")
     updatedAt    DateTime @updatedAt @map("updated_at")
 
+    // M3.1 — Quick PIN Login fields
+    displayName        String?       @map("display_name")
+    employeeCode       String?       @map("employee_code")
+    quickPinHash       String?       @map("quick_pin_hash")
+    pinLookupHash      String?       @unique @map("pin_lookup_hash")
+    pinLength          Int?          @map("pin_length")
+    pinTier            QuickPinTier? @map("pin_tier")
+    quickPinEnabled    Boolean       @default(false) @map("quick_pin_enabled")
+    lastPinChangedAt   DateTime?     @map("last_pin_changed_at")
+    pinLockedUntil     DateTime?     @map("pin_locked_until")
+    failedPinAttempts  Int           @default(0) @map("failed_pin_attempts")
+    avatarUrl          String?       @map("avatar_url")
+    quickPinIssuedAt   DateTime?     @map("quick_pin_issued_at")
+    quickPinIssuedById String?       @map("quick_pin_issued_by_id")
+
     // Relations
     userRoles     UserRole[]
     sessions      Session[]
     refreshTokens RefreshToken[]
     auditLogs     AuditLog[]     @relation("AuditActor")
+    memberships   Membership[]
 
     @@map("users")
 }
@@ -116,6 +162,7 @@ model Role {
     // Relations
     userRoles       UserRole[]
     rolePermissions RolePermission[]
+    memberships     Membership[]
 
     @@map("roles")
 }
@@ -191,15 +238,15 @@ model Session {
 
 /// Persisted refresh token supporting rotation and revocation.
 model RefreshToken {
-    id          String    @id @default(cuid())
-    userId      String    @map("user_id")
-    tokenHash   String    @unique @map("token_hash")
-    family      String
-    sessionId   String    @map("session_id")
-    expiresAt   DateTime  @map("expires_at")
-    revokedAt   DateTime? @map("revoked_at")
-    replacedById String?  @map("replaced_by_id")
-    createdAt   DateTime  @default(now()) @map("created_at")
+    id           String    @id @default(cuid())
+    userId       String    @map("user_id")
+    tokenHash    String    @unique @map("token_hash")
+    family       String
+    sessionId    String    @map("session_id")
+    expiresAt    DateTime  @map("expires_at")
+    revokedAt    DateTime? @map("revoked_at")
+    replacedById String?   @map("replaced_by_id")
+    createdAt    DateTime  @default(now()) @map("created_at")
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -210,15 +257,15 @@ model RefreshToken {
 
 /// Immutable audit trail for security and sensitive events.
 model AuditLog {
-    id           String   @id @default(cuid())
-    actorUserId  String?  @map("actor_user_id")
-    action       String
-    entityType   String   @map("entity_type")
-    entityId     String?  @map("entity_id")
-    metadata     Json?
-    ipAddress    String?  @map("ip_address")
-    userAgent    String?  @map("user_agent")
-    createdAt    DateTime @default(now()) @map("created_at")
+    id          String   @id @default(cuid())
+    actorUserId String?  @map("actor_user_id")
+    action      String
+    entityType  String   @map("entity_type")
+    entityId    String?  @map("entity_id")
+    metadata    Json?
+    ipAddress   String?  @map("ip_address")
+    userAgent   String?  @map("user_agent")
+    createdAt   DateTime @default(now()) @map("created_at")
 
     actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
@@ -226,4 +273,133 @@ model AuditLog {
     @@index([action])
     @@index([entityType])
     @@map("audit_logs")
+}
+
+// ── M3 Models ──
+
+/// Tenant root entity. All business data is ultimately scoped to an organization.
+model Organization {
+    id        String             @id @default(cuid())
+    name      String
+    slug      String             @unique
+    legalName String?            @map("legal_name")
+    taxId     String?            @map("tax_id")
+    status    OrganizationStatus @default(ACTIVE)
+    createdAt DateTime           @default(now()) @map("created_at")
+    updatedAt DateTime           @updatedAt @map("updated_at")
+
+    branches    Branch[]
+    memberships Membership[]
+    settings    OrgSettings?
+    exchangeRates ExchangeRate[]
+
+    @@map("organizations")
+}
+
+/// Physical store / location unit within an organization.
+model Branch {
+    id             String       @id @default(cuid())
+    organizationId String       @map("organization_id")
+    name           String
+    code           String?
+    slug           String?
+    timezone       String       @default("UTC")
+    currencyCode   String       @default("USD") @map("currency_code")
+    address        String?
+    phone          String?
+    email          String?
+    status         BranchStatus @default(ACTIVE)
+    createdAt      DateTime     @default(now()) @map("created_at")
+    updatedAt      DateTime     @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    memberships  Membership[]
+
+    @@unique([organizationId, code])
+    @@index([organizationId])
+    @@map("branches")
+}
+
+/// Links a user to a branch within an organization with a specific role.
+model Membership {
+    id              String           @id @default(cuid())
+    userId          String           @map("user_id")
+    organizationId  String           @map("organization_id")
+    branchId        String           @map("branch_id")
+    roleId          String           @map("role_id")
+    status          MembershipStatus @default(ACTIVE)
+    isDefaultBranch Boolean          @default(false) @map("is_default_branch")
+    createdAt       DateTime         @default(now()) @map("created_at")
+    updatedAt       DateTime         @updatedAt @map("updated_at")
+
+    user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    role         Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, branchId])
+    @@index([organizationId])
+    @@index([branchId])
+    @@index([userId])
+    @@map("memberships")
+}
+
+// ── M4 Models ──
+
+/// Central org-level configuration. One row per organization.
+/// JSON fields:
+///   anomalyThresholds: { lateVoidMin: number, heavyDiscountUGX: number }
+///   platformAccess: { useRoleDefaults: boolean, overrides?: Record<string, string[]> }
+///   franchiseWeights: { [metric: string]: number }
+///   metadata: arbitrary org metadata (e.g. businessRegistration, logo)
+///   defaults: future catch-all for module defaults
+///   taxMatrix: { defaultVatPct: number, categories: { name: string, vatPct: number }[] }
+///   rounding: { mode: "NEAREST"|"UP"|"DOWN", increment: number }
+///   bookingPolicies: { requireDeposit: boolean, maxPartySize?: number, ... }
+///   attendance: { autoClockOutHours: number, ... }
+///   inventoryTolerance: { variancePct: number, ... }
+model OrgSettings {
+    id                        String   @id @default(cuid())
+    orgId                     String   @unique @map("org_id")
+    vatPercent                Decimal  @default(18.00) @map("vat_percent") @db.Decimal(5, 2)
+    currency                  String   @default("UGX")
+    discountApprovalThreshold Decimal  @default(5000) @map("discount_approval_threshold") @db.Decimal(10, 2)
+    reservationHoldMinutes    Int      @default(30) @map("reservation_hold_minutes")
+    receiptFooter             String?  @map("receipt_footer")
+    metadata                  Json?
+    anomalyThresholds         Json?    @map("anomaly_thresholds")
+    platformAccess            Json?    @map("platform_access")
+    franchiseWeights          Json?    @map("franchise_weights")
+    showCostToChef            Boolean  @default(false) @map("show_cost_to_chef")
+    defaults                  Json?
+    baseCurrencyCode          String?  @map("base_currency_code")
+    taxMatrix                 Json?    @map("tax_matrix")
+    rounding                  Json?
+    bookingPolicies           Json?    @map("booking_policies")
+    attendance                Json?
+    inventoryTolerance        Json?    @map("inventory_tolerance")
+    createdAt                 DateTime @default(now()) @map("created_at")
+    updatedAt                 DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+    @@map("org_settings")
+}
+
+/// Exchange rate for multi-currency orgs. One row per currency pair per effective date.
+model ExchangeRate {
+    id                String   @id @default(cuid())
+    orgId             String   @map("org_id")
+    baseCurrencyCode  String   @map("base_currency_code")
+    quoteCurrencyCode String   @map("quote_currency_code")
+    rate              Decimal  @map("rate") @db.Decimal(18, 6)
+    effectiveAt       DateTime @map("effective_at")
+    createdAt         DateTime @default(now()) @map("created_at")
+    createdById       String?  @map("created_by_id")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([orgId, baseCurrencyCode, quoteCurrencyCode, effectiveAt])
+    @@map("exchange_rates")
 }

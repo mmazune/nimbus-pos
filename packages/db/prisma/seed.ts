@@ -1,5 +1,6 @@
 import { PrismaClient, RoleLevel, JobRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 12;
@@ -7,8 +8,8 @@ const SALT_ROUNDS = 12;
 // ── Baseline AppConfig rows ──
 const APP_CONFIG_DEFAULTS: { key: string; value: string }[] = [
     { key: 'app.name', value: 'Nimbus POS' },
-    { key: 'app.version', value: '0.2.0' },
-    { key: 'app.milestone', value: 'M2' },
+    { key: 'app.version', value: '0.4.0' },
+    { key: 'app.milestone', value: 'M4' },
 ];
 
 async function seedAppConfig(): Promise<{ created: number; skipped: number }> {
@@ -80,6 +81,14 @@ const PERMISSIONS_DATA = [
     { action: 'identity:session:revoke', description: 'Revoke sessions' },
     { action: 'identity:access-matrix:read', description: 'View access matrix / permission test' },
     { action: 'identity:access-matrix:write', description: 'Modify access matrix' },
+    // M3 tenancy permissions
+    { action: 'tenancy:org:read', description: 'Read organizations' },
+    { action: 'tenancy:org:write', description: 'Create/update organizations' },
+    { action: 'tenancy:branch:read', description: 'Read branches' },
+    { action: 'tenancy:branch:write', description: 'Create/update branches' },
+    { action: 'tenancy:membership:manage', description: 'Create/manage memberships' },
+    // M4 settings permissions
+    { action: 'tenancy:settings:manage', description: 'Create/update org settings' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -116,6 +125,12 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'identity:session:revoke',
         'identity:access-matrix:read',
         'identity:access-matrix:write',
+        'tenancy:org:read',
+        'tenancy:org:write',
+        'tenancy:branch:read',
+        'tenancy:branch:write',
+        'tenancy:membership:manage',
+        'tenancy:settings:manage',
     ],
     Manager: [
         'identity:user:read',
@@ -123,24 +138,33 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'identity:session:read',
         'identity:session:revoke',
         'identity:access-matrix:read',
+        'tenancy:org:read',
+        'tenancy:branch:read',
+        'tenancy:branch:write',
+        'tenancy:membership:manage',
+        'tenancy:settings:manage',
     ],
     Accountant: [
         'identity:user:read',
         'identity:session:read',
         'identity:access-matrix:read',
+        'tenancy:org:read',
+        'tenancy:branch:read',
     ],
     Supervisor: [
         'identity:user:read',
         'identity:session:read',
         'identity:access-matrix:read',
+        'tenancy:org:read',
+        'tenancy:branch:read',
     ],
-    Cashier: ['identity:user:read'],
-    Chef: ['identity:user:read'],
-    Waiter: ['identity:user:read'],
-    Bartender: ['identity:user:read'],
-    Procurement: ['identity:user:read', 'identity:session:read'],
-    'Stock Manager': ['identity:user:read', 'identity:session:read'],
-    'Event Manager': ['identity:user:read', 'identity:session:read'],
+    Cashier: ['identity:user:read', 'tenancy:branch:read'],
+    Chef: ['identity:user:read', 'tenancy:branch:read'],
+    Waiter: ['identity:user:read', 'tenancy:branch:read'],
+    Bartender: ['identity:user:read', 'tenancy:branch:read'],
+    Procurement: ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
+    'Stock Manager': ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
+    'Event Manager': ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
 };
 
 async function seedRolePermissions(): Promise<{ created: number; skipped: number }> {
@@ -253,6 +277,286 @@ async function recordSeedRun(seedName: string, details: string): Promise<void> {
     });
 }
 
+// ── M3: Organization + Branches + Memberships ──
+
+const ORG_SEED = {
+    name: 'Nimbus Restaurant Group',
+    slug: 'nimbus',
+    legalName: 'Nimbus Restaurant Group LLC',
+};
+
+const BRANCHES_SEED = [
+    { name: 'Main Branch', code: 'MAIN', slug: 'main', timezone: 'UTC', currencyCode: 'USD' },
+    { name: 'Downtown Branch', code: 'DOWNTOWN', slug: 'downtown', timezone: 'UTC', currencyCode: 'USD' },
+];
+
+// owner + manager → both branches, accountant → both branches (org visibility)
+// cashier, chef, waiter → Main Branch only
+const MEMBERSHIP_SEED: { email: string; roleName: string; branchCodes: string[]; defaultBranch: string }[] = [
+    { email: 'owner@demo.local', roleName: 'Owner', branchCodes: ['MAIN', 'DOWNTOWN'], defaultBranch: 'MAIN' },
+    { email: 'manager@demo.local', roleName: 'Manager', branchCodes: ['MAIN', 'DOWNTOWN'], defaultBranch: 'MAIN' },
+    { email: 'accountant@demo.local', roleName: 'Accountant', branchCodes: ['MAIN', 'DOWNTOWN'], defaultBranch: 'MAIN' },
+    { email: 'cashier@demo.local', roleName: 'Cashier', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
+    { email: 'chef@demo.local', roleName: 'Chef', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
+    { email: 'waiter@demo.local', roleName: 'Waiter', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
+];
+
+async function seedOrganization(): Promise<{ orgId: string; created: boolean }> {
+    const existing = await prisma.organization.findUnique({ where: { slug: ORG_SEED.slug } });
+    if (existing) {
+        console.log(`  ⏭  Organization "${ORG_SEED.name}" already exists — skipped`);
+        return { orgId: existing.id, created: false };
+    }
+
+    const org = await prisma.organization.create({
+        data: {
+            name: ORG_SEED.name,
+            slug: ORG_SEED.slug,
+            legalName: ORG_SEED.legalName,
+        },
+    });
+    console.log(`  ✅ Organization "${ORG_SEED.name}" created`);
+    return { orgId: org.id, created: true };
+}
+
+async function seedBranches(orgId: string): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    for (const branch of BRANCHES_SEED) {
+        const existing = await prisma.branch.findUnique({
+            where: { organizationId_code: { organizationId: orgId, code: branch.code } },
+        });
+        if (existing) {
+            console.log(`  ⏭  Branch "${branch.name}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+
+        await prisma.branch.create({
+            data: {
+                organizationId: orgId,
+                name: branch.name,
+                code: branch.code,
+                slug: branch.slug,
+                timezone: branch.timezone,
+                currencyCode: branch.currencyCode,
+            },
+        });
+        console.log(`  ✅ Branch "${branch.name}" created`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+async function seedMemberships(orgId: string): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    for (const ms of MEMBERSHIP_SEED) {
+        const user = await prisma.user.findUnique({ where: { email: ms.email } });
+        if (!user) {
+            console.log(`  ⚠️  User "${ms.email}" not found — skipping membership`);
+            continue;
+        }
+
+        const role = await prisma.role.findUnique({ where: { name: ms.roleName } });
+        if (!role) {
+            console.log(`  ⚠️  Role "${ms.roleName}" not found — skipping membership`);
+            continue;
+        }
+
+        for (const code of ms.branchCodes) {
+            const branch = await prisma.branch.findUnique({
+                where: { organizationId_code: { organizationId: orgId, code } },
+            });
+            if (!branch) {
+                console.log(`  ⚠️  Branch code "${code}" not found — skipping`);
+                continue;
+            }
+
+            const existing = await prisma.membership.findUnique({
+                where: { userId_branchId: { userId: user.id, branchId: branch.id } },
+            });
+            if (existing) {
+                skipped++;
+                continue;
+            }
+
+            const isDefault = code === ms.defaultBranch;
+
+            // If setting default, unset any prior defaults for this user in this org
+            if (isDefault) {
+                await prisma.membership.updateMany({
+                    where: { userId: user.id, organizationId: orgId, isDefaultBranch: true },
+                    data: { isDefaultBranch: false },
+                });
+            }
+
+            await prisma.membership.create({
+                data: {
+                    userId: user.id,
+                    organizationId: orgId,
+                    branchId: branch.id,
+                    roleId: role.id,
+                    isDefaultBranch: isDefault,
+                },
+            });
+            console.log(`  ✅ Membership: "${ms.email}" → "${branch.name}" (${ms.roleName})${isDefault ? ' [default]' : ''}`);
+            created++;
+        }
+    }
+
+    return { created, skipped };
+}
+
+// ── M3.1: Quick PIN Seed ──
+
+const QUICK_PIN_PEPPER = process.env.QUICK_PIN_PEPPER || 'nimbus-dev-pin-pepper';
+
+// Deterministic demo PINs for testing (NOT used in production)
+const DEMO_QUICK_PINS: { email: string; pin: string; tier: 'LOW_6' | 'HIGH_8'; pinLength: number }[] = [
+    { email: 'waiter@demo.local', pin: '123456', tier: 'LOW_6', pinLength: 6 },
+    { email: 'cashier@demo.local', pin: '654321', tier: 'LOW_6', pinLength: 6 },
+    { email: 'manager@demo.local', pin: '12345678', tier: 'HIGH_8', pinLength: 8 },
+];
+
+// Add supervisor seed if user exists
+// Note: We don't seed a supervisor user in M2, but we handle it gracefully
+
+function derivePinLookupHash(pepper: string, branchId: string, pin: string): string {
+    return crypto.createHmac('sha256', pepper).update(`${branchId}:${pin}`).digest('hex');
+}
+
+async function seedQuickPins(orgId: string): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    // Get the MAIN branch for lookup hash derivation
+    const mainBranch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: 'MAIN' } },
+    });
+
+    if (!mainBranch) {
+        console.log('  ⚠️  Main branch not found — skipping quick PIN seed');
+        return { created: 0, skipped: 0 };
+    }
+
+    for (const demo of DEMO_QUICK_PINS) {
+        const user = await prisma.user.findUnique({ where: { email: demo.email } });
+        if (!user) {
+            console.log(`  ⚠️  User "${demo.email}" not found — skipping quick PIN`);
+            continue;
+        }
+
+        // Skip if already has quick PIN (idempotent)
+        if (user.quickPinEnabled && user.quickPinHash) {
+            console.log(`  ⏭  User "${demo.email}" already has quick PIN — skipped`);
+            skipped++;
+            continue;
+        }
+
+        const pinHash = await bcrypt.hash(demo.pin, SALT_ROUNDS);
+        const lookupHash = derivePinLookupHash(QUICK_PIN_PEPPER, mainBranch.id, demo.pin);
+
+        // Check for lookup hash collision
+        const collision = await prisma.user.findUnique({ where: { pinLookupHash: lookupHash } });
+        if (collision && collision.id !== user.id) {
+            console.log(`  ⚠️  Lookup hash collision for "${demo.email}" — skipping`);
+            skipped++;
+            continue;
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                quickPinHash: pinHash,
+                pinLookupHash: lookupHash,
+                pinLength: demo.pinLength,
+                pinTier: demo.tier,
+                quickPinEnabled: true,
+                lastPinChangedAt: new Date(),
+                quickPinIssuedAt: new Date(),
+                displayName: `${user.firstName} ${user.lastName}`,
+                failedPinAttempts: 0,
+                pinLockedUntil: null,
+            },
+        });
+        console.log(`  ✅ Quick PIN set for "${demo.email}" (${demo.tier}, ${demo.pinLength}-digit)`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+// ── M4: OrgSettings Seed ──
+
+const ORG_SETTINGS_DEFAULTS = {
+    vatPercent: 18.00,
+    currency: 'UGX',
+    discountApprovalThreshold: 5000,
+    reservationHoldMinutes: 30,
+    showCostToChef: false,
+    anomalyThresholds: { lateVoidMin: 5, heavyDiscountUGX: 5000 },
+    rounding: { mode: 'NEAREST', increment: 100 },
+    taxMatrix: { defaultVatPct: 18, categories: [] },
+    platformAccess: { useRoleDefaults: true },
+    attendance: { autoClockOutHours: 16 },
+    inventoryTolerance: { variancePct: 2 },
+};
+
+async function seedOrgSettings(orgId: string): Promise<{ created: boolean }> {
+    const existing = await prisma.orgSettings.findUnique({ where: { orgId } });
+    if (existing) {
+        console.log(`  ⏭  OrgSettings for org "${orgId}" already exists — skipped`);
+        return { created: false };
+    }
+
+    await prisma.orgSettings.create({
+        data: {
+            orgId,
+            vatPercent: ORG_SETTINGS_DEFAULTS.vatPercent,
+            currency: ORG_SETTINGS_DEFAULTS.currency,
+            discountApprovalThreshold: ORG_SETTINGS_DEFAULTS.discountApprovalThreshold,
+            reservationHoldMinutes: ORG_SETTINGS_DEFAULTS.reservationHoldMinutes,
+            showCostToChef: ORG_SETTINGS_DEFAULTS.showCostToChef,
+            anomalyThresholds: ORG_SETTINGS_DEFAULTS.anomalyThresholds,
+            rounding: ORG_SETTINGS_DEFAULTS.rounding,
+            taxMatrix: ORG_SETTINGS_DEFAULTS.taxMatrix,
+            platformAccess: ORG_SETTINGS_DEFAULTS.platformAccess,
+            attendance: ORG_SETTINGS_DEFAULTS.attendance,
+            inventoryTolerance: ORG_SETTINGS_DEFAULTS.inventoryTolerance,
+        },
+    });
+    console.log(`  ✅ OrgSettings created for org "${orgId}"`);
+    return { created: true };
+}
+
+async function seedExchangeRate(orgId: string, creatorEmail: string): Promise<{ created: boolean }> {
+    // Check if any exchange rate already exists for this org
+    const existing = await prisma.exchangeRate.findFirst({ where: { orgId } });
+    if (existing) {
+        console.log(`  ⏭  ExchangeRate for org already exists — skipped`);
+        return { created: false };
+    }
+
+    const creator = await prisma.user.findUnique({ where: { email: creatorEmail } });
+
+    await prisma.exchangeRate.create({
+        data: {
+            orgId,
+            baseCurrencyCode: 'USD',
+            quoteCurrencyCode: 'UGX',
+            rate: 3700.000000,
+            effectiveAt: new Date(),
+            createdById: creator?.id ?? null,
+        },
+    });
+    console.log(`  ✅ ExchangeRate USD/UGX seeded`);
+    return { created: true };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -283,7 +587,37 @@ async function main(): Promise<void> {
     const usersResult = await seedUsers();
     console.log(`   Created: ${usersResult.created}, Skipped: ${usersResult.skipped}\n`);
 
-    // 6) Record seed execution
+    // 6) Seed Organization (M3)
+    console.log('── Organization (M3) ──');
+    const orgResult = await seedOrganization();
+    console.log(`   Org ID: ${orgResult.orgId}, Created: ${orgResult.created}\n`);
+
+    // 7) Seed Branches (M3)
+    console.log('── Branches (M3) ──');
+    const branchesResult = await seedBranches(orgResult.orgId);
+    console.log(`   Created: ${branchesResult.created}, Skipped: ${branchesResult.skipped}\n`);
+
+    // 8) Seed Memberships (M3)
+    console.log('── Memberships (M3) ──');
+    const membershipsResult = await seedMemberships(orgResult.orgId);
+    console.log(`   Created: ${membershipsResult.created}, Skipped: ${membershipsResult.skipped}\n`);
+
+    // 9) Seed Quick PINs (M3.1)
+    console.log('── Quick PINs (M3.1) ──');
+    const quickPinResult = await seedQuickPins(orgResult.orgId);
+    console.log(`   Created: ${quickPinResult.created}, Skipped: ${quickPinResult.skipped}\n`);
+
+    // 10) Seed OrgSettings (M4)
+    console.log('── OrgSettings (M4) ──');
+    const settingsResult = await seedOrgSettings(orgResult.orgId);
+    console.log(`   Created: ${settingsResult.created ? 1 : 0}\n`);
+
+    // 11) Seed ExchangeRate (M4)
+    console.log('── ExchangeRate (M4) ──');
+    const exchangeRateResult = await seedExchangeRate(orgResult.orgId, 'owner@demo.local');
+    console.log(`   Created: ${exchangeRateResult.created ? 1 : 0}\n`);
+
+    // 12) Record seed execution
     await recordSeedRun(
         'm1-baseline',
         `AppConfig: ${configResult.created} created, ${configResult.skipped} skipped`,
@@ -291,6 +625,18 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm2-auth-rbac',
         `Roles: ${rolesResult.created}c/${rolesResult.skipped}s | Perms: ${permsResult.created}c/${permsResult.skipped}s | RolePerms: ${rpResult.created}c/${rpResult.skipped}s | Users: ${usersResult.created}c/${usersResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm3-tenancy',
+        `Org: ${orgResult.created ? 1 : 0}c | Branches: ${branchesResult.created}c/${branchesResult.skipped}s | Memberships: ${membershipsResult.created}c/${membershipsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm3.1-quick-pin',
+        `QuickPINs: ${quickPinResult.created}c/${quickPinResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm4-org-settings',
+        `OrgSettings: ${settingsResult.created ? 1 : 0}c | ExchangeRate: ${exchangeRateResult.created ? 1 : 0}c`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 

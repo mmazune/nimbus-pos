@@ -25,7 +25,10 @@ nimbus-pos/
 │   ├── M0_FIRST_PROMPT.md
 │   ├── M0_COMPLETION_REPORT.md
 │   ├── M1_COMPLETION_REPORT.md
-│   └── M2_COMPLETION_REPORT.md
+│   ├── M2_COMPLETION_REPORT.md
+│   ├── M3_COMPLETION_REPORT.md
+│   ├── M3_1_COMPLETION_REPORT.md
+│   └── M4_COMPLETION_REPORT.md
 │
 ├── apps/
 │   ├── api/
@@ -51,10 +54,13 @@ nimbus-pos/
 │   │   │   │   │   ├── index.ts
 │   │   │   │   │   ├── current-user.decorator.ts
 │   │   │   │   │   ├── permissions.decorator.ts
+│   │   │   │   │   ├── require-branch-context.decorator.ts
 │   │   │   │   │   └── roles.decorator.ts
 │   │   │   │   ├── filters/
 │   │   │   │   ├── guards/
 │   │   │   │   │   ├── index.ts
+│   │   │   │   │   ├── branch-context.guard.ts
+│   │   │   │   │   ├── branch-context.guard.spec.ts
 │   │   │   │   │   ├── jwt-auth.guard.ts
 │   │   │   │   │   ├── permission.guard.ts
 │   │   │   │   │   └── platform-access.guard.ts
@@ -64,21 +70,55 @@ nimbus-pos/
 │   │   │   │       ├── prisma.module.ts
 │   │   │   │       └── prisma.service.ts
 │   │   │   └── modules/
-│   │   │       └── auth/
-│   │   │           ├── auth.controller.ts
-│   │   │           ├── auth.module.ts
-│   │   │           ├── auth.service.ts
-│   │   │           ├── auth.service.spec.ts
-│   │   │           ├── jwt.strategy.ts
+│   │   │       ├── auth/
+│   │   │       │   ├── auth.controller.ts
+│   │   │       │   ├── auth.module.ts
+│   │   │       │   ├── auth.service.ts
+│   │   │       │   ├── auth.service.spec.ts
+│   │   │       │   ├── jwt.strategy.ts
+│   │   │       │   ├── quick-pin.constants.ts
+│   │   │       │   ├── quick-pin.service.ts
+│   │   │       │   ├── quick-pin.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── login.dto.ts
+│   │   │       │       ├── pin-login.dto.ts
+│   │   │       │       ├── refresh.dto.ts
+│   │   │       │       ├── quick-pin-login.dto.ts
+│   │   │       │       ├── issue-quick-pin.dto.ts
+│   │   │       │       ├── reset-quick-pin.dto.ts
+│   │   │       │       └── update-quick-pin-settings.dto.ts
+│   │   │       ├── settings/
+│   │   │       │   ├── settings.module.ts
+│   │   │       │   ├── settings.controller.ts
+│   │   │       │   ├── settings.service.ts
+│   │   │       │   ├── settings.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── update-org-settings.dto.ts
+│   │   │       │       ├── update-currency.dto.ts
+│   │   │       │       ├── update-tax-matrix.dto.ts
+│   │   │       │       ├── update-rounding.dto.ts
+│   │   │       │       ├── update-thresholds.dto.ts
+│   │   │       │       ├── update-platform-access.dto.ts
+│   │   │       │       └── create-exchange-rate.dto.ts
+│   │   │       └── tenancy/
+│   │   │           ├── tenancy.controller.ts
+│   │   │           ├── tenancy.module.ts
+│   │   │           ├── tenancy.service.ts
+│   │   │           ├── tenancy.service.spec.ts
 │   │   │           └── dto/
 │   │   │               ├── index.ts
-│   │   │               ├── login.dto.ts
-│   │   │               ├── pin-login.dto.ts
-│   │   │               └── refresh.dto.ts
+│   │   │               ├── create-org.dto.ts
+│   │   │               ├── create-branch.dto.ts
+│   │   │               └── create-membership.dto.ts
 │   │   └── test/
 │   │       ├── jest-e2e.json
 │   │       ├── app.e2e-spec.ts
-│   │       └── auth.e2e-spec.ts
+│   │       ├── auth.e2e-spec.ts
+│   │       ├── quick-pin.e2e-spec.ts
+│   │       ├── settings.e2e-spec.ts
+│   │       └── tenancy.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -103,6 +143,12 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260320065959_m2_auth_rbac_sessions/
 │   │   │           └── migration.sql
+│   │   │       ├── 20260320073537_m3_tenancy_org_branch_membership/
+│   │   │       │   └── migration.sql
+│   │   │       └── 20260320100000_m3_1_quick_pin_login/
+│   │   │           └── migration.sql
+│   │   │       └── 20260320120000_m4_org_settings/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -122,7 +168,10 @@ nimbus-pos/
     ├── collections/
     │   ├── M0-Repo-Bootstrap.postman_collection.json
     │   ├── M1-Health-DB.postman_collection.json
-    │   └── M2-Auth-RBAC.postman_collection.json
+    │   ├── M2-Auth-RBAC.postman_collection.json
+    │   ├── M3-Tenancy.postman_collection.json
+    │   ├── M3_1-Quick-PIN-Login.postman_collection.json
+    │   └── M4-Org-Settings.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```
