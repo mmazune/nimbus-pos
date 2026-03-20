@@ -1,25 +1,30 @@
 {
-  "name": "nimbus-pos",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Nimbus POS — Enterprise Point-of-Sale Monorepo",
-  "license": "UNLICENSED",
-  "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.0",
-  "scripts": {
-    "dev:api": "turbo run dev --filter=@nimbus-pos/api",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,cjs,mjs}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,cjs,mjs}\""
-  },
-  "devDependencies": {
-    "prettier": "^3.2.5",
-    "turbo": "^2.3.0",
-    "typescript": "^5.4.0"
-  }
+    "name": "nimbus-pos",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Nimbus POS — Enterprise Point-of-Sale Monorepo",
+    "license": "UNLICENSED",
+    "engines": {
+        "node": ">=22.0.0",
+        "pnpm": ">=8.0.0"
+    },
+    "packageManager": "pnpm@8.15.0",
+    "scripts": {
+        "dev:api": "turbo run dev --filter=@nimbus-pos/api",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "test": "turbo run test",
+        "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,cjs,mjs}\"",
+        "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,cjs,mjs}\"",
+        "db:generate": "pnpm --filter @nimbus-pos/db db:generate",
+        "db:migrate": "pnpm --filter @nimbus-pos/db db:migrate",
+        "db:migrate:deploy": "pnpm --filter @nimbus-pos/db db:migrate:deploy",
+        "db:seed": "pnpm --filter @nimbus-pos/db db:seed",
+        "db:studio": "pnpm --filter @nimbus-pos/db db:studio"
+    },
+    "devDependencies": {
+        "prettier": "^3.2.5",
+        "turbo": "^2.3.0",
+        "typescript": "^5.4.0"
+    }
 }

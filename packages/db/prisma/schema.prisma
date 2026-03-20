@@ -1,0 +1,36 @@
+// ── Nimbus POS — Prisma Schema ──
+// Baseline models for M1: AppConfig + SeedHistory
+// All IDs use cuid2-compatible strings.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+/// Key/value configuration store for system bootstrap.
+model AppConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_config")
+}
+
+/// Records idempotent seed runs so seeds can detect prior execution.
+model SeedHistory {
+  id        String   @id @default(cuid())
+  seedName  String   @map("seed_name")
+  runAt     DateTime @default(now()) @map("run_at")
+  status    String   @default("completed")
+  details   String?
+
+  @@unique([seedName])
+  @@map("seed_history")
+}
