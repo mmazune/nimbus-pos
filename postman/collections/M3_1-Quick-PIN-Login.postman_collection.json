@@ -1,0 +1,769 @@
+{
+    "info": {
+        "_postman_id": "m3_1-quick-pin-login",
+        "name": "M3_1-Quick-PIN-Login",
+        "description": "M3.1 — Quick PIN Login for POS Desktop. PIN-only login by role tier.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "01 — Login (Owner)",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "// Warm up Neon DB connection (avoids cold-start 500 on first request)",
+                            "pm.sendRequest(pm.environment.get('baseUrl') + '/api/health', (err, res) => {",
+                            "    console.log('[WARM-UP] /api/health →', res ? res.code : err);",
+                            "});",
+                            "// Clear stale PIN vars from previous runs",
+                            "pm.environment.unset('waiterQuickPin');",
+                            "pm.environment.unset('cashierQuickPin');",
+                            "pm.environment.unset('managerQuickPin');",
+                            "pm.environment.unset('quickPinAccessToken');"
+                        ],
+                        "type": "text/javascript"
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Login returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has tokens', () => {",
+                            "    pm.expect(res.accessToken).to.be.a('string');",
+                            "    pm.expect(res.refreshToken).to.be.a('string');",
+                            "});",
+                            "if (res.accessToken) pm.environment.set('accessToken', res.accessToken);",
+                            "if (res.refreshToken) pm.environment.set('refreshToken', res.refreshToken);",
+                            "if (res.user && res.user.id) pm.environment.set('userId', res.user.id);",
+                            "console.log('[01] Owner login status:', pm.response.code, 'accessToken set:', !!pm.environment.get('accessToken'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "02 — Get Me (resolve branchId)",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Me returns 200', () => pm.response.to.have.status(200));",
+                            "// Extract branchId from defaultBranch (tenancy context response)",
+                            "if (res.defaultBranch && res.defaultBranch.id) {",
+                            "    pm.environment.set('branchId', res.defaultBranch.id);",
+                            "}",
+                            "// Extract orgId from first organization",
+                            "if (res.organizations && res.organizations.length > 0) {",
+                            "    pm.environment.set('orgId', res.organizations[0].id);",
+                            "}",
+                            "pm.test('branchId resolved', () => pm.expect(pm.environment.get('branchId')).to.be.a('string').and.not.empty);",
+                            "console.log('[02] branchId →', pm.environment.get('branchId'));",
+                            "console.log('[02] defaultBranch →', res.defaultBranch ? res.defaultBranch.id : 'NULL');"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "03 — Login (Waiter) — get userId",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"waiter@demo.local\",\n    \"password\": \"Waiter#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Login returns 201', () => pm.response.to.have.status(201));",
+                            "if (res.user && res.user.id) pm.environment.set('waiterUserId', res.user.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "04 — Login (Cashier) — get userId",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"cashier@demo.local\",\n    \"password\": \"Cashier#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Login returns 201', () => pm.response.to.have.status(201));",
+                            "if (res.user && res.user.id) pm.environment.set('cashierUserId', res.user.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "05 — Login (Manager) — get userId",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"manager@demo.local\",\n    \"password\": \"Manager#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Login returns 201', () => pm.response.to.have.status(201));",
+                            "if (res.user && res.user.id) pm.environment.set('managerUserId', res.user.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "06 — Issue Quick PIN (Waiter, 6-digit)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/users/{{waiterUserId}}/issue-quick-pin",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "users",
+                        "{{waiterUserId}}",
+                        "issue-quick-pin"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Issue returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('PIN is 6 digits', () => {",
+                            "    pm.expect(res.pinLength).to.equal(6);",
+                            "    pm.expect(res.pin).to.match(/^\\d{6}$/);",
+                            "});",
+                            "pm.test('Tier is LOW_6', () => pm.expect(res.tier).to.equal('LOW_6'));",
+                            "if (res.pin) pm.environment.set('waiterQuickPin', res.pin);",
+                            "console.log('[06] Issue Waiter PIN status:', pm.response.code, 'pin saved:', pm.environment.get('waiterQuickPin'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "07 — Issue Quick PIN (Cashier, 6-digit)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/users/{{cashierUserId}}/issue-quick-pin",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "users",
+                        "{{cashierUserId}}",
+                        "issue-quick-pin"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Issue returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('PIN is 6 digits', () => pm.expect(res.pinLength).to.equal(6));",
+                            "if (res.pin) pm.environment.set('cashierQuickPin', res.pin);",
+                            "console.log('[07] Issue Cashier PIN status:', pm.response.code, 'pin saved:', pm.environment.get('cashierQuickPin'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "08 — Issue Quick PIN (Manager, 8-digit)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/users/{{managerUserId}}/issue-quick-pin",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "users",
+                        "{{managerUserId}}",
+                        "issue-quick-pin"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Issue returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('PIN is 8 digits', () => {",
+                            "    pm.expect(res.pinLength).to.equal(8);",
+                            "    pm.expect(res.pin).to.match(/^\\d{8}$/);",
+                            "});",
+                            "pm.test('Tier is HIGH_8', () => pm.expect(res.tier).to.equal('HIGH_8'));",
+                            "if (res.pin) pm.environment.set('managerQuickPin', res.pin);",
+                            "console.log('[08] Issue Manager PIN status:', pm.response.code, 'pin saved:', pm.environment.get('managerQuickPin'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "09 — Quick PIN Login (Waiter on POS_DESKTOP)",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\",\n    \"pin\": \"{{waiterQuickPin}}\",\n    \"platform\": \"POS_DESKTOP\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/quick-pin-login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "quick-pin-login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Quick PIN login returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Session source is PIN', () => pm.expect(res.session.source).to.equal('PIN'));",
+                            "pm.test('Session platform is POS_DESKTOP', () => pm.expect(res.session.platform).to.equal('POS_DESKTOP'));",
+                            "pm.test('Session has branchId', () => pm.expect(res.session.branchId).to.equal(pm.environment.get('branchId')));",
+                            "if (res.accessToken) pm.environment.set('quickPinAccessToken', res.accessToken);",
+                            "console.log('[09] Waiter PIN Login — status:', pm.response.code, 'branchId:', pm.environment.get('branchId'), 'pin:', pm.environment.get('waiterQuickPin'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "10 — Quick PIN Login (Cashier on POS_DESKTOP)",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\",\n    \"pin\": \"{{cashierQuickPin}}\",\n    \"platform\": \"POS_DESKTOP\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/quick-pin-login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "quick-pin-login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Quick PIN login returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Session source is PIN', () => pm.expect(res.session.source).to.equal('PIN'));",
+                            "console.log('[10] Cashier PIN Login — status:', pm.response.code, 'branchId:', pm.environment.get('branchId'), 'pin:', pm.environment.get('cashierQuickPin'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "11 — Quick PIN Login (Manager on POS_DESKTOP)",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\",\n    \"pin\": \"{{managerQuickPin}}\",\n    \"platform\": \"POS_DESKTOP\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/quick-pin-login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "quick-pin-login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Quick PIN login returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Session source is PIN', () => pm.expect(res.session.source).to.equal('PIN'));",
+                            "pm.test('PIN length is 8 for manager', () => pm.expect(res.user).to.be.ok);",
+                            "console.log('[11] Manager PIN Login — status:', pm.response.code, 'branchId:', pm.environment.get('branchId'), 'pin:', pm.environment.get('managerQuickPin'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "12 — Me after Quick PIN Login",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{quickPinAccessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "me"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Me returns 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has session', () => pm.expect(res.session).to.be.ok);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "13 — Quick PIN Login — Wrong PIN → 401",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\",\n    \"pin\": \"000000\",\n    \"platform\": \"POS_DESKTOP\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/quick-pin-login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "quick-pin-login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Wrong PIN returns 401', () => pm.response.to.have.status(401));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "14 — Quick PIN Login — Wrong Platform → 403",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\",\n    \"pin\": \"{{waiterQuickPin}}\",\n    \"platform\": \"MOBILE_APP\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/quick-pin-login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "quick-pin-login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Wrong platform returns 403', () => pm.response.to.have.status(403));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "15 — Reset Quick PIN (Waiter)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"branchId\": \"{{branchId}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/users/{{waiterUserId}}/reset-quick-pin",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "users",
+                        "{{waiterUserId}}",
+                        "reset-quick-pin"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Reset returns 201', () => pm.response.to.have.status(201));",
+                            "pm.test('New PIN is 6 digits', () => pm.expect(res.pinLength).to.equal(6));",
+                            "if (res.pin) pm.environment.set('waiterQuickPin', res.pin);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "16 — Update Quick PIN Settings (Waiter)",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"displayName\": \"Speedy Waiter\",\n    \"quickPinEnabled\": true\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/users/{{waiterUserId}}/quick-pin-settings",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "users",
+                        "{{waiterUserId}}",
+                        "quick-pin-settings"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Settings update returns 200', () => pm.response.to.have.status(200));",
+                            "pm.test('displayName updated', () => pm.expect(res.displayName).to.equal('Speedy Waiter'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "17 — Quick PIN Status (Waiter)",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/users/{{waiterUserId}}/quick-pin-status",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "users",
+                        "{{waiterUserId}}",
+                        "quick-pin-status"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const res = pm.response.json();",
+                            "pm.test('Status returns 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has quickPinEnabled', () => pm.expect(res.quickPinEnabled).to.be.a('boolean'));",
+                            "pm.test('Has hasPin', () => pm.expect(res.hasPin).to.be.a('boolean'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        }
+    ]
+}

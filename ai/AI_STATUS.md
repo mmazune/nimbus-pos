@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M4 ✅
-- Last completed milestone: M4 — Org Settings + Configuration
-- Next milestone: M5 — Branch Settings + Number Sequences
+- Current milestone: M5 ✅
+- Last completed milestone: M5 — Floor Plans + Tables
+- Next milestone: M6 — Menu Catalog + Categories
 - Date updated: 2026-03-20
 
 ## Environment
@@ -133,13 +133,32 @@
 - [x] Docs updated (README, ARCHITECTURE, API_CONVENTIONS, MODULES, POSTMAN_GUIDE, repo file tree)
 - [x] DONE checks passed (2026-03-20: generate ✅, migrate ✅, seed×2 ✅, lint 0 errors ✅, test 60/60 ✅, e2e 16/16 M4 tests ✅, dev:api ✅, manual hits ✅)
 
-### M5-M47
+### M5 — Floor Plans + Tables
+
+- [x] Prisma schema: TableStatus enum, FloorPlan model (id, orgId, branchId, name, data Json, isActive, timestamps), Table model (id, orgId, branchId, floorPlanId?, label, capacity, status, isActive, metadata Json?, timestamps)
+- [x] Migration: 20260320140000_m5_floor_plans_tables (applied via prisma db execute)
+- [x] FloorModule: service + controller with full CRUD for floor plans & tables + availability endpoint
+- [x] DTOs: 5 validated DTOs (CreateFloorPlan, UpdateFloorPlan, CreateTable, UpdateTable, UpdateTableStatus)
+- [x] BranchContextGuard + PermissionGuard on all endpoints
+- [x] 4 new permissions: pos:floor:read/write, pos:table:read/write
+- [x] Role-permission matrix: Owner/Manager/Supervisor = all 4; Cashier/Chef/Waiter/Bartender = read-only
+- [x] TableStatus state machine: AVAILABLE, OCCUPIED, RESERVED, CLEANING
+- [x] Unique constraint: @@unique([branchId, label]) on Table model
+- [x] Audit events: FLOOR_PLAN_CREATED, FLOOR_PLAN_UPDATED, TABLE_CREATED, TABLE_UPDATED, TABLE_STATUS_CHANGED
+- [x] Seed: 2 floor plans (Main Dining, Patio) + 15 tables (T1-T10, VIP-1/2, P1-P3) for MAIN branch
+- [x] Unit tests: 8 tests in floor.service.spec.ts
+- [x] E2e tests: 18 tests in floor.e2e-spec.ts (all pass)
+- [x] Postman: M5-Floor-Plans-Tables collection (16 requests) + environment updated
+- [x] Docs updated (README, ARCHITECTURE, API_CONVENTIONS, MODULES, POSTMAN_GUIDE, repo file tree)
+- [x] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M6-M47
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 
 ## Known Blockers
 
-- None. M4 fully verified.
+- Neon Postgres P1001: Database suspends after inactivity. M5 migration SQL created manually, needs to be applied when Neon comes online. Same pattern as M3.1 and M4.
 
 ## Notes
 

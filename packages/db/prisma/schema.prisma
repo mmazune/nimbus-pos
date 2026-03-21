@@ -4,6 +4,7 @@
 // M3 models: Organization, Branch, Membership
 // M3.1 additions: QuickPinTier enum, quick PIN fields on User
 // M4 models: OrgSettings, ExchangeRate
+// M5 models: FloorPlan, Table + TableStatus enum
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -288,10 +289,12 @@ model Organization {
     createdAt DateTime           @default(now()) @map("created_at")
     updatedAt DateTime           @updatedAt @map("updated_at")
 
-    branches    Branch[]
-    memberships Membership[]
-    settings    OrgSettings?
+    branches      Branch[]
+    memberships   Membership[]
+    settings      OrgSettings?
     exchangeRates ExchangeRate[]
+    floorPlans    FloorPlan[]
+    tables        Table[]
 
     @@map("organizations")
 }
@@ -314,6 +317,8 @@ model Branch {
 
     organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
     memberships  Membership[]
+    floorPlans   FloorPlan[]
+    tables       Table[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -402,4 +407,60 @@ model ExchangeRate {
     @@index([orgId])
     @@index([orgId, baseCurrencyCode, quoteCurrencyCode, effectiveAt])
     @@map("exchange_rates")
+}
+
+// ── Enums (M5) ──
+
+enum TableStatus {
+    AVAILABLE
+    OCCUPIED
+    RESERVED
+    CLEANING
+}
+
+// ── M5 Models ──
+
+/// A visual layout container for tables within a branch.
+model FloorPlan {
+    id        String   @id @default(cuid())
+    orgId     String   @map("org_id")
+    branchId  String   @map("branch_id")
+    name      String
+    data      Json     @default("{}")
+    isActive  Boolean  @default(true) @map("is_active")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    tables       Table[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@map("floor_plans")
+}
+
+/// A seating resource within a branch, optionally assigned to a floor plan.
+model Table {
+    id          String      @id @default(cuid())
+    orgId       String      @map("org_id")
+    branchId    String      @map("branch_id")
+    floorPlanId String?     @map("floor_plan_id")
+    label       String
+    capacity    Int         @default(4)
+    status      TableStatus @default(AVAILABLE)
+    isActive    Boolean     @default(true) @map("is_active")
+    metadata    Json?
+    createdAt   DateTime    @default(now()) @map("created_at")
+    updatedAt   DateTime    @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    floorPlan    FloorPlan?   @relation(fields: [floorPlanId], references: [id], onDelete: SetNull)
+
+    @@unique([branchId, label])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([floorPlanId])
+    @@map("tables")
 }

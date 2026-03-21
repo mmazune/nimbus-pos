@@ -102,6 +102,34 @@ Org-level configuration for VAT, currency, rounding, thresholds, and platform ac
 | POST   | `/api/settings/exchange-rate`   | Yes  | tenancy:settings:manage  | Create exchange rate entry      |
 | GET    | `/api/settings/exchange-rates`  | Yes  | tenancy:org:read         | List exchange rates             |
 
+## Floor Plans + Tables (M5) ✅
+
+Branch-scoped floor plan and table management for dine-in operations.
+
+### Floor/Table Endpoints
+
+| Method | Path                      | Auth | Permission        | Branch | Description                    |
+| ------ | ------------------------- | ---- | ----------------- | ------ | ------------------------------ |
+| POST   | `/api/floor-plans`        | Yes  | pos:floor:write   | Yes    | Create floor plan              |
+| GET    | `/api/floor-plans`        | Yes  | pos:floor:read    | Yes    | List floor plans for branch    |
+| GET    | `/api/floor-plans/:id`    | Yes  | pos:floor:read    | Yes    | Get floor plan detail          |
+| PATCH  | `/api/floor-plans/:id`    | Yes  | pos:floor:write   | Yes    | Update floor plan              |
+| POST   | `/api/tables`             | Yes  | pos:table:write   | Yes    | Create table                   |
+| GET    | `/api/tables`             | Yes  | pos:table:read    | Yes    | List tables for branch         |
+| GET    | `/api/tables/:id`         | Yes  | pos:table:read    | Yes    | Get table detail               |
+| PATCH  | `/api/tables/:id`         | Yes  | pos:table:write   | Yes    | Update table                   |
+| PATCH  | `/api/tables/:id/status`  | Yes  | pos:table:write   | Yes    | Update table status            |
+| GET    | `/api/floor/availability` | Yes  | pos:floor:read    | Yes    | Current table availability     |
+
+### Table Statuses
+
+| Status      | Meaning                                  |
+| ----------- | ---------------------------------------- |
+| AVAILABLE   | Table is free and ready for seating      |
+| OCCUPIED    | Table has active diners                  |
+| RESERVED    | Table is reserved for upcoming guests    |
+| CLEANING    | Table is being cleaned / reset           |
+
 ## Validation
 
 - DTO classes with `class-validator`

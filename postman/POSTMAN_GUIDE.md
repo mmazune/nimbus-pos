@@ -11,7 +11,8 @@ postman/
 │   ├── M2-Auth-RBAC.postman_collection.json
 │   ├── M3-Tenancy.postman_collection.json
 │   ├── M3_1-Quick-PIN-Login.postman_collection.json
-│   └── M4-Org-Settings.postman_collection.json
+│   ├── M4-Org-Settings.postman_collection.json
+│   └── M5-Floor-Plans-Tables.postman_collection.json
 └── environments/
     └── dev.postman_environment.json
 ```
@@ -50,6 +51,7 @@ from the collection-level auth setting, using `{{accessToken}}`.
 | M3        | `M3-Tenancy`         | Yes — token capture active |
 | M3.1      | `M3_1-Quick-PIN-Login` | Yes — token capture active |
 | M4        | `M4-Org-Settings`      | Yes — token capture active |
+| M5        | `M5-Floor-Plans-Tables`  | Yes — token capture active |
 
 ## Manual Checklist — M0
 
@@ -148,3 +150,25 @@ from the collection-level auth setting, using `{{accessToken}}`.
 - [ ] Run `List Exchange Rates` — expect `200` with array including seeded and new rates
 - [ ] Run `Permission Denial — Waiter Update Currency → 403` — expect `403`
 - [ ] Run `Permission Denial — Waiter Update Thresholds → 403` — expect `403`
+
+## Manual Checklist — M5
+
+- [ ] Import `dev.postman_environment.json` (re-import to get `floorPlanId`, `tableId` vars)
+- [ ] Import `M5-Floor-Plans-Tables.postman_collection.json`
+- [ ] Select `Nimbus POS — Dev` environment
+- [ ] Run `Login (Owner)` — expect `201`, tokens auto-saved
+- [ ] Run `Login (Waiter)` — expect `201`, waiterAccessToken auto-saved
+- [ ] Run `List Floor Plans` — expect `200` with array of seeded floor plans for the branch
+- [ ] Run `Create Floor Plan` — expect `201` with new floor plan, `floorPlanId` auto-saved
+- [ ] Run `Get Floor Plan` — expect `200` with floor plan detail including tables
+- [ ] Run `Update Floor Plan` — expect `200` with updated name/data
+- [ ] Run `Create Table` — expect `201` with new table, `tableId` auto-saved
+- [ ] Run `List Tables` — expect `200` with tables array for the branch
+- [ ] Run `Get Table` — expect `200` with table detail
+- [ ] Run `Update Table` — expect `200` with updated label/capacity
+- [ ] Run `Change Table Status` — expect `200` with status changed to OCCUPIED
+- [ ] Run `Get Availability` — expect `200` with summary (total, available, occupied, reserved, cleaning)
+- [ ] Run `Permission Denial — Waiter Create Floor Plan → 403` — expect `403`
+- [ ] Run `Permission Denial — Waiter Create Table → 403` — expect `403`
+- [ ] Run `Missing Branch Header → 400` — expect `400` (no X-Branch-Id header)
+- [ ] Run `Invalid Status Enum → 400` — expect `400` (bad table status value)

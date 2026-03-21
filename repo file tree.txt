@@ -28,7 +28,8 @@ nimbus-pos/
 │   ├── M2_COMPLETION_REPORT.md
 │   ├── M3_COMPLETION_REPORT.md
 │   ├── M3_1_COMPLETION_REPORT.md
-│   └── M4_COMPLETION_REPORT.md
+│   ├── M4_COMPLETION_REPORT.md
+│   └── M5_COMPLETION_REPORT.md
 │
 ├── apps/
 │   ├── api/
@@ -88,6 +89,18 @@ nimbus-pos/
 │   │   │       │       ├── issue-quick-pin.dto.ts
 │   │   │       │       ├── reset-quick-pin.dto.ts
 │   │   │       │       └── update-quick-pin-settings.dto.ts
+│   │   │       ├── floor/
+│   │   │       │   ├── floor.module.ts
+│   │   │       │   ├── floor.controller.ts
+│   │   │       │   ├── floor.service.ts
+│   │   │       │   ├── floor.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-floor-plan.dto.ts
+│   │   │       │       ├── update-floor-plan.dto.ts
+│   │   │       │       ├── create-table.dto.ts
+│   │   │       │       ├── update-table.dto.ts
+│   │   │       │       └── update-table-status.dto.ts
 │   │   │       ├── settings/
 │   │   │       │   ├── settings.module.ts
 │   │   │       │   ├── settings.controller.ts
@@ -116,6 +129,7 @@ nimbus-pos/
 │   │       ├── jest-e2e.json
 │   │       ├── app.e2e-spec.ts
 │   │       ├── auth.e2e-spec.ts
+│   │       ├── floor.e2e-spec.ts
 │   │       ├── quick-pin.e2e-spec.ts
 │   │       ├── settings.e2e-spec.ts
 │   │       └── tenancy.e2e-spec.ts
@@ -149,6 +163,8 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260320120000_m4_org_settings/
 │   │   │           └── migration.sql
+│   │   │       └── 20260320140000_m5_floor_plans_tables/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -171,7 +187,8 @@ nimbus-pos/
     │   ├── M2-Auth-RBAC.postman_collection.json
     │   ├── M3-Tenancy.postman_collection.json
     │   ├── M3_1-Quick-PIN-Login.postman_collection.json
-    │   └── M4-Org-Settings.postman_collection.json
+    │   ├── M4-Org-Settings.postman_collection.json
+    │   └── M5-Floor-Plans-Tables.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```

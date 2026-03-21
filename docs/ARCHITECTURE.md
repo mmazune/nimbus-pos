@@ -78,8 +78,7 @@ Every business domain gets:
 | Branch context guard         | `apps/api/src/common/guards/`       | M3 ✅   |
 | Tenant / branch guards       | `apps/api/src/common/guards/`       | M3 ✅   |
 | Quick PIN service            | `apps/api/src/modules/auth/`        | M3.1 ✅ |
-| Org settings service         | `apps/api/src/modules/settings/`    | M4 ✅   |
-| Audit service                | `apps/api/src/common/audit/`        | M2 ✅   |
+| Org settings service         | `apps/api/src/modules/settings/`    | M4 ✅   || Floor / table service        | `apps/api/src/modules/floor/`       | M5 ✅   || Audit service                | `apps/api/src/common/audit/`        | M2 ✅   |
 | Idempotency interceptor      | `apps/api/src/common/interceptors/` | M41      |
 | Global exception filter      | `apps/api/src/common/filters/`      | M1       |
 | Request ID / correlation     | `apps/api/src/common/interceptors/` | M1       |
@@ -240,6 +239,53 @@ These are deferred to M4. M3 only establishes the tenancy structure.
 | THRESHOLDS_UPDATED        | Thresholds changed            |
 | PLATFORM_ACCESS_UPDATED   | Platform access changed       |
 | EXCHANGE_RATE_CREATED     | New exchange rate added       |
+
+## Floor Plans + Tables Architecture (M5)
+
+### Data Model
+
+- **FloorPlan**: A visual layout container scoped to `orgId` + `branchId`. Stores a `data` JSON field for layout metadata (grid dimensions, zone definitions). Supports `isActive` toggle.
+- **Table**: A seating resource scoped to `orgId` + `branchId`, optionally linked to a `FloorPlan`. Unique label per branch (`@@unique([branchId, label])`). Stores `capacity`, `status` enum, and optional `metadata` JSON for placement/shape.
+- **TableStatus** enum: `AVAILABLE`, `OCCUPIED`, `RESERVED`, `CLEANING`.
+
+### Branch Scoping
+
+All M5 endpoints require `X-Branch-Id` header via the `BranchContextGuard`. Floor plans and tables are strictly branch-isolated — a user can only see/manage assets in branches where they hold active membership.
+
+### Visual Layout
+
+- `FloorPlan.data` stores freeform JSON suitable for frontend drag-drop rendering. M5 seeds include placeholder zone/dimension data.
+- `Table.metadata` stores optional position/shape data per table. Later front-end milestones will consume this for visual layout rendering.
+
+### Status Model
+
+M5 implements a simple status enum — no state machine transitions yet. Any valid `TableStatus` value can be set directly via `PATCH /tables/:id/status`. Later milestones (reservations M20, POS orders M14) may add transition rules.
+
+### Future Integration Points
+
+- Reservations (M20) will attach to tables via `tableId`.
+- POS orders (M14) will reference tables for dine-in sessions.
+- No schema changes needed for those attachments — just new FK columns on future models.
+
+### M5 Permissions
+
+| Permission           | Purpose                          |
+| -------------------- | -------------------------------- |
+| pos:floor:read       | List/view floor plans            |
+| pos:floor:write      | Create/update floor plans        |
+| pos:table:read       | List/view tables + availability  |
+| pos:table:write      | Create/update tables + status    |
+
+### M5 Audit Events
+
+| Action               | Trigger                          |
+| -------------------- | -------------------------------- |
+| FLOOR_PLAN_CREATED   | Floor plan created               |
+| FLOOR_PLAN_UPDATED   | Floor plan updated               |
+| TABLE_CREATED        | Table created                    |
+| TABLE_UPDATED        | Table updated                    |
+| TABLE_STATUS_UPDATED | Table status changed             |
+| FLOOR_ACCESS_DENIED  | Access denied to floor resource  |
 
 ## Frontend Strategy (M43+)
 

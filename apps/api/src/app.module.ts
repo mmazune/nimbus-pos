@@ -7,6 +7,7 @@ import { AuditModule } from './common/audit';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { FloorModule } from './modules/floor/floor.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     AuthModule,
     TenancyModule,
     SettingsModule,
+    FloorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

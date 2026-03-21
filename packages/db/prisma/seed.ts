@@ -8,8 +8,8 @@ const SALT_ROUNDS = 12;
 // ── Baseline AppConfig rows ──
 const APP_CONFIG_DEFAULTS: { key: string; value: string }[] = [
     { key: 'app.name', value: 'Nimbus POS' },
-    { key: 'app.version', value: '0.4.0' },
-    { key: 'app.milestone', value: 'M4' },
+    { key: 'app.version', value: '0.5.0' },
+    { key: 'app.milestone', value: 'M5' },
 ];
 
 async function seedAppConfig(): Promise<{ created: number; skipped: number }> {
@@ -89,6 +89,11 @@ const PERMISSIONS_DATA = [
     { action: 'tenancy:membership:manage', description: 'Create/manage memberships' },
     // M4 settings permissions
     { action: 'tenancy:settings:manage', description: 'Create/update org settings' },
+    // M5 floor + table permissions
+    { action: 'pos:floor:read', description: 'Read floor plans' },
+    { action: 'pos:floor:write', description: 'Create/update floor plans' },
+    { action: 'pos:table:read', description: 'Read tables' },
+    { action: 'pos:table:write', description: 'Create/update tables' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -131,6 +136,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'tenancy:branch:write',
         'tenancy:membership:manage',
         'tenancy:settings:manage',
+        'pos:floor:read',
+        'pos:floor:write',
+        'pos:table:read',
+        'pos:table:write',
     ],
     Manager: [
         'identity:user:read',
@@ -143,6 +152,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'tenancy:branch:write',
         'tenancy:membership:manage',
         'tenancy:settings:manage',
+        'pos:floor:read',
+        'pos:floor:write',
+        'pos:table:read',
+        'pos:table:write',
     ],
     Accountant: [
         'identity:user:read',
@@ -157,11 +170,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'identity:access-matrix:read',
         'tenancy:org:read',
         'tenancy:branch:read',
+        'pos:floor:read',
+        'pos:floor:write',
+        'pos:table:read',
+        'pos:table:write',
     ],
-    Cashier: ['identity:user:read', 'tenancy:branch:read'],
-    Chef: ['identity:user:read', 'tenancy:branch:read'],
-    Waiter: ['identity:user:read', 'tenancy:branch:read'],
-    Bartender: ['identity:user:read', 'tenancy:branch:read'],
+    Cashier: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
+    Chef: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
+    Waiter: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
+    Bartender: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
     Procurement: ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
     'Stock Manager': ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
     'Event Manager': ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
@@ -557,6 +574,146 @@ async function seedExchangeRate(orgId: string, creatorEmail: string): Promise<{ 
     return { created: true };
 }
 
+// ── M5: Floor Plans + Tables Seed ──
+
+import { TableStatus } from '@prisma/client';
+
+const FLOOR_PLANS_SEED = [
+    {
+        name: 'Main Dining',
+        data: {
+            layout: 'grid',
+            width: 800,
+            height: 600,
+            zones: [
+                { name: 'Window Side', x: 0, y: 0, w: 400, h: 300 },
+                { name: 'Center', x: 400, y: 0, w: 400, h: 600 },
+            ],
+        },
+    },
+    {
+        name: 'Patio',
+        data: {
+            layout: 'freeform',
+            width: 600,
+            height: 400,
+            zones: [{ name: 'Outdoor', x: 0, y: 0, w: 600, h: 400 }],
+        },
+    },
+];
+
+interface TableSeed {
+    label: string;
+    capacity: number;
+    status: TableStatus;
+    floorPlanName: string;
+    metadata?: Record<string, unknown>;
+}
+
+const TABLES_SEED: TableSeed[] = [
+    { label: 'T1', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 50, y: 50, shape: 'round' } },
+    { label: 'T2', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 150, y: 50, shape: 'round' } },
+    { label: 'T3', capacity: 2, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 250, y: 50, shape: 'square' } },
+    { label: 'T4', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 350, y: 50, shape: 'round' } },
+    { label: 'T5', capacity: 6, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 450, y: 50, shape: 'rectangle' } },
+    { label: 'T6', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 550, y: 50, shape: 'round' } },
+    { label: 'T7', capacity: 2, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 50, y: 200, shape: 'square' } },
+    { label: 'T8', capacity: 4, status: TableStatus.OCCUPIED, floorPlanName: 'Main Dining', metadata: { x: 150, y: 200, shape: 'round' } },
+    { label: 'T9', capacity: 6, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 250, y: 200, shape: 'rectangle' } },
+    { label: 'T10', capacity: 8, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 350, y: 200, shape: 'rectangle' } },
+    { label: 'VIP-1', capacity: 6, status: TableStatus.RESERVED, floorPlanName: 'Main Dining', metadata: { x: 550, y: 200, shape: 'booth' } },
+    { label: 'VIP-2', capacity: 8, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 650, y: 200, shape: 'booth' } },
+    { label: 'P1', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Patio', metadata: { x: 50, y: 50, shape: 'round' } },
+    { label: 'P2', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Patio', metadata: { x: 200, y: 50, shape: 'round' } },
+    { label: 'P3', capacity: 2, status: TableStatus.CLEANING, floorPlanName: 'Patio', metadata: { x: 350, y: 50, shape: 'square' } },
+];
+
+async function seedFloorPlans(orgId: string, branchCode: string): Promise<{ floorPlanIds: Record<string, string>; created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const floorPlanIds: Record<string, string> = {};
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping floor plans`);
+        return { floorPlanIds, created: 0, skipped: 0 };
+    }
+
+    for (const fp of FLOOR_PLANS_SEED) {
+        const existing = await prisma.floorPlan.findFirst({
+            where: { branchId: branch.id, orgId, name: fp.name },
+        });
+        if (existing) {
+            console.log(`  ⏭  FloorPlan "${fp.name}" already exists — skipped`);
+            floorPlanIds[fp.name] = existing.id;
+            skipped++;
+            continue;
+        }
+
+        const created_fp = await prisma.floorPlan.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                name: fp.name,
+                data: fp.data as any,
+            },
+        });
+        console.log(`  ✅ FloorPlan "${fp.name}" created`);
+        floorPlanIds[fp.name] = created_fp.id;
+        created++;
+    }
+
+    return { floorPlanIds, created, skipped };
+}
+
+async function seedTables(
+    orgId: string,
+    branchCode: string,
+    floorPlanIds: Record<string, string>,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping tables`);
+        return { created: 0, skipped: 0 };
+    }
+
+    for (const t of TABLES_SEED) {
+        const existing = await prisma.table.findUnique({
+            where: { branchId_label: { branchId: branch.id, label: t.label } },
+        });
+        if (existing) {
+            console.log(`  ⏭  Table "${t.label}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+
+        const fpId = floorPlanIds[t.floorPlanName] ?? null;
+
+        await prisma.table.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                floorPlanId: fpId,
+                label: t.label,
+                capacity: t.capacity,
+                status: t.status,
+                metadata: t.metadata ? (t.metadata as any) : undefined,
+            },
+        });
+        console.log(`  ✅ Table "${t.label}" created (${t.floorPlanName}, cap=${t.capacity})`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -617,7 +774,17 @@ async function main(): Promise<void> {
     const exchangeRateResult = await seedExchangeRate(orgResult.orgId, 'owner@demo.local');
     console.log(`   Created: ${exchangeRateResult.created ? 1 : 0}\n`);
 
-    // 12) Record seed execution
+    // 12) Seed Floor Plans (M5)
+    console.log('── Floor Plans (M5) ──');
+    const floorResult = await seedFloorPlans(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${floorResult.created}, Skipped: ${floorResult.skipped}\n`);
+
+    // 13) Seed Tables (M5)
+    console.log('── Tables (M5) ──');
+    const tablesResult = await seedTables(orgResult.orgId, 'MAIN', floorResult.floorPlanIds);
+    console.log(`   Created: ${tablesResult.created}, Skipped: ${tablesResult.skipped}\n`);
+
+    // 14) Record seed execution
     await recordSeedRun(
         'm1-baseline',
         `AppConfig: ${configResult.created} created, ${configResult.skipped} skipped`,
@@ -637,6 +804,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm4-org-settings',
         `OrgSettings: ${settingsResult.created ? 1 : 0}c | ExchangeRate: ${exchangeRateResult.created ? 1 : 0}c`,
+    );
+    await recordSeedRun(
+        'm5-floor-plans-tables',
+        `FloorPlans: ${floorResult.created}c/${floorResult.skipped}s | Tables: ${tablesResult.created}c/${tablesResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 

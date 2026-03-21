@@ -1,13 +1,25 @@
-import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, UseGuards, Req, Param } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, PinLoginDto, RefreshDto } from './dto';
+import { QuickPinService } from './quick-pin.service';
+import {
+  LoginDto,
+  PinLoginDto,
+  RefreshDto,
+  QuickPinLoginDto,
+  IssueQuickPinDto,
+  ResetQuickPinDto,
+  UpdateQuickPinSettingsDto,
+} from './dto';
 import { JwtAuthGuard, PermissionGuard, PlatformAccessGuard } from '../../common/guards';
 import { CurrentUser, Permissions } from '../../common/decorators';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly quickPinService: QuickPinService,
+  ) {}
 
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request) {
@@ -78,5 +90,67 @@ export class AuthController {
       email: user.email,
       grantedPermissions: user.permissions,
     };
+  }
+
+  // ── M3.1 Quick PIN Endpoints ──
+
+  @Post('quick-pin-login')
+  async quickPinLogin(@Body() dto: QuickPinLoginDto, @Req() req: Request) {
+    return this.quickPinService.quickPinLogin(dto.branchId, dto.pin, dto.platform, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Post('users/:id/issue-quick-pin')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('identity:user:write')
+  async issueQuickPin(
+    @Param('id') userId: string,
+    @Body() dto: IssueQuickPinDto,
+    @CurrentUser() actor: { id: string },
+    @Req() req: Request,
+  ) {
+    return this.quickPinService.issueQuickPin(userId, actor.id, dto.branchId, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Post('users/:id/reset-quick-pin')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('identity:user:write')
+  async resetQuickPin(
+    @Param('id') userId: string,
+    @Body() dto: ResetQuickPinDto,
+    @CurrentUser() actor: { id: string },
+    @Req() req: Request,
+  ) {
+    return this.quickPinService.resetQuickPin(userId, actor.id, dto.branchId, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Patch('users/:id/quick-pin-settings')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('identity:user:write')
+  async updateQuickPinSettings(
+    @Param('id') userId: string,
+    @Body() dto: UpdateQuickPinSettingsDto,
+    @CurrentUser() actor: { id: string },
+    @Req() req: Request,
+  ) {
+    return this.quickPinService.updateQuickPinSettings(userId, actor.id, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Get('users/:id/quick-pin-status')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('identity:user:read')
+  async quickPinStatus(@Param('id') userId: string) {
+    return this.quickPinService.getQuickPinStatus(userId);
   }
 }

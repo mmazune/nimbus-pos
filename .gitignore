@@ -36,3 +36,10 @@ coverage/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Temp/debug scripts
+_*.cjs
+_*.mjs
+_*.txt
+seed_out.txt
+packages/db/_*.cjs

@@ -1,354 +1,407 @@
 {
-	"info": {
-		"_postman_id": "m2-auth-rbac-collection",
-		"name": "M2-Auth-RBAC",
-		"description": "Nimbus POS — M2: Auth Core + Sessions + RBAC + Audit Log\n\nEndpoints:\n- POST /auth/login\n- POST /auth/pin-login\n- POST /auth/refresh\n- POST /auth/logout\n- POST /auth/logout-all\n- GET /auth/me\n- GET /auth/sessions\n- GET /auth/_perm-test\n\nDeferred to later milestone:\n- MSR swipe login\n- Badge enrollment / assignment / revocation",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"auth": {
-		"type": "bearer",
-		"bearer": [
-			{
-				"key": "token",
-				"value": "{{accessToken}}",
-				"type": "string"
-			}
-		]
-	},
-	"item": [
-		{
-			"name": "Health Check",
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/health",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "health"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 200', () => pm.response.to.have.status(200));",
-							"pm.test('Body has status ok', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.status).to.eql('ok');",
-							"    pm.expect(body.db).to.eql('ok');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Login (Owner)",
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/login",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "login"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 201', () => pm.response.to.have.status(201));",
-							"pm.test('Body has tokens', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.accessToken).to.be.a('string');",
-							"    pm.expect(body.refreshToken).to.be.a('string');",
-							"    pm.expect(body.user.email).to.eql('owner@demo.local');",
-							"});",
-							"",
-							"const body = pm.response.json();",
-							"pm.environment.set('accessToken', body.accessToken);",
-							"pm.environment.set('refreshToken', body.refreshToken);",
-							"pm.environment.set('userId', body.user.id);"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "PIN Login (Cashier)",
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"email\": \"cashier@demo.local\",\n    \"pin\": \"3456\"\n}"
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/pin-login",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "pin-login"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 201', () => pm.response.to.have.status(201));",
-							"pm.test('Body has tokens', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.accessToken).to.be.a('string');",
-							"    pm.expect(body.refreshToken).to.be.a('string');",
-							"    pm.expect(body.user.email).to.eql('cashier@demo.local');",
-							"    pm.expect(body.session.source).to.eql('PIN');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Me",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/me",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "me"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 200', () => pm.response.to.have.status(200));",
-							"pm.test('Body has user info', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.email).to.be.a('string');",
-							"    pm.expect(body.roles).to.be.an('array');",
-							"    pm.expect(body.permissions).to.be.an('array');",
-							"    pm.expect(body.session).to.be.an('object');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Sessions List",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/sessions",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "sessions"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 200', () => pm.response.to.have.status(200));",
-							"pm.test('Body has sessions array', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.sessions).to.be.an('array');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Refresh Token",
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/refresh",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "refresh"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 201', () => pm.response.to.have.status(201));",
-							"pm.test('Body has rotated tokens', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.accessToken).to.be.a('string');",
-							"    pm.expect(body.refreshToken).to.be.a('string');",
-							"});",
-							"",
-							"const body = pm.response.json();",
-							"pm.environment.set('accessToken', body.accessToken);",
-							"pm.environment.set('refreshToken', body.refreshToken);"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Permission Test (Owner — should pass)",
-			"request": {
-				"method": "GET",
-				"header": [
-					{
-						"key": "X-Platform",
-						"value": "WEB_BACKOFFICE"
-					}
-				],
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/_perm-test",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "_perm-test"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 200', () => pm.response.to.have.status(200));",
-							"pm.test('Permission check passed', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.message).to.eql('Permission check passed');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Logout",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/logout",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "logout"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 201', () => pm.response.to.have.status(201));",
-							"pm.test('Logged out', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.message).to.include('Logged out');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Logout All (re-login first)",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/auth/logout-all",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "auth", "logout-all"]
-				}
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							"// Re-login to get a fresh token before logout-all",
-							"pm.sendRequest({",
-							"    url: pm.environment.get('baseUrl') + '/api/auth/login',",
-							"    method: 'POST',",
-							"    header: { 'Content-Type': 'application/json' },",
-							"    body: { mode: 'raw', raw: JSON.stringify({ email: 'owner@demo.local', password: 'Owner#123' }) }",
-							"}, function (err, res) {",
-							"    const body = res.json();",
-							"    pm.environment.set('accessToken', body.accessToken);",
-							"    pm.environment.set('refreshToken', body.refreshToken);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				},
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test('Status 201', () => pm.response.to.have.status(201));",
-							"pm.test('All sessions revoked', () => {",
-							"    const body = pm.response.json();",
-							"    pm.expect(body.message).to.include('revoked');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		}
-	]
+    "info": {
+        "_postman_id": "m2-auth-rbac-collection",
+        "name": "M2-Auth-RBAC",
+        "description": "Nimbus POS — M2: Auth Core + Sessions + RBAC + Audit Log\n\nEndpoints:\n- POST /auth/login\n- POST /auth/pin-login\n- POST /auth/refresh\n- POST /auth/logout\n- POST /auth/logout-all\n- GET /auth/me\n- GET /auth/sessions\n- GET /auth/_perm-test\n\nDeferred to later milestone:\n- MSR swipe login\n- Badge enrollment / assignment / revocation",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Health Check",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/health",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "health"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Body has status ok', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.status).to.eql('ok');",
+                            "    pm.expect(body.db).to.eql('ok');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Login (Owner)",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Body has tokens', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.accessToken).to.be.a('string');",
+                            "    pm.expect(body.refreshToken).to.be.a('string');",
+                            "    pm.expect(body.user.email).to.eql('owner@demo.local');",
+                            "});",
+                            "",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.environment.set('refreshToken', body.refreshToken);",
+                            "pm.environment.set('userId', body.user.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "PIN Login (Cashier)",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"cashier@demo.local\",\n    \"pin\": \"3456\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/pin-login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "pin-login"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Body has tokens', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.accessToken).to.be.a('string');",
+                            "    pm.expect(body.refreshToken).to.be.a('string');",
+                            "    pm.expect(body.user.email).to.eql('cashier@demo.local');",
+                            "    pm.expect(body.session.source).to.eql('PIN');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Me",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "me"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Body has user info', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.email).to.be.a('string');",
+                            "    pm.expect(body.roles).to.be.an('array');",
+                            "    pm.expect(body.permissions).to.be.an('array');",
+                            "    pm.expect(body.session).to.be.an('object');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Sessions List",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/sessions",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "sessions"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Body has sessions array', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.sessions).to.be.an('array');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Refresh Token",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/refresh",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "refresh"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Body has rotated tokens', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.accessToken).to.be.a('string');",
+                            "    pm.expect(body.refreshToken).to.be.a('string');",
+                            "});",
+                            "",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.environment.set('refreshToken', body.refreshToken);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Permission Test (Owner — should pass)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Platform",
+                        "value": "WEB_BACKOFFICE"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/_perm-test",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "_perm-test"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Permission check passed', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.message).to.eql('Permission check passed');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Logout",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/logout",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "logout"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Logged out', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.message).to.include('Logged out');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Logout All (re-login first)",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/logout-all",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "logout-all"
+                    ]
+                }
+            },
+            "response": [],
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "// Re-login to get a fresh token before logout-all",
+                            "pm.sendRequest({",
+                            "    url: pm.environment.get('baseUrl') + '/api/auth/login',",
+                            "    method: 'POST',",
+                            "    header: { 'Content-Type': 'application/json' },",
+                            "    body: { mode: 'raw', raw: JSON.stringify({ email: 'owner@demo.local', password: 'Owner#123' }) }",
+                            "}, function (err, res) {",
+                            "    const body = res.json();",
+                            "    pm.environment.set('accessToken', body.accessToken);",
+                            "    pm.environment.set('refreshToken', body.refreshToken);",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('All sessions revoked', () => {",
+                            "    const body = pm.response.json();",
+                            "    pm.expect(body.message).to.include('revoked');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
+        }
+    ]
 }

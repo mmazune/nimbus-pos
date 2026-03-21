@@ -13,7 +13,7 @@
 | **Auth — Quick PIN Login**          | `apps/api/src/modules/auth/`         | M3.1      | ✅ Implemented |
 | **Tenancy (Org/Branch/Membership)** | `apps/api/src/modules/tenancy/`      | M3        | ✅ Implemented |
 | **Settings / Numbering**            | `apps/api/src/modules/settings/`     | M4        | ✅ Implemented |
-| **Floor / Tables / Areas**          | `apps/api/src/modules/floor/`        | M5        | ⬜ Planned     |
+| **Floor / Tables / Areas**          | `apps/api/src/modules/floor/`        | M5        | ✅ Implemented |
 | **Menu Catalog**                    | `apps/api/src/modules/menu/`         | M6–M7     | ⬜ Planned     |
 | **Recipes / Costing**               | `apps/api/src/modules/recipes/`      | M8        | ⬜ Planned     |
 | **Inventory**                       | `apps/api/src/modules/inventory/`    | M9–M10    | ⬜ Planned     |
