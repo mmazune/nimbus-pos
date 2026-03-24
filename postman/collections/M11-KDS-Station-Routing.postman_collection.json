@@ -1,0 +1,546 @@
+{
+    "info": {
+        "_postman_id": "m11-kds-station-routing",
+        "name": "M11 — KDS Station Routing",
+        "description": "Nimbus POS — M11 KDS + Station Routing + SLA Timers: Queue view, mark-ready, recall, SLA config, SSE stream.\n\nWorkflow: Login → Fetch KITCHEN menu item → Create TAKEAWAY order → Add item → Send order (spawns KDS tickets) → KDS queue ops.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Login (Owner)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Fetch KITCHEN Menu Item",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const items = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has menu items', () => pm.expect(items).to.be.an('array').that.is.not.empty);",
+                            "const kitchenItem = items.find(i => i.station === 'KITCHEN' && i.isActive !== false);",
+                            "pm.test('Found a KITCHEN-station item', () => pm.expect(kitchenItem).to.exist);",
+                            "if (kitchenItem) {",
+                            "    pm.environment.set('kdsMenuItemId', kitchenItem.id);",
+                            "    console.log('kdsMenuItemId set to:', kitchenItem.id, '(' + kitchenItem.name + ')');",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/menu/items",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "menu",
+                        "items"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Order for KDS",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Order status is NEW', () => pm.expect(json.status).to.equal('NEW'));",
+                            "pm.test('Service type is TAKEAWAY', () => pm.expect(json.serviceType).to.equal('TAKEAWAY'));",
+                            "pm.environment.set('kdsOrderId', json.id);",
+                            "console.log('kdsOrderId set to:', json.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"serviceType\": \"TAKEAWAY\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Add KITCHEN Item to Order",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has menuItemId', () => pm.expect(json.menuItemId).to.be.a('string'));",
+                            "pm.test('Quantity is 1', () => pm.expect(Number(json.quantity)).to.equal(1));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"menuItemId\": \"{{kdsMenuItemId}}\",\n  \"quantity\": 1\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{kdsOrderId}}/items",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders",
+                        "{{kdsOrderId}}",
+                        "items"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Send Order → Spawns KDS Tickets",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Order status is SENT', () => pm.expect(json.status).to.equal('SENT'));",
+                            "console.log('Order sent — KDS tickets should now be in the queue.');"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{kdsOrderId}}/send",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders",
+                        "{{kdsOrderId}}",
+                        "send"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get KDS Queue",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));",
+                            "pm.test('Has total', () => pm.expect(json.total).to.be.a('number'));",
+                            "// Find a QUEUED ticket from the just-sent order for downstream mark-ready / recall tests",
+                            "const queued = json.data.find(t => t.status === 'QUEUED');",
+                            "pm.test('Queue has at least one QUEUED ticket', () => pm.expect(queued).to.exist);",
+                            "if (queued) {",
+                            "    pm.environment.set('kdsTicketId', queued.id);",
+                            "    pm.test('Ticket has urgencyState', () => pm.expect(queued.urgencyState).to.be.oneOf(['GREEN','AMBER','RED']));",
+                            "    pm.test('Ticket has elapsedSeconds', () => pm.expect(queued.elapsedSeconds).to.be.a('number'));",
+                            "    pm.test('Ticket has items', () => pm.expect(queued.items).to.be.an('array'));",
+                            "    console.log('kdsTicketId set to:', queued.id, '(station:', queued.station + ')');",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/kds/queue",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "kds",
+                        "queue"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get KDS Queue (KITCHEN filter)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('All tickets are KITCHEN', () => {",
+                            "    json.data.forEach(t => pm.expect(t.station).to.equal('KITCHEN'));",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/kds/queue?station=KITCHEN",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "kds",
+                        "queue"
+                    ],
+                    "query": [
+                        {
+                            "key": "station",
+                            "value": "KITCHEN"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get SLA Config (KITCHEN)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Station is KITCHEN', () => pm.expect(json.station).to.equal('KITCHEN'));",
+                            "pm.test('Has greenSeconds', () => pm.expect(json.greenSeconds).to.be.a('number'));",
+                            "pm.test('Has amberSeconds', () => pm.expect(json.amberSeconds).to.be.a('number'));",
+                            "pm.test('Has redSeconds', () => pm.expect(json.redSeconds).to.be.a('number'));",
+                            "pm.test('SLA order valid', () => pm.expect(json.greenSeconds).to.be.at.most(json.amberSeconds));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/kds/sla-config/KITCHEN",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "kds",
+                        "sla-config",
+                        "KITCHEN"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Update SLA Config (KITCHEN)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('greenSeconds updated', () => pm.expect(json.greenSeconds).to.equal(120));",
+                            "pm.test('amberSeconds updated', () => pm.expect(json.amberSeconds).to.equal(360));",
+                            "pm.test('redSeconds updated', () => pm.expect(json.redSeconds).to.equal(600));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"greenSeconds\": 120,\n  \"amberSeconds\": 360,\n  \"redSeconds\": 600\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/kds/sla-config/KITCHEN",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "kds",
+                        "sla-config",
+                        "KITCHEN"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Mark Ticket Ready",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Status is READY', () => pm.expect(json.status).to.equal('READY'));",
+                            "pm.test('Has readyAt', () => pm.expect(json.readyAt).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/kds/tickets/{{kdsTicketId}}/mark-ready",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "kds",
+                        "tickets",
+                        "{{kdsTicketId}}",
+                        "mark-ready"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Recall Ticket",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Status is RECALLED', () => pm.expect(json.status).to.equal('RECALLED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/kds/tickets/{{kdsTicketId}}/recall",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "kds",
+                        "tickets",
+                        "{{kdsTicketId}}",
+                        "recall"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Update SLA Config — Invalid Order (400)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"greenSeconds\": 600,\n  \"amberSeconds\": 300,\n  \"redSeconds\": 900\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/kds/sla-config/KITCHEN",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "kds",
+                        "sla-config",
+                        "KITCHEN"
+                    ]
+                }
+            }
+        }
+    ]
+}
