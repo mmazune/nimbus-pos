@@ -1,0 +1,679 @@
+{
+    "info": {
+        "_postman_id": "m7-menu-modifiers",
+        "name": "M7 — Menu Modifier Groups + Options",
+        "description": "Nimbus POS — M7 modifier groups, modifier options, item-to-group assignment, and item detail read model.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Login (Owner)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Modifier Groups",
+            "item": [
+                {
+                    "name": "Create Modifier Group",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('modifierGroupId', json.id);",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                                    "pm.test('Name matches', () => pm.expect(json.name).to.eql('PM Size'));",
+                                    "pm.test('Min is 1', () => pm.expect(json.min).to.eql(1));",
+                                    "pm.test('Required is true', () => pm.expect(json.required).to.eql(true));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Size\",\n  \"min\": 1,\n  \"max\": 1,\n  \"required\": true,\n  \"sortOrder\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Modifier Group — duplicate → 409",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Size\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Modifier Group — min > max → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Bad Group\",\n  \"min\": 5,\n  \"max\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Modifier Groups",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Has at least 1', () => pm.expect(json.length).to.be.at.least(1));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Modifier Group by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.eql(pm.environment.get('modifierGroupId')));",
+                                    "pm.test('Has options array', () => pm.expect(json.options).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups/{{modifierGroupId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups",
+                                "{{modifierGroupId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Modifier Group",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Max updated', () => pm.expect(json.max).to.eql(3));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"max\": 3\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups/{{modifierGroupId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups",
+                                "{{modifierGroupId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Modifier Options",
+            "item": [
+                {
+                    "name": "Create Modifier Option",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('modifierOptionId', json.id);",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                                    "pm.test('Name matches', () => pm.expect(json.name).to.eql('PM Small'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Small\",\n  \"priceDelta\": \"0.00\",\n  \"sortOrder\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups/{{modifierGroupId}}/options",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups",
+                                "{{modifierGroupId}}",
+                                "options"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Modifier Option — duplicate → 409",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Small\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups/{{modifierGroupId}}/options",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups",
+                                "{{modifierGroupId}}",
+                                "options"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Modifier Options",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Has at least 1', () => pm.expect(json.length).to.be.at.least(1));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups/{{modifierGroupId}}/options",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups",
+                                "{{modifierGroupId}}",
+                                "options"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Modifier Option",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Price updated', () => pm.expect(Number(json.priceDelta)).to.eql(2.5));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"priceDelta\": \"2.50\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/modifier-groups/{{modifierGroupId}}/options/{{modifierOptionId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "modifier-groups",
+                                "{{modifierGroupId}}",
+                                "options",
+                                "{{modifierOptionId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Item Modifier Assignment",
+            "item": [
+                {
+                    "name": "Assign Modifier Groups to Item",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Has 1 group', () => pm.expect(json.length).to.eql(1));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"groups\": [\n    { \"groupId\": \"{{modifierGroupId}}\", \"sortOrder\": 0 }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/modifier-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "modifier-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Item Modifier Groups",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Has options', () => { if (json.length > 0) pm.expect(json[0]).to.have.property('options'); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/modifier-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "modifier-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Item Detail — includes modifierGroups",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has modifierGroups', () => pm.expect(json).to.have.property('modifierGroups'));",
+                                    "pm.test('modifierGroups is array', () => pm.expect(json.modifierGroups).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Clear Modifier Groups (empty array)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Is empty array', () => pm.expect(json).to.be.an('array').that.is.empty);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"groups\": []\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/modifier-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "modifier-groups"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
