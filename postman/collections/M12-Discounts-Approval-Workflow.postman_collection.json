@@ -1,0 +1,717 @@
+{
+    "info": {
+        "_postman_id": "m12-discounts-approval-workflow",
+        "name": "M12 — Discounts + Approval Workflow",
+        "description": "Nimbus POS — M12 Discounts + Approval Workflow: Request discount, auto-approve vs pending, manager approve/reject, PIN verification, list discounts.\n\nWorkflow: Login (waiter) → Create order → Add items → Request small discount (auto-approve) → Login (owner/manager) → Request large discount (pending) → Approve → Reject → List order discounts → Get pending → Get detail.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Login (Waiter)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('waiterToken', json.accessToken);",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"waiter@demo.local\",\n  \"password\": \"Waiter#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "var allBranches = []; var orgs = json.organizations || []; for (var i = 0; i < orgs.length; i++) { var bs = orgs[i].branches || []; for (var j = 0; j < bs.length; j++) allBranches.push(bs[j]); }",
+                            "var mainBranch = null; for (var k = 0; k < allBranches.length; k++) { if (allBranches[k].code === 'MAIN') { mainBranch = allBranches[k]; break; } }",
+                            "var branchId = mainBranch ? mainBranch.id : (json.defaultBranch ? json.defaultBranch.id : (allBranches.length > 0 ? allBranches[0].id : null));",
+                            "console.log('[Get Branch ID] branches:', allBranches.length, '| picked:', branchId, '| code:', mainBranch ? mainBranch.code : 'fallback');",
+                            "pm.environment.set('branchId', branchId);",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has branchId', () => pm.expect(branchId).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{waiterToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Order",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('orderId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Order created', () => pm.expect(json.id).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Menu Items",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "var items = json.data || json;",
+                            "console.log('[Get Menu Items] count:', items.length, '| branchId:', pm.environment.get('branchId'));",
+                            "if (items.length > 0) pm.environment.set('menuItemId', items[0].id);",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has items', () => pm.expect(items.length).to.be.greaterThan(0));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/menu/items",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "menu",
+                        "items"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Add Item to Order",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 3\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders",
+                        "{{orderId}}",
+                        "items"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Request Small Discount (Auto-Approve)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('smallDiscountId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Auto-approved', () => pm.expect(json.status).to.eql('APPROVED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"type\": \"FIXED\",\n  \"value\": 1000,\n  \"reason\": \"Loyalty customer\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/discounts",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders",
+                        "{{orderId}}",
+                        "discounts"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Request Large Discount (Pending)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('pendingDiscountId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Pending', () => pm.expect(json.status).to.eql('PENDING'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"type\": \"FIXED\",\n  \"value\": 15000,\n  \"reason\": \"VIP guest special\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/discounts",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders",
+                        "{{orderId}}",
+                        "discounts"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Login (Owner/Manager)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('managerToken', json.accessToken);",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Approve Discount",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Approved', () => pm.expect(json.status).to.eql('APPROVED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{managerToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/discounts/{{pendingDiscountId}}/approve",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "discounts",
+                        "{{pendingDiscountId}}",
+                        "approve"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Request Another Large Discount (to reject)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('rejectDiscountId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{managerToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"type\": \"FIXED\",\n  \"value\": 8000,\n  \"reason\": \"Test reject flow\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/discounts",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders",
+                        "{{orderId}}",
+                        "discounts"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Reject Discount",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Rejected', () => pm.expect(json.status).to.eql('REJECTED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{managerToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"rejectionReason\": \"Amount exceeds policy limit\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/discounts/{{rejectDiscountId}}/reject",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "discounts",
+                        "{{rejectDiscountId}}",
+                        "reject"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Order Discounts",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has discounts', () => pm.expect(json.data.length).to.be.greaterThan(0));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/discounts",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "orders",
+                        "{{orderId}}",
+                        "discounts"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Pending Discounts",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Is array', () => pm.expect(json).to.be.an('array'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{managerToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/discounts/pending",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "discounts",
+                        "pending"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Discount Detail",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/discounts/{{smallDiscountId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "pos",
+                        "discounts",
+                        "{{smallDiscountId}}"
+                    ]
+                }
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001",
+            "type": "string"
+        },
+        {
+            "key": "accessToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "waiterToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "managerToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "branchId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "orderId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "menuItemId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "smallDiscountId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "pendingDiscountId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "rejectDiscountId",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}
