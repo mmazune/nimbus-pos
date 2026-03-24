@@ -1,0 +1,819 @@
+{
+    "info": {
+        "_postman_id": "m6-1-menu-taxonomy-serving-formats",
+        "name": "M6.1 — Menu Taxonomy + Serving Formats",
+        "description": "Nimbus POS — M6.1 POS browse groups, subgroups, serving formats, browse assignment, and navigation tree.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Login (Owner)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Browse Groups",
+            "item": [
+                {
+                    "name": "Create Browse Group (FOOD)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('browseGroupId', json.id);",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                                    "pm.test('Section is FOOD', () => pm.expect(json.section).to.eql('FOOD'));",
+                                    "pm.test('Is active', () => pm.expect(json.isActive).to.eql(true));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Starters\",\n  \"section\": \"FOOD\",\n  \"sortOrder\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Browse Group (DRINKS)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('browseGroupIdDrinks', json.id);",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Section is DRINKS', () => pm.expect(json.section).to.eql('DRINKS'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Cocktails\",\n  \"section\": \"DRINKS\",\n  \"sortOrder\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Browse Groups",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Has at least 1 group', () => pm.expect(json.length).to.be.at.least(1));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Browse Group by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('ID matches', () => pm.expect(json.id).to.eql(pm.environment.get('browseGroupId')));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups/{{browseGroupId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups",
+                                "{{browseGroupId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Browse Group",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('sortOrder updated', () => pm.expect(json.sortOrder).to.eql(5));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sortOrder\": 5\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups/{{browseGroupId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups",
+                                "{{browseGroupId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Browse Group — duplicate name → 409",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Starters\",\n  \"section\": \"FOOD\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Browse Subgroups",
+            "item": [
+                {
+                    "name": "Create Subgroup",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('browseSubgroupId', json.id);",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"PM Cold Starters\",\n  \"sortOrder\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups/{{browseGroupId}}/subgroups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups",
+                                "{{browseGroupId}}",
+                                "subgroups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Subgroups",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups/{{browseGroupId}}/subgroups",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups",
+                                "{{browseGroupId}}",
+                                "subgroups"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Subgroup",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('sortOrder updated', () => pm.expect(json.sortOrder).to.eql(3));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sortOrder\": 3\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/browse-groups/{{browseGroupId}}/subgroups/{{browseSubgroupId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "browse-groups",
+                                "{{browseGroupId}}",
+                                "subgroups",
+                                "{{browseSubgroupId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Menu Item Servings",
+            "item": [
+                {
+                    "name": "Create Serving",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('servingId', json.id);",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                                    "pm.test('Format is GLASS', () => pm.expect(json.format).to.eql('GLASS'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"format\": \"GLASS\",\n  \"price\": 12.00,\n  \"isDefault\": true,\n  \"sortOrder\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/servings",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "servings"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Servings",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Has at least 1 serving', () => pm.expect(json.length).to.be.at.least(1));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/servings",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "servings"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Serving",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Price updated', () => pm.expect(Number(json.price)).to.eql(15.50));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"price\": 15.50\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/servings/{{servingId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "servings",
+                                "{{servingId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Assign Browse + Navigation",
+            "item": [
+                {
+                    "name": "Assign Browse Group to Item",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('browseGroupId set', () => pm.expect(json.browseGroupId).to.eql(pm.environment.get('browseGroupId')));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"browseGroupId\": \"{{browseGroupId}}\",\n  \"browseSubgroupId\": \"{{browseSubgroupId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/browse",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "browse"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Clear Browse Assignment",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('browseGroupId is null', () => pm.expect(json.browseGroupId).to.be.null);",
+                                    "pm.test('browseSubgroupId is null', () => pm.expect(json.browseSubgroupId).to.be.null);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"browseGroupId\": null\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items/{{menuItemId}}/browse",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items",
+                                "{{menuItemId}}",
+                                "browse"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Navigation Tree",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "if (json.length > 0) {",
+                                    "  pm.test('Has section', () => pm.expect(json[0]).to.have.property('section'));",
+                                    "  pm.test('Has groups', () => pm.expect(json[0]).to.have.property('groups'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/navigation",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "navigation"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Navigation Tree — filter by FOOD",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "json.forEach(entry => {",
+                                    "  pm.test('Section is FOOD', () => pm.expect(entry.section).to.eql('FOOD'));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/navigation?section=FOOD",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "navigation"
+                            ],
+                            "query": [
+                                {
+                                    "key": "section",
+                                    "value": "FOOD"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Catalog (upgraded M6.1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has categories', () => pm.expect(json).to.have.property('categories'));",
+                                    "pm.test('Has taxCategories', () => pm.expect(json).to.have.property('taxCategories'));",
+                                    "pm.test('Categories is array', () => pm.expect(json.categories).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/catalog",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "catalog"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
