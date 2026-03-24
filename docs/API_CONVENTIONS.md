@@ -130,6 +130,174 @@ Branch-scoped floor plan and table management for dine-in operations.
 | RESERVED    | Table is reserved for upcoming guests    |
 | CLEANING    | Table is being cleaned / reset           |
 
+## Menu Catalog (M6) ✅
+
+Branch-scoped categories, tax categories, and menu items for the POS menu.
+
+### Menu Endpoints
+
+| Method | Path                         | Auth | Permission       | Branch | Description                          |
+| ------ | ---------------------------- | ---- | ---------------- | ------ | ------------------------------------ |
+| POST   | `/api/menu/categories`       | Yes  | pos:menu:write   | Yes    | Create category                      |
+| GET    | `/api/menu/categories`       | Yes  | pos:menu:read    | Yes    | List categories for branch           |
+| GET    | `/api/menu/categories/:id`   | Yes  | pos:menu:read    | Yes    | Get category detail                  |
+| PATCH  | `/api/menu/categories/:id`   | Yes  | pos:menu:write   | Yes    | Update category                      |
+| POST   | `/api/menu/tax-categories`   | Yes  | pos:tax:write    | Yes    | Create tax category                  |
+| GET    | `/api/menu/tax-categories`   | Yes  | pos:tax:read     | Yes    | List tax categories for branch       |
+| GET    | `/api/menu/tax-categories/:id` | Yes | pos:tax:read    | Yes    | Get tax category detail              |
+| PATCH  | `/api/menu/tax-categories/:id` | Yes | pos:tax:write   | Yes    | Update tax category                  |
+| POST   | `/api/menu/items`            | Yes  | pos:menu:write   | Yes    | Create menu item                     |
+| GET    | `/api/menu/items`            | Yes  | pos:menu:read    | Yes    | List menu items for branch           |
+| GET    | `/api/menu/items/:id`        | Yes  | pos:menu:read    | Yes    | Get menu item detail                 |
+| PATCH  | `/api/menu/items/:id`        | Yes  | pos:menu:write   | Yes    | Update menu item                     |
+| GET    | `/api/menu/catalog`          | Yes  | pos:menu:read    | Yes    | Full POS catalog (grouped by category) |
+
+### Menu Item Types
+
+| Type  | Meaning        |
+| ----- | -------------- |
+| FOOD  | Food product   |
+| DRINK | Beverage       |
+
+### Prep Stations
+
+| Station       | Meaning            |
+| ------------- | ------------------ |
+| KITCHEN       | Main kitchen       |
+| BAR           | Bar area           |
+| COLD_KITCHEN  | Cold prep station  |
+| DESSERT       | Dessert station    |
+| NONE          | No routing needed  |
+
+## Recipes + Ingredient Costing (M8) ✅
+
+Branch-scoped inventory items, recipes (ingredient lists per menu item), and theoretical COGS cost breakdown.
+
+### Inventory Item Endpoints
+
+| Method | Path                        | Auth | Permission         | Branch | Description                    |
+| ------ | --------------------------- | ---- | ------------------ | ------ | ------------------------------ |
+| POST   | `/api/inventory/items`      | Yes  | pos:recipe:write   | Yes    | Create inventory item          |
+| GET    | `/api/inventory/items`      | Yes  | pos:recipe:read    | Yes    | List inventory items           |
+| GET    | `/api/inventory/items/:id`  | Yes  | pos:recipe:read    | Yes    | Get inventory item detail      |
+| PATCH  | `/api/inventory/items/:id`  | Yes  | pos:recipe:write   | Yes    | Update inventory item          |
+
+### Recipe Endpoints
+
+| Method | Path                                      | Auth | Permission         | Branch | Description                          |
+| ------ | ----------------------------------------- | ---- | ------------------ | ------ | ------------------------------------ |
+| POST   | `/api/inventory/recipes/:menuItemId`      | Yes  | pos:recipe:write   | Yes    | Set/replace recipe (atomic)          |
+| GET    | `/api/inventory/recipes/:menuItemId`      | Yes  | pos:recipe:read    | Yes    | Get recipe (grouped by base/mod/srv) |
+| GET    | `/api/inventory/recipes/:menuItemId/cost` | Yes  | pos:cost:read      | Yes    | Cost breakdown with visibility       |
+
+### Cost Visibility
+
+Cost data is masked for Chef (L2 CHEF) when `OrgSettings.showCostToChef = false`. L4+ always see full cost breakdown.
+
+## Inventory Stock + FIFO (M9) ✅
+
+Branch-scoped stock batches, inventory levels with reorder thresholds, stock adjustments, and FIFO deduction foundation.
+
+### Stock Batch Endpoints
+
+| Method | Path                                | Auth | Permission            | Branch | Description                    |
+| ------ | ----------------------------------- | ---- | --------------------- | ------ | ------------------------------ |
+| POST   | `/api/inventory/batches`            | Yes  | pos:inventory:write   | Yes    | Create stock batch             |
+| GET    | `/api/inventory/batches`            | Yes  | pos:inventory:read    | Yes    | List all stock batches         |
+| GET    | `/api/inventory/items/:id/batches`  | Yes  | pos:inventory:read    | Yes    | List batches for item          |
+
+### Inventory Level Endpoints
+
+| Method | Path                        | Auth | Permission            | Branch | Description                    |
+| ------ | --------------------------- | ---- | --------------------- | ------ | ------------------------------ |
+| GET    | `/api/inventory/levels`     | Yes  | pos:inventory:read    | Yes    | Get stock levels + reorder     |
+
+### Stock Adjustment Endpoints
+
+| Method | Path                            | Auth | Permission              | Branch | Description                    |
+| ------ | ------------------------------- | ---- | ----------------------- | ------ | ------------------------------ |
+| POST   | `/api/inventory/adjustments`    | Yes  | pos:inventory:adjust    | Yes    | Create stock adjustment        |
+
+### FIFO Logic
+
+Negative adjustments consume stock from oldest batches first (ordered by `receivedAt ASC`). Negative stock is blocked — attempts are audited as `NEGATIVE_STOCK_ATTEMPT`.
+
+## POS Orders — Create + Lifecycle + Status Machine (M10) ✅
+
+Branch-scoped POS orders with line items, state machine lifecycle, pricing snapshots, and cost snapshots from M8 recipes.
+
+### Order Endpoints
+
+| Method | Path                                       | Auth | Permission          | Branch | Description                     |
+| ------ | ------------------------------------------ | ---- | ------------------- | ------ | ------------------------------- |
+| POST   | `/api/pos/orders`                          | Yes  | pos:orders:write    | Yes    | Create order                    |
+| GET    | `/api/pos/orders`                          | Yes  | pos:orders:read     | Yes    | List orders (paginated)         |
+| GET    | `/api/pos/orders/:id`                      | Yes  | pos:orders:read     | Yes    | Get order by ID                 |
+
+### Order Item Endpoints
+
+| Method | Path                                       | Auth | Permission          | Branch | Description                     |
+| ------ | ------------------------------------------ | ---- | ------------------- | ------ | ------------------------------- |
+| POST   | `/api/pos/orders/:id/items`                | Yes  | pos:orders:write    | Yes    | Add item to order               |
+| PATCH  | `/api/pos/orders/:id/items/:itemId`        | Yes  | pos:orders:write    | Yes    | Update order item               |
+| DELETE | `/api/pos/orders/:id/items/:itemId`        | Yes  | pos:orders:write    | Yes    | Remove order item               |
+
+### Order Lifecycle Endpoints
+
+| Method | Path                                       | Auth | Permission          | Branch | Description                     |
+| ------ | ------------------------------------------ | ---- | ------------------- | ------ | ------------------------------- |
+| POST   | `/api/pos/orders/:id/send`                 | Yes  | pos:orders:write    | Yes    | Send order (NEW → SENT)         |
+| POST   | `/api/pos/orders/:id/in-kitchen`           | Yes  | pos:orders:write    | Yes    | Mark in kitchen (SENT → IN_KITCHEN) |
+| POST   | `/api/pos/orders/:id/ready`                | Yes  | pos:orders:write    | Yes    | Mark ready (IN_KITCHEN → READY) |
+| POST   | `/api/pos/orders/:id/mark-served`          | Yes  | pos:orders:write    | Yes    | Mark served (READY → SERVED)    |
+| POST   | `/api/pos/orders/:id/close`                | Yes  | pos:orders:close    | Yes    | Close order (SERVED → CLOSED)   |
+| POST   | `/api/pos/orders/:id/void`                 | Yes  | pos:orders:void     | Yes    | Void order                      |
+
+## KDS + Station Routing — Queue + Tickets + SLA (M11) ✅
+
+Branch-scoped KDS queue, ticket actions, SLA configuration, and real-time SSE stream.
+
+### KDS Endpoints
+
+| Method | Path                                       | Auth | Permission          | Branch | Description                        |
+| ------ | ------------------------------------------ | ---- | ------------------- | ------ | ---------------------------------- |
+| GET    | `/api/kds/queue`                           | Yes  | pos:kds:read        | Yes    | Get KDS queue (enriched urgency)   |
+| GET    | `/api/kds/sla-config/:station`             | Yes  | pos:kds:read        | Yes    | Get SLA config for station         |
+| PATCH  | `/api/kds/sla-config/:station`             | Yes  | pos:kds:sla:write   | Yes    | Update SLA thresholds for station  |
+| POST   | `/api/kds/tickets/:id/mark-ready`          | Yes  | pos:kds:write       | Yes    | Mark ticket as READY               |
+| POST   | `/api/kds/tickets/:id/recall`              | Yes  | pos:kds:write       | Yes    | Recall READY ticket to queue       |
+| GET    | `/api/stream/kds`                          | Yes  | —                   | Yes    | SSE stream (filtered by branch)    |
+
+## Discounts + Approval Workflow (M12) ✅
+
+Branch-scoped discount requests with auto-approve / pending approval, manager PIN verification, and order integration.
+
+### Discount Endpoints
+
+| Method | Path                                       | Auth | Permission             | Branch | Description                           |
+| ------ | ------------------------------------------ | ---- | ---------------------- | ------ | ------------------------------------- |
+| POST   | `/api/pos/orders/:id/discounts`            | Yes  | pos:discount:request   | Yes    | Request discount on order             |
+| GET    | `/api/pos/orders/:id/discounts`            | Yes  | pos:discount:read      | Yes    | List discounts for order (paginated)  |
+| POST   | `/api/pos/discounts/:id/approve`           | Yes  | pos:discount:approve   | Yes    | Approve pending discount              |
+| POST   | `/api/pos/discounts/:id/reject`            | Yes  | pos:discount:approve   | Yes    | Reject pending discount               |
+| GET    | `/api/pos/discounts/pending`               | Yes  | pos:discount:approve   | Yes    | List pending discounts for branch     |
+| GET    | `/api/pos/discounts/:id`                   | Yes  | pos:discount:read      | Yes    | Get discount detail                   |
+
+## Payments: Cash, Card, Mobile Money (M13) ✅
+
+Close orders with payment, split payments, MOMO intent lifecycle, webhook ingestion.
+
+### Payment Endpoints
+
+| Method | Path                                       | Auth | Permission             | Branch | Description                           |
+| ------ | ------------------------------------------ | ---- | ---------------------- | ------ | ------------------------------------- |
+| POST   | `/api/pos/orders/:id/close`                | Yes  | pos:orders:close       | Yes    | Close order with payment(s)           |
+| POST   | `/api/payments/intents`                    | Yes  | pos:payment:intent     | Yes    | Create MOMO payment intent            |
+| POST   | `/api/payments/intents/:id/cancel`         | Yes  | pos:payment:intent     | Yes    | Cancel pending MOMO intent            |
+| GET    | `/api/pos/orders/:id/payments`             | Yes  | pos:payment:read       | Yes    | Get payments + intents for order      |
+| POST   | `/api/webhooks/mtn`                        | No   | —                      | No     | MTN Mobile Money webhook              |
+| POST   | `/api/webhooks/airtel`                     | No   | —                      | No     | Airtel Money webhook                  |
+
 ## Validation
 
 - DTO classes with `class-validator`

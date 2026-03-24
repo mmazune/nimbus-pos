@@ -8,8 +8,8 @@ const SALT_ROUNDS = 12;
 // ── Baseline AppConfig rows ──
 const APP_CONFIG_DEFAULTS: { key: string; value: string }[] = [
     { key: 'app.name', value: 'Nimbus POS' },
-    { key: 'app.version', value: '0.5.0' },
-    { key: 'app.milestone', value: 'M5' },
+    { key: 'app.version', value: '0.9.0' },
+    { key: 'app.milestone', value: 'M11' },
 ];
 
 async function seedAppConfig(): Promise<{ created: number; skipped: number }> {
@@ -40,17 +40,72 @@ async function seedAppConfig(): Promise<{ created: number; skipped: number }> {
 // ── M2: Roles ──
 
 const ROLES_DATA = [
-    { name: 'Owner', level: RoleLevel.L5, jobRole: JobRole.OWNER, description: 'Full system access — platform owner' },
-    { name: 'Manager', level: RoleLevel.L4, jobRole: JobRole.MANAGER, description: 'Branch management — day-to-day operations' },
-    { name: 'Accountant', level: RoleLevel.L4, jobRole: JobRole.ACCOUNTANT, description: 'Financial access — reporting and accounting' },
-    { name: 'Supervisor', level: RoleLevel.L3, jobRole: JobRole.SUPERVISOR, description: 'Floor supervisor — overrides and approvals' },
-    { name: 'Cashier', level: RoleLevel.L2, jobRole: JobRole.CASHIER, description: 'POS operations — orders and payments' },
-    { name: 'Chef', level: RoleLevel.L2, jobRole: JobRole.CHEF, description: 'Kitchen operations — KDS and prep' },
-    { name: 'Waiter', level: RoleLevel.L1, jobRole: JobRole.WAITER, description: 'Floor service — order taking' },
-    { name: 'Bartender', level: RoleLevel.L2, jobRole: JobRole.BARTENDER, description: 'Bar operations — drinks and service' },
-    { name: 'Procurement', level: RoleLevel.L3, jobRole: JobRole.PROCUREMENT, description: 'Purchasing — suppliers and orders' },
-    { name: 'Stock Manager', level: RoleLevel.L3, jobRole: JobRole.STOCK_MANAGER, description: 'Inventory management — counts and adjustments' },
-    { name: 'Event Manager', level: RoleLevel.L3, jobRole: JobRole.EVENT_MANAGER, description: 'Events and bookings — reservations' },
+    {
+        name: 'Owner',
+        level: RoleLevel.L5,
+        jobRole: JobRole.OWNER,
+        description: 'Full system access — platform owner',
+    },
+    {
+        name: 'Manager',
+        level: RoleLevel.L4,
+        jobRole: JobRole.MANAGER,
+        description: 'Branch management — day-to-day operations',
+    },
+    {
+        name: 'Accountant',
+        level: RoleLevel.L4,
+        jobRole: JobRole.ACCOUNTANT,
+        description: 'Financial access — reporting and accounting',
+    },
+    {
+        name: 'Supervisor',
+        level: RoleLevel.L3,
+        jobRole: JobRole.SUPERVISOR,
+        description: 'Floor supervisor — overrides and approvals',
+    },
+    {
+        name: 'Cashier',
+        level: RoleLevel.L2,
+        jobRole: JobRole.CASHIER,
+        description: 'POS operations — orders and payments',
+    },
+    {
+        name: 'Chef',
+        level: RoleLevel.L2,
+        jobRole: JobRole.CHEF,
+        description: 'Kitchen operations — KDS and prep',
+    },
+    {
+        name: 'Waiter',
+        level: RoleLevel.L1,
+        jobRole: JobRole.WAITER,
+        description: 'Floor service — order taking',
+    },
+    {
+        name: 'Bartender',
+        level: RoleLevel.L2,
+        jobRole: JobRole.BARTENDER,
+        description: 'Bar operations — drinks and service',
+    },
+    {
+        name: 'Procurement',
+        level: RoleLevel.L3,
+        jobRole: JobRole.PROCUREMENT,
+        description: 'Purchasing — suppliers and orders',
+    },
+    {
+        name: 'Stock Manager',
+        level: RoleLevel.L3,
+        jobRole: JobRole.STOCK_MANAGER,
+        description: 'Inventory management — counts and adjustments',
+    },
+    {
+        name: 'Event Manager',
+        level: RoleLevel.L3,
+        jobRole: JobRole.EVENT_MANAGER,
+        description: 'Events and bookings — reservations',
+    },
 ];
 
 async function seedRoles(): Promise<{ created: number; skipped: number }> {
@@ -94,6 +149,37 @@ const PERMISSIONS_DATA = [
     { action: 'pos:floor:write', description: 'Create/update floor plans' },
     { action: 'pos:table:read', description: 'Read tables' },
     { action: 'pos:table:write', description: 'Create/update tables' },
+    // M6 menu + tax permissions
+    { action: 'pos:menu:read', description: 'Read menu categories and items' },
+    { action: 'pos:menu:write', description: 'Create/update menu categories and items' },
+    { action: 'pos:tax:read', description: 'Read tax categories' },
+    { action: 'pos:tax:write', description: 'Create/update tax categories' },
+    // M8 recipe + cost permissions
+    { action: 'pos:recipe:read', description: 'Read recipes and ingredient lists' },
+    { action: 'pos:recipe:write', description: 'Create/update recipes' },
+    { action: 'pos:cost:read', description: 'Read recipe cost breakdowns' },
+    // M9 inventory + stock permissions
+    { action: 'pos:inventory:read', description: 'Read inventory levels and stock batches' },
+    { action: 'pos:inventory:write', description: 'Create/update stock batches' },
+    { action: 'pos:inventory:adjust', description: 'Create stock adjustments' },
+    // M10 POS order permissions
+    { action: 'pos:orders:read', description: 'Read orders' },
+    { action: 'pos:orders:write', description: 'Create/update orders and items' },
+    { action: 'pos:orders:close', description: 'Close orders' },
+    { action: 'pos:orders:void', description: 'Void orders' },
+    // M11 KDS permissions
+    { action: 'pos:kds:read', description: 'Read KDS queue and tickets' },
+    { action: 'pos:kds:write', description: 'Mark ready / recall KDS tickets' },
+    { action: 'pos:kds:sla:write', description: 'Update KDS SLA configuration' },
+    // M12 discount permissions
+    { action: 'pos:discount:request', description: 'Request a discount on an order' },
+    { action: 'pos:discount:approve', description: 'Approve or reject pending discounts' },
+    { action: 'pos:discount:read', description: 'Read discount records' },
+    // M13 payment permissions
+    { action: 'pos:payment:create', description: 'Create payment records on orders' },
+    { action: 'pos:payment:close', description: 'Close orders with payment' },
+    { action: 'pos:payment:intent', description: 'Create/cancel MOMO payment intents' },
+    { action: 'pos:payment:read', description: 'Read payment and intent records' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -140,6 +226,30 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:floor:write',
         'pos:table:read',
         'pos:table:write',
+        'pos:menu:read',
+        'pos:menu:write',
+        'pos:tax:read',
+        'pos:tax:write',
+        'pos:recipe:read',
+        'pos:recipe:write',
+        'pos:cost:read',
+        'pos:inventory:read',
+        'pos:inventory:write',
+        'pos:inventory:adjust',
+        'pos:orders:read',
+        'pos:orders:write',
+        'pos:orders:close',
+        'pos:orders:void',
+        'pos:kds:read',
+        'pos:kds:write',
+        'pos:kds:sla:write',
+        'pos:discount:request',
+        'pos:discount:approve',
+        'pos:discount:read',
+        'pos:payment:create',
+        'pos:payment:close',
+        'pos:payment:intent',
+        'pos:payment:read',
     ],
     Manager: [
         'identity:user:read',
@@ -156,6 +266,30 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:floor:write',
         'pos:table:read',
         'pos:table:write',
+        'pos:menu:read',
+        'pos:menu:write',
+        'pos:tax:read',
+        'pos:tax:write',
+        'pos:recipe:read',
+        'pos:recipe:write',
+        'pos:cost:read',
+        'pos:inventory:read',
+        'pos:inventory:write',
+        'pos:inventory:adjust',
+        'pos:orders:read',
+        'pos:orders:write',
+        'pos:orders:close',
+        'pos:orders:void',
+        'pos:kds:read',
+        'pos:kds:write',
+        'pos:kds:sla:write',
+        'pos:discount:request',
+        'pos:discount:approve',
+        'pos:discount:read',
+        'pos:payment:create',
+        'pos:payment:close',
+        'pos:payment:intent',
+        'pos:payment:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -163,6 +297,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'identity:access-matrix:read',
         'tenancy:org:read',
         'tenancy:branch:read',
+        'pos:discount:read',
+        'pos:payment:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -174,14 +310,118 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:floor:write',
         'pos:table:read',
         'pos:table:write',
+        'pos:menu:read',
+        'pos:menu:write',
+        'pos:tax:read',
+        'pos:tax:write',
+        'pos:recipe:read',
+        'pos:recipe:write',
+        'pos:cost:read',
+        'pos:inventory:read',
+        'pos:inventory:write',
+        'pos:inventory:adjust',
+        'pos:orders:read',
+        'pos:orders:write',
+        'pos:orders:close',
+        'pos:orders:void',
+        'pos:kds:read',
+        'pos:kds:write',
+        'pos:kds:sla:write',
+        'pos:discount:request',
+        'pos:discount:approve',
+        'pos:discount:read',
+        'pos:payment:create',
+        'pos:payment:close',
+        'pos:payment:intent',
+        'pos:payment:read',
     ],
-    Cashier: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
-    Chef: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
-    Waiter: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
-    Bartender: ['identity:user:read', 'tenancy:branch:read', 'pos:floor:read', 'pos:table:read'],
-    Procurement: ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
-    'Stock Manager': ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
-    'Event Manager': ['identity:user:read', 'identity:session:read', 'tenancy:org:read', 'tenancy:branch:read'],
+    Cashier: [
+        'identity:user:read',
+        'tenancy:branch:read',
+        'pos:floor:read',
+        'pos:table:read',
+        'pos:menu:read',
+        'pos:tax:read',
+        'pos:inventory:read',
+        'pos:orders:read',
+        'pos:orders:write',
+        'pos:kds:read',
+        'pos:kds:write',
+        'pos:discount:request',
+        'pos:discount:read',
+        'pos:payment:create',
+        'pos:payment:close',
+        'pos:payment:intent',
+        'pos:payment:read',
+    ],
+    Chef: [
+        'identity:user:read',
+        'tenancy:branch:read',
+        'pos:floor:read',
+        'pos:table:read',
+        'pos:menu:read',
+        'pos:tax:read',
+        'pos:recipe:read',
+        'pos:cost:read',
+        'pos:inventory:read',
+        'pos:orders:read',
+        'pos:kds:read',
+        'pos:kds:write',
+        'pos:discount:read',
+        'pos:payment:read',
+    ],
+    Waiter: [
+        'identity:user:read',
+        'tenancy:branch:read',
+        'pos:floor:read',
+        'pos:table:read',
+        'pos:menu:read',
+        'pos:tax:read',
+        'pos:inventory:read',
+        'pos:orders:read',
+        'pos:orders:write',
+        'pos:kds:read',
+        'pos:kds:write',
+        'pos:discount:request',
+        'pos:discount:read',
+        'pos:payment:create',
+        'pos:payment:read',
+    ],
+    Bartender: [
+        'identity:user:read',
+        'tenancy:branch:read',
+        'pos:floor:read',
+        'pos:table:read',
+        'pos:menu:read',
+        'pos:tax:read',
+        'pos:inventory:read',
+        'pos:orders:read',
+        'pos:kds:read',
+        'pos:kds:write',
+        'pos:discount:read',
+        'pos:payment:read',
+    ],
+    Procurement: [
+        'identity:user:read',
+        'identity:session:read',
+        'tenancy:org:read',
+        'tenancy:branch:read',
+    ],
+    'Stock Manager': [
+        'identity:user:read',
+        'identity:session:read',
+        'tenancy:org:read',
+        'tenancy:branch:read',
+        'pos:inventory:read',
+        'pos:inventory:write',
+        'pos:inventory:adjust',
+    ],
+    'Event Manager': [
+        'identity:user:read',
+        'identity:session:read',
+        'tenancy:org:read',
+        'tenancy:branch:read',
+    ],
 };
 
 async function seedRolePermissions(): Promise<{ created: number; skipped: number }> {
@@ -234,12 +474,54 @@ interface DemoUser {
 }
 
 const DEMO_USERS: DemoUser[] = [
-    { email: 'owner@demo.local', password: 'Owner#123', pin: '1234', firstName: 'Demo', lastName: 'Owner', roleName: 'Owner' },
-    { email: 'manager@demo.local', password: 'Manager#123', pin: '2345', firstName: 'Demo', lastName: 'Manager', roleName: 'Manager' },
-    { email: 'accountant@demo.local', password: 'Accountant#123', pin: '6789', firstName: 'Demo', lastName: 'Accountant', roleName: 'Accountant' },
-    { email: 'cashier@demo.local', password: 'Cashier#123', pin: '3456', firstName: 'Demo', lastName: 'Cashier', roleName: 'Cashier' },
-    { email: 'chef@demo.local', password: 'Chef#123', pin: '4567', firstName: 'Demo', lastName: 'Chef', roleName: 'Chef' },
-    { email: 'waiter@demo.local', password: 'Waiter#123', pin: '5678', firstName: 'Demo', lastName: 'Waiter', roleName: 'Waiter' },
+    {
+        email: 'owner@demo.local',
+        password: 'Owner#123',
+        pin: '1234',
+        firstName: 'Demo',
+        lastName: 'Owner',
+        roleName: 'Owner',
+    },
+    {
+        email: 'manager@demo.local',
+        password: 'Manager#123',
+        pin: '2345',
+        firstName: 'Demo',
+        lastName: 'Manager',
+        roleName: 'Manager',
+    },
+    {
+        email: 'accountant@demo.local',
+        password: 'Accountant#123',
+        pin: '6789',
+        firstName: 'Demo',
+        lastName: 'Accountant',
+        roleName: 'Accountant',
+    },
+    {
+        email: 'cashier@demo.local',
+        password: 'Cashier#123',
+        pin: '3456',
+        firstName: 'Demo',
+        lastName: 'Cashier',
+        roleName: 'Cashier',
+    },
+    {
+        email: 'chef@demo.local',
+        password: 'Chef#123',
+        pin: '4567',
+        firstName: 'Demo',
+        lastName: 'Chef',
+        roleName: 'Chef',
+    },
+    {
+        email: 'waiter@demo.local',
+        password: 'Waiter#123',
+        pin: '5678',
+        firstName: 'Demo',
+        lastName: 'Waiter',
+        roleName: 'Waiter',
+    },
 ];
 
 async function seedUsers(): Promise<{ created: number; skipped: number }> {
@@ -304,19 +586,50 @@ const ORG_SEED = {
 
 const BRANCHES_SEED = [
     { name: 'Main Branch', code: 'MAIN', slug: 'main', timezone: 'UTC', currencyCode: 'USD' },
-    { name: 'Downtown Branch', code: 'DOWNTOWN', slug: 'downtown', timezone: 'UTC', currencyCode: 'USD' },
+    {
+        name: 'Downtown Branch',
+        code: 'DOWNTOWN',
+        slug: 'downtown',
+        timezone: 'UTC',
+        currencyCode: 'USD',
+    },
 ];
 
 // owner + manager → both branches, accountant → both branches (org visibility)
 // cashier, chef, waiter → Main Branch only
-const MEMBERSHIP_SEED: { email: string; roleName: string; branchCodes: string[]; defaultBranch: string }[] = [
-    { email: 'owner@demo.local', roleName: 'Owner', branchCodes: ['MAIN', 'DOWNTOWN'], defaultBranch: 'MAIN' },
-    { email: 'manager@demo.local', roleName: 'Manager', branchCodes: ['MAIN', 'DOWNTOWN'], defaultBranch: 'MAIN' },
-    { email: 'accountant@demo.local', roleName: 'Accountant', branchCodes: ['MAIN', 'DOWNTOWN'], defaultBranch: 'MAIN' },
-    { email: 'cashier@demo.local', roleName: 'Cashier', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
-    { email: 'chef@demo.local', roleName: 'Chef', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
-    { email: 'waiter@demo.local', roleName: 'Waiter', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
-];
+const MEMBERSHIP_SEED: {
+    email: string;
+    roleName: string;
+    branchCodes: string[];
+    defaultBranch: string;
+}[] = [
+        {
+            email: 'owner@demo.local',
+            roleName: 'Owner',
+            branchCodes: ['MAIN', 'DOWNTOWN'],
+            defaultBranch: 'MAIN',
+        },
+        {
+            email: 'manager@demo.local',
+            roleName: 'Manager',
+            branchCodes: ['MAIN', 'DOWNTOWN'],
+            defaultBranch: 'MAIN',
+        },
+        {
+            email: 'accountant@demo.local',
+            roleName: 'Accountant',
+            branchCodes: ['MAIN', 'DOWNTOWN'],
+            defaultBranch: 'MAIN',
+        },
+        {
+            email: 'cashier@demo.local',
+            roleName: 'Cashier',
+            branchCodes: ['MAIN'],
+            defaultBranch: 'MAIN',
+        },
+        { email: 'chef@demo.local', roleName: 'Chef', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
+        { email: 'waiter@demo.local', roleName: 'Waiter', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
+    ];
 
 async function seedOrganization(): Promise<{ orgId: string; created: boolean }> {
     const existing = await prisma.organization.findUnique({ where: { slug: ORG_SEED.slug } });
@@ -420,7 +733,9 @@ async function seedMemberships(orgId: string): Promise<{ created: number; skippe
                     isDefaultBranch: isDefault,
                 },
             });
-            console.log(`  ✅ Membership: "${ms.email}" → "${branch.name}" (${ms.roleName})${isDefault ? ' [default]' : ''}`);
+            console.log(
+                `  ✅ Membership: "${ms.email}" → "${branch.name}" (${ms.roleName})${isDefault ? ' [default]' : ''}`,
+            );
             created++;
         }
     }
@@ -433,11 +748,16 @@ async function seedMemberships(orgId: string): Promise<{ created: number; skippe
 const QUICK_PIN_PEPPER = process.env.QUICK_PIN_PEPPER || 'nimbus-dev-pin-pepper';
 
 // Deterministic demo PINs for testing (NOT used in production)
-const DEMO_QUICK_PINS: { email: string; pin: string; tier: 'LOW_6' | 'HIGH_8'; pinLength: number }[] = [
-    { email: 'waiter@demo.local', pin: '123456', tier: 'LOW_6', pinLength: 6 },
-    { email: 'cashier@demo.local', pin: '654321', tier: 'LOW_6', pinLength: 6 },
-    { email: 'manager@demo.local', pin: '12345678', tier: 'HIGH_8', pinLength: 8 },
-];
+const DEMO_QUICK_PINS: {
+    email: string;
+    pin: string;
+    tier: 'LOW_6' | 'HIGH_8';
+    pinLength: number;
+}[] = [
+        { email: 'waiter@demo.local', pin: '123456', tier: 'LOW_6', pinLength: 6 },
+        { email: 'cashier@demo.local', pin: '654321', tier: 'LOW_6', pinLength: 6 },
+        { email: 'manager@demo.local', pin: '12345678', tier: 'HIGH_8', pinLength: 8 },
+    ];
 
 // Add supervisor seed if user exists
 // Note: We don't seed a supervisor user in M2, but we handle it gracefully
@@ -510,7 +830,7 @@ async function seedQuickPins(orgId: string): Promise<{ created: number; skipped:
 // ── M4: OrgSettings Seed ──
 
 const ORG_SETTINGS_DEFAULTS = {
-    vatPercent: 18.00,
+    vatPercent: 18.0,
     currency: 'UGX',
     discountApprovalThreshold: 5000,
     reservationHoldMinutes: 30,
@@ -550,7 +870,10 @@ async function seedOrgSettings(orgId: string): Promise<{ created: boolean }> {
     return { created: true };
 }
 
-async function seedExchangeRate(orgId: string, creatorEmail: string): Promise<{ created: boolean }> {
+async function seedExchangeRate(
+    orgId: string,
+    creatorEmail: string,
+): Promise<{ created: boolean }> {
     // Check if any exchange rate already exists for this org
     const existing = await prisma.exchangeRate.findFirst({ where: { orgId } });
     if (existing) {
@@ -565,7 +888,7 @@ async function seedExchangeRate(orgId: string, creatorEmail: string): Promise<{ 
             orgId,
             baseCurrencyCode: 'USD',
             quoteCurrencyCode: 'UGX',
-            rate: 3700.000000,
+            rate: 3700.0,
             effectiveAt: new Date(),
             createdById: creator?.id ?? null,
         },
@@ -576,7 +899,7 @@ async function seedExchangeRate(orgId: string, creatorEmail: string): Promise<{ 
 
 // ── M5: Floor Plans + Tables Seed ──
 
-import { TableStatus } from '@prisma/client';
+import { TableStatus, MenuItemType, PrepStation, MenuSection, ServingFormat, OrderStatus, ServiceType } from '@prisma/client';
 
 const FLOOR_PLANS_SEED = [
     {
@@ -611,24 +934,117 @@ interface TableSeed {
 }
 
 const TABLES_SEED: TableSeed[] = [
-    { label: 'T1', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 50, y: 50, shape: 'round' } },
-    { label: 'T2', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 150, y: 50, shape: 'round' } },
-    { label: 'T3', capacity: 2, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 250, y: 50, shape: 'square' } },
-    { label: 'T4', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 350, y: 50, shape: 'round' } },
-    { label: 'T5', capacity: 6, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 450, y: 50, shape: 'rectangle' } },
-    { label: 'T6', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 550, y: 50, shape: 'round' } },
-    { label: 'T7', capacity: 2, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 50, y: 200, shape: 'square' } },
-    { label: 'T8', capacity: 4, status: TableStatus.OCCUPIED, floorPlanName: 'Main Dining', metadata: { x: 150, y: 200, shape: 'round' } },
-    { label: 'T9', capacity: 6, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 250, y: 200, shape: 'rectangle' } },
-    { label: 'T10', capacity: 8, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 350, y: 200, shape: 'rectangle' } },
-    { label: 'VIP-1', capacity: 6, status: TableStatus.RESERVED, floorPlanName: 'Main Dining', metadata: { x: 550, y: 200, shape: 'booth' } },
-    { label: 'VIP-2', capacity: 8, status: TableStatus.AVAILABLE, floorPlanName: 'Main Dining', metadata: { x: 650, y: 200, shape: 'booth' } },
-    { label: 'P1', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Patio', metadata: { x: 50, y: 50, shape: 'round' } },
-    { label: 'P2', capacity: 4, status: TableStatus.AVAILABLE, floorPlanName: 'Patio', metadata: { x: 200, y: 50, shape: 'round' } },
-    { label: 'P3', capacity: 2, status: TableStatus.CLEANING, floorPlanName: 'Patio', metadata: { x: 350, y: 50, shape: 'square' } },
+    {
+        label: 'T1',
+        capacity: 4,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 50, y: 50, shape: 'round' },
+    },
+    {
+        label: 'T2',
+        capacity: 4,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 150, y: 50, shape: 'round' },
+    },
+    {
+        label: 'T3',
+        capacity: 2,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 250, y: 50, shape: 'square' },
+    },
+    {
+        label: 'T4',
+        capacity: 4,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 350, y: 50, shape: 'round' },
+    },
+    {
+        label: 'T5',
+        capacity: 6,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 450, y: 50, shape: 'rectangle' },
+    },
+    {
+        label: 'T6',
+        capacity: 4,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 550, y: 50, shape: 'round' },
+    },
+    {
+        label: 'T7',
+        capacity: 2,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 50, y: 200, shape: 'square' },
+    },
+    {
+        label: 'T8',
+        capacity: 4,
+        status: TableStatus.OCCUPIED,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 150, y: 200, shape: 'round' },
+    },
+    {
+        label: 'T9',
+        capacity: 6,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 250, y: 200, shape: 'rectangle' },
+    },
+    {
+        label: 'T10',
+        capacity: 8,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 350, y: 200, shape: 'rectangle' },
+    },
+    {
+        label: 'VIP-1',
+        capacity: 6,
+        status: TableStatus.RESERVED,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 550, y: 200, shape: 'booth' },
+    },
+    {
+        label: 'VIP-2',
+        capacity: 8,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Main Dining',
+        metadata: { x: 650, y: 200, shape: 'booth' },
+    },
+    {
+        label: 'P1',
+        capacity: 4,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Patio',
+        metadata: { x: 50, y: 50, shape: 'round' },
+    },
+    {
+        label: 'P2',
+        capacity: 4,
+        status: TableStatus.AVAILABLE,
+        floorPlanName: 'Patio',
+        metadata: { x: 200, y: 50, shape: 'round' },
+    },
+    {
+        label: 'P3',
+        capacity: 2,
+        status: TableStatus.CLEANING,
+        floorPlanName: 'Patio',
+        metadata: { x: 350, y: 50, shape: 'square' },
+    },
 ];
 
-async function seedFloorPlans(orgId: string, branchCode: string): Promise<{ floorPlanIds: Record<string, string>; created: number; skipped: number }> {
+async function seedFloorPlans(
+    orgId: string,
+    branchCode: string,
+): Promise<{ floorPlanIds: Record<string, string>; created: number; skipped: number }> {
     let created = 0;
     let skipped = 0;
     const floorPlanIds: Record<string, string> = {};
@@ -714,6 +1130,1816 @@ async function seedTables(
     return { created, skipped };
 }
 
+// ── M6: Menu Catalog Seed ──
+
+const CATEGORIES_SEED = [
+    { name: 'Starters', sortOrder: 0 },
+    { name: 'Mains', sortOrder: 1 },
+    { name: 'Desserts', sortOrder: 2 },
+    { name: 'Drinks', sortOrder: 3 },
+    { name: 'Sides', sortOrder: 4 },
+];
+
+const TAX_CATEGORIES_SEED = [
+    { name: 'VAT Standard', rate: 18.0 },
+    { name: 'VAT Zero', rate: 0.0 },
+];
+
+interface MenuItemSeed {
+    name: string;
+    categoryName: string;
+    taxCategoryName: string;
+    price: number;
+    itemType: MenuItemType;
+    station: PrepStation;
+    sortOrder: number;
+    description?: string;
+    sku?: string;
+}
+
+const MENU_ITEMS_SEED: MenuItemSeed[] = [
+    // Starters
+    {
+        name: 'Bruschetta',
+        categoryName: 'Starters',
+        taxCategoryName: 'VAT Standard',
+        price: 8.5,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.COLD_KITCHEN,
+        sortOrder: 0,
+        description: 'Toasted bread with tomato and basil',
+    },
+    {
+        name: 'Chicken Wings',
+        categoryName: 'Starters',
+        taxCategoryName: 'VAT Standard',
+        price: 12.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 1,
+        description: 'Crispy wings with hot sauce',
+    },
+    {
+        name: 'Caesar Salad',
+        categoryName: 'Starters',
+        taxCategoryName: 'VAT Standard',
+        price: 10.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.COLD_KITCHEN,
+        sortOrder: 2,
+        description: 'Romaine lettuce with Caesar dressing',
+    },
+    {
+        name: 'Garlic Bread',
+        categoryName: 'Starters',
+        taxCategoryName: 'VAT Standard',
+        price: 6.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 3,
+    },
+    // Mains
+    {
+        name: 'Grilled Chicken',
+        categoryName: 'Mains',
+        taxCategoryName: 'VAT Standard',
+        price: 22.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 0,
+        description: 'Half grilled chicken with herbs',
+    },
+    {
+        name: 'Beef Burger',
+        categoryName: 'Mains',
+        taxCategoryName: 'VAT Standard',
+        price: 18.5,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 1,
+        description: 'Angus beef patty with fries',
+    },
+    {
+        name: 'Pasta Alfredo',
+        categoryName: 'Mains',
+        taxCategoryName: 'VAT Standard',
+        price: 16.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 2,
+        description: 'Fettuccine in creamy Alfredo sauce',
+    },
+    {
+        name: 'Grilled Salmon',
+        categoryName: 'Mains',
+        taxCategoryName: 'VAT Standard',
+        price: 26.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 3,
+        description: 'Atlantic salmon with lemon butter',
+    },
+    {
+        name: 'Margherita Pizza',
+        categoryName: 'Mains',
+        taxCategoryName: 'VAT Standard',
+        price: 14.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 4,
+        description: 'Classic tomato, mozzarella, basil',
+    },
+    // Desserts
+    {
+        name: 'Cheesecake',
+        categoryName: 'Desserts',
+        taxCategoryName: 'VAT Standard',
+        price: 9.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.DESSERT,
+        sortOrder: 0,
+        description: 'New York style cheesecake',
+    },
+    {
+        name: 'Chocolate Brownie',
+        categoryName: 'Desserts',
+        taxCategoryName: 'VAT Standard',
+        price: 8.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.DESSERT,
+        sortOrder: 1,
+        description: 'Warm brownie with vanilla ice cream',
+    },
+    {
+        name: 'Tiramisu',
+        categoryName: 'Desserts',
+        taxCategoryName: 'VAT Standard',
+        price: 10.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.DESSERT,
+        sortOrder: 2,
+        description: 'Classic Italian coffee dessert',
+    },
+    // Drinks
+    {
+        name: 'Cola',
+        categoryName: 'Drinks',
+        taxCategoryName: 'VAT Zero',
+        price: 3.5,
+        itemType: MenuItemType.DRINK,
+        station: PrepStation.BAR,
+        sortOrder: 0,
+    },
+    {
+        name: 'Orange Juice',
+        categoryName: 'Drinks',
+        taxCategoryName: 'VAT Zero',
+        price: 4.0,
+        itemType: MenuItemType.DRINK,
+        station: PrepStation.BAR,
+        sortOrder: 1,
+        description: 'Fresh squeezed orange juice',
+    },
+    {
+        name: 'House Cocktail',
+        categoryName: 'Drinks',
+        taxCategoryName: 'VAT Standard',
+        price: 12.0,
+        itemType: MenuItemType.DRINK,
+        station: PrepStation.BAR,
+        sortOrder: 2,
+        description: 'Signature cocktail of the day',
+    },
+    {
+        name: 'Sparkling Water',
+        categoryName: 'Drinks',
+        taxCategoryName: 'VAT Zero',
+        price: 2.5,
+        itemType: MenuItemType.DRINK,
+        station: PrepStation.BAR,
+        sortOrder: 3,
+    },
+    {
+        name: 'Espresso',
+        categoryName: 'Drinks',
+        taxCategoryName: 'VAT Zero',
+        price: 3.0,
+        itemType: MenuItemType.DRINK,
+        station: PrepStation.BAR,
+        sortOrder: 4,
+    },
+    {
+        name: 'Craft Beer',
+        categoryName: 'Drinks',
+        taxCategoryName: 'VAT Standard',
+        price: 7.0,
+        itemType: MenuItemType.DRINK,
+        station: PrepStation.BAR,
+        sortOrder: 5,
+        description: 'Rotating local craft beer',
+    },
+    // Sides
+    {
+        name: 'French Fries',
+        categoryName: 'Sides',
+        taxCategoryName: 'VAT Standard',
+        price: 5.0,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.KITCHEN,
+        sortOrder: 0,
+    },
+    {
+        name: 'Side Salad',
+        categoryName: 'Sides',
+        taxCategoryName: 'VAT Standard',
+        price: 4.5,
+        itemType: MenuItemType.FOOD,
+        station: PrepStation.COLD_KITCHEN,
+        sortOrder: 1,
+        description: 'Mixed greens with vinaigrette',
+    },
+];
+
+async function seedCategories(
+    orgId: string,
+    branchCode: string,
+): Promise<{ categoryIds: Record<string, string>; created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const categoryIds: Record<string, string> = {};
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping categories`);
+        return { categoryIds, created: 0, skipped: 0 };
+    }
+
+    for (const cat of CATEGORIES_SEED) {
+        const existing = await prisma.category.findUnique({
+            where: { branchId_name: { branchId: branch.id, name: cat.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  Category "${cat.name}" already exists — skipped`);
+            categoryIds[cat.name] = existing.id;
+            skipped++;
+            continue;
+        }
+
+        const created_cat = await prisma.category.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                name: cat.name,
+                sortOrder: cat.sortOrder,
+            },
+        });
+        console.log(`  ✅ Category "${cat.name}" created`);
+        categoryIds[cat.name] = created_cat.id;
+        created++;
+    }
+
+    return { categoryIds, created, skipped };
+}
+
+async function seedTaxCategories(
+    orgId: string,
+    branchCode: string,
+): Promise<{ taxCategoryIds: Record<string, string>; created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const taxCategoryIds: Record<string, string> = {};
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping tax categories`);
+        return { taxCategoryIds, created: 0, skipped: 0 };
+    }
+
+    for (const tc of TAX_CATEGORIES_SEED) {
+        const existing = await prisma.taxCategory.findUnique({
+            where: { branchId_name: { branchId: branch.id, name: tc.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  TaxCategory "${tc.name}" already exists — skipped`);
+            taxCategoryIds[tc.name] = existing.id;
+            skipped++;
+            continue;
+        }
+
+        const created_tc = await prisma.taxCategory.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                name: tc.name,
+                rate: tc.rate,
+            },
+        });
+        console.log(`  ✅ TaxCategory "${tc.name}" (${tc.rate}%) created`);
+        taxCategoryIds[tc.name] = created_tc.id;
+        created++;
+    }
+
+    return { taxCategoryIds, created, skipped };
+}
+
+async function seedMenuItems(
+    orgId: string,
+    branchCode: string,
+    categoryIds: Record<string, string>,
+    taxCategoryIds: Record<string, string>,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping menu items`);
+        return { created: 0, skipped: 0 };
+    }
+
+    for (const item of MENU_ITEMS_SEED) {
+        const catId = categoryIds[item.categoryName];
+        if (!catId) {
+            console.log(`  ⚠️  Category "${item.categoryName}" not found — skipping item "${item.name}"`);
+            continue;
+        }
+
+        const existing = await prisma.menuItem.findUnique({
+            where: { categoryId_name: { categoryId: catId, name: item.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  MenuItem "${item.name}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+
+        const tcId = taxCategoryIds[item.taxCategoryName] ?? null;
+
+        await prisma.menuItem.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                categoryId: catId,
+                taxCategoryId: tcId,
+                name: item.name,
+                sku: item.sku ?? null,
+                description: item.description ?? null,
+                price: item.price,
+                itemType: item.itemType,
+                station: item.station,
+                sortOrder: item.sortOrder,
+            },
+        });
+        console.log(`  ✅ MenuItem "${item.name}" (${item.categoryName}, $${item.price}) created`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+// ── M6.1: Browse Groups, Subgroups, Servings ──
+
+interface BrowseGroupSeed {
+    name: string;
+    section: MenuSection;
+    internalKey?: string;
+    sortOrder: number;
+}
+
+const BROWSE_GROUPS_SEED: BrowseGroupSeed[] = [
+    { name: 'Starters', section: MenuSection.FOOD, internalKey: 'starters', sortOrder: 0 },
+    { name: 'Mains', section: MenuSection.FOOD, internalKey: 'mains', sortOrder: 1 },
+    { name: 'Desserts', section: MenuSection.FOOD, internalKey: 'desserts', sortOrder: 2 },
+    { name: 'Sides', section: MenuSection.FOOD, internalKey: 'sides', sortOrder: 3 },
+    { name: 'Cocktails', section: MenuSection.DRINKS, internalKey: 'cocktails', sortOrder: 0 },
+    { name: 'Beer', section: MenuSection.DRINKS, internalKey: 'beer', sortOrder: 1 },
+    { name: 'Soft Drinks', section: MenuSection.DRINKS, internalKey: 'soft-drinks', sortOrder: 2 },
+    {
+        name: 'Hot Beverages',
+        section: MenuSection.DRINKS,
+        internalKey: 'hot-beverages',
+        sortOrder: 3,
+    },
+];
+
+interface BrowseSubgroupSeed {
+    name: string;
+    groupName: string;
+    internalKey?: string;
+    sortOrder: number;
+}
+
+const BROWSE_SUBGROUPS_SEED: BrowseSubgroupSeed[] = [
+    { name: 'Cold Starters', groupName: 'Starters', internalKey: 'cold-starters', sortOrder: 0 },
+    { name: 'Hot Starters', groupName: 'Starters', internalKey: 'hot-starters', sortOrder: 1 },
+    { name: 'Grills', groupName: 'Mains', internalKey: 'grills', sortOrder: 0 },
+    { name: 'Pasta', groupName: 'Mains', internalKey: 'pasta', sortOrder: 1 },
+    { name: 'Pizza', groupName: 'Mains', internalKey: 'pizza', sortOrder: 2 },
+];
+
+// Map menu item names to browse group names for assignment
+const ITEM_BROWSE_MAP: Record<string, { groupName: string; subgroupName?: string }> = {
+    Bruschetta: { groupName: 'Starters', subgroupName: 'Cold Starters' },
+    'Caesar Salad': { groupName: 'Starters', subgroupName: 'Cold Starters' },
+    'Chicken Wings': { groupName: 'Starters', subgroupName: 'Hot Starters' },
+    'Garlic Bread': { groupName: 'Starters', subgroupName: 'Hot Starters' },
+    'Grilled Chicken': { groupName: 'Mains', subgroupName: 'Grills' },
+    'Grilled Salmon': { groupName: 'Mains', subgroupName: 'Grills' },
+    'Pasta Alfredo': { groupName: 'Mains', subgroupName: 'Pasta' },
+    'Margherita Pizza': { groupName: 'Mains', subgroupName: 'Pizza' },
+    'Beef Burger': { groupName: 'Mains' },
+    Cheesecake: { groupName: 'Desserts' },
+    'Chocolate Brownie': { groupName: 'Desserts' },
+    Tiramisu: { groupName: 'Desserts' },
+    'French Fries': { groupName: 'Sides' },
+    'Side Salad': { groupName: 'Sides' },
+    'House Cocktail': { groupName: 'Cocktails' },
+    'Craft Beer': { groupName: 'Beer' },
+    Cola: { groupName: 'Soft Drinks' },
+    'Orange Juice': { groupName: 'Soft Drinks' },
+    'Sparkling Water': { groupName: 'Soft Drinks' },
+    Espresso: { groupName: 'Hot Beverages' },
+};
+
+// Serving formats for select items
+interface ServingSeed {
+    itemName: string;
+    format: ServingFormat;
+    label?: string;
+    price: number;
+    volumeText?: string;
+    isDefault: boolean;
+    sortOrder: number;
+}
+
+const SERVINGS_SEED: ServingSeed[] = [
+    {
+        itemName: 'House Cocktail',
+        format: ServingFormat.GLASS,
+        price: 12.0,
+        isDefault: true,
+        sortOrder: 0,
+    },
+    {
+        itemName: 'House Cocktail',
+        format: ServingFormat.JUG,
+        label: 'Large Jug',
+        price: 35.0,
+        isDefault: false,
+        sortOrder: 1,
+    },
+    { itemName: 'Craft Beer', format: ServingFormat.PINT, price: 7.0, isDefault: true, sortOrder: 0 },
+    {
+        itemName: 'Craft Beer',
+        format: ServingFormat.HALF_PINT,
+        price: 4.0,
+        isDefault: false,
+        sortOrder: 1,
+    },
+    { itemName: 'Cola', format: ServingFormat.GLASS, price: 3.5, isDefault: true, sortOrder: 0 },
+    {
+        itemName: 'Cola',
+        format: ServingFormat.BOTTLE,
+        label: '500ml',
+        price: 5.0,
+        volumeText: '500ml',
+        isDefault: false,
+        sortOrder: 1,
+    },
+    {
+        itemName: 'Orange Juice',
+        format: ServingFormat.GLASS,
+        price: 4.0,
+        isDefault: true,
+        sortOrder: 0,
+    },
+    {
+        itemName: 'Orange Juice',
+        format: ServingFormat.JUG,
+        label: '1L Jug',
+        price: 12.0,
+        volumeText: '1L',
+        isDefault: false,
+        sortOrder: 1,
+    },
+    { itemName: 'Espresso', format: ServingFormat.SINGLE, price: 3.0, isDefault: true, sortOrder: 0 },
+    {
+        itemName: 'Espresso',
+        format: ServingFormat.DOUBLE,
+        price: 4.5,
+        isDefault: false,
+        sortOrder: 1,
+    },
+    {
+        itemName: 'Sparkling Water',
+        format: ServingFormat.BOTTLE,
+        label: '330ml',
+        price: 2.5,
+        volumeText: '330ml',
+        isDefault: true,
+        sortOrder: 0,
+    },
+    {
+        itemName: 'Sparkling Water',
+        format: ServingFormat.BOTTLE,
+        label: '750ml',
+        price: 4.5,
+        volumeText: '750ml',
+        isDefault: false,
+        sortOrder: 1,
+    },
+];
+
+async function seedBrowseGroups(
+    orgId: string,
+    branchCode: string,
+): Promise<{ groupIds: Record<string, string>; created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const groupIds: Record<string, string> = {};
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping browse groups`);
+        return { groupIds, created: 0, skipped: 0 };
+    }
+
+    for (const bg of BROWSE_GROUPS_SEED) {
+        const existing = await prisma.menuBrowseGroup.findUnique({
+            where: { branchId_name: { branchId: branch.id, name: bg.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  BrowseGroup "${bg.name}" already exists — skipped`);
+            groupIds[bg.name] = existing.id;
+            skipped++;
+            continue;
+        }
+
+        const group = await prisma.menuBrowseGroup.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                section: bg.section,
+                name: bg.name,
+                internalKey: bg.internalKey ?? null,
+                sortOrder: bg.sortOrder,
+            },
+        });
+        console.log(`  ✅ BrowseGroup "${bg.name}" (${bg.section}) created`);
+        groupIds[bg.name] = group.id;
+        created++;
+    }
+
+    return { groupIds, created, skipped };
+}
+
+async function seedBrowseSubgroups(
+    groupIds: Record<string, string>,
+): Promise<{ subgroupIds: Record<string, string>; created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const subgroupIds: Record<string, string> = {};
+
+    for (const sg of BROWSE_SUBGROUPS_SEED) {
+        const groupId = groupIds[sg.groupName];
+        if (!groupId) {
+            console.log(`  ⚠️  BrowseGroup "${sg.groupName}" not found — skipping subgroup "${sg.name}"`);
+            continue;
+        }
+
+        const existing = await prisma.menuBrowseSubgroup.findUnique({
+            where: { groupId_name: { groupId, name: sg.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  BrowseSubgroup "${sg.name}" already exists — skipped`);
+            subgroupIds[sg.name] = existing.id;
+            skipped++;
+            continue;
+        }
+
+        const subgroup = await prisma.menuBrowseSubgroup.create({
+            data: {
+                groupId,
+                name: sg.name,
+                internalKey: sg.internalKey ?? null,
+                sortOrder: sg.sortOrder,
+            },
+        });
+        console.log(`  ✅ BrowseSubgroup "${sg.name}" (→ ${sg.groupName}) created`);
+        subgroupIds[sg.name] = subgroup.id;
+        created++;
+    }
+
+    return { subgroupIds, created, skipped };
+}
+
+async function seedBrowseAssignments(
+    orgId: string,
+    branchCode: string,
+    groupIds: Record<string, string>,
+    subgroupIds: Record<string, string>,
+): Promise<{ updated: number; skipped: number }> {
+    let updated = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) return { updated: 0, skipped: 0 };
+
+    for (const [itemName, mapping] of Object.entries(ITEM_BROWSE_MAP)) {
+        const groupId = groupIds[mapping.groupName] ?? null;
+        const subgroupId = mapping.subgroupName ? (subgroupIds[mapping.subgroupName] ?? null) : null;
+
+        if (!groupId) {
+            console.log(`  ⚠️  BrowseGroup "${mapping.groupName}" not found — skipping "${itemName}"`);
+            continue;
+        }
+
+        const item = await prisma.menuItem.findFirst({
+            where: { branchId: branch.id, name: itemName },
+        });
+        if (!item) {
+            console.log(`  ⚠️  MenuItem "${itemName}" not found — skipping browse assignment`);
+            continue;
+        }
+
+        if (item.browseGroupId === groupId && item.browseSubgroupId === subgroupId) {
+            skipped++;
+            continue;
+        }
+
+        await prisma.menuItem.update({
+            where: { id: item.id },
+            data: { browseGroupId: groupId, browseSubgroupId: subgroupId },
+        });
+        console.log(
+            `  ✅ "${itemName}" → group="${mapping.groupName}"${mapping.subgroupName ? ` / sub="${mapping.subgroupName}"` : ''}`,
+        );
+        updated++;
+    }
+
+    return { updated, skipped };
+}
+
+async function seedMenuItemServings(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping servings`);
+        return { created: 0, skipped: 0 };
+    }
+
+    for (const s of SERVINGS_SEED) {
+        const item = await prisma.menuItem.findFirst({
+            where: { branchId: branch.id, name: s.itemName },
+        });
+        if (!item) {
+            console.log(`  ⚠️  MenuItem "${s.itemName}" not found — skipping serving`);
+            continue;
+        }
+
+        const existing = await prisma.menuItemServing.findFirst({
+            where: { menuItemId: item.id, format: s.format, label: s.label ?? null },
+        });
+        if (existing) {
+            console.log(
+                `  ⏭  Serving "${s.itemName}" ${s.format}${s.label ? ` (${s.label})` : ''} already exists — skipped`,
+            );
+            skipped++;
+            continue;
+        }
+
+        await prisma.menuItemServing.create({
+            data: {
+                menuItemId: item.id,
+                format: s.format,
+                label: s.label ?? null,
+                price: s.price,
+                volumeText: s.volumeText ?? null,
+                isDefault: s.isDefault,
+                sortOrder: s.sortOrder,
+            },
+        });
+        console.log(
+            `  ✅ Serving "${s.itemName}" ${s.format}${s.label ? ` (${s.label})` : ''} at $${s.price}`,
+        );
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+// ── M7: Modifier Groups + Options ──
+
+interface ModifierGroupSeed {
+    name: string;
+    min: number;
+    max: number;
+    required: boolean;
+    sortOrder: number;
+}
+
+const MODIFIER_GROUPS_SEED: ModifierGroupSeed[] = [
+    { name: 'Size', min: 1, max: 1, required: true, sortOrder: 0 },
+    { name: 'Cooking Temp', min: 1, max: 1, required: true, sortOrder: 1 },
+    { name: 'Extra Toppings', min: 0, max: 5, required: false, sortOrder: 2 },
+    { name: 'Drink Extras', min: 0, max: 3, required: false, sortOrder: 3 },
+];
+
+interface ModifierOptionSeed {
+    groupName: string;
+    name: string;
+    priceDelta: string;
+    sortOrder: number;
+}
+
+const MODIFIER_OPTIONS_SEED: ModifierOptionSeed[] = [
+    // Size
+    { groupName: 'Size', name: 'Small', priceDelta: '0.00', sortOrder: 0 },
+    { groupName: 'Size', name: 'Medium', priceDelta: '2.00', sortOrder: 1 },
+    { groupName: 'Size', name: 'Large', priceDelta: '4.00', sortOrder: 2 },
+    // Cooking Temp
+    { groupName: 'Cooking Temp', name: 'Rare', priceDelta: '0.00', sortOrder: 0 },
+    { groupName: 'Cooking Temp', name: 'Medium Rare', priceDelta: '0.00', sortOrder: 1 },
+    { groupName: 'Cooking Temp', name: 'Medium', priceDelta: '0.00', sortOrder: 2 },
+    { groupName: 'Cooking Temp', name: 'Well Done', priceDelta: '0.00', sortOrder: 3 },
+    // Extra Toppings
+    { groupName: 'Extra Toppings', name: 'Extra Cheese', priceDelta: '1.50', sortOrder: 0 },
+    { groupName: 'Extra Toppings', name: 'Mushrooms', priceDelta: '1.00', sortOrder: 1 },
+    { groupName: 'Extra Toppings', name: 'Pepperoni', priceDelta: '2.00', sortOrder: 2 },
+    { groupName: 'Extra Toppings', name: 'Olives', priceDelta: '1.00', sortOrder: 3 },
+    // Drink Extras
+    { groupName: 'Drink Extras', name: 'Extra Shot', priceDelta: '1.50', sortOrder: 0 },
+    { groupName: 'Drink Extras', name: 'Whipped Cream', priceDelta: '0.50', sortOrder: 1 },
+    { groupName: 'Drink Extras', name: 'Oat Milk', priceDelta: '1.00', sortOrder: 2 },
+];
+
+// Map: itemName → array of modifier group names
+const ITEM_MODIFIER_ASSIGNMENTS: Record<string, string[]> = {
+    'Beef Burger': ['Size', 'Cooking Temp', 'Extra Toppings'],
+    'Grilled Chicken': ['Size'],
+    'Margherita Pizza': ['Size', 'Extra Toppings'],
+    Cola: ['Size'],
+    'Orange Juice': ['Size'],
+    Espresso: ['Drink Extras'],
+    'House Cocktail': ['Drink Extras'],
+};
+
+async function seedModifierGroups(
+    orgId: string,
+    branchCode: string,
+): Promise<{ groupIds: Record<string, string>; created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const groupIds: Record<string, string> = {};
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping modifier groups`);
+        return { groupIds, created: 0, skipped: 0 };
+    }
+
+    for (const g of MODIFIER_GROUPS_SEED) {
+        const existing = await prisma.modifierGroup.findUnique({
+            where: { branchId_name: { branchId: branch.id, name: g.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  ModifierGroup "${g.name}" already exists — skipped`);
+            groupIds[g.name] = existing.id;
+            skipped++;
+            continue;
+        }
+
+        const created_g = await prisma.modifierGroup.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                name: g.name,
+                min: g.min,
+                max: g.max,
+                required: g.required,
+                sortOrder: g.sortOrder,
+            },
+        });
+        console.log(`  ✅ ModifierGroup "${g.name}" created`);
+        groupIds[g.name] = created_g.id;
+        created++;
+    }
+
+    return { groupIds, created, skipped };
+}
+
+async function seedModifierOptions(
+    groupIds: Record<string, string>,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    for (const o of MODIFIER_OPTIONS_SEED) {
+        const groupId = groupIds[o.groupName];
+        if (!groupId) {
+            console.log(`  ⚠️  ModifierGroup "${o.groupName}" not found — skipping option "${o.name}"`);
+            continue;
+        }
+
+        const existing = await prisma.modifierOption.findUnique({
+            where: { groupId_name: { groupId, name: o.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  ModifierOption "${o.groupName} → ${o.name}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+
+        await prisma.modifierOption.create({
+            data: {
+                groupId,
+                name: o.name,
+                priceDelta: o.priceDelta,
+                sortOrder: o.sortOrder,
+            },
+        });
+        console.log(`  ✅ ModifierOption "${o.groupName} → ${o.name}" ($${o.priceDelta}) created`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+async function seedItemModifierAssignments(
+    orgId: string,
+    branchCode: string,
+    groupIds: Record<string, string>,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) return { created: 0, skipped: 0 };
+
+    for (const [itemName, groupNames] of Object.entries(ITEM_MODIFIER_ASSIGNMENTS)) {
+        const item = await prisma.menuItem.findFirst({
+            where: { branchId: branch.id, name: itemName },
+        });
+        if (!item) {
+            console.log(`  ⚠️  MenuItem "${itemName}" not found — skipping modifier assignment`);
+            continue;
+        }
+
+        for (let i = 0; i < groupNames.length; i++) {
+            const groupId = groupIds[groupNames[i]];
+            if (!groupId) {
+                console.log(`  ⚠️  ModifierGroup "${groupNames[i]}" not found — skipping`);
+                continue;
+            }
+
+            const existing = await prisma.menuItemOnGroup.findUnique({
+                where: { itemId_groupId: { itemId: item.id, groupId } },
+            });
+            if (existing) {
+                console.log(`  ⏭  "${itemName}" ↔ "${groupNames[i]}" already assigned — skipped`);
+                skipped++;
+                continue;
+            }
+
+            await prisma.menuItemOnGroup.create({
+                data: { itemId: item.id, groupId, sortOrder: i },
+            });
+            console.log(`  ✅ "${itemName}" ↔ "${groupNames[i]}" assigned (sort=${i})`);
+            created++;
+        }
+    }
+
+    return { created, skipped };
+}
+
+// ── M8: Inventory Items + Recipe Ingredients ──
+
+interface InventoryItemSeed {
+    name: string;
+    unit: string;
+    category: string;
+    theoreticalUnitCost: string;
+    sku?: string;
+    reorderLevel?: string;
+    reorderQty?: string;
+}
+
+const INVENTORY_ITEMS_SEED: InventoryItemSeed[] = [
+    { name: 'Burger Bun', unit: 'pc', category: 'Bakery', theoreticalUnitCost: '0.500', sku: 'INV-001', reorderLevel: '100.000', reorderQty: '200.000' },
+    { name: 'Beef Patty 200g', unit: 'pc', category: 'Meat', theoreticalUnitCost: '3.500', sku: 'INV-002', reorderLevel: '50.000', reorderQty: '100.000' },
+    { name: 'Iceberg Lettuce', unit: 'leaf', category: 'Produce', theoreticalUnitCost: '0.100', reorderLevel: '80.000', reorderQty: '200.000' },
+    { name: 'Tomato Slice', unit: 'slice', category: 'Produce', theoreticalUnitCost: '0.080', reorderLevel: '60.000', reorderQty: '150.000' },
+    { name: 'Burger Sauce', unit: 'ml', category: 'Condiments', theoreticalUnitCost: '0.010', reorderLevel: '500.000', reorderQty: '2000.000' },
+    { name: 'Chicken Breast 250g', unit: 'pc', category: 'Meat', theoreticalUnitCost: '4.000', sku: 'INV-003', reorderLevel: '30.000', reorderQty: '60.000' },
+    { name: 'Cooking Oil', unit: 'ml', category: 'Oils', theoreticalUnitCost: '0.005', reorderLevel: '2000.000', reorderQty: '5000.000' },
+    { name: 'Herb Seasoning', unit: 'g', category: 'Spices', theoreticalUnitCost: '0.030', reorderLevel: '200.000', reorderQty: '500.000' },
+    { name: 'Espresso Beans', unit: 'g', category: 'Coffee', theoreticalUnitCost: '0.040', sku: 'INV-004', reorderLevel: '500.000', reorderQty: '2000.000' },
+    { name: 'Fresh Milk', unit: 'ml', category: 'Dairy', theoreticalUnitCost: '0.003', reorderLevel: '5000.000', reorderQty: '10000.000' },
+    { name: 'Base Spirit (Vodka)', unit: 'ml', category: 'Spirits', theoreticalUnitCost: '0.060', sku: 'INV-005', reorderLevel: '1000.000', reorderQty: '3000.000' },
+    { name: 'Cocktail Mixer', unit: 'ml', category: 'Beverages', theoreticalUnitCost: '0.015', reorderLevel: '2000.000', reorderQty: '5000.000' },
+    { name: 'Cocktail Garnish', unit: 'pc', category: 'Garnish', theoreticalUnitCost: '0.200', reorderLevel: '30.000', reorderQty: '100.000' },
+    { name: 'Pizza Dough Ball', unit: 'pc', category: 'Bakery', theoreticalUnitCost: '0.800', reorderLevel: '20.000', reorderQty: '50.000' },
+    { name: 'Mozzarella Cheese', unit: 'g', category: 'Dairy', theoreticalUnitCost: '0.012', reorderLevel: '1000.000', reorderQty: '3000.000' },
+    { name: 'Tomato Sauce', unit: 'ml', category: 'Condiments', theoreticalUnitCost: '0.008', reorderLevel: '1000.000', reorderQty: '3000.000' },
+    { name: 'Fresh Basil', unit: 'leaf', category: 'Produce', theoreticalUnitCost: '0.050', reorderLevel: '40.000', reorderQty: '100.000' },
+    { name: 'Fettuccine Pasta', unit: 'g', category: 'Pasta', theoreticalUnitCost: '0.006', reorderLevel: '2000.000', reorderQty: '5000.000' },
+    { name: 'Alfredo Cream Sauce', unit: 'ml', category: 'Sauces', theoreticalUnitCost: '0.020', reorderLevel: '1000.000', reorderQty: '3000.000' },
+    { name: 'Parmesan Cheese', unit: 'g', category: 'Dairy', theoreticalUnitCost: '0.025', reorderLevel: '500.000', reorderQty: '1000.000' },
+    { name: 'Cheese Slice', unit: 'slice', category: 'Dairy', theoreticalUnitCost: '0.300', reorderLevel: '50.000', reorderQty: '100.000' },
+    { name: 'Atlantic Salmon Fillet', unit: 'pc', category: 'Seafood', theoreticalUnitCost: '7.000', sku: 'INV-006', reorderLevel: '10.000', reorderQty: '20.000' },
+    { name: 'Lemon', unit: 'pc', category: 'Produce', theoreticalUnitCost: '0.150', reorderLevel: '30.000', reorderQty: '60.000' },
+    { name: 'Butter', unit: 'g', category: 'Dairy', theoreticalUnitCost: '0.008', reorderLevel: '500.000', reorderQty: '1000.000' },
+];
+
+interface RecipeSeed {
+    menuItemName: string;
+    ingredients: {
+        inventoryItemName: string;
+        qtyPerUnit: string;
+        wastePct: string;
+        unit: string;
+        notes?: string;
+        modifierOptionName?: string;
+        modifierGroupName?: string;
+    }[];
+}
+
+const RECIPES_SEED: RecipeSeed[] = [
+    {
+        menuItemName: 'Beef Burger',
+        ingredients: [
+            { inventoryItemName: 'Burger Bun', qtyPerUnit: '1.000', wastePct: '2.00', unit: 'pc' },
+            { inventoryItemName: 'Beef Patty 200g', qtyPerUnit: '1.000', wastePct: '5.00', unit: 'pc' },
+            { inventoryItemName: 'Iceberg Lettuce', qtyPerUnit: '2.000', wastePct: '10.00', unit: 'leaf' },
+            { inventoryItemName: 'Tomato Slice', qtyPerUnit: '2.000', wastePct: '5.00', unit: 'slice' },
+            { inventoryItemName: 'Burger Sauce', qtyPerUnit: '15.000', wastePct: '3.00', unit: 'ml' },
+        ],
+    },
+    {
+        menuItemName: 'Grilled Chicken',
+        ingredients: [
+            { inventoryItemName: 'Chicken Breast 250g', qtyPerUnit: '1.000', wastePct: '8.00', unit: 'pc' },
+            { inventoryItemName: 'Cooking Oil', qtyPerUnit: '10.000', wastePct: '5.00', unit: 'ml' },
+            { inventoryItemName: 'Herb Seasoning', qtyPerUnit: '5.000', wastePct: '3.00', unit: 'g' },
+        ],
+    },
+    {
+        menuItemName: 'Espresso',
+        ingredients: [
+            { inventoryItemName: 'Espresso Beans', qtyPerUnit: '18.000', wastePct: '5.00', unit: 'g', notes: 'Single shot dose' },
+        ],
+    },
+    {
+        menuItemName: 'House Cocktail',
+        ingredients: [
+            { inventoryItemName: 'Base Spirit (Vodka)', qtyPerUnit: '45.000', wastePct: '2.00', unit: 'ml' },
+            { inventoryItemName: 'Cocktail Mixer', qtyPerUnit: '90.000', wastePct: '3.00', unit: 'ml' },
+            { inventoryItemName: 'Cocktail Garnish', qtyPerUnit: '1.000', wastePct: '10.00', unit: 'pc' },
+        ],
+    },
+    {
+        menuItemName: 'Margherita Pizza',
+        ingredients: [
+            { inventoryItemName: 'Pizza Dough Ball', qtyPerUnit: '1.000', wastePct: '3.00', unit: 'pc' },
+            { inventoryItemName: 'Mozzarella Cheese', qtyPerUnit: '120.000', wastePct: '5.00', unit: 'g' },
+            { inventoryItemName: 'Tomato Sauce', qtyPerUnit: '80.000', wastePct: '5.00', unit: 'ml' },
+            { inventoryItemName: 'Fresh Basil', qtyPerUnit: '4.000', wastePct: '15.00', unit: 'leaf' },
+        ],
+    },
+    {
+        menuItemName: 'Pasta Alfredo',
+        ingredients: [
+            { inventoryItemName: 'Fettuccine Pasta', qtyPerUnit: '180.000', wastePct: '3.00', unit: 'g' },
+            { inventoryItemName: 'Alfredo Cream Sauce', qtyPerUnit: '120.000', wastePct: '5.00', unit: 'ml' },
+            { inventoryItemName: 'Parmesan Cheese', qtyPerUnit: '20.000', wastePct: '5.00', unit: 'g' },
+        ],
+    },
+    {
+        menuItemName: 'Grilled Salmon',
+        ingredients: [
+            { inventoryItemName: 'Atlantic Salmon Fillet', qtyPerUnit: '1.000', wastePct: '10.00', unit: 'pc' },
+            { inventoryItemName: 'Lemon', qtyPerUnit: '0.500', wastePct: '5.00', unit: 'pc' },
+            { inventoryItemName: 'Butter', qtyPerUnit: '15.000', wastePct: '3.00', unit: 'g' },
+            { inventoryItemName: 'Herb Seasoning', qtyPerUnit: '3.000', wastePct: '3.00', unit: 'g' },
+        ],
+    },
+    {
+        menuItemName: 'Caesar Salad',
+        ingredients: [
+            { inventoryItemName: 'Iceberg Lettuce', qtyPerUnit: '8.000', wastePct: '15.00', unit: 'leaf' },
+            { inventoryItemName: 'Parmesan Cheese', qtyPerUnit: '10.000', wastePct: '5.00', unit: 'g' },
+        ],
+    },
+    {
+        menuItemName: 'Garlic Bread',
+        ingredients: [
+            { inventoryItemName: 'Burger Bun', qtyPerUnit: '1.000', wastePct: '2.00', unit: 'pc', notes: 'Sliced baguette used' },
+            { inventoryItemName: 'Butter', qtyPerUnit: '10.000', wastePct: '3.00', unit: 'g' },
+            { inventoryItemName: 'Herb Seasoning', qtyPerUnit: '2.000', wastePct: '3.00', unit: 'g' },
+        ],
+    },
+    {
+        menuItemName: 'Chicken Wings',
+        ingredients: [
+            { inventoryItemName: 'Chicken Breast 250g', qtyPerUnit: '1.500', wastePct: '10.00', unit: 'pc', notes: 'Wings portion approx' },
+            { inventoryItemName: 'Cooking Oil', qtyPerUnit: '30.000', wastePct: '5.00', unit: 'ml' },
+            { inventoryItemName: 'Burger Sauce', qtyPerUnit: '20.000', wastePct: '3.00', unit: 'ml', notes: 'Hot sauce variant' },
+        ],
+    },
+];
+
+// Modifier-linked ingredient: Extra Cheese on Beef Burger
+const MODIFIER_RECIPE_SEED = [
+    {
+        menuItemName: 'Beef Burger',
+        modifierGroupName: 'Extra Toppings',
+        modifierOptionName: 'Extra Cheese',
+        inventoryItemName: 'Cheese Slice',
+        qtyPerUnit: '1.000',
+        wastePct: '2.00',
+        unit: 'slice',
+        notes: 'Modifier: extra cheese slice',
+    },
+    {
+        menuItemName: 'Margherita Pizza',
+        modifierGroupName: 'Extra Toppings',
+        modifierOptionName: 'Extra Cheese',
+        inventoryItemName: 'Mozzarella Cheese',
+        qtyPerUnit: '50.000',
+        wastePct: '5.00',
+        unit: 'g',
+        notes: 'Modifier: extra mozzarella on pizza',
+    },
+];
+
+async function seedInventoryItems(
+    orgId: string,
+    branchCode: string,
+): Promise<{ itemIds: Record<string, string>; created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const itemIds: Record<string, string> = {};
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping inventory items`);
+        return { itemIds, created: 0, skipped: 0 };
+    }
+
+    for (const inv of INVENTORY_ITEMS_SEED) {
+        const existing = await prisma.inventoryItem.findUnique({
+            where: { branchId_name: { branchId: branch.id, name: inv.name } },
+        });
+        if (existing) {
+            console.log(`  ⏭  InventoryItem "${inv.name}" already exists — skipped`);
+            itemIds[inv.name] = existing.id;
+            skipped++;
+            continue;
+        }
+
+        const item = await prisma.inventoryItem.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                sku: inv.sku ?? null,
+                name: inv.name,
+                unit: inv.unit,
+                category: inv.category,
+                theoreticalUnitCost: inv.theoreticalUnitCost,
+                reorderLevel: inv.reorderLevel ?? '0.000',
+                reorderQty: inv.reorderQty ?? '0.000',
+            },
+        });
+        console.log(`  ✅ InventoryItem "${inv.name}" ($${inv.theoreticalUnitCost}/${inv.unit}) created`);
+        itemIds[inv.name] = item.id;
+        created++;
+    }
+
+    return { itemIds, created, skipped };
+}
+
+async function seedRecipes(
+    orgId: string,
+    branchCode: string,
+    inventoryItemIds: Record<string, string>,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping recipes`);
+        return { created: 0, skipped: 0 };
+    }
+
+    for (const recipe of RECIPES_SEED) {
+        const menuItem = await prisma.menuItem.findFirst({
+            where: { branchId: branch.id, name: recipe.menuItemName },
+        });
+        if (!menuItem) {
+            console.log(`  ⚠️  MenuItem "${recipe.menuItemName}" not found — skipping recipe`);
+            continue;
+        }
+
+        // Check if recipe already exists (idempotent)
+        const existingCount = await prisma.recipeIngredient.count({
+            where: { menuItemId: menuItem.id, branchId: branch.id, modifierOptionId: null },
+        });
+        if (existingCount > 0) {
+            console.log(`  ⏭  Recipe for "${recipe.menuItemName}" already exists (${existingCount} rows) — skipped`);
+            skipped++;
+            continue;
+        }
+
+        for (const ing of recipe.ingredients) {
+            const invItemId = inventoryItemIds[ing.inventoryItemName];
+            if (!invItemId) {
+                console.log(`  ⚠️  InventoryItem "${ing.inventoryItemName}" not found — skipping ingredient`);
+                continue;
+            }
+
+            await prisma.recipeIngredient.create({
+                data: {
+                    orgId,
+                    branchId: branch.id,
+                    menuItemId: menuItem.id,
+                    inventoryItemId: invItemId,
+                    qtyPerUnit: ing.qtyPerUnit,
+                    wastePct: ing.wastePct,
+                    unit: ing.unit,
+                    notes: ing.notes ?? null,
+                },
+            });
+        }
+        console.log(`  ✅ Recipe for "${recipe.menuItemName}" created (${recipe.ingredients.length} ingredients)`);
+        created++;
+    }
+
+    // Seed modifier-linked recipe rows
+    for (const modRecipe of MODIFIER_RECIPE_SEED) {
+        const menuItem = await prisma.menuItem.findFirst({
+            where: { branchId: branch.id, name: modRecipe.menuItemName },
+        });
+        if (!menuItem) continue;
+
+        const invItemId = inventoryItemIds[modRecipe.inventoryItemName];
+        if (!invItemId) continue;
+
+        // Find modifier option
+        const modGroup = await prisma.modifierGroup.findUnique({
+            where: { branchId_name: { branchId: branch.id, name: modRecipe.modifierGroupName } },
+        });
+        if (!modGroup) continue;
+
+        const modOption = await prisma.modifierOption.findUnique({
+            where: { groupId_name: { groupId: modGroup.id, name: modRecipe.modifierOptionName } },
+        });
+        if (!modOption) continue;
+
+        // Check if already exists (idempotent)
+        const existing = await prisma.recipeIngredient.findFirst({
+            where: {
+                menuItemId: menuItem.id,
+                branchId: branch.id,
+                modifierOptionId: modOption.id,
+                inventoryItemId: invItemId,
+            },
+        });
+        if (existing) {
+            console.log(`  ⏭  Modifier recipe "${modRecipe.menuItemName} → ${modRecipe.modifierOptionName}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+
+        await prisma.recipeIngredient.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                menuItemId: menuItem.id,
+                inventoryItemId: invItemId,
+                modifierOptionId: modOption.id,
+                qtyPerUnit: modRecipe.qtyPerUnit,
+                wastePct: modRecipe.wastePct,
+                unit: modRecipe.unit,
+                notes: modRecipe.notes,
+            },
+        });
+        console.log(`  ✅ Modifier recipe "${modRecipe.menuItemName} → ${modRecipe.modifierOptionName}" created`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+// ── M9: Stock Batches Seed ──
+
+interface StockBatchSeed {
+    inventoryItemName: string;
+    batchNumber: string;
+    receivedQty: string;
+    unitCost: string;
+    expiryDate?: string;
+    receivedAt: string;
+}
+
+// Multiple batches for some items to demonstrate FIFO ordering
+const STOCK_BATCHES_SEED: StockBatchSeed[] = [
+    // Chicken Breast: 3 batches (FIFO demo)
+    { inventoryItemName: 'Chicken Breast 250g', batchNumber: 'CB-2025-001', receivedQty: '20.000', unitCost: '3.800', receivedAt: '2025-03-01T08:00:00Z', expiryDate: '2025-03-08T00:00:00Z' },
+    { inventoryItemName: 'Chicken Breast 250g', batchNumber: 'CB-2025-002', receivedQty: '25.000', unitCost: '4.000', receivedAt: '2025-03-05T08:00:00Z', expiryDate: '2025-03-12T00:00:00Z' },
+    { inventoryItemName: 'Chicken Breast 250g', batchNumber: 'CB-2025-003', receivedQty: '15.000', unitCost: '4.200', receivedAt: '2025-03-10T08:00:00Z', expiryDate: '2025-03-17T00:00:00Z' },
+    // Fresh Milk: 3 batches (FIFO demo)
+    { inventoryItemName: 'Fresh Milk', batchNumber: 'FM-2025-001', receivedQty: '5000.000', unitCost: '0.003', receivedAt: '2025-03-01T06:00:00Z', expiryDate: '2025-03-05T00:00:00Z' },
+    { inventoryItemName: 'Fresh Milk', batchNumber: 'FM-2025-002', receivedQty: '5000.000', unitCost: '0.003', receivedAt: '2025-03-03T06:00:00Z', expiryDate: '2025-03-07T00:00:00Z' },
+    { inventoryItemName: 'Fresh Milk', batchNumber: 'FM-2025-003', receivedQty: '8000.000', unitCost: '0.004', receivedAt: '2025-03-08T06:00:00Z', expiryDate: '2025-03-12T00:00:00Z' },
+    // Base Spirit (Vodka): 2 batches (FIFO demo)
+    { inventoryItemName: 'Base Spirit (Vodka)', batchNumber: 'VS-2025-001', receivedQty: '3000.000', unitCost: '0.058', receivedAt: '2025-02-15T10:00:00Z' },
+    { inventoryItemName: 'Base Spirit (Vodka)', batchNumber: 'VS-2025-002', receivedQty: '2000.000', unitCost: '0.062', receivedAt: '2025-03-01T10:00:00Z' },
+    // Single batches for remaining items
+    { inventoryItemName: 'Burger Bun', batchNumber: 'BB-2025-001', receivedQty: '200.000', unitCost: '0.480', receivedAt: '2025-03-08T07:00:00Z', expiryDate: '2025-03-15T00:00:00Z' },
+    { inventoryItemName: 'Beef Patty 200g', batchNumber: 'BP-2025-001', receivedQty: '80.000', unitCost: '3.400', receivedAt: '2025-03-06T09:00:00Z', expiryDate: '2025-03-20T00:00:00Z' },
+    { inventoryItemName: 'Iceberg Lettuce', batchNumber: 'IL-2025-001', receivedQty: '150.000', unitCost: '0.090', receivedAt: '2025-03-09T07:00:00Z', expiryDate: '2025-03-14T00:00:00Z' },
+    { inventoryItemName: 'Tomato Slice', batchNumber: 'TS-2025-001', receivedQty: '120.000', unitCost: '0.075', receivedAt: '2025-03-09T07:00:00Z', expiryDate: '2025-03-14T00:00:00Z' },
+    { inventoryItemName: 'Burger Sauce', batchNumber: 'BS-2025-001', receivedQty: '3000.000', unitCost: '0.009', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Cooking Oil', batchNumber: 'CO-2025-001', receivedQty: '5000.000', unitCost: '0.004', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Herb Seasoning', batchNumber: 'HS-2025-001', receivedQty: '500.000', unitCost: '0.028', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Espresso Beans', batchNumber: 'EB-2025-001', receivedQty: '2000.000', unitCost: '0.038', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Cocktail Mixer', batchNumber: 'CM-2025-001', receivedQty: '5000.000', unitCost: '0.014', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Cocktail Garnish', batchNumber: 'CG-2025-001', receivedQty: '80.000', unitCost: '0.180', receivedAt: '2025-03-05T10:00:00Z' },
+    { inventoryItemName: 'Pizza Dough Ball', batchNumber: 'PD-2025-001', receivedQty: '40.000', unitCost: '0.750', receivedAt: '2025-03-08T06:00:00Z', expiryDate: '2025-03-11T00:00:00Z' },
+    { inventoryItemName: 'Mozzarella Cheese', batchNumber: 'MC-2025-001', receivedQty: '3000.000', unitCost: '0.011', receivedAt: '2025-03-06T07:00:00Z', expiryDate: '2025-03-20T00:00:00Z' },
+    { inventoryItemName: 'Tomato Sauce', batchNumber: 'TSC-2025-001', receivedQty: '5000.000', unitCost: '0.007', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Fresh Basil', batchNumber: 'FB-2025-001', receivedQty: '80.000', unitCost: '0.045', receivedAt: '2025-03-09T07:00:00Z', expiryDate: '2025-03-13T00:00:00Z' },
+    { inventoryItemName: 'Fettuccine Pasta', batchNumber: 'FP-2025-001', receivedQty: '5000.000', unitCost: '0.005', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Alfredo Cream Sauce', batchNumber: 'AS-2025-001', receivedQty: '3000.000', unitCost: '0.018', receivedAt: '2025-03-01T10:00:00Z' },
+    { inventoryItemName: 'Parmesan Cheese', batchNumber: 'PC-2025-001', receivedQty: '1000.000', unitCost: '0.023', receivedAt: '2025-03-01T10:00:00Z', expiryDate: '2025-06-01T00:00:00Z' },
+    { inventoryItemName: 'Cheese Slice', batchNumber: 'CS-2025-001', receivedQty: '100.000', unitCost: '0.280', receivedAt: '2025-03-06T07:00:00Z', expiryDate: '2025-04-06T00:00:00Z' },
+    { inventoryItemName: 'Atlantic Salmon Fillet', batchNumber: 'SF-2025-001', receivedQty: '15.000', unitCost: '6.800', receivedAt: '2025-03-08T06:00:00Z', expiryDate: '2025-03-12T00:00:00Z' },
+    { inventoryItemName: 'Lemon', batchNumber: 'LM-2025-001', receivedQty: '60.000', unitCost: '0.140', receivedAt: '2025-03-06T07:00:00Z', expiryDate: '2025-03-20T00:00:00Z' },
+    { inventoryItemName: 'Butter', batchNumber: 'BT-2025-001', receivedQty: '1000.000', unitCost: '0.007', receivedAt: '2025-03-01T10:00:00Z', expiryDate: '2025-04-01T00:00:00Z' },
+];
+
+async function seedStockBatches(
+    orgId: string,
+    branchCode: string,
+    inventoryItemIds: Record<string, string>,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping stock batches`);
+        return { created: 0, skipped: 0 };
+    }
+
+    for (const batch of STOCK_BATCHES_SEED) {
+        const itemId = inventoryItemIds[batch.inventoryItemName];
+        if (!itemId) {
+            console.log(`  ⚠️  InventoryItem "${batch.inventoryItemName}" not found — skipping batch`);
+            continue;
+        }
+
+        // Check if batch already exists (idempotent by batchNumber + branchId)
+        const existing = await prisma.stockBatch.findFirst({
+            where: { branchId: branch.id, itemId, batchNumber: batch.batchNumber },
+        });
+        if (existing) {
+            console.log(`  ⏭  StockBatch "${batch.batchNumber}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+
+        await prisma.stockBatch.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                itemId,
+                batchNumber: batch.batchNumber,
+                receivedQty: batch.receivedQty,
+                remainingQty: batch.receivedQty,
+                unitCost: batch.unitCost,
+                expiryDate: batch.expiryDate ? new Date(batch.expiryDate) : null,
+                receivedAt: new Date(batch.receivedAt),
+            },
+        });
+        console.log(`  ✅ StockBatch "${batch.batchNumber}" (${batch.inventoryItemName}: ${batch.receivedQty} @ $${batch.unitCost}) created`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+// ── M10: POS Orders Seed ──
+
+interface OrderSeed {
+    orderNumber: string;
+    serviceType: ServiceType;
+    status: OrderStatus;
+    tableLabel?: string;
+    userEmail: string;
+    items: {
+        menuItemName: string;
+        servingLabel?: string;
+        quantity: number;
+        unitPrice: number;
+    }[];
+    notes?: string;
+}
+
+const ORDERS_SEED: OrderSeed[] = [
+    {
+        orderNumber: 'ORD-000001',
+        serviceType: ServiceType.DINE_IN,
+        status: OrderStatus.NEW,
+        tableLabel: 'T1',
+        userEmail: 'waiter@demo.local',
+        items: [
+            { menuItemName: 'Caesar Salad', quantity: 1, unitPrice: 8.5 },
+            { menuItemName: 'Grilled Chicken Breast', quantity: 2, unitPrice: 14.0 },
+        ],
+    },
+    {
+        orderNumber: 'ORD-000002',
+        serviceType: ServiceType.TAKEAWAY,
+        status: OrderStatus.SENT,
+        userEmail: 'cashier@demo.local',
+        items: [
+            { menuItemName: 'Margherita Pizza', quantity: 1, unitPrice: 12.0 },
+            { menuItemName: 'Lemonade', quantity: 2, unitPrice: 4.0 },
+        ],
+    },
+    {
+        orderNumber: 'ORD-000003',
+        serviceType: ServiceType.DINE_IN,
+        status: OrderStatus.IN_KITCHEN,
+        tableLabel: 'T3',
+        userEmail: 'waiter@demo.local',
+        items: [
+            { menuItemName: 'Beef Burger', quantity: 1, unitPrice: 11.0 },
+            { menuItemName: 'French Fries', quantity: 1, unitPrice: 4.5 },
+            { menuItemName: 'Iced Tea', quantity: 1, unitPrice: 3.5 },
+        ],
+    },
+    {
+        orderNumber: 'ORD-000004',
+        serviceType: ServiceType.DINE_IN,
+        status: OrderStatus.SERVED,
+        tableLabel: 'T2',
+        userEmail: 'waiter@demo.local',
+        items: [
+            { menuItemName: 'Tomato Soup', quantity: 2, unitPrice: 6.0 },
+        ],
+    },
+    {
+        orderNumber: 'ORD-000005',
+        serviceType: ServiceType.TAKEAWAY,
+        status: OrderStatus.CLOSED,
+        userEmail: 'cashier@demo.local',
+        items: [
+            { menuItemName: 'Pasta Carbonara', quantity: 1, unitPrice: 13.0 },
+            { menuItemName: 'Espresso', quantity: 1, unitPrice: 3.0 },
+        ],
+        notes: 'Customer picked up',
+    },
+    {
+        orderNumber: 'ORD-000006',
+        serviceType: ServiceType.DINE_IN,
+        status: OrderStatus.VOIDED,
+        tableLabel: 'T5',
+        userEmail: 'manager@demo.local',
+        items: [
+            { menuItemName: 'Chocolate Lava Cake', quantity: 1, unitPrice: 7.5 },
+        ],
+        notes: 'Customer cancelled before preparation',
+    },
+];
+
+async function seedOrders(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping orders`);
+        return { created: 0, skipped: 0 };
+    }
+
+    for (const order of ORDERS_SEED) {
+        // Check idempotency by orderNumber
+        const existing = await prisma.order.findUnique({
+            where: { branchId_orderNumber: { branchId: branch.id, orderNumber: order.orderNumber } },
+        });
+        if (existing) {
+            console.log(`  ⏭  Order "${order.orderNumber}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+
+        // Resolve user
+        const user = await prisma.user.findUnique({ where: { email: order.userEmail } });
+        if (!user) {
+            console.log(`  ⚠️  User "${order.userEmail}" not found — skipping order`);
+            continue;
+        }
+
+        // Resolve table
+        let tableId: string | null = null;
+        if (order.tableLabel) {
+            const table = await prisma.table.findUnique({
+                where: { branchId_label: { branchId: branch.id, label: order.tableLabel } },
+            });
+            tableId = table?.id ?? null;
+        }
+
+        // Resolve items
+        const itemsData: {
+            menuItemId: string;
+            menuItemServingId: string | null;
+            quantity: number;
+            price: number;
+            subtotal: number;
+        }[] = [];
+
+        for (const item of order.items) {
+            const menuItem = await prisma.menuItem.findFirst({
+                where: { branchId: branch.id, name: item.menuItemName },
+            });
+            if (!menuItem) {
+                console.log(`  ⚠️  MenuItem "${item.menuItemName}" not found — skipping item`);
+                continue;
+            }
+
+            let servingId: string | null = null;
+            if (item.servingLabel) {
+                const serving = await prisma.menuItemServing.findFirst({
+                    where: { menuItemId: menuItem.id, label: item.servingLabel },
+                });
+                servingId = serving?.id ?? null;
+            }
+
+            itemsData.push({
+                menuItemId: menuItem.id,
+                menuItemServingId: servingId,
+                quantity: item.quantity,
+                price: item.unitPrice,
+                subtotal: item.unitPrice * item.quantity,
+            });
+        }
+
+        const subtotal = itemsData.reduce((sum, i) => sum + i.subtotal, 0);
+
+        await prisma.order.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                userId: user.id,
+                tableId,
+                orderNumber: order.orderNumber,
+                status: order.status,
+                serviceType: order.serviceType,
+                subtotal,
+                tax: 0,
+                discount: 0,
+                total: subtotal,
+                notes: order.notes,
+                items: {
+                    create: itemsData.map((i) => ({
+                        menuItemId: i.menuItemId,
+                        menuItemServingId: i.menuItemServingId,
+                        quantity: i.quantity,
+                        price: i.price,
+                        subtotal: i.subtotal,
+                    })),
+                },
+            },
+        });
+        console.log(`  ✅ Order "${order.orderNumber}" (${order.serviceType}, ${order.status}) created with ${itemsData.length} items`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
+// ── M11: KDS SLA Configs + Demo Tickets ──
+
+async function seedKdsData(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping KDS data`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Seed SLA configs for KITCHEN and BAR
+    const slaDefaults = [
+        { station: 'KITCHEN', greenSeconds: 300, amberSeconds: 600, redSeconds: 900 },
+        { station: 'BAR', greenSeconds: 180, amberSeconds: 360, redSeconds: 600 },
+        { station: 'COLD_KITCHEN', greenSeconds: 240, amberSeconds: 480, redSeconds: 720 },
+        { station: 'DESSERT', greenSeconds: 180, amberSeconds: 360, redSeconds: 540 },
+    ];
+
+    for (const sla of slaDefaults) {
+        const existing = await prisma.kdsSlaConfig.findUnique({
+            where: { branchId_station: { branchId: branch.id, station: sla.station } },
+        });
+        if (existing) {
+            console.log(`  ⏭  KdsSlaConfig "${sla.station}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+        await prisma.kdsSlaConfig.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                station: sla.station,
+                greenSeconds: sla.greenSeconds,
+                amberSeconds: sla.amberSeconds,
+                redSeconds: sla.redSeconds,
+            },
+        });
+        console.log(`  ✅ KdsSlaConfig "${sla.station}" created`);
+        created++;
+    }
+
+    // Create KDS tickets for the SENT order (ORD-000002)
+    const sentOrder = await prisma.order.findFirst({
+        where: { branchId: branch.id, status: 'SENT' },
+        include: {
+            items: {
+                include: { menuItem: { select: { id: true, name: true, station: true } } },
+            },
+        },
+    });
+
+    if (sentOrder) {
+        const existingTickets = await prisma.kdsTicket.findMany({
+            where: { orderId: sentOrder.id, branchId: branch.id },
+        });
+        if (existingTickets.length > 0) {
+            console.log(`  ⏭  KDS tickets for "${sentOrder.orderNumber}" already exist — skipped`);
+            skipped++;
+        } else {
+            // Group items by station
+            const stationGroups: Record<string, string[]> = {};
+            for (const item of sentOrder.items) {
+                const station = item.menuItem.station;
+                if (station === 'NONE') continue;
+                if (!stationGroups[station]) stationGroups[station] = [];
+                stationGroups[station].push(item.id);
+            }
+
+            for (const [station, itemIds] of Object.entries(stationGroups)) {
+                await prisma.kdsTicket.create({
+                    data: {
+                        orgId,
+                        branchId: branch.id,
+                        orderId: sentOrder.id,
+                        station,
+                        status: 'QUEUED',
+                        items: {
+                            create: itemIds.map((orderItemId) => ({ orderItemId })),
+                        },
+                    },
+                });
+                console.log(`  ✅ KDS ticket for "${sentOrder.orderNumber}" station=${station} created`);
+                created++;
+            }
+        }
+    }
+
+    return { created, skipped };
+}
+
+// ── M12: Demo Discounts ──
+
+async function seedDiscounts(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping discounts`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Find the NEW order (ORD-000001) for demo discounts
+    const newOrder = await prisma.order.findFirst({
+        where: { branchId: branch.id, status: 'NEW' },
+    });
+    if (!newOrder) {
+        console.log(`  ⚠️  No NEW order found — skipping discounts`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Check idempotency
+    const existing = await prisma.discount.findFirst({
+        where: { orderId: newOrder.id, branchId: branch.id },
+    });
+    if (existing) {
+        console.log(`  ⏭  Discounts for "${newOrder.orderNumber}" already exist — skipped`);
+        return { created: 0, skipped: 3 };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    const waiter = await prisma.user.findUnique({ where: { email: 'waiter@demo.local' } });
+    if (!owner || !waiter) {
+        console.log(`  ⚠️  Demo users not found — skipping discounts`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // 1) Small FIXED approved discount (auto-approved, below threshold)
+    await prisma.discount.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            orderId: newOrder.id,
+            type: 'FIXED',
+            value: 2000,
+            reason: 'Returning customer loyalty',
+            status: 'APPROVED',
+            createdById: waiter.id,
+            approvedById: owner.id,
+            approvedAt: new Date(),
+        },
+    });
+    console.log(`  ✅ Discount FIXED/2000/APPROVED on "${newOrder.orderNumber}" created`);
+    created++;
+
+    // 2) Large PERCENTAGE pending discount (above threshold)
+    await prisma.discount.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            orderId: newOrder.id,
+            type: 'PERCENTAGE',
+            value: 25,
+            reason: 'VIP guest — pending manager approval',
+            status: 'PENDING',
+            createdById: waiter.id,
+        },
+    });
+    console.log(`  ✅ Discount PERCENTAGE/25/PENDING on "${newOrder.orderNumber}" created`);
+    created++;
+
+    // 3) Rejected discount
+    await prisma.discount.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            orderId: newOrder.id,
+            type: 'FIXED',
+            value: 50000,
+            reason: 'Excessive discount request',
+            status: 'REJECTED',
+            createdById: waiter.id,
+            rejectedById: owner.id,
+            rejectedAt: new Date(),
+            rejectionReason: 'Amount exceeds policy limit',
+        },
+    });
+    console.log(`  ✅ Discount FIXED/50000/REJECTED on "${newOrder.orderNumber}" created`);
+    created++;
+
+    return { created, skipped };
+}
+
+// ── M13: Payments Demo Data ──
+
+async function seedPayments(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping payments`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Find the SERVED order (ORD-000004) for payment demo
+    const servedOrder = await prisma.order.findUnique({
+        where: { branchId_orderNumber: { branchId: branch.id, orderNumber: 'ORD-000004' } },
+    });
+    if (!servedOrder) {
+        console.log(`  ⚠️  Order "ORD-000004" not found — skipping payments`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Idempotency check
+    const existingPayment = await prisma.payment.findFirst({
+        where: { orderId: servedOrder.id, branchId: branch.id },
+    });
+    if (existingPayment) {
+        console.log(`  ⏭  Payments for "ORD-000004" already exist — skipped`);
+        return { created: 0, skipped: 3 };
+    }
+
+    const cashier = await prisma.user.findUnique({ where: { email: 'cashier@demo.local' } });
+    if (!cashier) {
+        console.log(`  ⚠️  Cashier user not found — skipping payments`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // 1) Cash payment — full amount for the SERVED order (split payment demo: part cash)
+    await prisma.payment.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            orderId: servedOrder.id,
+            amount: 8.0,
+            method: 'CASH',
+            status: 'COMPLETED',
+            metadata: { changeDue: 0, note: 'Split payment — cash portion' },
+        },
+    });
+    console.log(`  ✅ Payment CASH/8.00/COMPLETED on "ORD-000004" created`);
+    created++;
+
+    // 2) Card payment — remainder of split payment
+    await prisma.payment.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            orderId: servedOrder.id,
+            amount: 4.0,
+            method: 'CARD',
+            status: 'COMPLETED',
+            transactionId: 'TXN-CARD-DEMO-001',
+            metadata: { cardLast4: '4242' },
+        },
+    });
+    console.log(`  ✅ Payment CARD/4.00/COMPLETED on "ORD-000004" created`);
+    created++;
+
+    // 3) MOMO payment intent — demonstrates async lifecycle
+    const intent = await prisma.paymentIntent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            orderId: servedOrder.id,
+            provider: 'MTN',
+            amount: 12.0,
+            currency: 'UGX',
+            status: 'SUCCEEDED',
+            providerRef: 'MTN-DEMO-REF-001',
+            metadata: { phoneNumber: '+256700000000' },
+        },
+    });
+    console.log(`  ✅ PaymentIntent MTN/SUCCEEDED/12.00 on "ORD-000004" created`);
+    created++;
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -784,7 +3010,106 @@ async function main(): Promise<void> {
     const tablesResult = await seedTables(orgResult.orgId, 'MAIN', floorResult.floorPlanIds);
     console.log(`   Created: ${tablesResult.created}, Skipped: ${tablesResult.skipped}\n`);
 
-    // 14) Record seed execution
+    // 14) Seed Categories (M6)
+    console.log('── Categories (M6) ──');
+    const catResult = await seedCategories(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${catResult.created}, Skipped: ${catResult.skipped}\n`);
+
+    // 15) Seed Tax Categories (M6)
+    console.log('── Tax Categories (M6) ──');
+    const taxCatResult = await seedTaxCategories(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${taxCatResult.created}, Skipped: ${taxCatResult.skipped}\n`);
+
+    // 16) Seed Menu Items (M6)
+    console.log('── Menu Items (M6) ──');
+    const menuItemResult = await seedMenuItems(
+        orgResult.orgId,
+        'MAIN',
+        catResult.categoryIds,
+        taxCatResult.taxCategoryIds,
+    );
+    console.log(`   Created: ${menuItemResult.created}, Skipped: ${menuItemResult.skipped}\n`);
+
+    // 17) Seed Browse Groups (M6.1)
+    console.log('── Browse Groups (M6.1) ──');
+    const bgResult = await seedBrowseGroups(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${bgResult.created}, Skipped: ${bgResult.skipped}\n`);
+
+    // 18) Seed Browse Subgroups (M6.1)
+    console.log('── Browse Subgroups (M6.1) ──');
+    const bsgResult = await seedBrowseSubgroups(bgResult.groupIds);
+    console.log(`   Created: ${bsgResult.created}, Skipped: ${bsgResult.skipped}\n`);
+
+    // 19) Seed Browse Assignments (M6.1)
+    console.log('── Browse Assignments (M6.1) ──');
+    const assignResult = await seedBrowseAssignments(
+        orgResult.orgId,
+        'MAIN',
+        bgResult.groupIds,
+        bsgResult.subgroupIds,
+    );
+    console.log(`   Updated: ${assignResult.updated}, Skipped: ${assignResult.skipped}\n`);
+
+    // 20) Seed Menu Item Servings (M6.1)
+    console.log('── Menu Item Servings (M6.1) ──');
+    const servingsResult = await seedMenuItemServings(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${servingsResult.created}, Skipped: ${servingsResult.skipped}\n`);
+
+    // 21) Seed Modifier Groups (M7)
+    console.log('── Modifier Groups (M7) ──');
+    const modGroupResult = await seedModifierGroups(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${modGroupResult.created}, Skipped: ${modGroupResult.skipped}\n`);
+
+    // 22) Seed Modifier Options (M7)
+    console.log('── Modifier Options (M7) ──');
+    const modOptionResult = await seedModifierOptions(modGroupResult.groupIds);
+    console.log(`   Created: ${modOptionResult.created}, Skipped: ${modOptionResult.skipped}\n`);
+
+    // 23) Seed Item ↔ Modifier Group Assignments (M7)
+    console.log('── Item Modifier Assignments (M7) ──');
+    const modAssignResult = await seedItemModifierAssignments(
+        orgResult.orgId,
+        'MAIN',
+        modGroupResult.groupIds,
+    );
+    console.log(`   Created: ${modAssignResult.created}, Skipped: ${modAssignResult.skipped}\n`);
+
+    // 24) Seed Inventory Items (M8)
+    console.log('── Inventory Items (M8) ──');
+    const invItemResult = await seedInventoryItems(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${invItemResult.created}, Skipped: ${invItemResult.skipped}\n`);
+
+    // 25) Seed Recipes (M8)
+    console.log('── Recipes (M8) ──');
+    const recipeResult = await seedRecipes(orgResult.orgId, 'MAIN', invItemResult.itemIds);
+    console.log(`   Created: ${recipeResult.created}, Skipped: ${recipeResult.skipped}\n`);
+
+    // 26) Seed Stock Batches (M9)
+    console.log('── Stock Batches (M9) ──');
+    const stockBatchResult = await seedStockBatches(orgResult.orgId, 'MAIN', invItemResult.itemIds);
+    console.log(`   Created: ${stockBatchResult.created}, Skipped: ${stockBatchResult.skipped}\n`);
+
+    // 27) Seed Orders (M10)
+    console.log('── Orders (M10) ──');
+    const ordersResult = await seedOrders(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${ordersResult.created}, Skipped: ${ordersResult.skipped}\n`);
+
+    // 28) Seed KDS Data (M11)
+    console.log('── KDS Data (M11) ──');
+    const kdsResult = await seedKdsData(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${kdsResult.created}, Skipped: ${kdsResult.skipped}\n`);
+
+    // 29) Seed Discounts (M12)
+    console.log('── Discounts (M12) ──');
+    const discountsResult = await seedDiscounts(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${discountsResult.created}, Skipped: ${discountsResult.skipped}\n`);
+
+    // 30) Seed Payments (M13)
+    console.log('── Payments (M13) ──');
+    const paymentsResult = await seedPayments(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${paymentsResult.created}, Skipped: ${paymentsResult.skipped}\n`);
+
+    // Record seed execution
     await recordSeedRun(
         'm1-baseline',
         `AppConfig: ${configResult.created} created, ${configResult.skipped} skipped`,
@@ -808,6 +3133,42 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm5-floor-plans-tables',
         `FloorPlans: ${floorResult.created}c/${floorResult.skipped}s | Tables: ${tablesResult.created}c/${tablesResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm6-menu-catalog',
+        `Categories: ${catResult.created}c/${catResult.skipped}s | TaxCategories: ${taxCatResult.created}c/${taxCatResult.skipped}s | MenuItems: ${menuItemResult.created}c/${menuItemResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm6.1-menu-taxonomy-servings',
+        `BrowseGroups: ${bgResult.created}c/${bgResult.skipped}s | Subgroups: ${bsgResult.created}c/${bsgResult.skipped}s | Assignments: ${assignResult.updated}u/${assignResult.skipped}s | Servings: ${servingsResult.created}c/${servingsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm7-modifier-groups-options',
+        `ModifierGroups: ${modGroupResult.created}c/${modGroupResult.skipped}s | ModifierOptions: ${modOptionResult.created}c/${modOptionResult.skipped}s | Assignments: ${modAssignResult.created}c/${modAssignResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm8-recipes-costing',
+        `InventoryItems: ${invItemResult.created}c/${invItemResult.skipped}s | Recipes: ${recipeResult.created}c/${recipeResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm9-inventory-stock',
+        `StockBatches: ${stockBatchResult.created}c/${stockBatchResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm10-pos-orders',
+        `Orders: ${ordersResult.created}c/${ordersResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm11-kds-station-routing',
+        `KDS: ${kdsResult.created}c/${kdsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm12-discounts-approval',
+        `Discounts: ${discountsResult.created}c/${discountsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm13-payments',
+        `Payments: ${paymentsResult.created}c/${paymentsResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 

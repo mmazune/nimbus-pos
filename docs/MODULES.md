@@ -14,16 +14,19 @@
 | **Tenancy (Org/Branch/Membership)** | `apps/api/src/modules/tenancy/`      | M3        | ✅ Implemented |
 | **Settings / Numbering**            | `apps/api/src/modules/settings/`     | M4        | ✅ Implemented |
 | **Floor / Tables / Areas**          | `apps/api/src/modules/floor/`        | M5        | ✅ Implemented |
-| **Menu Catalog**                    | `apps/api/src/modules/menu/`         | M6–M7     | ⬜ Planned     |
-| **Recipes / Costing**               | `apps/api/src/modules/recipes/`      | M8        | ⬜ Planned     |
-| **Inventory**                       | `apps/api/src/modules/inventory/`    | M9–M10    | ⬜ Planned     |
+| **Menu Catalog**                    | `apps/api/src/modules/menu/`         | M6        | ✅ Implemented |
+| **Menu Taxonomy + Servings**        | `apps/api/src/modules/menu/`         | M6.1      | ✅ Implemented |
+| **Menu Modifiers + Options**         | `apps/api/src/modules/menu/`         | M7        | ✅ Implemented |
+| **Recipes / Costing**               | `apps/api/src/modules/recipes/`      | M8        | ✅ Implemented |
+| **Inventory (Stock + FIFO)**        | `apps/api/src/modules/inventory/`    | M9        | ✅ Implemented |
 | **Purchasing / Suppliers**          | `apps/api/src/modules/purchasing/`   | M11–M12   | ⬜ Planned     |
-| **Stock Counts / Wastage**          | `apps/api/src/modules/inventory/`    | M13       | ⬜ Planned     |
-| **POS Orders**                      | `apps/api/src/modules/pos/`          | M14       | ⬜ Planned     |
-| **KDS / Station Routing**           | `apps/api/src/modules/kds/`          | M15       | ⬜ Planned     |
+| **Stock Counts / Wastage**          | `apps/api/src/modules/inventory/`    | M14+      | ⬜ Planned     |
+| **POS Orders**                      | `apps/api/src/modules/orders/`       | M10       | ✅ Implemented |
+| **KDS / Station Routing**           | `apps/api/src/modules/kds/`          | M11       | ✅ Implemented |
+| **Discounts + Approval Workflow**   | `apps/api/src/modules/discounts/`    | M12       | ✅ Implemented |
 | **Discounts / Overrides**           | `apps/api/src/modules/pos/`          | M16       | ⬜ Planned     |
 | **Shifts / Tills / Cash**           | `apps/api/src/modules/pos/`          | M17       | ⬜ Planned     |
-| **Payments**                        | `apps/api/src/modules/payments/`     | M18       | ⬜ Planned     |
+| **Payments (Cash/Card/MOMO)**       | `apps/api/src/modules/payments/`     | M13       | ✅ Implemented |
 | **Refunds**                         | `apps/api/src/modules/payments/`     | M19       | ⬜ Planned     |
 | **Reservations / Deposits**         | `apps/api/src/modules/reservations/` | M20       | ⬜ Planned     |
 | **Events / Ticketing**              | `apps/api/src/modules/events/`       | M21       | ⬜ Planned     |

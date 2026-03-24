@@ -3,10 +3,10 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M5 ✅
-- Last completed milestone: M5 — Floor Plans + Tables
-- Next milestone: M6 — Menu Catalog + Categories
-- Date updated: 2026-03-20
+- Current milestone: M13 ✅
+- Last completed milestone: M13 — Payments: Cash, Card, Mobile Money
+- Next milestone: M14 — TBD
+- Date updated: 2026-03-24
 
 ## Environment
 
@@ -152,7 +152,193 @@
 - [x] Docs updated (README, ARCHITECTURE, API_CONVENTIONS, MODULES, POSTMAN_GUIDE, repo file tree)
 - [x] DONE checks: pending Neon connectivity for migration/seed verification
 
-### M6-M47
+### M6 — Menu Catalog + Categories + Tax Categories
+
+- [x] Prisma schema: MenuItemType enum (FOOD, DRINK), PrepStation enum (KITCHEN, BAR, COLD_KITCHEN, DESSERT, NONE), Category model (@@unique([branchId, name])), TaxCategory model (@@unique([branchId, name])), MenuItem model (@@unique([categoryId, name]))
+- [x] Migration: 20260321000000_m6_menu_catalog (SQL created manually — apply when Neon online)
+- [x] MenuModule: service + controller with full CRUD for categories, tax categories, menu items + catalog endpoint
+- [x] DTOs: 7 validated DTOs (CreateCategory, UpdateCategory, CreateTaxCategory, UpdateTaxCategory, CreateMenuItem, UpdateMenuItem, ListMenuQuery)
+- [x] BranchContextGuard + PermissionGuard on all 13 endpoints
+- [x] 4 new permissions: pos:menu:read/write, pos:tax:read/write
+- [x] Role-permission matrix: Owner/Manager/Supervisor = all 4; Cashier/Chef/Waiter/Bartender = read-only
+- [x] Catalog endpoint: GET /api/menu/catalog returns POS-friendly grouped payload (categories with items, tax summary)
+- [x] Decimal safety: price Decimal(10,2), rate Decimal(5,2)
+- [x] Audit events: CATEGORY_CREATED/UPDATED, TAX_CATEGORY_CREATED/UPDATED, MENU_ITEM_CREATED/UPDATED
+- [x] Seed: 5 categories (Starters, Mains, Desserts, Drinks, Sides) + 2 tax categories (VAT Standard 18%, VAT Zero 0%) + 20 menu items across all categories
+- [x] Unit tests: 10 tests in menu.service.spec.ts (79/79 total across 10 suites)
+- [x] E2e tests: 20 tests in menu.e2e-spec.ts
+- [x] Postman: M6-Menu-Catalog collection (20 requests) + environment updated (categoryId, taxCategoryId, menuItemId)
+- [x] Docs updated (README, ARCHITECTURE, API_CONVENTIONS, MODULES, POSTMAN_GUIDE, repo file tree)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M6.1 — Menu Taxonomy + Serving Formats
+
+- [x] Prisma schema: MenuSection enum (FOOD, DRINKS), ServingFormat enum (12 values), MenuBrowseGroup model (@@unique([branchId, name])), MenuBrowseSubgroup model (@@unique([groupId, name])), MenuItemServing model (@@unique([menuItemId, format, label])), browseGroupId/browseSubgroupId on MenuItem
+- [x] Migration: 20260321100000_m6_1_menu_taxonomy_serving_formats (SQL created manually)
+- [x] DTOs: 8 new DTOs (CreateBrowseGroup, UpdateBrowseGroup, CreateBrowseSubgroup, UpdateBrowseSubgroup, CreateMenuItemServing, UpdateMenuItemServing, AssignMenuItemBrowse, ListMenuNavigationQuery)
+- [x] MenuService: 13 new methods (browse groups CRUD, subgroups CRUD, servings CRUD, assignItemBrowse, getNavigation, upgraded getCatalog)
+- [x] MenuController: 12 new endpoints (browse-groups 4, browse-groups/:id/subgroups 3, items/:id/servings 3, items/:id/browse 1, navigation 1)
+- [x] Catalog endpoint upgraded: returns { categories: [...], taxCategories: [...] } with browseGroup, browseSubgroup, servings per item
+- [x] Navigation endpoint: GET /api/menu/navigation returns POS browse tree grouped by section → groups → subgroups, supports ?section= and ?activeOnly= filters
+- [x] Audit events: MENU_BROWSE_GROUP_CREATED/UPDATED, MENU_BROWSE_SUBGROUP_CREATED/UPDATED, MENU_ITEM_SERVING_CREATED/UPDATED, MENU_ITEM_BROWSE_ASSIGNED
+- [x] Seed: 8 browse groups (4 FOOD + 4 DRINKS) + 5 subgroups + 20 item-browse assignments + 12 serving formats across 6 items
+- [x] Unit tests: 20 tests in menu.service.spec.ts (10 M6 + 10 M6.1)
+- [x] E2e tests: 36 tests in menu.e2e-spec.ts (20 M6 + 16 M6.1)
+- [x] Postman: M6_1-Menu-Taxonomy-Serving-Formats collection + environment updated (browseGroupId, browseSubgroupId, servingId)
+- [x] Docs updated (MODULES, AI_STATUS)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M7 — Menu Modifier Groups + Options
+
+- [x] Prisma schema: ModifierGroup model (@@unique([branchId, name])), ModifierOption model (@@unique([groupId, name]), Decimal(10,2) priceDelta), MenuItemOnGroup join model (@@unique([itemId, groupId]))
+- [x] Migration: 20260321200000_m7_modifier_groups_options (SQL created manually)
+- [x] DTOs: 5 new DTOs (CreateModifierGroup, UpdateModifierGroup, CreateModifierOption, UpdateModifierOption, AssignItemModifierGroups)
+- [x] MenuService: 9 new methods (modifier groups CRUD, options CRUD, item-group assignment + listing)
+- [x] MenuController: 10 new endpoints (modifier-groups 4, modifier-groups/:id/options 3, items/:id/modifier-groups 2, item detail upgraded)
+- [x] Item detail endpoint: GET /api/menu/items/:id returns flattened modifierGroups[{id, name, min, max, required, sortOrder, options[]}]
+- [x] Business rules: min/max validation (min <= max when both > 0), unique name per branch/group, branch context enforcement
+- [x] Audit events: MODIFIER_GROUP_CREATED, MODIFIER_GROUP_UPDATED, MODIFIER_OPTION_CREATED, MODIFIER_OPTION_UPDATED, MENU_ITEM_MODIFIER_GROUPS_ASSIGNED
+- [x] Seed: 4 modifier groups (Size, Cooking Temp, Extra Toppings, Drink Extras) + 14 options + 7 item-group assignments
+- [x] Unit tests: 33 tests in menu.service.spec.ts (20 M6/M6.1 + 13 M7)
+- [x] E2e tests: 50 tests in menu.e2e-spec.ts (36 M6/M6.1 + 14 M7)
+- [x] Postman: M7-Menu-Modifiers collection (16 requests) + environment updated (modifierGroupId, modifierOptionId)
+- [x] Docs updated (MODULES, AI_STATUS)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M8 — Recipes + Ingredient Costing (COGS Foundation)
+
+- [x] Prisma schema: InventoryItem model (13 fields, @@unique([branchId, name])), RecipeIngredient model (14 fields, indexed FKs), updated Organization/Branch/MenuItem/MenuItemServing/ModifierOption relations
+- [x] Migration: 20260321300000_m8_recipes_costing (SQL created manually — apply when Neon online)
+- [x] RecipesModule: service + controller with 7 endpoints under /inventory prefix
+- [x] DTOs: 4 validated DTOs (CreateInventoryItem, UpdateInventoryItem, SetRecipe with nested RecipeIngredientDto, ListRecipeCostQuery)
+- [x] Inventory item CRUD: POST/GET/GET-by-id/PATCH at /api/inventory/items
+- [x] Recipe set (atomic replace): POST /api/inventory/recipes/:menuItemId — deletes all existing + creates new in a transaction
+- [x] Recipe get: GET /api/inventory/recipes/:menuItemId — grouped by base/modifier/serving ingredients
+- [x] Cost breakdown: GET /api/inventory/recipes/:menuItemId/cost — effectiveQty, extendedCost, totalCogs, margin, marginPercent
+- [x] Visibility masking: L4/L5 always see cost; Chef (L2 CHEF) sees cost only if showCostToChef=true; cost fields omitted when masked
+- [x] Validation: serving IDs, modifier option IDs, inventory item IDs all validated against branch scope
+- [x] 3 new permissions: pos:recipe:read, pos:recipe:write, pos:cost:read
+- [x] Role-permission matrix: Owner/Manager/Supervisor = all 3; Chef = pos:recipe:read + pos:cost:read
+- [x] Audit events: INVENTORY_ITEM_CREATED, INVENTORY_ITEM_UPDATED, RECIPE_SET, RECIPE_UPDATED, RECIPE_COST_VIEWED, RECIPE_ACCESS_DENIED
+- [x] Decimal safety: theoreticalUnitCost Decimal(10,3), qtyPerUnit Decimal(10,3), wastePct Decimal(5,2)
+- [x] Cost formula: effectiveQty = qtyPerUnit × (1 + wastePct/100), extendedCost = effectiveQty × unitCost
+- [x] Seed: 24 inventory items, 10 base recipes (31 ingredient rows), 2 modifier-linked recipes, 3 M8 permissions in role matrices
+- [x] Unit tests: 25 tests in recipes.service.spec.ts (inventory CRUD, set/replace recipe, cost calculation, visibility masking, permission denial, modifier-linked costing)
+- [x] E2e tests: 17 tests in recipes.e2e-spec.ts (inventory CRUD, recipe set/get/cost, atomic replace, error cases, RBAC denial)
+- [x] Postman: M8-Recipes-Costing collection (10 requests) + environment updated (inventoryItemId, inventoryItemId2)
+- [x] Docs updated (README, ARCHITECTURE, API_CONVENTIONS, MODULES, POSTMAN_GUIDE, repo file tree)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M9 — Inventory Stock + FIFO
+
+- [x] Prisma schema: StockBatch model (14 fields, 6 indexes), StockAdjustment model (8 fields, 4 indexes), added reorderLevel/reorderQty to InventoryItem
+- [x] Migration: 20260323000000_m9_inventory_stock_batches (SQL created manually — apply when Neon online)
+- [x] InventoryModule: service + controller with 5 endpoints under /inventory prefix
+- [x] DTOs: 3 validated DTOs (CreateStockBatch, CreateStockAdjustment, ListInventoryLevelsQuery)
+- [x] Updated M8 DTOs: reorderLevel/reorderQty added to CreateInventoryItemDto and UpdateInventoryItemDto
+- [x] Stock batch CRUD: POST /api/inventory/batches, GET /api/inventory/batches, GET /api/inventory/items/:id/batches
+- [x] Inventory levels: GET /api/inventory/levels — aggregates remainingQty from batches per item, computes belowReorder flag
+- [x] Stock adjustments: POST /api/inventory/adjustments — positive adjustments create zero-cost batches, negative use FIFO deduction
+- [x] FIFO deduction foundation: fifoDeduct() consumes oldest batches first (receivedAt ASC), returns deduction records
+- [x] Negative stock blocking: attempts audited as NEGATIVE_STOCK_ATTEMPT, returns 400
+- [x] 3 new permissions: pos:inventory:read, pos:inventory:write, pos:inventory:adjust
+- [x] Role-permission matrix: Owner/Manager/Supervisor = all 3; Stock Manager = all 3; Chef/Cashier/Waiter/Bartender = pos:inventory:read only
+- [x] Audit events: STOCK_BATCH_CREATED, STOCK_ADJUSTED, NEGATIVE_STOCK_ATTEMPT
+- [x] Decimal safety: all quantities use Prisma Decimal(10,3), never float
+- [x] Seed: reorderLevel/reorderQty on all 24 inventory items, 30 stock batches (3 for Chicken, 3 for Milk, 2 for Vodka for FIFO demo)
+- [x] Unit tests: 14 tests in inventory.service.spec.ts (batch CRUD, levels, FIFO, adjustments, negative stock blocking)
+- [x] E2e tests: 13 tests in inventory.e2e-spec.ts (batch CRUD, levels, adjustments, RBAC, error cases)
+- [x] Postman: M9-Inventory-Stock collection (10 requests) + token capture + environment vars
+- [x] Docs updated (README, API_CONVENTIONS, MODULES, POSTMAN_GUIDE, AI_STATUS)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M10 — POS Orders: Create + Lifecycle + Status Machine
+
+- [x] Prisma schema: OrderStatus enum (7 values), ServiceType enum (2 values), Order model (17 fields, 7 indexes, unique [branchId, orderNumber]), OrderItem model (14 fields, 3 indexes)
+- [x] Relations: Order → Organization, Branch, User, Table; OrderItem → MenuItem, MenuItemServing
+- [x] Migration: 20260323100000_m10_pos_orders (SQL created manually — apply when Neon online)
+- [x] Prisma Client generated (v5.22.0)
+- [x] OrdersModule: service + controller + module registered in app.module.ts
+- [x] DTOs: 5 validated DTOs (CreateOrder, AddOrderItem, UpdateOrderItem, TransitionOrder, ListOrdersQuery) + barrel index
+- [x] Order CRUD: POST /api/pos/orders, GET /api/pos/orders, GET /api/pos/orders/:id
+- [x] Order items CRUD: POST /api/pos/orders/:id/items, PATCH /api/pos/orders/:id/items/:itemId, DELETE /api/pos/orders/:id/items/:itemId
+- [x] State machine: NEW → SENT → IN_KITCHEN → READY → SERVED → CLOSED, with VOIDED from NEW/SENT/IN_KITCHEN/READY
+- [x] Post-kitchen void requires reason (IN_KITCHEN, READY)
+- [x] Closed/voided orders block item mutations
+- [x] Order number generation: ORD-XXXXXX, branch-scoped sequential
+- [x] Line pricing: resolves from serving price or item price + modifier deltas
+- [x] Cost snapshots: computed from M8 recipe ingredients with waste%, margin calculation
+- [x] Order total recalculation on every item mutation
+- [x] 4 new permissions: pos:orders:read, pos:orders:write, pos:orders:close, pos:orders:void
+- [x] Role-permission matrix: Owner/Manager/Supervisor = all 4; Cashier/Waiter = read + write; Chef/Bartender = read only
+- [x] Audit events: ORDER_CREATED, ORDER_ITEM_ADDED, ORDER_ITEM_UPDATED, ORDER_ITEM_REMOVED, ORDER_SENT, ORDER_IN_KITCHEN, ORDER_READY, ORDER_SERVED, ORDER_CLOSED, ORDER_VOIDED
+- [x] Seed: 6 demo orders (dine-in + takeaway, various states: NEW/SENT/IN_KITCHEN/SERVED/CLOSED/VOIDED) with line items
+- [x] Unit tests: 26 tests in orders.service.spec.ts (create, get, list, add/delete items, all transitions, void rules)
+- [x] E2e tests: 16 tests in orders.e2e-spec.ts (order CRUD, items CRUD, full lifecycle, void, error cases)
+- [x] Postman: M10-POS-Orders collection (14 requests) with test scripts + POSTMAN_GUIDE updated
+- [x] Docs updated: ARCHITECTURE.md (M10 section), API_CONVENTIONS.md (M10 endpoints), MODULES.md (POS Orders → implemented)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M11 — KDS + Station Routing + SLA Timers
+
+- [x] Schema: KdsTicketStatus + KdsUrgencyState enums, KdsTicket, KdsTicketItem, KdsSlaConfig models with relations
+- [x] Migration: 20260323200000_m11_kds_station_routing (SQL created manually — apply when Neon online)
+- [x] KDS module: kds.module.ts, kds.service.ts, kds.controller.ts, dto/ (ListKdsQueueQueryDto, UpdateKdsSlaDto)
+- [x] Station routing: Order items grouped by PrepStation on sendOrder, NONE excluded
+- [x] Ticket lifecycle: QUEUED → READY → RECALLED with audit logging + SSE events
+- [x] SLA urgency: GREEN/AMBER/RED computed from elapsed time vs per-station thresholds (defaults 300/600/900s)
+- [x] Queue sorting: RED first → AMBER → GREEN, oldest first within each band
+- [x] SSE stream: GET /api/stream/kds with EventEmitter2 + rxjs (filtered by branch + optional station)
+- [x] Order integration: sendOrder() in orders.service.ts creates KDS tickets automatically
+- [x] Permissions: pos:kds:read, pos:kds:write, pos:kds:sla:write seeded + role-mapped
+- [x] Seed: SLA configs for 4 stations + demo KDS tickets for SENT order
+- [x] Unit tests: 20 tests in kds.service.spec.ts (ticket creation, queue enrichment, mark-ready, recall, SLA, urgency)
+- [x] E2e tests: 13 tests in kds.e2e-spec.ts (queue, station filter, mark-ready, recall, SLA CRUD, auth/errors)
+- [x] Postman: M11-KDS-Station-Routing collection (8 requests)
+- [x] Docs updated: ARCHITECTURE.md (M11 section), API_CONVENTIONS.md (KDS endpoints), MODULES.md (KDS → Implemented)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M12 — Discounts + Approval Workflow
+
+- [x] Schema: DiscountType + DiscountStatus enums, Discount model with relations on User, Organization, Branch, Order
+- [x] Migration: 20260323300000_m12_discounts_approval (SQL created manually — apply when Neon online)
+- [x] Discounts module: discounts.module.ts, discounts.service.ts, discounts.controller.ts, dto/ (RequestDiscountDto, ApproveDiscountDto, RejectDiscountDto, ListOrderDiscountsQueryDto)
+- [x] Auto-approve: effective discount ≤ OrgSettings.discountApprovalThreshold → APPROVED immediately
+- [x] Pending flow: large discounts → PENDING → manager approve/reject with optional PIN verification
+- [x] Manager PIN: bcrypt compare against User.quickPinHash from M3.1
+- [x] Heavy discount anomaly: HEAVY_DISCOUNT flag appended to order.anomalyFlags
+- [x] State restrictions: discounts blocked on SERVED, VOIDED, CLOSED orders (409)
+- [x] Order integration: recalcOrderTotals() incorporates latest approved discount into order.discount and order.total
+- [x] Permissions: pos:discount:request, pos:discount:approve, pos:discount:read seeded + role-mapped
+- [x] Seed: 3 demo discounts (FIXED/approved, PERCENTAGE/pending, FIXED/rejected) + permissions for all roles
+- [x] Unit tests: 20 tests in discounts.service.spec.ts (auto-approve, pending, approve, reject, anomaly, PIN, state limits, branch isolation)
+- [x] E2e tests: 13 tests in discounts.e2e-spec.ts (happy paths, permission denial, validation, closed-order rejection)
+- [x] Postman: M12-Discounts-Approval-Workflow collection (14 requests)
+- [x] Docs updated: ARCHITECTURE.md (M12 section), API_CONVENTIONS.md (discount endpoints), MODULES.md (Discounts → Implemented)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M13 — Payments: Cash, Card, Mobile Money
+
+- [x] Prisma schema: PaymentMethod enum (CASH/CARD/MOMO/BANK_TRANSFER), PaymentStatus enum (PENDING/COMPLETED/FAILED/REFUNDED), PaymentIntentStatus enum (PENDING/REQUIRES_ACTION/SUCCEEDED/FAILED/CANCELLED), Payment model (12 fields, 7 indexes), PaymentIntent model (13 fields, 7 indexes), WebhookEvent model (9 fields, 3 indexes)
+- [x] Migration: 20260324000000_m13_payments (SQL created manually — apply when Neon online)
+- [x] PaymentsModule: service + controller + module registered in app.module.ts
+- [x] DTOs: 3 validated DTOs (CloseOrderDto with nested CloseOrderPaymentDto, CreatePaymentIntentDto, CancelPaymentIntentDto) + barrel index
+- [x] Close order with payment: POST /pos/orders/:id/close — validates SERVED state, split payments, cash overpayment/changeDue, blocks non-cash overpayment, MOMO requires succeeded intent
+- [x] Payment intent lifecycle: POST /payments/intents (create MOMO intent), POST /payments/intents/:id/cancel
+- [x] Webhook persistence-first: POST /webhooks/mtn, POST /webhooks/airtel — raw payload persisted before processing, provider ref resolution, auto-create Payment on SUCCEEDED
+- [x] Get order payments: GET /pos/orders/:id/payments — returns payments + intents
+- [x] Business rules: split payment (multiple methods), cash change calculation, idempotent webhook processing, duplicate payment prevention
+- [x] 4 new permissions: pos:payment:create, pos:payment:close, pos:payment:intent, pos:payment:read
+- [x] Role-permission matrix: Owner/Manager/Supervisor/Cashier = all 4; Waiter = create + read; Chef/Bartender = read only; Accountant = read only
+- [x] Audit events: ORDER_PAID_AND_CLOSED, PAYMENT_RECORDED, PAYMENT_INTENT_CREATED, PAYMENT_INTENT_CANCELLED, PAYMENT_WEBHOOK_RECEIVED
+- [x] Seed: 4 permissions + role mappings (11 roles), 2 demo payments (CASH split + CARD), 1 MOMO intent (MTN/SUCCEEDED)
+- [x] Unit tests: 25 tests in payments.service.spec.ts (close order, split, overpayment, underpayment, state checks, MOMO intent, cancel, webhooks, branch isolation, audit)
+- [x] E2e tests: 13 tests in payments.e2e-spec.ts (close flow, intents, webhooks, permission denial, validation, branch header)
+- [x] Postman: M13-Payments-Cash-Card-MOMO collection (16 requests) with test scripts
+- [x] Docs updated: MODULES.md (Payments → Implemented), AI_STATUS.md (M13 checklist)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M14-M47
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 
