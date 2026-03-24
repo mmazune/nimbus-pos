@@ -1,0 +1,504 @@
+{
+    "info": {
+        "_postman_id": "m9-inventory-stock",
+        "name": "M9 — Inventory Stock + FIFO",
+        "description": "Nimbus POS — M9 stock batches, inventory levels, stock adjustments, FIFO deduction.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Login (Owner)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "const branchId = json.defaultBranch?.id || json.organizations?.[0]?.branches?.[0]?.id || json.branches?.[0]?.id || json.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', branchId);",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has branchId', () => pm.expect(branchId).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Inventory Item ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "if (Array.isArray(json) && json.length > 0) {",
+                            "  pm.environment.set('inventoryItemId', json[0].id);",
+                            "}",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has items', () => pm.expect(json.length).to.be.greaterThan(0));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/inventory/items",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "inventory",
+                        "items"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Stock Batches",
+            "item": [
+                {
+                    "name": "Create Stock Batch",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.environment.set('stockBatchId', json.id);",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                                    "pm.test('receivedQty matches', () => pm.expect(json.receivedQty).to.eql('50.000'));",
+                                    "pm.test('remainingQty = receivedQty', () => pm.expect(json.remainingQty).to.eql('50.000'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"itemId\": \"{{inventoryItemId}}\",\n  \"receivedQty\": \"50.000\",\n  \"unitCost\": \"3.500\",\n  \"batchNumber\": \"PM-BATCH-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/batches",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "batches"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List All Batches",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Has batches', () => pm.expect(json.length).to.be.greaterThan(0));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/batches",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "batches"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Batches for Item",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('All batches for same item', () => {",
+                                    "  json.forEach(b => pm.expect(b.itemId).to.eql(pm.environment.get('inventoryItemId')));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/items/{{inventoryItemId}}/batches",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "items",
+                                "{{inventoryItemId}}",
+                                "batches"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Inventory Levels",
+            "item": [
+                {
+                    "name": "Get Inventory Levels",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                                    "pm.test('Level has required fields', () => {",
+                                    "  if (json.length > 0) {",
+                                    "    pm.expect(json[0]).to.have.property('itemId');",
+                                    "    pm.expect(json[0]).to.have.property('onHandQty');",
+                                    "    pm.expect(json[0]).to.have.property('belowReorder');",
+                                    "    pm.expect(json[0]).to.have.property('reorderLevel');",
+                                    "  }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/levels",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "levels"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Inventory Levels (by Category)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('All items are Meat', () => {",
+                                    "  json.forEach(item => pm.expect(item.category).to.eql('Meat'));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/levels?category=Meat",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "levels"
+                            ],
+                            "query": [
+                                {
+                                    "key": "category",
+                                    "value": "Meat"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Stock Adjustments",
+            "item": [
+                {
+                    "name": "Positive Adjustment (+10)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));",
+                                    "pm.test('Reason recorded', () => pm.expect(json.reason).to.eql('Postman: found in store'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"itemId\": \"{{inventoryItemId}}\",\n  \"qtyDelta\": \"10.000\",\n  \"reason\": \"Postman: found in store\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Negative Adjustment (-5, FIFO)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has id', () => pm.expect(json.id).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"itemId\": \"{{inventoryItemId}}\",\n  \"qtyDelta\": \"-5.000\",\n  \"reason\": \"Postman: spillage write-off\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Negative Stock Attempt → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                                    "pm.test('Negative stock blocked', () => {",
+                                    "  const json = pm.response.json();",
+                                    "  pm.expect(json.message).to.include('negative stock');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"itemId\": \"{{inventoryItemId}}\",\n  \"qtyDelta\": \"-999999.000\",\n  \"reason\": \"Postman: should fail\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ]
+}
