@@ -36,14 +36,31 @@
                 }
             ],
             "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                    "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
             }
         },
         {
@@ -62,14 +79,31 @@
                 }
             ],
             "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                    "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"email\": \"waiter@demo.local\",\n  \"password\": \"Waiter#123\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
             }
         },
         {
@@ -94,7 +128,16 @@
             "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/me", "host": ["{{baseUrl}}"], "path": ["api", "me"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
             }
         },
         {
@@ -118,8 +161,22 @@
             ],
             "request": {
                 "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/api/floor-plans", "host": ["{{baseUrl}}"], "path": ["api", "floor-plans"] }
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/floor-plans",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "floor-plans"
+                    ]
+                }
             }
         },
         {
@@ -142,14 +199,29 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"name\": \"Postman Test Floor\",\n  \"data\": { \"layout\": \"freeform\", \"width\": 500, \"height\": 400 }\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/floor-plans", "host": ["{{baseUrl}}"], "path": ["api", "floor-plans"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/floor-plans",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "floor-plans"
+                    ]
+                }
             }
         },
         {
@@ -169,8 +241,23 @@
             ],
             "request": {
                 "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/api/floor-plans/{{floorPlanId}}", "host": ["{{baseUrl}}"], "path": ["api", "floor-plans", "{{floorPlanId}}"] }
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/floor-plans/{{floorPlanId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "floor-plans",
+                        "{{floorPlanId}}"
+                    ]
+                }
             }
         },
         {
@@ -191,14 +278,30 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"name\": \"Postman Updated Floor\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/floor-plans/{{floorPlanId}}", "host": ["{{baseUrl}}"], "path": ["api", "floor-plans", "{{floorPlanId}}"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/floor-plans/{{floorPlanId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "floor-plans",
+                        "{{floorPlanId}}"
+                    ]
+                }
             }
         },
         {
@@ -222,14 +325,29 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"label\": \"PM-T1\",\n  \"capacity\": 4,\n  \"floorPlanId\": \"{{floorPlanId}}\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/tables", "host": ["{{baseUrl}}"], "path": ["api", "tables"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/tables",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tables"
+                    ]
+                }
             }
         },
         {
@@ -250,8 +368,22 @@
             ],
             "request": {
                 "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/api/tables", "host": ["{{baseUrl}}"], "path": ["api", "tables"] }
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/tables",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tables"
+                    ]
+                }
             }
         },
         {
@@ -271,8 +403,23 @@
             ],
             "request": {
                 "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/api/tables/{{tableId}}", "host": ["{{baseUrl}}"], "path": ["api", "tables", "{{tableId}}"] }
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/tables/{{tableId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tables",
+                        "{{tableId}}"
+                    ]
+                }
             }
         },
         {
@@ -293,14 +440,30 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"capacity\": 8\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/tables/{{tableId}}", "host": ["{{baseUrl}}"], "path": ["api", "tables", "{{tableId}}"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/tables/{{tableId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tables",
+                        "{{tableId}}"
+                    ]
+                }
             }
         },
         {
@@ -321,14 +484,31 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"status\": \"OCCUPIED\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/tables/{{tableId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "tables", "{{tableId}}", "status"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/tables/{{tableId}}/status",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tables",
+                        "{{tableId}}",
+                        "status"
+                    ]
+                }
             }
         },
         {
@@ -350,8 +530,23 @@
             ],
             "request": {
                 "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/api/floor/availability", "host": ["{{baseUrl}}"], "path": ["api", "floor", "availability"] }
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/floor/availability",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "floor",
+                        "availability"
+                    ]
+                }
             }
         },
         {
@@ -370,18 +565,39 @@
             "request": {
                 "auth": {
                     "type": "bearer",
-                    "bearer": [{ "key": "token", "value": "{{waiterAccessToken}}", "type": "string" }]
+                    "bearer": [
+                        {
+                            "key": "token",
+                            "value": "{{waiterAccessToken}}",
+                            "type": "string"
+                        }
+                    ]
                 },
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"name\": \"Denied Floor\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/floor-plans", "host": ["{{baseUrl}}"], "path": ["api", "floor-plans"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/floor-plans",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "floor-plans"
+                    ]
+                }
             }
         },
         {
@@ -400,7 +616,16 @@
             "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/floor-plans", "host": ["{{baseUrl}}"], "path": ["api", "floor-plans"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/floor-plans",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "floor-plans"
+                    ]
+                }
             }
         },
         {
@@ -419,14 +644,31 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"status\": \"NOT_A_STATUS\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/tables/{{tableId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "tables", "{{tableId}}", "status"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/tables/{{tableId}}/status",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tables",
+                        "{{tableId}}",
+                        "status"
+                    ]
+                }
             }
         }
     ]

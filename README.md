@@ -86,7 +86,12 @@ See [ROADMAP.md](ROADMAP.md) for the full milestone index (M0–M47).
 | M3.1 — Quick PIN Login       | ✅ Complete    |
 | M4 — Org Settings + Config   | ✅ Complete    |
 | M5 — Floor Plans + Tables     | ✅ Complete    |
-| M6+                          | ⬜ Not started |
+| M6 — Menu Catalog             | ✅ Complete    |
+| M6.1 — Menu Taxonomy + Servings | ✅ Complete    |
+| M7 — Menu Modifiers + Options  | ✅ Complete    |
+| M8 — Recipes + Ingredient Costing | ✅ Complete |
+| M9 — Inventory Stock + FIFO     | ✅ Complete |
+| M10+                         | ⬜ Not started |
 
 ## Documentation
 

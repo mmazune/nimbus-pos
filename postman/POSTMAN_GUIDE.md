@@ -12,7 +12,15 @@ postman/
 │   ├── M3-Tenancy.postman_collection.json
 │   ├── M3_1-Quick-PIN-Login.postman_collection.json
 │   ├── M4-Org-Settings.postman_collection.json
-│   └── M5-Floor-Plans-Tables.postman_collection.json
+│   ├── M5-Floor-Plans-Tables.postman_collection.json
+│   ├── M6-Menu-Catalog.postman_collection.json
+│   ├── M6_1-Menu-Taxonomy-Serving-Formats.postman_collection.json
+│   ├── M7-Menu-Modifiers.postman_collection.json
+│   ├── M8-Recipes-Costing.postman_collection.json
+│   ├── M9-Inventory-Stock.postman_collection.json
+│   ├── M10-POS-Orders.postman_collection.json
+│   ├── M11-KDS-Station-Routing.postman_collection.json
+│   └── M12-Discounts-Approval-Workflow.postman_collection.json
 └── environments/
     └── dev.postman_environment.json
 ```
@@ -52,6 +60,14 @@ from the collection-level auth setting, using `{{accessToken}}`.
 | M3.1      | `M3_1-Quick-PIN-Login` | Yes — token capture active |
 | M4        | `M4-Org-Settings`      | Yes — token capture active |
 | M5        | `M5-Floor-Plans-Tables`  | Yes — token capture active |
+| M6        | `M6-Menu-Catalog`        | Yes — token capture active |
+| M6.1      | `M6_1-Menu-Taxonomy-Serving-Formats` | Yes — token capture active |
+| M7        | `M7-Menu-Modifiers`      | Yes — token capture active |
+| M8        | `M8-Recipes-Costing`     | Yes — token capture active |
+| M9        | `M9-Inventory-Stock`     | Yes — token capture active |
+| M10       | `M10-POS-Orders`         | Yes — token capture active |
+| M11       | `M11-KDS-Station-Routing` | Yes — token capture active |
+| M12       | `M12-Discounts-Approval-Workflow` | Yes — token capture active |
 
 ## Manual Checklist — M0
 
@@ -172,3 +188,96 @@ from the collection-level auth setting, using `{{accessToken}}`.
 - [ ] Run `Permission Denial — Waiter Create Table → 403` — expect `403`
 - [ ] Run `Missing Branch Header → 400` — expect `400` (no X-Branch-Id header)
 - [ ] Run `Invalid Status Enum → 400` — expect `400` (bad table status value)
+
+## Manual Checklist — M6
+
+- [ ] Import `dev.postman_environment.json` (re-import to get `categoryId`, `taxCategoryId`, `menuItemId` vars)
+- [ ] Import `M6-Menu-Catalog.postman_collection.json`
+- [ ] Select `Nimbus POS — Dev` environment
+- [ ] Run `Login (Owner)` — expect `201`, tokens auto-saved
+- [ ] Run `Login (Waiter)` — expect `201`, waiterAccessToken auto-saved
+- [ ] Run `Get Me` — expect `200`, branchId auto-saved
+- [ ] Run `List Categories` — expect `200` with array of seeded categories
+- [ ] Run `Create Category` — expect `201` with new category, `categoryId` auto-saved
+- [ ] Run `Get Category by ID` — expect `200` with category detail
+- [ ] Run `Update Category` — expect `200` with updated name
+- [ ] Run `List Tax Categories` — expect `200` with array of seeded tax categories
+- [ ] Run `Create Tax Category` — expect `201` with new tax category, `taxCategoryId` auto-saved
+- [ ] Run `Get Tax Category by ID` — expect `200` with tax category detail
+- [ ] Run `Update Tax Category` — expect `200` with updated rate
+- [ ] Run `Create Menu Item` — expect `201` with new item, `menuItemId` auto-saved
+- [ ] Run `List Menu Items` — expect `200` with items array
+- [ ] Run `Get Menu Item by ID` — expect `200` with item detail including category and taxCategory
+- [ ] Run `Update Menu Item` — expect `200` with updated price
+- [ ] Run `Get Catalog` — expect `200` with grouped categories, items, and taxCategories
+- [ ] Run `Permission Denial — Waiter Create Category → 403` — expect `403`
+- [ ] Run `Missing Branch Header → 400` — expect `400` (no X-Branch-Id header)
+- [ ] Run `Invalid Menu Item Payload → 400` — expect `400` (bad type, negative price)
+
+## Manual Checklist — M7
+
+- [ ] Import `M7-Menu-Modifiers.postman_collection.json`
+- [ ] Select `Nimbus POS — Dev` environment
+- [ ] Run `Login (Owner)` — expect `201`, tokens auto-saved
+- [ ] Run `Create Modifier Group` — expect `201`, `modifierGroupId` auto-saved
+- [ ] Run `List Modifier Groups` — expect `200`
+- [ ] Run `Create Modifier Option` — expect `201`, `modifierOptionId` auto-saved
+- [ ] Run `List Modifier Options` — expect `200`
+- [ ] Run `Attach Modifier Group to Item` — expect `201`
+
+## Manual Checklist — M8
+
+- [ ] Import `M8-Recipes-Costing.postman_collection.json`
+- [ ] Select `Nimbus POS — Dev` environment
+- [ ] Run `Login (Owner)` — expect `201`, tokens auto-saved
+- [ ] Run `Create Inventory Item` — expect `201` with id, name, unit, `inventoryItemId` auto-saved
+- [ ] Run `Create Second Inventory Item` — expect `201`, `inventoryItemId2` auto-saved
+- [ ] Run `List Inventory Items` — expect `200` with array of items
+- [ ] Run `Get Inventory Item by ID` — expect `200` with item detail
+- [ ] Run `Update Inventory Item` — expect `200` with updated theoreticalUnitCost
+- [ ] Run `Set Recipe for Menu Item` — expect `201` with menuItemId + ingredientCount=2
+- [ ] Run `Get Recipe` — expect `200` with menuItem, baseIngredients, modifierIngredients, servingIngredients
+- [ ] Run `Get Recipe Cost Breakdown` — expect `200` with totalTheoreticalCogs, margin, marginPercent, rows
+- [ ] Verify cost fields are present for Owner (L5) role
+- [ ] Login as Waiter, confirm cost endpoint returns `403` (no pos:cost:read permission)
+
+## Manual Checklist — M9
+
+- [ ] Import `M9-Inventory-Stock.postman_collection.json`
+- [ ] Select `Nimbus POS — Dev` environment
+- [ ] Run `Login (Owner)` — expect `201`, tokens auto-saved
+- [ ] Run `Get Branch ID` — expect `200`, branchId auto-saved
+- [ ] Run `Get Inventory Item ID` — expect `200`, inventoryItemId auto-saved
+- [ ] Run `Create Stock Batch` — expect `201`, stockBatchId auto-saved, remainingQty = receivedQty
+- [ ] Run `List All Batches` — expect `200` with array of batches
+- [ ] Run `List Batches for Item` — expect `200`, all batches for same itemId
+- [ ] Run `Get Inventory Levels` — expect `200` with onHandQty, reorderLevel, belowReorder
+- [ ] Run `Get Inventory Levels (by Category)` — expect `200`, all items filtered by category=Meat
+- [ ] Run `Positive Adjustment (+10)` — expect `201` with reason recorded
+- [ ] Run `Negative Adjustment (-5, FIFO)` — expect `201`, FIFO deduction from oldest batch
+- [ ] Run `Negative Stock Attempt → 400` — expect `400` with negative stock blocked message
+- [ ] Login as Waiter, run `Create Stock Batch` — expect `403` (no pos:inventory:write permission)
+- [ ] Login as Waiter, run `Positive Adjustment` — expect `403` (no pos:inventory:adjust permission)
+- [ ] Login as Waiter, run `Get Inventory Levels` — expect `200` (pos:inventory:read granted)
+
+## Manual Checklist — M10
+
+- [ ] Import `M10-POS-Orders.postman_collection.json`
+- [ ] Select `Nimbus POS — Dev` environment
+- [ ] Run `Login (Owner)` — expect `201`, tokens auto-saved
+- [ ] Run `Create Dine-In Order` — expect `201`, status = NEW, serviceType = DINE_IN, orderNumber matches ORD-XXXXXX
+- [ ] Run `Create Takeaway Order` — expect `201`, serviceType = TAKEAWAY, tableId = null
+- [ ] Run `List Orders` — expect `200` with data array and total
+- [ ] Run `Get Order by ID` — expect `200` with items array and user info
+- [ ] Run `Add Order Item` — expect `201` with menuItemId and quantity
+- [ ] Run `Update Order Item` — expect `200` with updated quantity
+- [ ] Run `Delete Order Item` — expect `200`
+- [ ] Run `Send Order (NEW → SENT)` — expect `200`, status = SENT
+- [ ] Run `Mark In-Kitchen (SENT → IN_KITCHEN)` — expect `200`, status = IN_KITCHEN
+- [ ] Run `Mark Ready (IN_KITCHEN → READY)` — expect `200`, status = READY
+- [ ] Run `Mark Served (READY → SERVED)` — expect `200`, status = SERVED
+- [ ] Run `Close Order (SERVED → CLOSED)` — expect `200`, status = CLOSED
+- [ ] Run `Void Order` — expect `200`, status = VOIDED
+- [ ] Verify TAKEAWAY + tableId → `400`
+- [ ] Verify invalid transition (e.g. NEW → CLOSED) → `409`
+- [ ] Verify post-kitchen void without reason → `400`

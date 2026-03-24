@@ -101,6 +101,30 @@ nimbus-pos/
 │   │   │       │       ├── create-table.dto.ts
 │   │   │       │       ├── update-table.dto.ts
 │   │   │       │       └── update-table-status.dto.ts
+│   │   │       ├── menu/
+│   │   │       │   ├── menu.module.ts
+│   │   │       │   ├── menu.controller.ts
+│   │   │       │   ├── menu.service.ts
+│   │   │       │   ├── menu.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-category.dto.ts
+│   │   │       │       ├── update-category.dto.ts
+│   │   │       │       ├── create-tax-category.dto.ts
+│   │   │       │       ├── update-tax-category.dto.ts
+│   │   │       │       ├── create-menu-item.dto.ts
+│   │   │       │       ├── update-menu-item.dto.ts
+│   │   │       │       └── list-menu-query.dto.ts
+│   │   │       ├── recipes/
+│   │   │       │   ├── recipes.module.ts
+│   │   │       │   ├── recipes.controller.ts
+│   │   │       │   ├── recipes.service.ts
+│   │   │       │   ├── recipes.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── set-recipe.dto.ts
+│   │   │       │       ├── inventory-item.dto.ts
+│   │   │       │       └── list-recipe-cost-query.dto.ts
 │   │   │       ├── settings/
 │   │   │       │   ├── settings.module.ts
 │   │   │       │   ├── settings.controller.ts
@@ -130,6 +154,8 @@ nimbus-pos/
 │   │       ├── app.e2e-spec.ts
 │   │       ├── auth.e2e-spec.ts
 │   │       ├── floor.e2e-spec.ts
+│   │       ├── menu.e2e-spec.ts
+│   │       ├── recipes.e2e-spec.ts
 │   │       ├── quick-pin.e2e-spec.ts
 │   │       ├── settings.e2e-spec.ts
 │   │       └── tenancy.e2e-spec.ts
@@ -165,6 +191,10 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260320140000_m5_floor_plans_tables/
 │   │   │           └── migration.sql
+│   │   │       └── 20260321000000_m6_menu_catalog/
+│   │   │           └── migration.sql
+│   │   │       └── 20260321300000_m8_recipes_costing/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -188,7 +218,11 @@ nimbus-pos/
     │   ├── M3-Tenancy.postman_collection.json
     │   ├── M3_1-Quick-PIN-Login.postman_collection.json
     │   ├── M4-Org-Settings.postman_collection.json
-    │   └── M5-Floor-Plans-Tables.postman_collection.json
+    │   ├── M5-Floor-Plans-Tables.postman_collection.json
+    │   ├── M6-Menu-Catalog.postman_collection.json
+    │   ├── M6_1-Menu-Taxonomy-Serving-Formats.postman_collection.json
+    │   ├── M7-Menu-Modifiers.postman_collection.json
+    │   └── M8-Recipes-Costing.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```
