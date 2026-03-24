@@ -393,7 +393,7 @@
                     }
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/serve",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/mark-served",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -402,7 +402,7 @@
                         "pos",
                         "orders",
                         "{{paymentOrderId}}",
-                        "serve"
+                        "mark-served"
                     ]
                 }
             }
