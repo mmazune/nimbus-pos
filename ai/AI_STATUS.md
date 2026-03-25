@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M13.1 ✅
-- Last completed milestone: M13.1 — MTN Native Request-to-Pay + Offline Manual Reference Fallback
-- Next milestone: M14 — TBD
+- Current milestone: M14 ✅
+- Last completed milestone: M14 — Refunds + Post-Close Void Flows
+- Next milestone: M15 — TBD
 - Date updated: 2026-03-25
 
 ## Environment
@@ -357,7 +357,32 @@
 - [x] Docs updated: AI_STATUS.md (M13.1 checklist)
 - [ ] DONE checks: pending Neon connectivity for migration/seed verification
 
-### M14-M47
+### M14 — Refunds + Post-Close Void Flows
+
+- [x] Prisma schema: RefundStatus enum (PENDING/APPROVED/COMPLETED/FAILED), Refund model (14 fields, 8 indexes), relations on Organization, Branch, Order, Payment, User (refundsCreated/refundsApproved)
+- [x] Migration: 20260325100000_m14_refunds_voids (SQL created manually)
+- [x] RefundsModule: refunds.module.ts, refunds.service.ts, refunds.controller.ts, dto/ (CreateRefundDto, ApproveRefundDto, PostCloseVoidDto)
+- [x] Refund creation: POST /pos/orders/:id/refunds — only CLOSED orders, validates payment exists + COMPLETED, amount ≤ remaining balance
+- [x] Auto-complete: refund amount ≤ OrgSettings.discountApprovalThreshold → COMPLETED immediately
+- [x] Pending flow: large refunds → PENDING → manager approve with optional PIN verification
+- [x] Approve refund: POST /pos/refunds/:id/approve — PENDING → COMPLETED, optional manager PIN (bcrypt against quickPinHash)
+- [x] Get refund: GET /pos/refunds/:id — includes createdBy user info
+- [x] List order refunds: GET /pos/orders/:id/refunds — ordered by createdAt DESC
+- [x] Post-close void: POST /pos/orders/:id/post-close-void — CLOSED → VOIDED within 15-minute window, requires manager PIN, voids all payments in transaction
+- [x] Payment status tracking: checkAndMarkPaymentRefunded() marks payment REFUNDED when total refunds ≥ payment amount
+- [x] Anomaly flagging: highValueRefund flag on order.anomalyFlags for above-threshold refunds
+- [x] 4 new permissions: pos:refund:create, pos:refund:approve, pos:refund:read, pos:void:postclose
+- [x] Role-permission matrix: Owner/Manager/Supervisor = all 4; Cashier/Waiter = create + read; Chef/Bartender/Accountant = read only
+- [x] Audit events: REFUND_AUTO_COMPLETED, REFUND_REQUESTED, REFUND_APPROVED, ORDER_POST_CLOSE_VOIDED
+- [x] Seed: 4 permissions + role mappings for all roles
+- [x] Unit tests: 16 tests in refunds.service.spec.ts (auto-complete, pending, approve, PIN, reject excess, order state checks, post-close void, window expiry, list, get)
+- [x] E2e tests: 11 tests in refunds.e2e-spec.ts (create, get, list, state check, excess amount, high-value, approve, post-close void, validation, RBAC)
+- [x] CI: .github/workflows/branch-validation.yml (lint + unit on push, e2e on PR)
+- [x] Postman: M14-Refunds-Voids collection (14 requests)
+- [x] Docs updated: ARCHITECTURE.md (M14 section), API_CONVENTIONS.md (refund endpoints), MODULES.md (Refunds → Implemented)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M15-M47
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

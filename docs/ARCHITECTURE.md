@@ -612,6 +612,45 @@ All payment records and the order status transition (SERVED → CLOSED) happen i
 | PAYMENT_INTENT_CANCELLED  | MOMO payment intent cancelled             |
 | PAYMENT_WEBHOOK_RECEIVED  | Webhook event received from provider      |
 
+## Refunds + Post-Close Void Architecture (M14)
+
+### Refund Model
+
+Each Refund is linked to a Payment on a CLOSED Order. Fields: id, orgId, branchId, orderId, paymentId, provider, amount (Decimal 10,2), reason, status (PENDING/APPROVED/COMPLETED/FAILED), createdById, approvedById, metadata, timestamps.
+
+### Refund Flow
+
+1. **Create refund** (`POST /pos/orders/:id/refunds`) — only CLOSED orders. Validates refund ≤ remaining payment balance.
+2. **Auto-complete** — if amount ≤ OrgSettings.discountApprovalThreshold, refund auto-completes. Otherwise PENDING.
+3. **Approve** (`POST /pos/refunds/:id/approve`) — manager approves with optional PIN. Transitions PENDING → COMPLETED.
+4. **Payment status** — when total refunds ≥ payment amount, payment marked REFUNDED.
+5. **Anomaly flag** — high-value refunds flag `highValueRefund` on order.anomalyFlags.
+
+### Post-Close Void
+
+- `POST /pos/orders/:id/post-close-void` — voids a CLOSED order within 15-minute window.
+- Requires manager PIN verification (bcrypt against quickPinHash).
+- Transitions order CLOSED → VOIDED and all COMPLETED payments → REFUNDED in a single transaction.
+- Audit logged as ORDER_POST_CLOSE_VOIDED.
+
+### M14 Permissions
+
+| Permission          | Owner | Manager | Supervisor | Cashier | Waiter | Chef |
+| ------------------- | ----- | ------- | ---------- | ------- | ------ | ---- |
+| pos:refund:create   | ✅    | ✅      | ✅         | ✅      | ✅     | —    |
+| pos:refund:approve  | ✅    | ✅      | ✅         | —       | —      | —    |
+| pos:refund:read     | ✅    | ✅      | ✅         | ✅      | ✅     | ✅   |
+| pos:void:postclose  | ✅    | ✅      | ✅         | —       | —      | —    |
+
+### M14 Audit Events
+
+| Action                    | Trigger                                   |
+| ------------------------- | ----------------------------------------- |
+| REFUND_AUTO_COMPLETED     | Small refund auto-completed below threshold|
+| REFUND_REQUESTED          | High-value refund created as PENDING      |
+| REFUND_APPROVED           | Manager approved a pending refund         |
+| ORDER_POST_CLOSE_VOIDED   | Post-close void executed                  |
+
 ## Frontend Strategy (M43+)
 
 - Web shell first

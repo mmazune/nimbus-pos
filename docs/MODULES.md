@@ -27,7 +27,7 @@
 | **Discounts / Overrides**           | `apps/api/src/modules/pos/`          | M16       | ⬜ Planned     |
 | **Shifts / Tills / Cash**           | `apps/api/src/modules/pos/`          | M17       | ⬜ Planned     |
 | **Payments (Cash/Card/MOMO)**       | `apps/api/src/modules/payments/`     | M13       | ✅ Implemented |
-| **Refunds**                         | `apps/api/src/modules/payments/`     | M19       | ⬜ Planned     |
+| **Refunds**                         | `apps/api/src/modules/refunds/`      | M14       | ✅ Implemented |
 | **Reservations / Deposits**         | `apps/api/src/modules/reservations/` | M20       | ⬜ Planned     |
 | **Events / Ticketing**              | `apps/api/src/modules/events/`       | M21       | ⬜ Planned     |
 | **Anomaly Detection**               | `apps/api/src/modules/analytics/`    | M22       | ⬜ Planned     |

@@ -298,6 +298,20 @@ Close orders with payment, split payments, MOMO intent lifecycle, webhook ingest
 | POST   | `/api/webhooks/mtn`                        | No   | —                      | No     | MTN Mobile Money webhook              |
 | POST   | `/api/webhooks/airtel`                     | No   | —                      | No     | Airtel Money webhook                  |
 
+## Refunds + Post-Close Voids (M14) ✅
+
+Refund closed-order payments, approve high-value refunds, post-close void with time window.
+
+### Refund Endpoints
+
+| Method | Path                                       | Auth | Permission             | Branch | Description                           |
+| ------ | ------------------------------------------ | ---- | ---------------------- | ------ | ------------------------------------- |
+| POST   | `/api/pos/orders/:id/refunds`              | Yes  | pos:refund:create      | Yes    | Create refund (auto-complete or PENDING) |
+| GET    | `/api/pos/orders/:id/refunds`              | Yes  | pos:refund:read        | Yes    | List refunds for order                |
+| GET    | `/api/pos/refunds/:id`                     | Yes  | pos:refund:read        | Yes    | Get refund detail                     |
+| POST   | `/api/pos/refunds/:id/approve`             | Yes  | pos:refund:approve     | Yes    | Approve pending refund                |
+| POST   | `/api/pos/orders/:id/post-close-void`      | Yes  | pos:void:postclose     | Yes    | Post-close void (15-min window + PIN) |
+
 ## Validation
 
 - DTO classes with `class-validator`

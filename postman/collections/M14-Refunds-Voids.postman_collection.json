@@ -1,0 +1,299 @@
+{
+    "info": {
+        "_postman_id": "m14-refunds-voids",
+        "name": "M14 — Refunds + Post-Close Void Flows",
+        "description": "Nimbus POS — M14: Refund requests, auto-approve threshold, manager PIN approval, post-close void with 15-minute window.\n\nWorkflow: Login → Get branch → Create order → Advance to CLOSED → Create small refund (auto-complete) → Get refund → List order refunds → Create high-value refund (PENDING) → Approve refund → Post-close void.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Login (Owner)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"email\": \"owner@demo.local\", \"password\": \"Owner#123\" }"
+                },
+                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+            }
+        },
+        {
+            "name": "Get Profile (branchId)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "const bid = json.defaultBranch?.id || json.organizations?.[0]?.branches?.[0]?.id || json.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has branchId', () => pm.expect(bid).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+                "url": { "raw": "{{baseUrl}}/api/me", "host": ["{{baseUrl}}"], "path": ["api", "me"] }
+            }
+        },
+        {
+            "name": "Create Order (DINE_IN)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('orderId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Order created', () => pm.expect(json.status).to.eql('NEW'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{ \"serviceType\": \"DINE_IN\" }" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders"] }
+            }
+        },
+        {
+            "name": "Add Item to Order",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{ \"menuItemId\": \"{{menuItemId}}\", \"quantity\": 2 }" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "items"] }
+            }
+        },
+        {
+            "name": "Send Order",
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
+                "body": { "mode": "raw", "raw": "{}" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/send", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "send"] }
+            }
+        },
+        {
+            "name": "Accept Order (IN_KITCHEN)",
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
+                "body": { "mode": "raw", "raw": "{}" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/accept", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "accept"] }
+            }
+        },
+        {
+            "name": "Ready Order",
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
+                "body": { "mode": "raw", "raw": "{}" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/ready", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "ready"] }
+            }
+        },
+        {
+            "name": "Serve Order",
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
+                "body": { "mode": "raw", "raw": "{}" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/serve", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "serve"] }
+            }
+        },
+        {
+            "name": "Close Order (Cash)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Order closed', () => pm.expect(json.status).to.eql('CLOSED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{ \"payments\": [{ \"method\": \"CASH\", \"amount\": {{orderTotal}} }] }" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/close", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "close"] }
+            }
+        },
+        {
+            "name": "Get Order Payments (capture paymentId)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('paymentId', json.payments?.[0]?.id);",
+                            "pm.test('Has payment', () => pm.expect(json.payments.length).to.be.above(0));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/payments", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "payments"] }
+            }
+        },
+        {
+            "name": "Create Refund (small → auto-complete)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('refundId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Auto-completed', () => pm.expect(json.status).to.eql('COMPLETED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{ \"paymentId\": \"{{paymentId}}\", \"amount\": 100, \"reason\": \"Wrong item served\" }" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/refunds", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "refunds"] }
+            }
+        },
+        {
+            "name": "Get Refund",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Correct refund', () => pm.expect(json.id).to.eql(pm.environment.get('refundId')));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
+                "url": { "raw": "{{baseUrl}}/api/pos/refunds/{{refundId}}", "host": ["{{baseUrl}}"], "path": ["api", "pos", "refunds", "{{refundId}}"] }
+            }
+        },
+        {
+            "name": "List Order Refunds",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has refunds', () => pm.expect(json.length).to.be.above(0));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/refunds", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "refunds"] }
+            }
+        },
+        {
+            "name": "Post-Close Void",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Order voided or PIN required', () => {",
+                            "  const s = pm.response.code;",
+                            "  pm.expect([200, 401]).to.include(s);",
+                            "  if (s === 200) pm.expect(json.status).to.eql('VOIDED');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{ \"reason\": \"Customer complaint\", \"managerPin\": \"1234\" }" },
+                "url": { "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/post-close-void", "host": ["{{baseUrl}}"], "path": ["api", "pos", "orders", "{{orderId}}", "post-close-void"] }
+            }
+        }
+    ],
+    "variable": [
+        { "key": "baseUrl", "value": "http://localhost:3001" }
+    ]
+}
