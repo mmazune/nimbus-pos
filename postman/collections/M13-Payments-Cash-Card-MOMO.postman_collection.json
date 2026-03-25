@@ -300,7 +300,7 @@
                     }
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/accept",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/in-kitchen",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -309,7 +309,7 @@
                         "pos",
                         "orders",
                         "{{paymentOrderId}}",
-                        "accept"
+                        "in-kitchen"
                     ]
                 }
             }
