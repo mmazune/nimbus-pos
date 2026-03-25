@@ -16,10 +16,14 @@ export class CreatePaymentIntentDto {
   @MaxLength(10)
   currency?: string;
 
-  @IsOptional()
   @IsString()
   @MaxLength(20)
-  phoneNumber?: string;
+  phoneNumber!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  idempotencyKey?: string;
 
   @IsOptional()
   metadata?: Record<string, unknown>;

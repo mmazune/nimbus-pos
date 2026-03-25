@@ -1,8 +1,8 @@
 {
     "info": {
-        "_postman_id": "m13-payments-cash-card-momo",
-        "name": "M13 — Payments: Cash, Card, Mobile Money",
-        "description": "Nimbus POS — M13 Payments: Close order with payment, split payments, MOMO intent lifecycle, webhooks.\n\nWorkflow: Login (cashier) → Get branch → Create order → Add items → Advance to SERVED → Create MOMO intent → Cancel intent → Close order with cash → Get payments → Webhook tests.",
+        "_postman_id": "m13-1-mtn-native-manual-reference",
+        "name": "M13.1 — MTN Native Request-to-Pay + Manual Reference Fallback",
+        "description": "Nimbus POS — M13.1: MTN MOMO native RequestToPay integration, manual reference payments (offline fallback), payment intent status, SSE stream, auto-settle.\n\nWorkflow: Login → Get branch → Create order → Advance to SERVED → Create MTN intent → Get intent → Get intent status → Cancel intent → Create manual-reference → List manual-references → Get order payments with balance → Webhook test → Close order.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "auth": {
@@ -17,14 +17,13 @@
     },
     "item": [
         {
-            "name": "Login (Cashier)",
+            "name": "Login (Owner)",
             "event": [
                 {
                     "listen": "test",
                     "script": {
                         "exec": [
                             "const json = pm.response.json();",
-                            "pm.environment.set('cashierToken', json.accessToken);",
                             "pm.environment.set('accessToken', json.accessToken);",
                             "pm.test('Status is 201', () => pm.response.to.have.status(201));",
                             "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
@@ -46,7 +45,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"email\": \"cashier@demo.local\",\n  \"password\": \"Cashier#123\"\n}"
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
@@ -62,16 +61,14 @@
             }
         },
         {
-            "name": "Get Branch ID",
+            "name": "Get Me (Branch ID)",
             "event": [
                 {
                     "listen": "test",
                     "script": {
                         "exec": [
                             "const json = pm.response.json();",
-                            "var allBranches = []; var orgs = json.organizations || []; for (var i = 0; i < orgs.length; i++) { var bs = orgs[i].branches || []; for (var j = 0; j < bs.length; j++) allBranches.push(bs[j]); }",
-                            "var mainBranch = null; for (var k = 0; k < allBranches.length; k++) { if (allBranches[k].code === 'MAIN') { mainBranch = allBranches[k]; break; } }",
-                            "var branchId = mainBranch ? mainBranch.id : (json.defaultBranch ? json.defaultBranch.id : (allBranches.length > 0 ? allBranches[0].id : null));",
+                            "const branchId = json.defaultBranch?.id || json.organizations?.[0]?.branches?.[0]?.id || json.memberships?.[0]?.branchId;",
                             "pm.environment.set('branchId', branchId);",
                             "pm.test('Status is 200', () => pm.response.to.have.status(200));",
                             "pm.test('Has branchId', () => pm.expect(branchId).to.be.a('string'));"
@@ -82,7 +79,6 @@
             ],
             "request": {
                 "method": "GET",
-                "header": [],
                 "url": {
                     "raw": "{{baseUrl}}/api/me",
                     "host": [
@@ -96,54 +92,16 @@
             }
         },
         {
-            "name": "Get Menu Items",
+            "name": "Create Order (DINE_IN)",
             "event": [
                 {
                     "listen": "test",
                     "script": {
                         "exec": [
                             "const json = pm.response.json();",
-                            "const items = json.data || json || [];",
-                            "pm.environment.set('menuItemId', items[0] ? items[0].id : '');",
-                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Has menu items', () => pm.expect(items.length).to.be.above(0));"
-                        ],
-                        "type": "text/javascript"
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseUrl}}/api/menu/items",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "menu",
-                        "items"
-                    ]
-                }
-            }
-        },
-        {
-            "name": "Create Order",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "const json = pm.response.json();",
-                            "pm.environment.set('paymentOrderId', json.id);",
+                            "pm.environment.set('orderId', json.id);",
                             "pm.test('Status is 201', () => pm.response.to.have.status(201));",
-                            "pm.test('Order created', () => pm.expect(json.id).to.be.a('string'));"
+                            "pm.test('Order status is NEW', () => pm.expect(json.status).to.eql('NEW'));"
                         ],
                         "type": "text/javascript"
                     }
@@ -179,7 +137,44 @@
             }
         },
         {
-            "name": "Add Items to Order",
+            "name": "Get Menu Items",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "const items = json.data || json;",
+                            "pm.environment.set('menuItemId', items[0]?.id);",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/menu/items",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "menu",
+                        "items"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Add Item to Order",
             "event": [
                 {
                     "listen": "test",
@@ -208,7 +203,7 @@
                     "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 2\n}"
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/items",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -216,7 +211,7 @@
                         "api",
                         "pos",
                         "orders",
-                        "{{paymentOrderId}}",
+                        "{{orderId}}",
                         "items"
                     ]
                 }
@@ -224,18 +219,6 @@
         },
         {
             "name": "Send Order (NEW → SENT)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Status is SENT', () => pm.expect(pm.response.json().status).to.eql('SENT'));"
-                        ],
-                        "type": "text/javascript"
-                    }
-                }
-            ],
             "request": {
                 "method": "POST",
                 "header": [
@@ -246,15 +229,10 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
+                    "raw": "{}"
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/send",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/send",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -262,7 +240,7 @@
                         "api",
                         "pos",
                         "orders",
-                        "{{paymentOrderId}}",
+                        "{{orderId}}",
                         "send"
                     ]
                 }
@@ -270,18 +248,6 @@
         },
         {
             "name": "Accept Order (SENT → IN_KITCHEN)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Status is IN_KITCHEN', () => pm.expect(pm.response.json().status).to.eql('IN_KITCHEN'));"
-                        ],
-                        "type": "text/javascript"
-                    }
-                }
-            ],
             "request": {
                 "method": "POST",
                 "header": [
@@ -292,15 +258,10 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
+                    "raw": "{}"
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/in-kitchen",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/accept",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -308,26 +269,14 @@
                         "api",
                         "pos",
                         "orders",
-                        "{{paymentOrderId}}",
-                        "in-kitchen"
+                        "{{orderId}}",
+                        "accept"
                     ]
                 }
             }
         },
         {
             "name": "Ready Order (IN_KITCHEN → READY)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Status is READY', () => pm.expect(pm.response.json().status).to.eql('READY'));"
-                        ],
-                        "type": "text/javascript"
-                    }
-                }
-            ],
             "request": {
                 "method": "POST",
                 "header": [
@@ -338,15 +287,10 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
+                    "raw": "{}"
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/ready",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/ready",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -354,7 +298,7 @@
                         "api",
                         "pos",
                         "orders",
-                        "{{paymentOrderId}}",
+                        "{{orderId}}",
                         "ready"
                     ]
                 }
@@ -362,19 +306,6 @@
         },
         {
             "name": "Serve Order (READY → SERVED)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Status is SERVED', () => pm.expect(pm.response.json().status).to.eql('SERVED'));",
-                            "pm.environment.set('orderTotal', pm.response.json().total);"
-                        ],
-                        "type": "text/javascript"
-                    }
-                }
-            ],
             "request": {
                 "method": "POST",
                 "header": [
@@ -385,15 +316,10 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
+                    "raw": "{}"
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/mark-served",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/serve",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -401,14 +327,14 @@
                         "api",
                         "pos",
                         "orders",
-                        "{{paymentOrderId}}",
-                        "mark-served"
+                        "{{orderId}}",
+                        "serve"
                     ]
                 }
             }
         },
         {
-            "name": "Create MOMO Intent (MTN)",
+            "name": "Create MTN Payment Intent",
             "event": [
                 {
                     "listen": "test",
@@ -417,8 +343,9 @@
                             "const json = pm.response.json();",
                             "pm.environment.set('intentId', json.id);",
                             "pm.test('Status is 201', () => pm.response.to.have.status(201));",
-                            "pm.test('Intent REQUIRES_ACTION', () => pm.expect(json.status).to.eql('REQUIRES_ACTION'));",
-                            "pm.test('Provider is MTN', () => pm.expect(json.provider).to.eql('MTN'));"
+                            "pm.test('Status is REQUIRES_ACTION', () => pm.expect(json.status).to.eql('REQUIRES_ACTION'));",
+                            "pm.test('Provider is MTN', () => pm.expect(json.provider).to.eql('MTN'));",
+                            "pm.test('Has externalId', () => pm.expect(json.externalId).to.be.a('string'));"
                         ],
                         "type": "text/javascript"
                     }
@@ -438,7 +365,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"orderId\": \"{{paymentOrderId}}\",\n  \"provider\": \"MTN\",\n  \"amount\": 50000,\n  \"phoneNumber\": \"+256700000000\"\n}"
+                    "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"provider\": \"MTN\",\n  \"amount\": 10000,\n  \"phoneNumber\": \"+256700000000\"\n}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/payments/intents",
@@ -454,7 +381,7 @@
             }
         },
         {
-            "name": "Cancel MOMO Intent",
+            "name": "Get Payment Intent",
             "event": [
                 {
                     "listen": "test",
@@ -462,7 +389,84 @@
                         "exec": [
                             "const json = pm.response.json();",
                             "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Intent CANCELLED', () => pm.expect(json.status).to.eql('CANCELLED'));"
+                            "pm.test('Intent ID matches', () => pm.expect(json.id).to.eql(pm.environment.get('intentId')));",
+                            "pm.test('Has provider', () => pm.expect(json.provider).to.eql('MTN'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/payments/intents/{{intentId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "payments",
+                        "intents",
+                        "{{intentId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Payment Intent Status",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has status field', () => pm.expect(json.status).to.be.a('string'));",
+                            "pm.test('Has remainingBalance', () => pm.expect(json.remainingBalance).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/payments/intents/{{intentId}}/status",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "payments",
+                        "intents",
+                        "{{intentId}}",
+                        "status"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Cancel Payment Intent",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Intent status is CANCELLED', () => pm.expect(json.status).to.eql('CANCELLED'));"
                         ],
                         "type": "text/javascript"
                     }
@@ -500,56 +504,18 @@
             }
         },
         {
-            "name": "Get Order Payments (before close)",
+            "name": "Create Manual Reference Payment",
             "event": [
                 {
                     "listen": "test",
                     "script": {
                         "exec": [
                             "const json = pm.response.json();",
-                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Has payments array', () => pm.expect(json.payments).to.be.an('array'));",
-                            "pm.test('Has intents array', () => pm.expect(json.intents).to.be.an('array'));"
-                        ],
-                        "type": "text/javascript"
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/payments",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "pos",
-                        "orders",
-                        "{{paymentOrderId}}",
-                        "payments"
-                    ]
-                }
-            }
-        },
-        {
-            "name": "Close Order with Cash",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "const json = pm.response.json();",
-                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Order CLOSED', () => pm.expect(json.order.status).to.eql('CLOSED'));",
-                            "pm.test('Has payments', () => pm.expect(json.payments.length).to.be.above(0));",
-                            "pm.test('Has changeDue', () => pm.expect(json.changeDue).to.be.a('string'));"
+                            "pm.environment.set('manualPaymentId', json.payment?.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('captureMode is MANUAL_REFERENCE', () => pm.expect(json.payment.captureMode).to.eql('MANUAL_REFERENCE'));",
+                            "pm.test('verificationStatus is UNVERIFIED', () => pm.expect(json.payment.verificationStatus).to.eql('UNVERIFIED'));",
+                            "pm.test('Has remainingBalance', () => pm.expect(json.remainingBalance).to.be.a('string'));"
                         ],
                         "type": "text/javascript"
                     }
@@ -569,25 +535,23 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"payments\": [\n    {\n      \"method\": \"CASH\",\n      \"amount\": 999999\n    }\n  ]\n}"
+                    "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"method\": \"MOMO\",\n  \"amount\": 5000,\n  \"externalTransactionId\": \"MTN-PM-REF-001\",\n  \"payerPhone\": \"256700000000\",\n  \"note\": \"Customer showed SMS confirmation on phone\"\n}"
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/close",
+                    "raw": "{{baseUrl}}/api/payments/manual-reference",
                     "host": [
                         "{{baseUrl}}"
                     ],
                     "path": [
                         "api",
-                        "pos",
-                        "orders",
-                        "{{paymentOrderId}}",
-                        "close"
+                        "payments",
+                        "manual-reference"
                     ]
                 }
             }
         },
         {
-            "name": "Get Order Payments (after close)",
+            "name": "Get Manual Reference Payment",
             "event": [
                 {
                     "listen": "test",
@@ -595,7 +559,7 @@
                         "exec": [
                             "const json = pm.response.json();",
                             "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Has payments', () => pm.expect(json.payments.length).to.be.above(0));"
+                            "pm.test('Is manual reference', () => pm.expect(json.captureMode).to.eql('MANUAL_REFERENCE'));"
                         ],
                         "type": "text/javascript"
                     }
@@ -610,7 +574,90 @@
                     }
                 ],
                 "url": {
-                    "raw": "{{baseUrl}}/api/pos/orders/{{paymentOrderId}}/payments",
+                    "raw": "{{baseUrl}}/api/payments/manual-reference/{{manualPaymentId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "payments",
+                        "manual-reference",
+                        "{{manualPaymentId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Manual Reference Payments",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Is array', () => pm.expect(json).to.be.an('array'));",
+                            "pm.test('Has entries', () => pm.expect(json.length).to.be.at.least(1));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/payments/manual-reference?verificationStatus=UNVERIFIED",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "payments",
+                        "manual-reference"
+                    ],
+                    "query": [
+                        {
+                            "key": "verificationStatus",
+                            "value": "UNVERIFIED"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Order Payments (balance info)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has orderTotal', () => pm.expect(json.orderTotal).to.be.a('string'));",
+                            "pm.test('Has totalPaid', () => pm.expect(json.totalPaid).to.be.a('string'));",
+                            "pm.test('Has remainingBalance', () => pm.expect(json.remainingBalance).to.be.a('string'));",
+                            "pm.test('Has isSettled', () => pm.expect(json.isSettled).to.be.a('boolean'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/payments",
                     "host": [
                         "{{baseUrl}}"
                     ],
@@ -618,14 +665,14 @@
                         "api",
                         "pos",
                         "orders",
-                        "{{paymentOrderId}}",
+                        "{{orderId}}",
                         "payments"
                     ]
                 }
             }
         },
         {
-            "name": "MTN Webhook",
+            "name": "MTN Webhook (simulated)",
             "event": [
                 {
                     "listen": "test",
@@ -652,7 +699,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"event_type\": \"payment.completed\",\n  \"external_id\": \"EXT-POSTMAN-MTN-001\",\n  \"status\": \"SUCCESSFUL\",\n  \"amount\": 50000\n}"
+                    "raw": "{\n  \"externalId\": \"non-existent-ext-id\",\n  \"status\": \"SUCCESSFUL\",\n  \"financialTransactionId\": \"FIN-TX-001\",\n  \"amount\": \"10000\",\n  \"currency\": \"UGX\",\n  \"payer\": { \"partyIdType\": \"MSISDN\", \"partyId\": \"256700000000\" }\n}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/webhooks/mtn",
@@ -668,7 +715,7 @@
             }
         },
         {
-            "name": "Airtel Webhook",
+            "name": "Close Order with Cash",
             "event": [
                 {
                     "listen": "test",
@@ -676,36 +723,39 @@
                         "exec": [
                             "const json = pm.response.json();",
                             "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                            "pm.test('Has webhookEventId', () => pm.expect(json.webhookEventId).to.be.a('string'));"
+                            "pm.test('Order is CLOSED', () => pm.expect(json.order.status).to.eql('CLOSED'));"
                         ],
                         "type": "text/javascript"
                     }
                 }
             ],
             "request": {
-                "auth": {
-                    "type": "noauth"
-                },
                 "method": "POST",
                 "header": [
                     {
                         "key": "Content-Type",
                         "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
                     }
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"eventType\": \"transaction.success\",\n  \"transactionId\": \"AIR-POSTMAN-001\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 30000\n}"
+                    "raw": "{\n  \"payments\": [\n    { \"method\": \"CASH\", \"amount\": 50000 }\n  ]\n}"
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/webhooks/airtel",
+                    "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/close",
                     "host": [
                         "{{baseUrl}}"
                     ],
                     "path": [
                         "api",
-                        "webhooks",
-                        "airtel"
+                        "pos",
+                        "orders",
+                        "{{orderId}}",
+                        "close"
                     ]
                 }
             }

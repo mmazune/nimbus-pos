@@ -3,10 +3,10 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M13 ✅
-- Last completed milestone: M13 — Payments: Cash, Card, Mobile Money
+- Current milestone: M13.1 ✅
+- Last completed milestone: M13.1 — MTN Native Request-to-Pay + Offline Manual Reference Fallback
 - Next milestone: M14 — TBD
-- Date updated: 2026-03-24
+- Date updated: 2026-03-25
 
 ## Environment
 
@@ -336,6 +336,25 @@
 - [x] E2e tests: 13 tests in payments.e2e-spec.ts (close flow, intents, webhooks, permission denial, validation, branch header)
 - [x] Postman: M13-Payments-Cash-Card-MOMO collection (16 requests) with test scripts
 - [x] Docs updated: MODULES.md (Payments → Implemented), AI_STATUS.md (M13 checklist)
+- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+
+### M13.1 — MTN Native Request-to-Pay + Offline Manual Reference Fallback
+
+- [x] Prisma schema: PaymentCaptureMode enum (ONLINE_PROVIDER/MANUAL_REFERENCE), PaymentVerificationStatus enum (NOT_REQUIRED/UNVERIFIED/VERIFIED/REJECTED), extended Payment (7 new fields: captureMode, verificationStatus, externalTransactionId, payerPhone, postedAt, enteredById, verificationNote + enteredBy relation + 3 indexes), extended PaymentIntent (11 new fields: customerPhone, externalId [unique], providerTransactionId, requestedAmount, confirmedAmount, requestedMsisdn, confirmedMsisdn, expiresAt, webhookEventIdLast, idempotencyKey, failureReason + 3 indexes), extended WebhookEvent (3 new fields: signature, headers, processingError), User.paymentsEntered relation
+- [x] Migration: 20260325000000_m13_1_mtn_native_manual_reference (SQL created manually)
+- [x] MTN Adapter: adapters/mtn.adapter.ts — real MTN Collections API (OAuth2, RequestToPay, status polling, token caching, sandbox helpers, status normalization)
+- [x] DTOs: CreateManualReferencePaymentDto (orderId, method, amount, externalTransactionId, payerPhone?, postedAt?, note?, provider?), updated CreatePaymentIntentDto (phoneNumber required, idempotencyKey optional)
+- [x] Service layer rewrite: EventEmitter2 + MtnAdapter DI, getOutstandingBalance(), autoSettleIfFullyPaid(), enhanced closeOrderWithPayment (pending intent blocking, already-paid tracking), createPaymentIntent (real MTN call, idempotency, externalId), getPaymentIntent, getPaymentIntentStatus, cancelPaymentIntent (SSE events), processWebhook (externalId resolution, confirmedAmount, auto-settle, SSE), getOrderPayments (with balance), createManualReferencePayment (UNVERIFIED, dedupe, auto-settle), getManualReferencePayment, listManualReferencePayments
+- [x] Controller: 12 endpoints total — GET /payments/intents/:id, GET /payments/intents/:id/status, POST /payments/manual-reference, GET /payments/manual-reference/:id, GET /payments/manual-reference, SSE GET /stream/payments (with orderId filter), updated webhook endpoints (pass headers)
+- [x] Module: MtnAdapter provider registered
+- [x] 3 new permissions: pos:payment:manual-reference, pos:payment:cancel, pos:payment:override
+- [x] Role-permission matrix updated: Owner/Manager/Supervisor get all 7 payment perms; Cashier gets 6 (all except override); Waiter gets intent + manual-reference + read; Chef/Bartender = read only
+- [x] SSE stream: payment.update events (8 event types: PAYMENT_INTENT_CREATED, PAYMENT_PENDING, PAYMENT_SUCCEEDED, PAYMENT_FAILED, PAYMENT_CANCELLED, PAYMENT_MANUAL_REFERENCE_RECORDED, ORDER_BALANCE_UPDATED, ORDER_AUTO_SETTLED)
+- [x] Seed: 3 new permissions + role mappings, manual-reference demo payment (MOMO/MANUAL_REFERENCE/UNVERIFIED), enhanced MTN intent demo (externalId, customerPhone, amounts, msisdn)
+- [x] Unit tests: 39 tests in payments.service.spec.ts (all M13 tests preserved + 14 new: pending intent blocking, already-paid tracking, idempotency, MTN adapter integration, MTN failure handling, SSE events, webhook auto-settle, manual-reference CRUD, dedupe, auto-settle, VOIDED rejection, intent get/status)
+- [x] E2e tests: 23 tests in payments.e2e-spec.ts (all M13 tests preserved + 10 new: manual-reference create/list/filter/403, intent get/status, order balance info, duplicate manual-reference 409)
+- [x] Postman: M13_1-MTN-Native-Manual-Reference collection (19 requests) with test scripts
+- [x] Docs updated: AI_STATUS.md (M13.1 checklist)
 - [ ] DONE checks: pending Neon connectivity for migration/seed verification
 
 ### M14-M47

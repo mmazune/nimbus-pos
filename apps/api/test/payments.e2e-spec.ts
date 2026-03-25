@@ -17,6 +17,7 @@ describe('Payments (e2e)', () => {
   let menuItemId: string;
   let orderId: string;
   let intentId: string;
+  let manualRefOrderId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -300,5 +301,185 @@ describe('Payments (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ payments: [{ method: 'CASH', amount: 100 }] })
       .expect(400);
+  });
+
+  // ══════════════════════════════════════════════════
+  // M13.1 — Manual Reference Payments
+  // ══════════════════════════════════════════════════
+
+  it('should create a SERVED order for manual-reference tests', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/api/pos/orders')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({ serviceType: 'DINE_IN' })
+      .expect(201);
+    manualRefOrderId = createRes.body.id;
+
+    await request(app.getHttpServer())
+      .post(`/api/pos/orders/${manualRefOrderId}/items`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({ menuItemId, quantity: 1 })
+      .expect(201);
+
+    // Advance to SERVED
+    await request(app.getHttpServer())
+      .post(`/api/pos/orders/${manualRefOrderId}/send`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({}).expect(200);
+    await request(app.getHttpServer())
+      .post(`/api/pos/orders/${manualRefOrderId}/accept`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({}).expect(200);
+    await request(app.getHttpServer())
+      .post(`/api/pos/orders/${manualRefOrderId}/ready`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({}).expect(200);
+    await request(app.getHttpServer())
+      .post(`/api/pos/orders/${manualRefOrderId}/serve`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({}).expect(200);
+  }, 30000);
+
+  it('POST /payments/manual-reference — creates manual reference payment', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/payments/manual-reference')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({
+        orderId: manualRefOrderId,
+        method: 'MOMO',
+        amount: 5000,
+        externalTransactionId: 'MTN-E2E-REF-001',
+        payerPhone: '256700000000',
+        note: 'Customer showed SMS confirmation',
+      })
+      .expect(201);
+
+    expect(res.body.payment).toBeDefined();
+    expect(res.body.payment.captureMode).toBe('MANUAL_REFERENCE');
+    expect(res.body.payment.verificationStatus).toBe('UNVERIFIED');
+    expect(res.body.remainingBalance).toBeDefined();
+  });
+
+  it('POST /payments/manual-reference — rejects duplicate externalTransactionId', async () => {
+    await request(app.getHttpServer())
+      .post('/api/payments/manual-reference')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({
+        orderId: manualRefOrderId,
+        method: 'MOMO',
+        amount: 5000,
+        externalTransactionId: 'MTN-E2E-REF-001',
+      })
+      .expect(409);
+  });
+
+  it('GET /payments/manual-reference — lists manual reference payments', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/payments/manual-reference')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .expect(200);
+
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('GET /payments/manual-reference?verificationStatus=UNVERIFIED — filters', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/payments/manual-reference?verificationStatus=UNVERIFIED')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .expect(200);
+
+    expect(Array.isArray(res.body)).toBe(true);
+    for (const p of res.body) {
+      expect(p.verificationStatus).toBe('UNVERIFIED');
+    }
+  });
+
+  // ══════════════════════════════════════════════════
+  // M13.1 — Payment Intent Status + Get
+  // ══════════════════════════════════════════════════
+
+  it('POST /payments/intents — creates intent for status test', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/payments/intents')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({
+        orderId: manualRefOrderId,
+        provider: 'MTN',
+        amount: 5000,
+        phoneNumber: '+256700111222',
+      })
+      .expect(201);
+
+    intentId = res.body.id;
+  });
+
+  it('GET /payments/intents/:id — returns intent', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/payments/intents/${intentId}`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .expect(200);
+
+    expect(res.body.id).toBe(intentId);
+    expect(res.body.provider).toBe('MTN');
+  });
+
+  it('GET /payments/intents/:id/status — returns intent status with balance', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/payments/intents/${intentId}/status`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .expect(200);
+
+    expect(res.body.id).toBe(intentId);
+    expect(res.body.status).toBeDefined();
+    expect(res.body.remainingBalance).toBeDefined();
+  });
+
+  // ══════════════════════════════════════════════════
+  // M13.1 — Order Balance in getOrderPayments
+  // ══════════════════════════════════════════════════
+
+  it('GET /pos/orders/:id/payments — returns balance info', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/api/pos/orders/${manualRefOrderId}/payments`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .expect(200);
+
+    expect(res.body.orderTotal).toBeDefined();
+    expect(res.body.totalPaid).toBeDefined();
+    expect(res.body.remainingBalance).toBeDefined();
+    expect(typeof res.body.isSettled).toBe('boolean');
+  });
+
+  // ══════════════════════════════════════════════════
+  // M13.1 — Chef cannot create manual-reference
+  // ══════════════════════════════════════════════════
+
+  it('POST /payments/manual-reference — chef gets 403', async () => {
+    await request(app.getHttpServer())
+      .post('/api/payments/manual-reference')
+      .set('Authorization', `Bearer ${chefToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({
+        orderId: manualRefOrderId,
+        method: 'MOMO',
+        amount: 1000,
+        externalTransactionId: 'MTN-E2E-CHEF-001',
+      })
+      .expect(403);
   });
 });

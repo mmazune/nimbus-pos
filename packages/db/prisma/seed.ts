@@ -180,6 +180,15 @@ const PERMISSIONS_DATA = [
     { action: 'pos:payment:close', description: 'Close orders with payment' },
     { action: 'pos:payment:intent', description: 'Create/cancel MOMO payment intents' },
     { action: 'pos:payment:read', description: 'Read payment and intent records' },
+    // M13.1 payment permissions
+    { action: 'pos:payment:manual-reference', description: 'Record manual reference payments (offline fallback)' },
+    { action: 'pos:payment:cancel', description: 'Cancel pending MOMO payment intents' },
+    { action: 'pos:payment:override', description: 'Override payment verification status' },
+    // M14 refund + void permissions
+    { action: 'pos:refund:create', description: 'Request a refund on a closed order' },
+    { action: 'pos:refund:approve', description: 'Approve pending high-value refunds' },
+    { action: 'pos:refund:read', description: 'Read refund records' },
+    { action: 'pos:void:postclose', description: 'Void a recently-closed order (post-close void)' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -250,6 +259,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:payment:close',
         'pos:payment:intent',
         'pos:payment:read',
+        'pos:payment:manual-reference',
+        'pos:payment:cancel',
+        'pos:payment:override',
+        'pos:refund:create',
+        'pos:refund:approve',
+        'pos:refund:read',
+        'pos:void:postclose',
     ],
     Manager: [
         'identity:user:read',
@@ -290,6 +306,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:payment:close',
         'pos:payment:intent',
         'pos:payment:read',
+        'pos:payment:manual-reference',
+        'pos:payment:cancel',
+        'pos:payment:override',
+        'pos:refund:create',
+        'pos:refund:approve',
+        'pos:refund:read',
+        'pos:void:postclose',
     ],
     Accountant: [
         'identity:user:read',
@@ -299,6 +322,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'tenancy:branch:read',
         'pos:discount:read',
         'pos:payment:read',
+        'pos:refund:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -334,6 +358,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:payment:close',
         'pos:payment:intent',
         'pos:payment:read',
+        'pos:payment:manual-reference',
+        'pos:payment:cancel',
+        'pos:payment:override',
+        'pos:refund:create',
+        'pos:refund:approve',
+        'pos:refund:read',
+        'pos:void:postclose',
     ],
     Cashier: [
         'identity:user:read',
@@ -353,6 +384,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:payment:close',
         'pos:payment:intent',
         'pos:payment:read',
+        'pos:payment:manual-reference',
+        'pos:payment:cancel',
+        'pos:refund:create',
+        'pos:refund:read',
     ],
     Chef: [
         'identity:user:read',
@@ -369,6 +404,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:kds:write',
         'pos:discount:read',
         'pos:payment:read',
+        'pos:refund:read',
     ],
     Waiter: [
         'identity:user:read',
@@ -385,7 +421,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:discount:request',
         'pos:discount:read',
         'pos:payment:create',
+        'pos:payment:intent',
+        'pos:payment:manual-reference',
         'pos:payment:read',
+        'pos:refund:create',
+        'pos:refund:read',
     ],
     Bartender: [
         'identity:user:read',
@@ -400,6 +440,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:kds:write',
         'pos:discount:read',
         'pos:payment:read',
+        'pos:refund:read',
     ],
     Procurement: [
         'identity:user:read',
@@ -2931,10 +2972,38 @@ async function seedPayments(
             currency: 'UGX',
             status: 'SUCCEEDED',
             providerRef: 'MTN-DEMO-REF-001',
+            externalId: 'demo-external-id-001',
+            customerPhone: '256700000000',
+            requestedAmount: 12.0,
+            confirmedAmount: 12.0,
+            requestedMsisdn: '256700000000',
+            confirmedMsisdn: '256700000000',
             metadata: { phoneNumber: '+256700000000' },
         },
     });
     console.log(`  ✅ PaymentIntent MTN/SUCCEEDED/12.00 on "ORD-000004" created`);
+    created++;
+
+    // 4) Manual-reference payment — offline fallback demo (UNVERIFIED)
+    await prisma.payment.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            orderId: servedOrder.id,
+            amount: 5.0,
+            method: 'MOMO',
+            status: 'COMPLETED',
+            captureMode: 'MANUAL_REFERENCE',
+            verificationStatus: 'UNVERIFIED',
+            externalTransactionId: 'MTN-TXN-MANUAL-DEMO-001',
+            payerPhone: '256700000001',
+            postedAt: new Date(),
+            enteredById: cashier.id,
+            verificationNote: 'Customer showed SMS confirmation on phone',
+            metadata: { provider: 'MTN', captureMode: 'MANUAL_REFERENCE' },
+        },
+    });
+    console.log(`  ✅ Payment MOMO/MANUAL_REFERENCE/5.00/UNVERIFIED on "ORD-000004" created`);
     created++;
 
     return { created, skipped };
