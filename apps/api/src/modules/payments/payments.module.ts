@@ -8,4 +8,4 @@ import { MtnAdapter } from './adapters/mtn.adapter';
   providers: [PaymentsService, MtnAdapter],
   exports: [PaymentsService],
 })
-export class PaymentsModule { }
+export class PaymentsModule {}

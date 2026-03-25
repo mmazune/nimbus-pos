@@ -69,7 +69,7 @@ export class PaymentsService {
     private readonly audit: AuditService,
     private readonly mtnAdapter: MtnAdapter,
     private readonly eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   // ── Helpers ──
 

@@ -95,9 +95,9 @@ describe('RefundsService', () => {
       amount: new Decimal(50000),
     });
     // refunds for that payment (after create)
-    prisma.refund.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
-      { amount: new Decimal(2000), status: 'COMPLETED' },
-    ]);
+    prisma.refund.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ amount: new Decimal(2000), status: 'COMPLETED' }]);
 
     const result = await service.createRefund(
       'user-1',
@@ -162,9 +162,7 @@ describe('RefundsService', () => {
     );
 
     expect(result.status).toBe('PENDING');
-    expect(audit.log).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'REFUND_REQUESTED' }),
-    );
+    expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'REFUND_REQUESTED' }));
   });
 
   // ── Create Refund: Order not found ──
@@ -243,9 +241,7 @@ describe('RefundsService', () => {
       method: 'CASH',
       status: 'COMPLETED',
     });
-    prisma.refund.findMany.mockResolvedValue([
-      { amount: new Decimal(8000), status: 'COMPLETED' },
-    ]);
+    prisma.refund.findMany.mockResolvedValue([{ amount: new Decimal(8000), status: 'COMPLETED' }]);
 
     await expect(
       service.createRefund(
@@ -285,23 +281,13 @@ describe('RefundsService', () => {
       id: 'pay-1',
       amount: new Decimal(10000),
     });
-    prisma.refund.findMany.mockResolvedValue([
-      { amount: new Decimal(10000), status: 'COMPLETED' },
-    ]);
+    prisma.refund.findMany.mockResolvedValue([{ amount: new Decimal(10000), status: 'COMPLETED' }]);
     prisma.payment.update.mockResolvedValue({});
 
-    const result = await service.approveRefund(
-      'mgr-1',
-      ctx,
-      'ref-1',
-      { managerPin: '1234' },
-      meta,
-    );
+    const result = await service.approveRefund('mgr-1', ctx, 'ref-1', { managerPin: '1234' }, meta);
 
     expect(result.status).toBe('COMPLETED');
-    expect(audit.log).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'REFUND_APPROVED' }),
-    );
+    expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'REFUND_APPROVED' }));
   });
 
   // ── Approve Refund: Invalid PIN ──
@@ -334,9 +320,9 @@ describe('RefundsService', () => {
       orgId: 'org-1',
     });
 
-    await expect(
-      service.approveRefund('mgr-1', ctx, 'ref-1', {}, meta),
-    ).rejects.toThrow(ConflictException);
+    await expect(service.approveRefund('mgr-1', ctx, 'ref-1', {}, meta)).rejects.toThrow(
+      ConflictException,
+    );
   });
 
   // ── List Order Refunds ──
@@ -456,13 +442,7 @@ describe('RefundsService', () => {
     });
 
     await expect(
-      service.postCloseVoid(
-        'mgr-1',
-        ctx,
-        'order-1',
-        { reason: 'Nope', managerPin: '1234' },
-        meta,
-      ),
+      service.postCloseVoid('mgr-1', ctx, 'order-1', { reason: 'Nope', managerPin: '1234' }, meta),
     ).rejects.toThrow(ConflictException);
   });
 

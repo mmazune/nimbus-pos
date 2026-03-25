@@ -328,22 +328,26 @@ describe('Payments (e2e)', () => {
       .post(`/api/pos/orders/${manualRefOrderId}/send`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
-      .send({}).expect(200);
+      .send({})
+      .expect(200);
     await request(app.getHttpServer())
       .post(`/api/pos/orders/${manualRefOrderId}/accept`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
-      .send({}).expect(200);
+      .send({})
+      .expect(200);
     await request(app.getHttpServer())
       .post(`/api/pos/orders/${manualRefOrderId}/ready`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
-      .send({}).expect(200);
+      .send({})
+      .expect(200);
     await request(app.getHttpServer())
       .post(`/api/pos/orders/${manualRefOrderId}/serve`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
-      .send({}).expect(200);
+      .send({})
+      .expect(200);
   }, 30000);
 
   it('POST /payments/manual-reference — creates manual reference payment', async () => {

@@ -31,7 +31,7 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   // ── Close Order with Payment ──
   @Post('pos/orders/:id/close')
