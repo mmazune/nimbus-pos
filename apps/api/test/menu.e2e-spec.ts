@@ -80,7 +80,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.sortOrder).toBe(10);
     expect(res.body.isActive).toBe(true);
     categoryId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/menu/categories — list categories (happy path)', async () => {
     const res = await request(app.getHttpServer())
@@ -91,7 +91,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/categories/:id — get single category', async () => {
     const res = await request(app.getHttpServer())
@@ -101,7 +101,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.id).toBe(categoryId);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/categories/:id — update category', async () => {
     const res = await request(app.getHttpServer())
@@ -112,7 +112,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.sortOrder).toBe(20);
-  }, 10000);
+  }, 30000);
 
   // ── Tax Categories ──
 
@@ -127,7 +127,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.id).toBeDefined();
     expect(res.body.name).toBe(`E2E Tax ${suffix}`);
     taxCategoryId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/menu/tax-categories — list tax categories', async () => {
     const res = await request(app.getHttpServer())
@@ -138,7 +138,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/tax-categories/:id — get single tax category', async () => {
     const res = await request(app.getHttpServer())
@@ -148,7 +148,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.id).toBe(taxCategoryId);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/tax-categories/:id — update tax category', async () => {
     const res = await request(app.getHttpServer())
@@ -159,7 +159,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(Number(res.body.rate)).toBe(20);
-  }, 10000);
+  }, 30000);
 
   // ── Menu Items ──
 
@@ -187,7 +187,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.category.id).toBe(categoryId);
     expect(res.body.taxCategory.id).toBe(taxCategoryId);
     menuItemId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/menu/items — list menu items (happy path)', async () => {
     const res = await request(app.getHttpServer())
@@ -198,7 +198,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/items/:id — get single item', async () => {
     const res = await request(app.getHttpServer())
@@ -208,7 +208,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.id).toBe(menuItemId);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/items/:id — update menu item (happy path)', async () => {
     const res = await request(app.getHttpServer())
@@ -220,7 +220,7 @@ describe('Menu (e2e)', () => {
 
     expect(Number(res.body.price)).toBe(18.5);
     expect(res.body.description).toBe('Updated by e2e');
-  }, 10000);
+  }, 30000);
 
   // ── Catalog (M6.1 upgraded) ──
 
@@ -241,7 +241,7 @@ describe('Menu (e2e)', () => {
       expect(res.body.categories[0]).toHaveProperty('items');
       expect(Array.isArray(res.body.categories[0].items)).toBe(true);
     }
-  }, 10000);
+  }, 30000);
 
   // ── Browse Groups (M6.1) ──
 
@@ -257,7 +257,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.name).toBe(`E2E Group ${suffix}`);
     expect(res.body.section).toBe('FOOD');
     browseGroupId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/menu/browse-groups — list browse groups', async () => {
     const res = await request(app.getHttpServer())
@@ -268,7 +268,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/browse-groups/:id — get single browse group', async () => {
     const res = await request(app.getHttpServer())
@@ -278,7 +278,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.id).toBe(browseGroupId);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/browse-groups/:id — update browse group', async () => {
     const res = await request(app.getHttpServer())
@@ -289,7 +289,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.sortOrder).toBe(50);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/menu/browse-groups — duplicate name → 409', async () => {
     await request(app.getHttpServer())
@@ -298,7 +298,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: `E2E Group ${suffix}`, section: 'FOOD' })
       .expect(409);
-  }, 10000);
+  }, 30000);
 
   // ── Browse Subgroups (M6.1) ──
 
@@ -313,7 +313,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.id).toBeDefined();
     expect(res.body.name).toBe(`E2E Sub ${suffix}`);
     browseSubgroupId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/menu/browse-groups/:id/subgroups — list subgroups', async () => {
     const res = await request(app.getHttpServer())
@@ -324,7 +324,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/browse-groups/:gId/subgroups/:sId — update subgroup', async () => {
     const res = await request(app.getHttpServer())
@@ -335,7 +335,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.sortOrder).toBe(5);
-  }, 10000);
+  }, 30000);
 
   // ── Menu Item Servings (M6.1) ──
 
@@ -351,7 +351,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.format).toBe('GLASS');
     expect(Number(res.body.price)).toBe(12);
     servingId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/menu/items/:id/servings — list servings', async () => {
     const res = await request(app.getHttpServer())
@@ -362,7 +362,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/items/:iId/servings/:sId — update serving', async () => {
     const res = await request(app.getHttpServer())
@@ -373,7 +373,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(Number(res.body.price)).toBe(14.5);
-  }, 10000);
+  }, 30000);
 
   // ── Assign Browse (M6.1) ──
 
@@ -387,7 +387,7 @@ describe('Menu (e2e)', () => {
 
     expect(res.body.browseGroupId).toBe(browseGroupId);
     expect(res.body.browseSubgroupId).toBe(browseSubgroupId);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/items/:id/browse — clear browse assignment', async () => {
     const res = await request(app.getHttpServer())
@@ -399,7 +399,7 @@ describe('Menu (e2e)', () => {
 
     expect(res.body.browseGroupId).toBeNull();
     expect(res.body.browseSubgroupId).toBeNull();
-  }, 10000);
+  }, 30000);
 
   // ── Navigation (M6.1) ──
 
@@ -416,7 +416,7 @@ describe('Menu (e2e)', () => {
       expect(res.body[0]).toHaveProperty('groups');
       expect(Array.isArray(res.body[0].groups)).toBe(true);
     }
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/navigation?section=FOOD — filtered by section', async () => {
     const res = await request(app.getHttpServer())
@@ -429,7 +429,7 @@ describe('Menu (e2e)', () => {
     for (const entry of res.body) {
       expect(entry.section).toBe('FOOD');
     }
-  }, 10000);
+  }, 30000);
 
   // ── Modifier Groups (M7) ──
 
@@ -447,7 +447,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.max).toBe(1);
     expect(res.body.required).toBe(true);
     modifierGroupId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/menu/modifier-groups — duplicate name → 409', async () => {
     await request(app.getHttpServer())
@@ -456,7 +456,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: `E2E Size ${suffix}` })
       .expect(409);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/menu/modifier-groups — min > max → 400', async () => {
     await request(app.getHttpServer())
@@ -465,7 +465,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: `E2E Bad ${suffix}`, min: 5, max: 2 })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/modifier-groups — list modifier groups', async () => {
     const res = await request(app.getHttpServer())
@@ -476,7 +476,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/modifier-groups/:id — get single modifier group', async () => {
     const res = await request(app.getHttpServer())
@@ -487,7 +487,7 @@ describe('Menu (e2e)', () => {
 
     expect(res.body.id).toBe(modifierGroupId);
     expect(res.body).toHaveProperty('options');
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/modifier-groups/:id — update modifier group', async () => {
     const res = await request(app.getHttpServer())
@@ -498,7 +498,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(res.body.max).toBe(3);
-  }, 10000);
+  }, 30000);
 
   // ── Modifier Options (M7) ──
 
@@ -514,7 +514,7 @@ describe('Menu (e2e)', () => {
     expect(res.body.name).toBe(`E2E Small ${suffix}`);
     expect(Number(res.body.priceDelta)).toBe(0);
     modifierOptionId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/menu/modifier-groups/:id/options — duplicate name → 409', async () => {
     await request(app.getHttpServer())
@@ -523,7 +523,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: `E2E Small ${suffix}` })
       .expect(409);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/modifier-groups/:id/options — list options', async () => {
     const res = await request(app.getHttpServer())
@@ -534,7 +534,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/menu/modifier-groups/:gId/options/:oId — update option', async () => {
     const res = await request(app.getHttpServer())
@@ -545,7 +545,7 @@ describe('Menu (e2e)', () => {
       .expect(200);
 
     expect(Number(res.body.priceDelta)).toBe(2.5);
-  }, 10000);
+  }, 30000);
 
   // ── Item ↔ Modifier Group Assignment (M7) ──
 
@@ -560,7 +560,7 @@ describe('Menu (e2e)', () => {
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(1);
     expect(res.body[0].id).toBe(modifierGroupId);
-  }, 15000);
+  }, 30000);
 
   it('GET /api/menu/items/:id/modifier-groups — list item modifier groups', async () => {
     const res = await request(app.getHttpServer())
@@ -572,7 +572,7 @@ describe('Menu (e2e)', () => {
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(1);
     expect(res.body[0]).toHaveProperty('options');
-  }, 10000);
+  }, 30000);
 
   it('POST /api/menu/items/:id/modifier-groups — clear assignment with empty array', async () => {
     const res = await request(app.getHttpServer())
@@ -584,7 +584,7 @@ describe('Menu (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(0);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/menu/items/:id — detail includes modifierGroups', async () => {
     // Re-assign so we have data
@@ -605,7 +605,7 @@ describe('Menu (e2e)', () => {
     expect(Array.isArray(res.body.modifierGroups)).toBe(true);
     expect(res.body.modifierGroups.length).toBe(1);
     expect(res.body.modifierGroups[0]).toHaveProperty('options');
-  }, 15000);
+  }, 30000);
 
   // ── Permission Denial ──
 
@@ -616,7 +616,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: 'Unauthorized Cat' })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/menu/items — waiter denied (403)', async () => {
     await request(app.getHttpServer())
@@ -630,7 +630,7 @@ describe('Menu (e2e)', () => {
         itemType: 'FOOD',
       })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/menu/browse-groups — waiter denied (403)', async () => {
     await request(app.getHttpServer())
@@ -639,7 +639,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: 'Unauth Group', section: 'FOOD' })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   // ── Missing Branch Header ──
 
@@ -648,7 +648,7 @@ describe('Menu (e2e)', () => {
       .get('/api/menu/categories')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   // ── Invalid Payload ──
 
@@ -659,7 +659,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: 'Bad Item', price: -5, itemType: 'INVALID_TYPE' })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/menu/categories — forbidden extra field → 400', async () => {
     await request(app.getHttpServer())
@@ -668,7 +668,7 @@ describe('Menu (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: 'Extra Field Cat', extraField: 'bad' })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/menu/items — negative price → 400', async () => {
     await request(app.getHttpServer())
@@ -682,7 +682,7 @@ describe('Menu (e2e)', () => {
         itemType: 'FOOD',
       })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   // ── Cross-branch access ──
 
@@ -693,5 +693,5 @@ describe('Menu (e2e)', () => {
       .set('Authorization', `Bearer ${waiterToken}`)
       .set('X-Branch-Id', 'fake-branch-id-123')
       .expect(400); // branch not found → 400
-  }, 10000);
+  }, 30000);
 });

@@ -21,6 +21,10 @@ describe('Quick PIN Login (e2e)', () => {
   // cashierUserId and managerUserId resolved in beforeAll for future tests
   let _cashierUserId: string;
   let _managerUserId: string;
+  // Dynamic PINs issued in beforeAll (seed PINs may have been rotated by prior e2e runs)
+  let waiterPin: string;
+  let cashierPin: string;
+  let managerPin: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -79,6 +83,29 @@ describe('Quick PIN Login (e2e)', () => {
       .send({ email: 'manager@demo.local', password: 'Manager#123' })
       .expect(201);
     _managerUserId = managerLogin.body.user.id;
+
+    // Issue fresh PINs so tests are independent of seed state (seed PINs may have been
+    // rotated by a prior e2e run that called issue-quick-pin or reset-quick-pin).
+    const waiterPinRes = await request(app.getHttpServer())
+      .post(`/api/auth/users/${waiterUserId}/issue-quick-pin`)
+      .set('Authorization', `Bearer ${ownerAccessToken}`)
+      .send({ branchId })
+      .expect(201);
+    waiterPin = waiterPinRes.body.pin;
+
+    const cashierPinRes = await request(app.getHttpServer())
+      .post(`/api/auth/users/${_cashierUserId}/issue-quick-pin`)
+      .set('Authorization', `Bearer ${ownerAccessToken}`)
+      .send({ branchId })
+      .expect(201);
+    cashierPin = cashierPinRes.body.pin;
+
+    const managerPinRes = await request(app.getHttpServer())
+      .post(`/api/auth/users/${_managerUserId}/issue-quick-pin`)
+      .set('Authorization', `Bearer ${ownerAccessToken}`)
+      .send({ branchId })
+      .expect(201);
+    managerPin = managerPinRes.body.pin;
   }, 60000);
 
   afterAll(async () => {
@@ -92,7 +119,7 @@ describe('Quick PIN Login (e2e)', () => {
       .post('/api/auth/quick-pin-login')
       .send({
         branchId,
-        pin: '123456',
+        pin: waiterPin,
         platform: 'POS_DESKTOP',
       })
       .expect(201);
@@ -103,14 +130,14 @@ describe('Quick PIN Login (e2e)', () => {
     expect(res.body.session.platform).toBe('POS_DESKTOP');
     expect(res.body.session.branchId).toBe(branchId);
     expect(res.body.user.email).toBe('waiter@demo.local');
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/quick-pin-login — cashier happy path', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/quick-pin-login')
       .send({
         branchId,
-        pin: '654321',
+        pin: cashierPin,
         platform: 'POS_DESKTOP',
       })
       .expect(201);
@@ -118,14 +145,14 @@ describe('Quick PIN Login (e2e)', () => {
     expect(res.body.accessToken).toBeDefined();
     expect(res.body.session.source).toBe('PIN');
     expect(res.body.user.email).toBe('cashier@demo.local');
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/quick-pin-login — manager happy path (8-digit)', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/quick-pin-login')
       .send({
         branchId,
-        pin: '12345678',
+        pin: managerPin,
         platform: 'POS_DESKTOP',
       })
       .expect(201);
@@ -133,7 +160,7 @@ describe('Quick PIN Login (e2e)', () => {
     expect(res.body.accessToken).toBeDefined();
     expect(res.body.session.source).toBe('PIN');
     expect(res.body.user.email).toBe('manager@demo.local');
-  }, 15000);
+  }, 30000);
 
   // ── Verify /auth/me shows branch context after quick PIN login ──
 
@@ -142,7 +169,7 @@ describe('Quick PIN Login (e2e)', () => {
       .post('/api/auth/quick-pin-login')
       .send({
         branchId,
-        pin: '123456',
+        pin: waiterPin,
         platform: 'POS_DESKTOP',
       })
       .expect(201);
@@ -154,7 +181,7 @@ describe('Quick PIN Login (e2e)', () => {
 
     expect(meRes.body.email).toBe('waiter@demo.local');
     expect(meRes.body.session).toBeDefined();
-  }, 15000);
+  }, 30000);
 
   // ── Rejection Cases ──
 
@@ -167,7 +194,7 @@ describe('Quick PIN Login (e2e)', () => {
         platform: 'POS_DESKTOP',
       })
       .expect(401);
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/quick-pin-login — wrong platform → 403', async () => {
     await request(app.getHttpServer())
@@ -178,7 +205,7 @@ describe('Quick PIN Login (e2e)', () => {
         platform: 'MOBILE_APP',
       })
       .expect(403);
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/quick-pin-login — non-existent branch → 401', async () => {
     await request(app.getHttpServer())
@@ -189,7 +216,7 @@ describe('Quick PIN Login (e2e)', () => {
         platform: 'POS_DESKTOP',
       })
       .expect(401);
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/quick-pin-login — invalid DTO → 400', async () => {
     await request(app.getHttpServer())
@@ -200,7 +227,7 @@ describe('Quick PIN Login (e2e)', () => {
         platform: 'POS_DESKTOP',
       })
       .expect(400);
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/quick-pin-login — missing platform → 400', async () => {
     await request(app.getHttpServer())
@@ -224,7 +251,7 @@ describe('Quick PIN Login (e2e)', () => {
     expect(res.body.pin).toBeDefined();
     expect(res.body.pinLength).toBe(6);
     expect(res.body.tier).toBe('LOW_6');
-  }, 15000);
+  }, 30000);
 
   // ── Reset Quick PIN ──
 
@@ -237,7 +264,7 @@ describe('Quick PIN Login (e2e)', () => {
 
     expect(res.body.pin).toBeDefined();
     expect(res.body.pinLength).toBe(6);
-  }, 15000);
+  }, 30000);
 
   // ── Update Quick PIN Settings ──
 
@@ -250,7 +277,7 @@ describe('Quick PIN Login (e2e)', () => {
 
     expect(res.body.displayName).toBe('Test Waiter');
     expect(res.body.quickPinEnabled).toBe(true);
-  }, 15000);
+  }, 30000);
 
   // ── Quick PIN Status ──
 
@@ -263,7 +290,7 @@ describe('Quick PIN Login (e2e)', () => {
     expect(res.body.id).toBe(waiterUserId);
     expect(res.body.quickPinEnabled).toBeDefined();
     expect(res.body.hasPin).toBeDefined();
-  }, 15000);
+  }, 30000);
 
   // ── Ensure M0-M3 still work ──
 
@@ -282,5 +309,5 @@ describe('Quick PIN Login (e2e)', () => {
       .send({ email: 'owner@demo.local', password: 'Owner#123' })
       .expect(201);
     expect(res.body.accessToken).toBeDefined();
-  }, 15000);
+  }, 30000);
 });

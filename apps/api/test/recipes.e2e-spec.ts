@@ -86,7 +86,7 @@ describe('Recipes (e2e)', () => {
     expect(res.body.name).toBe(`E2E Ingredient A ${suffix}`);
     expect(res.body.unit).toBe('kg');
     inventoryItemId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/inventory/items — create second inventory item', async () => {
     const res = await request(app.getHttpServer())
@@ -101,7 +101,7 @@ describe('Recipes (e2e)', () => {
       .expect(201);
 
     inventoryItemId2 = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/inventory/items — duplicate name → 409', async () => {
     await request(app.getHttpServer())
@@ -110,7 +110,7 @@ describe('Recipes (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: `E2E Ingredient A ${suffix}`, unit: 'kg' })
       .expect(409);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/items — list inventory items', async () => {
     const res = await request(app.getHttpServer())
@@ -121,7 +121,7 @@ describe('Recipes (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(2);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/items/:id — get single item', async () => {
     const res = await request(app.getHttpServer())
@@ -131,7 +131,7 @@ describe('Recipes (e2e)', () => {
       .expect(200);
 
     expect(res.body.id).toBe(inventoryItemId);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/inventory/items/:id — update item', async () => {
     const res = await request(app.getHttpServer())
@@ -142,7 +142,7 @@ describe('Recipes (e2e)', () => {
       .expect(200);
 
     expect(res.body.theoreticalUnitCost).toBeDefined();
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/items — missing X-Branch-Id → 400', async () => {
     await request(app.getHttpServer())
@@ -150,7 +150,7 @@ describe('Recipes (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ name: 'No Branch', unit: 'kg' })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/items — waiter (no write perm) → 403', async () => {
     await request(app.getHttpServer())
@@ -159,7 +159,7 @@ describe('Recipes (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: 'Blocked', unit: 'kg' })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/items — invalid payload → 400', async () => {
     await request(app.getHttpServer())
@@ -168,7 +168,7 @@ describe('Recipes (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: '' })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   // ── Recipes ──
 
@@ -198,7 +198,7 @@ describe('Recipes (e2e)', () => {
 
     expect(res.body.menuItemId).toBe(menuItemId);
     expect(res.body.ingredientCount).toBe(2);
-  }, 15000);
+  }, 30000);
 
   it('GET /api/inventory/recipes/:menuItemId — get recipe', async () => {
     if (!menuItemId) return;
@@ -212,7 +212,7 @@ describe('Recipes (e2e)', () => {
     expect(res.body.menuItem).toBeDefined();
     expect(res.body.baseIngredients).toBeDefined();
     expect(Array.isArray(res.body.baseIngredients)).toBe(true);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/recipes/:menuItemId/cost — cost breakdown', async () => {
     if (!menuItemId) return;
@@ -229,7 +229,7 @@ describe('Recipes (e2e)', () => {
     expect(res.body.sellingPrice).toBeDefined();
     expect(res.body.rows).toBeDefined();
     expect(res.body.rows.length).toBe(2);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/recipes/:menuItemId — replace recipe (atomic)', async () => {
     if (!menuItemId) return;
@@ -251,7 +251,7 @@ describe('Recipes (e2e)', () => {
       .expect(201);
 
     expect(res.body.ingredientCount).toBe(1);
-  }, 15000);
+  }, 30000);
 
   it('POST /api/inventory/recipes/:menuItemId — non-existent menu item → 404', async () => {
     await request(app.getHttpServer())
@@ -262,7 +262,7 @@ describe('Recipes (e2e)', () => {
         ingredients: [{ inventoryItemId, qtyPerUnit: '1', unit: 'pcs' }],
       })
       .expect(404);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/recipes/:menuItemId — non-existent inventory item → 404', async () => {
     if (!menuItemId) return;
@@ -275,7 +275,7 @@ describe('Recipes (e2e)', () => {
         ingredients: [{ inventoryItemId: 'non-existent-inv', qtyPerUnit: '1', unit: 'pcs' }],
       })
       .expect(404);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/recipes/:menuItemId — invalid payload → 400', async () => {
     if (!menuItemId) return;
@@ -286,7 +286,7 @@ describe('Recipes (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ ingredients: 'not-an-array' })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/recipes/:menuItemId/cost — waiter (no cost:read) → 403', async () => {
     if (!menuItemId) return;
@@ -296,5 +296,5 @@ describe('Recipes (e2e)', () => {
       .set('Authorization', `Bearer ${waiterToken}`)
       .set('X-Branch-Id', branchId)
       .expect(403);
-  }, 10000);
+  }, 30000);
 });

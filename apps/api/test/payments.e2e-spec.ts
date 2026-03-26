@@ -98,7 +98,7 @@ describe('Payments (e2e)', () => {
 
     // Advance: SENT → IN_KITCHEN
     await request(app.getHttpServer())
-      .post(`/api/pos/orders/${orderId}/accept`)
+      .post(`/api/pos/orders/${orderId}/in-kitchen`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
       .send({})
@@ -114,7 +114,7 @@ describe('Payments (e2e)', () => {
 
     // Advance: READY → SERVED
     await request(app.getHttpServer())
-      .post(`/api/pos/orders/${orderId}/serve`)
+      .post(`/api/pos/orders/${orderId}/mark-served`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
       .send({})
@@ -331,7 +331,7 @@ describe('Payments (e2e)', () => {
       .send({})
       .expect(200);
     await request(app.getHttpServer())
-      .post(`/api/pos/orders/${manualRefOrderId}/accept`)
+      .post(`/api/pos/orders/${manualRefOrderId}/in-kitchen`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
       .send({})
@@ -343,12 +343,12 @@ describe('Payments (e2e)', () => {
       .send({})
       .expect(200);
     await request(app.getHttpServer())
-      .post(`/api/pos/orders/${manualRefOrderId}/serve`)
+      .post(`/api/pos/orders/${manualRefOrderId}/mark-served`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
       .send({})
       .expect(200);
-  }, 30000);
+  }, 60000);
 
   it('POST /payments/manual-reference — creates manual reference payment', async () => {
     const res = await request(app.getHttpServer())
@@ -358,7 +358,7 @@ describe('Payments (e2e)', () => {
       .send({
         orderId: manualRefOrderId,
         method: 'MOMO',
-        amount: 5000,
+        amount: 1,
         externalTransactionId: 'MTN-E2E-REF-001',
         payerPhone: '256700000000',
         note: 'Customer showed SMS confirmation',

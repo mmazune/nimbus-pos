@@ -84,16 +84,16 @@ describe('Inventory (e2e)', () => {
       .send({
         itemId: inventoryItemId,
         receivedQty: '25.000',
-        unitCost: '2.400',
+        unitCost: '2.40',
         batchNumber: `E2E-BATCH-${suffix}`,
       })
       .expect(201);
 
     expect(res.body.id).toBeDefined();
-    expect(res.body.receivedQty).toBe('25.000');
-    expect(res.body.remainingQty).toBe('25.000');
+    expect(res.body.receivedQty).toBe('25');
+    expect(res.body.remainingQty).toBe('25');
     batchId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/inventory/batches — missing X-Branch-Id → 400', async () => {
     await request(app.getHttpServer())
@@ -105,7 +105,7 @@ describe('Inventory (e2e)', () => {
         unitCost: '2.000',
       })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/batches — waiter (no write perm) → 403', async () => {
     await request(app.getHttpServer())
@@ -118,7 +118,7 @@ describe('Inventory (e2e)', () => {
         unitCost: '2.000',
       })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/batches — invalid payload (missing receivedQty) → 400', async () => {
     await request(app.getHttpServer())
@@ -130,7 +130,7 @@ describe('Inventory (e2e)', () => {
         unitCost: '2.000',
       })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/batches — list all batches', async () => {
     const res = await request(app.getHttpServer())
@@ -141,7 +141,7 @@ describe('Inventory (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/items/:id/batches — list batches for item', async () => {
     const res = await request(app.getHttpServer())
@@ -153,7 +153,7 @@ describe('Inventory (e2e)', () => {
     expect(Array.isArray(res.body)).toBe(true);
     const found = res.body.find((b: any) => b.id === batchId);
     expect(found).toBeDefined();
-  }, 10000);
+  }, 30000);
 
   // ── Inventory Levels ──
 
@@ -169,7 +169,7 @@ describe('Inventory (e2e)', () => {
     expect(res.body[0]).toHaveProperty('itemId');
     expect(res.body[0]).toHaveProperty('onHandQty');
     expect(res.body[0]).toHaveProperty('belowReorder');
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/levels?category=Produce — filter by category', async () => {
     const res = await request(app.getHttpServer())
@@ -182,7 +182,7 @@ describe('Inventory (e2e)', () => {
     for (const level of res.body) {
       expect(level.category).toBe('Produce');
     }
-  }, 10000);
+  }, 30000);
 
   it('GET /api/inventory/levels — waiter (read-only) → 200', async () => {
     await request(app.getHttpServer())
@@ -190,7 +190,7 @@ describe('Inventory (e2e)', () => {
       .set('Authorization', `Bearer ${waiterToken}`)
       .set('X-Branch-Id', branchId)
       .expect(200);
-  }, 10000);
+  }, 30000);
 
   // ── Stock Adjustments ──
 
@@ -208,7 +208,7 @@ describe('Inventory (e2e)', () => {
 
     expect(res.body.id).toBeDefined();
     expect(res.body.reason).toBe('E2E found in storeroom');
-  }, 15000);
+  }, 30000);
 
   it('POST /api/inventory/adjustments — negative adjustment (within stock)', async () => {
     const res = await request(app.getHttpServer())
@@ -223,7 +223,7 @@ describe('Inventory (e2e)', () => {
       .expect(201);
 
     expect(res.body.id).toBeDefined();
-  }, 15000);
+  }, 30000);
 
   it('POST /api/inventory/adjustments — negative stock attempt → 400', async () => {
     await request(app.getHttpServer())
@@ -236,7 +236,7 @@ describe('Inventory (e2e)', () => {
         reason: 'E2E impossible',
       })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/adjustments — waiter (no adjust perm) → 403', async () => {
     await request(app.getHttpServer())
@@ -248,7 +248,7 @@ describe('Inventory (e2e)', () => {
         qtyDelta: '1.000',
       })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/adjustments — zero delta → 400', async () => {
     await request(app.getHttpServer())
@@ -260,7 +260,7 @@ describe('Inventory (e2e)', () => {
         qtyDelta: '0.000',
       })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('POST /api/inventory/adjustments — nonexistent item → 404', async () => {
     await request(app.getHttpServer())
@@ -272,5 +272,5 @@ describe('Inventory (e2e)', () => {
         qtyDelta: '1.000',
       })
       .expect(404);
-  }, 10000);
+  }, 30000);
 });

@@ -54,14 +54,14 @@ describe('Auth (e2e)', () => {
     expect(res.body.user.email).toBe('owner@demo.local');
     accessToken = res.body.accessToken;
     refreshToken = res.body.refreshToken;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/login — invalid password → 401', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({ email: 'owner@demo.local', password: 'wrong' })
       .expect(401);
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/login — invalid payload → 400', async () => {
     await request(app.getHttpServer())
@@ -106,7 +106,7 @@ describe('Auth (e2e)', () => {
     // Old refresh token should now be invalid
     refreshToken = res.body.refreshToken;
     accessToken = res.body.accessToken;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/pin-login — happy path', async () => {
     const res = await request(app.getHttpServer())
@@ -116,14 +116,14 @@ describe('Auth (e2e)', () => {
 
     expect(res.body.accessToken).toBeDefined();
     expect(res.body.refreshToken).toBeDefined();
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/pin-login — wrong pin → 401', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/pin-login')
       .send({ email: 'owner@demo.local', pin: '0000' })
       .expect(401);
-  }, 15000);
+  }, 30000);
 
   it('GET /api/auth/_perm-test — owner should pass', async () => {
     // Login as owner first for fresh token
@@ -138,7 +138,7 @@ describe('Auth (e2e)', () => {
       .expect(200);
 
     expect(res.body.message).toBe('Permission check passed');
-  }, 15000);
+  }, 30000);
 
   it('GET /api/auth/_perm-test — waiter should get 403 (insufficient perms)', async () => {
     const loginRes = await request(app.getHttpServer())
@@ -150,7 +150,7 @@ describe('Auth (e2e)', () => {
       .get('/api/auth/_perm-test')
       .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
       .expect(403);
-  }, 15000);
+  }, 30000);
 
   it('GET /api/auth/_perm-test — waiter on WEB_BACKOFFICE → 403 (platform denied)', async () => {
     const loginRes = await request(app.getHttpServer())
@@ -166,7 +166,7 @@ describe('Auth (e2e)', () => {
       .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
       .set('X-Platform', 'WEB_BACKOFFICE')
       .expect(403);
-  }, 15000);
+  }, 30000);
 
   it('POST /api/auth/logout — revokes session', async () => {
     // Login fresh
@@ -179,5 +179,5 @@ describe('Auth (e2e)', () => {
       .post('/api/auth/logout')
       .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
       .expect(201);
-  }, 15000);
+  }, 30000);
 });

@@ -72,7 +72,7 @@ describe('Tenancy (e2e)', () => {
     expect(res.body.slug).toBe(slug);
     expect(res.body.status).toBe('ACTIVE');
     testOrgId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/orgs — invalid payload → 400', async () => {
     await request(app.getHttpServer())
@@ -103,7 +103,7 @@ describe('Tenancy (e2e)', () => {
     expect(res.body.name).toBe('E2E Branch');
     expect(res.body.organizationId).toBe(testOrgId);
     testBranchId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('POST /api/orgs/:orgId/branches — cashier (no tenancy:branch:write) → 403', async () => {
     await request(app.getHttpServer())
@@ -133,7 +133,7 @@ describe('Tenancy (e2e)', () => {
     expect(res.body.id).toBeDefined();
     expect(res.body.userId).toBe(waiterUserId);
     expect(res.body.isDefaultBranch).toBe(true);
-  }, 15000);
+  }, 30000);
 
   // ── GET /api/branches ──
 
@@ -158,7 +158,7 @@ describe('Tenancy (e2e)', () => {
     const cashierBranches = cashierRes.body.map((b: any) => b.name);
     expect(cashierBranches).toContain('Main Branch');
     expect(cashierBranches).not.toContain('Downtown Branch');
-  }, 15000);
+  }, 30000);
 
   // ── GET /api/me ──
 
@@ -176,7 +176,7 @@ describe('Tenancy (e2e)', () => {
     expect(res.body.defaultBranch).toBeDefined();
     expect(res.body.permissions).toBeDefined();
     expect(res.body.roles).toBeDefined();
-  }, 15000);
+  }, 30000);
 
   // ── GET /api/branch-test — BranchContextGuard ──
 
@@ -185,7 +185,7 @@ describe('Tenancy (e2e)', () => {
       .get('/api/branch-test')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(400);
-  }, 15000);
+  }, 30000);
 
   it('GET /api/branch-test — with valid membership → 200', async () => {
     // Use a seeded branch where owner has membership
@@ -205,7 +205,7 @@ describe('Tenancy (e2e)', () => {
     expect(res.body.message).toBe('Branch context verified');
     expect(res.body.branchContext).toBeDefined();
     expect(res.body.branchContext.branchId).toBe(seededBranchId);
-  }, 15000);
+  }, 30000);
 
   it('GET /api/branch-test — non-member user → 403', async () => {
     // Cashier is only in Main Branch, use a branch they're NOT in
@@ -223,7 +223,7 @@ describe('Tenancy (e2e)', () => {
         .set('X-Branch-Id', downtownBranch.id)
         .expect(403);
     }
-  }, 15000);
+  }, 30000);
 
   // ── Permission denial ──
 

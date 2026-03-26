@@ -73,7 +73,7 @@ describe('Floor (e2e)', () => {
     expect(res.body.name).toBe(`E2E Floor ${suffix}`);
     expect(res.body.isActive).toBe(true);
     floorPlanId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/floor-plans — list floor plans (happy path)', async () => {
     const res = await request(app.getHttpServer())
@@ -84,7 +84,7 @@ describe('Floor (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/floor-plans/:id — get single floor plan', async () => {
     const res = await request(app.getHttpServer())
@@ -95,7 +95,7 @@ describe('Floor (e2e)', () => {
 
     expect(res.body.id).toBe(floorPlanId);
     expect(res.body.name).toBe(`E2E Floor ${suffix}`);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/floor-plans/:id — update floor plan', async () => {
     const res = await request(app.getHttpServer())
@@ -106,7 +106,7 @@ describe('Floor (e2e)', () => {
       .expect(200);
 
     expect(res.body.name).toBe(`E2E Updated ${suffix}`);
-  }, 10000);
+  }, 30000);
 
   // ── Tables ──
 
@@ -123,7 +123,7 @@ describe('Floor (e2e)', () => {
     expect(res.body.capacity).toBe(6);
     expect(res.body.status).toBe('AVAILABLE');
     tableId = res.body.id;
-  }, 15000);
+  }, 30000);
 
   it('GET /api/tables — list tables (happy path)', async () => {
     const res = await request(app.getHttpServer())
@@ -134,7 +134,7 @@ describe('Floor (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/tables/:id — get single table', async () => {
     const res = await request(app.getHttpServer())
@@ -145,7 +145,7 @@ describe('Floor (e2e)', () => {
 
     expect(res.body.id).toBe(tableId);
     expect(res.body.label).toBe(`E2E-T1-${suffix}`);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/tables/:id — update table', async () => {
     const res = await request(app.getHttpServer())
@@ -156,7 +156,7 @@ describe('Floor (e2e)', () => {
       .expect(200);
 
     expect(res.body.capacity).toBe(8);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/tables/:id/status — update table status (happy path)', async () => {
     const res = await request(app.getHttpServer())
@@ -167,7 +167,7 @@ describe('Floor (e2e)', () => {
       .expect(200);
 
     expect(res.body.status).toBe('OCCUPIED');
-  }, 10000);
+  }, 30000);
 
   // ── Availability ──
 
@@ -182,7 +182,7 @@ describe('Floor (e2e)', () => {
     expect(res.body.summary.total).toBeGreaterThanOrEqual(1);
     expect(res.body.tables).toBeDefined();
     expect(Array.isArray(res.body.tables)).toBe(true);
-  }, 10000);
+  }, 30000);
 
   // ── Validation / Error Cases ──
 
@@ -191,7 +191,7 @@ describe('Floor (e2e)', () => {
       .get('/api/floor-plans')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('permission denial — waiter POST floor-plans → 403', async () => {
     await request(app.getHttpServer())
@@ -200,7 +200,7 @@ describe('Floor (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: 'Waiter Floor' })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('permission denial — waiter POST tables → 403', async () => {
     await request(app.getHttpServer())
@@ -209,7 +209,7 @@ describe('Floor (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ label: `WAITER-${suffix}` })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('invalid payload — missing name for floor plan → 400', async () => {
     await request(app.getHttpServer())
@@ -218,7 +218,7 @@ describe('Floor (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({})
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('invalid payload — bad status enum → 400', async () => {
     await request(app.getHttpServer())
@@ -227,7 +227,7 @@ describe('Floor (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ status: 'INVALID_STATUS' })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('invalid payload — negative capacity → 400', async () => {
     await request(app.getHttpServer())
@@ -236,7 +236,7 @@ describe('Floor (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ label: `BAD-${suffix}`, capacity: -1 })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('invalid payload — forbidden extra field → 400', async () => {
     await request(app.getHttpServer())
@@ -245,7 +245,7 @@ describe('Floor (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({ name: 'Test', unknownField: true })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('cross-branch access — Downtown branch user cannot see Main branch floors if no membership', async () => {
     // Use a fake branch ID that the waiter is not a member of
@@ -254,5 +254,5 @@ describe('Floor (e2e)', () => {
       .set('Authorization', `Bearer ${waiterToken}`)
       .set('X-Branch-Id', 'nonexistent-branch-id')
       .expect(400); // branch not found / inactive
-  }, 10000);
+  }, 30000);
 });

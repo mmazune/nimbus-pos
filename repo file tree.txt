@@ -15,6 +15,10 @@ nimbus-pos/
 ├── ROADMAP.md
 ├── repo file tree.txt
 │
+├── .github/
+│   └── workflows/
+│       └── branch-validation.yml
+│
 ├── ai/
 │   ├── AI_CLAUDE_SONNET_PROMPTS.md
 │   ├── AI_COMPLETION_REPORT_TEMPLATE.md
@@ -29,7 +33,18 @@ nimbus-pos/
 │   ├── M3_COMPLETION_REPORT.md
 │   ├── M3_1_COMPLETION_REPORT.md
 │   ├── M4_COMPLETION_REPORT.md
-│   └── M5_COMPLETION_REPORT.md
+│   ├── M5_COMPLETION_REPORT.md
+│   ├── M6_COMPLETION_REPORT.md
+│   ├── M6_1_COMPLETION_REPORT.md
+│   ├── M7_COMPLETION_REPORT.md
+│   ├── M8_COMPLETION_REPORT.md
+│   ├── M9_COMPLETION_REPORT.md
+│   ├── M10_COMPLETION_REPORT.md
+│   ├── M11_COMPLETION_REPORT.md
+│   ├── M12_COMPLETION_REPORT.md
+│   ├── M13_COMPLETION_REPORT.md
+│   ├── M13_1_COMPLETION_REPORT.md
+│   └── M14_COMPLETION_REPORT.md
 │
 ├── apps/
 │   ├── api/
@@ -139,6 +154,71 @@ nimbus-pos/
 │   │   │       │       ├── update-thresholds.dto.ts
 │   │   │       │       ├── update-platform-access.dto.ts
 │   │   │       │       └── create-exchange-rate.dto.ts
+│   │   │       ├── inventory/
+│   │   │       │   ├── inventory.module.ts
+│   │   │       │   ├── inventory.controller.ts
+│   │   │       │   ├── inventory.service.ts
+│   │   │       │   ├── inventory.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-stock-batch.dto.ts
+│   │   │       │       ├── create-stock-adjustment.dto.ts
+│   │   │       │       └── list-inventory-levels-query.dto.ts
+│   │   │       ├── kds/
+│   │   │       │   ├── kds.module.ts
+│   │   │       │   ├── kds.controller.ts
+│   │   │       │   ├── kds.service.ts
+│   │   │       │   ├── kds.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── list-kds-queue-query.dto.ts
+│   │   │       │       └── update-kds-sla.dto.ts
+│   │   │       ├── orders/
+│   │   │       │   ├── orders.module.ts
+│   │   │       │   ├── orders.controller.ts
+│   │   │       │   ├── orders.service.ts
+│   │   │       │   ├── orders.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-order.dto.ts
+│   │   │       │       ├── add-order-item.dto.ts
+│   │   │       │       ├── update-order-item.dto.ts
+│   │   │       │       ├── transition-order.dto.ts
+│   │   │       │       └── list-orders-query.dto.ts
+│   │   │       ├── payments/
+│   │   │       │   ├── payments.module.ts
+│   │   │       │   ├── payments.controller.ts
+│   │   │       │   ├── payments.service.ts
+│   │   │       │   ├── payments.service.spec.ts
+│   │   │       │   ├── adapters/
+│   │   │       │   │   └── mtn.adapter.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── close-order.dto.ts
+│   │   │       │       ├── create-payment-intent.dto.ts
+│   │   │       │       ├── cancel-payment-intent.dto.ts
+│   │   │       │       └── create-manual-reference.dto.ts
+│   │   │       ├── discounts/
+│   │   │       │   ├── discounts.module.ts
+│   │   │       │   ├── discounts.controller.ts
+│   │   │       │   ├── discounts.service.ts
+│   │   │       │   ├── discounts.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── request-discount.dto.ts
+│   │   │       │       ├── approve-discount.dto.ts
+│   │   │       │       ├── reject-discount.dto.ts
+│   │   │       │       └── list-order-discounts-query.dto.ts
+│   │   │       ├── refunds/
+│   │   │       │   ├── refunds.module.ts
+│   │   │       │   ├── refunds.controller.ts
+│   │   │       │   ├── refunds.service.ts
+│   │   │       │   ├── refunds.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-refund.dto.ts
+│   │   │       │       ├── approve-refund.dto.ts
+│   │   │       │       └── post-close-void.dto.ts
 │   │   │       └── tenancy/
 │   │   │           ├── tenancy.controller.ts
 │   │   │           ├── tenancy.module.ts
@@ -153,10 +233,16 @@ nimbus-pos/
 │   │       ├── jest-e2e.json
 │   │       ├── app.e2e-spec.ts
 │   │       ├── auth.e2e-spec.ts
+│   │       ├── discounts.e2e-spec.ts
 │   │       ├── floor.e2e-spec.ts
+│   │       ├── inventory.e2e-spec.ts
+│   │       ├── kds.e2e-spec.ts
 │   │       ├── menu.e2e-spec.ts
-│   │       ├── recipes.e2e-spec.ts
+│   │       ├── orders.e2e-spec.ts
+│   │       ├── payments.e2e-spec.ts
 │   │       ├── quick-pin.e2e-spec.ts
+│   │       ├── recipes.e2e-spec.ts
+│   │       ├── refunds.e2e-spec.ts
 │   │       ├── settings.e2e-spec.ts
 │   │       └── tenancy.e2e-spec.ts
 │   ├── web/
@@ -195,6 +281,20 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260321300000_m8_recipes_costing/
 │   │   │           └── migration.sql
+│   │   │       └── 20260323000000_m9_inventory_stock_batches/
+│   │   │           └── migration.sql
+│   │   │       └── 20260323100000_m10_pos_orders/
+│   │   │           └── migration.sql
+│   │   │       └── 20260323200000_m11_kds_station_routing/
+│   │   │           └── migration.sql
+│   │   │       └── 20260323300000_m12_discounts_approval/
+│   │   │           └── migration.sql
+│   │   │       └── 20260324000000_m13_payments/
+│   │   │           └── migration.sql
+│   │   │       └── 20260325000000_m13_1_mtn_native_manual_reference/
+│   │   │           └── migration.sql
+│   │   │       └── 20260325100000_m14_refunds_voids/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -222,7 +322,14 @@ nimbus-pos/
     │   ├── M6-Menu-Catalog.postman_collection.json
     │   ├── M6_1-Menu-Taxonomy-Serving-Formats.postman_collection.json
     │   ├── M7-Menu-Modifiers.postman_collection.json
-    │   └── M8-Recipes-Costing.postman_collection.json
+    │   ├── M8-Recipes-Costing.postman_collection.json
+    │   ├── M9-Inventory-Stock.postman_collection.json
+    │   ├── M10-POS-Orders.postman_collection.json
+    │   ├── M11-KDS-Station-Routing.postman_collection.json
+    │   ├── M12-Discounts-Approval-Workflow.postman_collection.json
+    │   ├── M13-Payments-Cash-Card-MOMO.postman_collection.json
+    │   ├── M13_1-MTN-Native-Manual-Reference.postman_collection.json
+    │   └── M14-Refunds-Voids.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```

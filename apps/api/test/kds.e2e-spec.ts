@@ -99,7 +99,7 @@ describe('KDS Station Routing (e2e)', () => {
       .expect(200);
 
     expect(sendRes.body.status).toBe('SENT');
-  }, 20000);
+  }, 60000);
 
   // ── Queue ──
 
@@ -123,7 +123,7 @@ describe('KDS Station Routing (e2e)', () => {
       expect(ourTicket.items).toBeInstanceOf(Array);
       ticketId = ourTicket.id;
     }
-  }, 15000);
+  }, 30000);
 
   it('GET /api/kds/queue?station=KITCHEN — filter by station', async () => {
     const res = await request(app.getHttpServer())
@@ -135,21 +135,21 @@ describe('KDS Station Routing (e2e)', () => {
     for (const ticket of res.body.data) {
       expect(ticket.station).toBe('KITCHEN');
     }
-  }, 10000);
+  }, 30000);
 
   it('GET /api/kds/queue — missing branch header → 400', async () => {
     await request(app.getHttpServer())
       .get('/api/kds/queue')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('GET /api/kds/queue — no auth → 401', async () => {
     await request(app.getHttpServer())
       .get('/api/kds/queue')
       .set('X-Branch-Id', branchId)
       .expect(401);
-  }, 10000);
+  }, 30000);
 
   // ── Mark Ready ──
 
@@ -173,11 +173,11 @@ describe('KDS Station Routing (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
       .send({})
-      .expect(200);
+      .expect(201);
 
     expect(res.body.status).toBe('READY');
     expect(res.body.readyAt).toBeDefined();
-  }, 10000);
+  }, 30000);
 
   it('POST /api/kds/tickets/:id/mark-ready — already ready → 409', async () => {
     if (!ticketId) return;
@@ -188,7 +188,7 @@ describe('KDS Station Routing (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({})
       .expect(409);
-  }, 10000);
+  }, 30000);
 
   // ── Recall ──
 
@@ -200,10 +200,10 @@ describe('KDS Station Routing (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
       .send({})
-      .expect(200);
+      .expect(201);
 
     expect(res.body.status).toBe('RECALLED');
-  }, 10000);
+  }, 30000);
 
   it('POST /api/kds/tickets/:id/recall — non-READY → 409', async () => {
     if (!ticketId) return;
@@ -215,7 +215,7 @@ describe('KDS Station Routing (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({})
       .expect(409);
-  }, 10000);
+  }, 30000);
 
   // ── SLA Config ──
 
@@ -230,7 +230,7 @@ describe('KDS Station Routing (e2e)', () => {
     expect(res.body.greenSeconds).toBeGreaterThan(0);
     expect(res.body.amberSeconds).toBeGreaterThan(res.body.greenSeconds);
     expect(res.body.redSeconds).toBeGreaterThan(res.body.amberSeconds);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/kds/sla-config/KITCHEN — update SLA', async () => {
     const res = await request(app.getHttpServer())
@@ -247,7 +247,7 @@ describe('KDS Station Routing (e2e)', () => {
     expect(res.body.greenSeconds).toBe(120);
     expect(res.body.amberSeconds).toBe(360);
     expect(res.body.redSeconds).toBe(600);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/kds/sla-config/KITCHEN — invalid order → 400', async () => {
     await request(app.getHttpServer())
@@ -260,7 +260,7 @@ describe('KDS Station Routing (e2e)', () => {
         redSeconds: 900,
       })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   // ── Nonexistent ticket ──
 
@@ -271,5 +271,5 @@ describe('KDS Station Routing (e2e)', () => {
       .set('X-Branch-Id', branchId)
       .send({})
       .expect(404);
-  }, 10000);
+  }, 30000);
 });

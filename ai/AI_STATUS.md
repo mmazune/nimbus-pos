@@ -378,9 +378,11 @@
 - [x] Unit tests: 16 tests in refunds.service.spec.ts (auto-complete, pending, approve, PIN, reject excess, order state checks, post-close void, window expiry, list, get)
 - [x] E2e tests: 11 tests in refunds.e2e-spec.ts (create, get, list, state check, excess amount, high-value, approve, post-close void, validation, RBAC)
 - [x] CI: .github/workflows/branch-validation.yml (lint + unit on push, e2e on PR)
-- [x] Postman: M14-Refunds-Voids collection (14 requests)
+- [x] Postman: M14-Refunds-Voids collection (18 steps, 25 pm.test assertions — fixed lifecycle URLs + auto-complete threshold logic)
 - [x] Docs updated: ARCHITECTURE.md (M14 section), API_CONVENTIONS.md (refund endpoints), MODULES.md (Refunds → Implemented)
-- [ ] DONE checks: pending Neon connectivity for migration/seed verification
+- [x] DONE: migration applied to Neon (17/17 migrations up to date), seed idempotent (2× confirmed), e2e 11/11 passing
+- [x] Full e2e gate: 14/14 suites PASS, 238/238 tests PASS (EXIT:0)
+- [x] Branch-wide pre-existing e2e bugs fixed: payments (stale lifecycle URLs + auto-close), orders (close payload + response shape + TAKEAWAY guard), kds (HTTP 201 status + timeouts), inventory (unitCost decimal regex + Decimal serialization), quick-pin (self-healing PIN issuance in beforeAll); global 10000/15000 ms per-test timeouts raised to 30000 ms across all spec files
 
 ### M15-M47
 

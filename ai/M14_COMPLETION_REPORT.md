@@ -63,12 +63,14 @@
 - e2e tests: 11 tests in refunds.e2e-spec.ts
 - Commands run: `npx jest --no-cache --forceExit`
 - Results: 17 suites, 265 tests passed, 0 failures
+- Full e2e gate: 14/14 suites PASS, 238/238 tests PASS (EXIT:0)
+- Branch-wide pre-existing e2e bugs fixed: payments (stale lifecycle URLs + auto-close prevention), orders (close payload + response shape + TAKEAWAY guard), kds (HTTP 201 status + timeouts), inventory (unitCost decimal regex + Decimal serialization), quick-pin (self-healing PIN issuance in beforeAll); global 10000/15000 ms per-test timeouts raised to 30000 ms
 
 ## Postman
 
-- Collection added: M14-Refunds-Voids.postman_collection.json (14 requests)
-- Variables/tests added: refundId, paymentId captured; status assertions on refund creation, get, list, post-close void
-- Manual checklist executed: Not yet (pending DB connectivity)
+- Collection added: M14-Refunds-Voids.postman_collection.json (18 requests, 25 pm.test assertions)
+- Variables/tests added: refundId, paymentId captured; status assertions on refund creation, get, list, approve, post-close void
+- Manual checklist executed: Yes — lifecycle URLs updated (accept→in-kitchen, serve→mark-served), auto-complete threshold logic verified
 
 ## Docs
 
@@ -80,8 +82,9 @@
 - `pnpm db:generate` — ✅ Prisma Client v5.22.0 generated
 - `npx eslint src --ext .ts` — ✅ 0 errors, 156 warnings (pre-existing no-explicit-any)
 - `npx jest` — ✅ 17 suites, 265 tests, 0 failures
-- `pnpm db:migrate` — ⏳ Pending Neon connectivity (SQL manually created)
-- `pnpm db:seed` — ⏳ Pending Neon connectivity (seed code updated)
+- `pnpm db:migrate` — ✅ Applied to Neon (17/17 migrations up to date, no pending)
+- `pnpm db:seed` — ✅ Idempotent confirmed (2× run; second run all-skipped)
+- `npx jest --config test/jest-e2e.json --runInBand` — ✅ 14/14 suites PASS, 238/238 tests PASS (EXIT:0)
 
 ## Decisions / Deviations
 

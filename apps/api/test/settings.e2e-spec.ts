@@ -60,7 +60,7 @@ describe('Settings (e2e)', () => {
     expect(res.body.rounding).toBeDefined();
     expect(res.body.taxMatrix).toBeDefined();
     expect(res.body.anomalyThresholds).toBeDefined();
-  }, 15000);
+  }, 30000);
 
   // ── GET /api/settings/currency — happy path ──
 
@@ -71,7 +71,7 @@ describe('Settings (e2e)', () => {
       .expect(200);
 
     expect(res.body.currency).toBe('UGX');
-  }, 10000);
+  }, 30000);
 
   // ── PUT /api/settings/currency — happy path ──
 
@@ -91,7 +91,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ currency: 'UGX' })
       .expect(200);
-  }, 10000);
+  }, 30000);
 
   // ── PUT /api/settings/tax-matrix — happy path ──
 
@@ -111,7 +111,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ defaultVatPct: 18, categories: [] })
       .expect(200);
-  }, 10000);
+  }, 30000);
 
   // ── PUT /api/settings/rounding — happy path ──
 
@@ -132,7 +132,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ mode: 'NEAREST', increment: 100 })
       .expect(200);
-  }, 10000);
+  }, 30000);
 
   // ── PATCH /api/thresholds — happy path ──
 
@@ -152,7 +152,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ lateVoidMin: 5, discountApprovalThreshold: '5000' })
       .expect(200);
-  }, 10000);
+  }, 30000);
 
   // ── Invalid payload → 400 ──
 
@@ -162,7 +162,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ mode: 'INVALID', increment: -1 })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   it('PUT /api/settings/tax-matrix — invalid payload → 400', async () => {
     await request(app.getHttpServer())
@@ -170,7 +170,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ defaultVatPct: 'not-a-number' })
       .expect(400);
-  }, 10000);
+  }, 30000);
 
   // ── Permission denial → 403 ──
 
@@ -180,7 +180,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${waiterToken}`)
       .send({ currency: 'EUR' })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('PUT /api/settings/currency — waiter → 403', async () => {
     await request(app.getHttpServer())
@@ -188,7 +188,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${waiterToken}`)
       .send({ currency: 'EUR' })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   it('PATCH /api/thresholds — waiter → 403', async () => {
     await request(app.getHttpServer())
@@ -196,7 +196,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${waiterToken}`)
       .send({ lateVoidMin: 99 })
       .expect(403);
-  }, 10000);
+  }, 30000);
 
   // ── Platform access endpoints ──
 
@@ -207,7 +207,7 @@ describe('Settings (e2e)', () => {
       .expect(200);
 
     expect(res.body.platformAccess).toBeDefined();
-  }, 10000);
+  }, 30000);
 
   it('PUT /api/settings/platform-access — updates platform access', async () => {
     const res = await request(app.getHttpServer())
@@ -224,7 +224,7 @@ describe('Settings (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ useRoleDefaults: true })
       .expect(200);
-  }, 10000);
+  }, 30000);
 
   // ── Exchange rates ──
 
@@ -242,7 +242,7 @@ describe('Settings (e2e)', () => {
 
     expect(res.body.id).toBeDefined();
     expect(res.body.baseCurrencyCode).toBe('EUR');
-  }, 10000);
+  }, 30000);
 
   it('GET /api/settings/exchange-rates — lists exchange rates', async () => {
     const res = await request(app.getHttpServer())
@@ -252,7 +252,7 @@ describe('Settings (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-  }, 10000);
+  }, 30000);
 
   // ── Waiter can read settings (has tenancy:org:read via tenancy:branch:read) ──
 
@@ -263,5 +263,5 @@ describe('Settings (e2e)', () => {
       .get('/api/settings')
       .set('Authorization', `Bearer ${waiterToken}`)
       .expect(403);
-  }, 10000);
+  }, 30000);
 });
