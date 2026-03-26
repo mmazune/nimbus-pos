@@ -3,10 +3,10 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M16 ✅
-- Last completed milestone: M16 — Reservations + Deposits + Seating Bridge
-- Next milestone: M17 — TBD
-- Date updated: 2026-03-26
+- Current milestone: M17 ✅
+- Last completed milestone: M17 — Events + Booking Portal + Ticketing
+- Next milestone: M18 — TBD
+- Date updated: 2026-03-27
 
 ## Environment
 
@@ -447,7 +447,38 @@
 - [x] Postman: 14 requests with auto-capture + assertions ✅
 - [x] DONE: All verification gates confirmed ✅
 
-### M17+
+### M17 — Events + Booking Portal + Ticketing
+> Branch: `milestone/m17-events-booking-ticketing`
+
+- [x] Prisma schema: 5 enums (EventStatus, EventBookingStatus, TicketStatus, TicketClassType, CheckInStatus) + 6 models (Event, EventTicketClass, EventBooking, EventTicket, EventCheckIn, EventAuditLog)
+- [x] Migration SQL: `20260326200000_m17_events_booking_ticketing`
+- [x] EventsModule: service + controller + 10 DTOs (create-event, update-event, publish-event, close-event, create-ticket-class, create-booking, cancel-booking, issue-tickets, check-in-ticket, list-events-query)
+- [x] 16 endpoints: CRUD + lifecycle (publish/close) + ticket classes + bookings + ticket issuance + check-in + portal
+- [x] State machine: DRAFT → PUBLISHED → OPEN → CLOSED/COMPLETED/CANCELLED
+- [x] Booking flow: capacity validation, booking window enforcement, CONFIRMED status, sold count tracking
+- [x] Ticket issuance: unique QR tokens (crypto.randomBytes), duplicate prevention, TKT-XXXXXX numbering
+- [x] Check-in: ADMITTED/DUPLICATE/DENIED logging, auto-completes booking when all tickets checked in
+- [x] Portal endpoint: GET /events/portal/:portalKey — public-safe subset with ticket class availability
+- [x] Event number format: EVT-XXXXXX, booking: BKG-XXXXXX, ticket: TKT-XXXXXX (branch-scoped, sequential)
+- [x] EventAuditLog: dedicated audit table for event lifecycle actions
+- [x] 12 new permissions: pos:event:create/read/update/publish/close, pos:event:booking:create/read/cancel, pos:event:ticket:issue/read, pos:event:checkin, pos:event:portal:read
+- [x] Role mappings: Owner/Manager/Supervisor get all 12; Cashier/Waiter get 8 (read + booking + ticketing + checkin + portal); Chef/Bartender get read only; Accountant gets read + booking:read + ticket:read
+- [x] Unit tests: 19 in events.service.spec.ts — all passing
+- [x] E2E tests: events.e2e-spec.ts — full lifecycle + portal + permission denial
+- [x] Seed: 12 permissions + role mappings for all roles + 3 demo events (DRAFT, OPEN with full booking/ticket/checkin chain, CANCELLED)
+- [x] Postman: M17-Events-Booking-Portal-Ticketing.postman_collection.json (18 requests with auto-capture + assertions)
+- [x] Docs updated: ARCHITECTURE.md (M17 section), API_CONVENTIONS.md (16 endpoints), MODULES.md (Events → Implemented)
+- [x] Prisma generate: v5.22.0 client generated ✅
+- [x] Prisma migrate deploy: migration applied (21 total) ✅
+- [x] Seed 2×: idempotent (12 perms, role mappings, 3 events) ✅
+- [x] Lint: 0 errors, 219 warnings (all pre-existing `no-explicit-any`) ✅
+- [x] Unit tests: 338/338 pass across 21 suites ✅
+- [x] E2E tests: 26/26 M17 e2e tests pass ✅
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] DONE: All verification gates confirmed ✅
+
+### M18+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

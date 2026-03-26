@@ -358,6 +358,31 @@ Table reservation lifecycle with deposit tracking, conflict detection, and seati
 | GET    | `/api/reservations/:id/events`            | Yes  | pos:reservation:read            | Yes    | List event log for reservation       |
 | PATCH  | `/api/reservations/:id/assign-table`      | Yes  | pos:reservation:table:assign    | Yes    | Assign/reassign table                |
 
+## Events + Booking Portal + Ticketing (M17) ✅
+
+Branch-scoped event lifecycle with booking portal, ticket classes, bookings, ticket issuance, and QR check-in.
+
+### Event Endpoints
+
+| Method | Path                                                | Auth | Permission               | Branch | Description                          |
+| ------ | --------------------------------------------------- | ---- | ------------------------ | ------ | ------------------------------------ |
+| POST   | `/api/events`                                       | Yes  | pos:event:create         | Yes    | Create event (DRAFT)                 |
+| GET    | `/api/events`                                       | Yes  | pos:event:read           | Yes    | List events (paginated, filterable)  |
+| GET    | `/api/events/upcoming`                              | Yes  | pos:event:read           | Yes    | List upcoming events                 |
+| GET    | `/api/events/portal/:portalKey`                     | Yes  | pos:event:portal:read    | Yes    | Public portal view                   |
+| GET    | `/api/events/:id`                                   | Yes  | pos:event:read           | Yes    | Get event by ID                      |
+| PATCH  | `/api/events/:id`                                   | Yes  | pos:event:update         | Yes    | Update DRAFT event                   |
+| PATCH  | `/api/events/:id/publish`                           | Yes  | pos:event:publish        | Yes    | Publish event (generates portal key) |
+| PATCH  | `/api/events/:id/close`                             | Yes  | pos:event:close          | Yes    | Close event                          |
+| POST   | `/api/events/:id/ticket-classes`                    | Yes  | pos:event:update         | Yes    | Create ticket class                  |
+| GET    | `/api/events/:id/ticket-classes`                    | Yes  | pos:event:read           | Yes    | List ticket classes                  |
+| POST   | `/api/events/:id/bookings`                          | Yes  | pos:event:booking:create | Yes    | Create booking                       |
+| GET    | `/api/events/:id/bookings`                          | Yes  | pos:event:booking:read   | Yes    | List bookings for event              |
+| GET    | `/api/events/bookings/:bookingId`                   | Yes  | pos:event:booking:read   | Yes    | Get booking by ID                    |
+| PATCH  | `/api/events/bookings/:bookingId/cancel`            | Yes  | pos:event:booking:cancel | Yes    | Cancel booking                       |
+| POST   | `/api/events/bookings/:bookingId/tickets/issue`     | Yes  | pos:event:ticket:issue   | Yes    | Issue tickets for booking            |
+| POST   | `/api/events/tickets/:ticketId/check-in`            | Yes  | pos:event:checkin        | Yes    | Check in ticket via QR               |
+
 ## Validation
 
 - DTO classes with `class-validator`

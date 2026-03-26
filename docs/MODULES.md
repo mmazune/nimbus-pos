@@ -29,7 +29,7 @@
 | **Payments (Cash/Card/MOMO)**       | `apps/api/src/modules/payments/`     | M13       | ✅ Implemented |
 | **Refunds**                         | `apps/api/src/modules/refunds/`      | M14       | ✅ Implemented |
 | **Reservations / Deposits**         | `apps/api/src/modules/reservations/` | M16       | ✅ Implemented |
-| **Events / Ticketing**              | `apps/api/src/modules/events/`       | M21       | ⬜ Planned     |
+| **Events / Ticketing**              | `apps/api/src/modules/events/`       | M17       | ✅ Implemented |
 | **Anomaly Detection**               | `apps/api/src/modules/analytics/`    | M22       | ⬜ Planned     |
 | **Dashboards / KPIs**               | `apps/api/src/modules/analytics/`    | M23       | ⬜ Planned     |
 | **Reports / Exports**               | `apps/api/src/modules/reports/`      | M24       | ⬜ Planned     |

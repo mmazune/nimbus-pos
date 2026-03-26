@@ -792,6 +792,80 @@ Before assigning a table or creating a reservation with a table, the service che
 | RESERVATION_DEPOSIT_RECORDED  | Deposit payment recorded               |
 | RESERVATION_TABLE_ASSIGNED    | Table assigned to reservation          |
 
+## M17 — Events + Booking Portal + Ticketing
+
+### Purpose
+
+Event lifecycle management with a booking portal, ticket classes, bookings, ticket issuance, QR-based check-in, and a dedicated event audit log.
+
+### DB Models
+
+| Model            | Key Fields                                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| Event            | eventNumber (EVT-XXXXXX), title, slug, startsAt, endsAt, status, capacity, soldCount, checkedInCount, portalKey, venueTableId?, metadata |
+| EventTicketClass | eventId, name, type (GENERAL/VIP/EARLY_BIRD/GROUP/COMPLIMENTARY), price, capacity, soldCount       |
+| EventBooking     | bookingNumber (BKG-XXXXXX), eventId, ticketClassId, customerName/Phone/Email, quantity, status, totalAmount |
+| EventTicket      | ticketNumber (TKT-XXXXXX), bookingId, eventId, ticketClassId, holderName, status, qrToken, checkedInAt |
+| EventCheckIn     | ticketId, eventId, status (ADMITTED/DUPLICATE/DENIED), scannedAt, message                          |
+| EventAuditLog    | eventId, action, actorUserId, details, ipAddress, userAgent                                        |
+
+### State Machine
+
+| From       | Allowed Targets              |
+| ---------- | ---------------------------- |
+| DRAFT      | PUBLISHED, CANCELLED         |
+| PUBLISHED  | OPEN, CANCELLED              |
+| OPEN       | CLOSED, COMPLETED, CANCELLED |
+| CLOSED     | (terminal)                   |
+| COMPLETED  | (terminal)                   |
+| CANCELLED  | (terminal)                   |
+
+### Booking Flow
+
+1. Event must be PUBLISHED or OPEN (booking window open)
+2. Booking validates ticket class capacity (`soldCount + quantity <= capacity`)
+3. Booking creates CONFIRMED booking, increments `soldCount` on ticket class and event
+4. Ticket issuance generates `quantity` tickets with unique QR tokens
+5. Check-in scans QR, logs ADMITTED/DUPLICATE/DENIED, updates booking status when all tickets checked in
+
+### Portal Endpoint
+
+`GET /api/events/portal/:portalKey` returns a public-safe subset of event data with ticket class availability. Does not expose `orgId`, `branchId`, or internal audit data.
+
+### Permissions (12 new)
+
+| Permission               | Description                        |
+| ------------------------ | ---------------------------------- |
+| pos:event:create         | Create events                      |
+| pos:event:read           | Read events and ticket classes     |
+| pos:event:update         | Update DRAFT events, manage ticket classes |
+| pos:event:publish        | Publish events (DRAFT → PUBLISHED) |
+| pos:event:close          | Close events                       |
+| pos:event:booking:create | Create bookings                    |
+| pos:event:booking:read   | Read bookings                      |
+| pos:event:booking:cancel | Cancel bookings                    |
+| pos:event:ticket:issue   | Issue tickets for bookings         |
+| pos:event:ticket:read    | Read ticket details                |
+| pos:event:checkin        | Check in tickets via QR            |
+| pos:event:portal:read    | Access portal endpoint             |
+
+### M17 Audit Events
+
+| Action                  | Trigger                                |
+| ----------------------- | -------------------------------------- |
+| EVENT_CREATED           | New event created                      |
+| EVENT_UPDATED           | Event details updated                  |
+| EVENT_PUBLISHED         | Event published (portal key generated) |
+| EVENT_CLOSED            | Event closed                           |
+| EVENT_CANCELLED         | Event cancelled                        |
+| TICKET_CLASS_CREATED    | Ticket class added to event            |
+| BOOKING_CREATED         | Booking confirmed                      |
+| BOOKING_CANCELLED       | Booking cancelled (capacity reversed)  |
+| TICKETS_ISSUED          | Tickets issued for booking             |
+| CHECK_IN_ADMITTED       | Ticket checked in successfully         |
+| CHECK_IN_DUPLICATE      | Duplicate check-in attempt             |
+| CHECK_IN_DENIED         | Check-in denied                        |
+
 ## Frontend Strategy (M43+)
 
 - Web shell first
