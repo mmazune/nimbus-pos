@@ -150,26 +150,26 @@ model User {
     quickPinIssuedById String?       @map("quick_pin_issued_by_id")
 
     // Relations
-    userRoles         UserRole[]
-    sessions          Session[]
-    refreshTokens     RefreshToken[]
-    auditLogs         AuditLog[]        @relation("AuditActor")
-    memberships       Membership[]
-    stockAdjustments  StockAdjustment[]
-    orders            Order[]
-    discountsCreated  Discount[]        @relation("DiscountCreatedBy")
-    discountsApproved Discount[]        @relation("DiscountApprovedBy")
-    discountsRejected Discount[]        @relation("DiscountRejectedBy")
-    paymentsEntered   Payment[]         @relation("PaymentEnteredBy")
-    refundsCreated    Refund[]          @relation("RefundCreatedBy")
-    refundsApproved   Refund[]          @relation("RefundApprovedBy")
-    shiftsOpened      Shift[]           @relation("ShiftOpenedBy")
-    shiftsClosed      Shift[]           @relation("ShiftClosedBy")
-    tillsOperated     TillSession[]     @relation("TillOperator")
-    tillsOpened       TillSession[]     @relation("TillOpenedBy")
-    tillsClosed       TillSession[]     @relation("TillClosedBy")
-    cashMovementsCreated  CashMovement[]  @relation("CashMovementCreatedBy")
-    cashMovementsApproved CashMovement[]  @relation("CashMovementApprovedBy")
+    userRoles               UserRole[]
+    sessions                Session[]
+    refreshTokens           RefreshToken[]
+    auditLogs               AuditLog[]          @relation("AuditActor")
+    memberships             Membership[]
+    stockAdjustments        StockAdjustment[]
+    orders                  Order[]
+    discountsCreated        Discount[]          @relation("DiscountCreatedBy")
+    discountsApproved       Discount[]          @relation("DiscountApprovedBy")
+    discountsRejected       Discount[]          @relation("DiscountRejectedBy")
+    paymentsEntered         Payment[]           @relation("PaymentEnteredBy")
+    refundsCreated          Refund[]            @relation("RefundCreatedBy")
+    refundsApproved         Refund[]            @relation("RefundApprovedBy")
+    shiftsOpened            Shift[]             @relation("ShiftOpenedBy")
+    shiftsClosed            Shift[]             @relation("ShiftClosedBy")
+    tillsOperated           TillSession[]       @relation("TillOperator")
+    tillsOpened             TillSession[]       @relation("TillOpenedBy")
+    tillsClosed             TillSession[]       @relation("TillClosedBy")
+    cashMovementsCreated    CashMovement[]      @relation("CashMovementCreatedBy")
+    cashMovementsApproved   CashMovement[]      @relation("CashMovementApprovedBy")
     shiftSummariesGenerated ShiftCloseSummary[] @relation("ShiftSummaryGeneratedBy")
 
     @@map("users")
@@ -315,31 +315,31 @@ model Organization {
     createdAt DateTime           @default(now()) @map("created_at")
     updatedAt DateTime           @updatedAt @map("updated_at")
 
-    branches          Branch[]
-    memberships       Membership[]
-    settings          OrgSettings?
-    exchangeRates     ExchangeRate[]
-    floorPlans        FloorPlan[]
-    tables            Table[]
-    categories        Category[]
-    taxCategories     TaxCategory[]
-    menuItems         MenuItem[]
-    menuBrowseGroups  MenuBrowseGroup[]
-    modifierGroups    ModifierGroup[]
-    inventoryItems    InventoryItem[]
-    recipeIngredients RecipeIngredient[]
-    stockBatches      StockBatch[]
-    stockAdjustments  StockAdjustment[]
-    orders            Order[]
-    kdsTickets        KdsTicket[]
-    kdsSlaConfigs     KdsSlaConfig[]
-    discounts         Discount[]
-    payments          Payment[]
-    paymentIntents    PaymentIntent[]
-    refunds           Refund[]
-    shifts            Shift[]
-    tillSessions      TillSession[]
-    cashMovements     CashMovement[]
+    branches            Branch[]
+    memberships         Membership[]
+    settings            OrgSettings?
+    exchangeRates       ExchangeRate[]
+    floorPlans          FloorPlan[]
+    tables              Table[]
+    categories          Category[]
+    taxCategories       TaxCategory[]
+    menuItems           MenuItem[]
+    menuBrowseGroups    MenuBrowseGroup[]
+    modifierGroups      ModifierGroup[]
+    inventoryItems      InventoryItem[]
+    recipeIngredients   RecipeIngredient[]
+    stockBatches        StockBatch[]
+    stockAdjustments    StockAdjustment[]
+    orders              Order[]
+    kdsTickets          KdsTicket[]
+    kdsSlaConfigs       KdsSlaConfig[]
+    discounts           Discount[]
+    payments            Payment[]
+    paymentIntents      PaymentIntent[]
+    refunds             Refund[]
+    shifts              Shift[]
+    tillSessions        TillSession[]
+    cashMovements       CashMovement[]
     shiftCloseSummaries ShiftCloseSummary[]
 
     @@map("organizations")
@@ -361,29 +361,29 @@ model Branch {
     createdAt      DateTime     @default(now()) @map("created_at")
     updatedAt      DateTime     @updatedAt @map("updated_at")
 
-    organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    memberships       Membership[]
-    floorPlans        FloorPlan[]
-    tables            Table[]
-    categories        Category[]
-    taxCategories     TaxCategory[]
-    menuItems         MenuItem[]
-    menuBrowseGroups  MenuBrowseGroup[]
-    modifierGroups    ModifierGroup[]
-    inventoryItems    InventoryItem[]
-    recipeIngredients RecipeIngredient[]
-    stockBatches      StockBatch[]
-    stockAdjustments  StockAdjustment[]
-    orders            Order[]
-    kdsTickets        KdsTicket[]
-    kdsSlaConfigs     KdsSlaConfig[]
-    discounts         Discount[]
-    payments          Payment[]
-    paymentIntents    PaymentIntent[]
-    refunds           Refund[]
-    shifts            Shift[]
-    tillSessions      TillSession[]
-    cashMovements     CashMovement[]
+    organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    memberships         Membership[]
+    floorPlans          FloorPlan[]
+    tables              Table[]
+    categories          Category[]
+    taxCategories       TaxCategory[]
+    menuItems           MenuItem[]
+    menuBrowseGroups    MenuBrowseGroup[]
+    modifierGroups      ModifierGroup[]
+    inventoryItems      InventoryItem[]
+    recipeIngredients   RecipeIngredient[]
+    stockBatches        StockBatch[]
+    stockAdjustments    StockAdjustment[]
+    orders              Order[]
+    kdsTickets          KdsTicket[]
+    kdsSlaConfigs       KdsSlaConfig[]
+    discounts           Discount[]
+    payments            Payment[]
+    paymentIntents      PaymentIntent[]
+    refunds             Refund[]
+    shifts              Shift[]
+    tillSessions        TillSession[]
+    cashMovements       CashMovement[]
     shiftCloseSummaries ShiftCloseSummary[]
 
     @@unique([organizationId, code])
@@ -1362,24 +1362,24 @@ enum VarianceStatus {
 
 /// Represents a staff member's operational duty period at a branch.
 model Shift {
-    id         String      @id @default(cuid())
-    orgId      String      @map("org_id")
-    branchId   String      @map("branch_id")
-    shiftNumber String     @map("shift_number")
-    openedById String      @map("opened_by_id")
-    closedById String?     @map("closed_by_id")
-    openedAt   DateTime    @default(now()) @map("opened_at")
-    closedAt   DateTime?   @map("closed_at")
-    status     ShiftStatus @default(OPEN)
-    notes      String?
-    metadata   Json?
-    createdAt  DateTime    @default(now()) @map("created_at")
-    updatedAt  DateTime    @updatedAt @map("updated_at")
+    id          String      @id @default(cuid())
+    orgId       String      @map("org_id")
+    branchId    String      @map("branch_id")
+    shiftNumber String      @map("shift_number")
+    openedById  String      @map("opened_by_id")
+    closedById  String?     @map("closed_by_id")
+    openedAt    DateTime    @default(now()) @map("opened_at")
+    closedAt    DateTime?   @map("closed_at")
+    status      ShiftStatus @default(OPEN)
+    notes       String?
+    metadata    Json?
+    createdAt   DateTime    @default(now()) @map("created_at")
+    updatedAt   DateTime    @updatedAt @map("updated_at")
 
-    organization   Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    openedBy       User              @relation("ShiftOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
-    closedBy       User?             @relation("ShiftClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+    organization   Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    openedBy       User                @relation("ShiftOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
+    closedBy       User?               @relation("ShiftClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
     tillSessions   TillSession[]
     cashMovements  CashMovement[]
     closeSummaries ShiftCloseSummary[]
@@ -1397,34 +1397,34 @@ model Shift {
 
 /// Represents custody of a cash drawer / register during a shift.
 model TillSession {
-    id              String            @id @default(cuid())
-    orgId           String            @map("org_id")
-    branchId        String            @map("branch_id")
-    shiftId         String            @map("shift_id")
-    tillCode        String            @map("till_code")
-    operatorUserId  String            @map("operator_user_id")
-    openedById      String            @map("opened_by_id")
-    closedById      String?           @map("closed_by_id")
-    openedAt        DateTime          @default(now()) @map("opened_at")
-    reconciledAt    DateTime?         @map("reconciled_at")
-    closedAt        DateTime?         @map("closed_at")
-    openingFloat    Decimal           @map("opening_float") @db.Decimal(10, 2)
-    expectedCash    Decimal           @default(0) @map("expected_cash") @db.Decimal(10, 2)
-    countedCash     Decimal?          @map("counted_cash") @db.Decimal(10, 2)
-    variance        Decimal?          @db.Decimal(10, 2)
-    varianceStatus  VarianceStatus?   @map("variance_status")
-    status          TillSessionStatus @default(OPEN)
-    notes           String?
-    metadata        Json?
-    createdAt       DateTime          @default(now()) @map("created_at")
-    updatedAt       DateTime          @updatedAt @map("updated_at")
+    id             String            @id @default(cuid())
+    orgId          String            @map("org_id")
+    branchId       String            @map("branch_id")
+    shiftId        String            @map("shift_id")
+    tillCode       String            @map("till_code")
+    operatorUserId String            @map("operator_user_id")
+    openedById     String            @map("opened_by_id")
+    closedById     String?           @map("closed_by_id")
+    openedAt       DateTime          @default(now()) @map("opened_at")
+    reconciledAt   DateTime?         @map("reconciled_at")
+    closedAt       DateTime?         @map("closed_at")
+    openingFloat   Decimal           @map("opening_float") @db.Decimal(10, 2)
+    expectedCash   Decimal           @default(0) @map("expected_cash") @db.Decimal(10, 2)
+    countedCash    Decimal?          @map("counted_cash") @db.Decimal(10, 2)
+    variance       Decimal?          @db.Decimal(10, 2)
+    varianceStatus VarianceStatus?   @map("variance_status")
+    status         TillSessionStatus @default(OPEN)
+    notes          String?
+    metadata       Json?
+    createdAt      DateTime          @default(now()) @map("created_at")
+    updatedAt      DateTime          @updatedAt @map("updated_at")
 
-    organization   Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    shift          Shift             @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-    operatorUser   User              @relation("TillOperator", fields: [operatorUserId], references: [id], onDelete: Cascade)
-    openedBy       User              @relation("TillOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
-    closedBy       User?             @relation("TillClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+    organization   Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    shift          Shift               @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+    operatorUser   User                @relation("TillOperator", fields: [operatorUserId], references: [id], onDelete: Cascade)
+    openedBy       User                @relation("TillOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
+    closedBy       User?               @relation("TillClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
     cashMovements  CashMovement[]
     closeSummaries ShiftCloseSummary[]
 
@@ -1475,27 +1475,27 @@ model CashMovement {
 
 /// Summary record generated when a shift is closed.
 model ShiftCloseSummary {
-    id               String   @id @default(cuid())
-    orgId            String   @map("org_id")
-    branchId         String   @map("branch_id")
-    shiftId          String   @map("shift_id")
-    tillSessionId    String?  @map("till_session_id")
-    generatedById    String   @map("generated_by_id")
-    grossSales       Decimal  @default(0) @map("gross_sales") @db.Decimal(10, 2)
-    cashSales        Decimal  @default(0) @map("cash_sales") @db.Decimal(10, 2)
-    momoSales        Decimal  @default(0) @map("momo_sales") @db.Decimal(10, 2)
-    cardSales        Decimal  @default(0) @map("card_sales") @db.Decimal(10, 2)
-    refundCashOut    Decimal  @default(0) @map("refund_cash_out") @db.Decimal(10, 2)
-    safeDropTotal    Decimal  @default(0) @map("safe_drop_total") @db.Decimal(10, 2)
-    pickupTotal      Decimal  @default(0) @map("pickup_total") @db.Decimal(10, 2)
-    expectedCash     Decimal  @default(0) @map("expected_cash") @db.Decimal(10, 2)
-    countedCash      Decimal? @map("counted_cash") @db.Decimal(10, 2)
-    variance         Decimal? @db.Decimal(10, 2)
-    ordersClosedCount Int     @default(0) @map("orders_closed_count")
-    refundsCount     Int      @default(0) @map("refunds_count")
-    metadata         Json?
-    createdAt        DateTime @default(now()) @map("created_at")
-    updatedAt        DateTime @updatedAt @map("updated_at")
+    id                String   @id @default(cuid())
+    orgId             String   @map("org_id")
+    branchId          String   @map("branch_id")
+    shiftId           String   @map("shift_id")
+    tillSessionId     String?  @map("till_session_id")
+    generatedById     String   @map("generated_by_id")
+    grossSales        Decimal  @default(0) @map("gross_sales") @db.Decimal(10, 2)
+    cashSales         Decimal  @default(0) @map("cash_sales") @db.Decimal(10, 2)
+    momoSales         Decimal  @default(0) @map("momo_sales") @db.Decimal(10, 2)
+    cardSales         Decimal  @default(0) @map("card_sales") @db.Decimal(10, 2)
+    refundCashOut     Decimal  @default(0) @map("refund_cash_out") @db.Decimal(10, 2)
+    safeDropTotal     Decimal  @default(0) @map("safe_drop_total") @db.Decimal(10, 2)
+    pickupTotal       Decimal  @default(0) @map("pickup_total") @db.Decimal(10, 2)
+    expectedCash      Decimal  @default(0) @map("expected_cash") @db.Decimal(10, 2)
+    countedCash       Decimal? @map("counted_cash") @db.Decimal(10, 2)
+    variance          Decimal? @db.Decimal(10, 2)
+    ordersClosedCount Int      @default(0) @map("orders_closed_count")
+    refundsCount      Int      @default(0) @map("refunds_count")
+    metadata          Json?
+    createdAt         DateTime @default(now()) @map("created_at")
+    updatedAt         DateTime @updatedAt @map("updated_at")
 
     organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
     branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)

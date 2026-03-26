@@ -35,7 +35,10 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -43,8 +46,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "auth", "login"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
                 }
             }
         },
@@ -70,8 +79,13 @@
                 "header": [],
                 "url": {
                     "raw": "{{baseUrl}}/api/me",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "me"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
                 }
             }
         },
@@ -95,8 +109,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -104,8 +124,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/shifts/open",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "shifts", "open"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "shifts",
+                        "open"
+                    ]
                 }
             }
         },
@@ -128,12 +154,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/shifts/active",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "shifts", "active"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "shifts",
+                        "active"
+                    ]
                 }
             }
         },
@@ -155,12 +190,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/shifts/{{shiftId}}",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "shifts", "{{shiftId}}"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "shifts",
+                        "{{shiftId}}"
+                    ]
                 }
             }
         },
@@ -185,8 +229,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -194,8 +244,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/tills/open",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "tills", "open"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tills",
+                        "open"
+                    ]
                 }
             }
         },
@@ -218,12 +274,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/tills/active",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "tills", "active"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tills",
+                        "active"
+                    ]
                 }
             }
         },
@@ -246,12 +311,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/tills/{{tillId}}",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "tills", "{{tillId}}"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tills",
+                        "{{tillId}}"
+                    ]
                 }
             }
         },
@@ -274,8 +348,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -283,8 +363,15 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/tills/{{tillId}}/safe-drop",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "tills", "{{tillId}}", "safe-drop"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tills",
+                        "{{tillId}}",
+                        "safe-drop"
+                    ]
                 }
             }
         },
@@ -306,12 +393,22 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/tills/{{tillId}}/summary",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "tills", "{{tillId}}", "summary"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tills",
+                        "{{tillId}}",
+                        "summary"
+                    ]
                 }
             }
         },
@@ -334,8 +431,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -343,8 +446,15 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/tills/{{tillId}}/reconcile",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "tills", "{{tillId}}", "reconcile"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tills",
+                        "{{tillId}}",
+                        "reconcile"
+                    ]
                 }
             }
         },
@@ -366,8 +476,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -375,8 +491,15 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/shifts/{{shiftId}}/close",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "shifts", "{{shiftId}}", "close"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "shifts",
+                        "{{shiftId}}",
+                        "close"
+                    ]
                 }
             }
         },
@@ -398,12 +521,22 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/shifts/{{shiftId}}/summary",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "shifts", "{{shiftId}}", "summary"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "shifts",
+                        "{{shiftId}}",
+                        "summary"
+                    ]
                 }
             }
         },
@@ -423,8 +556,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -432,8 +571,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/shifts/open",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "shifts", "open"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "shifts",
+                        "open"
+                    ]
                 }
             }
         },
@@ -453,8 +598,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -462,8 +613,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/tills/open",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "tills", "open"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "tills",
+                        "open"
+                    ]
                 }
             }
         }
