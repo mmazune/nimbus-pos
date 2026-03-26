@@ -10,7 +10,7 @@ import { AppModule } from '../src/app.module';
 describe('KDS Station Routing (e2e)', () => {
   let app: INestApplication;
   let ownerToken: string;
-  let waiterToken: string;
+  let _waiterToken: string;
   let branchId: string;
   let menuItemId: string;
   let orderId: string;
@@ -42,7 +42,7 @@ describe('KDS Station Routing (e2e)', () => {
     const waiterLogin = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({ email: 'waiter@demo.local', password: 'Waiter#123' });
-    waiterToken = waiterLogin.body.accessToken;
+    _waiterToken = waiterLogin.body.accessToken;
 
     // Get branch ID
     const me = await request(app.getHttpServer())

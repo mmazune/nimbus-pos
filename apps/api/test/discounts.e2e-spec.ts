@@ -15,7 +15,7 @@ describe('Discounts Approval Workflow (e2e)', () => {
   let branchId: string;
   let menuItemId: string;
   let orderId: string;
-  let smallDiscountId: string;
+  let _smallDiscountId: string;
   let largeDiscountId: string;
   let rejectDiscountId: string;
 
@@ -109,7 +109,7 @@ describe('Discounts Approval Workflow (e2e)', () => {
 
     expect(res.body.status).toBe('APPROVED');
     expect(res.body.orderId).toBe(orderId);
-    smallDiscountId = res.body.id;
+    _smallDiscountId = res.body.id;
   });
 
   // ── Large discount creates pending ──

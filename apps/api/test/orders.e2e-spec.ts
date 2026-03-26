@@ -110,7 +110,9 @@ describe('POS Orders (e2e)', () => {
 
   it('POST /api/pos/orders — TAKEAWAY with tableId → 400', async () => {
     if (!tableId) {
-      console.warn('No tableId available (floor tables empty) — skipping TAKEAWAY+tableId validation test');
+      console.warn(
+        'No tableId available (floor tables empty) — skipping TAKEAWAY+tableId validation test',
+      );
       return;
     }
     await request(app.getHttpServer())
