@@ -312,6 +312,31 @@ Refund closed-order payments, approve high-value refunds, post-close void with t
 | POST   | `/api/pos/refunds/:id/approve`             | Yes  | pos:refund:approve     | Yes    | Approve pending refund                |
 | POST   | `/api/pos/orders/:id/post-close-void`      | Yes  | pos:void:postclose     | Yes    | Post-close void (15-min window + PIN) |
 
+## Shifts + Till Sessions + Cash Reconciliation (M15) ✅
+
+Operational shift lifecycle, till sessions with cash drawer management, safe drops, reconciliation with variance tracking.
+
+### Shift Endpoints
+
+| Method | Path                           | Auth | Permission         | Branch | Description                        |
+| ------ | ------------------------------ | ---- | ------------------ | ------ | ---------------------------------- |
+| POST   | `/api/shifts/open`             | Yes  | pos:shift:open     | Yes    | Open a new shift                   |
+| POST   | `/api/shifts/:id/close`        | Yes  | pos:shift:close    | Yes    | Close shift + auto-generate summary|
+| GET    | `/api/shifts/active`           | Yes  | pos:shift:read     | Yes    | Get current user's active shift    |
+| GET    | `/api/shifts/:id`              | Yes  | pos:shift:read     | Yes    | Get shift by ID                    |
+| GET    | `/api/shifts/:id/summary`      | Yes  | pos:shift:read     | Yes    | Get shift close summary            |
+
+### Till Endpoints
+
+| Method | Path                           | Auth | Permission           | Branch | Description                        |
+| ------ | ------------------------------ | ---- | -------------------- | ------ | ---------------------------------- |
+| POST   | `/api/tills/open`              | Yes  | pos:till:open        | Yes    | Open a till session (within shift) |
+| POST   | `/api/tills/:id/safe-drop`     | Yes  | pos:till:safe-drop   | Yes    | Perform cash safe drop             |
+| POST   | `/api/tills/:id/reconcile`     | Yes  | pos:till:reconcile   | Yes    | Reconcile + close till             |
+| GET    | `/api/tills/active`            | Yes  | pos:till:read        | Yes    | Get current user's active till     |
+| GET    | `/api/tills/:id`               | Yes  | pos:till:read        | Yes    | Get till by ID with movements      |
+| GET    | `/api/tills/:id/summary`       | Yes  | pos:till:read        | Yes    | Get till summary + expected cash   |
+
 ## Validation
 
 - DTO classes with `class-validator`

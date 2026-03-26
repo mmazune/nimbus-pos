@@ -1,7 +1,7 @@
 import { IsOptional, IsString } from 'class-validator';
 
 export class ApproveRefundDto {
-    @IsOptional()
-    @IsString()
-    managerPin?: string;
+  @IsOptional()
+  @IsString()
+  managerPin?: string;
 }

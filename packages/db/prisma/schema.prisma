@@ -14,6 +14,7 @@
 // M11 models: KdsTicket, KdsTicketItem, KdsSlaConfig + KdsTicketStatus, KdsUrgencyState enums
 // M12 models: Discount + DiscountType, DiscountStatus enums
 // M13.1 additions: PaymentCaptureMode, PaymentVerificationStatus enums; extended Payment, PaymentIntent, WebhookEvent fields
+// M15 models: Shift, TillSession, CashMovement, ShiftCloseSummary + ShiftStatus, TillSessionStatus, CashMovementType, VarianceStatus enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -162,6 +163,14 @@ model User {
     paymentsEntered   Payment[]         @relation("PaymentEnteredBy")
     refundsCreated    Refund[]          @relation("RefundCreatedBy")
     refundsApproved   Refund[]          @relation("RefundApprovedBy")
+    shiftsOpened      Shift[]           @relation("ShiftOpenedBy")
+    shiftsClosed      Shift[]           @relation("ShiftClosedBy")
+    tillsOperated     TillSession[]     @relation("TillOperator")
+    tillsOpened       TillSession[]     @relation("TillOpenedBy")
+    tillsClosed       TillSession[]     @relation("TillClosedBy")
+    cashMovementsCreated  CashMovement[]  @relation("CashMovementCreatedBy")
+    cashMovementsApproved CashMovement[]  @relation("CashMovementApprovedBy")
+    shiftSummariesGenerated ShiftCloseSummary[] @relation("ShiftSummaryGeneratedBy")
 
     @@map("users")
 }
@@ -328,6 +337,10 @@ model Organization {
     payments          Payment[]
     paymentIntents    PaymentIntent[]
     refunds           Refund[]
+    shifts            Shift[]
+    tillSessions      TillSession[]
+    cashMovements     CashMovement[]
+    shiftCloseSummaries ShiftCloseSummary[]
 
     @@map("organizations")
 }
@@ -368,6 +381,10 @@ model Branch {
     payments          Payment[]
     paymentIntents    PaymentIntent[]
     refunds           Refund[]
+    shifts            Shift[]
+    tillSessions      TillSession[]
+    cashMovements     CashMovement[]
+    shiftCloseSummaries ShiftCloseSummary[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -1311,4 +1328,186 @@ model Refund {
     @@index([approvedById])
     @@index([createdAt])
     @@map("refunds")
+}
+
+// ── Enums (M15) ──
+
+enum ShiftStatus {
+    OPEN
+    CLOSED
+}
+
+enum TillSessionStatus {
+    OPEN
+    RECONCILED
+    CLOSED
+}
+
+enum CashMovementType {
+    OPENING_FLOAT
+    SAFE_DROP
+    CASH_PICKUP
+    PAID_IN
+    PAID_OUT
+    REFUND_PAYOUT
+}
+
+enum VarianceStatus {
+    MATCHED
+    SHORT
+    OVER
+}
+
+// ── M15 Models ──
+
+/// Represents a staff member's operational duty period at a branch.
+model Shift {
+    id         String      @id @default(cuid())
+    orgId      String      @map("org_id")
+    branchId   String      @map("branch_id")
+    shiftNumber String     @map("shift_number")
+    openedById String      @map("opened_by_id")
+    closedById String?     @map("closed_by_id")
+    openedAt   DateTime    @default(now()) @map("opened_at")
+    closedAt   DateTime?   @map("closed_at")
+    status     ShiftStatus @default(OPEN)
+    notes      String?
+    metadata   Json?
+    createdAt  DateTime    @default(now()) @map("created_at")
+    updatedAt  DateTime    @updatedAt @map("updated_at")
+
+    organization   Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    openedBy       User              @relation("ShiftOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
+    closedBy       User?             @relation("ShiftClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+    tillSessions   TillSession[]
+    cashMovements  CashMovement[]
+    closeSummaries ShiftCloseSummary[]
+
+    @@unique([branchId, shiftNumber])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([openedById])
+    @@index([closedById])
+    @@index([status])
+    @@index([branchId, status])
+    @@index([createdAt])
+    @@map("shifts")
+}
+
+/// Represents custody of a cash drawer / register during a shift.
+model TillSession {
+    id              String            @id @default(cuid())
+    orgId           String            @map("org_id")
+    branchId        String            @map("branch_id")
+    shiftId         String            @map("shift_id")
+    tillCode        String            @map("till_code")
+    operatorUserId  String            @map("operator_user_id")
+    openedById      String            @map("opened_by_id")
+    closedById      String?           @map("closed_by_id")
+    openedAt        DateTime          @default(now()) @map("opened_at")
+    reconciledAt    DateTime?         @map("reconciled_at")
+    closedAt        DateTime?         @map("closed_at")
+    openingFloat    Decimal           @map("opening_float") @db.Decimal(10, 2)
+    expectedCash    Decimal           @default(0) @map("expected_cash") @db.Decimal(10, 2)
+    countedCash     Decimal?          @map("counted_cash") @db.Decimal(10, 2)
+    variance        Decimal?          @db.Decimal(10, 2)
+    varianceStatus  VarianceStatus?   @map("variance_status")
+    status          TillSessionStatus @default(OPEN)
+    notes           String?
+    metadata        Json?
+    createdAt       DateTime          @default(now()) @map("created_at")
+    updatedAt       DateTime          @updatedAt @map("updated_at")
+
+    organization   Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    shift          Shift             @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+    operatorUser   User              @relation("TillOperator", fields: [operatorUserId], references: [id], onDelete: Cascade)
+    openedBy       User              @relation("TillOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
+    closedBy       User?             @relation("TillClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+    cashMovements  CashMovement[]
+    closeSummaries ShiftCloseSummary[]
+
+    @@index([branchId, tillCode])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([shiftId])
+    @@index([operatorUserId])
+    @@index([openedById])
+    @@index([status])
+    @@index([branchId, status])
+    @@index([createdAt])
+    @@map("till_sessions")
+}
+
+/// Append-only cash movement record for audit trail.
+model CashMovement {
+    id            String           @id @default(cuid())
+    orgId         String           @map("org_id")
+    branchId      String           @map("branch_id")
+    tillSessionId String           @map("till_session_id")
+    shiftId       String?          @map("shift_id")
+    type          CashMovementType
+    amount        Decimal          @db.Decimal(10, 2)
+    reason        String
+    reference     String?
+    createdById   String           @map("created_by_id")
+    approvedById  String?          @map("approved_by_id")
+    metadata      Json?
+    createdAt     DateTime         @default(now()) @map("created_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    tillSession  TillSession  @relation(fields: [tillSessionId], references: [id], onDelete: Cascade)
+    shift        Shift?       @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+    createdBy    User         @relation("CashMovementCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    approvedBy   User?        @relation("CashMovementApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([tillSessionId])
+    @@index([shiftId])
+    @@index([type])
+    @@index([createdById])
+    @@index([createdAt])
+    @@map("cash_movements")
+}
+
+/// Summary record generated when a shift is closed.
+model ShiftCloseSummary {
+    id               String   @id @default(cuid())
+    orgId            String   @map("org_id")
+    branchId         String   @map("branch_id")
+    shiftId          String   @map("shift_id")
+    tillSessionId    String?  @map("till_session_id")
+    generatedById    String   @map("generated_by_id")
+    grossSales       Decimal  @default(0) @map("gross_sales") @db.Decimal(10, 2)
+    cashSales        Decimal  @default(0) @map("cash_sales") @db.Decimal(10, 2)
+    momoSales        Decimal  @default(0) @map("momo_sales") @db.Decimal(10, 2)
+    cardSales        Decimal  @default(0) @map("card_sales") @db.Decimal(10, 2)
+    refundCashOut    Decimal  @default(0) @map("refund_cash_out") @db.Decimal(10, 2)
+    safeDropTotal    Decimal  @default(0) @map("safe_drop_total") @db.Decimal(10, 2)
+    pickupTotal      Decimal  @default(0) @map("pickup_total") @db.Decimal(10, 2)
+    expectedCash     Decimal  @default(0) @map("expected_cash") @db.Decimal(10, 2)
+    countedCash      Decimal? @map("counted_cash") @db.Decimal(10, 2)
+    variance         Decimal? @db.Decimal(10, 2)
+    ordersClosedCount Int     @default(0) @map("orders_closed_count")
+    refundsCount     Int      @default(0) @map("refunds_count")
+    metadata         Json?
+    createdAt        DateTime @default(now()) @map("created_at")
+    updatedAt        DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    shift        Shift        @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+    tillSession  TillSession? @relation(fields: [tillSessionId], references: [id], onDelete: SetNull)
+    generatedBy  User         @relation("ShiftSummaryGeneratedBy", fields: [generatedById], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([shiftId])
+    @@index([tillSessionId])
+    @@index([generatedById])
+    @@index([createdAt])
+    @@map("shift_close_summaries")
 }

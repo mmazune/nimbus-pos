@@ -189,6 +189,14 @@ const PERMISSIONS_DATA = [
     { action: 'pos:refund:approve', description: 'Approve pending high-value refunds' },
     { action: 'pos:refund:read', description: 'Read refund records' },
     { action: 'pos:void:postclose', description: 'Void a recently-closed order (post-close void)' },
+    // M15 shift + till + cash reconciliation permissions
+    { action: 'pos:shift:open', description: 'Open a new shift' },
+    { action: 'pos:shift:close', description: 'Close an active shift' },
+    { action: 'pos:shift:read', description: 'Read shift records and summaries' },
+    { action: 'pos:till:open', description: 'Open a till session' },
+    { action: 'pos:till:reconcile', description: 'Reconcile and close a till session' },
+    { action: 'pos:till:safe-drop', description: 'Perform a safe drop on an open till' },
+    { action: 'pos:till:read', description: 'Read till sessions and summaries' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -266,6 +274,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:refund:approve',
         'pos:refund:read',
         'pos:void:postclose',
+        'pos:shift:open',
+        'pos:shift:close',
+        'pos:shift:read',
+        'pos:till:open',
+        'pos:till:reconcile',
+        'pos:till:safe-drop',
+        'pos:till:read',
     ],
     Manager: [
         'identity:user:read',
@@ -313,6 +328,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:refund:approve',
         'pos:refund:read',
         'pos:void:postclose',
+        'pos:shift:open',
+        'pos:shift:close',
+        'pos:shift:read',
+        'pos:till:open',
+        'pos:till:reconcile',
+        'pos:till:safe-drop',
+        'pos:till:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -323,6 +345,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:discount:read',
         'pos:payment:read',
         'pos:refund:read',
+        'pos:shift:read',
+        'pos:till:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -365,6 +389,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:refund:approve',
         'pos:refund:read',
         'pos:void:postclose',
+        'pos:shift:open',
+        'pos:shift:close',
+        'pos:shift:read',
+        'pos:till:open',
+        'pos:till:reconcile',
+        'pos:till:safe-drop',
+        'pos:till:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -388,6 +419,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:payment:cancel',
         'pos:refund:create',
         'pos:refund:read',
+        'pos:shift:open',
+        'pos:shift:close',
+        'pos:shift:read',
+        'pos:till:open',
+        'pos:till:reconcile',
+        'pos:till:safe-drop',
+        'pos:till:read',
     ],
     Chef: [
         'identity:user:read',
@@ -405,6 +443,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:discount:read',
         'pos:payment:read',
         'pos:refund:read',
+        'pos:shift:read',
+        'pos:till:read',
     ],
     Waiter: [
         'identity:user:read',
@@ -426,6 +466,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:payment:read',
         'pos:refund:create',
         'pos:refund:read',
+        'pos:shift:open',
+        'pos:shift:close',
+        'pos:shift:read',
+        'pos:till:open',
+        'pos:till:reconcile',
+        'pos:till:safe-drop',
+        'pos:till:read',
     ],
     Bartender: [
         'identity:user:read',
@@ -441,6 +488,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:discount:read',
         'pos:payment:read',
         'pos:refund:read',
+        'pos:shift:read',
+        'pos:till:read',
     ],
     Procurement: [
         'identity:user:read',
@@ -3009,6 +3058,188 @@ async function seedPayments(
     return { created, skipped };
 }
 
+// ── Shifts + Tills (M15) ──
+
+async function seedShiftsAndTills(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping shifts/tills`);
+        return { created: 0, skipped: 0 };
+    }
+
+    const cashier = await prisma.user.findUnique({ where: { email: 'cashier@demo.local' } });
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    if (!cashier || !owner) {
+        console.log(`  ⚠️  Demo users not found — skipping shifts/tills`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Idempotency: check if shifts already exist
+    const existingShift = await prisma.shift.findFirst({
+        where: { branchId: branch.id },
+    });
+    if (existingShift) {
+        console.log(`  ⏭  Shifts for branch "${branchCode}" already exist — skipped`);
+        return { created: 0, skipped: 3 };
+    }
+
+    // 1) Closed shift with summary
+    const closedShift = await prisma.shift.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            shiftNumber: 'SHF-000001',
+            openedById: cashier.id,
+            closedById: owner.id,
+            status: 'CLOSED',
+            openedAt: new Date('2026-03-25T06:00:00Z'),
+            closedAt: new Date('2026-03-25T14:00:00Z'),
+            notes: 'Morning shift — completed',
+        },
+    });
+    console.log(`  ✅ Shift SHF-000001 (CLOSED) created`);
+    created++;
+
+    // Summary for the closed shift
+    await prisma.shiftCloseSummary.create({
+        data: {
+            shiftId: closedShift.id,
+            orgId,
+            branchId: branch.id,
+            grossSales: 150000,
+            cashSales: 90000,
+            momoSales: 40000,
+            cardSales: 20000,
+            refundCashOut: 5000,
+            safeDropTotal: 30000,
+            pickupTotal: 0,
+            expectedCash: 55000,
+            countedCash: 54500,
+            variance: -500,
+            ordersClosedCount: 12,
+            refundsCount: 1,
+            generatedById: owner.id,
+        },
+    });
+    console.log(`  ✅ ShiftCloseSummary for SHF-000001 created`);
+    created++;
+
+    // Closed till for the closed shift
+    const closedTill = await prisma.tillSession.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            shiftId: closedShift.id,
+            tillCode: 'TILL-01',
+            operatorUserId: cashier.id,
+            openedById: cashier.id,
+            closedById: owner.id,
+            openingFloat: 50000,
+            expectedCash: 55000,
+            countedCash: 54500,
+            variance: -500,
+            varianceStatus: 'SHORT',
+            status: 'RECONCILED',
+            openedAt: new Date('2026-03-25T06:05:00Z'),
+            reconciledAt: new Date('2026-03-25T13:55:00Z'),
+            closedAt: new Date('2026-03-25T13:55:00Z'),
+            notes: 'Minor variance — coins',
+        },
+    });
+    console.log(`  ✅ TillSession TILL-01 (RECONCILED) created`);
+    created++;
+
+    // Cash movements for the closed till
+    await prisma.cashMovement.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            tillSessionId: closedTill.id,
+            shiftId: closedShift.id,
+            type: 'OPENING_FLOAT',
+            amount: 50000,
+            reason: 'Opening float',
+            createdById: cashier.id,
+        },
+    });
+    console.log(`  ✅ CashMovement OPENING_FLOAT/50000 created`);
+    created++;
+
+    await prisma.cashMovement.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            tillSessionId: closedTill.id,
+            shiftId: closedShift.id,
+            type: 'SAFE_DROP',
+            amount: 30000,
+            reason: 'Excess cash removal mid-shift',
+            createdById: cashier.id,
+        },
+    });
+    console.log(`  ✅ CashMovement SAFE_DROP/30000 created`);
+    created++;
+
+    // 2) Currently open shift
+    const openShift = await prisma.shift.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            shiftNumber: 'SHF-000002',
+            openedById: cashier.id,
+            status: 'OPEN',
+            openedAt: new Date('2026-03-26T06:00:00Z'),
+            notes: 'Current shift — ongoing',
+        },
+    });
+    console.log(`  ✅ Shift SHF-000002 (OPEN) created`);
+    created++;
+
+    // Open till for the current shift
+    const openTill = await prisma.tillSession.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            shiftId: openShift.id,
+            tillCode: 'TILL-01',
+            operatorUserId: cashier.id,
+            openedById: cashier.id,
+            openingFloat: 50000,
+            expectedCash: 50000,
+            status: 'OPEN',
+            openedAt: new Date('2026-03-26T06:05:00Z'),
+            notes: 'Active till session',
+        },
+    });
+    console.log(`  ✅ TillSession TILL-01 (OPEN) created`);
+    created++;
+
+    await prisma.cashMovement.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            tillSessionId: openTill.id,
+            shiftId: openShift.id,
+            type: 'OPENING_FLOAT',
+            amount: 50000,
+            reason: 'Opening float',
+            createdById: cashier.id,
+        },
+    });
+    console.log(`  ✅ CashMovement OPENING_FLOAT/50000 (current) created`);
+    created++;
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -3178,6 +3409,11 @@ async function main(): Promise<void> {
     const paymentsResult = await seedPayments(orgResult.orgId, 'MAIN');
     console.log(`   Created: ${paymentsResult.created}, Skipped: ${paymentsResult.skipped}\n`);
 
+    // 31) Seed Shifts + Tills (M15)
+    console.log('── Shifts + Tills (M15) ──');
+    const shiftsResult = await seedShiftsAndTills(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${shiftsResult.created}, Skipped: ${shiftsResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -3238,6 +3474,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm13-payments',
         `Payments: ${paymentsResult.created}c/${paymentsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm15-shifts-tills',
+        `Shifts+Tills: ${shiftsResult.created}c/${shiftsResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 

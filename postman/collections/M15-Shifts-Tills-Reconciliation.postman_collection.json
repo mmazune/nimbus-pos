@@ -1,0 +1,477 @@
+{
+    "info": {
+        "_postman_id": "m15-shifts-tills-reconciliation",
+        "name": "M15 — Shifts + Till Sessions + Cash Reconciliation",
+        "description": "Nimbus POS — M15: Shift lifecycle (open/close), till sessions (open/safe-drop/reconcile), expected cash computation, variance tracking.\n\nWorkflow: Login → Get branch → Open shift → Open till → Safe drop → Get till summary → Reconcile till → Close shift → Get shift summary.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Login (Owner)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"email\": \"owner@demo.local\", \"password\": \"Owner#123\" }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "auth", "login"]
+                }
+            }
+        },
+        {
+            "name": "Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "const branchId = json.defaultBranch?.id || json.organizations?.[0]?.branches?.[0]?.id || json.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', branchId);",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has branchId', () => pm.expect(branchId).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "me"]
+                }
+            }
+        },
+        {
+            "name": "Open Shift",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('shiftId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Shift is OPEN', () => pm.expect(json.status).to.eql('OPEN'));",
+                            "pm.test('Has shiftNumber', () => pm.expect(json.shiftNumber).to.match(/^SHF-/));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"notes\": \"Postman test shift\" }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/shifts/open",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "shifts", "open"]
+                }
+            }
+        },
+        {
+            "name": "Get Active Shift",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Shift is OPEN', () => pm.expect(json.status).to.eql('OPEN'));",
+                            "pm.test('Matches shiftId', () => pm.expect(json.id).to.eql(pm.environment.get('shiftId')));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/shifts/active",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "shifts", "active"]
+                }
+            }
+        },
+        {
+            "name": "Get Shift by ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Correct shift', () => pm.expect(json.id).to.eql(pm.environment.get('shiftId')));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/shifts/{{shiftId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "shifts", "{{shiftId}}"]
+                }
+            }
+        },
+        {
+            "name": "Open Till",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('tillId', json.id);",
+                            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Till is OPEN', () => pm.expect(json.status).to.eql('OPEN'));",
+                            "pm.test('TillCode matches', () => pm.expect(json.tillCode).to.eql('TILL-PM'));",
+                            "pm.test('OpeningFloat set', () => pm.expect(parseFloat(json.openingFloat)).to.eql(50000));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"tillCode\": \"TILL-PM\", \"openingFloat\": 50000 }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/tills/open",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "tills", "open"]
+                }
+            }
+        },
+        {
+            "name": "Get Active Till",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Till is OPEN', () => pm.expect(json.status).to.eql('OPEN'));",
+                            "pm.test('Matches tillId', () => pm.expect(json.id).to.eql(pm.environment.get('tillId')));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/tills/active",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "tills", "active"]
+                }
+            }
+        },
+        {
+            "name": "Get Till by ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Correct till', () => pm.expect(json.id).to.eql(pm.environment.get('tillId')));",
+                            "pm.test('Has cashMovements', () => pm.expect(json.cashMovements).to.be.an('array'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/tills/{{tillId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "tills", "{{tillId}}"]
+                }
+            }
+        },
+        {
+            "name": "Safe Drop",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Type is SAFE_DROP', () => pm.expect(json.type).to.eql('SAFE_DROP'));",
+                            "pm.test('Amount is 20000', () => pm.expect(parseFloat(json.amount)).to.eql(20000));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"amount\": 20000, \"reason\": \"Postman safe drop test\" }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/tills/{{tillId}}/safe-drop",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "tills", "{{tillId}}", "safe-drop"]
+                }
+            }
+        },
+        {
+            "name": "Get Till Summary",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has computedExpectedCash', () => pm.expect(json.computedExpectedCash).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/tills/{{tillId}}/summary",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "tills", "{{tillId}}", "summary"]
+                }
+            }
+        },
+        {
+            "name": "Reconcile Till",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Status is RECONCILED', () => pm.expect(json.status).to.eql('RECONCILED'));",
+                            "pm.test('Has varianceStatus', () => pm.expect(json.varianceStatus).to.be.oneOf(['MATCHED', 'SHORT', 'OVER']));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"countedCash\": 30000, \"varianceReason\": \"Postman reconciliation test\" }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/tills/{{tillId}}/reconcile",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "tills", "{{tillId}}", "reconcile"]
+                }
+            }
+        },
+        {
+            "name": "Close Shift",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Shift is CLOSED', () => pm.expect(json.status).to.eql('CLOSED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"notes\": \"Postman close shift test\" }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/shifts/{{shiftId}}/close",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "shifts", "{{shiftId}}", "close"]
+                }
+            }
+        },
+        {
+            "name": "Get Shift Summary",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has shiftId', () => pm.expect(json.shiftId).to.eql(pm.environment.get('shiftId')));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/shifts/{{shiftId}}/summary",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "shifts", "{{shiftId}}", "summary"]
+                }
+            }
+        },
+        {
+            "name": "Duplicate Shift Open (409)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/shifts/open",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "shifts", "open"]
+                }
+            }
+        },
+        {
+            "name": "Invalid Till Payload (400)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"openingFloat\": -100 }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/tills/open",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "tills", "open"]
+                }
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3000"
+        }
+    ]
+}

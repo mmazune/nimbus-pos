@@ -16,6 +16,8 @@ import { KdsModule } from './modules/kds/kds.module';
 import { DiscountsModule } from './modules/discounts/discounts.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { RefundsModule } from './modules/refunds/refunds.module';
+import { ShiftsModule } from './modules/shifts/shifts.module';
+import { TillsModule } from './modules/tills/tills.module';
 
 @Module({
   imports: [
@@ -34,8 +36,10 @@ import { RefundsModule } from './modules/refunds/refunds.module';
     DiscountsModule,
     PaymentsModule,
     RefundsModule,
+    ShiftsModule,
+    TillsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

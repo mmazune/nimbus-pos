@@ -25,7 +25,7 @@
 | **KDS / Station Routing**           | `apps/api/src/modules/kds/`          | M11       | ✅ Implemented |
 | **Discounts + Approval Workflow**   | `apps/api/src/modules/discounts/`    | M12       | ✅ Implemented |
 | **Discounts / Overrides**           | `apps/api/src/modules/pos/`          | M16       | ⬜ Planned     |
-| **Shifts / Tills / Cash**           | `apps/api/src/modules/pos/`          | M17       | ⬜ Planned     |
+| **Shifts / Tills / Cash**           | `apps/api/src/modules/shifts/` + `tills/` | M15       | ✅ Implemented |
 | **Payments (Cash/Card/MOMO)**       | `apps/api/src/modules/payments/`     | M13       | ✅ Implemented |
 | **Refunds**                         | `apps/api/src/modules/refunds/`      | M14       | ✅ Implemented |
 | **Reservations / Deposits**         | `apps/api/src/modules/reservations/` | M20       | ⬜ Planned     |

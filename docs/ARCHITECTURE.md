@@ -651,6 +651,82 @@ Each Refund is linked to a Payment on a CLOSED Order. Fields: id, orgId, branchI
 | REFUND_APPROVED           | Manager approved a pending refund         |
 | ORDER_POST_CLOSE_VOIDED   | Post-close void executed                  |
 
+---
+
+## M15 — Shifts / Till Sessions / Cash Reconciliation
+
+### New Models (Prisma)
+
+| Model             | Purpose                                          |
+| ----------------- | ------------------------------------------------ |
+| Shift             | Represents an operational shift (OPEN → CLOSED)  |
+| TillSession       | Cash drawer session within a shift               |
+| CashMovement      | Append-only ledger of cash events on a till      |
+| ShiftCloseSummary | Auto-generated financial summary when shift closes|
+
+### Enums
+
+| Enum               | Values                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| ShiftStatus        | OPEN, CLOSED                                                                               |
+| TillSessionStatus  | OPEN, RECONCILED, CLOSED                                                                   |
+| CashMovementType   | OPENING_FLOAT, SAFE_DROP, CASH_PICKUP, PAID_IN, PAID_OUT, REFUND_PAYOUT                    |
+| VarianceStatus     | MATCHED, SHORT, OVER                                                                       |
+
+### Endpoints
+
+| Method | Route                     | Permission           | Description                        |
+| ------ | ------------------------- | -------------------- | ---------------------------------- |
+| POST   | /shifts/open              | pos:shift:open       | Open a new shift                   |
+| POST   | /shifts/:id/close         | pos:shift:close      | Close shift + generate summary     |
+| GET    | /shifts/active            | pos:shift:read       | Get current user's active shift    |
+| GET    | /shifts/:id               | pos:shift:read       | Get shift by ID                    |
+| GET    | /shifts/:id/summary       | pos:shift:read       | Get shift close summary            |
+| POST   | /tills/open               | pos:till:open        | Open a till session (within shift) |
+| POST   | /tills/:id/safe-drop      | pos:till:safe-drop   | Perform cash safe drop             |
+| POST   | /tills/:id/reconcile      | pos:till:reconcile   | Reconcile + close till             |
+| GET    | /tills/active             | pos:till:read        | Get current user's active till     |
+| GET    | /tills/:id                | pos:till:read        | Get till by ID with movements      |
+| GET    | /tills/:id/summary        | pos:till:read        | Get till summary + expected cash   |
+
+### Business Rules
+
+- One active shift per user per branch (ConflictException on duplicate)
+- Shift close blocked while OPEN till sessions exist
+- Shift close auto-generates ShiftCloseSummary (gross/cash/momo/card sales, refunds, drops)
+- One active till per tillCode per branch (@@unique constraint)
+- Till open requires an active shift
+- Opening float → automatic OPENING_FLOAT CashMovement
+- Safe drop only on OPEN tills → SAFE_DROP CashMovement + expectedCash decrement
+- Reconcile computes `expectedCash = openingFloat + cashSales + paidIn − safeDrops − cashPickups − refundCashOut − refundPayout − paidOut`
+- Variance = countedCash − expectedCash → MATCHED (≤0.01), SHORT (<0), OVER (>0)
+- Variance mismatch requires `varianceReason` (BadRequestException)
+- All CashMovement records are append-only (no updates, no deletes)
+- `hasActiveTillInBranch()` policy hook for future cash-payment gating
+
+### Permissions
+
+| Permission          | Owner | Manager | Supervisor | Cashier | Waiter | Chef | Bartender | Accountant |
+| ------------------- | ----- | ------- | ---------- | ------- | ------ | ---- | --------- | ---------- |
+| pos:shift:open      | ✅    | ✅      | ✅         | ✅      | ✅     | —    | —         | —          |
+| pos:shift:close     | ✅    | ✅      | ✅         | ✅      | ✅     | —    | —         | —          |
+| pos:shift:read      | ✅    | ✅      | ✅         | ✅      | ✅     | ✅   | ✅        | ✅         |
+| pos:till:open       | ✅    | ✅      | ✅         | ✅      | ✅     | —    | —         | —          |
+| pos:till:reconcile  | ✅    | ✅      | ✅         | ✅      | ✅     | —    | —         | —          |
+| pos:till:safe-drop  | ✅    | ✅      | ✅         | ✅      | ✅     | —    | —         | —          |
+| pos:till:read       | ✅    | ✅      | ✅         | ✅      | ✅     | ✅   | ✅        | ✅         |
+
+### M15 Audit Events
+
+| Action                  | Trigger                                       |
+| ----------------------- | --------------------------------------------- |
+| SHIFT_OPENED            | New shift opened                              |
+| SHIFT_CLOSED            | Shift closed + summary generated              |
+| TILL_OPENED             | Till session opened                           |
+| TILL_SAFE_DROP          | Cash safe drop performed                      |
+| TILL_RECONCILED         | Till reconciled successfully                  |
+| TILL_RECONCILE_VARIANCE | Reconciliation with cash variance detected    |
+
 ## Frontend Strategy (M43+)
 
 - Web shell first
