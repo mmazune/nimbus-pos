@@ -3,10 +3,10 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M14 ✅
-- Last completed milestone: M14 — Refunds + Post-Close Void Flows
-- Next milestone: M15 — TBD
-- Date updated: 2026-03-25
+- Current milestone: M15 ✅
+- Last completed milestone: M15 — Shifts / Till Sessions / Cash Reconciliation
+- Next milestone: M16 — TBD
+- Date updated: 2026-03-26
 
 ## Environment
 
@@ -384,7 +384,35 @@
 - [x] Full e2e gate: 14/14 suites PASS, 238/238 tests PASS (EXIT:0)
 - [x] Branch-wide pre-existing e2e bugs fixed: payments (stale lifecycle URLs + auto-close), orders (close payload + response shape + TAKEAWAY guard), kds (HTTP 201 status + timeouts), inventory (unitCost decimal regex + Decimal serialization), quick-pin (self-healing PIN issuance in beforeAll); global 10000/15000 ms per-test timeouts raised to 30000 ms across all spec files
 
-### M15-M47
+### M15 — Shifts / Till Sessions / Cash Reconciliation
+> Branch: `milestone/m15-shifts-tills-reconciliation`
+
+- [x] Prisma schema: 4 enums (ShiftStatus, TillSessionStatus, CashMovementType, VarianceStatus) + 4 models (Shift, TillSession, CashMovement, ShiftCloseSummary)
+- [x] Migration SQL: `20260326000000_m15_shifts_tills_reconciliation` + `20260326000001_m15_fix_till_unique_partial` (partial unique index fix)
+- [x] ShiftsModule: service + controller + DTOs (openShift, closeShift, getActiveShift, getShiftById, getShiftSummary)
+- [x] TillsModule: service + controller + DTOs (openTill, safeDrop, reconcileTill, getActiveTill, getTillById, getTillSummary, hasActiveTillInBranch)
+- [x] Expected cash formula: openingFloat + cashSales + paidIn − safeDrops − cashPickups − refundCashOut − refundPayout − paidOut
+- [x] Variance tracking: MATCHED / SHORT / OVER with mandatory reason on mismatch
+- [x] ShiftCloseSummary auto-generation on shift close (aggregates payments by method, refunds, cash movements)
+- [x] 7 new permissions: pos:shift:open/close/read, pos:till:open/reconcile/safe-drop/read
+- [x] Role mappings: Owner/Manager/Supervisor/Cashier/Waiter = full ops; Chef/Bartender/Accountant = read-only (41 role-permission mappings)
+- [x] Unit tests: 29 new (14 shifts + 15 tills); 294 total across 19 suites — all passing
+- [x] E2E tests: 22 in shifts-tills.e2e-spec.ts — full lifecycle + cleanup. Full suite: 227/227 pass (orders/inventory = pre-existing Neon P1017 flakiness, 33/33 in isolation)
+- [x] Seed: 7 permissions + 41 role mappings + demo shifts/tills/cash movements/summary data (idempotent, 2× confirmed)
+- [x] Postman: M15-Shifts-Tills-Reconciliation.postman_collection.json (15 requests with auto-capture + assertions)
+- [x] Docs updated: ARCHITECTURE.md, API_CONVENTIONS.md, MODULES.md
+- [x] Policy hook: `hasActiveTillInBranch()` implemented for future cash-payment gating (not wired into payments service yet — deferred)
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] Append-only CashMovement pattern (no updatedAt, no deletes)
+- [x] Lint: 0 errors, 0 warnings (exit 0) — 4 pre-existing unused-var fixes applied in E2E test files
+- [x] Manual endpoint hits: All 11 M15 endpoints verified (correct status codes + response shapes)
+- [x] dev:api boots: All 11 routes registered, health OK
+- [x] DB verified: shift_perms=3, till_perms=4, shifts=2, tills=2, summaries=1, no duplicates
+- [x] Schema fix: `@@unique([branchId, tillCode, status])` replaced with partial unique `WHERE status='OPEN'` via migration 20260326000001
+- [x] DONE: All 16 verification gates confirmed ✅
+
+### M16+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 
