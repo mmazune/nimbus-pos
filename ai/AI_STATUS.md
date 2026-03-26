@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M15 ✅
-- Last completed milestone: M15 — Shifts / Till Sessions / Cash Reconciliation
-- Next milestone: M16 — TBD
+- Current milestone: M16 ✅
+- Last completed milestone: M16 — Reservations + Deposits + Seating Bridge
+- Next milestone: M17 — TBD
 - Date updated: 2026-03-26
 
 ## Environment
@@ -412,7 +412,42 @@
 - [x] Schema fix: `@@unique([branchId, tillCode, status])` replaced with partial unique `WHERE status='OPEN'` via migration 20260326000001
 - [x] DONE: All 16 verification gates confirmed ✅
 
-### M16+
+### M16 — Reservations + Deposits + Seating Bridge
+> Branch: `milestone/m16-reservations-deposits-seating`
+
+- [x] Prisma schema: 4 enums (ReservationStatus, ReservationSource, ReservationDepositStatus, ReservationEventType) + 3 models (Reservation, ReservationDeposit, ReservationEvent)
+- [x] Migration SQL: `20260326100000_m16_reservations_deposits_seating`
+- [x] ReservationsModule: service + controller + 8 DTOs (create, confirm, seat, cancel, noShow, recordDeposit, listQuery, assignTable)
+- [x] 12 endpoints: CRUD + lifecycle transitions + deposits + events + assign-table
+- [x] State machine: PENDING → CONFIRMED → SEATED → COMPLETED; cancel/no-show from PENDING/CONFIRMED
+- [x] Seating bridge: `createOrder: true` creates DINE_IN order linked via `seatedOrderId`
+- [x] Table conflict detection: overlap check by time window (reservationAt ± expectedDurationMinutes)
+- [x] Deposit lifecycle: PENDING → RECEIVED → APPLIED/REFUNDED/FORFEITED/VOIDED
+- [x] 10 new permissions: pos:reservation:create/read/confirm/seat/cancel/no-show/deposit:record/deposit:read/update/table:assign
+- [x] Role mappings: Owner/Manager/Supervisor/Event Manager = all 10; Cashier/Waiter = 7 (create/read/confirm/seat/deposit:record/deposit:read/table:assign); Chef/Bartender = read; Accountant = read+deposit:read
+- [x] Unit tests: 24 in reservations.service.spec.ts — all lifecycle + guard scenarios
+- [x] E2E tests: reservations.e2e-spec.ts — full lifecycle + seating bridge + permission denial + state machine enforcement
+- [x] Seed: 10 permissions + role mappings + 5 demo reservations (PENDING, CONFIRMED+deposit, SEATED, CANCELLED, NO_SHOW)
+- [x] Postman: M16-Reservations-Deposits-Seating.postman_collection.json (14 requests with auto-capture + assertions)
+- [x] Docs updated: ARCHITECTURE.md (M16 section), API_CONVENTIONS.md (12 endpoints), MODULES.md (Implemented)
+- [x] Event log: append-only ReservationEvent for full audit trail
+- [x] Reservation number format: RES-XXXXXX (branch-scoped, sequential)
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] Prisma generate: v5.22.0 client generated ✅
+- [x] Prisma migrate deploy: migration applied ✅
+- [x] Seed 2×: idempotent (10 perms, 58 role-perm mappings, 5 reservations, 1 deposit) ✅
+- [x] DB verified: 10 perms, 58 role-perm mappings, 5 reservations (PENDING/CONFIRMED/SEATED/CANCELLED/NO_SHOW) ✅
+- [x] Lint: 0 errors, 197 warnings (all pre-existing `no-explicit-any`) ✅
+- [x] Unit tests: 319/319 pass across 20 suites ✅
+- [x] E2E tests: 281/281 pass across 16 suites ✅
+- [x] CI workflow: branch-validation.yml covers lint + unit on push, e2e on PR ✅
+- [x] dev:api boots: 12 M16 routes registered, health OK ✅
+- [x] Manual endpoint hits: 16/16 passed (all lifecycle + deposits + events + seat with table) ✅
+- [x] Postman: 14 requests with auto-capture + assertions ✅
+- [x] DONE: All verification gates confirmed ✅
+
+### M17+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

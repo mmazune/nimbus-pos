@@ -337,6 +337,27 @@ Operational shift lifecycle, till sessions with cash drawer management, safe dro
 | GET    | `/api/tills/:id`               | Yes  | pos:till:read        | Yes    | Get till by ID with movements      |
 | GET    | `/api/tills/:id/summary`       | Yes  | pos:till:read        | Yes    | Get till summary + expected cash   |
 
+## Reservations + Deposits + Seating (M16) ✅
+
+Table reservation lifecycle with deposit tracking, conflict detection, and seating bridge to POS orders.
+
+### Reservation Endpoints
+
+| Method | Path                                      | Auth | Permission                      | Branch | Description                          |
+| ------ | ----------------------------------------- | ---- | ------------------------------- | ------ | ------------------------------------ |
+| POST   | `/api/reservations`                       | Yes  | pos:reservation:create          | Yes    | Create a reservation                 |
+| GET    | `/api/reservations`                       | Yes  | pos:reservation:read            | Yes    | List reservations (paginated)        |
+| GET    | `/api/reservations/upcoming`              | Yes  | pos:reservation:read            | Yes    | List upcoming PENDING/CONFIRMED      |
+| GET    | `/api/reservations/:id`                   | Yes  | pos:reservation:read            | Yes    | Get reservation by ID                |
+| PATCH  | `/api/reservations/:id/confirm`           | Yes  | pos:reservation:confirm         | Yes    | Confirm a pending reservation        |
+| PATCH  | `/api/reservations/:id/seat`              | Yes  | pos:reservation:seat            | Yes    | Seat reservation (optional order)    |
+| PATCH  | `/api/reservations/:id/cancel`            | Yes  | pos:reservation:cancel          | Yes    | Cancel a reservation                 |
+| PATCH  | `/api/reservations/:id/no-show`           | Yes  | pos:reservation:no-show         | Yes    | Mark as no-show                      |
+| POST   | `/api/reservations/:id/deposits`          | Yes  | pos:reservation:deposit:record  | Yes    | Record a deposit                     |
+| GET    | `/api/reservations/:id/deposits`          | Yes  | pos:reservation:deposit:read    | Yes    | List deposits for reservation        |
+| GET    | `/api/reservations/:id/events`            | Yes  | pos:reservation:read            | Yes    | List event log for reservation       |
+| PATCH  | `/api/reservations/:id/assign-table`      | Yes  | pos:reservation:table:assign    | Yes    | Assign/reassign table                |
+
 ## Validation
 
 - DTO classes with `class-validator`

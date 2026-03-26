@@ -18,6 +18,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { RefundsModule } from './modules/refunds/refunds.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
 import { TillsModule } from './modules/tills/tills.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
 
 @Module({
   imports: [
@@ -38,8 +39,9 @@ import { TillsModule } from './modules/tills/tills.module';
     RefundsModule,
     ShiftsModule,
     TillsModule,
+    ReservationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -727,6 +727,71 @@ Each Refund is linked to a Payment on a CLOSED Order. Fields: id, orgId, branchI
 | TILL_RECONCILED         | Till reconciled successfully                  |
 | TILL_RECONCILE_VARIANCE | Reconciliation with cash variance detected    |
 
+## M16 — Reservations + Deposits + Seating Bridge
+
+### Purpose
+
+Table reservation lifecycle management with deposit tracking, conflict detection, and seamless POS order bridging on seating.
+
+### DB Models
+
+| Model              | Key Fields                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| Reservation        | reservationNumber (RES-XXXXXX), customerName, partySize, reservationAt, status, tableId?, seatedOrderId?, depositRequired? |
+| ReservationDeposit | reservationId, amount, status (PENDING→RECEIVED→APPLIED/REFUNDED/FORFEITED/VOIDED), method?, reference? |
+| ReservationEvent   | reservationId, type (CREATED/CONFIRMED/DEPOSIT_RECORDED/TABLE_ASSIGNED/SEATED/CANCELLED/NO_SHOW/DEPOSIT_REFUNDED/DEPOSIT_FORFEITED), actorUserId |
+
+### State Machine
+
+```
+PENDING → CONFIRMED → SEATED → COMPLETED
+  ↓            ↓
+CANCELLED   CANCELLED / NO_SHOW
+  ↓            ↓
+NO_SHOW     NO_SHOW
+```
+
+Valid transitions:
+- PENDING → CONFIRMED, CANCELLED, NO_SHOW
+- CONFIRMED → SEATED, CANCELLED, NO_SHOW
+- SEATED → COMPLETED
+- COMPLETED, CANCELLED, NO_SHOW → (terminal)
+
+### Seating Bridge
+
+When seating a reservation with `createOrder: true`, the service creates a DINE_IN order linked to the reservation via `seatedOrderId`. This bridges the reservation system to the existing POS order flow (M10).
+
+### Table Conflict Detection
+
+Before assigning a table or creating a reservation with a table, the service checks for overlapping reservations on the same table within the time window (reservationAt ± expectedDurationMinutes, default 120 min).
+
+### Permissions (10 new)
+
+| Permission                       | Description                           |
+| -------------------------------- | ------------------------------------- |
+| pos:reservation:create           | Create a new reservation              |
+| pos:reservation:read             | Read reservations and events          |
+| pos:reservation:confirm          | Confirm a pending reservation         |
+| pos:reservation:seat             | Seat a confirmed reservation          |
+| pos:reservation:cancel           | Cancel a reservation                  |
+| pos:reservation:no-show          | Mark a reservation as no-show         |
+| pos:reservation:deposit:record   | Record a deposit for a reservation    |
+| pos:reservation:deposit:read     | Read deposits for a reservation       |
+| pos:reservation:update           | Update reservation details            |
+| pos:reservation:table:assign     | Assign a table to a reservation       |
+
+### M16 Audit Events
+
+| Action                        | Trigger                                |
+| ----------------------------- | -------------------------------------- |
+| RESERVATION_CREATED           | New reservation created                |
+| RESERVATION_CONFIRMED         | Reservation confirmed                  |
+| RESERVATION_SEATED            | Party seated (+ optional order)        |
+| RESERVATION_CANCELLED         | Reservation cancelled                  |
+| RESERVATION_NO_SHOW           | Marked as no-show                      |
+| RESERVATION_DEPOSIT_RECORDED  | Deposit payment recorded               |
+| RESERVATION_TABLE_ASSIGNED    | Table assigned to reservation          |
+
 ## Frontend Strategy (M43+)
 
 - Web shell first

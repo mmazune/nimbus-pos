@@ -197,6 +197,17 @@ const PERMISSIONS_DATA = [
     { action: 'pos:till:reconcile', description: 'Reconcile and close a till session' },
     { action: 'pos:till:safe-drop', description: 'Perform a safe drop on an open till' },
     { action: 'pos:till:read', description: 'Read till sessions and summaries' },
+    // M16 reservations + deposits + seating permissions
+    { action: 'pos:reservation:create', description: 'Create a new reservation' },
+    { action: 'pos:reservation:read', description: 'Read reservations and events' },
+    { action: 'pos:reservation:confirm', description: 'Confirm a pending reservation' },
+    { action: 'pos:reservation:seat', description: 'Seat a confirmed reservation' },
+    { action: 'pos:reservation:cancel', description: 'Cancel a reservation' },
+    { action: 'pos:reservation:no-show', description: 'Mark a reservation as no-show' },
+    { action: 'pos:reservation:deposit:record', description: 'Record a deposit for a reservation' },
+    { action: 'pos:reservation:deposit:read', description: 'Read deposits for a reservation' },
+    { action: 'pos:reservation:update', description: 'Update reservation details' },
+    { action: 'pos:reservation:table:assign', description: 'Assign a table to a reservation' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -281,6 +292,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:till:reconcile',
         'pos:till:safe-drop',
         'pos:till:read',
+        'pos:reservation:create',
+        'pos:reservation:read',
+        'pos:reservation:confirm',
+        'pos:reservation:seat',
+        'pos:reservation:cancel',
+        'pos:reservation:no-show',
+        'pos:reservation:deposit:record',
+        'pos:reservation:deposit:read',
+        'pos:reservation:update',
+        'pos:reservation:table:assign',
     ],
     Manager: [
         'identity:user:read',
@@ -335,6 +356,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:till:reconcile',
         'pos:till:safe-drop',
         'pos:till:read',
+        'pos:reservation:create',
+        'pos:reservation:read',
+        'pos:reservation:confirm',
+        'pos:reservation:seat',
+        'pos:reservation:cancel',
+        'pos:reservation:no-show',
+        'pos:reservation:deposit:record',
+        'pos:reservation:deposit:read',
+        'pos:reservation:update',
+        'pos:reservation:table:assign',
     ],
     Accountant: [
         'identity:user:read',
@@ -347,6 +378,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:refund:read',
         'pos:shift:read',
         'pos:till:read',
+        'pos:reservation:read',
+        'pos:reservation:deposit:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -396,6 +429,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:till:reconcile',
         'pos:till:safe-drop',
         'pos:till:read',
+        'pos:reservation:create',
+        'pos:reservation:read',
+        'pos:reservation:confirm',
+        'pos:reservation:seat',
+        'pos:reservation:cancel',
+        'pos:reservation:no-show',
+        'pos:reservation:deposit:record',
+        'pos:reservation:deposit:read',
+        'pos:reservation:update',
+        'pos:reservation:table:assign',
     ],
     Cashier: [
         'identity:user:read',
@@ -426,6 +469,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:till:reconcile',
         'pos:till:safe-drop',
         'pos:till:read',
+        'pos:reservation:create',
+        'pos:reservation:read',
+        'pos:reservation:confirm',
+        'pos:reservation:seat',
+        'pos:reservation:deposit:record',
+        'pos:reservation:deposit:read',
+        'pos:reservation:table:assign',
     ],
     Chef: [
         'identity:user:read',
@@ -445,6 +495,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:refund:read',
         'pos:shift:read',
         'pos:till:read',
+        'pos:reservation:read',
     ],
     Waiter: [
         'identity:user:read',
@@ -473,6 +524,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:till:reconcile',
         'pos:till:safe-drop',
         'pos:till:read',
+        'pos:reservation:create',
+        'pos:reservation:read',
+        'pos:reservation:confirm',
+        'pos:reservation:seat',
+        'pos:reservation:deposit:record',
+        'pos:reservation:deposit:read',
+        'pos:reservation:table:assign',
     ],
     Bartender: [
         'identity:user:read',
@@ -490,6 +548,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:refund:read',
         'pos:shift:read',
         'pos:till:read',
+        'pos:reservation:read',
     ],
     Procurement: [
         'identity:user:read',
@@ -511,6 +570,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'identity:session:read',
         'tenancy:org:read',
         'tenancy:branch:read',
+        'pos:reservation:create',
+        'pos:reservation:read',
+        'pos:reservation:confirm',
+        'pos:reservation:seat',
+        'pos:reservation:cancel',
+        'pos:reservation:no-show',
+        'pos:reservation:deposit:record',
+        'pos:reservation:deposit:read',
+        'pos:reservation:update',
+        'pos:reservation:table:assign',
     ],
 };
 
@@ -3240,6 +3309,255 @@ async function seedShiftsAndTills(
     return { created, skipped };
 }
 
+// ── M16: Demo Reservations + Deposits ──
+
+async function seedReservations(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping reservations`);
+        return { created: 0, skipped: 0 };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    const waiter = await prisma.user.findUnique({ where: { email: 'waiter@demo.local' } });
+    if (!owner || !waiter) {
+        console.log(`  ⚠️  Demo users not found — skipping reservations`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Idempotency check
+    const existing = await prisma.reservation.findFirst({
+        where: { branchId: branch.id },
+    });
+    if (existing) {
+        console.log(`  ⏭  Reservations for branch "${branchCode}" already exist — skipped`);
+        return { created: 0, skipped: 5 };
+    }
+
+    // Grab first table for seating demo
+    const table = await prisma.table.findFirst({
+        where: { branchId: branch.id },
+        orderBy: { label: 'asc' },
+    });
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(19, 0, 0, 0);
+
+    const dayAfter = new Date();
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    dayAfter.setHours(20, 0, 0, 0);
+
+    // 1) PENDING reservation
+    const r1 = await prisma.reservation.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationNumber: 'RES-000001',
+            customerName: 'Grace Nakamya',
+            customerPhone: '+256700123456',
+            partySize: 4,
+            reservationAt: tomorrow,
+            expectedDurationMinutes: 90,
+            source: 'PHONE',
+            status: 'PENDING',
+            notes: 'Birthday dinner — needs cake candles',
+            depositRequired: 50000,
+            createdById: waiter.id,
+            tableId: table?.id || null,
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r1.id,
+            type: 'CREATED',
+            actorUserId: waiter.id,
+            message: 'Reservation created via phone call',
+        },
+    });
+    console.log(`  ✅ Reservation RES-000001 (PENDING) created`);
+    created++;
+
+    // 2) CONFIRMED with deposit
+    const r2 = await prisma.reservation.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationNumber: 'RES-000002',
+            customerName: 'Daniel Okello',
+            customerPhone: '+256771234567',
+            partySize: 6,
+            reservationAt: tomorrow,
+            expectedDurationMinutes: 120,
+            source: 'WHATSAPP',
+            status: 'CONFIRMED',
+            confirmedAt: new Date(),
+            depositRequired: 100000,
+            createdById: waiter.id,
+            updatedById: owner.id,
+            tableId: table?.id || null,
+        },
+    });
+    await prisma.reservationDeposit.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r2.id,
+            amount: 100000,
+            status: 'RECEIVED',
+            method: 'MOBILE_MONEY',
+            reference: 'MTN-REF-98765',
+            recordedById: owner.id,
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r2.id,
+            type: 'CREATED',
+            actorUserId: waiter.id,
+            message: 'Reservation created via WhatsApp',
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r2.id,
+            type: 'CONFIRMED',
+            actorUserId: owner.id,
+            message: 'Reservation confirmed',
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r2.id,
+            type: 'DEPOSIT_RECORDED',
+            actorUserId: owner.id,
+            message: 'Deposit of 100000 recorded via MOBILE_MONEY',
+        },
+    });
+    console.log(`  ✅ Reservation RES-000002 (CONFIRMED + deposit) created`);
+    created++;
+
+    // 3) SEATED reservation
+    const r3 = await prisma.reservation.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationNumber: 'RES-000003',
+            customerName: 'Sarah Achieng',
+            partySize: 2,
+            reservationAt: new Date(),
+            source: 'WALK_IN',
+            status: 'SEATED',
+            confirmedAt: new Date(),
+            seatedAt: new Date(),
+            createdById: waiter.id,
+            updatedById: waiter.id,
+            tableId: table?.id || null,
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r3.id,
+            type: 'CREATED',
+            actorUserId: waiter.id,
+            message: 'Walk-in reservation',
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r3.id,
+            type: 'SEATED',
+            actorUserId: waiter.id,
+            message: 'Party seated',
+        },
+    });
+    console.log(`  ✅ Reservation RES-000003 (SEATED) created`);
+    created++;
+
+    // 4) CANCELLED reservation
+    const r4 = await prisma.reservation.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationNumber: 'RES-000004',
+            customerName: 'Peter Ssemakula',
+            customerPhone: '+256780111222',
+            partySize: 3,
+            reservationAt: dayAfter,
+            source: 'INSTAGRAM',
+            status: 'CANCELLED',
+            cancelledAt: new Date(),
+            createdById: waiter.id,
+            updatedById: owner.id,
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r4.id,
+            type: 'CANCELLED',
+            actorUserId: owner.id,
+            message: 'Customer cancelled — schedule conflict',
+        },
+    });
+    console.log(`  ✅ Reservation RES-000004 (CANCELLED) created`);
+    created++;
+
+    // 5) NO_SHOW reservation
+    const r5 = await prisma.reservation.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationNumber: 'RES-000005',
+            customerName: 'Amina Nambi',
+            customerPhone: '+256700555666',
+            partySize: 5,
+            reservationAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // yesterday
+            source: 'PHONE',
+            status: 'NO_SHOW',
+            confirmedAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+            noShowAt: new Date(Date.now() - 23 * 60 * 60 * 1000),
+            createdById: waiter.id,
+            updatedById: owner.id,
+        },
+    });
+    await prisma.reservationEvent.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            reservationId: r5.id,
+            type: 'NO_SHOW',
+            actorUserId: owner.id,
+            message: 'Marked as no-show after 30 minutes past reservation time',
+        },
+    });
+    console.log(`  ✅ Reservation RES-000005 (NO_SHOW) created`);
+    created++;
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -3414,6 +3732,11 @@ async function main(): Promise<void> {
     const shiftsResult = await seedShiftsAndTills(orgResult.orgId, 'MAIN');
     console.log(`   Created: ${shiftsResult.created}, Skipped: ${shiftsResult.skipped}\n`);
 
+    // 32) Seed Reservations + Deposits (M16)
+    console.log('── Reservations + Deposits (M16) ──');
+    const reservationsResult = await seedReservations(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${reservationsResult.created}, Skipped: ${reservationsResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -3478,6 +3801,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm15-shifts-tills',
         `Shifts+Tills: ${shiftsResult.created}c/${shiftsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm16-reservations-deposits',
+        `Reservations: ${reservationsResult.created}c/${reservationsResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 

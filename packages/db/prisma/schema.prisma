@@ -15,6 +15,7 @@
 // M12 models: Discount + DiscountType, DiscountStatus enums
 // M13.1 additions: PaymentCaptureMode, PaymentVerificationStatus enums; extended Payment, PaymentIntent, WebhookEvent fields
 // M15 models: Shift, TillSession, CashMovement, ShiftCloseSummary + ShiftStatus, TillSessionStatus, CashMovementType, VarianceStatus enums
+// M16 models: Reservation, ReservationDeposit, ReservationEvent + ReservationStatus, ReservationSource, ReservationDepositStatus, ReservationEventType enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -171,6 +172,10 @@ model User {
     cashMovementsCreated    CashMovement[]      @relation("CashMovementCreatedBy")
     cashMovementsApproved   CashMovement[]      @relation("CashMovementApprovedBy")
     shiftSummariesGenerated ShiftCloseSummary[] @relation("ShiftSummaryGeneratedBy")
+    reservationsCreated     Reservation[]      @relation("ReservationCreatedBy")
+    reservationsUpdated     Reservation[]      @relation("ReservationUpdatedBy")
+    depositsRecorded        ReservationDeposit[] @relation("DepositRecordedBy")
+    reservationEventsActed  ReservationEvent[] @relation("ReservationEventActor")
 
     @@map("users")
 }
@@ -341,6 +346,9 @@ model Organization {
     tillSessions        TillSession[]
     cashMovements       CashMovement[]
     shiftCloseSummaries ShiftCloseSummary[]
+    reservations        Reservation[]
+    reservationDeposits ReservationDeposit[]
+    reservationEvents   ReservationEvent[]
 
     @@map("organizations")
 }
@@ -385,6 +393,9 @@ model Branch {
     tillSessions        TillSession[]
     cashMovements       CashMovement[]
     shiftCloseSummaries ShiftCloseSummary[]
+    reservations        Reservation[]
+    reservationDeposits ReservationDeposit[]
+    reservationEvents   ReservationEvent[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -524,6 +535,7 @@ model Table {
     branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
     floorPlan    FloorPlan?   @relation(fields: [floorPlanId], references: [id], onDelete: SetNull)
     orders       Order[]
+    reservations Reservation[]
 
     @@unique([branchId, label])
     @@index([orgId])
@@ -966,6 +978,7 @@ model Order {
     payments       Payment[]
     paymentIntents PaymentIntent[]
     refunds        Refund[]
+    reservations   Reservation[]
 
     @@unique([branchId, orderNumber])
     @@index([orgId])
@@ -1216,6 +1229,7 @@ model Payment {
     order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
     enteredBy    User?        @relation("PaymentEnteredBy", fields: [enteredById], references: [id], onDelete: SetNull)
     refunds      Refund[]
+    reservationDeposits ReservationDeposit[]
 
     @@index([orgId])
     @@index([branchId])
@@ -1510,4 +1524,158 @@ model ShiftCloseSummary {
     @@index([generatedById])
     @@index([createdAt])
     @@map("shift_close_summaries")
+}
+
+// ── Enums (M16) ──
+
+enum ReservationStatus {
+    PENDING
+    CONFIRMED
+    SEATED
+    COMPLETED
+    CANCELLED
+    NO_SHOW
+}
+
+enum ReservationSource {
+    WALK_IN
+    PHONE
+    WHATSAPP
+    INSTAGRAM
+    MANUAL
+    OTHER
+}
+
+enum ReservationDepositStatus {
+    PENDING
+    RECEIVED
+    APPLIED
+    REFUNDED
+    FORFEITED
+    VOIDED
+}
+
+enum ReservationEventType {
+    CREATED
+    CONFIRMED
+    DEPOSIT_RECORDED
+    TABLE_ASSIGNED
+    SEATED
+    CANCELLED
+    NO_SHOW
+    DEPOSIT_REFUNDED
+    DEPOSIT_FORFEITED
+}
+
+// ── M16 Models ──
+
+/// A table reservation with lifecycle management, deposit tracking, and seating bridge.
+model Reservation {
+    id                      String            @id @default(cuid())
+    orgId                   String            @map("org_id")
+    branchId                String            @map("branch_id")
+    reservationNumber       String            @map("reservation_number")
+    customerName            String            @map("customer_name")
+    customerPhone           String?           @map("customer_phone")
+    customerEmail           String?           @map("customer_email")
+    partySize               Int               @map("party_size")
+    reservationAt           DateTime          @map("reservation_at")
+    expectedDurationMinutes Int?              @map("expected_duration_minutes")
+    source                  ReservationSource @default(MANUAL)
+    status                  ReservationStatus @default(PENDING)
+    notes                   String?
+    specialRequests         String?           @map("special_requests")
+    tableId                 String?           @map("table_id")
+    seatedOrderId           String?           @map("seated_order_id")
+    depositRequired         Decimal?          @map("deposit_required") @db.Decimal(10, 2)
+    confirmedAt             DateTime?         @map("confirmed_at")
+    seatedAt                DateTime?         @map("seated_at")
+    cancelledAt             DateTime?         @map("cancelled_at")
+    noShowAt                DateTime?         @map("no_show_at")
+    completedAt             DateTime?         @map("completed_at")
+    createdById             String            @map("created_by_id")
+    updatedById             String?           @map("updated_by_id")
+    metadata                Json?
+    createdAt               DateTime          @default(now()) @map("created_at")
+    updatedAt               DateTime          @updatedAt @map("updated_at")
+
+    organization Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    table        Table?                @relation(fields: [tableId], references: [id], onDelete: SetNull)
+    seatedOrder  Order?                @relation(fields: [seatedOrderId], references: [id], onDelete: SetNull)
+    createdBy    User                  @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    updatedBy    User?                 @relation("ReservationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+    deposits     ReservationDeposit[]
+    events       ReservationEvent[]
+
+    @@unique([branchId, reservationNumber])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([branchId, reservationAt])
+    @@index([branchId, status])
+    @@index([tableId])
+    @@index([seatedOrderId])
+    @@index([createdById])
+    @@index([reservationAt])
+    @@index([status])
+    @@index([createdAt])
+    @@map("reservations")
+}
+
+/// Deposit payment associated with a reservation.
+model ReservationDeposit {
+    id            String                   @id @default(cuid())
+    orgId         String                   @map("org_id")
+    branchId      String                   @map("branch_id")
+    reservationId String                   @map("reservation_id")
+    paymentId     String?                  @map("payment_id")
+    amount        Decimal                  @db.Decimal(10, 2)
+    status        ReservationDepositStatus @default(PENDING)
+    method        String?
+    reference     String?
+    recordedById  String                   @map("recorded_by_id")
+    recordedAt    DateTime                 @default(now()) @map("recorded_at")
+    notes         String?
+    metadata      Json?
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    reservation  Reservation  @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+    payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+    recordedBy   User         @relation("DepositRecordedBy", fields: [recordedById], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([reservationId])
+    @@index([paymentId])
+    @@index([recordedById])
+    @@index([status])
+    @@index([recordedAt])
+    @@map("reservation_deposits")
+}
+
+/// Append-only event log for reservation lifecycle tracking.
+model ReservationEvent {
+    id            String               @id @default(cuid())
+    orgId         String               @map("org_id")
+    branchId      String               @map("branch_id")
+    reservationId String               @map("reservation_id")
+    type          ReservationEventType
+    actorUserId   String               @map("actor_user_id")
+    message       String?
+    metadata      Json?
+    createdAt     DateTime             @default(now()) @map("created_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    reservation  Reservation  @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+    actor        User         @relation("ReservationEventActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([reservationId])
+    @@index([actorUserId])
+    @@index([type])
+    @@index([createdAt])
+    @@map("reservation_events")
 }

@@ -28,7 +28,7 @@
 | **Shifts / Tills / Cash**           | `apps/api/src/modules/shifts/` + `tills/` | M15       | ✅ Implemented |
 | **Payments (Cash/Card/MOMO)**       | `apps/api/src/modules/payments/`     | M13       | ✅ Implemented |
 | **Refunds**                         | `apps/api/src/modules/refunds/`      | M14       | ✅ Implemented |
-| **Reservations / Deposits**         | `apps/api/src/modules/reservations/` | M20       | ⬜ Planned     |
+| **Reservations / Deposits**         | `apps/api/src/modules/reservations/` | M16       | ✅ Implemented |
 | **Events / Ticketing**              | `apps/api/src/modules/events/`       | M21       | ⬜ Planned     |
 | **Anomaly Detection**               | `apps/api/src/modules/analytics/`    | M22       | ⬜ Planned     |
 | **Dashboards / KPIs**               | `apps/api/src/modules/analytics/`    | M23       | ⬜ Planned     |
