@@ -16,6 +16,7 @@
 // M13.1 additions: PaymentCaptureMode, PaymentVerificationStatus enums; extended Payment, PaymentIntent, WebhookEvent fields
 // M15 models: Shift, TillSession, CashMovement, ShiftCloseSummary + ShiftStatus, TillSessionStatus, CashMovementType, VarianceStatus enums
 // M16 models: Reservation, ReservationDeposit, ReservationEvent + ReservationStatus, ReservationSource, ReservationDepositStatus, ReservationEventType enums
+// M17 models: Event, EventTicketClass, EventBooking, EventTicket, EventCheckIn, EventAuditLog + EventStatus, EventBookingStatus, TicketStatus, TicketClassType, CheckInStatus enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -176,6 +177,12 @@ model User {
     reservationsUpdated     Reservation[]      @relation("ReservationUpdatedBy")
     depositsRecorded        ReservationDeposit[] @relation("DepositRecordedBy")
     reservationEventsActed  ReservationEvent[] @relation("ReservationEventActor")
+    // M17 — Events + Booking + Ticketing
+    eventsCreated           Event[]            @relation("EventCreatedBy")
+    eventsUpdated           Event[]            @relation("EventUpdatedBy")
+    eventBookingsBooked     EventBooking[]     @relation("EventBookingBookedBy")
+    eventCheckInsActed      EventCheckIn[]     @relation("EventCheckInActor")
+    eventAuditLogsActed     EventAuditLog[]    @relation("EventAuditLogActor")
 
     @@map("users")
 }
@@ -349,6 +356,13 @@ model Organization {
     reservations        Reservation[]
     reservationDeposits ReservationDeposit[]
     reservationEvents   ReservationEvent[]
+    // M17 — Events
+    events              Event[]
+    eventTicketClasses  EventTicketClass[]
+    eventBookings       EventBooking[]
+    eventTickets        EventTicket[]
+    eventCheckIns       EventCheckIn[]
+    eventAuditLogs      EventAuditLog[]
 
     @@map("organizations")
 }
@@ -396,6 +410,13 @@ model Branch {
     reservations        Reservation[]
     reservationDeposits ReservationDeposit[]
     reservationEvents   ReservationEvent[]
+    // M17 — Events
+    events              Event[]
+    eventTicketClasses  EventTicketClass[]
+    eventBookings       EventBooking[]
+    eventTickets        EventTicket[]
+    eventCheckIns       EventCheckIn[]
+    eventAuditLogs      EventAuditLog[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -536,6 +557,7 @@ model Table {
     floorPlan    FloorPlan?   @relation(fields: [floorPlanId], references: [id], onDelete: SetNull)
     orders       Order[]
     reservations Reservation[]
+    events       Event[]
 
     @@unique([branchId, label])
     @@index([orgId])
@@ -1230,6 +1252,7 @@ model Payment {
     enteredBy    User?        @relation("PaymentEnteredBy", fields: [enteredById], references: [id], onDelete: SetNull)
     refunds      Refund[]
     reservationDeposits ReservationDeposit[]
+    eventBookings EventBooking[]
 
     @@index([orgId])
     @@index([branchId])
@@ -1607,6 +1630,7 @@ model Reservation {
     updatedBy    User?                 @relation("ReservationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
     deposits     ReservationDeposit[]
     events       ReservationEvent[]
+    eventBookings EventBooking[]
 
     @@unique([branchId, reservationNumber])
     @@index([orgId])
@@ -1678,4 +1702,287 @@ model ReservationEvent {
     @@index([type])
     @@index([createdAt])
     @@map("reservation_events")
+}
+
+// ── Enums (M17) ──
+
+enum EventStatus {
+    DRAFT
+    PUBLISHED
+    OPEN
+    CLOSED
+    CANCELLED
+    COMPLETED
+}
+
+enum EventBookingStatus {
+    PENDING
+    CONFIRMED
+    CANCELLED
+    CHECKED_IN
+    NO_SHOW
+}
+
+enum TicketStatus {
+    ISSUED
+    CANCELLED
+    CHECKED_IN
+    VOIDED
+}
+
+enum TicketClassType {
+    GENERAL
+    VIP
+    TABLE
+    PACKAGE
+    OTHER
+}
+
+enum CheckInStatus {
+    SUCCESS
+    DENIED
+    DUPLICATE
+}
+
+// ── M17 Models ──
+
+/// An event hosted at a branch (concert, wine tasting, private party, etc.).
+model Event {
+    id                String      @id @default(cuid())
+    orgId             String      @map("org_id")
+    branchId          String      @map("branch_id")
+    eventNumber       String      @map("event_number")
+    title             String
+    slug              String?
+    portalKey         String?     @unique @map("portal_key")
+    description       String?
+    startsAt          DateTime    @map("starts_at")
+    endsAt            DateTime?   @map("ends_at")
+    bookingOpensAt    DateTime?   @map("booking_opens_at")
+    bookingClosesAt   DateTime?   @map("booking_closes_at")
+    status            EventStatus @default(DRAFT)
+    capacity          Int
+    soldCount         Int         @default(0) @map("sold_count")
+    checkedInCount    Int         @default(0) @map("checked_in_count")
+    venueTableId      String?     @map("venue_table_id")
+    venueNotes        String?     @map("venue_notes")
+    createdById       String      @map("created_by_id")
+    updatedById       String?     @map("updated_by_id")
+    publishedAt       DateTime?   @map("published_at")
+    cancelledAt       DateTime?   @map("cancelled_at")
+    completedAt       DateTime?   @map("completed_at")
+    metadata          Json?
+    createdAt         DateTime    @default(now()) @map("created_at")
+    updatedAt         DateTime    @updatedAt @map("updated_at")
+
+    organization    Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch          Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    venueTable      Table?             @relation(fields: [venueTableId], references: [id], onDelete: SetNull)
+    createdBy       User               @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    updatedBy       User?              @relation("EventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+    ticketClasses   EventTicketClass[]
+    bookings        EventBooking[]
+    tickets         EventTicket[]
+    checkIns        EventCheckIn[]
+    auditLogs       EventAuditLog[]
+
+    @@unique([branchId, eventNumber])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([branchId, startsAt])
+    @@index([branchId, status])
+    @@index([venueTableId])
+    @@index([createdById])
+    @@index([status])
+    @@index([startsAt])
+    @@index([portalKey])
+    @@index([createdAt])
+    @@map("events")
+}
+
+/// A ticket class / tier for an event (General, VIP, Table, Package, Other).
+model EventTicketClass {
+    id        String          @id @default(cuid())
+    orgId     String          @map("org_id")
+    branchId  String          @map("branch_id")
+    eventId   String          @map("event_id")
+    name      String
+    type      TicketClassType @default(GENERAL)
+    price     Decimal         @db.Decimal(10, 2)
+    capacity  Int
+    soldCount Int             @default(0) @map("sold_count")
+    active    Boolean         @default(true)
+    sortOrder Int             @default(0) @map("sort_order")
+    notes     String?
+    metadata  Json?
+    createdAt DateTime        @default(now()) @map("created_at")
+    updatedAt DateTime        @updatedAt @map("updated_at")
+
+    organization Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    bookings     EventBooking[]
+    tickets      EventTicket[]
+
+    @@unique([eventId, name])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([eventId])
+    @@index([type])
+    @@index([createdAt])
+    @@map("event_ticket_classes")
+}
+
+/// A booking / reservation for an event.
+model EventBooking {
+    id             String             @id @default(cuid())
+    orgId          String             @map("org_id")
+    branchId       String             @map("branch_id")
+    eventId        String             @map("event_id")
+    ticketClassId  String             @map("ticket_class_id")
+    reservationId  String?            @map("reservation_id")
+    bookingNumber  String             @map("booking_number")
+    customerName   String             @map("customer_name")
+    customerPhone  String?            @map("customer_phone")
+    customerEmail  String?            @map("customer_email")
+    quantity       Int
+    subtotal       Decimal            @db.Decimal(10, 2)
+    depositAmount  Decimal?           @map("deposit_amount") @db.Decimal(10, 2)
+    paymentId      String?            @map("payment_id")
+    status         EventBookingStatus @default(PENDING)
+    bookedById     String             @map("booked_by_id")
+    confirmedAt    DateTime?          @map("confirmed_at")
+    cancelledAt    DateTime?          @map("cancelled_at")
+    checkedInAt    DateTime?          @map("checked_in_at")
+    notes          String?
+    metadata       Json?
+    createdAt      DateTime           @default(now()) @map("created_at")
+    updatedAt      DateTime           @updatedAt @map("updated_at")
+
+    organization Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    event        Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    ticketClass  EventTicketClass @relation(fields: [ticketClassId], references: [id], onDelete: Cascade)
+    reservation  Reservation?    @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+    payment      Payment?        @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+    bookedBy     User            @relation("EventBookingBookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
+    tickets      EventTicket[]
+    checkIns     EventCheckIn[]
+    auditLogs    EventAuditLog[]
+
+    @@unique([branchId, bookingNumber])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([eventId])
+    @@index([ticketClassId])
+    @@index([reservationId])
+    @@index([paymentId])
+    @@index([bookedById])
+    @@index([status])
+    @@index([createdAt])
+    @@map("event_bookings")
+}
+
+/// An individual ticket issued against a booking.
+model EventTicket {
+    id            String       @id @default(cuid())
+    orgId         String       @map("org_id")
+    branchId      String       @map("branch_id")
+    eventId       String       @map("event_id")
+    bookingId     String       @map("booking_id")
+    ticketClassId String       @map("ticket_class_id")
+    ticketNumber  String       @map("ticket_number")
+    holderName    String?      @map("holder_name")
+    holderPhone   String?      @map("holder_phone")
+    status        TicketStatus @default(ISSUED)
+    issuedAt      DateTime     @default(now()) @map("issued_at")
+    cancelledAt   DateTime?    @map("cancelled_at")
+    checkedInAt   DateTime?    @map("checked_in_at")
+    qrToken       String       @unique @map("qr_token")
+    metadata      Json?
+    createdAt     DateTime     @default(now()) @map("created_at")
+    updatedAt     DateTime     @updatedAt @map("updated_at")
+
+    organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    event        Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    booking      EventBooking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+    ticketClass  EventTicketClass @relation(fields: [ticketClassId], references: [id], onDelete: Cascade)
+    checkIns     EventCheckIn[]
+    auditLogs    EventAuditLog[]
+
+    @@unique([branchId, ticketNumber])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([eventId])
+    @@index([bookingId])
+    @@index([ticketClassId])
+    @@index([status])
+    @@index([qrToken])
+    @@index([createdAt])
+    @@map("event_tickets")
+}
+
+/// Check-in attempt record (append-only).
+model EventCheckIn {
+    id          String        @id @default(cuid())
+    orgId       String        @map("org_id")
+    branchId    String        @map("branch_id")
+    eventId     String        @map("event_id")
+    bookingId   String?       @map("booking_id")
+    ticketId    String?       @map("ticket_id")
+    actorUserId String        @map("actor_user_id")
+    status      CheckInStatus
+    message     String?
+    metadata    Json?
+    createdAt   DateTime      @default(now()) @map("created_at")
+
+    organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    booking      EventBooking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+    ticket       EventTicket?  @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+    actor        User          @relation("EventCheckInActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([eventId])
+    @@index([bookingId])
+    @@index([ticketId])
+    @@index([actorUserId])
+    @@index([status])
+    @@index([createdAt])
+    @@map("event_check_ins")
+}
+
+/// Append-only audit log for event lifecycle tracking.
+model EventAuditLog {
+    id          String   @id @default(cuid())
+    orgId       String   @map("org_id")
+    branchId    String   @map("branch_id")
+    eventId     String   @map("event_id")
+    bookingId   String?  @map("booking_id")
+    ticketId    String?  @map("ticket_id")
+    type        String
+    actorUserId String   @map("actor_user_id")
+    message     String?
+    metadata    Json?
+    createdAt   DateTime @default(now()) @map("created_at")
+
+    organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    booking      EventBooking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+    ticket       EventTicket?  @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+    actor        User          @relation("EventAuditLogActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([eventId])
+    @@index([bookingId])
+    @@index([ticketId])
+    @@index([actorUserId])
+    @@index([type])
+    @@index([createdAt])
+    @@map("event_audit_logs")
 }

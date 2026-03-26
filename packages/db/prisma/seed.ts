@@ -208,6 +208,19 @@ const PERMISSIONS_DATA = [
     { action: 'pos:reservation:deposit:read', description: 'Read deposits for a reservation' },
     { action: 'pos:reservation:update', description: 'Update reservation details' },
     { action: 'pos:reservation:table:assign', description: 'Assign a table to a reservation' },
+    // ── M17: Events + Booking Portal + Ticketing ──
+    { action: 'pos:event:create', description: 'Create a new event' },
+    { action: 'pos:event:read', description: 'Read events and event details' },
+    { action: 'pos:event:update', description: 'Update event details' },
+    { action: 'pos:event:publish', description: 'Publish a draft event' },
+    { action: 'pos:event:close', description: 'Close an open event' },
+    { action: 'pos:event:booking:create', description: 'Create a booking for an event' },
+    { action: 'pos:event:booking:read', description: 'Read event bookings' },
+    { action: 'pos:event:booking:cancel', description: 'Cancel an event booking' },
+    { action: 'pos:event:ticket:issue', description: 'Issue tickets for a booking' },
+    { action: 'pos:event:ticket:read', description: 'Read event tickets' },
+    { action: 'pos:event:checkin', description: 'Check in a ticket at an event' },
+    { action: 'pos:event:portal:read', description: 'Access event portal data' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -302,6 +315,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reservation:deposit:read',
         'pos:reservation:update',
         'pos:reservation:table:assign',
+        'pos:event:create',
+        'pos:event:read',
+        'pos:event:update',
+        'pos:event:publish',
+        'pos:event:close',
+        'pos:event:booking:create',
+        'pos:event:booking:read',
+        'pos:event:booking:cancel',
+        'pos:event:ticket:issue',
+        'pos:event:ticket:read',
+        'pos:event:checkin',
+        'pos:event:portal:read',
     ],
     Manager: [
         'identity:user:read',
@@ -366,6 +391,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reservation:deposit:read',
         'pos:reservation:update',
         'pos:reservation:table:assign',
+        'pos:event:create',
+        'pos:event:read',
+        'pos:event:update',
+        'pos:event:publish',
+        'pos:event:close',
+        'pos:event:booking:create',
+        'pos:event:booking:read',
+        'pos:event:booking:cancel',
+        'pos:event:ticket:issue',
+        'pos:event:ticket:read',
+        'pos:event:checkin',
+        'pos:event:portal:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -380,6 +417,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:till:read',
         'pos:reservation:read',
         'pos:reservation:deposit:read',
+        'pos:event:read',
+        'pos:event:booking:read',
+        'pos:event:ticket:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -439,6 +479,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reservation:deposit:read',
         'pos:reservation:update',
         'pos:reservation:table:assign',
+        'pos:event:create',
+        'pos:event:read',
+        'pos:event:update',
+        'pos:event:publish',
+        'pos:event:close',
+        'pos:event:booking:create',
+        'pos:event:booking:read',
+        'pos:event:booking:cancel',
+        'pos:event:ticket:issue',
+        'pos:event:ticket:read',
+        'pos:event:checkin',
+        'pos:event:portal:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -476,6 +528,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reservation:deposit:record',
         'pos:reservation:deposit:read',
         'pos:reservation:table:assign',
+        'pos:event:read',
+        'pos:event:booking:create',
+        'pos:event:booking:read',
+        'pos:event:ticket:issue',
+        'pos:event:ticket:read',
+        'pos:event:checkin',
+        'pos:event:portal:read',
     ],
     Chef: [
         'identity:user:read',
@@ -496,6 +555,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:shift:read',
         'pos:till:read',
         'pos:reservation:read',
+        'pos:event:read',
     ],
     Waiter: [
         'identity:user:read',
@@ -531,6 +591,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reservation:deposit:record',
         'pos:reservation:deposit:read',
         'pos:reservation:table:assign',
+        'pos:event:read',
+        'pos:event:booking:create',
+        'pos:event:booking:read',
+        'pos:event:ticket:issue',
+        'pos:event:ticket:read',
+        'pos:event:checkin',
+        'pos:event:portal:read',
     ],
     Bartender: [
         'identity:user:read',
@@ -549,6 +616,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:shift:read',
         'pos:till:read',
         'pos:reservation:read',
+        'pos:event:read',
     ],
     Procurement: [
         'identity:user:read',
@@ -3558,6 +3626,314 @@ async function seedReservations(
     return { created, skipped };
 }
 
+// ── M17: Events + Booking Portal + Ticketing ──
+
+async function seedEvents(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping events`);
+        return { created: 0, skipped: 0 };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    const waiter = await prisma.user.findUnique({ where: { email: 'waiter@demo.local' } });
+    if (!owner || !waiter) {
+        console.log(`  ⚠️  Demo users not found — skipping events`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // Idempotency check
+    const existing = await prisma.event.findFirst({
+        where: { branchId: branch.id },
+    });
+    if (existing) {
+        console.log(`  ⏭  Events for branch "${branchCode}" already exist — skipped`);
+        return { created: 0, skipped: 3 };
+    }
+
+    const nextFriday = new Date();
+    nextFriday.setDate(nextFriday.getDate() + ((5 - nextFriday.getDay() + 7) % 7 || 7));
+    nextFriday.setHours(20, 0, 0, 0);
+
+    const nextSaturday = new Date(nextFriday);
+    nextSaturday.setDate(nextSaturday.getDate() + 1);
+    nextSaturday.setHours(18, 0, 0, 0);
+
+    // 1) DRAFT event
+    await prisma.event.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventNumber: 'EVT-000001',
+            title: 'Jazz Night — Draft',
+            description: 'An upcoming jazz event still in planning',
+            startsAt: nextFriday,
+            endsAt: new Date(nextFriday.getTime() + 4 * 60 * 60 * 1000),
+            capacity: 80,
+            status: 'DRAFT',
+            createdById: owner.id,
+        },
+    });
+    await prisma.eventAuditLog.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: (await prisma.event.findFirst({ where: { branchId: branch.id, eventNumber: 'EVT-000001' } }))!.id,
+            type: 'EVENT_CREATED',
+            actorUserId: owner.id,
+            message: 'Event EVT-000001 created: "Jazz Night — Draft"',
+        },
+    });
+    console.log(`  ✅ Event EVT-000001 (DRAFT) created`);
+    created++;
+
+    // 2) PUBLISHED/OPEN event with ticket classes, bookings, tickets, check-ins
+    const evt2 = await prisma.event.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventNumber: 'EVT-000002',
+            title: 'Saturday Vibes Party',
+            slug: 'saturday-vibes-party',
+            portalKey: 'demo-portal-key-001',
+            description: 'Live DJ, cocktails, and good vibes every Saturday!',
+            startsAt: nextSaturday,
+            endsAt: new Date(nextSaturday.getTime() + 5 * 60 * 60 * 1000),
+            bookingOpensAt: new Date(),
+            bookingClosesAt: nextSaturday,
+            capacity: 150,
+            soldCount: 5,
+            checkedInCount: 1,
+            status: 'OPEN',
+            publishedAt: new Date(),
+            createdById: owner.id,
+            updatedById: owner.id,
+        },
+    });
+
+    // Ticket classes
+    const tcGeneral = await prisma.eventTicketClass.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            name: 'General Admission',
+            type: 'GENERAL',
+            price: 25000,
+            capacity: 100,
+            soldCount: 3,
+            sortOrder: 0,
+        },
+    });
+
+    const tcVip = await prisma.eventTicketClass.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            name: 'VIP Table',
+            type: 'VIP',
+            price: 100000,
+            capacity: 50,
+            soldCount: 2,
+            sortOrder: 1,
+            notes: 'Includes reserved table and a bottle',
+        },
+    });
+
+    // Booking 1: CONFIRMED with tickets issued + 1 checked in
+    const bkg1 = await prisma.eventBooking.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            ticketClassId: tcGeneral.id,
+            bookingNumber: 'BKG-000001',
+            customerName: 'Grace Nakamya',
+            customerPhone: '+256700123456',
+            quantity: 3,
+            subtotal: 75000,
+            status: 'CHECKED_IN',
+            confirmedAt: new Date(),
+            checkedInAt: new Date(),
+            bookedById: waiter.id,
+        },
+    });
+
+    // Issue 3 tickets for booking 1
+    const tkt1 = await prisma.eventTicket.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            bookingId: bkg1.id,
+            ticketClassId: tcGeneral.id,
+            ticketNumber: 'TKT-000001',
+            holderName: 'Grace Nakamya',
+            holderPhone: '+256700123456',
+            status: 'CHECKED_IN',
+            checkedInAt: new Date(),
+            qrToken: 'demo-qr-token-001',
+        },
+    });
+    await prisma.eventTicket.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            bookingId: bkg1.id,
+            ticketClassId: tcGeneral.id,
+            ticketNumber: 'TKT-000002',
+            holderName: 'Grace Nakamya',
+            status: 'ISSUED',
+            qrToken: 'demo-qr-token-002',
+        },
+    });
+    await prisma.eventTicket.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            bookingId: bkg1.id,
+            ticketClassId: tcGeneral.id,
+            ticketNumber: 'TKT-000003',
+            holderName: 'Grace Nakamya',
+            status: 'ISSUED',
+            qrToken: 'demo-qr-token-003',
+        },
+    });
+
+    // Check-in record for ticket 1
+    await prisma.eventCheckIn.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            bookingId: bkg1.id,
+            ticketId: tkt1.id,
+            actorUserId: waiter.id,
+            status: 'SUCCESS',
+            message: 'Welcome!',
+        },
+    });
+
+    // Booking 2: CONFIRMED VIP booking (no tickets issued yet)
+    await prisma.eventBooking.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            ticketClassId: tcVip.id,
+            bookingNumber: 'BKG-000002',
+            customerName: 'Daniel Okello',
+            customerPhone: '+256771234567',
+            customerEmail: 'daniel@example.com',
+            quantity: 2,
+            subtotal: 200000,
+            depositAmount: 100000,
+            status: 'CONFIRMED',
+            confirmedAt: new Date(),
+            bookedById: owner.id,
+            notes: 'VIP table near stage',
+        },
+    });
+
+    // Booking 3: CANCELLED booking
+    await prisma.eventBooking.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            ticketClassId: tcGeneral.id,
+            bookingNumber: 'BKG-000003',
+            customerName: 'Peter Ssemakula',
+            quantity: 1,
+            subtotal: 25000,
+            status: 'CANCELLED',
+            confirmedAt: new Date(Date.now() - 86400000),
+            cancelledAt: new Date(),
+            bookedById: waiter.id,
+            notes: 'Customer requested cancellation',
+        },
+    });
+
+    // Audit logs for event 2
+    await prisma.eventAuditLog.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            type: 'EVENT_CREATED',
+            actorUserId: owner.id,
+            message: 'Event EVT-000002 created: "Saturday Vibes Party"',
+        },
+    });
+    await prisma.eventAuditLog.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            type: 'EVENT_PUBLISHED',
+            actorUserId: owner.id,
+            message: 'Event published with portal key demo-portal-key-001',
+        },
+    });
+    await prisma.eventAuditLog.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            bookingId: bkg1.id,
+            type: 'BOOKING_CREATED',
+            actorUserId: waiter.id,
+            message: 'Booking BKG-000001 created for Grace Nakamya (3 × General Admission)',
+        },
+    });
+    await prisma.eventAuditLog.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventId: evt2.id,
+            bookingId: bkg1.id,
+            ticketId: tkt1.id,
+            type: 'TICKET_CHECKED_IN',
+            actorUserId: waiter.id,
+            message: 'Ticket TKT-000001 checked in',
+        },
+    });
+
+    console.log(`  ✅ Event EVT-000002 (OPEN + ticket classes + bookings + tickets + check-in) created`);
+    created++;
+
+    // 3) CANCELLED event
+    await prisma.event.create({
+        data: {
+            orgId,
+            branchId: branch.id,
+            eventNumber: 'EVT-000003',
+            title: 'Cancelled Karaoke Night',
+            description: 'Was planned but cancelled due to low interest',
+            startsAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            capacity: 40,
+            status: 'CANCELLED',
+            cancelledAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+            createdById: owner.id,
+        },
+    });
+    console.log(`  ✅ Event EVT-000003 (CANCELLED) created`);
+    created++;
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -3737,6 +4113,11 @@ async function main(): Promise<void> {
     const reservationsResult = await seedReservations(orgResult.orgId, 'MAIN');
     console.log(`   Created: ${reservationsResult.created}, Skipped: ${reservationsResult.skipped}\n`);
 
+    // 33) Seed Events + Booking Portal + Ticketing (M17)
+    console.log('── Events + Booking Portal + Ticketing (M17) ──');
+    const eventsResult = await seedEvents(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${eventsResult.created}, Skipped: ${eventsResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -3805,6 +4186,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm16-reservations-deposits',
         `Reservations: ${reservationsResult.created}c/${reservationsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm17-events-booking-ticketing',
+        `Events: ${eventsResult.created}c/${eventsResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 

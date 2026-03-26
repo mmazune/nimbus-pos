@@ -19,6 +19,7 @@ import { RefundsModule } from './modules/refunds/refunds.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
 import { TillsModule } from './modules/tills/tills.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
     ShiftsModule,
     TillsModule,
     ReservationsModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
