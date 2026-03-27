@@ -17,6 +17,7 @@ import {
   CreateEventDto,
   UpdateEventDto,
   PublishEventDto,
+  OpenEventDto,
   CloseEventDto,
   CreateTicketClassDto,
   CreateBookingDto,
@@ -104,6 +105,22 @@ export class EventsController {
   ) {
     const ctx = (req as any).branchContext;
     return this.eventsService.publishEvent(id, user.id, ctx, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Patch(':id/open')
+  @Permissions('pos:event:publish')
+  @HttpCode(HttpStatus.OK)
+  async open(
+    @Param('id') id: string,
+    @Body() dto: OpenEventDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.eventsService.openEvent(id, user.id, ctx, dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });

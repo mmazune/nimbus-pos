@@ -19,6 +19,7 @@ import {
   CreateEventDto,
   UpdateEventDto,
   PublishEventDto,
+  OpenEventDto,
   CloseEventDto,
   CreateTicketClassDto,
   CreateBookingDto,
@@ -268,6 +269,50 @@ export class EventsService {
       entityType: 'Event',
       entityId: id,
       metadata: { eventNumber: event.eventNumber, portalKey },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return updated;
+  }
+
+  // ── Open Event ──
+
+  async openEvent(
+    id: string,
+    userId: string,
+    ctx: BranchContext,
+    dto: OpenEventDto,
+    meta: RequestMeta,
+  ) {
+    const event = await this.findEventOrFail(id, ctx);
+    this.assertEventTransition(event.status, EventStatus.OPEN);
+
+    const updated = await this.prisma.event.update({
+      where: { id },
+      data: {
+        status: EventStatus.OPEN,
+        updatedById: userId,
+      },
+      include: { ticketClasses: true, venueTable: true },
+    });
+
+    await this.logEventAudit(
+      ctx,
+      id,
+      null,
+      null,
+      'EVENT_OPENED',
+      userId,
+      dto.reason ? `Event opened: ${dto.reason}` : 'Event opened — doors open',
+    );
+
+    await this.audit.log({
+      actorUserId: userId,
+      action: 'EVENT_OPENED',
+      entityType: 'Event',
+      entityId: id,
+      metadata: { eventNumber: event.eventNumber },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

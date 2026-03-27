@@ -237,6 +237,34 @@
             ]
         },
         {
+            "name": "Open Event",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"reason\": \"Doors open — event started\"\n}"
+                },
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/open", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "open"] }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Opened event', () => {",
+                            "  pm.response.to.have.status(200);",
+                            "  pm.expect(pm.response.json().status).to.eql('OPEN');",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
             "name": "Portal — Get Event by Portal Key",
             "request": {
                 "method": "GET",
