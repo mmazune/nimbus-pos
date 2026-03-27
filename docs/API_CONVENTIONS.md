@@ -427,6 +427,49 @@ Owner/manager dashboards, today summary, payment mix, open orders, low stock, KP
 | ------ | --------------------------- | ---- | ---------- | ------ | ------------------------------------ |
 | SSE    | `/api/stream/metrics`       | Yes  | (auth only)| Yes    | Live metrics stream (15s interval)   |
 
+## Reporting v1 + Exports (M20) ✅
+
+Core report generation, history listing, CSV/PDF export, and artifact download.
+
+### Report Generation Endpoints (M20)
+
+| Method | Path                              | Auth | Permission                                | Branch | Description                          |
+| ------ | --------------------------------- | ---- | ----------------------------------------- | ------ | ------------------------------------ |
+| POST   | `/api/reports/shift-end`          | Yes  | pos:reports:shift-end:generate            | Yes    | Shift-end report                     |
+| POST   | `/api/reports/daily-sales`        | Yes  | pos:reports:daily-sales:generate          | Yes    | Daily sales report                   |
+| POST   | `/api/reports/payment-mix`        | Yes  | pos:reports:payment-mix:generate          | Yes    | Payment mix report                   |
+| POST   | `/api/reports/top-items`          | Yes  | pos:reports:top-items:generate            | Yes    | Top items report                     |
+| POST   | `/api/reports/stock-variance`     | Yes  | pos:reports:stock-variance:generate       | Yes    | Stock variance report                |
+| POST   | `/api/reports/anomaly-summary`    | Yes  | pos:reports:anomaly-summary:generate      | Yes    | Anomaly summary report               |
+| GET    | `/api/reports`                    | Yes  | pos:reports:history:read                  | Yes    | List report runs                     |
+| GET    | `/api/reports/:id`                | Yes  | pos:reports:history:read                  | Yes    | Get report run by ID                 |
+| POST   | `/api/reports/export`             | Yes  | pos:reports:exports:read                  | Yes    | Create CSV/PDF export                |
+| GET    | `/api/reports/exports/:id/download` | Yes | pos:reports:exports:download             | Yes    | Download export file                 |
+
+### Report Depth Expansion Endpoints (M20.1)
+
+| Method | Path                                  | Auth | Permission                                   | Branch | Description                     |
+| ------ | ------------------------------------- | ---- | -------------------------------------------- | ------ | ------------------------------- |
+| GET    | `/api/reports/catalog`                | Yes  | pos:reports:catalog:read                     | Yes    | Report catalog (all types)      |
+| POST   | `/api/reports/sales-by-category`      | Yes  | pos:reports:sales-by-category:generate       | Yes    | Sales by category / PMIX        |
+| POST   | `/api/reports/sales-by-hour`          | Yes  | pos:reports:sales-by-hour:generate           | Yes    | Sales by hour / daypart         |
+| POST   | `/api/reports/open-closed-orders`     | Yes  | pos:reports:sales-by-hour:generate           | Yes    | Open vs closed orders           |
+| POST   | `/api/reports/discounts-summary`      | Yes  | pos:reports:discounts:generate               | Yes    | Discounts summary               |
+| POST   | `/api/reports/voids-summary`          | Yes  | pos:reports:voids:generate                   | Yes    | Voids summary                   |
+| POST   | `/api/reports/refunds-summary`        | Yes  | pos:reports:refunds:generate                 | Yes    | Refunds summary                 |
+| POST   | `/api/reports/cash-variance`          | Yes  | pos:reports:cash-variance:generate           | Yes    | Cash variance / over-short      |
+| POST   | `/api/reports/cash-movements`         | Yes  | pos:reports:cash-movements:generate          | Yes    | Cash movements detail           |
+| POST   | `/api/reports/wastage-summary`        | Yes  | pos:reports:wastage:generate                 | Yes    | Wastage / spoilage              |
+| POST   | `/api/reports/low-stock`              | Yes  | pos:reports:low-stock:generate               | Yes    | Low-stock alerts                |
+| POST   | `/api/reports/reservation-summary`    | Yes  | pos:reports:reservations:generate            | Yes    | Reservation summary             |
+| POST   | `/api/reports/reservation-deposits`   | Yes  | pos:reports:reservations:generate            | Yes    | Reservation deposits            |
+| POST   | `/api/reports/reservation-no-shows`   | Yes  | pos:reports:reservations:generate            | Yes    | Reservation no-shows            |
+| POST   | `/api/reports/event-summary`          | Yes  | pos:reports:events:generate                  | Yes    | Event summary                   |
+| POST   | `/api/reports/event-bookings`         | Yes  | pos:reports:events:generate                  | Yes    | Event bookings detail           |
+| POST   | `/api/reports/event-checkins`         | Yes  | pos:reports:events:generate                  | Yes    | Event check-ins detail          |
+| POST   | `/api/reports/high-risk-actors`       | Yes  | pos:reports:anomaly-summary:generate         | Yes    | High risk actors report         |
+| POST   | `/api/reports/staff-operations`       | Yes  | pos:reports:staff-operations:generate        | Yes    | Staff operations report         |
+
 ## Validation
 
 - DTO classes with `class-validator`

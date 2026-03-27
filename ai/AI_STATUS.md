@@ -3,12 +3,12 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M20 ✅
-- Last completed milestone: M20 — Reporting v1 + Exports
+- Current milestone: M20.1 ✅
+- Last completed milestone: M20.1 — Reporting Depth Expansion + M20 Finalization
 - Next milestone: M21 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
-- Date updated: 2026-03-27
+- Date updated: 2026-03-28
 
 ## Environment
 
@@ -542,6 +542,27 @@
 - [x] M13.1 (MTN native) = PENDING
 - [x] M13.2 (Airtel native) = PENDING
 - [x] DONE: All verification gates confirmed ✅
+
+### M20.1 — Reporting Depth Expansion + Finalization
+
+- [x] Branch: milestone/m20-1-reporting-depth-finalization
+- [x] Schema: ReportType enum expanded from 8 → 25 values (17 new types)
+- [x] Migration: 20260328000000_m20_1_reporting_depth (migration 25)
+- [x] Prisma generate: v5.22.0 ✅
+- [x] DTOs: 12 new validation DTOs (sales-by-category, sales-by-hour, discounts, voids, refunds, cash-variance, cash-movements, wastage, low-stock, reservation-summary, event-summary, staff-operations)
+- [x] Service: rewritten with 20+ report generators + GET /catalog endpoint
+- [x] Controller: rewritten with 24+ endpoints (18 new generate + 1 catalog)
+- [x] Permissions: 13 new (sales-by-category:generate, sales-by-hour:generate, discounts:generate, voids:generate, refunds:generate, cash-variance:generate, cash-movements:generate, wastage:generate, low-stock:generate, reservations:generate, events:generate, staff-operations:generate, catalog:read)
+- [x] Seed: 13 new permissions + updated role mappings (Owner, Manager, Accountant, Supervisor); optimized RolePermissions to batch queries (3 queries instead of ~1243)
+- [x] Unit tests: reports.service.spec.ts — 39 tests (20 new)
+- [x] E2e tests: reports.e2e-spec.ts — 39 tests (22 new)
+- [x] Postman: M20_1-Reporting-Depth-Finalization.postman_collection.json (24 requests)
+- [x] Docs: REPORT_CATALOG_GUIDE.md created; API_CONVENTIONS.md, MODULES.md, POSTMAN_ENDPOINT_GUIDE.md, AI_STATUS.md updated
+- [x] TypeScript: 0 errors, ESLint: 0 errors
+- [x] Seed x2 idempotent ✅
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] DONE: All M20.1 verification gates confirmed ✅
 
 ### M21+
 

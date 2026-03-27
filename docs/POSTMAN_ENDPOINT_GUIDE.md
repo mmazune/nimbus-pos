@@ -212,6 +212,30 @@ Quick-reference of **every API endpoint** with Postman collection mapping.
 | POST | `/api/reports/export` | M20-Reporting-v1-Exports |
 | GET | `/api/reports/exports/:id/download` | M20-Reporting-v1-Exports |
 
+## Reporting Depth Expansion (M20.1)
+
+| Method | Path | Collection |
+|--------|------|-----------|
+| GET | `/api/reports/catalog` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/sales-by-category` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/sales-by-hour` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/open-closed-orders` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/discounts-summary` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/voids-summary` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/refunds-summary` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/cash-variance` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/cash-movements` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/wastage-summary` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/low-stock` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/reservation-summary` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/reservation-deposits` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/reservation-no-shows` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/event-summary` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/event-bookings` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/event-checkins` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/high-risk-actors` | M20_1-Reporting-Depth-Finalization |
+| POST | `/api/reports/staff-operations` | M20_1-Reporting-Depth-Finalization |
+
 ---
 
 ## Common Pitfalls & Known Issues

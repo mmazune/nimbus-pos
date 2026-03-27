@@ -1,0 +1,454 @@
+{
+    "info": {
+        "name": "M20.1 — Reporting Depth Expansion + Finalization",
+        "_postman_id": "m20-1-reporting-depth-finalization",
+        "description": "M20.1 Reporting Depth Expansion. 18 new report endpoints (sales-by-category, sales-by-hour, open-closed-orders, discounts-summary, voids-summary, refunds-summary, cash-variance, cash-movements, wastage-summary, low-stock, reservation-summary, reservation-deposits, reservation-no-shows, event-summary, event-bookings, event-checkins, high-risk-actors, staff-operations) + GET /catalog.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        { "key": "baseUrl", "value": "http://localhost:3001" },
+        { "key": "accessToken", "value": "" },
+        { "key": "branchId", "value": "" },
+        { "key": "chefAccessToken", "value": "" },
+        { "key": "reportRunId", "value": "" },
+        { "key": "exportArtifactId", "value": "" }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{accessToken}}" }]
+    },
+    "item": [
+        {
+            "name": "00 — Login (Owner)",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "const body = pm.response.json();",
+                "pm.environment.set('accessToken', body.accessToken);",
+                "pm.test('Login OK', () => pm.response.to.have.status(201));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"email\":\"owner@demo.local\",\"password\":\"Owner#123\"}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+            }
+        },
+        {
+            "name": "00b — Login (Chef — no report perms)",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "const body = pm.response.json();",
+                "pm.environment.set('chefAccessToken', body.accessToken);",
+                "pm.test('Login OK', () => pm.response.to.have.status(201));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"email\":\"chef@demo.local\",\"password\":\"Chef#123\"}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+            }
+        },
+        {
+            "name": "00c — Get Branch ID",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "const body = pm.response.json();",
+                "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                "pm.environment.set('branchId', bid);",
+                "pm.test('Branch extracted', () => pm.expect(bid).to.be.a('string'));"
+            ] } }],
+            "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+                "url": { "raw": "{{baseUrl}}/api/me", "host": ["{{baseUrl}}"], "path": ["api","me"] }
+            }
+        },
+        {
+            "name": "01 — GET Report Catalog",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "pm.test('Array with 20+ entries', () => pm.expect(body.length).to.be.greaterThan(20));",
+                "pm.test('Entry has key/title/status', () => { pm.expect(body[0].key).to.be.a('string'); pm.expect(body[0].title).to.be.a('string'); pm.expect(body[0].status).to.be.a('string'); });"
+            ] } }],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/reports/catalog", "host": ["{{baseUrl}}"], "path": ["api","reports","catalog"] }
+            }
+        },
+        {
+            "name": "02 — Sales by Category",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "const body = pm.response.json();",
+                "pm.test('SALES_BY_CATEGORY', () => pm.expect(body.reportType).to.eql('SALES_BY_CATEGORY'));",
+                "pm.test('COMPLETED', () => pm.expect(body.status).to.eql('COMPLETED'));",
+                "pm.environment.set('reportRunId', body.id);"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/sales-by-category", "host": ["{{baseUrl}}"], "path": ["api","reports","sales-by-category"] }
+            }
+        },
+        {
+            "name": "03 — Sales by Hour",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('SALES_BY_HOUR', () => pm.expect(pm.response.json().reportType).to.eql('SALES_BY_HOUR'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/sales-by-hour", "host": ["{{baseUrl}}"], "path": ["api","reports","sales-by-hour"] }
+            }
+        },
+        {
+            "name": "04 — Open/Closed Orders",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('OPEN_CLOSED_ORDERS', () => pm.expect(pm.response.json().reportType).to.eql('OPEN_CLOSED_ORDERS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/open-closed-orders", "host": ["{{baseUrl}}"], "path": ["api","reports","open-closed-orders"] }
+            }
+        },
+        {
+            "name": "05 — Discounts Summary",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('DISCOUNTS_SUMMARY', () => pm.expect(pm.response.json().reportType).to.eql('DISCOUNTS_SUMMARY'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/discounts-summary", "host": ["{{baseUrl}}"], "path": ["api","reports","discounts-summary"] }
+            }
+        },
+        {
+            "name": "06 — Voids Summary",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('VOIDS_SUMMARY', () => pm.expect(pm.response.json().reportType).to.eql('VOIDS_SUMMARY'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/voids-summary", "host": ["{{baseUrl}}"], "path": ["api","reports","voids-summary"] }
+            }
+        },
+        {
+            "name": "07 — Refunds Summary",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('REFUNDS_SUMMARY', () => pm.expect(pm.response.json().reportType).to.eql('REFUNDS_SUMMARY'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/refunds-summary", "host": ["{{baseUrl}}"], "path": ["api","reports","refunds-summary"] }
+            }
+        },
+        {
+            "name": "08 — Cash Variance",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('CASH_VARIANCE', () => pm.expect(pm.response.json().reportType).to.eql('CASH_VARIANCE'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/cash-variance", "host": ["{{baseUrl}}"], "path": ["api","reports","cash-variance"] }
+            }
+        },
+        {
+            "name": "09 — Cash Movements",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('CASH_MOVEMENTS', () => pm.expect(pm.response.json().reportType).to.eql('CASH_MOVEMENTS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/cash-movements", "host": ["{{baseUrl}}"], "path": ["api","reports","cash-movements"] }
+            }
+        },
+        {
+            "name": "10 — Wastage Summary",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('WASTAGE_SUMMARY', () => pm.expect(pm.response.json().reportType).to.eql('WASTAGE_SUMMARY'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/wastage-summary", "host": ["{{baseUrl}}"], "path": ["api","reports","wastage-summary"] }
+            }
+        },
+        {
+            "name": "11 — Low Stock",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('LOW_STOCK', () => pm.expect(pm.response.json().reportType).to.eql('LOW_STOCK'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/low-stock", "host": ["{{baseUrl}}"], "path": ["api","reports","low-stock"] }
+            }
+        },
+        {
+            "name": "12 — Reservation Summary",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('RESERVATION_SUMMARY', () => pm.expect(pm.response.json().reportType).to.eql('RESERVATION_SUMMARY'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/reservation-summary", "host": ["{{baseUrl}}"], "path": ["api","reports","reservation-summary"] }
+            }
+        },
+        {
+            "name": "13 — Reservation Deposits",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('RESERVATION_DEPOSITS', () => pm.expect(pm.response.json().reportType).to.eql('RESERVATION_DEPOSITS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/reservation-deposits", "host": ["{{baseUrl}}"], "path": ["api","reports","reservation-deposits"] }
+            }
+        },
+        {
+            "name": "14 — Reservation No-Shows",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('RESERVATION_NO_SHOWS', () => pm.expect(pm.response.json().reportType).to.eql('RESERVATION_NO_SHOWS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/reservation-no-shows", "host": ["{{baseUrl}}"], "path": ["api","reports","reservation-no-shows"] }
+            }
+        },
+        {
+            "name": "15 — Event Summary",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('EVENT_SUMMARY', () => pm.expect(pm.response.json().reportType).to.eql('EVENT_SUMMARY'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/event-summary", "host": ["{{baseUrl}}"], "path": ["api","reports","event-summary"] }
+            }
+        },
+        {
+            "name": "16 — Event Bookings",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('EVENT_BOOKINGS', () => pm.expect(pm.response.json().reportType).to.eql('EVENT_BOOKINGS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/event-bookings", "host": ["{{baseUrl}}"], "path": ["api","reports","event-bookings"] }
+            }
+        },
+        {
+            "name": "17 — Event Checkins",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('EVENT_CHECKINS', () => pm.expect(pm.response.json().reportType).to.eql('EVENT_CHECKINS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/event-checkins", "host": ["{{baseUrl}}"], "path": ["api","reports","event-checkins"] }
+            }
+        },
+        {
+            "name": "18 — High Risk Actors",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('HIGH_RISK_ACTORS', () => pm.expect(pm.response.json().reportType).to.eql('HIGH_RISK_ACTORS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/high-risk-actors", "host": ["{{baseUrl}}"], "path": ["api","reports","high-risk-actors"] }
+            }
+        },
+        {
+            "name": "19 — Staff Operations",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('STAFF_OPERATIONS', () => pm.expect(pm.response.json().reportType).to.eql('STAFF_OPERATIONS'));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/staff-operations", "host": ["{{baseUrl}}"], "path": ["api","reports","staff-operations"] }
+            }
+        },
+        {
+            "name": "20 — Export CSV for last report",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                "const body = pm.response.json();",
+                "pm.test('CSV + READY', () => { pm.expect(body.format).to.eql('CSV'); pm.expect(body.status).to.eql('READY'); });",
+                "pm.environment.set('exportArtifactId', body.id);"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportRunId\":\"{{reportRunId}}\",\"format\":\"CSV\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/export", "host": ["{{baseUrl}}"], "path": ["api","reports","export"] }
+            }
+        },
+        {
+            "name": "21 — Download Export",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                "pm.test('CSV content-type', () => pm.expect(pm.response.headers.get('content-type')).to.include('text/csv'));"
+            ] } }],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/reports/exports/{{exportArtifactId}}/download", "host": ["{{baseUrl}}"], "path": ["api","reports","exports","{{exportArtifactId}}","download"] }
+            }
+        },
+        {
+            "name": "22 — 403 Chef: sales-by-category",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+            ] } }],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "Authorization", "value": "Bearer {{chefAccessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\"reportWindow\":\"DAY\"}" },
+                "url": { "raw": "{{baseUrl}}/api/reports/sales-by-category", "host": ["{{baseUrl}}"], "path": ["api","reports","sales-by-category"] }
+            }
+        },
+        {
+            "name": "23 — 403 Chef: catalog",
+            "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+            ] } }],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "Authorization", "value": "Bearer {{chefAccessToken}}" },
+                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/reports/catalog", "host": ["{{baseUrl}}"], "path": ["api","reports","catalog"] }
+            }
+        }
+    ]
+}
