@@ -18,6 +18,7 @@
 // M16 models: Reservation, ReservationDeposit, ReservationEvent + ReservationStatus, ReservationSource, ReservationDepositStatus, ReservationEventType enums
 // M17 models: Event, EventTicketClass, EventBooking, EventTicket, EventCheckIn, EventAuditLog + EventStatus, EventBookingStatus, TicketStatus, TicketClassType, CheckInStatus enums
 // M18 models: AnomalyRule, RiskThreshold, AnomalyEvent, StaffRiskSnapshot + AnomalyRuleStatus, AnomalyRuleType, AnomalySeverity, AnomalyEventStatus, RiskEntityType enums
+// M19 models: KpiSnapshot, KpiSubscription + KpiScopeType, KpiMetricWindow, KpiSubscriptionStatus enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -190,6 +191,8 @@ model User {
     anomalyEventsActed     AnomalyEvent[]     @relation("AnomalyEventActor")
     anomalyEventsAcked     AnomalyEvent[]     @relation("AnomalyEventAcknowledgedBy")
     staffRiskSnapshots     StaffRiskSnapshot[] @relation("StaffRiskSnapshotUser")
+    // M19 — Dashboards + KPI
+    kpiSubscriptions       KpiSubscription[]  @relation("KpiSubscriptionUser")
 
     @@map("users")
 }
@@ -375,6 +378,9 @@ model Organization {
     riskThresholds      RiskThreshold[]
     anomalyEvents       AnomalyEvent[]
     staffRiskSnapshots  StaffRiskSnapshot[]
+    // M19 — Dashboards + KPI
+    kpiSnapshots        KpiSnapshot[]
+    kpiSubscriptions    KpiSubscription[]
 
     @@map("organizations")
 }
@@ -434,6 +440,9 @@ model Branch {
     riskThresholds      RiskThreshold[]
     anomalyEvents       AnomalyEvent[]
     staffRiskSnapshots  StaffRiskSnapshot[]
+    // M19 — Dashboards + KPI
+    kpiSnapshots        KpiSnapshot[]
+    kpiSubscriptions    KpiSubscription[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2201,4 +2210,90 @@ model StaffRiskSnapshot {
     @@index([branchId, userId])
     @@index([createdAt])
     @@map("staff_risk_snapshots")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// M19 — Operational Dashboards + KPI Streams
+// ═══════════════════════════════════════════════════════════════════
+
+enum KpiScopeType {
+    OWNER
+    MANAGER
+    BRANCH
+}
+
+enum KpiMetricWindow {
+    TODAY
+    MTD
+    CUSTOM
+}
+
+enum KpiSubscriptionStatus {
+    ACTIVE
+    CLOSED
+}
+
+/// Cached KPI snapshot for a scope/window/date.
+model KpiSnapshot {
+    id                     String          @id @default(cuid())
+    orgId                  String          @map("org_id")
+    branchId               String?         @map("branch_id")
+    scopeType              KpiScopeType    @map("scope_type")
+    metricWindow           KpiMetricWindow @map("metric_window")
+    snapshotDate           DateTime        @map("snapshot_date")
+    grossSales             Decimal         @default(0) @map("gross_sales") @db.Decimal(10, 2)
+    netSales               Decimal         @default(0) @map("net_sales") @db.Decimal(10, 2)
+    paymentCash            Decimal         @default(0) @map("payment_cash") @db.Decimal(10, 2)
+    paymentCard            Decimal         @default(0) @map("payment_card") @db.Decimal(10, 2)
+    paymentMomo            Decimal         @default(0) @map("payment_momo") @db.Decimal(10, 2)
+    refundsTotal           Decimal         @default(0) @map("refunds_total") @db.Decimal(10, 2)
+    ordersOpenCount        Int             @default(0) @map("orders_open_count")
+    ordersClosedCount      Int             @default(0) @map("orders_closed_count")
+    lowStockCount          Int             @default(0) @map("low_stock_count")
+    anomalyOpenCount       Int             @default(0) @map("anomaly_open_count")
+    anomalyHighCount       Int             @default(0) @map("anomaly_high_count")
+    reservationsTodayCount Int             @default(0) @map("reservations_today_count")
+    eventsTodayCount       Int             @default(0) @map("events_today_count")
+    avgOrderValue          Decimal         @default(0) @map("avg_order_value") @db.Decimal(10, 2)
+    metadata               Json?
+    calculatedAt           DateTime        @map("calculated_at")
+    createdAt              DateTime        @default(now()) @map("created_at")
+    updatedAt              DateTime        @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([scopeType])
+    @@index([metricWindow])
+    @@index([snapshotDate])
+    @@index([orgId, branchId, scopeType, metricWindow, snapshotDate])
+    @@map("kpi_snapshots")
+}
+
+/// Lightweight KPI stream subscription state.
+model KpiSubscription {
+    id         String                @id @default(cuid())
+    orgId      String                @map("org_id")
+    branchId   String?               @map("branch_id")
+    scopeType  KpiScopeType          @map("scope_type")
+    userId     String                @map("user_id")
+    status     KpiSubscriptionStatus @default(ACTIVE)
+    lastPingAt DateTime?             @map("last_ping_at")
+    metadata   Json?
+    createdAt  DateTime              @default(now()) @map("created_at")
+    updatedAt  DateTime              @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    user         User         @relation("KpiSubscriptionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([userId])
+    @@index([status])
+    @@index([scopeType])
+    @@index([orgId, branchId, userId, status])
+    @@map("kpi_subscriptions")
 }

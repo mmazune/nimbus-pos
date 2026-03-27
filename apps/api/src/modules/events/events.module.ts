@@ -7,4 +7,4 @@ import { EventsService } from './events.service';
   providers: [EventsService],
   exports: [EventsService],
 })
-export class EventsModule { }
+export class EventsModule {}

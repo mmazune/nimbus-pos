@@ -21,6 +21,7 @@ import { TillsModule } from './modules/tills/tills.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { EventsModule } from './modules/events/events.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { DashboardsModule } from './modules/dashboards/dashboards.module';
 
 @Module({
   imports: [
@@ -44,8 +45,9 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     ReservationsModule,
     EventsModule,
     AnalyticsModule,
+    DashboardsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -230,6 +230,12 @@ const PERMISSIONS_DATA = [
     { action: 'pos:analytics:anomalies:recalculate', description: 'Trigger anomaly recalculation for a branch' },
     { action: 'pos:analytics:thresholds:read', description: 'Read risk threshold configuration' },
     { action: 'pos:analytics:thresholds:update', description: 'Update risk threshold configuration' },
+    // ── M19: Operational Dashboards + KPI Streams ──
+    { action: 'pos:dash:owner:read', description: 'Read owner-level dashboard' },
+    { action: 'pos:dash:manager:read', description: 'Read manager-level dashboard' },
+    { action: 'pos:dash:today-summary:read', description: 'Read today summary + payment mix + open orders + low stock' },
+    { action: 'pos:dash:stream:read', description: 'Subscribe to live metric SSE stream' },
+    { action: 'pos:dash:kpi:refresh', description: 'Trigger a manual KPI snapshot refresh' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -345,6 +351,12 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:analytics:anomalies:recalculate',
         'pos:analytics:thresholds:read',
         'pos:analytics:thresholds:update',
+        // M19: Operational Dashboards + KPI Streams
+        'pos:dash:owner:read',
+        'pos:dash:manager:read',
+        'pos:dash:today-summary:read',
+        'pos:dash:stream:read',
+        'pos:dash:kpi:refresh',
     ],
     Manager: [
         'identity:user:read',
@@ -430,6 +442,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:analytics:anomalies:recalculate',
         'pos:analytics:thresholds:read',
         'pos:analytics:thresholds:update',
+        // M19: Operational Dashboards + KPI Streams
+        'pos:dash:manager:read',
+        'pos:dash:today-summary:read',
+        'pos:dash:stream:read',
+        'pos:dash:kpi:refresh',
     ],
     Accountant: [
         'identity:user:read',
@@ -451,6 +468,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:analytics:anomalies:read',
         'pos:analytics:risk-dashboard:read',
         'pos:analytics:thresholds:read',
+        // M19: Dashboards (read-only for Accountant)
+        'pos:dash:today-summary:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -528,6 +547,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:analytics:risk-dashboard:read',
         'pos:analytics:anomalies:recalculate',
         'pos:analytics:thresholds:read',
+        // M19: Operational Dashboards (Supervisor: manager + today-summary + stream)
+        'pos:dash:manager:read',
+        'pos:dash:today-summary:read',
+        'pos:dash:stream:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -4156,6 +4179,88 @@ async function seedAnalyticsData(
     return { created, skipped };
 }
 
+// ── M19: Operational Dashboards Seed Data ──
+
+async function seedDashboardData(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping dashboard data`);
+        return { created: 0, skipped: 0 };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    if (!owner) {
+        console.log(`  ⚠️  Owner user not found — skipping dashboard data`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // ── Sample KpiSnapshot (idempotent: check if any snapshot exists for branch) ──
+    const existingSnapshot = await prisma.kpiSnapshot.findFirst({ where: { orgId, branchId: branch.id } });
+    if (existingSnapshot) {
+        console.log(`  ⏭  KpiSnapshot for branch "${branchCode}" already exists — skipped`);
+        skipped++;
+    } else {
+        await prisma.kpiSnapshot.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                scopeType: 'BRANCH',
+                metricWindow: 'TODAY',
+                snapshotDate: new Date(new Date().setHours(0, 0, 0, 0)),
+                grossSales: 1250000,
+                netSales: 1215000,
+                paymentCash: 750000,
+                paymentCard: 300000,
+                paymentMomo: 200000,
+                refundsTotal: 35000,
+                ordersOpenCount: 3,
+                ordersClosedCount: 44,
+                lowStockCount: 2,
+                anomalyOpenCount: 1,
+                anomalyHighCount: 0,
+                reservationsTodayCount: 5,
+                eventsTodayCount: 0,
+                avgOrderValue: 26596,
+                calculatedAt: new Date(),
+            },
+        });
+        console.log(`  ✅ Sample KpiSnapshot (TODAY, BRANCH) created`);
+        created++;
+    }
+
+    // ── Sample KpiSubscription (idempotent: check if subscription exists for owner) ──
+    const existingSub = await prisma.kpiSubscription.findFirst({
+        where: { orgId, branchId: branch.id, userId: owner.id },
+    });
+    if (existingSub) {
+        console.log(`  ⏭  KpiSubscription for owner already exists — skipped`);
+        skipped++;
+    } else {
+        await prisma.kpiSubscription.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                userId: owner.id,
+                scopeType: 'OWNER',
+                status: 'ACTIVE',
+                lastPingAt: new Date(),
+            },
+        });
+        console.log(`  ✅ Sample KpiSubscription (OWNER, ACTIVE) created`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -4345,6 +4450,11 @@ async function main(): Promise<void> {
     const analyticsResult = await seedAnalyticsData(orgResult.orgId, 'MAIN');
     console.log(`   Created: ${analyticsResult.created}, Skipped: ${analyticsResult.skipped}\n`);
 
+    // 35) Seed Operational Dashboards + KPI Streams (M19)
+    console.log('── Operational Dashboards + KPI Streams (M19) ──');
+    const dashboardResult = await seedDashboardData(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${dashboardResult.created}, Skipped: ${dashboardResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -4421,6 +4531,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm18-anomaly-anti-theft',
         `Analytics: ${analyticsResult.created}c/${analyticsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm19-dashboards-kpi-streams',
+        `Dashboards: ${dashboardResult.created}c/${dashboardResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 
