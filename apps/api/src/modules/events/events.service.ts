@@ -58,7 +58,7 @@ export class EventsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) { }
+  ) {}
 
   // ── Number Generators ──
 

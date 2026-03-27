@@ -1,0 +1,329 @@
+{
+  "info": {
+    "name": "M18 — Anomaly Detection + Anti-Theft Signals",
+    "_postman_id": "m18-anomaly-anti-theft",
+    "description": "M18 Anomaly Detection & Anti-Theft Signals. Covers anomaly rules CRUD, anomaly events (list/acknowledge/resolve), risk dashboard, staff risk snapshots, thresholds, and recalculate.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "ownerToken", "value": "" },
+    { "key": "branchId", "value": "" },
+    { "key": "ruleId", "value": "" },
+    { "key": "anomalyId", "value": "" },
+    { "key": "thresholdId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{ownerToken}}" }]
+  },
+  "item": [
+    {
+      "name": "00 — Login (Owner)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('ownerToken', body.accessToken);",
+              "pm.test('Login OK', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"owner@demo.local\",\"password\":\"Owner#123\"}"
+        },
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+      }
+    },
+    {
+      "name": "01 — Get Branch ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+              "pm.collectionVariables.set('branchId', bid);",
+              "pm.test('Got branchId', () => pm.expect(bid).to.be.a('string'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/me", "host": ["{{baseUrl}}"], "path": ["me"] }
+      }
+    },
+    {
+      "name": "02 — Create Anomaly Rule",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('ruleId', body.id);",
+              "pm.test('Rule created', () => { pm.response.to.have.status(201); pm.expect(body.code).to.eql('PM-VOID-01'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-branch-id", "value": "{{branchId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"code\":\"PM-VOID-01\",\"name\":\"Postman Void Spike\",\"type\":\"VOID_SPIKE\",\"severity\":\"HIGH\",\"metricKey\":\"order.void.count_per_staff\",\"operator\":\">=\",\"thresholdValue\":5,\"windowMinutes\":60}"
+        },
+        "url": { "raw": "{{baseUrl}}/analytics/anomaly-rules", "host": ["{{baseUrl}}"], "path": ["analytics", "anomaly-rules"] }
+      }
+    },
+    {
+      "name": "03 — List Anomaly Rules",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rules list OK', () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-branch-id", "value": "{{branchId}}" }],
+        "url": { "raw": "{{baseUrl}}/analytics/anomaly-rules", "host": ["{{baseUrl}}"], "path": ["analytics", "anomaly-rules"] }
+      }
+    },
+    {
+      "name": "04 — Get Rule by ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rule retrieved', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('ruleId')); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-branch-id", "value": "{{branchId}}" }],
+        "url": { "raw": "{{baseUrl}}/analytics/anomaly-rules/{{ruleId}}", "host": ["{{baseUrl}}"], "path": ["analytics", "anomaly-rules", "{{ruleId}}"] }
+      }
+    },
+    {
+      "name": "05 — Update Rule",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rule updated', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().name).to.eql('Updated Void Spike'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-branch-id", "value": "{{branchId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Updated Void Spike\",\"severity\":\"CRITICAL\"}"
+        },
+        "url": { "raw": "{{baseUrl}}/analytics/anomaly-rules/{{ruleId}}", "host": ["{{baseUrl}}"], "path": ["analytics", "anomaly-rules", "{{ruleId}}"] }
+      }
+    },
+    {
+      "name": "06 — List Anomalies",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Anomalies list OK', () => { pm.response.to.have.status(200); pm.expect(body.data).to.be.an('array'); });",
+              "if (body.data.length > 0) pm.collectionVariables.set('anomalyId', body.data[0].id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-branch-id", "value": "{{branchId}}" }],
+        "url": { "raw": "{{baseUrl}}/analytics/anomalies", "host": ["{{baseUrl}}"], "path": ["analytics", "anomalies"] }
+      }
+    },
+    {
+      "name": "07 — Filter Anomalies by Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Filtered anomalies OK', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-branch-id", "value": "{{branchId}}" }],
+        "url": { "raw": "{{baseUrl}}/analytics/anomalies?status=OPEN&limit=5", "host": ["{{baseUrl}}"], "path": ["analytics", "anomalies"], "query": [{ "key": "status", "value": "OPEN" }, { "key": "limit", "value": "5" }] }
+      }
+    },
+    {
+      "name": "08 — Acknowledge Anomaly",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Anomaly acknowledged', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('ACKNOWLEDGED'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-branch-id", "value": "{{branchId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"resolutionNotes\":\"Reviewed via Postman\"}"
+        },
+        "url": { "raw": "{{baseUrl}}/analytics/anomalies/{{anomalyId}}/acknowledge", "host": ["{{baseUrl}}"], "path": ["analytics", "anomalies", "{{anomalyId}}", "acknowledge"] }
+      }
+    },
+    {
+      "name": "09 — Resolve Anomaly",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Anomaly resolved', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('RESOLVED'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-branch-id", "value": "{{branchId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"resolutionNotes\":\"Resolved via Postman — false positive\"}"
+        },
+        "url": { "raw": "{{baseUrl}}/analytics/anomalies/{{anomalyId}}/resolve", "host": ["{{baseUrl}}"], "path": ["analytics", "anomalies", "{{anomalyId}}", "resolve"] }
+      }
+    },
+    {
+      "name": "10 — Risk Dashboard",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Dashboard OK', () => { pm.response.to.have.status(200); pm.expect(body.openAnomalies).to.be.a('number'); pm.expect(body.severityBreakdown).to.be.an('array'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-branch-id", "value": "{{branchId}}" }],
+        "url": { "raw": "{{baseUrl}}/analytics/risk-dashboard", "host": ["{{baseUrl}}"], "path": ["analytics", "risk-dashboard"] }
+      }
+    },
+    {
+      "name": "11 — List Thresholds",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Thresholds list OK', () => { pm.response.to.have.status(200); pm.expect(body).to.be.an('array'); });",
+              "if (body.length > 0) pm.collectionVariables.set('thresholdId', body[0].id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-branch-id", "value": "{{branchId}}" }],
+        "url": { "raw": "{{baseUrl}}/analytics/thresholds", "host": ["{{baseUrl}}"], "path": ["analytics", "thresholds"] }
+      }
+    },
+    {
+      "name": "12 — Update Threshold",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Threshold updated', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-branch-id", "value": "{{branchId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"description\":\"Updated via Postman\"}"
+        },
+        "url": { "raw": "{{baseUrl}}/analytics/thresholds/{{thresholdId}}", "host": ["{{baseUrl}}"], "path": ["analytics", "thresholds", "{{thresholdId}}"] }
+      }
+    },
+    {
+      "name": "13 — Recalculate Anomalies",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Recalculate OK', () => { pm.response.to.have.status(200); pm.expect(body.rulesEvaluated).to.be.a('number'); pm.expect(body.results).to.be.an('array'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-branch-id", "value": "{{branchId}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": { "raw": "{{baseUrl}}/analytics/anomalies/recalculate", "host": ["{{baseUrl}}"], "path": ["analytics", "anomalies", "recalculate"] }
+      }
+    }
+  ]
+}

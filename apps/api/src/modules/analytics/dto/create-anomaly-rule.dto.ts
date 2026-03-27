@@ -19,7 +19,18 @@ export class CreateAnomalyRuleDto {
   @MaxLength(200)
   name!: string;
 
-  @IsEnum(['VOID_SPIKE', 'DISCOUNT_ABUSE', 'CASH_VARIANCE', 'SHRINKAGE', 'LATE_CLOSE', 'PRICE_OVERRIDE', 'REFUND_SPIKE', 'NO_SHOW_PATTERN', 'CHECKIN_DENIED_PATTERN', 'CUSTOM'])
+  @IsEnum([
+    'VOID_SPIKE',
+    'DISCOUNT_ABUSE',
+    'CASH_VARIANCE',
+    'SHRINKAGE',
+    'LATE_CLOSE',
+    'PRICE_OVERRIDE',
+    'REFUND_SPIKE',
+    'NO_SHOW_PATTERN',
+    'CHECKIN_DENIED_PATTERN',
+    'CUSTOM',
+  ])
   type!: string;
 
   @IsOptional()

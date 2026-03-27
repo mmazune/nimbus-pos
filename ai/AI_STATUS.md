@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M17 ✅
-- Last completed milestone: M17 — Events + Booking Portal + Ticketing
-- Next milestone: M18 — TBD
+- Current milestone: M18 ✅
+- Last completed milestone: M18 — Anomaly Detection + Anti-Theft Signals
+- Next milestone: M19 — TBD
 - Date updated: 2026-03-27
 
 ## Environment
@@ -478,7 +478,31 @@
 - [x] M13.2 (Airtel native) = PENDING
 - [x] DONE: All verification gates confirmed ✅
 
-### M18+
+### M18 — Anomaly Detection + Anti-Theft Signals
+> Branch: `milestone/m18-anomaly-anti-theft-signals`
+
+- [x] Prisma schema: 5 enums (AnomalyRuleStatus, AnomalyRuleType, AnomalySeverity, AnomalyEventStatus, RiskEntityType) + 4 models (AnomalyRule, RiskThreshold, AnomalyEvent, StaffRiskSnapshot)
+- [x] Migration SQL: `20260327000000_m18_anomaly_anti_theft`
+- [x] AnalyticsModule: service + controller + 7 DTOs (create-anomaly-rule, update-anomaly-rule, acknowledge-anomaly, resolve-anomaly, list-anomalies-query, risk-dashboard-query, update-threshold)
+- [x] 13 endpoints: Anomaly rules CRUD (POST/GET/GET:id/PATCH) + Anomaly events (GET list/GET:id/PATCH acknowledge/PATCH resolve) + Risk dashboard + Staff risk + Thresholds (GET/PATCH) + Recalculate
+- [x] Signal implementations: VOID_SPIKE, DISCOUNT_ABUSE, CASH_VARIANCE, LATE_CLOSE, REFUND_SPIKE — all advisory-first
+- [x] Anomaly lifecycle: OPEN → ACKNOWLEDGED → RESOLVED (state validation enforced)
+- [x] Risk dashboard: open anomaly count, severity breakdown, type breakdown, top staff by anomalies (24h window)
+- [x] Staff risk drilldown: latest snapshot + recent anomalies per user
+- [x] 8 new permissions: pos:analytics:anomalies:read, anomaly-rules:create, anomaly-rules:update, anomalies:acknowledge, risk-dashboard:read, anomalies:recalculate, thresholds:read, thresholds:update
+- [x] Role mappings: Owner/Manager get all 8; Supervisor gets 6 (read + ack + recalculate + thresholds:read); Accountant gets 3 (read-only); Event Manager gets anomalies:read
+- [x] Unit tests: 19 in analytics.service.spec.ts — all passing
+- [x] E2E tests: analytics.e2e-spec.ts — full rule/anomaly/threshold lifecycle + permission denial + validation
+- [x] Seed: 8 permissions + role mappings + 6 risk thresholds + 5 anomaly rules + 1 sample anomaly event
+- [x] Postman: M18-Anomaly-Detection-Anti-Theft.postman_collection.json (14 requests with auto-capture + assertions)
+- [x] Docs updated: AI_STATUS.md (M18 checklist)
+- [x] Prisma generate: v5.22.0 client generated ✅
+- [x] Unit tests: 357/357 pass across 22 suites ✅
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] DONE: All verification gates confirmed ✅
+
+### M19+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

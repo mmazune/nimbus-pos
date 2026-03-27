@@ -173,10 +173,7 @@ export class AnalyticsController {
   @Post('anomalies/recalculate')
   @Permissions('pos:analytics:anomalies:recalculate')
   @HttpCode(HttpStatus.OK)
-  async recalculate(
-    @CurrentUser() user: { id: string },
-    @Req() req: Request,
-  ) {
+  async recalculate(@CurrentUser() user: { id: string }, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.analyticsService.recalculateAnomalies(user.id, ctx, {
       ipAddress: req.ip,
