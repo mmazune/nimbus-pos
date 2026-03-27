@@ -1,396 +1,527 @@
-# Nimbus POS Rebuild — Repo File Tree
-
-```text
-nimbus-pos/
-├── .editorconfig
-├── .env.example
-├── .gitignore
-├── package.json
-├── pnpm-lock.yaml
-├── pnpm-workspace.yaml
-├── prettier.config.cjs
-├── tsconfig.base.json
-├── turbo.json
-├── README.md
-├── ROADMAP.md
-├── repo file tree.txt
-│
-├── .github/
-│   └── workflows/
-│       └── branch-validation.yml
-│
-├── ai/
-│   ├── AI_CLAUDE_SONNET_PROMPTS.md
-│   ├── AI_COMPLETION_REPORT_TEMPLATE.md
-│   ├── AI_CONTEXT.md
-│   ├── AI_ERROR_PROTOCOL.md
-│   ├── AI_GOVERNANCE_PROMPT_UPDATED.md
-│   ├── AI_STATUS.md
-│   ├── M0_FIRST_PROMPT.md
-│   ├── M0_COMPLETION_REPORT.md
-│   ├── M1_COMPLETION_REPORT.md
-│   ├── M2_COMPLETION_REPORT.md
-│   ├── M3_COMPLETION_REPORT.md
-│   ├── M3_1_COMPLETION_REPORT.md
-│   ├── M4_COMPLETION_REPORT.md
-│   ├── M5_COMPLETION_REPORT.md
-│   ├── M6_COMPLETION_REPORT.md
-│   ├── M6_1_COMPLETION_REPORT.md
-│   ├── M7_COMPLETION_REPORT.md
-│   ├── M8_COMPLETION_REPORT.md
-│   ├── M9_COMPLETION_REPORT.md
-│   ├── M10_COMPLETION_REPORT.md
-│   ├── M11_COMPLETION_REPORT.md
-│   ├── M12_COMPLETION_REPORT.md
-│   ├── M13_COMPLETION_REPORT.md
-│   ├── M13_1_COMPLETION_REPORT.md
-│   └── M14_COMPLETION_REPORT.md
-│
-├── apps/
-│   ├── api/
-│   │   ├── .env.example
-│   │   ├── .eslintrc.js
-│   │   ├── nest-cli.json
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   ├── tsconfig.build.json
-│   │   ├── src/
-│   │   │   ├── main.ts
-│   │   │   ├── app.module.ts
-│   │   │   ├── app.controller.ts
-│   │   │   ├── app.controller.spec.ts
-│   │   │   ├── app.service.ts
-│   │   │   ├── common/
-│   │   │   │   ├── audit/
-│   │   │   │   │   ├── index.ts
-│   │   │   │   │   ├── audit.module.ts
-│   │   │   │   │   └── audit.service.ts
-│   │   │   │   ├── config/
-│   │   │   │   ├── decorators/
-│   │   │   │   │   ├── index.ts
-│   │   │   │   │   ├── current-user.decorator.ts
-│   │   │   │   │   ├── permissions.decorator.ts
-│   │   │   │   │   ├── require-branch-context.decorator.ts
-│   │   │   │   │   └── roles.decorator.ts
-│   │   │   │   ├── filters/
-│   │   │   │   ├── guards/
-│   │   │   │   │   ├── index.ts
-│   │   │   │   │   ├── branch-context.guard.ts
-│   │   │   │   │   ├── branch-context.guard.spec.ts
-│   │   │   │   │   ├── jwt-auth.guard.ts
-│   │   │   │   │   ├── permission.guard.ts
-│   │   │   │   │   └── platform-access.guard.ts
-│   │   │   │   ├── interceptors/
-│   │   │   │   └── prisma/
-│   │   │   │       ├── index.ts
-│   │   │   │       ├── prisma.module.ts
-│   │   │   │       └── prisma.service.ts
-│   │   │   └── modules/
-│   │   │       ├── auth/
-│   │   │       │   ├── auth.controller.ts
-│   │   │       │   ├── auth.module.ts
-│   │   │       │   ├── auth.service.ts
-│   │   │       │   ├── auth.service.spec.ts
-│   │   │       │   ├── jwt.strategy.ts
-│   │   │       │   ├── quick-pin.constants.ts
-│   │   │       │   ├── quick-pin.service.ts
-│   │   │       │   ├── quick-pin.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── login.dto.ts
-│   │   │       │       ├── pin-login.dto.ts
-│   │   │       │       ├── refresh.dto.ts
-│   │   │       │       ├── quick-pin-login.dto.ts
-│   │   │       │       ├── issue-quick-pin.dto.ts
-│   │   │       │       ├── reset-quick-pin.dto.ts
-│   │   │       │       └── update-quick-pin-settings.dto.ts
-│   │   │       ├── floor/
-│   │   │       │   ├── floor.module.ts
-│   │   │       │   ├── floor.controller.ts
-│   │   │       │   ├── floor.service.ts
-│   │   │       │   ├── floor.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── create-floor-plan.dto.ts
-│   │   │       │       ├── update-floor-plan.dto.ts
-│   │   │       │       ├── create-table.dto.ts
-│   │   │       │       ├── update-table.dto.ts
-│   │   │       │       └── update-table-status.dto.ts
-│   │   │       ├── menu/
-│   │   │       │   ├── menu.module.ts
-│   │   │       │   ├── menu.controller.ts
-│   │   │       │   ├── menu.service.ts
-│   │   │       │   ├── menu.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── create-category.dto.ts
-│   │   │       │       ├── update-category.dto.ts
-│   │   │       │       ├── create-tax-category.dto.ts
-│   │   │       │       ├── update-tax-category.dto.ts
-│   │   │       │       ├── create-menu-item.dto.ts
-│   │   │       │       ├── update-menu-item.dto.ts
-│   │   │       │       └── list-menu-query.dto.ts
-│   │   │       ├── recipes/
-│   │   │       │   ├── recipes.module.ts
-│   │   │       │   ├── recipes.controller.ts
-│   │   │       │   ├── recipes.service.ts
-│   │   │       │   ├── recipes.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── set-recipe.dto.ts
-│   │   │       │       ├── inventory-item.dto.ts
-│   │   │       │       └── list-recipe-cost-query.dto.ts
-│   │   │       ├── settings/
-│   │   │       │   ├── settings.module.ts
-│   │   │       │   ├── settings.controller.ts
-│   │   │       │   ├── settings.service.ts
-│   │   │       │   ├── settings.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── update-org-settings.dto.ts
-│   │   │       │       ├── update-currency.dto.ts
-│   │   │       │       ├── update-tax-matrix.dto.ts
-│   │   │       │       ├── update-rounding.dto.ts
-│   │   │       │       ├── update-thresholds.dto.ts
-│   │   │       │       ├── update-platform-access.dto.ts
-│   │   │       │       └── create-exchange-rate.dto.ts
-│   │   │       ├── inventory/
-│   │   │       │   ├── inventory.module.ts
-│   │   │       │   ├── inventory.controller.ts
-│   │   │       │   ├── inventory.service.ts
-│   │   │       │   ├── inventory.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── create-stock-batch.dto.ts
-│   │   │       │       ├── create-stock-adjustment.dto.ts
-│   │   │       │       └── list-inventory-levels-query.dto.ts
-│   │   │       ├── kds/
-│   │   │       │   ├── kds.module.ts
-│   │   │       │   ├── kds.controller.ts
-│   │   │       │   ├── kds.service.ts
-│   │   │       │   ├── kds.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── list-kds-queue-query.dto.ts
-│   │   │       │       └── update-kds-sla.dto.ts
-│   │   │       ├── orders/
-│   │   │       │   ├── orders.module.ts
-│   │   │       │   ├── orders.controller.ts
-│   │   │       │   ├── orders.service.ts
-│   │   │       │   ├── orders.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── create-order.dto.ts
-│   │   │       │       ├── add-order-item.dto.ts
-│   │   │       │       ├── update-order-item.dto.ts
-│   │   │       │       ├── transition-order.dto.ts
-│   │   │       │       └── list-orders-query.dto.ts
-│   │   │       ├── payments/
-│   │   │       │   ├── payments.module.ts
-│   │   │       │   ├── payments.controller.ts
-│   │   │       │   ├── payments.service.ts
-│   │   │       │   ├── payments.service.spec.ts
-│   │   │       │   ├── adapters/
-│   │   │       │   │   └── mtn.adapter.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── close-order.dto.ts
-│   │   │       │       ├── create-payment-intent.dto.ts
-│   │   │       │       ├── cancel-payment-intent.dto.ts
-│   │   │       │       └── create-manual-reference.dto.ts
-│   │   │       ├── discounts/
-│   │   │       │   ├── discounts.module.ts
-│   │   │       │   ├── discounts.controller.ts
-│   │   │       │   ├── discounts.service.ts
-│   │   │       │   ├── discounts.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── request-discount.dto.ts
-│   │   │       │       ├── approve-discount.dto.ts
-│   │   │       │       ├── reject-discount.dto.ts
-│   │   │       │       └── list-order-discounts-query.dto.ts
-│   │   │       ├── refunds/
-│   │   │       │   ├── refunds.module.ts
-│   │   │       │   ├── refunds.controller.ts
-│   │   │       │   ├── refunds.service.ts
-│   │   │       │   ├── refunds.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── create-refund.dto.ts
-│   │   │       │       ├── approve-refund.dto.ts
-│   │   │       │       └── post-close-void.dto.ts
-│   │   │       ├── shifts/
-│   │   │       │   ├── shifts.module.ts
-│   │   │       │   ├── shifts.controller.ts
-│   │   │       │   ├── shifts.service.ts
-│   │   │       │   ├── shifts.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       ├── tills/
-│   │   │       │   ├── tills.module.ts
-│   │   │       │   ├── tills.controller.ts
-│   │   │       │   ├── tills.service.ts
-│   │   │       │   ├── tills.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       ├── reservations/
-│   │   │       │   ├── reservations.module.ts
-│   │   │       │   ├── reservations.controller.ts
-│   │   │       │   ├── reservations.service.ts
-│   │   │       │   ├── reservations.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       ├── events/
-│   │   │       │   ├── events.module.ts
-│   │   │       │   ├── events.controller.ts
-│   │   │       │   ├── events.service.ts
-│   │   │       │   ├── events.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       ├── analytics/
-│   │   │       │   ├── analytics.module.ts
-│   │   │       │   ├── analytics.controller.ts
-│   │   │       │   ├── analytics.service.ts
-│   │   │       │   ├── analytics.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       ├── dashboards/
-│   │   │       │   ├── dashboards.module.ts
-│   │   │       │   ├── dashboards.controller.ts
-│   │   │       │   ├── dashboards.service.ts
-│   │   │       │   ├── dashboards.service.spec.ts
-│   │   │       │   └── dto/
-│   │   │       │       ├── index.ts
-│   │   │       │       ├── today-summary-query.dto.ts
-│   │   │       │       ├── dashboard-query.dto.ts
-│   │   │       │       ├── refresh-kpi.dto.ts
-│   │   │       │       └── stream-metrics-query.dto.ts
-│   │   │       └── tenancy/
-│   │   │           ├── tenancy.controller.ts
-│   │   │           ├── tenancy.module.ts
-│   │   │           ├── tenancy.service.ts
-│   │   │           ├── tenancy.service.spec.ts
-│   │   │           └── dto/
-│   │   │               ├── index.ts
-│   │   │               ├── create-org.dto.ts
-│   │   │               ├── create-branch.dto.ts
-│   │   │               └── create-membership.dto.ts
-│   │   └── test/
-│   │       ├── jest-e2e.json
-│   │       ├── app.e2e-spec.ts
-│   │       ├── auth.e2e-spec.ts
-│   │       ├── discounts.e2e-spec.ts
-│   │       ├── floor.e2e-spec.ts
-│   │       ├── inventory.e2e-spec.ts
-│   │       ├── kds.e2e-spec.ts
-│   │       ├── menu.e2e-spec.ts
-│   │       ├── orders.e2e-spec.ts
-│   │       ├── payments.e2e-spec.ts
-│   │       ├── quick-pin.e2e-spec.ts
-│   │       ├── recipes.e2e-spec.ts
-│   │       ├── refunds.e2e-spec.ts
-│   │       ├── settings.e2e-spec.ts
-│   │       ├── tenancy.e2e-spec.ts
-│   │       ├── shifts-tills.e2e-spec.ts
-│   │       ├── reservations.e2e-spec.ts
-│   │       ├── events.e2e-spec.ts
-│   │       ├── analytics.e2e-spec.ts
-│   │       └── dashboards.e2e-spec.ts
-│   ├── web/
-│   │   ├── package.json
-│   │   └── src/
-│   ├── desktop/
-│   │   ├── package.json
-│   │   └── src/
-│   └── mobile/
-│       ├── package.json
-│       └── src/
-│
-├── packages/
-│   ├── db/
-│   │   ├── .env.example
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma
-│   │   │   ├── seed.ts
-│   │   │   └── migrations/
-│   │   │       ├── migration_lock.toml
-│   │   │       └── 20260320000000_m1_baseline/
-│   │   │           └── migration.sql
-│   │   │       └── 20260320065959_m2_auth_rbac_sessions/
-│   │   │           └── migration.sql
-│   │   │       ├── 20260320073537_m3_tenancy_org_branch_membership/
-│   │   │       │   └── migration.sql
-│   │   │       └── 20260320100000_m3_1_quick_pin_login/
-│   │   │           └── migration.sql
-│   │   │       └── 20260320120000_m4_org_settings/
-│   │   │           └── migration.sql
-│   │   │       └── 20260320140000_m5_floor_plans_tables/
-│   │   │           └── migration.sql
-│   │   │       └── 20260321000000_m6_menu_catalog/
-│   │   │           └── migration.sql
-│   │   │       └── 20260321300000_m8_recipes_costing/
-│   │   │           └── migration.sql
-│   │   │       └── 20260323000000_m9_inventory_stock_batches/
-│   │   │           └── migration.sql
-│   │   │       └── 20260323100000_m10_pos_orders/
-│   │   │           └── migration.sql
-│   │   │       └── 20260323200000_m11_kds_station_routing/
-│   │   │           └── migration.sql
-│   │   │       └── 20260323300000_m12_discounts_approval/
-│   │   │           └── migration.sql
-│   │   │       └── 20260324000000_m13_payments/
-│   │   │           └── migration.sql
-│   │   │       └── 20260325000000_m13_1_mtn_native_manual_reference/
-│   │   │           └── migration.sql
-│   │   │       └── 20260325100000_m14_refunds_voids/
-│   │   │           └── migration.sql
-│   │   │       └── 20260325200000_m15_shifts_tills/
-│   │   │           └── migration.sql
-│   │   │       └── 20260326000000_m16_reservations_deposits/
-│   │   │           └── migration.sql
-│   │   │       └── 20260326100000_m17_events_booking_ticketing/
-│   │   │           └── migration.sql
-│   │   │       └── 20260326200000_m18_anomaly_detection/
-│   │   │           └── migration.sql
-│   │   │       └── 20260327100000_m19_dashboards_kpi_streams/
-│   │   │           └── migration.sql
-│   │   └── src/
-│   │       ├── client.ts
-│   │       └── index.ts
-│   └── shared/
-│       ├── package.json
-│       ├── tsconfig.json
-│       └── src/
-│           └── index.ts
-│
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── API_CONVENTIONS.md
-│   └── MODULES.md
-│
-└── postman/
-    ├── POSTMAN_GUIDE.md
-    ├── collections/
-    │   ├── M0-Repo-Bootstrap.postman_collection.json
-    │   ├── M1-Health-DB.postman_collection.json
-    │   ├── M2-Auth-RBAC.postman_collection.json
-    │   ├── M3-Tenancy.postman_collection.json
-    │   ├── M3_1-Quick-PIN-Login.postman_collection.json
-    │   ├── M4-Org-Settings.postman_collection.json
-    │   ├── M5-Floor-Plans-Tables.postman_collection.json
-    │   ├── M6-Menu-Catalog.postman_collection.json
-    │   ├── M6_1-Menu-Taxonomy-Serving-Formats.postman_collection.json
-    │   ├── M7-Menu-Modifiers.postman_collection.json
-    │   ├── M8-Recipes-Costing.postman_collection.json
-    │   ├── M9-Inventory-Stock.postman_collection.json
-    │   ├── M10-POS-Orders.postman_collection.json
-    │   ├── M11-KDS-Station-Routing.postman_collection.json
-    │   ├── M12-Discounts-Approval-Workflow.postman_collection.json
-    │   ├── M13-Payments-Cash-Card-MOMO.postman_collection.json
-    │   ├── M13_1-MTN-Native-Manual-Reference.postman_collection.json
-    │   ├── M14-Refunds-Voids.postman_collection.json
-    │   ├── M15-Shifts-Tills-Reconciliation.postman_collection.json
-    │   ├── M16-Reservations-Deposits-Seating.postman_collection.json
-    │   ├── M17-Events-Booking-Portal-Ticketing.postman_collection.json
-    │   ├── M18-Anomaly-Detection-Anti-Theft.postman_collection.json
-    │   └── M19-Operational-Dashboards-KPI-Streams.postman_collection.json
-    └── environments/
-        └── dev.postman_environment.json
-```
+﻿.editorconfig
+.env.example
+.github
+.github/workflows
+.github/workflows/branch-validation.yml
+.gitignore
+_check_m6_tables.mjs
+_check_perms.mjs
+_check_tables.cjs
+_clear_pins.cjs
+_clear_pins.mjs
+_e2e_floor.txt
+_e2e_out2.txt
+_m16_manual_out.txt
+_m16_manual_out2.txt
+_m16_v3.txt
+_m16_v4.txt
+_m5_verify.cjs
+_manual_m16.mjs
+_manual_test.cjs
+_postman_sim.cjs
+_seed_final.txt
+_seed_idempotent.txt
+_seed_m13_1.txt
+_seed_m13_1b.txt
+_seed_run2.txt
+_sim_out.txt
+_sim_result.txt
+_test_endpoints.mjs
+_test_results.txt
+_verify.cjs
+_verify_m16.cjs
+_verify_m16.mjs
+_verify2.cjs
+_vout.txt
+ai
+ai/AI_CLAUDE_SONNET_PROMPTS.md
+ai/AI_COMPLETION_REPORT_TEMPLATE.md
+ai/AI_CONTEXT.md
+ai/AI_ERROR_PROTOCOL.md
+ai/AI_GOVERNANCE_PROMPT_UPDATED.md
+ai/AI_STATUS.md
+ai/M0_COMPLETION_REPORT.md
+ai/M0_FIRST_PROMPT.md
+ai/M1_COMPLETION_REPORT.md
+ai/M10_COMPLETION_REPORT.md
+ai/M11_COMPLETION_REPORT.md
+ai/M12_COMPLETION_REPORT.md
+ai/M13_1_COMPLETION_REPORT.md
+ai/M13_COMPLETION_REPORT.md
+ai/M14_COMPLETION_REPORT.md
+ai/M15_COMPLETION_REPORT.md
+ai/M16_COMPLETION_REPORT.md
+ai/M17_COMPLETION_REPORT.md
+ai/M18_COMPLETION_REPORT.md
+ai/M19_COMPLETION_REPORT.md
+ai/M2_COMPLETION_REPORT.md
+ai/M20_COMPLETION_REPORT.md
+ai/M3_1_COMPLETION_REPORT.md
+ai/M3_COMPLETION_REPORT.md
+ai/M4_COMPLETION_REPORT.md
+ai/M5_COMPLETION_REPORT.md
+ai/M6_1_COMPLETION_REPORT.md
+ai/M6_COMPLETION_REPORT.md
+ai/M7_COMPLETION_REPORT.md
+ai/M8_COMPLETION_REPORT.md
+ai/M9_COMPLETION_REPORT.md
+ai/POSTMAN_ENDPOINT_GUIDE.md
+apps
+apps/api
+apps/api/.env
+apps/api/.env.example
+apps/api/.eslintrc.js
+apps/api/_cleanup_out.txt
+apps/api/_e2e_detail.txt
+apps/api/_full_e2e.txt
+apps/api/_isolated_e2e.txt
+apps/api/_open_shifts.txt
+apps/api/nest-cli.json
+apps/api/package.json
+apps/api/src
+apps/api/src/app.controller.spec.ts
+apps/api/src/app.controller.ts
+apps/api/src/app.module.ts
+apps/api/src/app.service.ts
+apps/api/src/common
+apps/api/src/common/audit
+apps/api/src/common/audit/audit.module.ts
+apps/api/src/common/audit/audit.service.ts
+apps/api/src/common/audit/index.ts
+apps/api/src/common/config
+apps/api/src/common/config/.gitkeep
+apps/api/src/common/decorators
+apps/api/src/common/decorators/current-user.decorator.ts
+apps/api/src/common/decorators/index.ts
+apps/api/src/common/decorators/permissions.decorator.ts
+apps/api/src/common/decorators/require-branch-context.decorator.ts
+apps/api/src/common/decorators/roles.decorator.ts
+apps/api/src/common/filters
+apps/api/src/common/filters/.gitkeep
+apps/api/src/common/guards
+apps/api/src/common/guards/.gitkeep
+apps/api/src/common/guards/branch-context.guard.spec.ts
+apps/api/src/common/guards/branch-context.guard.ts
+apps/api/src/common/guards/index.ts
+apps/api/src/common/guards/jwt-auth.guard.ts
+apps/api/src/common/guards/permission.guard.spec.ts
+apps/api/src/common/guards/permission.guard.ts
+apps/api/src/common/guards/platform-access.guard.spec.ts
+apps/api/src/common/guards/platform-access.guard.ts
+apps/api/src/common/interceptors
+apps/api/src/common/interceptors/.gitkeep
+apps/api/src/common/prisma
+apps/api/src/common/prisma/index.ts
+apps/api/src/common/prisma/prisma.module.ts
+apps/api/src/common/prisma/prisma.service.ts
+apps/api/src/main.ts
+apps/api/src/modules
+apps/api/src/modules/.gitkeep
+apps/api/src/modules/analytics
+apps/api/src/modules/analytics/analytics.controller.ts
+apps/api/src/modules/analytics/analytics.module.ts
+apps/api/src/modules/analytics/analytics.service.spec.ts
+apps/api/src/modules/analytics/analytics.service.ts
+apps/api/src/modules/analytics/dto
+apps/api/src/modules/analytics/dto/acknowledge-anomaly.dto.ts
+apps/api/src/modules/analytics/dto/create-anomaly-rule.dto.ts
+apps/api/src/modules/analytics/dto/index.ts
+apps/api/src/modules/analytics/dto/list-anomalies-query.dto.ts
+apps/api/src/modules/analytics/dto/resolve-anomaly.dto.ts
+apps/api/src/modules/analytics/dto/risk-dashboard-query.dto.ts
+apps/api/src/modules/analytics/dto/update-anomaly-rule.dto.ts
+apps/api/src/modules/analytics/dto/update-threshold.dto.ts
+apps/api/src/modules/auth
+apps/api/src/modules/auth/auth.controller.ts
+apps/api/src/modules/auth/auth.module.ts
+apps/api/src/modules/auth/auth.service.spec.ts
+apps/api/src/modules/auth/auth.service.ts
+apps/api/src/modules/auth/dto
+apps/api/src/modules/auth/dto/index.ts
+apps/api/src/modules/auth/dto/issue-quick-pin.dto.ts
+apps/api/src/modules/auth/dto/login.dto.ts
+apps/api/src/modules/auth/dto/pin-login.dto.ts
+apps/api/src/modules/auth/dto/quick-pin-login.dto.ts
+apps/api/src/modules/auth/dto/refresh.dto.ts
+apps/api/src/modules/auth/dto/reset-quick-pin.dto.ts
+apps/api/src/modules/auth/dto/update-quick-pin-settings.dto.ts
+apps/api/src/modules/auth/jwt.strategy.ts
+apps/api/src/modules/auth/quick-pin.constants.ts
+apps/api/src/modules/auth/quick-pin.service.spec.ts
+apps/api/src/modules/auth/quick-pin.service.ts
+apps/api/src/modules/dashboards
+apps/api/src/modules/dashboards/dashboards.controller.ts
+apps/api/src/modules/dashboards/dashboards.module.ts
+apps/api/src/modules/dashboards/dashboards.service.spec.ts
+apps/api/src/modules/dashboards/dashboards.service.ts
+apps/api/src/modules/dashboards/dto
+apps/api/src/modules/dashboards/dto/dashboard-query.dto.ts
+apps/api/src/modules/dashboards/dto/index.ts
+apps/api/src/modules/dashboards/dto/refresh-kpi.dto.ts
+apps/api/src/modules/dashboards/dto/stream-metrics-query.dto.ts
+apps/api/src/modules/dashboards/dto/today-summary-query.dto.ts
+apps/api/src/modules/discounts
+apps/api/src/modules/discounts/discounts.controller.ts
+apps/api/src/modules/discounts/discounts.module.ts
+apps/api/src/modules/discounts/discounts.service.spec.ts
+apps/api/src/modules/discounts/discounts.service.ts
+apps/api/src/modules/discounts/dto
+apps/api/src/modules/discounts/dto/approve-discount.dto.ts
+apps/api/src/modules/discounts/dto/index.ts
+apps/api/src/modules/discounts/dto/list-order-discounts-query.dto.ts
+apps/api/src/modules/discounts/dto/reject-discount.dto.ts
+apps/api/src/modules/discounts/dto/request-discount.dto.ts
+apps/api/src/modules/events
+apps/api/src/modules/events/dto
+apps/api/src/modules/events/dto/cancel-booking.dto.ts
+apps/api/src/modules/events/dto/check-in-ticket.dto.ts
+apps/api/src/modules/events/dto/close-event.dto.ts
+apps/api/src/modules/events/dto/create-booking.dto.ts
+apps/api/src/modules/events/dto/create-event.dto.ts
+apps/api/src/modules/events/dto/create-ticket-class.dto.ts
+apps/api/src/modules/events/dto/index.ts
+apps/api/src/modules/events/dto/issue-tickets.dto.ts
+apps/api/src/modules/events/dto/list-events-query.dto.ts
+apps/api/src/modules/events/dto/open-event.dto.ts
+apps/api/src/modules/events/dto/publish-event.dto.ts
+apps/api/src/modules/events/dto/update-event.dto.ts
+apps/api/src/modules/events/events.controller.ts
+apps/api/src/modules/events/events.module.ts
+apps/api/src/modules/events/events.service.spec.ts
+apps/api/src/modules/events/events.service.ts
+apps/api/src/modules/floor
+apps/api/src/modules/floor/dto
+apps/api/src/modules/floor/dto/create-floor-plan.dto.ts
+apps/api/src/modules/floor/dto/create-table.dto.ts
+apps/api/src/modules/floor/dto/index.ts
+apps/api/src/modules/floor/dto/update-floor-plan.dto.ts
+apps/api/src/modules/floor/dto/update-table.dto.ts
+apps/api/src/modules/floor/dto/update-table-status.dto.ts
+apps/api/src/modules/floor/floor.controller.ts
+apps/api/src/modules/floor/floor.module.ts
+apps/api/src/modules/floor/floor.service.spec.ts
+apps/api/src/modules/floor/floor.service.ts
+apps/api/src/modules/inventory
+apps/api/src/modules/inventory/dto
+apps/api/src/modules/inventory/dto/create-stock-adjustment.dto.ts
+apps/api/src/modules/inventory/dto/create-stock-batch.dto.ts
+apps/api/src/modules/inventory/dto/index.ts
+apps/api/src/modules/inventory/dto/list-inventory-levels-query.dto.ts
+apps/api/src/modules/inventory/inventory.controller.ts
+apps/api/src/modules/inventory/inventory.module.ts
+apps/api/src/modules/inventory/inventory.service.spec.ts
+apps/api/src/modules/inventory/inventory.service.ts
+apps/api/src/modules/kds
+apps/api/src/modules/kds/dto
+apps/api/src/modules/kds/dto/index.ts
+apps/api/src/modules/kds/dto/list-kds-queue-query.dto.ts
+apps/api/src/modules/kds/dto/update-kds-sla.dto.ts
+apps/api/src/modules/kds/kds.controller.ts
+apps/api/src/modules/kds/kds.module.ts
+apps/api/src/modules/kds/kds.service.spec.ts
+apps/api/src/modules/kds/kds.service.ts
+apps/api/src/modules/menu
+apps/api/src/modules/menu/dto
+apps/api/src/modules/menu/dto/assign-item-modifier-groups.dto.ts
+apps/api/src/modules/menu/dto/assign-menu-item-browse.dto.ts
+apps/api/src/modules/menu/dto/create-browse-group.dto.ts
+apps/api/src/modules/menu/dto/create-browse-subgroup.dto.ts
+apps/api/src/modules/menu/dto/create-category.dto.ts
+apps/api/src/modules/menu/dto/create-menu-item.dto.ts
+apps/api/src/modules/menu/dto/create-menu-item-serving.dto.ts
+apps/api/src/modules/menu/dto/create-modifier-group.dto.ts
+apps/api/src/modules/menu/dto/create-modifier-option.dto.ts
+apps/api/src/modules/menu/dto/create-tax-category.dto.ts
+apps/api/src/modules/menu/dto/index.ts
+apps/api/src/modules/menu/dto/list-menu-navigation-query.dto.ts
+apps/api/src/modules/menu/dto/list-menu-query.dto.ts
+apps/api/src/modules/menu/dto/update-browse-group.dto.ts
+apps/api/src/modules/menu/dto/update-browse-subgroup.dto.ts
+apps/api/src/modules/menu/dto/update-category.dto.ts
+apps/api/src/modules/menu/dto/update-menu-item.dto.ts
+apps/api/src/modules/menu/dto/update-menu-item-serving.dto.ts
+apps/api/src/modules/menu/dto/update-modifier-group.dto.ts
+apps/api/src/modules/menu/dto/update-modifier-option.dto.ts
+apps/api/src/modules/menu/dto/update-tax-category.dto.ts
+apps/api/src/modules/menu/menu.controller.ts
+apps/api/src/modules/menu/menu.module.ts
+apps/api/src/modules/menu/menu.service.spec.ts
+apps/api/src/modules/menu/menu.service.ts
+apps/api/src/modules/orders
+apps/api/src/modules/orders/dto
+apps/api/src/modules/orders/dto/add-order-item.dto.ts
+apps/api/src/modules/orders/dto/create-order.dto.ts
+apps/api/src/modules/orders/dto/index.ts
+apps/api/src/modules/orders/dto/list-orders-query.dto.ts
+apps/api/src/modules/orders/dto/transition-order.dto.ts
+apps/api/src/modules/orders/dto/update-order-item.dto.ts
+apps/api/src/modules/orders/orders.controller.ts
+apps/api/src/modules/orders/orders.module.ts
+apps/api/src/modules/orders/orders.service.spec.ts
+apps/api/src/modules/orders/orders.service.ts
+apps/api/src/modules/payments
+apps/api/src/modules/payments/adapters
+apps/api/src/modules/payments/adapters/mtn.adapter.ts
+apps/api/src/modules/payments/dto
+apps/api/src/modules/payments/dto/cancel-payment-intent.dto.ts
+apps/api/src/modules/payments/dto/close-order.dto.ts
+apps/api/src/modules/payments/dto/create-manual-reference.dto.ts
+apps/api/src/modules/payments/dto/create-payment-intent.dto.ts
+apps/api/src/modules/payments/dto/index.ts
+apps/api/src/modules/payments/payments.controller.ts
+apps/api/src/modules/payments/payments.module.ts
+apps/api/src/modules/payments/payments.service.spec.ts
+apps/api/src/modules/payments/payments.service.ts
+apps/api/src/modules/recipes
+apps/api/src/modules/recipes/dto
+apps/api/src/modules/recipes/dto/index.ts
+apps/api/src/modules/recipes/dto/inventory-item.dto.ts
+apps/api/src/modules/recipes/dto/list-recipe-cost-query.dto.ts
+apps/api/src/modules/recipes/dto/set-recipe.dto.ts
+apps/api/src/modules/recipes/recipes.controller.ts
+apps/api/src/modules/recipes/recipes.module.ts
+apps/api/src/modules/recipes/recipes.service.spec.ts
+apps/api/src/modules/recipes/recipes.service.ts
+apps/api/src/modules/refunds
+apps/api/src/modules/refunds/dto
+apps/api/src/modules/refunds/dto/approve-refund.dto.ts
+apps/api/src/modules/refunds/dto/create-refund.dto.ts
+apps/api/src/modules/refunds/dto/index.ts
+apps/api/src/modules/refunds/dto/post-close-void.dto.ts
+apps/api/src/modules/refunds/refunds.controller.ts
+apps/api/src/modules/refunds/refunds.module.ts
+apps/api/src/modules/refunds/refunds.service.spec.ts
+apps/api/src/modules/refunds/refunds.service.ts
+apps/api/src/modules/reports
+apps/api/src/modules/reports/dto
+apps/api/src/modules/reports/dto/create-anomaly-summary-report.dto.ts
+apps/api/src/modules/reports/dto/create-daily-sales-report.dto.ts
+apps/api/src/modules/reports/dto/create-export.dto.ts
+apps/api/src/modules/reports/dto/create-payment-mix-report.dto.ts
+apps/api/src/modules/reports/dto/create-shift-end-report.dto.ts
+apps/api/src/modules/reports/dto/create-stock-variance-report.dto.ts
+apps/api/src/modules/reports/dto/create-top-items-report.dto.ts
+apps/api/src/modules/reports/dto/index.ts
+apps/api/src/modules/reports/dto/list-reports-query.dto.ts
+apps/api/src/modules/reports/reports.controller.ts
+apps/api/src/modules/reports/reports.module.ts
+apps/api/src/modules/reports/reports.service.spec.ts
+apps/api/src/modules/reports/reports.service.ts
+apps/api/src/modules/reservations
+apps/api/src/modules/reservations/dto
+apps/api/src/modules/reservations/dto/assign-table.dto.ts
+apps/api/src/modules/reservations/dto/cancel-reservation.dto.ts
+apps/api/src/modules/reservations/dto/confirm-reservation.dto.ts
+apps/api/src/modules/reservations/dto/create-reservation.dto.ts
+apps/api/src/modules/reservations/dto/index.ts
+apps/api/src/modules/reservations/dto/list-reservations-query.dto.ts
+apps/api/src/modules/reservations/dto/mark-no-show.dto.ts
+apps/api/src/modules/reservations/dto/record-deposit.dto.ts
+apps/api/src/modules/reservations/dto/seat-reservation.dto.ts
+apps/api/src/modules/reservations/reservations.controller.ts
+apps/api/src/modules/reservations/reservations.module.ts
+apps/api/src/modules/reservations/reservations.service.spec.ts
+apps/api/src/modules/reservations/reservations.service.ts
+apps/api/src/modules/settings
+apps/api/src/modules/settings/dto
+apps/api/src/modules/settings/dto/create-exchange-rate.dto.ts
+apps/api/src/modules/settings/dto/index.ts
+apps/api/src/modules/settings/dto/update-currency.dto.ts
+apps/api/src/modules/settings/dto/update-org-settings.dto.ts
+apps/api/src/modules/settings/dto/update-platform-access.dto.ts
+apps/api/src/modules/settings/dto/update-rounding.dto.ts
+apps/api/src/modules/settings/dto/update-tax-matrix.dto.ts
+apps/api/src/modules/settings/dto/update-thresholds.dto.ts
+apps/api/src/modules/settings/settings.controller.ts
+apps/api/src/modules/settings/settings.module.ts
+apps/api/src/modules/settings/settings.service.spec.ts
+apps/api/src/modules/settings/settings.service.ts
+apps/api/src/modules/shifts
+apps/api/src/modules/shifts/dto
+apps/api/src/modules/shifts/dto/close-shift.dto.ts
+apps/api/src/modules/shifts/dto/index.ts
+apps/api/src/modules/shifts/dto/open-shift.dto.ts
+apps/api/src/modules/shifts/shifts.controller.ts
+apps/api/src/modules/shifts/shifts.module.ts
+apps/api/src/modules/shifts/shifts.service.spec.ts
+apps/api/src/modules/shifts/shifts.service.ts
+apps/api/src/modules/tenancy
+apps/api/src/modules/tenancy/dto
+apps/api/src/modules/tenancy/dto/create-branch.dto.ts
+apps/api/src/modules/tenancy/dto/create-membership.dto.ts
+apps/api/src/modules/tenancy/dto/create-org.dto.ts
+apps/api/src/modules/tenancy/dto/index.ts
+apps/api/src/modules/tenancy/tenancy.controller.ts
+apps/api/src/modules/tenancy/tenancy.module.ts
+apps/api/src/modules/tenancy/tenancy.service.spec.ts
+apps/api/src/modules/tenancy/tenancy.service.ts
+apps/api/src/modules/tills
+apps/api/src/modules/tills/dto
+apps/api/src/modules/tills/dto/index.ts
+apps/api/src/modules/tills/dto/open-till.dto.ts
+apps/api/src/modules/tills/dto/reconcile-till.dto.ts
+apps/api/src/modules/tills/dto/safe-drop.dto.ts
+apps/api/src/modules/tills/tills.controller.ts
+apps/api/src/modules/tills/tills.module.ts
+apps/api/src/modules/tills/tills.service.spec.ts
+apps/api/src/modules/tills/tills.service.ts
+apps/api/test
+apps/api/test/analytics.e2e-spec.ts
+apps/api/test/app.e2e-spec.ts
+apps/api/test/auth.e2e-spec.ts
+apps/api/test/dashboards.e2e-spec.ts
+apps/api/test/discounts.e2e-spec.ts
+apps/api/test/events.e2e-spec.ts
+apps/api/test/floor.e2e-spec.ts
+apps/api/test/inventory.e2e-spec.ts
+apps/api/test/jest-e2e.json
+apps/api/test/kds.e2e-spec.ts
+apps/api/test/menu.e2e-spec.ts
+apps/api/test/orders.e2e-spec.ts
+apps/api/test/payments.e2e-spec.ts
+apps/api/test/quick-pin.e2e-spec.ts
+apps/api/test/recipes.e2e-spec.ts
+apps/api/test/refunds.e2e-spec.ts
+apps/api/test/reports.e2e-spec.ts
+apps/api/test/reservations.e2e-spec.ts
+apps/api/test/settings.e2e-spec.ts
+apps/api/test/shifts-tills.e2e-spec.ts
+apps/api/test/tenancy.e2e-spec.ts
+apps/api/tsconfig.build.json
+apps/api/tsconfig.json
+apps/desktop
+apps/desktop/package.json
+apps/desktop/src
+apps/desktop/src/.gitkeep
+apps/mobile
+apps/mobile/package.json
+apps/mobile/src
+apps/mobile/src/.gitkeep
+apps/web
+apps/web/package.json
+apps/web/src
+apps/web/src/.gitkeep
+docs
+docs/API_CONVENTIONS.md
+docs/ARCHITECTURE.md
+docs/MODULES.md
+docs/POSTMAN_ENDPOINT_GUIDE.md
+package.json
+packages
+packages/db
+packages/db/.env
+packages/db/.env.example
+packages/db/_check_perms.mjs
+packages/db/_check_tables.ts
+packages/db/_check_users.cjs
+packages/db/_clear_pins.cjs
+packages/db/_debug_pin.cjs
+packages/db/_fix_m10_perms.mjs
+packages/db/_keepalive.cjs
+packages/db/_lint_out.txt
+packages/db/_m15_check.txt
+packages/db/_migrate_status.txt
+packages/db/_wake.cjs
+packages/db/package.json
+packages/db/prisma
+packages/db/prisma/migrations
+packages/db/prisma/migrations/20260320000000_m1_baseline
+packages/db/prisma/migrations/20260320000000_m1_baseline/migration.sql
+packages/db/prisma/migrations/20260320065959_m2_auth_rbac_sessions
+packages/db/prisma/migrations/20260320065959_m2_auth_rbac_sessions/migration.sql
+packages/db/prisma/migrations/20260320073537_m3_tenancy_org_branch_membership
+packages/db/prisma/migrations/20260320073537_m3_tenancy_org_branch_membership/migration.sql
+packages/db/prisma/migrations/20260320100000_m3_1_quick_pin_login
+packages/db/prisma/migrations/20260320100000_m3_1_quick_pin_login/migration.sql
+packages/db/prisma/migrations/20260320120000_m4_org_settings
+packages/db/prisma/migrations/20260320120000_m4_org_settings/migration.sql
+packages/db/prisma/migrations/20260320140000_m5_floor_plans_tables
+packages/db/prisma/migrations/20260320140000_m5_floor_plans_tables/migration.sql
+packages/db/prisma/migrations/20260321000000_m6_menu_catalog
+packages/db/prisma/migrations/20260321000000_m6_menu_catalog/migration.sql
+packages/db/prisma/migrations/20260321100000_m6_1_menu_taxonomy_serving_formats
+packages/db/prisma/migrations/20260321100000_m6_1_menu_taxonomy_serving_formats/migration.sql
+packages/db/prisma/migrations/20260321200000_m7_modifier_groups_options
+packages/db/prisma/migrations/20260321200000_m7_modifier_groups_options/migration.sql
+packages/db/prisma/migrations/20260321300000_m8_recipes_costing
+packages/db/prisma/migrations/20260321300000_m8_recipes_costing/migration.sql
+packages/db/prisma/migrations/20260323000000_m9_inventory_stock_batches
+packages/db/prisma/migrations/20260323000000_m9_inventory_stock_batches/migration.sql
+packages/db/prisma/migrations/20260323100000_m10_pos_orders
+packages/db/prisma/migrations/20260323100000_m10_pos_orders/migration.sql
+packages/db/prisma/migrations/20260323200000_m11_kds_station_routing
+packages/db/prisma/migrations/20260323200000_m11_kds_station_routing/migration.sql
+packages/db/prisma/migrations/20260323300000_m12_discounts_approval
+packages/db/prisma/migrations/20260323300000_m12_discounts_approval/migration.sql
+packages/db/prisma/migrations/20260324000000_m13_payments
+packages/db/prisma/migrations/20260324000000_m13_payments/migration.sql
+packages/db/prisma/migrations/20260325000000_m13_1_mtn_native_manual_reference
+packages/db/prisma/migrations/20260325000000_m13_1_mtn_native_manual_reference/migration.sql
+packages/db/prisma/migrations/20260325100000_m14_refunds_voids
+packages/db/prisma/migrations/20260325100000_m14_refunds_voids/migration.sql
+packages/db/prisma/migrations/20260326000000_m15_shifts_tills_reconciliation
+packages/db/prisma/migrations/20260326000000_m15_shifts_tills_reconciliation/migration.sql
+packages/db/prisma/migrations/20260326000001_m15_fix_till_unique_partial
+packages/db/prisma/migrations/20260326000001_m15_fix_till_unique_partial/migration.sql
+packages/db/prisma/migrations/20260326100000_m16_reservations_deposits_seating
+packages/db/prisma/migrations/20260326100000_m16_reservations_deposits_seating/migration.sql
+packages/db/prisma/migrations/20260326200000_m17_events_booking_ticketing
+packages/db/prisma/migrations/20260326200000_m17_events_booking_ticketing/migration.sql
+packages/db/prisma/migrations/20260327000000_m18_anomaly_anti_theft
+packages/db/prisma/migrations/20260327000000_m18_anomaly_anti_theft/migration.sql
+packages/db/prisma/migrations/20260327100000_m19_dashboards_kpi_streams
+packages/db/prisma/migrations/20260327100000_m19_dashboards_kpi_streams/migration.sql
+packages/db/prisma/migrations/migration_lock.toml
+packages/db/prisma/schema.prisma
+packages/db/prisma/seed.ts
+packages/db/src
+packages/db/src/client.ts
+packages/db/src/index.ts
+packages/db/tsconfig.json
+packages/db/tsconfig.seed.json
+packages/shared
+packages/shared/package.json
+packages/shared/src
+packages/shared/src/index.ts
+packages/shared/tsconfig.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+postman
+postman/collections
+postman/collections/M0-Repo-Bootstrap.postman_collection.json
+postman/collections/M10-POS-Orders.postman_collection.json
+postman/collections/M11-KDS-Station-Routing.postman_collection.json
+postman/collections/M12-Discounts-Approval-Workflow.postman_collection.json
+postman/collections/M13_1-MTN-Native-Manual-Reference.postman_collection.json
+postman/collections/M13-Payments-Cash-Card-MOMO.postman_collection.json
+postman/collections/M14-Refunds-Voids.postman_collection.json
+postman/collections/M15-Shifts-Tills-Reconciliation.postman_collection.json
+postman/collections/M16-Reservations-Deposits-Seating.postman_collection.json
+postman/collections/M17-Events-Booking-Portal-Ticketing.postman_collection.json
+postman/collections/M18-Anomaly-Detection-Anti-Theft.postman_collection.json
+postman/collections/M19-Operational-Dashboards-KPI-Streams.postman_collection.json
+postman/collections/M1-Health-DB.postman_collection.json
+postman/collections/M2-Auth-RBAC.postman_collection.json
+postman/collections/M3_1-Quick-PIN-Login.postman_collection.json
+postman/collections/M3-Tenancy.postman_collection.json
+postman/collections/M4-Org-Settings.postman_collection.json
+postman/collections/M5-Floor-Plans-Tables.postman_collection.json
+postman/collections/M6_1-Menu-Taxonomy-Serving-Formats.postman_collection.json
+postman/collections/M6-Menu-Catalog.postman_collection.json
+postman/collections/M7-Menu-Modifiers.postman_collection.json
+postman/collections/M8-Recipes-Costing.postman_collection.json
+postman/collections/M9-Inventory-Stock.postman_collection.json
+postman/environments
+postman/environments/dev.postman_environment.json
+postman/POSTMAN_GUIDE.md
+prettier.config.cjs
+README.md
+repo file tree.txt
+ROADMAP.md
+seed_m16_full.txt
+seed_m16_out.txt
+seed_out.txt
+seed_out2.txt
+seed_run2.txt
+tsconfig.base.json
+turbo.json
