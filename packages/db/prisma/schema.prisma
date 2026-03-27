@@ -17,6 +17,7 @@
 // M15 models: Shift, TillSession, CashMovement, ShiftCloseSummary + ShiftStatus, TillSessionStatus, CashMovementType, VarianceStatus enums
 // M16 models: Reservation, ReservationDeposit, ReservationEvent + ReservationStatus, ReservationSource, ReservationDepositStatus, ReservationEventType enums
 // M17 models: Event, EventTicketClass, EventBooking, EventTicket, EventCheckIn, EventAuditLog + EventStatus, EventBookingStatus, TicketStatus, TicketClassType, CheckInStatus enums
+// M18 models: AnomalyRule, RiskThreshold, AnomalyEvent, StaffRiskSnapshot + AnomalyRuleStatus, AnomalyRuleType, AnomalySeverity, AnomalyEventStatus, RiskEntityType enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -183,6 +184,12 @@ model User {
     eventBookingsBooked     EventBooking[]     @relation("EventBookingBookedBy")
     eventCheckInsActed      EventCheckIn[]     @relation("EventCheckInActor")
     eventAuditLogsActed     EventAuditLog[]    @relation("EventAuditLogActor")
+    // M18 — Anomaly Detection
+    anomalyRulesCreated    AnomalyRule[]      @relation("AnomalyRuleCreatedBy")
+    anomalyRulesUpdated    AnomalyRule[]      @relation("AnomalyRuleUpdatedBy")
+    anomalyEventsActed     AnomalyEvent[]     @relation("AnomalyEventActor")
+    anomalyEventsAcked     AnomalyEvent[]     @relation("AnomalyEventAcknowledgedBy")
+    staffRiskSnapshots     StaffRiskSnapshot[] @relation("StaffRiskSnapshotUser")
 
     @@map("users")
 }
@@ -363,6 +370,11 @@ model Organization {
     eventTickets        EventTicket[]
     eventCheckIns       EventCheckIn[]
     eventAuditLogs      EventAuditLog[]
+    // M18 — Anomaly Detection
+    anomalyRules        AnomalyRule[]
+    riskThresholds      RiskThreshold[]
+    anomalyEvents       AnomalyEvent[]
+    staffRiskSnapshots  StaffRiskSnapshot[]
 
     @@map("organizations")
 }
@@ -417,6 +429,11 @@ model Branch {
     eventTickets        EventTicket[]
     eventCheckIns       EventCheckIn[]
     eventAuditLogs      EventAuditLog[]
+    // M18 — Anomaly Detection
+    anomalyRules        AnomalyRule[]
+    riskThresholds      RiskThreshold[]
+    anomalyEvents       AnomalyEvent[]
+    staffRiskSnapshots  StaffRiskSnapshot[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -1985,4 +2002,203 @@ model EventAuditLog {
     @@index([type])
     @@index([createdAt])
     @@map("event_audit_logs")
+}
+
+// ── Enums (M18) ──
+
+enum AnomalyRuleStatus {
+    ACTIVE
+    INACTIVE
+}
+
+enum AnomalyRuleType {
+    VOID_SPIKE
+    DISCOUNT_ABUSE
+    CASH_VARIANCE
+    SHRINKAGE
+    LATE_CLOSE
+    PRICE_OVERRIDE
+    REFUND_SPIKE
+    NO_SHOW_PATTERN
+    CHECKIN_DENIED_PATTERN
+    CUSTOM
+}
+
+enum AnomalySeverity {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+}
+
+enum AnomalyEventStatus {
+    OPEN
+    ACKNOWLEDGED
+    RESOLVED
+}
+
+enum RiskEntityType {
+    STAFF
+    BRANCH
+    ORDER
+    SHIFT
+    TILL
+    INVENTORY_ITEM
+    EVENT
+    RESERVATION
+}
+
+// ── M18 Models ──
+
+/// Defines a detection rule for anomalies / anti-theft signals.
+/// Each rule specifies a metric, operator, threshold, and window.
+model AnomalyRule {
+    id                  String             @id @default(cuid())
+    orgId               String             @map("org_id")
+    branchId            String?            @map("branch_id")
+    code                String
+    name                String
+    type                AnomalyRuleType
+    description         String?
+    status              AnomalyRuleStatus  @default(ACTIVE)
+    severity            AnomalySeverity
+    metricKey           String             @map("metric_key")
+    operator            String
+    thresholdValue      Decimal?           @map("threshold_value") @db.Decimal(10, 2)
+    windowMinutes       Int?               @map("window_minutes")
+    minimumSampleSize   Int?               @map("minimum_sample_size")
+    appliesToEntityType RiskEntityType?    @map("applies_to_entity_type")
+    config              Json?
+    createdById         String             @map("created_by_id")
+    updatedById         String?            @map("updated_by_id")
+    createdAt           DateTime           @default(now()) @map("created_at")
+    updatedAt           DateTime           @updatedAt @map("updated_at")
+
+    organization   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    createdBy      User            @relation("AnomalyRuleCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    updatedBy      User?           @relation("AnomalyRuleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+    anomalyEvents  AnomalyEvent[]
+
+    @@unique([orgId, code])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([type])
+    @@index([status])
+    @@index([severity])
+    @@index([createdAt])
+    @@map("anomaly_rules")
+}
+
+/// Key-value risk threshold configuration.
+model RiskThreshold {
+    id          String   @id @default(cuid())
+    orgId       String   @map("org_id")
+    branchId    String?  @map("branch_id")
+    key         String
+    name        String
+    value       Decimal? @db.Decimal(10, 2)
+    intValue    Int?     @map("int_value")
+    boolValue   Boolean? @map("bool_value")
+    unit        String?
+    description String?
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+    @@unique([orgId, key])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([key])
+    @@map("risk_thresholds")
+}
+
+/// A detected anomaly event — advisory-first, explainable.
+model AnomalyEvent {
+    id                   String             @id @default(cuid())
+    orgId                String             @map("org_id")
+    branchId             String             @map("branch_id")
+    ruleId               String?            @map("rule_id")
+    type                 AnomalyRuleType
+    status               AnomalyEventStatus @default(OPEN)
+    severity             AnomalySeverity
+    entityType           RiskEntityType     @map("entity_type")
+    entityId             String             @map("entity_id")
+    actorUserId          String?            @map("actor_user_id")
+    relatedOrderId       String?            @map("related_order_id")
+    relatedShiftId       String?            @map("related_shift_id")
+    relatedTillSessionId String?            @map("related_till_session_id")
+    relatedPaymentId     String?            @map("related_payment_id")
+    relatedRefundId      String?            @map("related_refund_id")
+    relatedReservationId String?            @map("related_reservation_id")
+    relatedEventId       String?            @map("related_event_id")
+    score                Decimal?           @db.Decimal(10, 2)
+    title                String
+    description          String?
+    evidence             Json
+    metadata             Json?
+    acknowledgedById     String?            @map("acknowledged_by_id")
+    acknowledgedAt       DateTime?          @map("acknowledged_at")
+    resolutionNotes      String?            @map("resolution_notes")
+    createdAt            DateTime           @default(now()) @map("created_at")
+    updatedAt            DateTime           @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    rule         AnomalyRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+    actorUser    User?        @relation("AnomalyEventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+    acknowledgedBy User?      @relation("AnomalyEventAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([ruleId])
+    @@index([type])
+    @@index([status])
+    @@index([severity])
+    @@index([entityType])
+    @@index([entityId])
+    @@index([actorUserId])
+    @@index([acknowledgedById])
+    @@index([branchId, type, status])
+    @@index([branchId, actorUserId])
+    @@index([createdAt])
+    @@map("anomaly_events")
+}
+
+/// Periodic staff risk summary snapshot.
+model StaffRiskSnapshot {
+    id                 String   @id @default(cuid())
+    orgId              String   @map("org_id")
+    branchId           String   @map("branch_id")
+    userId             String   @map("user_id")
+    windowStart        DateTime @map("window_start")
+    windowEnd          DateTime @map("window_end")
+    riskScore          Decimal  @default(0) @map("risk_score") @db.Decimal(10, 2)
+    anomalyCount       Int      @default(0) @map("anomaly_count")
+    highSeverityCount  Int      @default(0) @map("high_severity_count")
+    voidSpikeCount     Int      @default(0) @map("void_spike_count")
+    discountAbuseCount Int      @default(0) @map("discount_abuse_count")
+    cashVarianceCount  Int      @default(0) @map("cash_variance_count")
+    refundSpikeCount   Int      @default(0) @map("refund_spike_count")
+    noShowPatternCount Int      @default(0) @map("no_show_pattern_count")
+    lastEvaluatedAt    DateTime @map("last_evaluated_at")
+    metadata           Json?
+    createdAt          DateTime @default(now()) @map("created_at")
+    updatedAt          DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    user         User         @relation("StaffRiskSnapshotUser", fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([orgId, branchId, userId, windowStart, windowEnd])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([userId])
+    @@index([windowStart])
+    @@index([windowEnd])
+    @@index([branchId, userId])
+    @@index([createdAt])
+    @@map("staff_risk_snapshots")
 }

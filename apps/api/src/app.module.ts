@@ -20,6 +20,7 @@ import { ShiftsModule } from './modules/shifts/shifts.module';
 import { TillsModule } from './modules/tills/tills.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { EventsModule } from './modules/events/events.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { EventsModule } from './modules/events/events.module';
     TillsModule,
     ReservationsModule,
     EventsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

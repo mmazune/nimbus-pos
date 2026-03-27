@@ -221,6 +221,15 @@ const PERMISSIONS_DATA = [
     { action: 'pos:event:ticket:read', description: 'Read event tickets' },
     { action: 'pos:event:checkin', description: 'Check in a ticket at an event' },
     { action: 'pos:event:portal:read', description: 'Access event portal data' },
+    // ── M18: Anomaly Detection + Anti-Theft Signals ──
+    { action: 'pos:analytics:anomalies:read', description: 'Read anomaly events' },
+    { action: 'pos:analytics:anomaly-rules:create', description: 'Create anomaly detection rules' },
+    { action: 'pos:analytics:anomaly-rules:update', description: 'Update anomaly detection rules' },
+    { action: 'pos:analytics:anomalies:acknowledge', description: 'Acknowledge or resolve anomaly events' },
+    { action: 'pos:analytics:risk-dashboard:read', description: 'View risk dashboard and staff risk data' },
+    { action: 'pos:analytics:anomalies:recalculate', description: 'Trigger anomaly recalculation' },
+    { action: 'pos:analytics:thresholds:read', description: 'Read risk thresholds' },
+    { action: 'pos:analytics:thresholds:update', description: 'Update risk thresholds' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -327,6 +336,14 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:event:ticket:read',
         'pos:event:checkin',
         'pos:event:portal:read',
+        'pos:analytics:anomalies:read',
+        'pos:analytics:anomaly-rules:create',
+        'pos:analytics:anomaly-rules:update',
+        'pos:analytics:anomalies:acknowledge',
+        'pos:analytics:risk-dashboard:read',
+        'pos:analytics:anomalies:recalculate',
+        'pos:analytics:thresholds:read',
+        'pos:analytics:thresholds:update',
     ],
     Manager: [
         'identity:user:read',
@@ -403,6 +420,14 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:event:ticket:read',
         'pos:event:checkin',
         'pos:event:portal:read',
+        'pos:analytics:anomalies:read',
+        'pos:analytics:anomaly-rules:create',
+        'pos:analytics:anomaly-rules:update',
+        'pos:analytics:anomalies:acknowledge',
+        'pos:analytics:risk-dashboard:read',
+        'pos:analytics:anomalies:recalculate',
+        'pos:analytics:thresholds:read',
+        'pos:analytics:thresholds:update',
     ],
     Accountant: [
         'identity:user:read',
@@ -420,6 +445,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:event:read',
         'pos:event:booking:read',
         'pos:event:ticket:read',
+        'pos:analytics:anomalies:read',
+        'pos:analytics:risk-dashboard:read',
+        'pos:analytics:thresholds:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -491,6 +519,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:event:ticket:read',
         'pos:event:checkin',
         'pos:event:portal:read',
+        'pos:analytics:anomalies:read',
+        'pos:analytics:anomalies:acknowledge',
+        'pos:analytics:risk-dashboard:read',
+        'pos:analytics:anomalies:recalculate',
+        'pos:analytics:thresholds:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -648,6 +681,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reservation:deposit:read',
         'pos:reservation:update',
         'pos:reservation:table:assign',
+        'pos:analytics:anomalies:read',
     ],
 };
 
@@ -3934,6 +3968,184 @@ async function seedEvents(
     return { created, skipped };
 }
 
+// ── M18: Anomaly Detection + Anti-Theft Signals Seed ──
+
+async function seedAnalyticsData(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findFirst({
+        where: { organizationId: orgId, code: branchCode },
+    });
+    if (!branch) {
+        console.log('  ⚠ Branch not found — skipping analytics seed');
+        return { created, skipped };
+    }
+
+    const owner = await prisma.user.findFirst({
+        where: { email: 'owner@demo.local' },
+    });
+    if (!owner) {
+        console.log('  ⚠ Owner user not found — skipping analytics seed');
+        return { created, skipped };
+    }
+
+    // ── Risk Thresholds ──
+    const thresholds = [
+        { key: 'void_rate_pct', name: 'Max Void Rate (%)', value: 10, unit: 'percent', description: 'Maximum acceptable void rate per shift' },
+        { key: 'discount_limit_per_hour', name: 'Discount Limit per Hour', intValue: 5, description: 'Max discounts a single staff can apply per hour' },
+        { key: 'cash_variance_limit', name: 'Cash Variance Limit', value: 500, unit: 'currency', description: 'Maximum acceptable cash variance on till close' },
+        { key: 'late_close_hours', name: 'Late Close Hours', intValue: 12, unit: 'hours', description: 'Shift duration threshold for late-close signal' },
+        { key: 'refund_spike_per_hour', name: 'Refund Spike per Hour', intValue: 3, description: 'Max refunds a single staff can process per hour' },
+        { key: 'price_override_enabled', name: 'Price Override Detection', boolValue: true, description: 'Whether to flag price override anomalies' },
+    ];
+
+    for (const t of thresholds) {
+        const existing = await prisma.riskThreshold.findUnique({
+            where: { orgId_key: { orgId, key: t.key } },
+        });
+        if (existing) { skipped++; continue; }
+        await prisma.riskThreshold.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                key: t.key,
+                name: t.name,
+                value: t.value ?? null,
+                intValue: t.intValue ?? null,
+                boolValue: t.boolValue ?? null,
+                unit: t.unit ?? null,
+                description: t.description ?? null,
+            },
+        });
+        console.log(`  ✅ Threshold "${t.key}" created`);
+        created++;
+    }
+
+    // ── Anomaly Rules ──
+    const rules = [
+        {
+            code: 'VOID-SPIKE-01',
+            name: 'Void Spike — Hourly',
+            type: 'VOID_SPIKE' as const,
+            severity: 'HIGH' as const,
+            metricKey: 'order.void.count_per_staff',
+            operator: '>=',
+            thresholdValue: 5,
+            windowMinutes: 60,
+            minimumSampleSize: 3,
+            appliesToEntityType: 'STAFF' as const,
+        },
+        {
+            code: 'DISC-ABUSE-01',
+            name: 'Discount Abuse — Hourly',
+            type: 'DISCOUNT_ABUSE' as const,
+            severity: 'MEDIUM' as const,
+            metricKey: 'discount.count_per_staff',
+            operator: '>=',
+            thresholdValue: 5,
+            windowMinutes: 60,
+            appliesToEntityType: 'STAFF' as const,
+        },
+        {
+            code: 'CASH-VAR-01',
+            name: 'Cash Variance — Till Close',
+            type: 'CASH_VARIANCE' as const,
+            severity: 'HIGH' as const,
+            metricKey: 'till.closing_variance_abs',
+            operator: '>=',
+            thresholdValue: 500,
+            windowMinutes: 480,
+            appliesToEntityType: 'TILL' as const,
+        },
+        {
+            code: 'LATE-CLOSE-01',
+            name: 'Late Close — Shift Duration',
+            type: 'LATE_CLOSE' as const,
+            severity: 'LOW' as const,
+            metricKey: 'shift.duration_hours',
+            operator: '>=',
+            thresholdValue: 12,
+            windowMinutes: 1440,
+            appliesToEntityType: 'SHIFT' as const,
+        },
+        {
+            code: 'REFUND-SPIKE-01',
+            name: 'Refund Spike — Hourly',
+            type: 'REFUND_SPIKE' as const,
+            severity: 'HIGH' as const,
+            metricKey: 'refund.count_per_staff',
+            operator: '>=',
+            thresholdValue: 3,
+            windowMinutes: 60,
+            appliesToEntityType: 'STAFF' as const,
+        },
+    ];
+
+    for (const r of rules) {
+        const existing = await prisma.anomalyRule.findUnique({
+            where: { orgId_code: { orgId, code: r.code } },
+        });
+        if (existing) { skipped++; continue; }
+        await prisma.anomalyRule.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                code: r.code,
+                name: r.name,
+                type: r.type,
+                severity: r.severity,
+                metricKey: r.metricKey,
+                operator: r.operator,
+                thresholdValue: r.thresholdValue,
+                windowMinutes: r.windowMinutes,
+                minimumSampleSize: r.minimumSampleSize ?? null,
+                appliesToEntityType: r.appliesToEntityType,
+                createdById: owner.id,
+            },
+        });
+        console.log(`  ✅ Rule "${r.code}" created`);
+        created++;
+    }
+
+    // ── Sample Anomaly Events ──
+    const voidRule = await prisma.anomalyRule.findUnique({
+        where: { orgId_code: { orgId, code: 'VOID-SPIKE-01' } },
+    });
+    if (voidRule) {
+        const existingEvent = await prisma.anomalyEvent.findFirst({
+            where: { orgId, ruleId: voidRule.id },
+        });
+        if (!existingEvent) {
+            await prisma.anomalyEvent.create({
+                data: {
+                    orgId,
+                    branchId: branch.id,
+                    ruleId: voidRule.id,
+                    type: 'VOID_SPIKE',
+                    severity: 'HIGH',
+                    entityType: 'STAFF',
+                    entityId: owner.id,
+                    actorUserId: owner.id,
+                    title: 'Void spike: 7 voids in 60min (seed sample)',
+                    description: 'Detected by rule: Void Spike — Hourly (VOID-SPIKE-01)',
+                    evidence: { voidCount: 7, windowMinutes: 60, threshold: 5 },
+                    metadata: { ruleCode: 'VOID-SPIKE-01', evaluatedAt: new Date().toISOString(), seeded: true },
+                },
+            });
+            console.log('  ✅ Sample anomaly event (VOID_SPIKE) created');
+            created++;
+        } else {
+            skipped++;
+        }
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -4118,6 +4330,11 @@ async function main(): Promise<void> {
     const eventsResult = await seedEvents(orgResult.orgId, 'MAIN');
     console.log(`   Created: ${eventsResult.created}, Skipped: ${eventsResult.skipped}\n`);
 
+    // 34) Seed Analytics / Anomaly Detection (M18)
+    console.log('── Analytics + Anomaly Detection (M18) ──');
+    const analyticsResult = await seedAnalyticsData(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${analyticsResult.created}, Skipped: ${analyticsResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -4190,6 +4407,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm17-events-booking-ticketing',
         `Events: ${eventsResult.created}c/${eventsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm18-anomaly-anti-theft',
+        `Analytics: ${analyticsResult.created}c/${analyticsResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 
