@@ -15,7 +15,7 @@
         ]
     },
     "variable": [
-        { "key": "baseUrl", "value": "http://localhost:3000/api" },
+        { "key": "baseUrl", "value": "http://localhost:3001" },
         { "key": "accessToken", "value": "" },
         { "key": "branchId", "value": "" },
         { "key": "eventId", "value": "" },
@@ -34,7 +34,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
             },
             "event": [
                 {
@@ -54,7 +54,7 @@
             "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/me", "host": ["{{baseUrl}}"], "path": ["me"] }
+                "url": { "raw": "{{baseUrl}}/api/me", "host": ["{{baseUrl}}"], "path": ["api", "me"] }
             },
             "event": [
                 {
@@ -82,7 +82,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"title\": \"Postman Jazz Night\",\n  \"description\": \"Live jazz with cocktails\",\n  \"startsAt\": \"2026-04-15T19:00:00.000Z\",\n  \"endsAt\": \"2026-04-15T23:00:00.000Z\",\n  \"capacity\": 150,\n  \"venueNotes\": \"Main dining room\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events", "host": ["{{baseUrl}}"], "path": ["events"] }
+                "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api", "events"] }
             },
             "event": [
                 {
@@ -108,7 +108,7 @@
                 "header": [
                     { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}"] }
             },
             "event": [
                 {
@@ -136,7 +136,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"title\": \"Postman Jazz Night — Updated\",\n  \"venueNotes\": \"Main hall, VIP section reserved\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}"] }
             },
             "event": [
                 {
@@ -164,7 +164,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"name\": \"General Admission\",\n  \"type\": \"GENERAL\",\n  \"price\": 25000,\n  \"capacity\": 120\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}/ticket-classes", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}", "ticket-classes"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/ticket-classes", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "ticket-classes"] }
             },
             "event": [
                 {
@@ -189,7 +189,7 @@
                 "header": [
                     { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}/ticket-classes", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}", "ticket-classes"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/ticket-classes", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "ticket-classes"] }
             },
             "event": [
                 {
@@ -217,7 +217,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"slug\": \"postman-jazz-night\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}/publish", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}", "publish"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "publish"] }
             },
             "event": [
                 {
@@ -243,7 +243,7 @@
                 "header": [
                     { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
-                "url": { "raw": "{{baseUrl}}/events/portal/{{portalKey}}", "host": ["{{baseUrl}}"], "path": ["events", "portal", "{{portalKey}}"] }
+                "url": { "raw": "{{baseUrl}}/api/events/portal/{{portalKey}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "portal", "{{portalKey}}"] }
             },
             "event": [
                 {
@@ -273,7 +273,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"ticketClassId\": \"{{ticketClassId}}\",\n  \"customerName\": \"Postman Booking Guest\",\n  \"customerPhone\": \"+256700123456\",\n  \"customerEmail\": \"guest@postman.test\",\n  \"quantity\": 2\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}/bookings", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}", "bookings"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/bookings", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "bookings"] }
             },
             "event": [
                 {
@@ -299,7 +299,7 @@
                 "header": [
                     { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
-                "url": { "raw": "{{baseUrl}}/events/bookings/{{bookingId}}", "host": ["{{baseUrl}}"], "path": ["events", "bookings", "{{bookingId}}"] }
+                "url": { "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "bookings", "{{bookingId}}"] }
             },
             "event": [
                 {
@@ -322,7 +322,7 @@
                 "header": [
                     { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}/bookings", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}", "bookings"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/bookings", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "bookings"] }
             },
             "event": [
                 {
@@ -350,7 +350,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"holderName\": \"Postman Ticket Holder\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/bookings/{{bookingId}}/tickets/issue", "host": ["{{baseUrl}}"], "path": ["events", "bookings", "{{bookingId}}", "tickets", "issue"] }
+                "url": { "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}/tickets/issue", "host": ["{{baseUrl}}"], "path": ["api", "events", "bookings", "{{bookingId}}", "tickets", "issue"] }
             },
             "event": [
                 {
@@ -383,7 +383,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"message\": \"Welcome to Jazz Night!\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/tickets/{{ticketId}}/check-in", "host": ["{{baseUrl}}"], "path": ["events", "tickets", "{{ticketId}}", "check-in"] }
+                "url": { "raw": "{{baseUrl}}/api/events/tickets/{{ticketId}}/check-in", "host": ["{{baseUrl}}"], "path": ["api", "events", "tickets", "{{ticketId}}", "check-in"] }
             },
             "event": [
                 {
@@ -412,7 +412,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"reason\": \"Change of plans\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/bookings/{{bookingId}}/cancel", "host": ["{{baseUrl}}"], "path": ["events", "bookings", "{{bookingId}}", "cancel"] }
+                "url": { "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "events", "bookings", "{{bookingId}}", "cancel"] }
             },
             "event": [
                 {
@@ -435,7 +435,7 @@
                 "header": [
                     { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
-                "url": { "raw": "{{baseUrl}}/events?page=1&pageSize=10", "host": ["{{baseUrl}}"], "path": ["events"], "query": [{ "key": "page", "value": "1" }, { "key": "pageSize", "value": "10" }] }
+                "url": { "raw": "{{baseUrl}}/api/events?page=1&pageSize=10", "host": ["{{baseUrl}}"], "path": ["api", "events"], "query": [{ "key": "page", "value": "1" }, { "key": "pageSize", "value": "10" }] }
             },
             "event": [
                 {
@@ -460,7 +460,7 @@
                 "header": [
                     { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
-                "url": { "raw": "{{baseUrl}}/events/upcoming", "host": ["{{baseUrl}}"], "path": ["events", "upcoming"] }
+                "url": { "raw": "{{baseUrl}}/api/events/upcoming", "host": ["{{baseUrl}}"], "path": ["api", "events", "upcoming"] }
             },
             "event": [
                 {
@@ -488,7 +488,7 @@
                     "mode": "raw",
                     "raw": "{\n  \"reason\": \"Event concluded successfully\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/events/{{eventId}}/close", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}", "close"] }
+                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/close", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "close"] }
             },
             "event": [
                 {
