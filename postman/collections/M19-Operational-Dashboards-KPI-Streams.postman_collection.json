@@ -6,16 +6,34 @@
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
-        { "key": "baseUrl", "value": "http://localhost:3001" },
-        { "key": "accessToken", "value": "" },
-        { "key": "branchId", "value": "" },
-        { "key": "snapshotId", "value": "" },
-        { "key": "chefAccessToken", "value": "" }
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "snapshotId",
+            "value": ""
+        },
+        {
+            "key": "chefAccessToken",
+            "value": ""
+        }
     ],
     "auth": {
         "type": "bearer",
         "bearer": [
-            { "key": "token", "value": "{{accessToken}}" }
+            {
+                "key": "token",
+                "value": "{{accessToken}}"
+            }
         ]
     },
     "item": [
@@ -36,7 +54,10 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -44,8 +65,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "auth", "login"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
                 }
             }
         },
@@ -68,8 +95,13 @@
                 "method": "GET",
                 "url": {
                     "raw": "{{baseUrl}}/api/me",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "me"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
                 }
             }
         },
@@ -94,12 +126,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/owner",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "owner"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "owner"
+                    ]
                 }
             }
         },
@@ -123,12 +164,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/manager",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "manager"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "manager"
+                    ]
                 }
             }
         },
@@ -155,12 +205,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/today-summary",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "today-summary"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "today-summary"
+                    ]
                 }
             }
         },
@@ -185,12 +244,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/payment-mix",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "payment-mix"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "payment-mix"
+                    ]
                 }
             }
         },
@@ -212,12 +280,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/open-orders",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "open-orders"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "open-orders"
+                    ]
                 }
             }
         },
@@ -239,12 +316,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/low-stock",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "low-stock"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "low-stock"
+                    ]
                 }
             }
         },
@@ -265,12 +351,21 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/snapshots",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "snapshots"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "snapshots"
+                    ]
                 }
             }
         },
@@ -294,8 +389,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -303,8 +404,15 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/kpi/refresh",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "kpi", "refresh"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "kpi",
+                        "refresh"
+                    ]
                 }
             }
         },
@@ -325,8 +433,14 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "x-branch-id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -334,8 +448,15 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/kpi/refresh",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "kpi", "refresh"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "kpi",
+                        "refresh"
+                    ]
                 }
             }
         },
@@ -356,7 +477,10 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -364,8 +488,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "auth", "login"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
                 }
             }
         },
@@ -384,14 +514,28 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "x-branch-id", "value": "{{branchId}}" },
-                    { "key": "Authorization", "value": "Bearer {{chefAccessToken}}" }
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{chefAccessToken}}"
+                    }
                 ],
-                "auth": { "type": "noauth" },
+                "auth": {
+                    "type": "noauth"
+                },
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/owner",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "owner"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "owner"
+                    ]
                 }
             }
         },
@@ -410,19 +554,37 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "x-branch-id", "value": "{{branchId}}" },
-                    { "key": "Authorization", "value": "Bearer {{chefAccessToken}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{chefAccessToken}}"
+                    }
                 ],
-                "auth": { "type": "noauth" },
+                "auth": {
+                    "type": "noauth"
+                },
                 "body": {
                     "mode": "raw",
                     "raw": "{\"scopeType\":\"BRANCH\",\"metricWindow\":\"TODAY\"}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/kpi/refresh",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "kpi", "refresh"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "kpi",
+                        "refresh"
+                    ]
                 }
             }
         },
@@ -442,8 +604,14 @@
                 "method": "GET",
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/owner",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "owner"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "owner"
+                    ]
                 }
             }
         },
@@ -461,11 +629,19 @@
             ],
             "request": {
                 "method": "GET",
-                "auth": { "type": "noauth" },
+                "auth": {
+                    "type": "noauth"
+                },
                 "url": {
                     "raw": "{{baseUrl}}/api/dash/owner",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "dash", "owner"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "dash",
+                        "owner"
+                    ]
                 }
             }
         }

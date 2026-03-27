@@ -157,42 +157,42 @@ model User {
     userRoles               UserRole[]
     sessions                Session[]
     refreshTokens           RefreshToken[]
-    auditLogs               AuditLog[]          @relation("AuditActor")
+    auditLogs               AuditLog[]           @relation("AuditActor")
     memberships             Membership[]
     stockAdjustments        StockAdjustment[]
     orders                  Order[]
-    discountsCreated        Discount[]          @relation("DiscountCreatedBy")
-    discountsApproved       Discount[]          @relation("DiscountApprovedBy")
-    discountsRejected       Discount[]          @relation("DiscountRejectedBy")
-    paymentsEntered         Payment[]           @relation("PaymentEnteredBy")
-    refundsCreated          Refund[]            @relation("RefundCreatedBy")
-    refundsApproved         Refund[]            @relation("RefundApprovedBy")
-    shiftsOpened            Shift[]             @relation("ShiftOpenedBy")
-    shiftsClosed            Shift[]             @relation("ShiftClosedBy")
-    tillsOperated           TillSession[]       @relation("TillOperator")
-    tillsOpened             TillSession[]       @relation("TillOpenedBy")
-    tillsClosed             TillSession[]       @relation("TillClosedBy")
-    cashMovementsCreated    CashMovement[]      @relation("CashMovementCreatedBy")
-    cashMovementsApproved   CashMovement[]      @relation("CashMovementApprovedBy")
-    shiftSummariesGenerated ShiftCloseSummary[] @relation("ShiftSummaryGeneratedBy")
-    reservationsCreated     Reservation[]      @relation("ReservationCreatedBy")
-    reservationsUpdated     Reservation[]      @relation("ReservationUpdatedBy")
+    discountsCreated        Discount[]           @relation("DiscountCreatedBy")
+    discountsApproved       Discount[]           @relation("DiscountApprovedBy")
+    discountsRejected       Discount[]           @relation("DiscountRejectedBy")
+    paymentsEntered         Payment[]            @relation("PaymentEnteredBy")
+    refundsCreated          Refund[]             @relation("RefundCreatedBy")
+    refundsApproved         Refund[]             @relation("RefundApprovedBy")
+    shiftsOpened            Shift[]              @relation("ShiftOpenedBy")
+    shiftsClosed            Shift[]              @relation("ShiftClosedBy")
+    tillsOperated           TillSession[]        @relation("TillOperator")
+    tillsOpened             TillSession[]        @relation("TillOpenedBy")
+    tillsClosed             TillSession[]        @relation("TillClosedBy")
+    cashMovementsCreated    CashMovement[]       @relation("CashMovementCreatedBy")
+    cashMovementsApproved   CashMovement[]       @relation("CashMovementApprovedBy")
+    shiftSummariesGenerated ShiftCloseSummary[]  @relation("ShiftSummaryGeneratedBy")
+    reservationsCreated     Reservation[]        @relation("ReservationCreatedBy")
+    reservationsUpdated     Reservation[]        @relation("ReservationUpdatedBy")
     depositsRecorded        ReservationDeposit[] @relation("DepositRecordedBy")
-    reservationEventsActed  ReservationEvent[] @relation("ReservationEventActor")
+    reservationEventsActed  ReservationEvent[]   @relation("ReservationEventActor")
     // M17 — Events + Booking + Ticketing
-    eventsCreated           Event[]            @relation("EventCreatedBy")
-    eventsUpdated           Event[]            @relation("EventUpdatedBy")
-    eventBookingsBooked     EventBooking[]     @relation("EventBookingBookedBy")
-    eventCheckInsActed      EventCheckIn[]     @relation("EventCheckInActor")
-    eventAuditLogsActed     EventAuditLog[]    @relation("EventAuditLogActor")
+    eventsCreated           Event[]              @relation("EventCreatedBy")
+    eventsUpdated           Event[]              @relation("EventUpdatedBy")
+    eventBookingsBooked     EventBooking[]       @relation("EventBookingBookedBy")
+    eventCheckInsActed      EventCheckIn[]       @relation("EventCheckInActor")
+    eventAuditLogsActed     EventAuditLog[]      @relation("EventAuditLogActor")
     // M18 — Anomaly Detection
-    anomalyRulesCreated    AnomalyRule[]      @relation("AnomalyRuleCreatedBy")
-    anomalyRulesUpdated    AnomalyRule[]      @relation("AnomalyRuleUpdatedBy")
-    anomalyEventsActed     AnomalyEvent[]     @relation("AnomalyEventActor")
-    anomalyEventsAcked     AnomalyEvent[]     @relation("AnomalyEventAcknowledgedBy")
-    staffRiskSnapshots     StaffRiskSnapshot[] @relation("StaffRiskSnapshotUser")
+    anomalyRulesCreated     AnomalyRule[]        @relation("AnomalyRuleCreatedBy")
+    anomalyRulesUpdated     AnomalyRule[]        @relation("AnomalyRuleUpdatedBy")
+    anomalyEventsActed      AnomalyEvent[]       @relation("AnomalyEventActor")
+    anomalyEventsAcked      AnomalyEvent[]       @relation("AnomalyEventAcknowledgedBy")
+    staffRiskSnapshots      StaffRiskSnapshot[]  @relation("StaffRiskSnapshotUser")
     // M19 — Dashboards + KPI
-    kpiSubscriptions       KpiSubscription[]  @relation("KpiSubscriptionUser")
+    kpiSubscriptions        KpiSubscription[]    @relation("KpiSubscriptionUser")
 
     @@map("users")
 }
@@ -401,7 +401,7 @@ model Branch {
     createdAt      DateTime     @default(now()) @map("created_at")
     updatedAt      DateTime     @updatedAt @map("updated_at")
 
-    organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
     memberships         Membership[]
     floorPlans          FloorPlan[]
     tables              Table[]
@@ -578,9 +578,9 @@ model Table {
     createdAt   DateTime    @default(now()) @map("created_at")
     updatedAt   DateTime    @updatedAt @map("updated_at")
 
-    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    floorPlan    FloorPlan?   @relation(fields: [floorPlanId], references: [id], onDelete: SetNull)
+    organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    floorPlan    FloorPlan?    @relation(fields: [floorPlanId], references: [id], onDelete: SetNull)
     orders       Order[]
     reservations Reservation[]
     events       Event[]
@@ -1272,13 +1272,13 @@ model Payment {
     createdAt             DateTime                  @default(now()) @map("created_at")
     updatedAt             DateTime                  @updatedAt @map("updated_at")
 
-    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-    enteredBy    User?        @relation("PaymentEnteredBy", fields: [enteredById], references: [id], onDelete: SetNull)
-    refunds      Refund[]
+    organization        Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch              Branch               @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    order               Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    enteredBy           User?                @relation("PaymentEnteredBy", fields: [enteredById], references: [id], onDelete: SetNull)
+    refunds             Refund[]
     reservationDeposits ReservationDeposit[]
-    eventBookings EventBooking[]
+    eventBookings       EventBooking[]
 
     @@index([orgId])
     @@index([branchId])
@@ -1648,14 +1648,14 @@ model Reservation {
     createdAt               DateTime          @default(now()) @map("created_at")
     updatedAt               DateTime          @updatedAt @map("updated_at")
 
-    organization Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch       Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    table        Table?                @relation(fields: [tableId], references: [id], onDelete: SetNull)
-    seatedOrder  Order?                @relation(fields: [seatedOrderId], references: [id], onDelete: SetNull)
-    createdBy    User                  @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-    updatedBy    User?                 @relation("ReservationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-    deposits     ReservationDeposit[]
-    events       ReservationEvent[]
+    organization  Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch        Branch               @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    table         Table?               @relation(fields: [tableId], references: [id], onDelete: SetNull)
+    seatedOrder   Order?               @relation(fields: [seatedOrderId], references: [id], onDelete: SetNull)
+    createdBy     User                 @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    updatedBy     User?                @relation("ReservationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+    deposits      ReservationDeposit[]
+    events        ReservationEvent[]
     eventBookings EventBooking[]
 
     @@unique([branchId, reservationNumber])
@@ -1774,43 +1774,43 @@ enum CheckInStatus {
 
 /// An event hosted at a branch (concert, wine tasting, private party, etc.).
 model Event {
-    id                String      @id @default(cuid())
-    orgId             String      @map("org_id")
-    branchId          String      @map("branch_id")
-    eventNumber       String      @map("event_number")
-    title             String
-    slug              String?
-    portalKey         String?     @unique @map("portal_key")
-    description       String?
-    startsAt          DateTime    @map("starts_at")
-    endsAt            DateTime?   @map("ends_at")
-    bookingOpensAt    DateTime?   @map("booking_opens_at")
-    bookingClosesAt   DateTime?   @map("booking_closes_at")
-    status            EventStatus @default(DRAFT)
-    capacity          Int
-    soldCount         Int         @default(0) @map("sold_count")
-    checkedInCount    Int         @default(0) @map("checked_in_count")
-    venueTableId      String?     @map("venue_table_id")
-    venueNotes        String?     @map("venue_notes")
-    createdById       String      @map("created_by_id")
-    updatedById       String?     @map("updated_by_id")
-    publishedAt       DateTime?   @map("published_at")
-    cancelledAt       DateTime?   @map("cancelled_at")
-    completedAt       DateTime?   @map("completed_at")
-    metadata          Json?
-    createdAt         DateTime    @default(now()) @map("created_at")
-    updatedAt         DateTime    @updatedAt @map("updated_at")
+    id              String      @id @default(cuid())
+    orgId           String      @map("org_id")
+    branchId        String      @map("branch_id")
+    eventNumber     String      @map("event_number")
+    title           String
+    slug            String?
+    portalKey       String?     @unique @map("portal_key")
+    description     String?
+    startsAt        DateTime    @map("starts_at")
+    endsAt          DateTime?   @map("ends_at")
+    bookingOpensAt  DateTime?   @map("booking_opens_at")
+    bookingClosesAt DateTime?   @map("booking_closes_at")
+    status          EventStatus @default(DRAFT)
+    capacity        Int
+    soldCount       Int         @default(0) @map("sold_count")
+    checkedInCount  Int         @default(0) @map("checked_in_count")
+    venueTableId    String?     @map("venue_table_id")
+    venueNotes      String?     @map("venue_notes")
+    createdById     String      @map("created_by_id")
+    updatedById     String?     @map("updated_by_id")
+    publishedAt     DateTime?   @map("published_at")
+    cancelledAt     DateTime?   @map("cancelled_at")
+    completedAt     DateTime?   @map("completed_at")
+    metadata        Json?
+    createdAt       DateTime    @default(now()) @map("created_at")
+    updatedAt       DateTime    @updatedAt @map("updated_at")
 
-    organization    Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch          Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    venueTable      Table?             @relation(fields: [venueTableId], references: [id], onDelete: SetNull)
-    createdBy       User               @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-    updatedBy       User?              @relation("EventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-    ticketClasses   EventTicketClass[]
-    bookings        EventBooking[]
-    tickets         EventTicket[]
-    checkIns        EventCheckIn[]
-    auditLogs       EventAuditLog[]
+    organization  Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch        Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    venueTable    Table?             @relation(fields: [venueTableId], references: [id], onDelete: SetNull)
+    createdBy     User               @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    updatedBy     User?              @relation("EventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+    ticketClasses EventTicketClass[]
+    bookings      EventBooking[]
+    tickets       EventTicket[]
+    checkIns      EventCheckIn[]
+    auditLogs     EventAuditLog[]
 
     @@unique([branchId, eventNumber])
     @@index([orgId])
@@ -1861,37 +1861,37 @@ model EventTicketClass {
 
 /// A booking / reservation for an event.
 model EventBooking {
-    id             String             @id @default(cuid())
-    orgId          String             @map("org_id")
-    branchId       String             @map("branch_id")
-    eventId        String             @map("event_id")
-    ticketClassId  String             @map("ticket_class_id")
-    reservationId  String?            @map("reservation_id")
-    bookingNumber  String             @map("booking_number")
-    customerName   String             @map("customer_name")
-    customerPhone  String?            @map("customer_phone")
-    customerEmail  String?            @map("customer_email")
-    quantity       Int
-    subtotal       Decimal            @db.Decimal(10, 2)
-    depositAmount  Decimal?           @map("deposit_amount") @db.Decimal(10, 2)
-    paymentId      String?            @map("payment_id")
-    status         EventBookingStatus @default(PENDING)
-    bookedById     String             @map("booked_by_id")
-    confirmedAt    DateTime?          @map("confirmed_at")
-    cancelledAt    DateTime?          @map("cancelled_at")
-    checkedInAt    DateTime?          @map("checked_in_at")
-    notes          String?
-    metadata       Json?
-    createdAt      DateTime           @default(now()) @map("created_at")
-    updatedAt      DateTime           @updatedAt @map("updated_at")
+    id            String             @id @default(cuid())
+    orgId         String             @map("org_id")
+    branchId      String             @map("branch_id")
+    eventId       String             @map("event_id")
+    ticketClassId String             @map("ticket_class_id")
+    reservationId String?            @map("reservation_id")
+    bookingNumber String             @map("booking_number")
+    customerName  String             @map("customer_name")
+    customerPhone String?            @map("customer_phone")
+    customerEmail String?            @map("customer_email")
+    quantity      Int
+    subtotal      Decimal            @db.Decimal(10, 2)
+    depositAmount Decimal?           @map("deposit_amount") @db.Decimal(10, 2)
+    paymentId     String?            @map("payment_id")
+    status        EventBookingStatus @default(PENDING)
+    bookedById    String             @map("booked_by_id")
+    confirmedAt   DateTime?          @map("confirmed_at")
+    cancelledAt   DateTime?          @map("cancelled_at")
+    checkedInAt   DateTime?          @map("checked_in_at")
+    notes         String?
+    metadata      Json?
+    createdAt     DateTime           @default(now()) @map("created_at")
+    updatedAt     DateTime           @updatedAt @map("updated_at")
 
-    organization Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch       Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    event        Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    event        Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
     ticketClass  EventTicketClass @relation(fields: [ticketClassId], references: [id], onDelete: Cascade)
-    reservation  Reservation?    @relation(fields: [reservationId], references: [id], onDelete: SetNull)
-    payment      Payment?        @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-    bookedBy     User            @relation("EventBookingBookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
+    reservation  Reservation?     @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+    payment      Payment?         @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+    bookedBy     User             @relation("EventBookingBookedBy", fields: [bookedById], references: [id], onDelete: Cascade)
     tickets      EventTicket[]
     checkIns     EventCheckIn[]
     auditLogs    EventAuditLog[]
@@ -2062,32 +2062,32 @@ enum RiskEntityType {
 /// Defines a detection rule for anomalies / anti-theft signals.
 /// Each rule specifies a metric, operator, threshold, and window.
 model AnomalyRule {
-    id                  String             @id @default(cuid())
-    orgId               String             @map("org_id")
-    branchId            String?            @map("branch_id")
+    id                  String            @id @default(cuid())
+    orgId               String            @map("org_id")
+    branchId            String?           @map("branch_id")
     code                String
     name                String
     type                AnomalyRuleType
     description         String?
-    status              AnomalyRuleStatus  @default(ACTIVE)
+    status              AnomalyRuleStatus @default(ACTIVE)
     severity            AnomalySeverity
-    metricKey           String             @map("metric_key")
+    metricKey           String            @map("metric_key")
     operator            String
-    thresholdValue      Decimal?           @map("threshold_value") @db.Decimal(10, 2)
-    windowMinutes       Int?               @map("window_minutes")
-    minimumSampleSize   Int?               @map("minimum_sample_size")
-    appliesToEntityType RiskEntityType?    @map("applies_to_entity_type")
+    thresholdValue      Decimal?          @map("threshold_value") @db.Decimal(10, 2)
+    windowMinutes       Int?              @map("window_minutes")
+    minimumSampleSize   Int?              @map("minimum_sample_size")
+    appliesToEntityType RiskEntityType?   @map("applies_to_entity_type")
     config              Json?
-    createdById         String             @map("created_by_id")
-    updatedById         String?            @map("updated_by_id")
-    createdAt           DateTime           @default(now()) @map("created_at")
-    updatedAt           DateTime           @updatedAt @map("updated_at")
+    createdById         String            @map("created_by_id")
+    updatedById         String?           @map("updated_by_id")
+    createdAt           DateTime          @default(now()) @map("created_at")
+    updatedAt           DateTime          @updatedAt @map("updated_at")
 
-    organization   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch         Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
-    createdBy      User            @relation("AnomalyRuleCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-    updatedBy      User?           @relation("AnomalyRuleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-    anomalyEvents  AnomalyEvent[]
+    organization  Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    createdBy     User           @relation("AnomalyRuleCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    updatedBy     User?          @relation("AnomalyRuleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+    anomalyEvents AnomalyEvent[]
 
     @@unique([orgId, code])
     @@index([orgId])
@@ -2154,11 +2154,11 @@ model AnomalyEvent {
     createdAt            DateTime           @default(now()) @map("created_at")
     updatedAt            DateTime           @updatedAt @map("updated_at")
 
-    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-    rule         AnomalyRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
-    actorUser    User?        @relation("AnomalyEventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
-    acknowledgedBy User?      @relation("AnomalyEventAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+    organization   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    rule           AnomalyRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+    actorUser      User?        @relation("AnomalyEventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+    acknowledgedBy User?        @relation("AnomalyEventAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
 
     @@index([orgId])
     @@index([branchId])
