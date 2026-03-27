@@ -15,26 +15,65 @@
         ]
     },
     "variable": [
-        { "key": "baseUrl", "value": "http://localhost:3001" },
-        { "key": "accessToken", "value": "" },
-        { "key": "branchId", "value": "" },
-        { "key": "eventId", "value": "" },
-        { "key": "ticketClassId", "value": "" },
-        { "key": "bookingId", "value": "" },
-        { "key": "ticketId", "value": "" },
-        { "key": "portalKey", "value": "" }
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "eventId",
+            "value": ""
+        },
+        {
+            "key": "ticketClassId",
+            "value": ""
+        },
+        {
+            "key": "bookingId",
+            "value": ""
+        },
+        {
+            "key": "ticketId",
+            "value": ""
+        },
+        {
+            "key": "portalKey",
+            "value": ""
+        }
     ],
     "item": [
         {
             "name": "Auth — Login (Owner)",
             "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
             },
             "event": [
                 {
@@ -54,7 +93,16 @@
             "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{baseUrl}}/api/me", "host": ["{{baseUrl}}"], "path": ["api", "me"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
             },
             "event": [
                 {
@@ -75,14 +123,29 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"title\": \"Postman Jazz Night\",\n  \"description\": \"Live jazz with cocktails\",\n  \"startsAt\": \"2026-04-15T19:00:00.000Z\",\n  \"endsAt\": \"2026-04-15T23:00:00.000Z\",\n  \"capacity\": 150,\n  \"venueNotes\": \"Main dining room\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api", "events"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events"
+                    ]
+                }
             },
             "event": [
                 {
@@ -106,9 +169,22 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}"
+                    ]
+                }
             },
             "event": [
                 {
@@ -129,14 +205,30 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"title\": \"Postman Jazz Night — Updated\",\n  \"venueNotes\": \"Main hall, VIP section reserved\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}"
+                    ]
+                }
             },
             "event": [
                 {
@@ -157,14 +249,31 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"name\": \"General Admission\",\n  \"type\": \"GENERAL\",\n  \"price\": 25000,\n  \"capacity\": 120\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/ticket-classes", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "ticket-classes"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}/ticket-classes",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}",
+                        "ticket-classes"
+                    ]
+                }
             },
             "event": [
                 {
@@ -187,9 +296,23 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/ticket-classes", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "ticket-classes"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}/ticket-classes",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}",
+                        "ticket-classes"
+                    ]
+                }
             },
             "event": [
                 {
@@ -210,14 +333,31 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"slug\": \"postman-jazz-night\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "publish"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}/publish",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}",
+                        "publish"
+                    ]
+                }
             },
             "event": [
                 {
@@ -241,14 +381,31 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"reason\": \"Doors open — event started\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/open", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "open"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}/open",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}",
+                        "open"
+                    ]
+                }
             },
             "event": [
                 {
@@ -269,9 +426,23 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
-                "url": { "raw": "{{baseUrl}}/api/events/portal/{{portalKey}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "portal", "{{portalKey}}"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/portal/{{portalKey}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "portal",
+                        "{{portalKey}}"
+                    ]
+                }
             },
             "event": [
                 {
@@ -294,14 +465,31 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"ticketClassId\": \"{{ticketClassId}}\",\n  \"customerName\": \"Postman Booking Guest\",\n  \"customerPhone\": \"+256700123456\",\n  \"customerEmail\": \"guest@postman.test\",\n  \"quantity\": 2\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/bookings", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "bookings"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}/bookings",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}",
+                        "bookings"
+                    ]
+                }
             },
             "event": [
                 {
@@ -325,9 +513,23 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
-                "url": { "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}", "host": ["{{baseUrl}}"], "path": ["api", "events", "bookings", "{{bookingId}}"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "bookings",
+                        "{{bookingId}}"
+                    ]
+                }
             },
             "event": [
                 {
@@ -348,9 +550,23 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/bookings", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "bookings"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}/bookings",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}",
+                        "bookings"
+                    ]
+                }
             },
             "event": [
                 {
@@ -371,14 +587,33 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"holderName\": \"Postman Ticket Holder\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}/tickets/issue", "host": ["{{baseUrl}}"], "path": ["api", "events", "bookings", "{{bookingId}}", "tickets", "issue"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}/tickets/issue",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "bookings",
+                        "{{bookingId}}",
+                        "tickets",
+                        "issue"
+                    ]
+                }
             },
             "event": [
                 {
@@ -404,14 +639,32 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"message\": \"Welcome to Jazz Night!\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/tickets/{{ticketId}}/check-in", "host": ["{{baseUrl}}"], "path": ["api", "events", "tickets", "{{ticketId}}", "check-in"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/tickets/{{ticketId}}/check-in",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "tickets",
+                        "{{ticketId}}",
+                        "check-in"
+                    ]
+                }
             },
             "event": [
                 {
@@ -433,14 +686,32 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"reason\": \"Change of plans\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "events", "bookings", "{{bookingId}}", "cancel"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/bookings/{{bookingId}}/cancel",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "bookings",
+                        "{{bookingId}}",
+                        "cancel"
+                    ]
+                }
             },
             "event": [
                 {
@@ -461,9 +732,31 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
-                "url": { "raw": "{{baseUrl}}/api/events?page=1&pageSize=10", "host": ["{{baseUrl}}"], "path": ["api", "events"], "query": [{ "key": "page", "value": "1" }, { "key": "pageSize", "value": "10" }] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events?page=1&pageSize=10",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events"
+                    ],
+                    "query": [
+                        {
+                            "key": "page",
+                            "value": "1"
+                        },
+                        {
+                            "key": "pageSize",
+                            "value": "10"
+                        }
+                    ]
+                }
             },
             "event": [
                 {
@@ -486,9 +779,22 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
-                "url": { "raw": "{{baseUrl}}/api/events/upcoming", "host": ["{{baseUrl}}"], "path": ["api", "events", "upcoming"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/upcoming",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "upcoming"
+                    ]
+                }
             },
             "event": [
                 {
@@ -509,14 +815,31 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"reason\": \"Event concluded successfully\"\n}"
                 },
-                "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/close", "host": ["{{baseUrl}}"], "path": ["api", "events", "{{eventId}}", "close"] }
+                "url": {
+                    "raw": "{{baseUrl}}/api/events/{{eventId}}/close",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "events",
+                        "{{eventId}}",
+                        "close"
+                    ]
+                }
             },
             "event": [
                 {

@@ -46,4 +46,4 @@ import { EventsModule } from './modules/events/events.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
