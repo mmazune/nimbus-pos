@@ -42,7 +42,7 @@
                     "script": {
                         "exec": [
                             "const body = pm.response.json();",
-                            "pm.collectionVariables.set('accessToken', body.accessToken);",
+                            "pm.environment.set('accessToken', body.accessToken);",
                             "pm.test('Login OK', () => pm.response.to.have.status(200));"
                         ]
                     }
@@ -63,7 +63,7 @@
                         "exec": [
                             "const body = pm.response.json();",
                             "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
-                            "pm.collectionVariables.set('branchId', bid);",
+                            "pm.environment.set('branchId', bid);",
                             "pm.test('Got branchId', () => pm.expect(bid).to.be.a('string'));"
                         ]
                     }
@@ -90,7 +90,7 @@
                     "script": {
                         "exec": [
                             "const body = pm.response.json();",
-                            "pm.collectionVariables.set('eventId', body.id);",
+                            "pm.environment.set('eventId', body.id);",
                             "pm.test('Created DRAFT event', () => {",
                             "  pm.response.to.have.status(201);",
                             "  pm.expect(body.status).to.eql('DRAFT');",
@@ -117,7 +117,7 @@
                         "exec": [
                             "pm.test('Got event', () => {",
                             "  pm.response.to.have.status(200);",
-                            "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('eventId'));",
+                            "  pm.expect(pm.response.json().id).to.eql(pm.environment.get('eventId'));",
                             "});"
                         ]
                     }
@@ -172,7 +172,7 @@
                     "script": {
                         "exec": [
                             "const body = pm.response.json();",
-                            "pm.collectionVariables.set('ticketClassId', body.id);",
+                            "pm.environment.set('ticketClassId', body.id);",
                             "pm.test('Created ticket class', () => {",
                             "  pm.response.to.have.status(201);",
                             "  pm.expect(body.name).to.eql('General Admission');",
@@ -225,7 +225,7 @@
                     "script": {
                         "exec": [
                             "const body = pm.response.json();",
-                            "pm.collectionVariables.set('portalKey', body.portalKey);",
+                            "pm.environment.set('portalKey', body.portalKey);",
                             "pm.test('Published event', () => {",
                             "  pm.response.to.have.status(200);",
                             "  pm.expect(body.status).to.eql('PUBLISHED');",
@@ -281,7 +281,7 @@
                     "script": {
                         "exec": [
                             "const body = pm.response.json();",
-                            "pm.collectionVariables.set('bookingId', body.id);",
+                            "pm.environment.set('bookingId', body.id);",
                             "pm.test('Created booking', () => {",
                             "  pm.response.to.have.status(201);",
                             "  pm.expect(body.bookingNumber).to.match(/^BKG-/);",
@@ -308,7 +308,7 @@
                         "exec": [
                             "pm.test('Got booking', () => {",
                             "  pm.response.to.have.status(200);",
-                            "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('bookingId'));",
+                            "  pm.expect(pm.response.json().id).to.eql(pm.environment.get('bookingId'));",
                             "});"
                         ]
                     }
@@ -359,7 +359,7 @@
                         "exec": [
                             "const body = pm.response.json();",
                             "if (Array.isArray(body) && body.length > 0) {",
-                            "  pm.collectionVariables.set('ticketId', body[0].id);",
+                            "  pm.environment.set('ticketId', body[0].id);",
                             "}",
                             "pm.test('Issued tickets', () => {",
                             "  pm.response.to.have.status(201);",
