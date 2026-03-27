@@ -33,7 +33,7 @@ import { CurrentUser, Permissions, RequireBranchContext } from '../../common/dec
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(private readonly eventsService: EventsService) { }
 
   // ── Events CRUD ──
 

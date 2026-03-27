@@ -42,7 +42,7 @@ export class AnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) {}
+  ) { }
 
   // ── Anomaly Rules CRUD ──
 

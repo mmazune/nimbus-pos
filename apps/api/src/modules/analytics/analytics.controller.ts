@@ -29,7 +29,7 @@ import { CurrentUser, Permissions, RequireBranchContext } from '../../common/dec
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
   // ── Anomaly Rules ──
 

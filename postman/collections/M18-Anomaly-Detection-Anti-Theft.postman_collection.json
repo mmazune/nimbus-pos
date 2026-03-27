@@ -1,4 +1,4 @@
-﻿{
+{
     "info":  {
                  "name":  "M18 — Anomaly Detection + Anti-Theft Signals",
                  "_postman_id":  "m18-anomaly-anti-theft",
@@ -11,7 +11,7 @@
                          "value":  "http://localhost:3001"
                      },
                      {
-                         "key":  "ownerToken",
+                         "key":  "accessToken",
                          "value":  ""
                      },
                      {
@@ -36,7 +36,7 @@
                  "bearer":  [
                                 {
                                     "key":  "token",
-                                    "value":  "{{ownerToken}}"
+                                    "value":  "{{accessToken}}"
                                 }
                             ]
              },
@@ -49,7 +49,7 @@
                                        "script":  {
                                                       "exec":  [
                                                                    "const body = pm.response.json();",
-                                                                   "pm.environment.set(\u0027ownerToken\u0027, body.accessToken);",
+                                                                   "pm.environment.set(\u0027accessToken\u0027, body.accessToken);",
                                                                    "pm.test(\u0027Login OK\u0027, () =\u003e pm.response.to.have.status(200));"
                                                                ]
                                                   }
@@ -131,7 +131,7 @@
                                                         "value":  "application/json"
                                                     },
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -168,7 +168,7 @@
                                      "method":  "GET",
                                      "header":  [
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -201,7 +201,7 @@
                                      "method":  "GET",
                                      "header":  [
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -239,7 +239,7 @@
                                                         "value":  "application/json"
                                                     },
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -279,7 +279,7 @@
                                      "method":  "GET",
                                      "header":  [
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -312,7 +312,7 @@
                                      "method":  "GET",
                                      "header":  [
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -359,7 +359,7 @@
                                                         "value":  "application/json"
                                                     },
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -402,7 +402,7 @@
                                                         "value":  "application/json"
                                                     },
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -442,7 +442,7 @@
                                      "method":  "GET",
                                      "header":  [
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -477,7 +477,7 @@
                                      "method":  "GET",
                                      "header":  [
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -514,7 +514,7 @@
                                                         "value":  "application/json"
                                                     },
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],
@@ -557,7 +557,7 @@
                                                         "value":  "application/json"
                                                     },
                                                     {
-                                                        "key":  "x-branch-id",
+                                                        "key":  "X-Branch-Id",
                                                         "value":  "{{branchId}}"
                                                     }
                                                 ],

@@ -1,4 +1,4 @@
-﻿{
+{
     "info":  {
                  "name":  "M16 — Reservations + Deposits + Seating",
                  "description":  "Nimbus POS M16: Reservations lifecycle, deposit tracking, and seating bridge.\n\n## Endpoints\n- POST /reservations — Create reservation\n- GET /reservations — List reservations (paginated, filterable)\n- GET /reservations/upcoming — List upcoming (PENDING/CONFIRMED)\n- GET /reservations/:id — Get reservation by ID\n- PATCH /reservations/:id/confirm — Confirm reservation\n- PATCH /reservations/:id/seat — Seat reservation (optional order creation)\n- PATCH /reservations/:id/cancel — Cancel reservation\n- PATCH /reservations/:id/no-show — Mark as no-show\n- POST /reservations/:id/deposits — Record deposit\n- GET /reservations/:id/deposits — List deposits\n- GET /reservations/:id/events — List events\n- PATCH /reservations/:id/assign-table — Assign table",

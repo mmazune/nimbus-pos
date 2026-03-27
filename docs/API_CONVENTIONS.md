@@ -383,38 +383,6 @@ Branch-scoped event lifecycle with booking portal, ticket classes, bookings, tic
 | POST   | `/api/events/bookings/:bookingId/tickets/issue`     | Yes  | pos:event:ticket:issue   | Yes    | Issue tickets for booking            |
 | POST   | `/api/events/tickets/:ticketId/check-in`            | Yes  | pos:event:checkin        | Yes    | Check in ticket via QR               |
 
-## Anomaly Detection + Anti-Theft Signals (M18) ✅
-
-Branch-scoped anomaly detection with advisory-first signals, risk dashboard, threshold management, and recalculation triggers.
-
-### Anomaly Rule Endpoints
-
-| Method | Path                                   | Auth | Permission                              | Branch | Description                     |
-| ------ | -------------------------------------- | ---- | --------------------------------------- | ------ | ------------------------------- |
-| POST   | `/api/analytics/anomaly-rules`         | Yes  | pos:analytics:anomaly-rules:create      | Yes    | Create anomaly rule             |
-| GET    | `/api/analytics/anomaly-rules`         | Yes  | pos:analytics:anomalies:read            | Yes    | List rules (branch + org-wide)  |
-| GET    | `/api/analytics/anomaly-rules/:id`     | Yes  | pos:analytics:anomalies:read            | Yes    | Get rule by ID                  |
-| PATCH  | `/api/analytics/anomaly-rules/:id`     | Yes  | pos:analytics:anomaly-rules:update      | Yes    | Update anomaly rule             |
-
-### Anomaly Endpoints
-
-| Method | Path                                            | Auth | Permission                              | Branch | Description                     |
-| ------ | ----------------------------------------------- | ---- | --------------------------------------- | ------ | ------------------------------- |
-| GET    | `/api/analytics/anomalies`                      | Yes  | pos:analytics:anomalies:read            | Yes    | List anomalies (paginated)      |
-| GET    | `/api/analytics/anomalies/:id`                  | Yes  | pos:analytics:anomalies:read            | Yes    | Get anomaly by ID               |
-| PATCH  | `/api/analytics/anomalies/:id/acknowledge`      | Yes  | pos:analytics:anomalies:acknowledge     | Yes    | Acknowledge anomaly             |
-| PATCH  | `/api/analytics/anomalies/:id/resolve`          | Yes  | pos:analytics:anomalies:acknowledge     | Yes    | Resolve anomaly                 |
-| POST   | `/api/analytics/anomalies/recalculate`          | Yes  | pos:analytics:anomalies:recalculate     | Yes    | Trigger signal recalculation    |
-
-### Dashboard + Threshold Endpoints
-
-| Method | Path                                            | Auth | Permission                              | Branch | Description                     |
-| ------ | ----------------------------------------------- | ---- | --------------------------------------- | ------ | ------------------------------- |
-| GET    | `/api/analytics/risk-dashboard`                 | Yes  | pos:analytics:risk-dashboard:read       | Yes    | 24h risk dashboard              |
-| GET    | `/api/analytics/staff-risk/:userId`             | Yes  | pos:analytics:risk-dashboard:read       | Yes    | Staff risk drilldown            |
-| GET    | `/api/analytics/thresholds`                     | Yes  | pos:analytics:thresholds:read           | Yes    | List risk thresholds            |
-| PATCH  | `/api/analytics/thresholds/:id`                 | Yes  | pos:analytics:thresholds:update         | Yes    | Update threshold                |
-
 ## Validation
 
 - DTO classes with `class-validator`
