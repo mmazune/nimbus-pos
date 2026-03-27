@@ -217,6 +217,21 @@ If a collection logs in successfully but later requests get 401, first check:
 3. is the correct environment selected?
 4. is the token expired because the server restarted or DB reseeded?
 
+### Login Response Status Code — CRITICAL
+
+`POST /api/auth/login` returns **HTTP 201** (not 200). A new Session record is created on
+every login, so NestJS returns 201. **Always assert 201** in the Postman test script:
+
+```javascript
+const body = pm.response.json();
+pm.environment.set('accessToken', body.accessToken);
+pm.test('Login OK', () => pm.response.to.have.status(201));
+```
+
+If you use `pm.response.to.have.status(200)`, the test will FAIL even though the login
+itself succeeded and the token WAS captured. This appears as a false failure in the
+Postman Runner and can mask subsequent 500 errors on new endpoints.
+
 ---
 
 ## 7) Branch Context Contract
@@ -383,6 +398,25 @@ Check:
 - business rule state machine
 - uniqueness constraints
 - seed duplicates vs idempotency
+
+### 500 Internal Server Error on New Milestone Endpoints
+
+If new milestone endpoints return 500 while older endpoints work fine, the most
+likely cause is a **stale server process** running a compiled build from before
+the milestone code was added.
+
+**Diagnosis checklist (run in order before touching code):**
+1. Are all migrations applied? → `cd packages/db; npx prisma migrate deploy`
+2. Is the error on a route that definitely exists (check server startup logs for route mapped)?
+3. If yes, kill all node processes: `Get-Process node | Stop-Process -Force`
+4. Restart the API: `npx nest start` from `apps/api/`
+5. Re-run the failing requests
+
+If after restart the endpoints still return 500, then proceed to service-level
+debugging (check Prisma query field names, DTO validation, try/catch coverage).
+
+**Rule:** Always restart the dev server when testing a new milestone's Postman
+collection for the first time in a new terminal session.
 
 ---
 

@@ -1,7 +1,7 @@
-{
+﻿{
     "info":  {
-                 "name":  "M16 — Reservations + Deposits + Seating",
-                 "description":  "Nimbus POS M16: Reservations lifecycle, deposit tracking, and seating bridge.\n\n## Endpoints\n- POST /reservations — Create reservation\n- GET /reservations — List reservations (paginated, filterable)\n- GET /reservations/upcoming — List upcoming (PENDING/CONFIRMED)\n- GET /reservations/:id — Get reservation by ID\n- PATCH /reservations/:id/confirm — Confirm reservation\n- PATCH /reservations/:id/seat — Seat reservation (optional order creation)\n- PATCH /reservations/:id/cancel — Cancel reservation\n- PATCH /reservations/:id/no-show — Mark as no-show\n- POST /reservations/:id/deposits — Record deposit\n- GET /reservations/:id/deposits — List deposits\n- GET /reservations/:id/events — List events\n- PATCH /reservations/:id/assign-table — Assign table",
+                 "name":  "M16 â€” Reservations + Deposits + Seating",
+                 "description":  "Nimbus POS M16: Reservations lifecycle, deposit tracking, and seating bridge.\n\n## Endpoints\n- POST /reservations â€” Create reservation\n- GET /reservations â€” List reservations (paginated, filterable)\n- GET /reservations/upcoming â€” List upcoming (PENDING/CONFIRMED)\n- GET /reservations/:id â€” Get reservation by ID\n- PATCH /reservations/:id/confirm â€” Confirm reservation\n- PATCH /reservations/:id/seat â€” Seat reservation (optional order creation)\n- PATCH /reservations/:id/cancel â€” Cancel reservation\n- PATCH /reservations/:id/no-show â€” Mark as no-show\n- POST /reservations/:id/deposits â€” Record deposit\n- GET /reservations/:id/deposits â€” List deposits\n- GET /reservations/:id/events â€” List events\n- PATCH /reservations/:id/assign-table â€” Assign table",
                  "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
              },
     "auth":  {
@@ -38,7 +38,7 @@
                  ],
     "item":  [
                  {
-                     "name":  "Auth — Login (Owner)",
+                     "name":  "Auth â€” Login (Owner)",
                      "request":  {
                                      "method":  "POST",
                                      "header":  [
@@ -70,14 +70,14 @@
                                                       "exec":  [
                                                                    "const body = pm.response.json();",
                                                                    "pm.environment.set(\u0027accessToken\u0027, body.accessToken);",
-                                                                   "pm.test(\u0027Login OK\u0027, () =\u003e pm.response.to.have.status(200));"
+                                                                   "pm.test('Login OK', () => pm.response.to.have.status(201));"
                                                                ]
                                                   }
                                    }
                                ]
                  },
                  {
-                     "name":  "Auth — Get /me (capture branchId)",
+                     "name":  "Auth â€” Get /me (capture branchId)",
                      "request":  {
                                      "method":  "GET",
                                      "header":  [
@@ -540,7 +540,7 @@
                                        "listen":  "test",
                                        "script":  {
                                                       "exec":  [
-                                                                   "// This may 409 if already seated — both are valid test outcomes",
+                                                                   "// This may 409 if already seated â€” both are valid test outcomes",
                                                                    "pm.test(\u0027Status 200 or 409\u0027, () =\u003e pm.expect([200, 409]).to.include(pm.response.code));"
                                                                ]
                                                   }

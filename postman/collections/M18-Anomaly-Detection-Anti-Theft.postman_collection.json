@@ -1,6 +1,6 @@
-{
+﻿{
     "info":  {
-                 "name":  "M18 — Anomaly Detection + Anti-Theft Signals",
+                 "name":  "M18 â€” Anomaly Detection + Anti-Theft Signals",
                  "_postman_id":  "m18-anomaly-anti-theft",
                  "description":  "M18 Anomaly Detection \u0026 Anti-Theft Signals. Covers anomaly rules CRUD, anomaly events (list/acknowledge/resolve), risk dashboard, staff risk snapshots, thresholds, and recalculate.",
                  "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -42,7 +42,7 @@
              },
     "item":  [
                  {
-                     "name":  "00 — Login (Owner)",
+                     "name":  "00 â€” Login (Owner)",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -50,7 +50,7 @@
                                                       "exec":  [
                                                                    "const body = pm.response.json();",
                                                                    "pm.environment.set(\u0027accessToken\u0027, body.accessToken);",
-                                                                   "pm.test(\u0027Login OK\u0027, () =\u003e pm.response.to.have.status(200));"
+                                                                   "pm.test('Login OK', () => pm.response.to.have.status(201));"
                                                                ]
                                                   }
                                    }
@@ -81,7 +81,7 @@
                                  }
                  },
                  {
-                     "name":  "01 — Get Branch ID",
+                     "name":  "01 â€” Get Branch ID",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -110,7 +110,7 @@
                                  }
                  },
                  {
-                     "name":  "02 — Create Anomaly Rule",
+                     "name":  "02 â€” Create Anomaly Rule",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -153,7 +153,7 @@
                                  }
                  },
                  {
-                     "name":  "03 — List Anomaly Rules",
+                     "name":  "03 â€” List Anomaly Rules",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -186,7 +186,7 @@
                                  }
                  },
                  {
-                     "name":  "04 — Get Rule by ID",
+                     "name":  "04 â€” Get Rule by ID",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -220,7 +220,7 @@
                                  }
                  },
                  {
-                     "name":  "05 — Update Rule",
+                     "name":  "05 â€” Update Rule",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -262,7 +262,7 @@
                                  }
                  },
                  {
-                     "name":  "06 — List Anomalies",
+                     "name":  "06 â€” List Anomalies",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -297,7 +297,7 @@
                                  }
                  },
                  {
-                     "name":  "07 — Filter Anomalies by Status",
+                     "name":  "07 â€” Filter Anomalies by Status",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -340,7 +340,7 @@
                                  }
                  },
                  {
-                     "name":  "08 — Acknowledge Anomaly",
+                     "name":  "08 â€” Acknowledge Anomaly",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -383,7 +383,7 @@
                                  }
                  },
                  {
-                     "name":  "09 — Resolve Anomaly",
+                     "name":  "09 â€” Resolve Anomaly",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -408,7 +408,7 @@
                                                 ],
                                      "body":  {
                                                   "mode":  "raw",
-                                                  "raw":  "{\"resolutionNotes\":\"Resolved via Postman — false positive\"}"
+                                                  "raw":  "{\"resolutionNotes\":\"Resolved via Postman â€” false positive\"}"
                                               },
                                      "url":  {
                                                  "raw":  "{{baseUrl}}/api/analytics/anomalies/{{anomalyId}}/resolve",
@@ -426,7 +426,7 @@
                                  }
                  },
                  {
-                     "name":  "10 — Risk Dashboard",
+                     "name":  "10 â€” Risk Dashboard",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -460,7 +460,7 @@
                                  }
                  },
                  {
-                     "name":  "11 — List Thresholds",
+                     "name":  "11 â€” List Thresholds",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -495,7 +495,7 @@
                                  }
                  },
                  {
-                     "name":  "12 — Update Threshold",
+                     "name":  "12 â€” Update Threshold",
                      "event":  [
                                    {
                                        "listen":  "test",
@@ -537,7 +537,7 @@
                                  }
                  },
                  {
-                     "name":  "13 — Recalculate Anomalies",
+                     "name":  "13 â€” Recalculate Anomalies",
                      "event":  [
                                    {
                                        "listen":  "test",

@@ -211,3 +211,33 @@ Quick-reference of **every API endpoint** with Postman collection mapping.
 | GET | `/api/reports/:id` | M20-Reporting-v1-Exports |
 | POST | `/api/reports/export` | M20-Reporting-v1-Exports |
 | GET | `/api/reports/exports/:id/download` | M20-Reporting-v1-Exports |
+
+---
+
+## Common Pitfalls & Known Issues
+
+### 1. Login returns 201, not 200
+
+`POST /api/auth/login` returns **HTTP 201** (Created — a new Session record is created).
+Postman test scripts must assert `pm.response.to.have.status(201)`, not `(200)`.
+
+**Affected collections:** M16, M17, M18, M19, M20 — all fixed.
+**Rule:** Any time a login or token endpoint creates a session record server-side, expect 201.
+
+### 2. 500 errors on new milestone endpoints after server restart
+
+If Postman gets 500 on endpoints that are part of a newly implemented milestone, the most likely cause is a **stale server process** running a build that predates the milestone.
+
+**Symptoms:** New endpoints return 500, endpoints from previous milestones work fine.  
+**Fix:** Kill all node processes and restart: `Get-Process node | Stop-Process -Force`, then restart with `npx nest start` from `apps/api`.  
+**Prevention:** After each milestone commit/merge, always restart the dev server before running Postman tests.
+
+### 3. Missing `x-branch-id` header
+
+All protected endpoints require the `x-branch-id` header. Without it the API returns 400.  
+The Postman "Get Branch ID" pre-request captures this from `/api/me`.  
+If subsequent requests fail with 400 "X-Branch-Id header is required", re-run the "Get Branch ID" request first.
+
+### 4. Token expired mid-run
+
+Access tokens expire after 15 minutes. If a long Postman Runner run fails authentication mid-way, re-run request 00 (Login) to refresh the token environment variable.

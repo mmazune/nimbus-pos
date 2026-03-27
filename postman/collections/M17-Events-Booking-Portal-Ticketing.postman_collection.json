@@ -1,7 +1,7 @@
-{
+﻿{
     "info": {
-        "name": "M17 — Events + Booking Portal + Ticketing",
-        "description": "Nimbus POS M17: Events lifecycle, booking portal, ticket classes, bookings, ticket issuance, and check-in.\n\n## Endpoints\n- POST /events — Create event (DRAFT)\n- GET /events — List events (paginated, filterable)\n- GET /events/upcoming — List upcoming events\n- GET /events/portal/:portalKey — Public portal view\n- GET /events/:id — Get event by ID\n- PATCH /events/:id — Update DRAFT event\n- PATCH /events/:id/publish — Publish event\n- PATCH /events/:id/close — Close event\n- POST /events/:id/ticket-classes — Create ticket class\n- GET /events/:id/ticket-classes — List ticket classes\n- POST /events/:id/bookings — Create booking\n- GET /events/:id/bookings — List bookings\n- GET /events/bookings/:bookingId — Get booking\n- PATCH /events/bookings/:bookingId/cancel — Cancel booking\n- POST /events/bookings/:bookingId/tickets/issue — Issue tickets\n- POST /events/tickets/:ticketId/check-in — Check in ticket",
+        "name": "M17 â€” Events + Booking Portal + Ticketing",
+        "description": "Nimbus POS M17: Events lifecycle, booking portal, ticket classes, bookings, ticket issuance, and check-in.\n\n## Endpoints\n- POST /events â€” Create event (DRAFT)\n- GET /events â€” List events (paginated, filterable)\n- GET /events/upcoming â€” List upcoming events\n- GET /events/portal/:portalKey â€” Public portal view\n- GET /events/:id â€” Get event by ID\n- PATCH /events/:id â€” Update DRAFT event\n- PATCH /events/:id/publish â€” Publish event\n- PATCH /events/:id/close â€” Close event\n- POST /events/:id/ticket-classes â€” Create ticket class\n- GET /events/:id/ticket-classes â€” List ticket classes\n- POST /events/:id/bookings â€” Create booking\n- GET /events/:id/bookings â€” List bookings\n- GET /events/bookings/:bookingId â€” Get booking\n- PATCH /events/bookings/:bookingId/cancel â€” Cancel booking\n- POST /events/bookings/:bookingId/tickets/issue â€” Issue tickets\n- POST /events/tickets/:ticketId/check-in â€” Check in ticket",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "auth": {
@@ -50,7 +50,7 @@
     ],
     "item": [
         {
-            "name": "Auth — Login (Owner)",
+            "name": "Auth â€” Login (Owner)",
             "request": {
                 "method": "POST",
                 "header": [
@@ -82,14 +82,14 @@
                         "exec": [
                             "const body = pm.response.json();",
                             "pm.environment.set('accessToken', body.accessToken);",
-                            "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                            "pm.test('Login OK', () => pm.response.to.have.status(201));"
                         ]
                     }
                 }
             ]
         },
         {
-            "name": "Auth — Get /me (capture branchId)",
+            "name": "Auth â€” Get /me (capture branchId)",
             "request": {
                 "method": "GET",
                 "header": [],
@@ -216,7 +216,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"title\": \"Postman Jazz Night — Updated\",\n  \"venueNotes\": \"Main hall, VIP section reserved\"\n}"
+                    "raw": "{\n  \"title\": \"Postman Jazz Night â€” Updated\",\n  \"venueNotes\": \"Main hall, VIP section reserved\"\n}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/events/{{eventId}}",
@@ -392,7 +392,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"reason\": \"Doors open — event started\"\n}"
+                    "raw": "{\n  \"reason\": \"Doors open â€” event started\"\n}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/events/{{eventId}}/open",
@@ -422,7 +422,7 @@
             ]
         },
         {
-            "name": "Portal — Get Event by Portal Key",
+            "name": "Portal â€” Get Event by Portal Key",
             "request": {
                 "method": "GET",
                 "header": [

@@ -50,7 +50,7 @@
                         "exec": [
                             "const body = pm.response.json();",
                             "pm.environment.set('accessToken', body.accessToken);",
-                            "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                            "pm.test('Login OK', () => pm.response.to.have.status(201));"
                         ]
                     }
                 }
@@ -590,7 +590,7 @@
                         "exec": [
                             "const body = pm.response.json();",
                             "pm.environment.set('chefAccessToken', body.accessToken);",
-                            "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                            "pm.test('Login OK', () => pm.response.to.have.status(201));"
                         ]
                     }
                 }
