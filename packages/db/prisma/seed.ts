@@ -248,6 +248,20 @@ const PERMISSIONS_DATA = [
     { action: 'pos:reports:exports:read', description: 'Create export artifacts from reports' },
     { action: 'pos:reports:exports:download', description: 'Download export artifacts' },
     { action: 'pos:reports:history:read', description: 'List and view report run history' },
+    // ── M20.1: Reporting Depth Expansion ──
+    { action: 'pos:reports:sales-by-category:generate', description: 'Generate sales by category / PMIX report' },
+    { action: 'pos:reports:sales-by-hour:generate', description: 'Generate sales by hour / daypart report' },
+    { action: 'pos:reports:discounts:generate', description: 'Generate discounts summary report' },
+    { action: 'pos:reports:voids:generate', description: 'Generate voids summary report' },
+    { action: 'pos:reports:refunds:generate', description: 'Generate refunds summary report' },
+    { action: 'pos:reports:cash-variance:generate', description: 'Generate cash variance report' },
+    { action: 'pos:reports:cash-movements:generate', description: 'Generate cash movements report' },
+    { action: 'pos:reports:wastage:generate', description: 'Generate wastage / shrinkage report' },
+    { action: 'pos:reports:low-stock:generate', description: 'Generate low stock / reorder report' },
+    { action: 'pos:reports:reservations:generate', description: 'Generate reservations summary report (extended)' },
+    { action: 'pos:reports:events:generate', description: 'Generate events summary report (extended)' },
+    { action: 'pos:reports:staff-operations:generate', description: 'Generate staff / operator operations report' },
+    { action: 'pos:reports:catalog:read', description: 'Read the report catalog (implemented / pending)' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -381,6 +395,20 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:exports:read',
         'pos:reports:exports:download',
         'pos:reports:history:read',
+        // M20.1: Reporting Depth Expansion
+        'pos:reports:sales-by-category:generate',
+        'pos:reports:sales-by-hour:generate',
+        'pos:reports:discounts:generate',
+        'pos:reports:voids:generate',
+        'pos:reports:refunds:generate',
+        'pos:reports:cash-variance:generate',
+        'pos:reports:cash-movements:generate',
+        'pos:reports:wastage:generate',
+        'pos:reports:low-stock:generate',
+        'pos:reports:reservations:generate',
+        'pos:reports:events:generate',
+        'pos:reports:staff-operations:generate',
+        'pos:reports:catalog:read',
     ],
     Manager: [
         'identity:user:read',
@@ -483,6 +511,20 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:exports:read',
         'pos:reports:exports:download',
         'pos:reports:history:read',
+        // M20.1: Reporting Depth Expansion
+        'pos:reports:sales-by-category:generate',
+        'pos:reports:sales-by-hour:generate',
+        'pos:reports:discounts:generate',
+        'pos:reports:voids:generate',
+        'pos:reports:refunds:generate',
+        'pos:reports:cash-variance:generate',
+        'pos:reports:cash-movements:generate',
+        'pos:reports:wastage:generate',
+        'pos:reports:low-stock:generate',
+        'pos:reports:reservations:generate',
+        'pos:reports:events:generate',
+        'pos:reports:staff-operations:generate',
+        'pos:reports:catalog:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -512,6 +554,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:exports:read',
         'pos:reports:exports:download',
         'pos:reports:history:read',
+        // M20.1: Reporting Depth Expansion (Accountant: financial-relevant reports)
+        'pos:reports:sales-by-category:generate',
+        'pos:reports:sales-by-hour:generate',
+        'pos:reports:discounts:generate',
+        'pos:reports:refunds:generate',
+        'pos:reports:cash-variance:generate',
+        'pos:reports:cash-movements:generate',
+        'pos:reports:stock-variance:generate',
+        'pos:reports:catalog:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -600,6 +651,17 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:exports:read',
         'pos:reports:exports:download',
         'pos:reports:history:read',
+        // M20.1: Reporting Depth Expansion (Supervisor: operational reports)
+        'pos:reports:sales-by-category:generate',
+        'pos:reports:sales-by-hour:generate',
+        'pos:reports:discounts:generate',
+        'pos:reports:voids:generate',
+        'pos:reports:refunds:generate',
+        'pos:reports:cash-variance:generate',
+        'pos:reports:cash-movements:generate',
+        'pos:reports:low-stock:generate',
+        'pos:reports:staff-operations:generate',
+        'pos:reports:catalog:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -764,34 +826,49 @@ async function seedRolePermissions(): Promise<{ created: number; skipped: number
     let created = 0;
     let skipped = 0;
 
+    // Batch-fetch all roles and permissions in 2 queries instead of N×M individual lookups
+    const allRoles = await prisma.role.findMany();
+    const allPermissions = await prisma.permission.findMany();
+    const allExisting = await prisma.rolePermission.findMany({
+        select: { roleId: true, permissionId: true },
+    });
+
+    const roleMap = new Map(allRoles.map((r) => [r.name, r.id]));
+    const permMap = new Map(allPermissions.map((p) => [p.action, p.id]));
+    const existingSet = new Set(allExisting.map((rp) => `${rp.roleId}|${rp.permissionId}`));
+
+    const toCreate: { roleId: string; permissionId: string }[] = [];
+
     for (const [roleName, permActions] of Object.entries(ROLE_PERM_MATRIX)) {
-        const role = await prisma.role.findUnique({ where: { name: roleName } });
-        if (!role) {
+        const roleId = roleMap.get(roleName);
+        if (!roleId) {
             console.log(`  ⚠️  Role "${roleName}" not found — skipping permissions`);
             continue;
         }
 
         for (const action of permActions) {
-            const permission = await prisma.permission.findUnique({ where: { action } });
-            if (!permission) {
+            const permissionId = permMap.get(action);
+            if (!permissionId) {
                 console.log(`  ⚠️  Permission "${action}" not found — skipping`);
                 continue;
             }
 
-            const existing = await prisma.rolePermission.findUnique({
-                where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
-            });
-
-            if (existing) {
+            const key = `${roleId}|${permissionId}`;
+            if (existingSet.has(key)) {
                 skipped++;
             } else {
-                await prisma.rolePermission.create({
-                    data: { roleId: role.id, permissionId: permission.id },
-                });
+                toCreate.push({ roleId, permissionId });
                 console.log(`  ✅ RolePermission "${roleName}" → "${action}"`);
-                created++;
             }
         }
+    }
+
+    if (toCreate.length > 0) {
+        const result = await prisma.rolePermission.createMany({
+            data: toCreate,
+            skipDuplicates: true,
+        });
+        created = result.count;
     }
 
     return { created, skipped };

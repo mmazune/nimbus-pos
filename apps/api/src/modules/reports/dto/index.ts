@@ -6,3 +6,16 @@ export { CreateStockVarianceReportDto } from './create-stock-variance-report.dto
 export { CreateAnomalySummaryReportDto } from './create-anomaly-summary-report.dto';
 export { CreateExportDto } from './create-export.dto';
 export { ListReportsQueryDto } from './list-reports-query.dto';
+// M20.1 additions
+export { CreateSalesByCategoryReportDto } from './create-sales-by-category-report.dto';
+export { CreateSalesByHourReportDto } from './create-sales-by-hour-report.dto';
+export { CreateDiscountsReportDto } from './create-discounts-report.dto';
+export { CreateVoidsReportDto } from './create-voids-report.dto';
+export { CreateRefundsReportDto } from './create-refunds-report.dto';
+export { CreateCashVarianceReportDto } from './create-cash-variance-report.dto';
+export { CreateCashMovementsReportDto } from './create-cash-movements-report.dto';
+export { CreateWastageReportDto } from './create-wastage-report.dto';
+export { CreateLowStockReportDto } from './create-low-stock-report.dto';
+export { CreateReservationSummaryReportDto } from './create-reservation-summary-report.dto';
+export { CreateEventSummaryReportDto } from './create-event-summary-report.dto';
+export { CreateStaffOperationsReportDto } from './create-staff-operations-report.dto';
