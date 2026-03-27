@@ -1,358 +1,594 @@
-{
-    "info": {
-        "name": "M16 — Reservations + Deposits + Seating",
-        "description": "Nimbus POS M16: Reservations lifecycle, deposit tracking, and seating bridge.\n\n## Endpoints\n- POST /reservations — Create reservation\n- GET /reservations — List reservations (paginated, filterable)\n- GET /reservations/upcoming — List upcoming (PENDING/CONFIRMED)\n- GET /reservations/:id — Get reservation by ID\n- PATCH /reservations/:id/confirm — Confirm reservation\n- PATCH /reservations/:id/seat — Seat reservation (optional order creation)\n- PATCH /reservations/:id/cancel — Cancel reservation\n- PATCH /reservations/:id/no-show — Mark as no-show\n- POST /reservations/:id/deposits — Record deposit\n- GET /reservations/:id/deposits — List deposits\n- GET /reservations/:id/events — List events\n- PATCH /reservations/:id/assign-table — Assign table",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "auth": {
-        "type": "bearer",
-        "bearer": [
-            {
-                "key": "token",
-                "value": "{{accessToken}}",
-                "type": "string"
-            }
-        ]
-    },
-    "variable": [
-        { "key": "baseUrl", "value": "http://localhost:3000/api" },
-        { "key": "accessToken", "value": "" },
-        { "key": "branchId", "value": "" },
-        { "key": "reservationId", "value": "" },
-        { "key": "tableId", "value": "" }
-    ],
-    "item": [
-        {
-            "name": "Auth — Login (Owner)",
-            "request": {
-                "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "const body = pm.response.json();",
-                            "pm.collectionVariables.set('accessToken', body.accessToken);",
-                            "pm.test('Login OK', () => pm.response.to.have.status(200));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Auth — Get /me (capture branchId)",
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": { "raw": "{{baseUrl}}/me", "host": ["{{baseUrl}}"], "path": ["me"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "const body = pm.response.json();",
-                            "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
-                            "pm.collectionVariables.set('branchId', bid);",
-                            "pm.test('Got branchId', () => pm.expect(bid).to.be.a('string'));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Create Reservation",
-            "request": {
-                "method": "POST",
-                "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"customerName\": \"Postman Test Guest\",\n  \"partySize\": 4,\n  \"reservationAt\": \"{{$isoTimestamp}}\",\n  \"source\": \"PHONE\",\n  \"notes\": \"Test reservation via Postman\",\n  \"depositRequired\": 50000\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/reservations", "host": ["{{baseUrl}}"], "path": ["reservations"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "const body = pm.response.json();",
-                            "pm.collectionVariables.set('reservationId', body.id);",
-                            "pm.test('Created 201', () => pm.response.to.have.status(201));",
-                            "pm.test('Has reservation number', () => pm.expect(body.reservationNumber).to.match(/^RES-/));",
-                            "pm.test('Status PENDING', () => pm.expect(body.status).to.equal('PENDING'));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "List Reservations",
-            "request": {
-                "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": {
-                    "raw": "{{baseUrl}}/reservations?page=1&pageSize=10",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["reservations"],
-                    "query": [
-                        { "key": "page", "value": "1" },
-                        { "key": "pageSize", "value": "10" }
-                    ]
-                }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                            "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "List Upcoming Reservations",
-            "request": {
-                "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/reservations/upcoming", "host": ["{{baseUrl}}"], "path": ["reservations", "upcoming"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                            "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Get Reservation By ID",
-            "request": {
-                "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                            "pm.test('Correct ID', () => pm.expect(pm.response.json().id).to.equal(pm.collectionVariables.get('reservationId')));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Confirm Reservation",
-            "request": {
-                "method": "PATCH",
-                "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"notes\": \"Confirmed via Postman\"\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/confirm", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "confirm"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                            "pm.test('Status CONFIRMED', () => pm.expect(pm.response.json().status).to.equal('CONFIRMED'));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Record Deposit",
-            "request": {
-                "method": "POST",
-                "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"amount\": 50000,\n  \"method\": \"CASH\",\n  \"notes\": \"Deposit received at counter\"\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/deposits", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "deposits"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('201 Created', () => pm.response.to.have.status(201));",
-                            "pm.test('Status RECEIVED', () => pm.expect(pm.response.json().status).to.equal('RECEIVED'));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Get Deposits",
-            "request": {
-                "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/deposits", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "deposits"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                            "pm.test('Has deposits', () => pm.expect(pm.response.json().length).to.be.greaterThan(0));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Get Events",
-            "request": {
-                "method": "GET",
-                "header": [{ "key": "X-Branch-Id", "value": "{{branchId}}" }],
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/events", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "events"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                            "pm.test('Has events', () => pm.expect(pm.response.json().length).to.be.greaterThan(0));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Assign Table",
-            "request": {
-                "method": "PATCH",
-                "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"tableId\": \"{{tableId}}\"\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/assign-table", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "assign-table"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Seat Reservation",
-            "request": {
-                "method": "PATCH",
-                "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"createOrder\": true\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/seat", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "seat"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                            "pm.test('Status SEATED', () => pm.expect(pm.response.json().status).to.equal('SEATED'));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Cancel Reservation (new one)",
-            "request": {
-                "method": "PATCH",
-                "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"reason\": \"Customer cancelled via Postman test\"\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/cancel", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "cancel"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "// This may 409 if already seated — both are valid test outcomes",
-                            "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Mark No-Show (new one)",
-            "request": {
-                "method": "PATCH",
-                "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"reason\": \"Did not arrive\",\n  \"depositOutcome\": \"FORFEIT\"\n}"
-                },
-                "url": { "raw": "{{baseUrl}}/reservations/{{reservationId}}/no-show", "host": ["{{baseUrl}}"], "path": ["reservations", "{{reservationId}}", "no-show"] }
-            },
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "exec": [
-                            "// This may 409 if already in terminal state",
-                            "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));"
-                        ]
-                    }
-                }
-            ]
-        }
-    ]
+﻿{
+    "info":  {
+                 "name":  "M16 — Reservations + Deposits + Seating",
+                 "description":  "Nimbus POS M16: Reservations lifecycle, deposit tracking, and seating bridge.\n\n## Endpoints\n- POST /reservations — Create reservation\n- GET /reservations — List reservations (paginated, filterable)\n- GET /reservations/upcoming — List upcoming (PENDING/CONFIRMED)\n- GET /reservations/:id — Get reservation by ID\n- PATCH /reservations/:id/confirm — Confirm reservation\n- PATCH /reservations/:id/seat — Seat reservation (optional order creation)\n- PATCH /reservations/:id/cancel — Cancel reservation\n- PATCH /reservations/:id/no-show — Mark as no-show\n- POST /reservations/:id/deposits — Record deposit\n- GET /reservations/:id/deposits — List deposits\n- GET /reservations/:id/events — List events\n- PATCH /reservations/:id/assign-table — Assign table",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "auth":  {
+                 "type":  "bearer",
+                 "bearer":  [
+                                {
+                                    "key":  "token",
+                                    "value":  "{{accessToken}}",
+                                    "type":  "string"
+                                }
+                            ]
+             },
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://localhost:3001"
+                     },
+                     {
+                         "key":  "accessToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "branchId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "reservationId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "tableId",
+                         "value":  ""
+                     }
+                 ],
+    "item":  [
+                 {
+                     "name":  "Auth — Login (Owner)",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/auth/login",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "auth",
+                                                              "login"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "const body = pm.response.json();",
+                                                                   "pm.environment.set(\u0027accessToken\u0027, body.accessToken);",
+                                                                   "pm.test(\u0027Login OK\u0027, () =\u003e pm.response.to.have.status(200));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Auth — Get /me (capture branchId)",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/me",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "me"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "const body = pm.response.json();",
+                                                                   "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                                                                   "pm.environment.set(\u0027branchId\u0027, bid);",
+                                                                   "pm.test(\u0027Got branchId\u0027, () =\u003e pm.expect(bid).to.be.a(\u0027string\u0027));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Create Reservation",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"customerName\": \"Postman Test Guest\",\n  \"partySize\": 4,\n  \"reservationAt\": \"{{$isoTimestamp}}\",\n  \"source\": \"PHONE\",\n  \"notes\": \"Test reservation via Postman\",\n  \"depositRequired\": 50000\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "const body = pm.response.json();",
+                                                                   "pm.environment.set(\u0027reservationId\u0027, body.id);",
+                                                                   "pm.test(\u0027Created 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                   "pm.test(\u0027Has reservation number\u0027, () =\u003e pm.expect(body.reservationNumber).to.match(/^RES-/));",
+                                                                   "pm.test(\u0027Status PENDING\u0027, () =\u003e pm.expect(body.status).to.equal(\u0027PENDING\u0027));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "List Reservations",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations?page=1\u0026pageSize=10",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "page",
+                                                                   "value":  "1"
+                                                               },
+                                                               {
+                                                                   "key":  "pageSize",
+                                                                   "value":  "10"
+                                                               }
+                                                           ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                   "pm.test(\u0027Has data array\u0027, () =\u003e pm.expect(pm.response.json().data).to.be.an(\u0027array\u0027));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "List Upcoming Reservations",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/upcoming",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "upcoming"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                   "pm.test(\u0027Is array\u0027, () =\u003e pm.expect(pm.response.json()).to.be.an(\u0027array\u0027));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Get Reservation By ID",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                   "pm.test(\u0027Correct ID\u0027, () =\u003e pm.expect(pm.response.json().id).to.equal(pm.environment.get(\u0027reservationId\u0027)));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Confirm Reservation",
+                     "request":  {
+                                     "method":  "PATCH",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"notes\": \"Confirmed via Postman\"\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/confirm",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "confirm"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                   "pm.test(\u0027Status CONFIRMED\u0027, () =\u003e pm.expect(pm.response.json().status).to.equal(\u0027CONFIRMED\u0027));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Record Deposit",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"amount\": 50000,\n  \"method\": \"CASH\",\n  \"notes\": \"Deposit received at counter\"\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/deposits",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "deposits"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027201 Created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                   "pm.test(\u0027Status RECEIVED\u0027, () =\u003e pm.expect(pm.response.json().status).to.equal(\u0027RECEIVED\u0027));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Get Deposits",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/deposits",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "deposits"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                   "pm.test(\u0027Has deposits\u0027, () =\u003e pm.expect(pm.response.json().length).to.be.greaterThan(0));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Get Events",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/events",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "events"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                   "pm.test(\u0027Has events\u0027, () =\u003e pm.expect(pm.response.json().length).to.be.greaterThan(0));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Assign Table",
+                     "request":  {
+                                     "method":  "PATCH",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"tableId\": \"{{tableId}}\"\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/assign-table",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "assign-table"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Seat Reservation",
+                     "request":  {
+                                     "method":  "PATCH",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"createOrder\": true\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/seat",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "seat"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                   "pm.test(\u0027Status SEATED\u0027, () =\u003e pm.expect(pm.response.json().status).to.equal(\u0027SEATED\u0027));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Cancel Reservation (new one)",
+                     "request":  {
+                                     "method":  "PATCH",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"reason\": \"Customer cancelled via Postman test\"\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "cancel"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "// This may 409 if already seated — both are valid test outcomes",
+                                                                   "pm.test(\u0027Status 200 or 409\u0027, () =\u003e pm.expect([200, 409]).to.include(pm.response.code));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Mark No-Show (new one)",
+                     "request":  {
+                                     "method":  "PATCH",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "X-Branch-Id",
+                                                        "value":  "{{branchId}}"
+                                                    }
+                                                ],
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"reason\": \"Did not arrive\",\n  \"depositOutcome\": \"FORFEIT\"\n}"
+                                              },
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/reservations/{{reservationId}}/no-show",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "reservations",
+                                                              "{{reservationId}}",
+                                                              "no-show"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "// This may 409 if already in terminal state",
+                                                                   "pm.test(\u0027Status 200 or 409\u0027, () =\u003e pm.expect([200, 409]).to.include(pm.response.code));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 }
+             ]
 }

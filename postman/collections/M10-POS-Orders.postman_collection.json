@@ -1,4 +1,4 @@
-{
+﻿{
     "info": {
         "_postman_id": "m10-pos-orders",
         "name": "M10 — POS Orders",
@@ -433,6 +433,6 @@
         }
     ],
     "variable": [
-        { "key": "baseUrl", "value": "http://localhost:3000" }
+        { "key": "baseUrl", "value": "http://localhost:3001" }
     ]
 }
