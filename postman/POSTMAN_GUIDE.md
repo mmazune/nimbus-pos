@@ -20,7 +20,14 @@ postman/
 │   ├── M9-Inventory-Stock.postman_collection.json
 │   ├── M10-POS-Orders.postman_collection.json
 │   ├── M11-KDS-Station-Routing.postman_collection.json
-│   └── M12-Discounts-Approval-Workflow.postman_collection.json
+│   ├── M12-Discounts-Approval-Workflow.postman_collection.json
+│   ├── M13-Payments.postman_collection.json
+│   ├── M14-Refunds.postman_collection.json
+│   ├── M15-Shifts-Tills.postman_collection.json
+│   ├── M16-Reservations-Deposits.postman_collection.json
+│   ├── M17-Events-Booking-Ticketing.postman_collection.json
+│   ├── M18-Anomaly-Detection-Anti-Theft.postman_collection.json
+│   └── M19-Operational-Dashboards-KPI-Streams.postman_collection.json
 └── environments/
     └── dev.postman_environment.json
 ```
@@ -68,6 +75,13 @@ from the collection-level auth setting, using `{{accessToken}}`.
 | M10       | `M10-POS-Orders`         | Yes — token capture active |
 | M11       | `M11-KDS-Station-Routing` | Yes — token capture active |
 | M12       | `M12-Discounts-Approval-Workflow` | Yes — token capture active |
+| M13       | `M13-Payments`                    | Yes — token capture active |
+| M14       | `M14-Refunds`                     | Yes — token capture active |
+| M15       | `M15-Shifts-Tills`                | Yes — token capture active |
+| M16       | `M16-Reservations-Deposits`       | Yes — token capture active |
+| M17       | `M17-Events-Booking-Ticketing`    | Yes — token capture active |
+| M18       | `M18-Anomaly-Detection-Anti-Theft`| Yes — token capture active |
+| M19       | `M19-Operational-Dashboards-KPI-Streams` | Yes — token capture active |
 
 ## Manual Checklist — M0
 
