@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M19 ✅
-- Last completed milestone: M19 — Operational Dashboards + KPI Streams
-- Next milestone: M20 — TBD
+- Current milestone: M20 ✅
+- Last completed milestone: M20 — Reporting v1 + Exports
+- Next milestone: M21 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
 - Date updated: 2026-03-27
@@ -523,7 +523,27 @@
 - [x] M13.2 (Airtel native) = PENDING
 - [x] DONE: All verification gates confirmed ✅
 
-### M20+
+### M20 — Reporting v1 + Exports
+
+- [x] Branch: milestone/m20-reporting-exports
+- [x] Schema: ReportRun + ExportArtifact models, 5 enums (ReportType, ReportWindow, ExportFormat, ReportRunStatus, ExportArtifactStatus)
+- [x] Migration: 20260327200000_m20_reporting_exports (migration 24)
+- [x] Prisma generate: v5.22.0 ✅
+- [x] DTOs: 8 validation DTOs (shift-end, daily-sales, payment-mix, top-items, stock-variance, anomaly-summary, export, list-query)
+- [x] Service: reports.service.ts — 6 report generators + list + get + export + download
+- [x] Controller: reports.controller.ts — 10 endpoints under /api/reports
+- [x] Module: reports.module.ts registered in app.module.ts
+- [x] Permissions: 11 new (shift-end:generate, daily-sales:generate, payment-mix:generate, top-items:generate, stock-variance:generate, anomaly-summary:generate, reservation-summary:generate, event-summary:generate, exports:read, exports:download, history:read)
+- [x] Seed: 11 permissions + role mappings (Owner, Manager, Accountant, Supervisor) + sample ReportRun + ExportArtifact
+- [x] Unit tests: reports.service.spec.ts — 16 tests
+- [x] E2E tests: reports.e2e-spec.ts — 14 tests
+- [x] Postman: M20-Reporting-v1-Exports.postman_collection.json (16 requests)
+- [x] Docs: ARCHITECTURE.md, MODULES.md, POSTMAN_ENDPOINT_GUIDE.md updated
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] DONE: All verification gates confirmed ✅
+
+### M21+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

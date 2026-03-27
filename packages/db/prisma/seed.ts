@@ -236,6 +236,18 @@ const PERMISSIONS_DATA = [
     { action: 'pos:dash:today-summary:read', description: 'Read today summary + payment mix + open orders + low stock' },
     { action: 'pos:dash:stream:read', description: 'Subscribe to live metric SSE stream' },
     { action: 'pos:dash:kpi:refresh', description: 'Trigger a manual KPI snapshot refresh' },
+    // ── M20: Reporting v1 + Exports ──
+    { action: 'pos:reports:shift-end:generate', description: 'Generate shift-end report' },
+    { action: 'pos:reports:daily-sales:generate', description: 'Generate daily sales report' },
+    { action: 'pos:reports:payment-mix:generate', description: 'Generate payment mix report' },
+    { action: 'pos:reports:top-items:generate', description: 'Generate top items report' },
+    { action: 'pos:reports:stock-variance:generate', description: 'Generate stock variance report' },
+    { action: 'pos:reports:anomaly-summary:generate', description: 'Generate anomaly summary report' },
+    { action: 'pos:reports:reservation-summary:generate', description: 'Generate reservation summary report' },
+    { action: 'pos:reports:event-summary:generate', description: 'Generate event summary report' },
+    { action: 'pos:reports:exports:read', description: 'Create export artifacts from reports' },
+    { action: 'pos:reports:exports:download', description: 'Download export artifacts' },
+    { action: 'pos:reports:history:read', description: 'List and view report run history' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -357,6 +369,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:dash:today-summary:read',
         'pos:dash:stream:read',
         'pos:dash:kpi:refresh',
+        // M20: Reporting v1 + Exports
+        'pos:reports:shift-end:generate',
+        'pos:reports:daily-sales:generate',
+        'pos:reports:payment-mix:generate',
+        'pos:reports:top-items:generate',
+        'pos:reports:stock-variance:generate',
+        'pos:reports:anomaly-summary:generate',
+        'pos:reports:reservation-summary:generate',
+        'pos:reports:event-summary:generate',
+        'pos:reports:exports:read',
+        'pos:reports:exports:download',
+        'pos:reports:history:read',
     ],
     Manager: [
         'identity:user:read',
@@ -447,6 +471,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:dash:today-summary:read',
         'pos:dash:stream:read',
         'pos:dash:kpi:refresh',
+        // M20: Reporting v1 + Exports (Manager: all generate + read + download)
+        'pos:reports:shift-end:generate',
+        'pos:reports:daily-sales:generate',
+        'pos:reports:payment-mix:generate',
+        'pos:reports:top-items:generate',
+        'pos:reports:stock-variance:generate',
+        'pos:reports:anomaly-summary:generate',
+        'pos:reports:reservation-summary:generate',
+        'pos:reports:event-summary:generate',
+        'pos:reports:exports:read',
+        'pos:reports:exports:download',
+        'pos:reports:history:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -470,6 +506,12 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:analytics:thresholds:read',
         // M19: Dashboards (read-only for Accountant)
         'pos:dash:today-summary:read',
+        // M20: Reporting (Accountant: history + exports + download)
+        'pos:reports:daily-sales:generate',
+        'pos:reports:payment-mix:generate',
+        'pos:reports:exports:read',
+        'pos:reports:exports:download',
+        'pos:reports:history:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -551,6 +593,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:dash:manager:read',
         'pos:dash:today-summary:read',
         'pos:dash:stream:read',
+        // M20: Reporting (Supervisor: shift-end + daily-sales + top-items + history + exports)
+        'pos:reports:shift-end:generate',
+        'pos:reports:daily-sales:generate',
+        'pos:reports:top-items:generate',
+        'pos:reports:exports:read',
+        'pos:reports:exports:download',
+        'pos:reports:history:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -4261,6 +4310,91 @@ async function seedDashboardData(
     return { created, skipped };
 }
 
+// ── M20: Reporting v1 + Exports Seed Data ──
+
+async function seedReportsData(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findUnique({
+        where: { organizationId_code: { organizationId: orgId, code: branchCode } },
+    });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping reports data`);
+        return { created: 0, skipped: 0 };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    if (!owner) {
+        console.log(`  ⚠️  Owner user not found — skipping reports data`);
+        return { created: 0, skipped: 0 };
+    }
+
+    // ── Sample ReportRun (idempotent: check if any report run exists for branch) ──
+    const existingRun = await prisma.reportRun.findFirst({ where: { orgId, branchId: branch.id } });
+    if (existingRun) {
+        console.log(`  ⏭  ReportRun for branch "${branchCode}" already exists — skipped`);
+        skipped++;
+    } else {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+        const run = await prisma.reportRun.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                reportType: 'DAILY_SALES',
+                reportWindow: 'DAY',
+                requestedById: owner.id,
+                status: 'COMPLETED',
+                dateFrom: todayStart,
+                dateTo: todayEnd,
+                rowCount: 12,
+                summary: {
+                    grossSales: '1250000',
+                    netSales: '1215000',
+                    taxTotal: '35000',
+                    discountTotal: '15000',
+                    orderCount: 12,
+                    avgOrderValue: '101250',
+                    paymentBreakdown: { CASH: '750000', CARD: '300000', MOMO: '165000' },
+                    refundTotal: '20000',
+                    refundCount: 1,
+                },
+                generatedAt: now,
+            },
+        });
+        console.log(`  ✅ Sample ReportRun (DAILY_SALES, COMPLETED) created — ${run.id}`);
+        created++;
+
+        // ── Sample ExportArtifact (linked to the report run) ──
+        const artifact = await prisma.exportArtifact.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                reportRunId: run.id,
+                format: 'CSV',
+                status: 'READY',
+                fileName: `daily_sales_seed_${now.toISOString().replace(/[:.]/g, '-')}.csv`,
+                mimeType: 'text/csv',
+                storagePath: '/exports/daily_sales_seed.csv',
+                fileSizeBytes: 512,
+                checksum: 'seed-checksum-placeholder',
+                generatedById: owner.id,
+                readyAt: now,
+            },
+        });
+        console.log(`  ✅ Sample ExportArtifact (CSV, READY) created — ${artifact.id}`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -4455,6 +4589,11 @@ async function main(): Promise<void> {
     const dashboardResult = await seedDashboardData(orgResult.orgId, 'MAIN');
     console.log(`   Created: ${dashboardResult.created}, Skipped: ${dashboardResult.skipped}\n`);
 
+    // 36) Seed Reporting v1 + Exports (M20)
+    console.log('── Reporting v1 + Exports (M20) ──');
+    const reportsResult = await seedReportsData(orgResult.orgId, 'MAIN');
+    console.log(`   Created: ${reportsResult.created}, Skipped: ${reportsResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -4535,6 +4674,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm19-dashboards-kpi-streams',
         `Dashboards: ${dashboardResult.created}c/${dashboardResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm20-reporting-exports',
+        `Reports: ${reportsResult.created}c/${reportsResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 

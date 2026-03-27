@@ -927,6 +927,80 @@ Owner/manager operational visibility: today/MTD sales, payment mix, open orders,
 | -------------------- | ------------------------ |
 | KPI_REFRESH_TRIGGERED | Manual KPI refresh      |
 
+## M20 — Reporting v1 + Exports
+
+### Overview
+
+Operational reporting engine providing on-demand report generation and CSV/PDF export artifacts.
+Reports aggregate data from existing operational tables (orders, payments, refunds, shifts, tills,
+stock adjustments, anomaly events) into structured ReportRun records with JSON summaries.
+
+Export artifacts are generated synchronously in v1 and stored as local files. A future milestone
+will migrate to cloud object storage (S3/GCS).
+
+### Models
+
+- **ReportRun** — tracks a single report generation request; stores type, window, date range, parameters, status, summary JSON, and row count
+- **ExportArtifact** — tracks an export file generated from a completed ReportRun; stores format, file metadata, checksum, and local storage path
+
+### Report Types
+
+| Enum                | Description                               |
+| ------------------- | ----------------------------------------- |
+| SHIFT_END           | Shift/till summary with gross/net sales, payment breakdown, refunds, safe drops |
+| DAILY_SALES         | Daily sales aggregation with order counts, AOV, refunds, payment mix |
+| PAYMENT_MIX         | Payment method breakdown with amounts, counts, percentages |
+| TOP_ITEMS           | Top-selling menu items by quantity and gross contribution |
+| STOCK_VARIANCE      | Stock adjustment summary per inventory item |
+| ANOMALY_SUMMARY     | Anomaly event counts by type, severity, status |
+| RESERVATION_SUMMARY | Reserved for future milestone              |
+| EVENT_SUMMARY       | Reserved for future milestone              |
+
+### Endpoints
+
+- `POST /api/reports/shift-end` — Generate shift-end report
+- `POST /api/reports/daily-sales` — Generate daily sales report
+- `POST /api/reports/payment-mix` — Generate payment mix report
+- `POST /api/reports/top-items` — Generate top items report
+- `POST /api/reports/stock-variance` — Generate stock variance report
+- `POST /api/reports/anomaly-summary` — Generate anomaly summary report
+- `GET /api/reports` — List reports (paginated, filterable by type/status)
+- `GET /api/reports/:id` — Get report by ID with export artifacts
+- `POST /api/reports/export` — Create CSV/PDF export from completed report
+- `GET /api/reports/exports/:id/download` — Download export artifact file
+
+### M20 Permissions
+
+| Permission                             | Description                              |
+| -------------------------------------- | ---------------------------------------- |
+| pos:reports:shift-end:generate         | Generate shift-end report                |
+| pos:reports:daily-sales:generate       | Generate daily sales report              |
+| pos:reports:payment-mix:generate       | Generate payment mix report              |
+| pos:reports:top-items:generate         | Generate top items report                |
+| pos:reports:stock-variance:generate    | Generate stock variance report           |
+| pos:reports:anomaly-summary:generate   | Generate anomaly summary report          |
+| pos:reports:reservation-summary:generate | Generate reservation summary report    |
+| pos:reports:event-summary:generate     | Generate event summary report            |
+| pos:reports:exports:read               | Create export artifacts from reports     |
+| pos:reports:exports:download           | Download export artifacts                |
+| pos:reports:history:read               | List and view report run history         |
+
+### M20 Audit Events
+
+| Action                  | Trigger                          |
+| ----------------------- | -------------------------------- |
+| REPORT_RUN_COMPLETED    | Report generation succeeded      |
+| REPORT_RUN_FAILED       | Report generation failed         |
+| EXPORT_ARTIFACT_CREATED | Export artifact created (pending) |
+| EXPORT_ARTIFACT_READY   | Export file generated and ready   |
+
+### Known Limitations (v1)
+
+- Export generation is synchronous — large reports may cause slower responses
+- Local filesystem storage only; no S3/GCS integration yet
+- PDF output is structured text, not a proper PDF render (no pdfkit/puppeteer)
+- RESERVATION_SUMMARY and EVENT_SUMMARY types are reserved but not yet implemented
+
 ## Frontend Strategy (M43+)
 
 - Web shell first

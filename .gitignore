@@ -32,6 +32,9 @@ packages/db/prisma/migrations/**/migration_lock.toml
 # Test
 coverage/
 
+# Export artifacts (generated at runtime)
+apps/api/exports/
+
 # Logs
 *.log
 npm-debug.log*

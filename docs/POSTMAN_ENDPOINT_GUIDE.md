@@ -196,3 +196,18 @@ Quick-reference of **every API endpoint** with Postman collection mapping.
 | GET | `/api/dash/snapshots` | M19-Operational-Dashboards-KPI-Streams |
 | POST | `/api/dash/kpi/refresh` | M19-Operational-Dashboards-KPI-Streams |
 | SSE | `/api/stream/metrics` | M19-Operational-Dashboards-KPI-Streams |
+
+## Reporting v1 + Exports (M20)
+
+| Method | Path | Collection |
+|--------|------|-----------|
+| POST | `/api/reports/shift-end` | M20-Reporting-v1-Exports |
+| POST | `/api/reports/daily-sales` | M20-Reporting-v1-Exports |
+| POST | `/api/reports/payment-mix` | M20-Reporting-v1-Exports |
+| POST | `/api/reports/top-items` | M20-Reporting-v1-Exports |
+| POST | `/api/reports/stock-variance` | M20-Reporting-v1-Exports |
+| POST | `/api/reports/anomaly-summary` | M20-Reporting-v1-Exports |
+| GET | `/api/reports` | M20-Reporting-v1-Exports |
+| GET | `/api/reports/:id` | M20-Reporting-v1-Exports |
+| POST | `/api/reports/export` | M20-Reporting-v1-Exports |
+| GET | `/api/reports/exports/:id/download` | M20-Reporting-v1-Exports |

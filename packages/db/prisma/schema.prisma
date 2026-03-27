@@ -19,6 +19,7 @@
 // M17 models: Event, EventTicketClass, EventBooking, EventTicket, EventCheckIn, EventAuditLog + EventStatus, EventBookingStatus, TicketStatus, TicketClassType, CheckInStatus enums
 // M18 models: AnomalyRule, RiskThreshold, AnomalyEvent, StaffRiskSnapshot + AnomalyRuleStatus, AnomalyRuleType, AnomalySeverity, AnomalyEventStatus, RiskEntityType enums
 // M19 models: KpiSnapshot, KpiSubscription + KpiScopeType, KpiMetricWindow, KpiSubscriptionStatus enums
+// M20 models: ReportRun, ExportArtifact + ReportType, ReportWindow, ExportFormat, ReportRunStatus, ExportArtifactStatus enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -193,6 +194,9 @@ model User {
     staffRiskSnapshots      StaffRiskSnapshot[]  @relation("StaffRiskSnapshotUser")
     // M19 — Dashboards + KPI
     kpiSubscriptions        KpiSubscription[]    @relation("KpiSubscriptionUser")
+    // M20 — Reports + Exports
+    reportRunsRequested     ReportRun[]          @relation("ReportRunRequestedBy")
+    exportArtifactsGenerated ExportArtifact[]    @relation("ExportArtifactGeneratedBy")
 
     @@map("users")
 }
@@ -381,6 +385,9 @@ model Organization {
     // M19 — Dashboards + KPI
     kpiSnapshots        KpiSnapshot[]
     kpiSubscriptions    KpiSubscription[]
+    // M20 — Reports + Exports
+    reportRuns          ReportRun[]
+    exportArtifacts     ExportArtifact[]
 
     @@map("organizations")
 }
@@ -443,6 +450,9 @@ model Branch {
     // M19 — Dashboards + KPI
     kpiSnapshots        KpiSnapshot[]
     kpiSubscriptions    KpiSubscription[]
+    // M20 — Reports + Exports
+    reportRuns          ReportRun[]
+    exportArtifacts     ExportArtifact[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2296,4 +2306,116 @@ model KpiSubscription {
     @@index([scopeType])
     @@index([orgId, branchId, userId, status])
     @@map("kpi_subscriptions")
+}
+
+// ── Enums (M20) ──
+
+enum ReportType {
+    SHIFT_END
+    DAILY_SALES
+    PAYMENT_MIX
+    TOP_ITEMS
+    STOCK_VARIANCE
+    ANOMALY_SUMMARY
+    RESERVATION_SUMMARY
+    EVENT_SUMMARY
+}
+
+enum ReportWindow {
+    DAY
+    WEEK
+    MONTH
+    CUSTOM
+}
+
+enum ExportFormat {
+    CSV
+    PDF
+}
+
+enum ReportRunStatus {
+    PENDING
+    COMPLETED
+    FAILED
+}
+
+enum ExportArtifactStatus {
+    PENDING
+    READY
+    FAILED
+}
+
+// ── M20 Models ──
+
+/// A single report generation run. Stores parameters, status, summary, and row count.
+model ReportRun {
+    id             String          @id @default(cuid())
+    orgId          String          @map("org_id")
+    branchId       String?         @map("branch_id")
+    reportType     ReportType      @map("report_type")
+    reportWindow   ReportWindow    @map("report_window")
+    requestedById  String          @map("requested_by_id")
+    status         ReportRunStatus @default(PENDING)
+    dateFrom       DateTime?       @map("date_from")
+    dateTo         DateTime?       @map("date_to")
+    parameters     Json?
+    rowCount       Int             @default(0) @map("row_count")
+    summary        Json?
+    generatedAt    DateTime?       @map("generated_at")
+    failedAt       DateTime?       @map("failed_at")
+    failureReason  String?         @map("failure_reason")
+    createdAt      DateTime        @default(now()) @map("created_at")
+    updatedAt      DateTime        @updatedAt @map("updated_at")
+
+    organization    Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch          Branch?         @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    requestedBy     User            @relation("ReportRunRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+    exportArtifacts ExportArtifact[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([reportType])
+    @@index([reportWindow])
+    @@index([requestedById])
+    @@index([status])
+    @@index([createdAt])
+    @@index([orgId, branchId, reportType, status])
+    @@map("report_runs")
+}
+
+/// An export file artifact linked to a report run.
+model ExportArtifact {
+    id              String               @id @default(cuid())
+    orgId           String               @map("org_id")
+    branchId        String?              @map("branch_id")
+    reportRunId     String               @map("report_run_id")
+    format          ExportFormat
+    status          ExportArtifactStatus @default(PENDING)
+    fileName        String               @map("file_name")
+    mimeType        String               @map("mime_type")
+    storagePath     String               @map("storage_path")
+    fileSizeBytes   Int?                 @map("file_size_bytes")
+    checksum        String?
+    generatedById   String               @map("generated_by_id")
+    readyAt         DateTime?            @map("ready_at")
+    failedAt        DateTime?            @map("failed_at")
+    failureReason   String?              @map("failure_reason")
+    metadata        Json?
+    createdAt       DateTime             @default(now()) @map("created_at")
+    updatedAt       DateTime             @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    reportRun    ReportRun    @relation(fields: [reportRunId], references: [id], onDelete: Cascade)
+    generatedBy  User         @relation("ExportArtifactGeneratedBy", fields: [generatedById], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([reportRunId])
+    @@index([format])
+    @@index([status])
+    @@index([generatedById])
+    @@index([createdAt])
+    @@index([orgId, branchId, reportRunId, format])
+    @@map("export_artifacts")
 }

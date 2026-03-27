@@ -22,6 +22,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
 import { EventsModule } from './modules/events/events.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardsModule } from './modules/dashboards/dashboards.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { DashboardsModule } from './modules/dashboards/dashboards.module';
     EventsModule,
     AnalyticsModule,
     DashboardsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

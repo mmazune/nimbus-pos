@@ -32,7 +32,7 @@
 | **Events / Ticketing**              | `apps/api/src/modules/events/`       | M17       | ✅ Implemented |
 | **Anomaly Detection**               | `apps/api/src/modules/analytics/`    | M18       | ✅ Implemented |
 | **Dashboards / KPIs**               | `apps/api/src/modules/dashboards/`   | M19       | ✅ Implemented |
-| **Reports / Exports**               | `apps/api/src/modules/reports/`      | M24       | ⬜ Planned     |
+| **Reports / Exports**               | `apps/api/src/modules/reports/`      | M20       | ✅ Implemented |
 | **Feedback / NPS**                  | `apps/api/src/modules/feedback/`     | M25       | ⬜ Planned     |
 | **Documents / Uploads**             | `apps/api/src/modules/documents/`    | M26       | ⬜ Planned     |
 | **HR / Employees**                  | `apps/api/src/modules/hr/`           | M27–M28   | ⬜ Planned     |

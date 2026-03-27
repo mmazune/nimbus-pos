@@ -1,0 +1,761 @@
+{
+    "info": {
+        "name": "M20 — Reporting v1 + Exports",
+        "_postman_id": "m20-reporting-v1-exports",
+        "description": "M20 Reporting v1 & Exports. Covers shift-end, daily-sales, payment-mix, top-items, stock-variance, anomaly-summary reports, CSV/PDF export generation, report listing, and artifact download.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "reportRunId",
+            "value": ""
+        },
+        {
+            "key": "exportArtifactId",
+            "value": ""
+        },
+        {
+            "key": "chefAccessToken",
+            "value": ""
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "00 — Login (Owner)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"email\":\"owner@demo.local\",\"password\":\"Owner#123\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "01 — Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);",
+                            "pm.test('Branch resolved', () => pm.expect(bid).to.be.a('string'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "02 — Generate Shift-End Report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.environment.set('reportRunId', body.id);",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Report type is SHIFT_END', () => pm.expect(body.reportType).to.eql('SHIFT_END'));",
+                            "pm.test('Status is COMPLETED', () => pm.expect(body.status).to.eql('COMPLETED'));",
+                            "pm.test('Has summary', () => pm.expect(body.summary).to.be.an('object'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"DAY\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/shift-end",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "shift-end"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "03 — Generate Daily Sales Report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Report type is DAILY_SALES', () => pm.expect(body.reportType).to.eql('DAILY_SALES'));",
+                            "pm.test('Status is COMPLETED', () => pm.expect(body.status).to.eql('COMPLETED'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"DAY\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/daily-sales",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "daily-sales"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "04 — Generate Payment Mix Report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Report type is PAYMENT_MIX', () => pm.expect(body.reportType).to.eql('PAYMENT_MIX'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"DAY\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/payment-mix",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "payment-mix"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "05 — Generate Top Items Report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Report type is TOP_ITEMS', () => pm.expect(body.reportType).to.eql('TOP_ITEMS'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"DAY\",\"limit\":10}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/top-items",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "top-items"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "06 — Generate Stock Variance Report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Report type is STOCK_VARIANCE', () => pm.expect(body.reportType).to.eql('STOCK_VARIANCE'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"DAY\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/stock-variance",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "stock-variance"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "07 — Generate Anomaly Summary Report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Report type is ANOMALY_SUMMARY', () => pm.expect(body.reportType).to.eql('ANOMALY_SUMMARY'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"DAY\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/anomaly-summary",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "anomaly-summary"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "08 — List Reports",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has data array', () => pm.expect(body.data).to.be.an('array'));",
+                            "pm.test('Has total', () => pm.expect(body.total).to.be.a('number'));",
+                            "pm.test('Has page', () => pm.expect(body.page).to.be.a('number'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports?page=1&pageSize=10",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports"
+                    ],
+                    "query": [
+                        {
+                            "key": "page",
+                            "value": "1"
+                        },
+                        {
+                            "key": "pageSize",
+                            "value": "10"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "09 — Get Report By ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Has ID', () => pm.expect(body.id).to.be.a('string'));",
+                            "pm.test('Has summary', () => pm.expect(body.summary).to.be.an('object'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/{{reportRunId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "{{reportRunId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "10 — Create CSV Export",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.environment.set('exportArtifactId', body.id);",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Status is READY', () => pm.expect(body.status).to.eql('READY'));",
+                            "pm.test('Format is CSV', () => pm.expect(body.format).to.eql('CSV'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportRunId\":\"{{reportRunId}}\",\"format\":\"CSV\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/export",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "export"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "11 — Download Export",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('Content-Type is CSV', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'));",
+                            "pm.test('Has attachment header', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/exports/{{exportArtifactId}}/download",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "exports",
+                        "{{exportArtifactId}}",
+                        "download"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "12 — Login (Chef — No Permissions)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.environment.set('chefAccessToken', body.accessToken);",
+                            "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"email\":\"chef@demo.local\",\"password\":\"Chef#123\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "13 — [403] Chef tries shift-end report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{chefAccessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"DAY\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/shift-end",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "shift-end"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "14 — [400] Invalid report window",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"INVALID\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/shift-end",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "shift-end"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "15 — Custom Date Range Report",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                            "pm.test('Report window is CUSTOM', () => pm.expect(body.reportWindow).to.eql('CUSTOM'));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportWindow\":\"CUSTOM\",\"dateFrom\":\"2024-01-01\",\"dateTo\":\"2024-01-31\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/daily-sales",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "daily-sales"
+                    ]
+                }
+            }
+        }
+    ]
+}
