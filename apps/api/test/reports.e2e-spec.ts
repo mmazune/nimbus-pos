@@ -316,4 +316,335 @@ describe('Reports (e2e)', () => {
 
     expect(res.status).toBe(404);
   });
+
+  // ══════════════════════════════════════════════════════════════
+  // M20.1 — New Report Endpoints
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Report Catalog ──
+
+  it('GET /api/reports/catalog — should return report catalog', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/reports/catalog')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(20);
+    const entry = res.body[0];
+    expect(entry.key).toBeDefined();
+    expect(entry.title).toBeDefined();
+    expect(entry.status).toBeDefined();
+  });
+
+  // ── Sales by Category ──
+
+  it('POST /api/reports/sales-by-category — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/sales-by-category')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('SALES_BY_CATEGORY');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Sales by Hour ──
+
+  it('POST /api/reports/sales-by-hour — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/sales-by-hour')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('SALES_BY_HOUR');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Open/Closed Orders ──
+
+  it('POST /api/reports/open-closed-orders — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/open-closed-orders')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('OPEN_CLOSED_ORDERS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Discounts Summary ──
+
+  it('POST /api/reports/discounts-summary — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/discounts-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('DISCOUNTS_SUMMARY');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Voids Summary ──
+
+  it('POST /api/reports/voids-summary — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/voids-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('VOIDS_SUMMARY');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Refunds Summary ──
+
+  it('POST /api/reports/refunds-summary — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/refunds-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('REFUNDS_SUMMARY');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Cash Variance ──
+
+  it('POST /api/reports/cash-variance — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/cash-variance')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('CASH_VARIANCE');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Cash Movements ──
+
+  it('POST /api/reports/cash-movements — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/cash-movements')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('CASH_MOVEMENTS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Wastage Summary ──
+
+  it('POST /api/reports/wastage-summary — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/wastage-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('WASTAGE_SUMMARY');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Low Stock ──
+
+  it('POST /api/reports/low-stock — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/low-stock')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('LOW_STOCK');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Reservation Summary ──
+
+  it('POST /api/reports/reservation-summary — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/reservation-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('RESERVATION_SUMMARY');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Reservation Deposits ──
+
+  it('POST /api/reports/reservation-deposits — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/reservation-deposits')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('RESERVATION_DEPOSITS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Reservation No-Shows ──
+
+  it('POST /api/reports/reservation-no-shows — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/reservation-no-shows')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('RESERVATION_NO_SHOWS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Event Summary ──
+
+  it('POST /api/reports/event-summary — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/event-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('EVENT_SUMMARY');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Event Bookings ──
+
+  it('POST /api/reports/event-bookings — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/event-bookings')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('EVENT_BOOKINGS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Event Checkins ──
+
+  it('POST /api/reports/event-checkins — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/event-checkins')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('EVENT_CHECKINS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Anomaly — High Risk Actors ──
+
+  it('POST /api/reports/high-risk-actors — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/high-risk-actors')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('HIGH_RISK_ACTORS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── Staff Operations ──
+
+  it('POST /api/reports/staff-operations — should generate', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/staff-operations')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.reportType).toBe('STAFF_OPERATIONS');
+    expect(res.body.status).toBe('COMPLETED');
+    createdRunIds.push(res.body.id);
+  });
+
+  // ── M20.1 CSV Export for new report type ──
+
+  it('POST /api/reports/export — should create CSV for sales-by-category', async () => {
+    // Find the sales-by-category run
+    const catRunId = createdRunIds.find((_, i) => i >= 17); // first M20.1 run ID
+    if (!catRunId) return;
+
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/export')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportRunId: catRunId, format: 'CSV' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.format).toBe('CSV');
+    expect(res.body.status).toBe('READY');
+    createdArtifactIds.push(res.body.id);
+  });
+
+  // ── M20.1 — 403 for chef on new endpoints ──
+
+  it('POST /api/reports/sales-by-category — 403 for chef', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/reports/sales-by-category')
+      .set('Authorization', `Bearer ${chefToken}`)
+      .set('x-branch-id', branchId)
+      .send({ reportWindow: 'DAY' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('GET /api/reports/catalog — 403 for chef', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/reports/catalog')
+      .set('Authorization', `Bearer ${chefToken}`)
+      .set('x-branch-id', branchId);
+
+    expect(res.status).toBe(403);
+  });
 });
