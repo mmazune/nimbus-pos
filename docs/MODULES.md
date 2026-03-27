@@ -30,8 +30,8 @@
 | **Refunds**                         | `apps/api/src/modules/refunds/`      | M14       | ✅ Implemented |
 | **Reservations / Deposits**         | `apps/api/src/modules/reservations/` | M16       | ✅ Implemented |
 | **Events / Ticketing**              | `apps/api/src/modules/events/`       | M17       | ✅ Implemented |
-| **Anomaly Detection**               | `apps/api/src/modules/analytics/`    | M22       | ⬜ Planned     |
-| **Dashboards / KPIs**               | `apps/api/src/modules/analytics/`    | M23       | ⬜ Planned     |
+| **Anomaly Detection**               | `apps/api/src/modules/analytics/`    | M18       | ✅ Implemented |
+| **Dashboards / KPIs**               | `apps/api/src/modules/dashboards/`   | M19       | ✅ Implemented |
 | **Reports / Exports**               | `apps/api/src/modules/reports/`      | M24       | ⬜ Planned     |
 | **Feedback / NPS**                  | `apps/api/src/modules/feedback/`     | M25       | ⬜ Planned     |
 | **Documents / Uploads**             | `apps/api/src/modules/documents/`    | M26       | ⬜ Planned     |

@@ -383,6 +383,50 @@ Branch-scoped event lifecycle with booking portal, ticket classes, bookings, tic
 | POST   | `/api/events/bookings/:bookingId/tickets/issue`     | Yes  | pos:event:ticket:issue   | Yes    | Issue tickets for booking            |
 | POST   | `/api/events/tickets/:ticketId/check-in`            | Yes  | pos:event:checkin        | Yes    | Check in ticket via QR               |
 
+## Anomaly Detection + Anti-Theft Signals (M18) ✅
+
+Branch-scoped anomaly detection rules, events, risk dashboard, and threshold management.
+
+### Analytics Endpoints
+
+| Method | Path                                         | Auth | Permission                              | Branch | Description                         |
+| ------ | -------------------------------------------- | ---- | --------------------------------------- | ------ | ----------------------------------- |
+| POST   | `/api/analytics/anomaly-rules`               | Yes  | pos:analytics:anomaly-rules:create      | Yes    | Create anomaly rule                 |
+| GET    | `/api/analytics/anomaly-rules`               | Yes  | pos:analytics:anomalies:read            | Yes    | List anomaly rules                  |
+| GET    | `/api/analytics/anomaly-rules/:id`           | Yes  | pos:analytics:anomalies:read            | Yes    | Get rule by ID                      |
+| PATCH  | `/api/analytics/anomaly-rules/:id`           | Yes  | pos:analytics:anomaly-rules:update      | Yes    | Update rule                         |
+| GET    | `/api/analytics/anomalies`                   | Yes  | pos:analytics:anomalies:read            | Yes    | List anomaly events (paginated)     |
+| PATCH  | `/api/analytics/anomalies/:id/acknowledge`   | Yes  | pos:analytics:anomalies:acknowledge     | Yes    | Acknowledge anomaly                 |
+| PATCH  | `/api/analytics/anomalies/:id/resolve`       | Yes  | pos:analytics:anomalies:acknowledge     | Yes    | Resolve anomaly                     |
+| GET    | `/api/analytics/risk-dashboard`              | Yes  | pos:analytics:risk-dashboard:read       | Yes    | Risk dashboard summary              |
+| GET    | `/api/analytics/staff-risk/:userId`          | Yes  | pos:analytics:risk-dashboard:read       | Yes    | Staff risk data                     |
+| GET    | `/api/analytics/thresholds`                  | Yes  | pos:analytics:thresholds:read           | Yes    | List risk thresholds                |
+| PATCH  | `/api/analytics/thresholds/:id`              | Yes  | pos:analytics:thresholds:update         | Yes    | Update threshold                    |
+| POST   | `/api/analytics/anomalies/recalculate`       | Yes  | pos:analytics:anomalies:recalculate     | Yes    | Trigger recalculation               |
+
+## Operational Dashboards + KPI Streams (M19) ✅
+
+Owner/manager dashboards, today summary, payment mix, open orders, low stock, KPI snapshots, KPI refresh, and live metric SSE stream.
+
+### Dashboard Endpoints
+
+| Method | Path                        | Auth | Permission                  | Branch | Description                          |
+| ------ | --------------------------- | ---- | --------------------------- | ------ | ------------------------------------ |
+| GET    | `/api/dash/owner`           | Yes  | pos:dash:owner:read         | Yes    | Owner dashboard (today + MTD)        |
+| GET    | `/api/dash/manager`         | Yes  | pos:dash:manager:read       | Yes    | Manager dashboard (today + shifts)   |
+| GET    | `/api/dash/today-summary`   | Yes  | pos:dash:today-summary:read | Yes    | Compact today summary                |
+| GET    | `/api/dash/payment-mix`     | Yes  | pos:dash:today-summary:read | Yes    | Payment method breakdown             |
+| GET    | `/api/dash/open-orders`     | Yes  | pos:dash:today-summary:read | Yes    | Open orders list                     |
+| GET    | `/api/dash/low-stock`       | Yes  | pos:dash:today-summary:read | Yes    | Low stock items                      |
+| GET    | `/api/dash/snapshots`       | Yes  | pos:dash:owner:read         | Yes    | KPI snapshot history                 |
+| POST   | `/api/dash/kpi/refresh`     | Yes  | pos:dash:kpi:refresh        | Yes    | Trigger manual KPI refresh           |
+
+### Stream Endpoints
+
+| Method | Path                        | Auth | Permission | Branch | Description                          |
+| ------ | --------------------------- | ---- | ---------- | ------ | ------------------------------------ |
+| SSE    | `/api/stream/metrics`       | Yes  | (auth only)| Yes    | Live metrics stream (15s interval)   |
+
 ## Validation
 
 - DTO classes with `class-validator`

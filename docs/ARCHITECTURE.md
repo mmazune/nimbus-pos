@@ -866,6 +866,67 @@ Event lifecycle management with a booking portal, ticket classes, bookings, tick
 | CHECK_IN_DUPLICATE      | Duplicate check-in attempt             |
 | CHECK_IN_DENIED         | Check-in denied                        |
 
+## M18 — Anomaly Detection + Anti-Theft Signals
+
+Branch-scoped anomaly detection with configurable rules, severity-based escalation, staff risk scoring, and threshold management.
+
+### Models
+
+- **AnomalyRule**: Org/branch-scoped detection rules with type (VOID_SPIKE, DISCOUNT_ABUSE, etc.), metric key, operator, threshold, window.
+- **AnomalyEvent**: Individual anomaly occurrences linked to rules, with status (OPEN → ACKNOWLEDGED → RESOLVED), severity, evidence JSON.
+- **RiskThreshold**: Org-scoped configurable thresholds (void rate %, cash variance limit, etc.).
+- **StaffRiskSnapshot**: Per-staff risk score snapshots for dashboard aggregation.
+
+### M18 Permissions
+
+| Permission                              | Description                                  |
+| --------------------------------------- | -------------------------------------------- |
+| pos:analytics:anomalies:read            | Read anomaly events and history              |
+| pos:analytics:anomaly-rules:create      | Create anomaly detection rules               |
+| pos:analytics:anomaly-rules:update      | Update anomaly detection rules               |
+| pos:analytics:anomalies:acknowledge     | Acknowledge or resolve anomaly events        |
+| pos:analytics:risk-dashboard:read       | View staff risk dashboard and snapshots      |
+| pos:analytics:anomalies:recalculate     | Trigger anomaly recalculation for a branch   |
+| pos:analytics:thresholds:read           | Read risk threshold configuration            |
+| pos:analytics:thresholds:update         | Update risk threshold configuration          |
+
+## M19 — Operational Dashboards + KPI Streams
+
+Owner/manager operational visibility: today/MTD sales, payment mix, open orders, low-stock signals, anomaly highlights, KPI snapshots, and lightweight live metric streaming via SSE.
+
+### Models
+
+- **KpiSnapshot**: Cached point-in-time aggregation with gross/net sales, payment mix (cash/card/momo), refunds, order counts, low stock count, anomaly counts, reservations, events, and avg order value. Scoped by `KpiScopeType` (OWNER/MANAGER/BRANCH) and `KpiMetricWindow` (TODAY/MTD/CUSTOM).
+- **KpiSubscription**: Lightweight SSE subscription state per user/branch/scope.
+
+### Endpoints
+
+- `GET /api/dash/owner` — Full owner dashboard (today + MTD + payment mix + anomalies + reservations + events)
+- `GET /api/dash/manager` — Manager dashboard (today sales + open orders + shift/till summary)
+- `GET /api/dash/today-summary` — Compact today summary with all KPIs
+- `GET /api/dash/payment-mix` — Payment method breakdown
+- `GET /api/dash/open-orders` — Open orders list
+- `GET /api/dash/low-stock` — Low stock items list
+- `GET /api/dash/snapshots` — Historical KPI snapshots
+- `POST /api/dash/kpi/refresh` — Manual KPI snapshot refresh (creates KpiSnapshot, audit logged)
+- `SSE GET /api/stream/metrics` — Live metric SSE stream (15s polling interval)
+
+### M19 Permissions
+
+| Permission                    | Description                                           |
+| ----------------------------- | ----------------------------------------------------- |
+| pos:dash:owner:read           | Read owner-level dashboard                            |
+| pos:dash:manager:read         | Read manager-level dashboard                          |
+| pos:dash:today-summary:read   | Read today summary + payment mix + open orders + low stock |
+| pos:dash:stream:read          | Subscribe to live metric SSE stream                   |
+| pos:dash:kpi:refresh          | Trigger a manual KPI snapshot refresh                 |
+
+### M19 Audit Events
+
+| Action               | Trigger                  |
+| -------------------- | ------------------------ |
+| KPI_REFRESH_TRIGGERED | Manual KPI refresh      |
+
 ## Frontend Strategy (M43+)
 
 - Web shell first

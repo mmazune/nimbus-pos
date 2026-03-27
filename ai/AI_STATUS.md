@@ -3,9 +3,11 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M17 ✅
-- Last completed milestone: M17 — Events + Booking Portal + Ticketing
-- Next milestone: M18 — TBD
+- Current milestone: M19 ✅
+- Last completed milestone: M19 — Operational Dashboards + KPI Streams
+- Next milestone: M20 — TBD
+- M13.1 (MTN Native) = PENDING
+- M13.2 (Airtel Native) = PENDING
 - Date updated: 2026-03-27
 
 ## Environment
@@ -478,7 +480,50 @@
 - [x] M13.2 (Airtel native) = PENDING
 - [x] DONE: All verification gates confirmed ✅
 
-### M18+
+### M18 — Anomaly Detection + Anti-Theft Signals
+
+- [x] Prisma schema: AnomalySeverity/AnomalyStatus/AnomalyRuleType enums, AnomalyRule model, AnomalyEvent model, RiskThreshold model
+- [x] Migration applied (22 total)
+- [x] AnalyticsModule: anomaly rules CRUD, event detection, acknowledge/recalculate, risk dashboard, thresholds
+- [x] Seed: 8 permissions + role mappings + 6 risk thresholds + 5 anomaly rules + 1 demo AnomalyEvent
+- [x] Unit tests: analytics.service.spec.ts
+- [x] E2E tests: analytics.e2e-spec.ts
+- [x] Postman: M18-Anomaly-Detection-Anti-Theft.postman_collection.json
+- [x] Docs updated: ARCHITECTURE.md, API_CONVENTIONS.md, MODULES.md
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] DONE: All verification gates confirmed ✅
+
+### M19 — Operational Dashboards + KPI Streams
+
+- [x] Prisma schema: KpiScopeType/KpiMetricWindow/KpiSubscriptionStatus enums, KpiSnapshot model, KpiSubscription model
+- [x] Migration: 20260327100000_m19_dashboards_kpi_streams (23 total)
+- [x] DashboardsModule + StreamController: 8 REST endpoints + 1 SSE stream
+- [x] Live aggregation from Order, Payment, Refund, InventoryItem, AnomalyEvent, Reservation, Event, Shift, TillSession
+- [x] 5 permissions: pos:dash:owner:read, pos:dash:manager:read, pos:dash:today-summary:read, pos:dash:stream:read, pos:dash:kpi:refresh
+- [x] Role mappings: Owner (5), Manager (4), Accountant (1), Supervisor (3)
+- [x] Seed: 5 permissions + role mappings + 1 KpiSnapshot + 1 KpiSubscription
+- [x] Unit tests: 13 in dashboards.service.spec.ts — all passing
+- [x] E2E tests: 14 in dashboards.e2e-spec.ts — all passing
+- [x] Postman: M19-Operational-Dashboards-KPI-Streams.postman_collection.json (16 requests)
+- [x] Docs updated: ARCHITECTURE.md, API_CONVENTIONS.md, MODULES.md, POSTMAN_ENDPOINT_GUIDE.md (new)
+- [x] Prisma generate: v5.22.0 client generated ✅
+- [x] Prisma migrate status: 23 migrations applied, schema up to date ✅
+- [x] Seed 2×: idempotent (0 created on second run) ✅
+- [x] Lint: 0 errors, 273 warnings (all pre-existing `no-explicit-any`) ✅
+- [x] Unit tests: 370/370 pass across 23 suites ✅
+- [x] E2E tests: 337/337 pass across 19 suites ✅
+- [x] Manual API: all 9 endpoints verified (owner, manager, today-summary, payment-mix, open-orders, low-stock, snapshots, kpi/refresh, stream/metrics)
+- [x] Permission denial: Chef gets 403 on owner/manager/refresh ✅
+- [x] Missing branch header: 400 ✅
+- [x] Unauthenticated: 401 ✅
+- [x] Postman contract: baseUrl=http://localhost:3001, all pm.environment.set/get, no violations ✅
+- [x] CI: .github/workflows/branch-validation.yml validated ✅
+- [x] M13.1 (MTN native) = PENDING
+- [x] M13.2 (Airtel native) = PENDING
+- [x] DONE: All verification gates confirmed ✅
+
+### M20+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

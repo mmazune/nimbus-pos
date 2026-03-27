@@ -219,6 +219,47 @@ nimbus-pos/
 │   │   │       │       ├── create-refund.dto.ts
 │   │   │       │       ├── approve-refund.dto.ts
 │   │   │       │       └── post-close-void.dto.ts
+│   │   │       ├── shifts/
+│   │   │       │   ├── shifts.module.ts
+│   │   │       │   ├── shifts.controller.ts
+│   │   │       │   ├── shifts.service.ts
+│   │   │       │   ├── shifts.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── tills/
+│   │   │       │   ├── tills.module.ts
+│   │   │       │   ├── tills.controller.ts
+│   │   │       │   ├── tills.service.ts
+│   │   │       │   ├── tills.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── reservations/
+│   │   │       │   ├── reservations.module.ts
+│   │   │       │   ├── reservations.controller.ts
+│   │   │       │   ├── reservations.service.ts
+│   │   │       │   ├── reservations.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── events/
+│   │   │       │   ├── events.module.ts
+│   │   │       │   ├── events.controller.ts
+│   │   │       │   ├── events.service.ts
+│   │   │       │   ├── events.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── analytics/
+│   │   │       │   ├── analytics.module.ts
+│   │   │       │   ├── analytics.controller.ts
+│   │   │       │   ├── analytics.service.ts
+│   │   │       │   ├── analytics.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── dashboards/
+│   │   │       │   ├── dashboards.module.ts
+│   │   │       │   ├── dashboards.controller.ts
+│   │   │       │   ├── dashboards.service.ts
+│   │   │       │   ├── dashboards.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── today-summary-query.dto.ts
+│   │   │       │       ├── dashboard-query.dto.ts
+│   │   │       │       ├── refresh-kpi.dto.ts
+│   │   │       │       └── stream-metrics-query.dto.ts
 │   │   │       └── tenancy/
 │   │   │           ├── tenancy.controller.ts
 │   │   │           ├── tenancy.module.ts
@@ -244,7 +285,12 @@ nimbus-pos/
 │   │       ├── recipes.e2e-spec.ts
 │   │       ├── refunds.e2e-spec.ts
 │   │       ├── settings.e2e-spec.ts
-│   │       └── tenancy.e2e-spec.ts
+│   │       ├── tenancy.e2e-spec.ts
+│   │       ├── shifts-tills.e2e-spec.ts
+│   │       ├── reservations.e2e-spec.ts
+│   │       ├── events.e2e-spec.ts
+│   │       ├── analytics.e2e-spec.ts
+│   │       └── dashboards.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -295,6 +341,16 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260325100000_m14_refunds_voids/
 │   │   │           └── migration.sql
+│   │   │       └── 20260325200000_m15_shifts_tills/
+│   │   │           └── migration.sql
+│   │   │       └── 20260326000000_m16_reservations_deposits/
+│   │   │           └── migration.sql
+│   │   │       └── 20260326100000_m17_events_booking_ticketing/
+│   │   │           └── migration.sql
+│   │   │       └── 20260326200000_m18_anomaly_detection/
+│   │   │           └── migration.sql
+│   │   │       └── 20260327100000_m19_dashboards_kpi_streams/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -329,7 +385,12 @@ nimbus-pos/
     │   ├── M12-Discounts-Approval-Workflow.postman_collection.json
     │   ├── M13-Payments-Cash-Card-MOMO.postman_collection.json
     │   ├── M13_1-MTN-Native-Manual-Reference.postman_collection.json
-    │   └── M14-Refunds-Voids.postman_collection.json
+    │   ├── M14-Refunds-Voids.postman_collection.json
+    │   ├── M15-Shifts-Tills-Reconciliation.postman_collection.json
+    │   ├── M16-Reservations-Deposits-Seating.postman_collection.json
+    │   ├── M17-Events-Booking-Portal-Ticketing.postman_collection.json
+    │   ├── M18-Anomaly-Detection-Anti-Theft.postman_collection.json
+    │   └── M19-Operational-Dashboards-KPI-Streams.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```
