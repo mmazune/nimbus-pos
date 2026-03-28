@@ -15,27 +15,56 @@
         ]
     },
     "variable": [
-        { "key": "baseUrl", "value": "http://localhost:3001" },
-        { "key": "accessToken", "value": "" },
-        { "key": "branchId", "value": "" },
-        { "key": "feedbackRequestId", "value": "" },
-        { "key": "feedbackToken", "value": "" },
-        { "key": "feedbackId", "value": "" }
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "feedbackRequestId",
+            "value": ""
+        },
+        {
+            "key": "feedbackToken",
+            "value": ""
+        },
+        {
+            "key": "feedbackId",
+            "value": ""
+        }
     ],
     "item": [
         {
             "name": "Auth — Login (Owner)",
             "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "auth", "login"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
                 }
             },
             "event": [
@@ -55,11 +84,21 @@
             "name": "Get /me — Capture branchId",
             "request": {
                 "method": "GET",
-                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
                 "url": {
                     "raw": "{{baseUrl}}/api/me",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "me"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
                 }
             },
             "event": [
@@ -81,9 +120,18 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -91,8 +139,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/requests",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "requests"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "requests"
+                    ]
                 }
             },
             "event": [
@@ -116,13 +170,25 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/requests",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "requests"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "requests"
+                    ]
                 }
             },
             "event": [
@@ -144,8 +210,16 @@
                 "header": [],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/public/token/{{feedbackToken}}",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "public", "token", "{{feedbackToken}}"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "public",
+                        "token",
+                        "{{feedbackToken}}"
+                    ]
                 }
             },
             "event": [
@@ -166,15 +240,26 @@
             "name": "POST /feedback/public — Submit Feedback",
             "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
                 "body": {
                     "mode": "raw",
                     "raw": "{\n  \"token\": \"{{feedbackToken}}\",\n  \"rating\": 5,\n  \"npsScore\": 9,\n  \"comment\": \"Excellent service from Postman test!\",\n  \"customerName\": \"Postman Tester\"\n}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/public",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "public"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "public"
+                    ]
                 }
             },
             "event": [
@@ -198,13 +283,24 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback"
+                    ]
                 }
             },
             "event": [
@@ -226,13 +322,25 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/{{feedbackId}}",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "{{feedbackId}}"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "{{feedbackId}}"
+                    ]
                 }
             },
             "event": [
@@ -254,9 +362,18 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -264,8 +381,15 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/{{feedbackId}}/tag",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "{{feedbackId}}", "tag"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "{{feedbackId}}",
+                        "tag"
+                    ]
                 }
             },
             "event": [
@@ -286,13 +410,25 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/tags",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "tags"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "tags"
+                    ]
                 }
             },
             "event": [
@@ -312,13 +448,26 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/{{feedbackId}}/acknowledge",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "{{feedbackId}}", "acknowledge"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "{{feedbackId}}",
+                        "acknowledge"
+                    ]
                 }
             },
             "event": [
@@ -339,9 +488,18 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" },
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -349,8 +507,15 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/{{feedbackId}}/resolve",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "{{feedbackId}}", "resolve"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "{{feedbackId}}",
+                        "resolve"
+                    ]
                 }
             },
             "event": [
@@ -371,13 +536,25 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/nps-summary",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "nps-summary"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "nps-summary"
+                    ]
                 }
             },
             "event": [
@@ -400,13 +577,27 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/feedback/requests/{{feedbackRequestId}}/cancel",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "feedback", "requests", "{{feedbackRequestId}}", "cancel"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "feedback",
+                        "requests",
+                        "{{feedbackRequestId}}",
+                        "cancel"
+                    ]
                 }
             },
             "event": [
