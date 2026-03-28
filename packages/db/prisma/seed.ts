@@ -262,6 +262,16 @@ const PERMISSIONS_DATA = [
     { action: 'pos:reports:events:generate', description: 'Generate events summary report (extended)' },
     { action: 'pos:reports:staff-operations:generate', description: 'Generate staff / operator operations report' },
     { action: 'pos:reports:catalog:read', description: 'Read the report catalog (implemented / pending)' },
+    // ── M21: Customer Feedback + NPS + QR Follow-up ──
+    { action: 'pos:feedback:read', description: 'List and view customer feedback' },
+    { action: 'pos:feedback:request:create', description: 'Create feedback requests (QR / SMS / email)' },
+    { action: 'pos:feedback:tag', description: 'Add tags to feedback entries' },
+    { action: 'pos:feedback:acknowledge', description: 'Acknowledge feedback entries' },
+    { action: 'pos:feedback:resolve', description: 'Resolve feedback entries' },
+    { action: 'pos:feedback:nps:read', description: 'View NPS summary and analytics' },
+    { action: 'pos:feedback:request:cancel', description: 'Cancel pending feedback requests' },
+    { action: 'pos:feedback:public:token:read', description: 'Public: look up feedback token (no auth)' },
+    { action: 'pos:feedback:analytics:read', description: 'View feedback analytics and trends' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -409,6 +419,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:events:generate',
         'pos:reports:staff-operations:generate',
         'pos:reports:catalog:read',
+        // M21: Customer Feedback + NPS + QR Follow-up
+        'pos:feedback:read',
+        'pos:feedback:request:create',
+        'pos:feedback:tag',
+        'pos:feedback:acknowledge',
+        'pos:feedback:resolve',
+        'pos:feedback:nps:read',
+        'pos:feedback:request:cancel',
+        'pos:feedback:analytics:read',
     ],
     Manager: [
         'identity:user:read',
@@ -525,6 +544,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:events:generate',
         'pos:reports:staff-operations:generate',
         'pos:reports:catalog:read',
+        // M21: Customer Feedback + NPS + QR Follow-up
+        'pos:feedback:read',
+        'pos:feedback:request:create',
+        'pos:feedback:tag',
+        'pos:feedback:acknowledge',
+        'pos:feedback:resolve',
+        'pos:feedback:nps:read',
+        'pos:feedback:request:cancel',
+        'pos:feedback:analytics:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -563,6 +591,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:cash-movements:generate',
         'pos:reports:stock-variance:generate',
         'pos:reports:catalog:read',
+        // M21: Customer Feedback (Accountant: read-only)
+        'pos:feedback:read',
+        'pos:feedback:nps:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -662,6 +693,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reports:low-stock:generate',
         'pos:reports:staff-operations:generate',
         'pos:reports:catalog:read',
+        // M21: Customer Feedback + NPS + QR Follow-up
+        'pos:feedback:read',
+        'pos:feedback:request:create',
+        'pos:feedback:tag',
+        'pos:feedback:acknowledge',
+        'pos:feedback:resolve',
+        'pos:feedback:nps:read',
+        'pos:feedback:request:cancel',
+        'pos:feedback:analytics:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -706,6 +746,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:event:ticket:read',
         'pos:event:checkin',
         'pos:event:portal:read',
+        // M21: Customer Feedback (Cashier: create requests + read)
+        'pos:feedback:read',
+        'pos:feedback:request:create',
     ],
     Chef: [
         'identity:user:read',
@@ -769,6 +812,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:event:ticket:read',
         'pos:event:checkin',
         'pos:event:portal:read',
+        // M21: Customer Feedback (Waiter: create requests + read)
+        'pos:feedback:read',
+        'pos:feedback:request:create',
     ],
     Bartender: [
         'identity:user:read',
@@ -819,6 +865,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:reservation:deposit:read',
         'pos:reservation:update',
         'pos:reservation:table:assign',
+        // M21: Customer Feedback (Event Manager: read + create requests + NPS)
+        'pos:feedback:read',
+        'pos:feedback:request:create',
+        'pos:feedback:nps:read',
     ],
 };
 

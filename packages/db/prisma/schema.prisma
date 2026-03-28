@@ -20,6 +20,7 @@
 // M18 models: AnomalyRule, RiskThreshold, AnomalyEvent, StaffRiskSnapshot + AnomalyRuleStatus, AnomalyRuleType, AnomalySeverity, AnomalyEventStatus, RiskEntityType enums
 // M19 models: KpiSnapshot, KpiSubscription + KpiScopeType, KpiMetricWindow, KpiSubscriptionStatus enums
 // M20 models: ReportRun, ExportArtifact + ReportType, ReportWindow, ExportFormat, ReportRunStatus, ExportArtifactStatus enums
+// M21 models: Feedback, FeedbackTag, NpsSummary, FeedbackRequest + FeedbackStatus, FeedbackSource, FeedbackSentiment, FeedbackRequestStatus, NpsBucket enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -197,6 +198,11 @@ model User {
     // M20 — Reports + Exports
     reportRunsRequested     ReportRun[]          @relation("ReportRunRequestedBy")
     exportArtifactsGenerated ExportArtifact[]    @relation("ExportArtifactGeneratedBy")
+    // M21 — Feedback + NPS
+    feedbacksAcknowledged   Feedback[]           @relation("FeedbackAcknowledgedBy")
+    feedbacksResolved       Feedback[]           @relation("FeedbackResolvedBy")
+    feedbackTagsCreated     FeedbackTag[]        @relation("FeedbackTagCreatedBy")
+    feedbackRequestsCreated FeedbackRequest[]    @relation("FeedbackRequestCreatedBy")
 
     @@map("users")
 }
@@ -388,6 +394,11 @@ model Organization {
     // M20 — Reports + Exports
     reportRuns          ReportRun[]
     exportArtifacts     ExportArtifact[]
+    // M21 — Feedback + NPS
+    feedbacks           Feedback[]
+    feedbackTags        FeedbackTag[]
+    npsSummaries        NpsSummary[]
+    feedbackRequests    FeedbackRequest[]
 
     @@map("organizations")
 }
@@ -453,6 +464,11 @@ model Branch {
     // M20 — Reports + Exports
     reportRuns          ReportRun[]
     exportArtifacts     ExportArtifact[]
+    // M21 — Feedback + NPS
+    feedbacks           Feedback[]
+    feedbackTags        FeedbackTag[]
+    npsSummaries        NpsSummary[]
+    feedbackRequests    FeedbackRequest[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -1037,6 +1053,9 @@ model Order {
     paymentIntents PaymentIntent[]
     refunds        Refund[]
     reservations   Reservation[]
+    // M21 — Feedback
+    feedbacks      Feedback[]
+    feedbackRequests FeedbackRequest[]
 
     @@unique([branchId, orderNumber])
     @@index([orgId])
@@ -1667,6 +1686,9 @@ model Reservation {
     deposits      ReservationDeposit[]
     events        ReservationEvent[]
     eventBookings EventBooking[]
+    // M21 — Feedback
+    feedbacks         Feedback[]
+    feedbackRequests  FeedbackRequest[]
 
     @@unique([branchId, reservationNumber])
     @@index([orgId])
@@ -1821,6 +1843,9 @@ model Event {
     tickets       EventTicket[]
     checkIns      EventCheckIn[]
     auditLogs     EventAuditLog[]
+    // M21 — Feedback
+    feedbacks         Feedback[]
+    feedbackRequests  FeedbackRequest[]
 
     @@unique([branchId, eventNumber])
     @@index([orgId])
@@ -2436,4 +2461,197 @@ model ExportArtifact {
     @@index([createdAt])
     @@index([orgId, branchId, reportRunId, format])
     @@map("export_artifacts")
+}
+
+// ── Enums (M21) ──
+
+enum FeedbackStatus {
+    NEW
+    ACKNOWLEDGED
+    RESOLVED
+    DISMISSED
+}
+
+enum FeedbackSource {
+    QR
+    ORDER_LINK
+    RESERVATION_LINK
+    EVENT_LINK
+    MANUAL
+    OTHER
+}
+
+enum FeedbackSentiment {
+    POSITIVE
+    NEUTRAL
+    NEGATIVE
+    CRITICAL
+}
+
+enum FeedbackRequestStatus {
+    PENDING
+    OPENED
+    SUBMITTED
+    EXPIRED
+    CANCELLED
+}
+
+enum NpsBucket {
+    DETRACTOR
+    PASSIVE
+    PROMOTER
+}
+
+// ── M21 Models ──
+
+/// Customer feedback entry linked to an order, reservation, or event.
+model Feedback {
+    id                String            @id @default(cuid())
+    orgId             String            @map("org_id")
+    branchId          String            @map("branch_id")
+    orderId           String?           @map("order_id")
+    reservationId     String?           @map("reservation_id")
+    eventId           String?           @map("event_id")
+    feedbackRequestId String?           @map("feedback_request_id")
+    customerName      String?           @map("customer_name")
+    customerPhone     String?           @map("customer_phone")
+    customerEmail     String?           @map("customer_email")
+    source            FeedbackSource
+    rating            Int?
+    npsScore          Int?              @map("nps_score")
+    npsBucket         NpsBucket?        @map("nps_bucket")
+    sentiment         FeedbackSentiment
+    comment           String?
+    status            FeedbackStatus    @default(NEW)
+    submittedAt       DateTime          @map("submitted_at")
+    acknowledgedById  String?           @map("acknowledged_by_id")
+    acknowledgedAt    DateTime?         @map("acknowledged_at")
+    resolvedById      String?           @map("resolved_by_id")
+    resolvedAt        DateTime?         @map("resolved_at")
+    resolutionNotes   String?           @map("resolution_notes")
+    metadata          Json?
+    createdAt         DateTime          @default(now()) @map("created_at")
+    updatedAt         DateTime          @updatedAt @map("updated_at")
+
+    organization    Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch          Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    order           Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+    reservation     Reservation?     @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+    event           Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
+    feedbackRequest FeedbackRequest? @relation(fields: [feedbackRequestId], references: [id], onDelete: SetNull)
+    acknowledgedBy  User?            @relation("FeedbackAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+    resolvedBy      User?            @relation("FeedbackResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+    tags            FeedbackTag[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([orderId])
+    @@index([reservationId])
+    @@index([eventId])
+    @@index([feedbackRequestId])
+    @@index([status])
+    @@index([source])
+    @@index([sentiment])
+    @@index([submittedAt])
+    @@index([orgId, branchId, status])
+    @@index([orgId, branchId, sentiment])
+    @@map("feedbacks")
+}
+
+/// Tag applied to a feedback entry for categorization.
+model FeedbackTag {
+    id          String   @id @default(cuid())
+    orgId       String   @map("org_id")
+    branchId    String?  @map("branch_id")
+    feedbackId  String   @map("feedback_id")
+    tagKey      String   @map("tag_key")
+    tagLabel    String   @map("tag_label")
+    createdById String   @map("created_by_id")
+    metadata    Json?
+    createdAt   DateTime @default(now()) @map("created_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    feedback     Feedback     @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+    createdBy    User         @relation("FeedbackTagCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+    @@unique([feedbackId, tagKey])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([feedbackId])
+    @@index([tagKey])
+    @@map("feedback_tags")
+}
+
+/// NPS summary rollup for a given window + branch.
+model NpsSummary {
+    id             String   @id @default(cuid())
+    orgId          String   @map("org_id")
+    branchId       String?  @map("branch_id")
+    windowStart    DateTime @map("window_start")
+    windowEnd      DateTime @map("window_end")
+    totalResponses Int      @default(0) @map("total_responses")
+    promoters      Int      @default(0)
+    passives       Int      @default(0)
+    detractors     Int      @default(0)
+    npsScore       Decimal  @default(0) @map("nps_score") @db.Decimal(10, 2)
+    avgRating      Decimal? @map("avg_rating") @db.Decimal(10, 2)
+    negativeCount  Int      @default(0) @map("negative_count")
+    criticalCount  Int      @default(0) @map("critical_count")
+    calculatedAt   DateTime @map("calculated_at")
+    metadata       Json?
+    createdAt      DateTime @default(now()) @map("created_at")
+    updatedAt      DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([windowStart, windowEnd])
+    @@index([orgId, branchId, windowStart, windowEnd])
+    @@map("nps_summaries")
+}
+
+/// A feedback request sent via QR / tokenized link to solicit customer feedback.
+model FeedbackRequest {
+    id             String                @id @default(cuid())
+    orgId          String                @map("org_id")
+    branchId       String                @map("branch_id")
+    orderId        String?               @map("order_id")
+    reservationId  String?               @map("reservation_id")
+    eventId        String?               @map("event_id")
+    token          String                @unique
+    source         FeedbackSource
+    status         FeedbackRequestStatus @default(PENDING)
+    customerName   String?               @map("customer_name")
+    customerPhone  String?               @map("customer_phone")
+    customerEmail  String?               @map("customer_email")
+    sentAt         DateTime?             @map("sent_at")
+    openedAt       DateTime?             @map("opened_at")
+    submittedAt    DateTime?             @map("submitted_at")
+    expiresAt      DateTime?             @map("expires_at")
+    createdById    String?               @map("created_by_id")
+    metadata       Json?
+    createdAt      DateTime              @default(now()) @map("created_at")
+    updatedAt      DateTime              @updatedAt @map("updated_at")
+
+    organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    order        Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+    reservation  Reservation?     @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+    event        Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
+    createdBy    User?            @relation("FeedbackRequestCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+    feedbacks    Feedback[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([orderId])
+    @@index([reservationId])
+    @@index([eventId])
+    @@index([token])
+    @@index([status])
+    @@index([source])
+    @@index([orgId, branchId, status])
+    @@map("feedback_requests")
 }

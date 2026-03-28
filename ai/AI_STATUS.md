@@ -3,12 +3,12 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M20.1 ✅
-- Last completed milestone: M20.1 — Reporting Depth Expansion + M20 Finalization
-- Next milestone: M21 — TBD
+- Current milestone: M21 ✅
+- Last completed milestone: M21 — Customer Feedback + NPS + QR Follow-up
+- Next milestone: M22 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
-- Date updated: 2026-03-28
+- Date updated: 2026-03-29
 
 ## Environment
 
@@ -565,6 +565,25 @@
 - [x] DONE: All M20.1 verification gates confirmed ✅
 
 ### M21+
+
+### M21 — Customer Feedback + NPS + QR Follow-up ✅
+
+- [x] Prisma schema: 5 enums + 4 models (Feedback, FeedbackTag, NpsSummary, FeedbackRequest)
+- [x] Migration #26: `20260329000000_m21_feedback_nps_qr_followup`
+- [x] DTOs: 7 + barrel export
+- [x] Service: `feedback.service.ts` — 15 methods
+- [x] Admin controller: 10 endpoints (auth + branch-scoped)
+- [x] Public controller: 2 endpoints (no auth, token-protected)
+- [x] Module registered in `app.module.ts`
+- [x] Permissions: 9 new (pos:feedback:*)
+- [x] Role-permission matrix: 33 new mappings
+- [x] Unit tests: 34 passing
+- [x] E2e tests: 25 passing
+- [x] Seed: idempotent (permissions + role mappings)
+- [x] Postman collection: M21-Customer-Feedback-NPS-QR-Followup
+- [x] TypeScript: 0 errors
+
+### M22+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

@@ -23,6 +23,7 @@ import { EventsModule } from './modules/events/events.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardsModule } from './modules/dashboards/dashboards.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     AnalyticsModule,
     DashboardsModule,
     ReportsModule,
+    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [AppService],

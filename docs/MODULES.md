@@ -34,7 +34,7 @@
 | **Dashboards / KPIs**               | `apps/api/src/modules/dashboards/`   | M19       | ✅ Implemented |
 | **Reports / Exports**               | `apps/api/src/modules/reports/`      | M20       | ✅ Implemented |
 | **Reports — Depth Expansion**       | `apps/api/src/modules/reports/`      | M20.1     | ✅ Implemented |
-| **Feedback / NPS**                  | `apps/api/src/modules/feedback/`     | M25       | ⬜ Planned     |
+| **Feedback / NPS**                  | `apps/api/src/modules/feedback/`     | M21       | ✅ Implemented |
 | **Documents / Uploads**             | `apps/api/src/modules/documents/`    | M26       | ⬜ Planned     |
 | **HR / Employees**                  | `apps/api/src/modules/hr/`           | M27–M28   | ⬜ Planned     |
 | **Scheduling / Roster**             | `apps/api/src/modules/hr/`           | M29       | ⬜ Planned     |
