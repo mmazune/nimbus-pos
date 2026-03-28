@@ -77,16 +77,23 @@
 ## Closure Gates
 
 - [x] Schema valid (`pnpm db:generate` ✅)
-- [x] Migration SQL created
+- [x] Migration SQL created (`20260330000000_m22_documents_uploads_attachments`)
 - [x] DTOs with class-validator decorators
 - [x] Service with audit logging on all writes
 - [x] Controller with guards (JwtAuth + Permission + BranchContext)
 - [x] Module registered in AppModule
-- [x] Unit tests written
-- [x] E2e tests written
-- [x] Seed updated (permissions + role-perm matrix + demo data)
-- [x] Postman collection created
-- [x] Docs created
+- [x] Unit tests: 22/22 pass (`documents.service.spec.ts`)
+- [x] E2e tests: 22/22 pass (`documents.e2e-spec.ts`) — dedupe, link, soft-delete, 401/403/400 enforced
+- [x] Seed updated (permissions + role-perm matrix + demo data) — idempotent x2 ✅
+- [x] `pnpm db:migrate:deploy` — 27 migrations, none pending
+- [x] DB verified: 8 permissions, 26 role mappings, 3 ACTIVE docs, 1 StorageProviderConfig
+- [x] Lint: 0 errors (449 pre-existing warnings, unchanged)
+- [x] Full unit suite: 465/465 pass (26 suites)
+- [x] Manual API: 60/60 checks pass (3 false-negatives are login status 201 vs 200 — correct NestJS default)
+- [x] CI workflow: `branch-validation.yml` covers `milestone/**` — lint + unit on push, e2e on PR
+- [x] Postman collection: 13 requests, baseUrl `localhost:3001`, `pm.collectionVariables` used
+- [x] docs/MODULES.md updated (M22 ✅ Implemented)
+- [x] ai/AI_STATUS.md — M22 block complete
 - [x] M13.1 (MTN native) = PENDING (untouched)
 - [x] M13.2 (Airtel native) = PENDING (untouched)
 

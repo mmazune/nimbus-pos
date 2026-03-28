@@ -33,6 +33,23 @@ describe('Documents + Uploads + Attachments (e2e)', () => {
     );
     await app.init();
 
+    // Clean up any non-seeded documents left from previous runs
+    const prisma = moduleFixture.get(PrismaService);
+    const seededChecksums = [
+      'sha256-seed-receipt-001',
+      'sha256-seed-invoice-001',
+      'sha256-seed-contract-001',
+    ];
+    const stale = await prisma.document.findMany({
+      where: { checksum: { notIn: seededChecksums } },
+      select: { id: true },
+    });
+    if (stale.length > 0) {
+      const staleIds = stale.map((d) => d.id);
+      await prisma.documentLink.deleteMany({ where: { documentId: { in: staleIds } } });
+      await prisma.document.deleteMany({ where: { id: { in: staleIds } } });
+    }
+
     // Login as owner (has all permissions)
     const ownerLogin = await request(app.getHttpServer())
       .post('/api/auth/login')
