@@ -106,19 +106,8 @@
                     }
                 ],
                 "body": {
-                    "mode": "formdata",
-                    "formdata": [
-                        {
-                            "key": "file",
-                            "type": "file",
-                            "src": ""
-                        },
-                        {
-                            "key": "documentType",
-                            "value": "RECEIPT",
-                            "type": "text"
-                        }
-                    ]
+                    "mode": "raw",
+                    "raw": ""
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/upload",
@@ -128,13 +117,53 @@
             },
             "event": [
                 {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "// Collection Runner cannot attach binary files via formdata src.",
+                            "// Build a raw multipart body inline and send via pm.sendRequest.",
+                            "const boundary = '----PostmanM22UploadBoundary';",
+                            "const nl = '\\r\\n';",
+                            "const parts = [",
+                            "  '--' + boundary,",
+                            "  'Content-Disposition: form-data; name=\"documentType\"',",
+                            "  '',",
+                            "  'RECEIPT',",
+                            "  '--' + boundary,",
+                            "  'Content-Disposition: form-data; name=\"file\"; filename=\"pm-test-receipt.pdf\"',",
+                            "  'Content-Type: application/octet-stream',",
+                            "  '',",
+                            "  'Postman M22 test receipt file content for upload verification',",
+                            "  '--' + boundary + '--'",
+                            "];",
+                            "pm.sendRequest({",
+                            "  url: pm.variables.get('baseUrl') + '/api/documents/upload',",
+                            "  method: 'POST',",
+                            "  header: {",
+                            "    'Authorization': 'Bearer ' + pm.environment.get('accessToken'),",
+                            "    'X-Branch-Id': pm.environment.get('branchId'),",
+                            "    'Content-Type': 'multipart/form-data; boundary=----PostmanM22UploadBoundary'",
+                            "  },",
+                            "  body: { mode: 'raw', raw: parts.join(nl) }",
+                            "}, function(err, res) {",
+                            "  if (err) { console.error('Upload prereq error:', err); return; }",
+                            "  const json = res.json();",
+                            "  pm.environment.set('_uploadCode', String(res.code));",
+                            "  if (json.document && json.document.id) {",
+                            "    pm.environment.set('documentId', json.document.id);",
+                            "  }",
+                            "});"
+                        ]
+                    }
+                },
+                {
                     "listen": "test",
                     "script": {
                         "exec": [
-                            "const json = pm.response.json();",
-                            "if (json.document) pm.environment.set('documentId', json.document.id);",
-                            "pm.test('Upload OK', () => pm.response.to.have.status(201));",
-                            "pm.test('Has document', () => pm.expect(json.document).to.have.property('id'));"
+                            "const code = parseInt(pm.environment.get('_uploadCode') || '0');",
+                            "const docId = pm.environment.get('documentId');",
+                            "pm.test('Upload OK', () => pm.expect(code).to.equal(201));",
+                            "pm.test('Has document', () => pm.expect(docId).to.be.a('string').and.not.empty);"
                         ]
                     }
                 }
