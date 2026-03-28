@@ -26,6 +26,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { HrModule } from './modules/hr/hr.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { HrModule } from './modules/hr/hr.module';
     FeedbackModule,
     DocumentsModule,
     HrModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

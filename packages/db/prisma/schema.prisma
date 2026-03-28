@@ -23,6 +23,7 @@
 // M21 models: Feedback, FeedbackTag, NpsSummary, FeedbackRequest + FeedbackStatus, FeedbackSource, FeedbackSentiment, FeedbackRequestStatus, NpsBucket enums
 // M22 models: Document, DocumentLink, StorageProviderConfig + DocumentStatus, DocumentType, DocumentLinkType, StorageProviderType enums
 // M23 models: Employee, EmploymentContract, Position, CompensationProfile + EmployeeStatus, EmploymentType, ContractStatus, SalaryBasis enums
+// M24 models: AttendanceRecord, LeaveRequest, ShiftSwapRequest, AttendancePolicy + AttendanceStatus, LeaveRequestStatus, LeaveType, ShiftSwapStatus enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -213,6 +214,11 @@ model User {
     employee                Employee?            @relation("EmployeeUser")
     contractsCreated        EmploymentContract[] @relation("ContractCreatedBy")
     contractsUpdated        EmploymentContract[] @relation("ContractUpdatedBy")
+    // M24 — Attendance + Leave + Shift Swaps
+    attendanceRecords       AttendanceRecord[]   @relation("AttendanceUser")
+    leaveRequestsRequested  LeaveRequest[]       @relation("LeaveRequestedBy")
+    leaveRequestsReviewed   LeaveRequest[]       @relation("LeaveReviewedBy")
+    shiftSwapsApproved      ShiftSwapRequest[]   @relation("ShiftSwapApprovedBy")
 
     @@map("users")
 }
@@ -418,6 +424,11 @@ model Organization {
     employmentContracts    EmploymentContract[]
     positions              Position[]
     compensationProfiles   CompensationProfile[]
+    // M24 — Attendance + Leave + Shift Swaps
+    attendanceRecords      AttendanceRecord[]
+    leaveRequests          LeaveRequest[]
+    shiftSwapRequests      ShiftSwapRequest[]
+    attendancePolicies     AttendancePolicy[]
 
     @@map("organizations")
 }
@@ -496,6 +507,11 @@ model Branch {
     employmentContracts EmploymentContract[]
     positions           Position[]
     compensationProfiles CompensationProfile[]
+    // M24 — Attendance + Leave + Shift Swaps
+    attendanceRecords   AttendanceRecord[]
+    leaveRequests       LeaveRequest[]
+    shiftSwapRequests   ShiftSwapRequest[]
+    attendancePolicies  AttendancePolicy[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2880,6 +2896,11 @@ model Employee {
     position            Position?             @relation(fields: [positionId], references: [id], onDelete: SetNull)
     compensationProfile CompensationProfile?  @relation(fields: [compensationProfileId], references: [id], onDelete: SetNull)
     contracts           EmploymentContract[]
+    // M24 — Attendance + Leave + Shift Swaps
+    attendanceRecords   AttendanceRecord[]
+    leaveRequests       LeaveRequest[]       @relation("LeaveRequestEmployee")
+    shiftSwapsRequested ShiftSwapRequest[]   @relation("ShiftSwapRequester")
+    shiftSwapsTargeted  ShiftSwapRequest[]   @relation("ShiftSwapTarget")
 
     @@unique([orgId, employeeCode])
     @@index([orgId])
@@ -2979,4 +3000,167 @@ model CompensationProfile {
     @@index([active])
     @@index([salaryBasis])
     @@map("compensation_profiles")
+}
+
+// ── M24 Enums ──
+
+enum AttendanceStatus {
+    CLOCKED_IN
+    CLOCKED_OUT
+    LATE
+    ABSENT
+    ON_LEAVE
+}
+
+enum LeaveRequestStatus {
+    PENDING
+    APPROVED
+    REJECTED
+    CANCELLED
+}
+
+enum LeaveType {
+    ANNUAL
+    SICK
+    UNPAID
+    EMERGENCY
+    OTHER
+}
+
+enum ShiftSwapStatus {
+    PENDING
+    APPROVED
+    REJECTED
+    CANCELLED
+}
+
+// ── M24 Models ──
+
+/// Attendance record for a single employee on a date. Tracks clock in/out, lateness, and policy.
+model AttendanceRecord {
+    id              String           @id @default(cuid())
+    orgId           String           @map("org_id")
+    branchId        String           @map("branch_id")
+    employeeId      String           @map("employee_id")
+    userId          String?          @map("user_id")
+    attendanceDate  DateTime         @map("attendance_date") @db.Date
+    clockInAt       DateTime?        @map("clock_in_at")
+    clockOutAt      DateTime?        @map("clock_out_at")
+    status          AttendanceStatus
+    lateMinutes     Int              @default(0) @map("late_minutes")
+    policyId        String?          @map("policy_id")
+    notes           String?
+    metadata        Json?
+    createdAt       DateTime         @default(now()) @map("created_at")
+    updatedAt       DateTime         @updatedAt @map("updated_at")
+
+    organization    Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch          Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    user            User?             @relation("AttendanceUser", fields: [userId], references: [id], onDelete: SetNull)
+    policy          AttendancePolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+
+    @@unique([employeeId, attendanceDate])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([employeeId])
+    @@index([userId])
+    @@index([attendanceDate])
+    @@index([status])
+    @@index([policyId])
+    @@index([orgId, branchId, attendanceDate])
+    @@map("attendance_records")
+}
+
+/// Leave request submitted by an employee.
+model LeaveRequest {
+    id              String             @id @default(cuid())
+    orgId           String             @map("org_id")
+    branchId        String?            @map("branch_id")
+    employeeId      String             @map("employee_id")
+    leaveType       LeaveType          @map("leave_type")
+    startsAt        DateTime           @map("starts_at") @db.Date
+    endsAt          DateTime           @map("ends_at") @db.Date
+    reason          String?
+    status          LeaveRequestStatus @default(PENDING)
+    requestedById   String             @map("requested_by_id")
+    reviewedById    String?            @map("reviewed_by_id")
+    reviewedAt      DateTime?          @map("reviewed_at")
+    reviewNotes     String?            @map("review_notes")
+    metadata        Json?
+    createdAt       DateTime           @default(now()) @map("created_at")
+    updatedAt       DateTime           @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employee     Employee     @relation("LeaveRequestEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+    requestedBy  User         @relation("LeaveRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+    reviewedBy   User?        @relation("LeaveReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([employeeId])
+    @@index([leaveType])
+    @@index([status])
+    @@index([requestedById])
+    @@index([orgId, branchId, status])
+    @@map("leave_requests")
+}
+
+/// Shift swap request between two employees.
+model ShiftSwapRequest {
+    id                    String         @id @default(cuid())
+    orgId                 String         @map("org_id")
+    branchId              String         @map("branch_id")
+    requesterEmployeeId   String         @map("requester_employee_id")
+    targetEmployeeId      String         @map("target_employee_id")
+    shiftDate             DateTime       @map("shift_date") @db.Date
+    reason                String?
+    status                ShiftSwapStatus @default(PENDING)
+    approvedById          String?        @map("approved_by_id")
+    approvedAt            DateTime?      @map("approved_at")
+    reviewNotes           String?        @map("review_notes")
+    metadata              Json?
+    createdAt             DateTime       @default(now()) @map("created_at")
+    updatedAt             DateTime       @updatedAt @map("updated_at")
+
+    organization  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch        Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    requester     Employee     @relation("ShiftSwapRequester", fields: [requesterEmployeeId], references: [id], onDelete: Cascade)
+    target        Employee     @relation("ShiftSwapTarget", fields: [targetEmployeeId], references: [id], onDelete: Cascade)
+    approvedBy    User?        @relation("ShiftSwapApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([requesterEmployeeId])
+    @@index([targetEmployeeId])
+    @@index([shiftDate])
+    @@index([status])
+    @@index([orgId, branchId, status])
+    @@map("shift_swap_requests")
+}
+
+/// Attendance policy for an organization or branch. Defines grace/late rules.
+model AttendancePolicy {
+    id                      String   @id @default(cuid())
+    orgId                   String   @map("org_id")
+    branchId                String?  @map("branch_id")
+    name                    String
+    graceMinutes            Int      @default(0) @map("grace_minutes")
+    autoLateAfterMinutes    Int?     @map("auto_late_after_minutes")
+    allowSelfClockOutFix    Boolean  @default(false) @map("allow_self_clock_out_fix")
+    active                  Boolean  @default(true)
+    metadata                Json?
+    createdAt               DateTime @default(now()) @map("created_at")
+    updatedAt               DateTime @updatedAt @map("updated_at")
+
+    organization    Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch          Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    attendanceRecords AttendanceRecord[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([active])
+    @@index([orgId, branchId, active])
+    @@map("attendance_policies")
 }
