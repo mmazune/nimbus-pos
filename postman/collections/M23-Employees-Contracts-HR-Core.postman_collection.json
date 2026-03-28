@@ -1,0 +1,428 @@
+{
+    "info": {
+        "name": "M23 — Employees + Contracts + HR Core",
+        "description": "Nimbus POS M23: Employee master data, employment contracts, positions, and compensation profiles.\n\n## Endpoints\n- POST /hr/employees — Create employee\n- GET /hr/employees — List employees (paginated, filterable)\n- GET /hr/employees/:id — Get employee by ID (with contracts)\n- PATCH /hr/employees/:id — Update employee\n- POST /hr/contracts — Create employment contract\n- GET /hr/contracts — List contracts (filterable)\n- POST /hr/positions — Create position\n- GET /hr/positions — List positions\n- POST /hr/compensation-profiles — Create compensation profile\n- GET /hr/compensation-profiles — List compensation profiles",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "positionId",
+            "value": ""
+        },
+        {
+            "key": "compensationProfileId",
+            "value": ""
+        },
+        {
+            "key": "employeeId",
+            "value": ""
+        },
+        {
+            "key": "contractId",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth — Login (Owner)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "auth", "login"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Login OK', () => pm.response.to.have.status(201));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Auth — Get Branch ID",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "me"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "const bid = json.defaultBranch?.id || json.organizations?.[0]?.branches?.[0]?.id || json.branches?.[0]?.id || json.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);",
+                            "pm.test('Got branch ID', () => pm.expect(bid).to.be.a('string'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Position (Head Chef)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"PM-HEAD-CHEF\",\n  \"title\": \"Head Chef\",\n  \"department\": \"Kitchen\",\n  \"level\": \"Senior\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/positions",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "positions"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('positionId', json.id);",
+                            "pm.test('Position created', () => pm.response.to.have.status(201));",
+                            "pm.test('Has code', () => pm.expect(json.code).to.eql('PM-HEAD-CHEF'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Positions",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/positions",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "positions"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Positions listed', () => pm.response.to.have.status(200));",
+                            "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Compensation Profile (Monthly Standard)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"PM-MONTHLY-STD\",\n  \"salaryBasis\": \"MONTHLY\",\n  \"baseAmount\": 3000000,\n  \"currency\": \"UGX\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/compensation-profiles",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "compensation-profiles"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('compensationProfileId', json.id);",
+                            "pm.test('Profile created', () => pm.response.to.have.status(201));",
+                            "pm.test('Has code', () => pm.expect(json.code).to.eql('PM-MONTHLY-STD'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Compensation Profiles",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/compensation-profiles",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "compensation-profiles"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Profiles listed', () => pm.response.to.have.status(200));",
+                            "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Employee (Permanent Chef)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Chef\",\n  \"hireDate\": \"2024-01-15\",\n  \"employmentType\": \"PERMANENT\",\n  \"positionId\": \"{{positionId}}\",\n  \"compensationProfileId\": \"{{compensationProfileId}}\",\n  \"phone\": \"+256700999999\",\n  \"email\": \"postman.chef@nimbus.local\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('employeeId', json.id);",
+                            "pm.test('Employee created', () => pm.response.to.have.status(201));",
+                            "pm.test('Has employeeCode', () => pm.expect(json.employeeCode).to.be.a('string'));",
+                            "pm.test('Has position', () => pm.expect(json.position).to.not.be.null);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Employees",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Employees listed', () => pm.response.to.have.status(200));",
+                            "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));",
+                            "pm.test('Has total', () => pm.expect(json.total).to.be.a('number'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Employees (filter by type)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees?employmentType=PERMANENT",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"],
+                    "query": [
+                        { "key": "employmentType", "value": "PERMANENT" }
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Filtered OK', () => pm.response.to.have.status(200));",
+                            "pm.test('All PERMANENT', () => json.data.forEach(e => pm.expect(e.employmentType).to.eql('PERMANENT')));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Get Employee by ID",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees/{{employeeId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees", "{{employeeId}}"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Employee fetched', () => pm.response.to.have.status(200));",
+                            "pm.test('Has contracts array', () => pm.expect(json.contracts).to.be.an('array'));",
+                            "pm.test('Has position', () => pm.expect(json.position).to.not.be.null);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Update Employee (status ON_LEAVE)",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"status\": \"ON_LEAVE\",\n  \"notes\": \"On annual leave\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees/{{employeeId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees", "{{employeeId}}"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Employee updated', () => pm.response.to.have.status(200));",
+                            "pm.test('Status changed', () => pm.expect(json.status).to.eql('ON_LEAVE'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Contract",
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"startsAt\": \"2024-01-15\",\n  \"salaryBasis\": \"MONTHLY\",\n  \"salaryAmount\": 5000000,\n  \"termsSummary\": \"12-month renewable contract, head chef role\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/contracts",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "contracts"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('contractId', json.id);",
+                            "pm.test('Contract created', () => pm.response.to.have.status(201));",
+                            "pm.test('Has contractNumber', () => pm.expect(json.contractNumber).to.be.a('string'));",
+                            "pm.test('Has employee', () => pm.expect(json.employee).to.not.be.null);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Contracts",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/contracts",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "contracts"]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Contracts listed', () => pm.response.to.have.status(200));",
+                            "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));",
+                            "pm.test('Has total', () => pm.expect(json.total).to.be.a('number'));"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

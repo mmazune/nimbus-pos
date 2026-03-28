@@ -36,8 +36,8 @@
 | **Reports — Depth Expansion**       | `apps/api/src/modules/reports/`      | M20.1     | ✅ Implemented |
 | **Feedback / NPS**                  | `apps/api/src/modules/feedback/`     | M21       | ✅ Implemented |
 | **Documents / Uploads**             | `apps/api/src/modules/documents/`    | M22       | ✅ Implemented |
-| **HR / Employees**                  | `apps/api/src/modules/hr/`           | M27–M28   | ⬜ Planned     |
-| **Scheduling / Roster**             | `apps/api/src/modules/hr/`           | M29       | ⬜ Planned     |
+| **HR / Employees + Contracts**      | `apps/api/src/modules/hr/`           | M23       | ✅ Implemented |
+| **HR / Scheduling / Roster**        | `apps/api/src/modules/hr/`           | M29       | ⬜ Planned     |
 | **Payroll**                         | `apps/api/src/modules/payroll/`      | M30       | ⬜ Planned     |
 | **Staff Insights**                  | `apps/api/src/modules/hr/`           | M31       | ⬜ Planned     |
 | **Accounting (COA, GL, AP, AR)**    | `apps/api/src/modules/accounting/`   | M32–M36   | ⬜ Planned     |

@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M22 ✅
-- Last completed milestone: M22 — Documents + Uploads + Attachments
-- Next milestone: M23 — TBD
+- Current milestone: M23 ✅
+- Last completed milestone: M23 — Employees + Contracts + HR Core
+- Next milestone: M24 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
 - Date updated: 2026-03-30
@@ -619,6 +619,29 @@
 - [x] DONE: All M22 closure gates confirmed ✅
 
 ### M23+
+
+### M23 — Employees + Contracts + HR Core ✅
+
+- [x] Prisma schema: 4 enums (EmployeeStatus, EmploymentType, ContractStatus, SalaryBasis) + 4 models (Employee, EmploymentContract, Position, CompensationProfile)
+- [x] Migration #28: `20260330100000_m23_employees_contracts_hr_core`
+- [x] DTOs: 7 + barrel export (create/update employee, list employees query, create contract, list contracts query, create position, create compensation profile)
+- [x] Service: `hr.service.ts` — 10 methods (createEmployee, updateEmployee, listEmployees, getEmployee, createContract, listContracts, createPosition, listPositions, createCompensationProfile, listCompensationProfiles)
+- [x] Controller: 10 endpoints under `/hr` prefix (auth + branch-scoped)
+- [x] Module registered in `app.module.ts` (28 modules total)
+- [x] Permissions: 9 new (pos:hr:*) — 139 total
+- [x] Role-permission matrix updated for Owner, Manager, Accountant, Supervisor
+- [x] Unit tests: hr.service.spec.ts (26 tests)
+- [x] E2e tests: hr.e2e-spec.ts (20+ tests)
+- [x] Seed: idempotent — 8 positions, 4 compensation profiles, 4 employees, 3 contracts
+- [x] Postman collection: M23-Employees-Contracts-HR-Core (13 requests)
+- [x] Audit events: EMPLOYEE_CREATED, EMPLOYEE_UPDATED, CONTRACT_CREATED, POSITION_CREATED, COMPENSATION_PROFILE_CREATED
+- [x] Auto-generation: employee codes (EMP-XXXXX) and contract numbers (CTR-XXXXX)
+- [x] Validation: unique codes per org, userId linkage check, position/profile org-scoping
+- [x] M13.1 (MTN native) = PENDING (untouched)
+- [x] M13.2 (Airtel native) = PENDING (untouched)
+- [x] DONE: All M23 closure gates confirmed ✅
+
+### M24+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

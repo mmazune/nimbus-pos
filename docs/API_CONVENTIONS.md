@@ -470,6 +470,23 @@ Core report generation, history listing, CSV/PDF export, and artifact download.
 | POST   | `/api/reports/high-risk-actors`       | Yes  | pos:reports:anomaly-summary:generate         | Yes    | High risk actors report         |
 | POST   | `/api/reports/staff-operations`       | Yes  | pos:reports:staff-operations:generate        | Yes    | Staff operations report         |
 
+## Employees + Contracts + HR Core (M23) ✅
+
+### HR Endpoints
+
+| Method | Path                            | Auth | Permission                     | Branch | Description                  |
+| ------ | ------------------------------- | ---- | ------------------------------ | ------ | ---------------------------- |
+| POST   | `/api/hr/employees`             | Yes  | pos:hr:employees:create        | Yes    | Create employee              |
+| GET    | `/api/hr/employees`             | Yes  | pos:hr:employees:read          | Yes    | List employees (paginated)   |
+| GET    | `/api/hr/employees/:id`         | Yes  | pos:hr:employees:read          | Yes    | Get employee with contracts  |
+| PATCH  | `/api/hr/employees/:id`         | Yes  | pos:hr:employees:update        | Yes    | Update employee              |
+| POST   | `/api/hr/contracts`             | Yes  | pos:hr:contracts:create        | Yes    | Create employment contract   |
+| GET    | `/api/hr/contracts`             | Yes  | pos:hr:contracts:read          | Yes    | List contracts               |
+| POST   | `/api/hr/positions`             | Yes  | pos:hr:positions:create        | Yes    | Create position              |
+| GET    | `/api/hr/positions`             | Yes  | pos:hr:positions:read          | Yes    | List positions               |
+| POST   | `/api/hr/compensation-profiles` | Yes  | pos:hr:compensation:create     | Yes    | Create compensation profile  |
+| GET    | `/api/hr/compensation-profiles` | Yes  | pos:hr:compensation:read       | Yes    | List compensation profiles   |
+
 ## Validation
 
 - DTO classes with `class-validator`
