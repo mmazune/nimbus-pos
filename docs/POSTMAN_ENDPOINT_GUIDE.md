@@ -289,6 +289,22 @@ Quick-reference of **every API endpoint** with Postman collection mapping.
 | POST   | `/api/hr/compensation-profiles`             | M23-Employees-Contracts-HR-Core        |
 | GET    | `/api/hr/compensation-profiles`             | M23-Employees-Contracts-HR-Core        |
 
+## Attendance + Leave + Shift Swaps (M24)
+
+| Method | Path                                        | Collection                             |
+| ------ | ------------------------------------------- | -------------------------------------- |
+| POST   | `/api/hr/attendance/clock`                  | M24-Attendance-Leave-Shift-Swaps       |
+| GET    | `/api/hr/attendance`                        | M24-Attendance-Leave-Shift-Swaps       |
+| POST   | `/api/hr/leave`                             | M24-Attendance-Leave-Shift-Swaps       |
+| GET    | `/api/hr/leave`                             | M24-Attendance-Leave-Shift-Swaps       |
+| PATCH  | `/api/hr/leave/:id/review`                  | M24-Attendance-Leave-Shift-Swaps       |
+| POST   | `/api/hr/shift-swaps`                       | M24-Attendance-Leave-Shift-Swaps       |
+| GET    | `/api/hr/shift-swaps`                       | M24-Attendance-Leave-Shift-Swaps       |
+| PATCH  | `/api/hr/shift-swaps/:id/approve`           | M24-Attendance-Leave-Shift-Swaps       |
+| POST   | `/api/hr/attendance/policies`               | M24-Attendance-Leave-Shift-Swaps       |
+| GET    | `/api/hr/attendance/policies`               | M24-Attendance-Leave-Shift-Swaps       |
+| PATCH  | `/api/hr/attendance/policies/:id`           | M24-Attendance-Leave-Shift-Swaps       |
+
 ---
 
 ## Common Pitfalls & Known Issues

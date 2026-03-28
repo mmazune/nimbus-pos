@@ -641,7 +641,26 @@
 - [x] M13.2 (Airtel native) = PENDING (untouched)
 - [x] DONE: All M23 closure gates confirmed ✅
 
-### M24+
+### M24 — Attendance + Leave + Shift Swaps
+
+- [x] Schema: 4 enums (AttendanceStatus, LeaveRequestStatus, LeaveType, ShiftSwapStatus) + 4 models (AttendanceRecord, LeaveRequest, ShiftSwapRequest, AttendancePolicy)
+- [x] Migration #30: `20260330200000_m24_attendance_leave_shift_swaps` — applied to Neon
+- [x] DTOs: 10 DTO files + barrel index in `apps/api/src/modules/attendance/dto/`
+- [x] Service: `attendance.service.ts` — 11 methods (clock in/out, leave CRUD + review, shift swap CRUD + approve, policy CRUD)
+- [x] Controller: `attendance.controller.ts` — 11 endpoints under `/api/hr`
+- [x] Module: `attendance.module.ts` — registered in `app.module.ts`
+- [x] Permissions: 11 new (pos:hr:attendance:clock, :read, pos:hr:leave:create, :read, :review, pos:hr:shift-swaps:create, :read, :approve, pos:hr:attendance-policy:read, :create, :update)
+- [x] Role matrix: Owner (all 11), Manager (9), Supervisor (10), Cashier (7), Waiter (7), Accountant (2)
+- [x] Seed: seedAttendanceData() — 1 policy, 2 attendance records, 1 leave request, 1 shift swap
+- [x] Unit tests: 36 pass (attendance.service.spec.ts)
+- [x] E2E tests: 36 pass (attendance.e2e-spec.ts)
+- [x] Postman: M24-Attendance-Leave-Shift-Swaps.postman_collection.json (15 requests)
+- [x] Docs: ARCHITECTURE.md, MODULES.md, POSTMAN_ENDPOINT_GUIDE.md, HR_CORE_GUIDE.md, ATTENDANCE_LEAVE_SWAPS_GUIDE.md updated
+- [x] M13.1 (MTN native) = PENDING (untouched)
+- [x] M13.2 (Airtel native) = PENDING (untouched)
+- [x] DONE: All M24 closure gates confirmed ✅
+
+### M25+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

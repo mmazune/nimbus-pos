@@ -114,6 +114,7 @@ The seed creates demo data for development:
 ## Future Milestones
 
 This module is the foundation for:
+- **M24: Attendance + Leave + Shift Swaps** ✅ (implemented)
 - M29: Scheduling / Roster
 - M30: Payroll
 - M31: Staff Insights

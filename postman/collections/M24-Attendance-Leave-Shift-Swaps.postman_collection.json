@@ -1,0 +1,683 @@
+{
+    "info": {
+        "name": "M24 — Attendance + Leave + Shift Swaps",
+        "description": "Nimbus POS M24: Attendance clock in/out, leave requests, shift swap requests, and attendance policies.\n\n## Endpoints\n- POST /hr/attendance/clock — Clock in/out an employee\n- GET /hr/attendance — List attendance records\n- POST /hr/leave — Create leave request\n- GET /hr/leave — List leave requests\n- PATCH /hr/leave/:id/review — Approve/reject leave request\n- POST /hr/shift-swaps — Create shift swap request\n- GET /hr/shift-swaps — List shift swap requests\n- PATCH /hr/shift-swaps/:id/approve — Approve/reject shift swap\n- POST /hr/attendance/policies — Create attendance policy\n- GET /hr/attendance/policies — List attendance policies\n- PATCH /hr/attendance/policies/:id — Update attendance policy",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "employeeId1",
+            "value": ""
+        },
+        {
+            "key": "employeeId2",
+            "value": ""
+        },
+        {
+            "key": "attendanceRecordId",
+            "value": ""
+        },
+        {
+            "key": "leaveRequestId",
+            "value": ""
+        },
+        {
+            "key": "shiftSwapId",
+            "value": ""
+        },
+        {
+            "key": "policyId",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth — Login (Owner)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"owner@demo.local\",\n  \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('accessToken', json.accessToken);",
+                            "pm.test('Login OK', () => pm.response.to.have.status(200));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Get Branch ID",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "const bid = json.defaultBranch?.id || json.organizations?.[0]?.branches?.[0]?.id || json.branches?.[0]?.id || json.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);",
+                            "pm.test('Got branchId', () => pm.expect(bid).to.be.a('string'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Get Employees (for IDs)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees?take=2",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "employees"
+                    ],
+                    "query": [
+                        {
+                            "key": "take",
+                            "value": "2"
+                        }
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "const employees = json.data || json;",
+                            "if (employees.length >= 2) {",
+                            "  pm.environment.set('employeeId1', employees[0].id);",
+                            "  pm.environment.set('employeeId2', employees[1].id);",
+                            "}",
+                            "pm.test('Got employees', () => pm.expect(employees.length).to.be.at.least(2));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Attendance Policy",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"Morning Shift Policy\",\n  \"graceMinutes\": 10,\n  \"autoLateAfterMinutes\": 15,\n  \"allowSelfClockOutFix\": false\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/attendance/policies",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "attendance",
+                        "policies"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('policyId', json.id);",
+                            "pm.test('Policy created', () => pm.response.to.have.status(201));",
+                            "pm.test('Has graceMinutes', () => pm.expect(json.graceMinutes).to.eql(10));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Attendance Policies",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/attendance/policies",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "attendance",
+                        "policies"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                            "pm.test('Is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Update Attendance Policy",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"graceMinutes\": 15,\n  \"active\": true\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/attendance/policies/{{policyId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "attendance",
+                        "policies",
+                        "{{policyId}}"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                            "pm.test('Updated', () => pm.expect(pm.response.json().graceMinutes).to.eql(15));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Clock In Employee",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"employeeId\": \"{{employeeId1}}\",\n  \"notes\": \"Morning shift clock-in\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/attendance/clock",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "attendance",
+                        "clock"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('attendanceRecordId', json.id);",
+                            "pm.test('Clock registered', () => pm.response.to.have.status(201));",
+                            "pm.test('Has clockInAt', () => pm.expect(json.clockInAt).to.be.a('string'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Clock Out Employee (toggle)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"employeeId\": \"{{employeeId1}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/attendance/clock",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "attendance",
+                        "clock"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.test('Clocked out', () => pm.expect(json.status).to.eql('CLOCKED_OUT'));",
+                            "pm.test('Has clockOutAt', () => pm.expect(json.clockOutAt).to.be.a('string'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Attendance Records",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/attendance?take=10",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "attendance"
+                    ],
+                    "query": [
+                        {
+                            "key": "take",
+                            "value": "10"
+                        }
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Has data + total', () => { pm.expect(json).to.have.property('data'); pm.expect(json).to.have.property('total'); });"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Leave Request",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"employeeId\": \"{{employeeId1}}\",\n  \"leaveType\": \"ANNUAL\",\n  \"startsAt\": \"2026-07-01\",\n  \"endsAt\": \"2026-07-05\",\n  \"reason\": \"Annual vacation\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/leave",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "leave"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('leaveRequestId', json.id);",
+                            "pm.test('Leave created', () => pm.response.to.have.status(201));",
+                            "pm.test('Status PENDING', () => pm.expect(json.status).to.eql('PENDING'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Leave Requests",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/leave?take=10",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "leave"
+                    ],
+                    "query": [
+                        {
+                            "key": "take",
+                            "value": "10"
+                        }
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Has data + total', () => { pm.expect(json).to.have.property('data'); pm.expect(json).to.have.property('total'); });"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Review Leave Request (Approve)",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"status\": \"APPROVED\",\n  \"reviewNotes\": \"Approved by manager\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/leave/{{leaveRequestId}}/review",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "leave",
+                        "{{leaveRequestId}}",
+                        "review"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                            "pm.test('Approved', () => pm.expect(pm.response.json().status).to.eql('APPROVED'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Shift Swap Request",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"requesterEmployeeId\": \"{{employeeId1}}\",\n  \"targetEmployeeId\": \"{{employeeId2}}\",\n  \"shiftDate\": \"2026-07-15\",\n  \"reason\": \"Personal appointment\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/shift-swaps",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "shift-swaps"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "pm.environment.set('shiftSwapId', json.id);",
+                            "pm.test('Swap created', () => pm.response.to.have.status(201));",
+                            "pm.test('Status PENDING', () => pm.expect(json.status).to.eql('PENDING'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Shift Swaps",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/shift-swaps?take=10",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "shift-swaps"
+                    ],
+                    "query": [
+                        {
+                            "key": "take",
+                            "value": "10"
+                        }
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test('Has data + total', () => { pm.expect(json).to.have.property('data'); pm.expect(json).to.have.property('total'); });"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Approve Shift Swap",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Branch-Id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"status\": \"APPROVED\",\n  \"reviewNotes\": \"Approved — both employees confirmed\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/shift-swaps/{{shiftSwapId}}/approve",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "hr",
+                        "shift-swaps",
+                        "{{shiftSwapId}}",
+                        "approve"
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                            "pm.test('Approved', () => pm.expect(pm.response.json().status).to.eql('APPROVED'));"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
