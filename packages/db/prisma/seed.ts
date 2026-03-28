@@ -292,6 +292,19 @@ const PERMISSIONS_DATA = [
     { action: 'pos:hr:positions:create', description: 'Create positions' },
     { action: 'pos:hr:compensation:read', description: 'List and view compensation profiles' },
     { action: 'pos:hr:compensation:create', description: 'Create compensation profiles' },
+
+    // ── M24: Attendance + Leave + Shift Swaps ──
+    { action: 'pos:hr:attendance:clock', description: 'Clock in/out attendance' },
+    { action: 'pos:hr:attendance:read', description: 'List and view attendance records' },
+    { action: 'pos:hr:leave:create', description: 'Create leave requests' },
+    { action: 'pos:hr:leave:read', description: 'List and view leave requests' },
+    { action: 'pos:hr:leave:review', description: 'Approve or reject leave requests' },
+    { action: 'pos:hr:shift-swaps:create', description: 'Create shift swap requests' },
+    { action: 'pos:hr:shift-swaps:read', description: 'List and view shift swap requests' },
+    { action: 'pos:hr:shift-swaps:approve', description: 'Approve or reject shift swap requests' },
+    { action: 'pos:hr:attendance-policy:read', description: 'List and view attendance policies' },
+    { action: 'pos:hr:attendance-policy:create', description: 'Create attendance policies' },
+    { action: 'pos:hr:attendance-policy:update', description: 'Update attendance policies' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -467,6 +480,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:positions:create',
         'pos:hr:compensation:read',
         'pos:hr:compensation:create',
+        // M24: Attendance + Leave + Shift Swaps (Owner: full access)
+        'pos:hr:attendance:clock',
+        'pos:hr:attendance:read',
+        'pos:hr:leave:create',
+        'pos:hr:leave:read',
+        'pos:hr:leave:review',
+        'pos:hr:shift-swaps:create',
+        'pos:hr:shift-swaps:read',
+        'pos:hr:shift-swaps:approve',
+        'pos:hr:attendance-policy:read',
+        'pos:hr:attendance-policy:create',
+        'pos:hr:attendance-policy:update',
     ],
     Manager: [
         'identity:user:read',
@@ -609,6 +634,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:positions:read',
         'pos:hr:positions:create',
         'pos:hr:compensation:read',
+        // M24: Attendance + Leave + Shift Swaps (Manager: full access except policy:create/update)
+        'pos:hr:attendance:clock',
+        'pos:hr:attendance:read',
+        'pos:hr:leave:create',
+        'pos:hr:leave:read',
+        'pos:hr:leave:review',
+        'pos:hr:shift-swaps:create',
+        'pos:hr:shift-swaps:read',
+        'pos:hr:shift-swaps:approve',
+        'pos:hr:attendance-policy:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -659,6 +694,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:employees:read',
         'pos:hr:contracts:read',
         'pos:hr:compensation:read',
+        // M24: Attendance + Leave (Accountant: read-only for attendance/leave)
+        'pos:hr:attendance:read',
+        'pos:hr:leave:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -777,6 +815,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:employees:read',
         'pos:hr:contracts:read',
         'pos:hr:positions:read',
+        // M24: Attendance + Leave + Shift Swaps (Supervisor: clock, read, review leave, approve swaps)
+        'pos:hr:attendance:clock',
+        'pos:hr:attendance:read',
+        'pos:hr:leave:create',
+        'pos:hr:leave:read',
+        'pos:hr:leave:review',
+        'pos:hr:shift-swaps:create',
+        'pos:hr:shift-swaps:read',
+        'pos:hr:shift-swaps:approve',
+        'pos:hr:attendance-policy:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -826,6 +874,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:feedback:request:create',
         // M22: Documents (Cashier: read only)
         'pos:documents:read',
+        // M24: Attendance + Leave + Shift Swaps (Cashier: clock + own leave/swap)
+        'pos:hr:attendance:clock',
+        'pos:hr:attendance:read',
+        'pos:hr:leave:create',
+        'pos:hr:leave:read',
+        'pos:hr:shift-swaps:create',
+        'pos:hr:shift-swaps:read',
     ],
     Chef: [
         'identity:user:read',
@@ -894,6 +949,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:feedback:request:create',
         // M22: Documents (Waiter: read only)
         'pos:documents:read',
+        // M24: Attendance + Leave + Shift Swaps (Waiter: clock + own leave/swap)
+        'pos:hr:attendance:clock',
+        'pos:hr:attendance:read',
+        'pos:hr:leave:create',
+        'pos:hr:leave:read',
+        'pos:hr:shift-swaps:create',
+        'pos:hr:shift-swaps:read',
     ],
     Bartender: [
         'identity:user:read',
@@ -4924,6 +4986,161 @@ async function seedHrData(
     return { created, skipped };
 }
 
+// ── M24: Attendance + Leave + Shift Swaps Seed ──
+
+async function seedAttendanceData(
+    orgId: string,
+    branchSlug: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findFirst({ where: { organizationId: orgId, slug: branchSlug } });
+    if (!branch) {
+        console.log('  ❌ Branch not found — skipping Attendance seed');
+        return { created, skipped };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    if (!owner) {
+        console.log('  ❌ Owner user not found — skipping Attendance seed');
+        return { created, skipped };
+    }
+
+    // Get existing employees
+    const employees = await prisma.employee.findMany({ where: { orgId }, take: 4 });
+    if (employees.length === 0) {
+        console.log('  ❌ No employees found — skipping Attendance seed');
+        return { created, skipped };
+    }
+
+    // Seed Attendance Policy
+    const policyName = 'Default Shift Policy';
+    let policy = await prisma.attendancePolicy.findFirst({
+        where: { orgId, name: policyName },
+    });
+    if (policy) {
+        console.log(`  ⏭  AttendancePolicy "${policyName}" already exists — skipped`);
+        skipped++;
+    } else {
+        policy = await prisma.attendancePolicy.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                name: policyName,
+                graceMinutes: 10,
+                autoLateAfterMinutes: 15,
+                allowSelfClockOutFix: false,
+                active: true,
+            },
+        });
+        console.log(`  ✅ AttendancePolicy "${policyName}" created`);
+        created++;
+    }
+
+    // Seed Attendance Records (yesterday for first 2 employees)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < Math.min(2, employees.length); i++) {
+        const emp = employees[i];
+        const existing = await prisma.attendanceRecord.findUnique({
+            where: { employeeId_attendanceDate: { employeeId: emp.id, attendanceDate: yesterday } },
+        });
+        if (existing) {
+            console.log(`  ⏭  AttendanceRecord for "${emp.employeeCode}" on yesterday already exists — skipped`);
+            skipped++;
+        } else {
+            const clockIn = new Date(yesterday);
+            clockIn.setHours(8, i * 5, 0, 0); // 8:00 and 8:05
+            const clockOut = new Date(yesterday);
+            clockOut.setHours(17, 0, 0, 0);
+            await prisma.attendanceRecord.create({
+                data: {
+                    orgId,
+                    branchId: branch.id,
+                    employeeId: emp.id,
+                    userId: owner.id,
+                    attendanceDate: yesterday,
+                    clockInAt: clockIn,
+                    clockOutAt: clockOut,
+                    status: i === 0 ? 'CLOCKED_OUT' : 'LATE',
+                    lateMinutes: i === 0 ? 0 : 5,
+                    policyId: policy.id,
+                    notes: i === 0 ? 'On time' : 'Arrived 5 minutes after grace',
+                },
+            });
+            console.log(`  ✅ AttendanceRecord for "${emp.employeeCode}" on yesterday created`);
+            created++;
+        }
+    }
+
+    // Seed a Leave Request (employee 3: sick leave, pending)
+    if (employees.length >= 3) {
+        const emp3 = employees[2];
+        const existingLeave = await prisma.leaveRequest.findFirst({
+            where: { employeeId: emp3.id, leaveType: 'SICK' },
+        });
+        if (existingLeave) {
+            console.log(`  ⏭  LeaveRequest (SICK) for "${emp3.employeeCode}" already exists — skipped`);
+            skipped++;
+        } else {
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            const nextWeekEnd = new Date(nextWeek);
+            nextWeekEnd.setDate(nextWeekEnd.getDate() + 2);
+            await prisma.leaveRequest.create({
+                data: {
+                    orgId,
+                    branchId: branch.id,
+                    employeeId: emp3.id,
+                    leaveType: 'SICK',
+                    startsAt: nextWeek,
+                    endsAt: nextWeekEnd,
+                    reason: 'Medical checkup and recovery',
+                    status: 'PENDING',
+                    requestedById: owner.id,
+                },
+            });
+            console.log(`  ✅ LeaveRequest (SICK) for "${emp3.employeeCode}" created`);
+            created++;
+        }
+    }
+
+    // Seed a Shift Swap Request (employee 1 wants to swap with employee 2)
+    if (employees.length >= 2) {
+        const emp1 = employees[0];
+        const emp2 = employees[1];
+        const swapDate = new Date();
+        swapDate.setDate(swapDate.getDate() + 3);
+        swapDate.setHours(0, 0, 0, 0);
+        const existingSwap = await prisma.shiftSwapRequest.findFirst({
+            where: { requesterEmployeeId: emp1.id, targetEmployeeId: emp2.id, shiftDate: swapDate },
+        });
+        if (existingSwap) {
+            console.log(`  ⏭  ShiftSwapRequest "${emp1.employeeCode}" ↔ "${emp2.employeeCode}" already exists — skipped`);
+            skipped++;
+        } else {
+            await prisma.shiftSwapRequest.create({
+                data: {
+                    orgId,
+                    branchId: branch.id,
+                    requesterEmployeeId: emp1.id,
+                    targetEmployeeId: emp2.id,
+                    shiftDate: swapDate,
+                    reason: 'Family commitment, requesting swap',
+                    status: 'PENDING',
+                },
+            });
+            console.log(`  ✅ ShiftSwapRequest "${emp1.employeeCode}" ↔ "${emp2.employeeCode}" created`);
+            created++;
+        }
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -5133,6 +5350,11 @@ async function main(): Promise<void> {
     const hrResult = await seedHrData(orgResult.orgId, 'main');
     console.log(`   Created: ${hrResult.created}, Skipped: ${hrResult.skipped}\n`);
 
+    // 39) Seed Attendance + Leave + Shift Swaps (M24)
+    console.log('── Attendance + Leave + Shift Swaps (M24) ──');
+    const attendanceResult = await seedAttendanceData(orgResult.orgId, 'main');
+    console.log(`   Created: ${attendanceResult.created}, Skipped: ${attendanceResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -5225,6 +5447,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm23-employees-contracts-hr',
         `HR: ${hrResult.created}c/${hrResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm24-attendance-leave-shift-swaps',
+        `Attendance: ${attendanceResult.created}c/${attendanceResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 
