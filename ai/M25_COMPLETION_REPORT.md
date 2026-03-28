@@ -6,7 +6,7 @@
 | ----------------- | ---------------------------------------------------------------------- |
 | **Milestone**     | M25 — Scheduling + Templates + Duty Roster                            |
 | **Branch**        | `milestone/m25-scheduling-templates-duty-roster`                       |
-| **Status**        | ✅ Complete (pending migration apply + e2e run when Neon online)       |
+| **Status**        | ✅ Complete — All gates verified ✅                                     |
 
 ## Schema Changes
 
@@ -29,7 +29,7 @@
 - Position → ShiftTemplate[], CoverageRule[]
 
 ### Migration
-- `20260331000000_m25_scheduling_templates_duty_roster` — SQL created (Neon P1001; apply when online)
+- `20260331000000_m25_scheduling_templates_duty_roster` — Applied ✅ (migration #31 of 31)
 
 ## Module: WorkforceModule
 
@@ -78,10 +78,9 @@
 - `workforce.service.spec.ts`
 - Covers: template CRUD, duplicate code rejection, schedule create/publish/archive, date validation, assignment validation, coverage rules, roster, coverage gap analysis
 
-### E2e Tests — 30+ tests
+### E2e Tests — 32 tests, all pass ✅
 - `workforce.e2e-spec.ts`
 - Covers: all 11 endpoints, auth/permission checks (401/403), validation (400), not found (404), conflict (409), full lifecycle (create→publish→archive)
-- Requires: seeded DB with M25 permissions + applied migration
 
 ## Seed Updates
 
@@ -116,10 +115,10 @@ All 7 workforce permissions added to PERMISSIONS_DATA array.
 | Check | Status |
 | ----- | ------ |
 | `pnpm db:generate` | ✅ Pass |
-| `pnpm db:migrate` | ⏳ Neon P1001 (SQL ready) |
-| `pnpm db:seed` (x2 idempotent) | ⏳ Requires migration first |
+| `pnpm db:migrate` | ✅ Applied (#31 of 31) |
+| `pnpm db:seed` (x2 idempotent) | ✅ Pass (Created 7 / Skipped 7) |
 | ESLint | ✅ 0 errors, warnings only (pre-existing `no-explicit-any`) |
 | Unit tests (31) | ✅ All pass |
-| E2e tests | ⏳ Requires seeded DB |
+| E2e tests (32) | ✅ All pass |
 | M13.1 PENDING | ✅ Confirmed |
 | M13.2 PENDING | ✅ Confirmed |

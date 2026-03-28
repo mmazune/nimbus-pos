@@ -5181,15 +5181,15 @@ async function seedAttendanceData(
 
 async function seedWorkforceData(
     orgId: string,
-    branchCode: string,
+    branchSlug: string,
 ): Promise<{ created: number; skipped: number }> {
     let created = 0;
     let skipped = 0;
 
     // Find branch
-    const branch = await prisma.branch.findFirst({ where: { orgId, code: branchCode } });
+    const branch = await prisma.branch.findFirst({ where: { organizationId: orgId, slug: branchSlug } });
     if (!branch) {
-        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping workforce data`);
+        console.log(`  ⚠️  Branch "${branchSlug}" not found — skipping workforce data`);
         return { created, skipped };
     }
 

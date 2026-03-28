@@ -663,13 +663,13 @@
 ### M25 — Scheduling + Templates + Duty Roster
 
 - [x] Schema: 3 enums (ScheduleStatus, CoverageRuleStatus, CoverageSeverity) + 4 models (ShiftTemplate, Schedule, ScheduleAssignment, CoverageRule)
-- [x] Migration #31: `20260331000000_m25_scheduling_templates_duty_roster` — SQL created (Neon P1001; apply when online)
+- [x] Migration #31: `20260331000000_m25_scheduling_templates_duty_roster` — Applied ✅
 - [x] Module: `WorkforceModule` — controller + service + 7 DTOs
 - [x] Endpoints: 11 (POST/GET templates, POST/GET/GET:id schedules, PATCH publish, PATCH archive, GET roster, POST/GET coverage-rules, GET coverage-gaps)
 - [x] Permissions: 7 new (`pos:workforce:templates:read/create`, `pos:workforce:schedules:read/create/publish`, `pos:workforce:coverage-rules:read/create`)
 - [x] Role matrix updated: Owner/Manager (full), Supervisor (read + create schedules), Cashier/Waiter (read-only)
 - [x] Unit tests: 31 tests in `workforce.service.spec.ts` — all pass ✅
-- [x] E2e tests: `workforce.e2e-spec.ts` — 30+ tests (requires seeded DB + applied migration)
+- [x] E2e tests: `workforce.e2e-spec.ts` — 32 tests, all pass ✅
 - [x] Seed: 4 shift templates, 2 schedules (1 DRAFT + 1 PUBLISHED), 1 coverage rule, 7 permissions
 - [x] Postman: `M25-Scheduling-Templates-Duty-Roster.postman_collection.json` (13 requests)
 - [x] Docs: MODULES.md, AI_STATUS.md, POSTMAN_ENDPOINT_GUIDE.md, SCHEDULING_ROSTER_GUIDE.md updated

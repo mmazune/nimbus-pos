@@ -281,6 +281,59 @@ nimbus-pos/
 │   │   │       │       ├── acknowledge-feedback.dto.ts
 │   │   │       │       ├── resolve-feedback.dto.ts
 │   │   │       │       └── nps-summary-query.dto.ts
+│   │   │       ├── documents/
+│   │   │       │   ├── documents.module.ts
+│   │   │       │   ├── documents.controller.ts
+│   │   │       │   ├── documents.service.ts
+│   │   │       │   ├── documents.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── upload-document.dto.ts
+│   │   │       │       ├── list-documents-query.dto.ts
+│   │   │       │       ├── link-document.dto.ts
+│   │   │       │       └── update-document-metadata.dto.ts
+│   │   │       ├── hr/
+│   │   │       │   ├── hr.module.ts
+│   │   │       │   ├── hr.controller.ts
+│   │   │       │   ├── hr.service.ts
+│   │   │       │   ├── hr.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-employee.dto.ts
+│   │   │       │       ├── update-employee.dto.ts
+│   │   │       │       ├── create-contract.dto.ts
+│   │   │       │       ├── create-position.dto.ts
+│   │   │       │       ├── create-compensation-profile.dto.ts
+│   │   │       │       ├── list-employees-query.dto.ts
+│   │   │       │       └── list-contracts-query.dto.ts
+│   │   │       ├── attendance/
+│   │   │       │   ├── attendance.module.ts
+│   │   │       │   ├── attendance.controller.ts
+│   │   │       │   ├── attendance.service.ts
+│   │   │       │   ├── attendance.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── clock-dto.ts
+│   │   │       │       ├── create-leave-request.dto.ts
+│   │   │       │       ├── review-leave-request.dto.ts
+│   │   │       │       ├── create-shift-swap.dto.ts
+│   │   │       │       ├── approve-shift-swap.dto.ts
+│   │   │       │       ├── create-attendance-policy.dto.ts
+│   │   │       │       └── list-attendance-query.dto.ts
+│   │   │       ├── workforce/
+│   │   │       │   ├── workforce.module.ts
+│   │   │       │   ├── workforce.controller.ts
+│   │   │       │   ├── workforce.service.ts
+│   │   │       │   ├── workforce.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-shift-template.dto.ts
+│   │   │       │       ├── list-shift-templates-query.dto.ts
+│   │   │       │       ├── create-schedule.dto.ts
+│   │   │       │       ├── publish-schedule.dto.ts
+│   │   │       │       ├── list-schedules-query.dto.ts
+│   │   │       │       ├── list-roster-query.dto.ts
+│   │   │       │       └── create-coverage-rule.dto.ts
 │   │   │       └── tenancy/
 │   │   │           ├── tenancy.controller.ts
 │   │   │           ├── tenancy.module.ts
@@ -313,7 +366,11 @@ nimbus-pos/
 │   │       ├── analytics.e2e-spec.ts
 │   │       ├── dashboards.e2e-spec.ts
 │   │       ├── reports.e2e-spec.ts
-│   │       └── feedback.e2e-spec.ts
+│   │       ├── feedback.e2e-spec.ts
+│   │       ├── documents.e2e-spec.ts
+│   │       ├── hr.e2e-spec.ts
+│   │       ├── attendance.e2e-spec.ts
+│   │       └── workforce.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -380,6 +437,16 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260329000000_m21_feedback_nps_qr_followup/
 │   │   │           └── migration.sql
+│   │   │       └── 20260330000000_m22_documents_uploads_attachments/
+│   │   │           └── migration.sql
+│   │   │       └── 20260330100000_m23_employees_contracts_hr_core/
+│   │   │           └── migration.sql
+│   │   │       └── 20260330200000_m23_fix_employee_status_enum/
+│   │   │           └── migration.sql
+│   │   │       └── 20260330300000_m24_attendance_leave_shift_swaps/
+│   │   │           └── migration.sql
+│   │   │       └── 20260331000000_m25_scheduling_templates_duty_roster/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -395,7 +462,9 @@ nimbus-pos/
 │   ├── MODULES.md
 │   ├── POSTMAN_ENDPOINT_GUIDE.md
 │   ├── FEEDBACK_NPS_GUIDE.md
-│   └── REPORT_CATALOG_GUIDE.md
+│   ├── REPORT_CATALOG_GUIDE.md
+│   ├── DOCUMENTS_GUIDE.md
+│   └── SCHEDULING_ROSTER_GUIDE.md
 │
 └── postman/
     ├── POSTMAN_GUIDE.md
@@ -426,6 +495,10 @@ nimbus-pos/
 │   │   ├── M20-Reporting-v1-Exports.postman_collection.json
 │   │   ├── M20_1-Reporting-Depth-Finalization.postman_collection.json
 │   │   └── M21-Customer-Feedback-NPS-QR-Followup.postman_collection.json
+│   │   ├── M22-Documents-Uploads-Attachments.postman_collection.json
+│   │   ├── M23-Employees-Contracts-HR-Core.postman_collection.json
+│   │   ├── M24-Attendance-Leave-Shift-Swaps.postman_collection.json
+│   │   └── M25-Scheduling-Templates-Duty-Roster.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```
