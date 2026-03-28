@@ -1,1 +1,1 @@
-export class AcknowledgeFeedbackDto { }
+export class AcknowledgeFeedbackDto {}

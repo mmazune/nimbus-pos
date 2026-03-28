@@ -15,7 +15,7 @@ import { CurrentUser, Permissions, RequireBranchContext } from '../../common/dec
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class FeedbackController {
-  constructor(private readonly feedbackService: FeedbackService) { }
+  constructor(private readonly feedbackService: FeedbackService) {}
 
   // ── Feedback Requests ──
 
