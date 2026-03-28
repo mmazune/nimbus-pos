@@ -25,6 +25,7 @@ import { DashboardsModule } from './modules/dashboards/dashboards.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { HrModule } from './modules/hr/hr.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
     ReportsModule,
     FeedbackModule,
     DocumentsModule,
+    HrModule,
   ],
   controllers: [AppController],
   providers: [AppService],

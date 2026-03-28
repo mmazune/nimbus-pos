@@ -22,6 +22,7 @@
 // M20 models: ReportRun, ExportArtifact + ReportType, ReportWindow, ExportFormat, ReportRunStatus, ExportArtifactStatus enums
 // M21 models: Feedback, FeedbackTag, NpsSummary, FeedbackRequest + FeedbackStatus, FeedbackSource, FeedbackSentiment, FeedbackRequestStatus, NpsBucket enums
 // M22 models: Document, DocumentLink, StorageProviderConfig + DocumentStatus, DocumentType, DocumentLinkType, StorageProviderType enums
+// M23 models: Employee, EmploymentContract, Position, CompensationProfile + EmployeeStatus, EmploymentType, ContractStatus, SalaryBasis enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -208,6 +209,10 @@ model User {
     documentsUploaded       Document[]           @relation("DocumentUploadedBy")
     documentsDeleted        Document[]           @relation("DocumentDeletedBy")
     documentLinksCreated    DocumentLink[]       @relation("DocumentLinkCreatedBy")
+    // M23 — HR Core
+    employee                Employee?            @relation("EmployeeUser")
+    contractsCreated        EmploymentContract[] @relation("ContractCreatedBy")
+    contractsUpdated        EmploymentContract[] @relation("ContractUpdatedBy")
 
     @@map("users")
 }
@@ -408,6 +413,11 @@ model Organization {
     documents              Document[]
     documentLinks          DocumentLink[]
     storageProviderConfigs StorageProviderConfig[]
+    // M23 — HR Core
+    employees              Employee[]
+    employmentContracts    EmploymentContract[]
+    positions              Position[]
+    compensationProfiles   CompensationProfile[]
 
     @@map("organizations")
 }
@@ -481,6 +491,11 @@ model Branch {
     // M22 — Documents + Uploads
     documents           Document[]
     documentLinks       DocumentLink[]
+    // M23 — HR Core
+    employees           Employee[]
+    employmentContracts EmploymentContract[]
+    positions           Position[]
+    compensationProfiles CompensationProfile[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2798,4 +2813,170 @@ model StorageProviderConfig {
     @@index([orgId])
     @@index([providerType])
     @@map("storage_provider_configs")
+}
+
+// ── Enums (M23) ──
+
+enum EmployeeStatus {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+    TERMINATED
+}
+
+enum EmploymentType {
+    PERMANENT
+    TEMPORARY
+    CASUAL
+    CONTRACTOR
+}
+
+enum ContractStatus {
+    DRAFT
+    ACTIVE
+    ENDED
+    TERMINATED
+}
+
+enum SalaryBasis {
+    MONTHLY
+    DAILY
+    HOURLY
+    SHIFT
+    OTHER
+}
+
+// ── M23 Models ──
+
+/// Employee master record. Separate from auth User — supports staff without system login.
+model Employee {
+    id                      String         @id @default(cuid())
+    orgId                   String         @map("org_id")
+    branchId                String?        @map("branch_id")
+    userId                  String?        @unique @map("user_id")
+    employeeCode            String         @map("employee_code")
+    firstName               String         @map("first_name")
+    lastName                String         @map("last_name")
+    middleName              String?        @map("middle_name")
+    phone                   String?
+    email                   String?
+    dateOfBirth             DateTime?      @map("date_of_birth")
+    hireDate                DateTime       @map("hire_date")
+    status                  EmployeeStatus @default(ACTIVE)
+    employmentType          EmploymentType @map("employment_type")
+    positionId              String?        @map("position_id")
+    compensationProfileId   String?        @map("compensation_profile_id")
+    emergencyContactName    String?        @map("emergency_contact_name")
+    emergencyContactPhone   String?        @map("emergency_contact_phone")
+    address                 Json?
+    notes                   String?
+    metadata                Json?
+    createdAt               DateTime       @default(now()) @map("created_at")
+    updatedAt               DateTime       @updatedAt @map("updated_at")
+
+    organization        Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch              Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    user                User?                 @relation("EmployeeUser", fields: [userId], references: [id], onDelete: SetNull)
+    position            Position?             @relation(fields: [positionId], references: [id], onDelete: SetNull)
+    compensationProfile CompensationProfile?  @relation(fields: [compensationProfileId], references: [id], onDelete: SetNull)
+    contracts           EmploymentContract[]
+
+    @@unique([orgId, employeeCode])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([userId])
+    @@index([status])
+    @@index([employmentType])
+    @@index([positionId])
+    @@index([compensationProfileId])
+    @@index([orgId, branchId, status])
+    @@map("employees")
+}
+
+/// Employment contract for an employee. Tracks terms, duration, compensation basis.
+model EmploymentContract {
+    id              String         @id @default(cuid())
+    orgId           String         @map("org_id")
+    branchId        String?        @map("branch_id")
+    employeeId      String         @map("employee_id")
+    contractNumber  String         @map("contract_number")
+    contractStatus  ContractStatus @default(DRAFT) @map("contract_status")
+    startsAt        DateTime       @map("starts_at")
+    endsAt          DateTime?      @map("ends_at")
+    salaryBasis     SalaryBasis    @map("salary_basis")
+    salaryAmount    Decimal?       @map("salary_amount") @db.Decimal(10, 2)
+    termsSummary    String?        @map("terms_summary")
+    createdById     String         @map("created_by_id")
+    updatedById     String?        @map("updated_by_id")
+    metadata        Json?
+    createdAt       DateTime       @default(now()) @map("created_at")
+    updatedAt       DateTime       @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    createdBy    User         @relation("ContractCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+    updatedBy    User?        @relation("ContractUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+    @@unique([orgId, contractNumber])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([employeeId])
+    @@index([contractStatus])
+    @@index([salaryBasis])
+    @@index([createdById])
+    @@map("employment_contracts")
+}
+
+/// Reusable position / job title master data.
+model Position {
+    id          String   @id @default(cuid())
+    orgId       String   @map("org_id")
+    branchId    String?  @map("branch_id")
+    code        String
+    title       String
+    department  String?
+    level       String?
+    description String?
+    active      Boolean  @default(true)
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employees    Employee[]
+
+    @@unique([orgId, code])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([active])
+    @@map("positions")
+}
+
+/// Compensation profile / pay grade for grouping salary basis and allowances.
+model CompensationProfile {
+    id          String      @id @default(cuid())
+    orgId       String      @map("org_id")
+    branchId    String?     @map("branch_id")
+    code        String
+    salaryBasis SalaryBasis @map("salary_basis")
+    baseAmount  Decimal?    @map("base_amount") @db.Decimal(10, 2)
+    currency    String?
+    allowances  Json?
+    deductions  Json?
+    notes       String?
+    active      Boolean     @default(true)
+    createdAt   DateTime    @default(now()) @map("created_at")
+    updatedAt   DateTime    @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employees    Employee[]
+
+    @@unique([orgId, code])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([active])
+    @@index([salaryBasis])
+    @@map("compensation_profiles")
 }
