@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M23 ✅
-- Last completed milestone: M23 — Employees + Contracts + HR Core
-- Next milestone: M24 — TBD
+- Current milestone: M26 ✅
+- Last completed milestone: M26 — Payroll Engine + Pay Runs + Payslips
+- Next milestone: M27 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
 - Date updated: 2026-03-30
@@ -677,7 +677,24 @@
 - [x] M13.2 (Airtel native) = PENDING (untouched)
 - [x] DONE: All M25 closure gates confirmed ✅
 
-### M26+
+### M26 — Payroll Engine + Pay Runs + Payslips
+
+- [x] Schema: 4 enums (PayRunStatus, PayComponentType, PaySlipStatus, PayrollAdjustmentType) + 4 models (PayComponent, PayrollAdjustment, PayRun, PaySlip)
+- [x] Migration #32: `20260401000000_m26_payroll_engine_pay_runs_payslips` — SQL created
+- [x] Module: `PayrollModule` — controller + service + 6 DTOs
+- [x] Endpoints: 11 (POST/GET components, POST/GET adjustments, POST build, PATCH approve, PATCH pay, GET/GET:id runs, GET/GET:id slips)
+- [x] Permissions: 9 new (`pos:payroll:components:read/create`, `pos:payroll:adjustments:read/create`, `pos:payroll:runs:read/build/approve/pay`, `pos:payroll:slips:read`)
+- [x] Role matrix updated: Owner (full), Manager (all except pay), Accountant (read-only), Supervisor (read + adjustments), Cashier/Waiter (slips:read)
+- [x] Unit tests: 24 tests in `payroll.service.spec.ts`
+- [x] E2e tests: `payroll.e2e-spec.ts` — 20 tests
+- [x] Seed: 6 pay components, 1 demo adjustment, idempotent
+- [x] Postman: `M26-Payroll-Engine-Pay-Runs-Payslips.postman_collection.json` (13 requests)
+- [x] Docs: PAYROLL_PAYRUNS_PAYSLIPS_GUIDE.md, M26_COMPLETION_REPORT.md, AI_STATUS.md updated
+- [x] M13.1 (MTN native) = PENDING (untouched)
+- [x] M13.2 (Airtel native) = PENDING (untouched)
+- [x] DONE: All M26 closure gates confirmed ✅
+
+### M27+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

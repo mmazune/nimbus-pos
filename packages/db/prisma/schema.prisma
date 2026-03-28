@@ -24,6 +24,8 @@
 // M22 models: Document, DocumentLink, StorageProviderConfig + DocumentStatus, DocumentType, DocumentLinkType, StorageProviderType enums
 // M23 models: Employee, EmploymentContract, Position, CompensationProfile + EmployeeStatus, EmploymentType, ContractStatus, SalaryBasis enums
 // M24 models: AttendanceRecord, LeaveRequest, ShiftSwapRequest, AttendancePolicy + AttendanceStatus, LeaveRequestStatus, LeaveType, ShiftSwapStatus enums
+// M25 models: ShiftTemplate, Schedule, ScheduleAssignment, CoverageRule + ScheduleStatus, CoverageRuleStatus, CoverageSeverity enums
+// M26 models: PayComponent, PayrollAdjustment, PayRun, PaySlip + PayRunStatus, PayComponentType, PaySlipStatus, PayrollAdjustmentType enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -221,6 +223,11 @@ model User {
     shiftSwapsApproved      ShiftSwapRequest[]   @relation("ShiftSwapApprovedBy")
     // M25 — Scheduling + Templates + Duty Roster
     schedulesPublished      Schedule[]           @relation("SchedulePublishedBy")
+    // M26 — Payroll Engine + Pay Runs + Payslips
+    payRunsBuilt            PayRun[]             @relation("PayRunBuiltBy")
+    payRunsApproved         PayRun[]             @relation("PayRunApprovedBy")
+    payRunsPaid             PayRun[]             @relation("PayRunPaidBy")
+    payrollAdjustmentsCreated PayrollAdjustment[] @relation("PayrollAdjustmentCreatedBy")
 
     @@map("users")
 }
@@ -436,6 +443,11 @@ model Organization {
     schedules              Schedule[]
     scheduleAssignments    ScheduleAssignment[]
     coverageRules          CoverageRule[]
+    // M26 — Payroll Engine + Pay Runs + Payslips
+    payComponents          PayComponent[]
+    payrollAdjustments     PayrollAdjustment[]
+    payRuns                PayRun[]
+    paySlips               PaySlip[]
 
     @@map("organizations")
 }
@@ -524,6 +536,11 @@ model Branch {
     schedules           Schedule[]
     scheduleAssignments ScheduleAssignment[]
     coverageRules       CoverageRule[]
+    // M26 — Payroll Engine + Pay Runs + Payslips
+    payComponents       PayComponent[]
+    payrollAdjustments  PayrollAdjustment[]
+    payRuns             PayRun[]
+    paySlips            PaySlip[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2915,6 +2932,9 @@ model Employee {
     shiftSwapsTargeted  ShiftSwapRequest[]   @relation("ShiftSwapTarget")
     // M25 — Scheduling + Templates + Duty Roster
     scheduleAssignments ScheduleAssignment[]
+    // M26 — Payroll Engine + Pay Runs + Payslips
+    payrollAdjustments  PayrollAdjustment[]
+    paySlips            PaySlip[]
 
     @@unique([orgId, employeeCode])
     @@index([orgId])
@@ -3336,4 +3356,175 @@ model CoverageRule {
     @@index([status])
     @@index([orgId, branchId, status])
     @@map("coverage_rules")
+}
+
+// ── M26 Enums ──
+
+enum PayRunStatus {
+    DRAFT
+    APPROVED
+    PAID
+    CANCELLED
+}
+
+enum PayComponentType {
+    EARNING
+    DEDUCTION
+    EMPLOYER_COST
+    OTHER
+}
+
+enum PaySlipStatus {
+    DRAFT
+    FINAL
+    PAID
+}
+
+enum PayrollAdjustmentType {
+    BONUS
+    OVERTIME
+    ADVANCE
+    DEDUCTION
+    PENALTY
+    OTHER
+}
+
+// ── M26 Models ──
+
+/// Master data for pay components (earnings, deductions, employer costs).
+model PayComponent {
+    id                String          @id @default(cuid())
+    orgId             String          @map("org_id")
+    branchId          String?         @map("branch_id")
+    code              String
+    name              String
+    componentType     PayComponentType @map("component_type")
+    calculationMethod String?         @map("calculation_method")
+    defaultAmount     Decimal?        @map("default_amount") @db.Decimal(10, 2)
+    taxable           Boolean         @default(false)
+    active            Boolean         @default(true)
+    metadata          Json?
+    createdAt         DateTime        @default(now()) @map("created_at")
+    updatedAt         DateTime        @updatedAt @map("updated_at")
+
+    organization       Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch             Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    payrollAdjustments PayrollAdjustment[]
+
+    @@unique([orgId, code])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([code])
+    @@index([componentType])
+    @@index([active])
+    @@index([orgId, branchId, active])
+    @@map("pay_components")
+}
+
+/// Explicit payroll adjustment for an employee (bonus, overtime, advance, deduction, penalty).
+model PayrollAdjustment {
+    id              String                @id @default(cuid())
+    orgId           String                @map("org_id")
+    branchId        String?               @map("branch_id")
+    employeeId      String                @map("employee_id")
+    payComponentId  String?               @map("pay_component_id")
+    adjustmentType  PayrollAdjustmentType @map("adjustment_type")
+    amount          Decimal               @db.Decimal(10, 2)
+    effectiveDate   DateTime              @map("effective_date") @db.Date
+    notes           String?
+    createdById     String                @map("created_by_id")
+    createdAt       DateTime              @default(now()) @map("created_at")
+    metadata        Json?
+
+    organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    payComponent PayComponent? @relation(fields: [payComponentId], references: [id], onDelete: SetNull)
+    createdBy    User          @relation("PayrollAdjustmentCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([employeeId])
+    @@index([payComponentId])
+    @@index([adjustmentType])
+    @@index([effectiveDate])
+    @@index([createdById])
+    @@index([orgId, branchId, effectiveDate])
+    @@map("payroll_adjustments")
+}
+
+/// A pay run covering a payroll period for an org/branch. Contains aggregated gross/net totals.
+model PayRun {
+    id              String       @id @default(cuid())
+    orgId           String       @map("org_id")
+    branchId        String?      @map("branch_id")
+    name            String
+    periodStart     DateTime     @map("period_start") @db.Date
+    periodEnd       DateTime     @map("period_end") @db.Date
+    status          PayRunStatus @default(DRAFT)
+    builtById       String       @map("built_by_id")
+    approvedById    String?      @map("approved_by_id")
+    approvedAt      DateTime?    @map("approved_at")
+    paidById        String?      @map("paid_by_id")
+    paidAt          DateTime?    @map("paid_at")
+    employeeCount   Int          @default(0) @map("employee_count")
+    grossTotal      Decimal      @default(0) @map("gross_total") @db.Decimal(10, 2)
+    netTotal        Decimal      @default(0) @map("net_total") @db.Decimal(10, 2)
+    postingPayload  Json?        @map("posting_payload")
+    notes           String?
+    createdAt       DateTime     @default(now()) @map("created_at")
+    updatedAt       DateTime     @updatedAt @map("updated_at")
+    metadata        Json?
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    builtBy      User         @relation("PayRunBuiltBy", fields: [builtById], references: [id], onDelete: Cascade)
+    approvedBy   User?        @relation("PayRunApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+    paidBy       User?        @relation("PayRunPaidBy", fields: [paidById], references: [id], onDelete: SetNull)
+    paySlips     PaySlip[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([status])
+    @@index([periodStart])
+    @@index([periodEnd])
+    @@index([builtById])
+    @@index([approvedById])
+    @@index([paidById])
+    @@index([orgId, branchId, status])
+    @@index([orgId, branchId, periodStart, periodEnd])
+    @@map("pay_runs")
+}
+
+/// Individual payslip for an employee within a pay run. Stores frozen component snapshot.
+model PaySlip {
+    id               String        @id @default(cuid())
+    orgId            String        @map("org_id")
+    branchId         String?       @map("branch_id")
+    payRunId         String        @map("pay_run_id")
+    employeeId       String        @map("employee_id")
+    status           PaySlipStatus @default(DRAFT)
+    grossPay         Decimal       @map("gross_pay") @db.Decimal(10, 2)
+    totalDeductions  Decimal       @map("total_deductions") @db.Decimal(10, 2)
+    netPay           Decimal       @map("net_pay") @db.Decimal(10, 2)
+    componentSnapshot Json         @map("component_snapshot")
+    generatedAt      DateTime      @default(now()) @map("generated_at")
+    paidAt           DateTime?     @map("paid_at")
+    metadata         Json?
+    createdAt        DateTime      @default(now()) @map("created_at")
+    updatedAt        DateTime      @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    payRun       PayRun       @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+    employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([payRunId])
+    @@index([employeeId])
+    @@index([status])
+    @@index([orgId, branchId, status])
+    @@index([payRunId, employeeId])
+    @@map("pay_slips")
 }

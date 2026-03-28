@@ -28,6 +28,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { HrModule } from './modules/hr/hr.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { WorkforceModule } from './modules/workforce/workforce.module';
     HrModule,
     AttendanceModule,
     WorkforceModule,
+    PayrollModule,
   ],
   controllers: [AppController],
   providers: [AppService],

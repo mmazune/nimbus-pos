@@ -314,6 +314,17 @@ const PERMISSIONS_DATA = [
     { action: 'pos:workforce:schedules:publish', description: 'Publish or archive schedules' },
     { action: 'pos:workforce:coverage-rules:read', description: 'List and view coverage rules and gaps' },
     { action: 'pos:workforce:coverage-rules:create', description: 'Create coverage rules' },
+
+    // ── M26: Payroll Engine + Pay Runs + Payslips ──
+    { action: 'pos:payroll:components:read', description: 'List and view pay components' },
+    { action: 'pos:payroll:components:create', description: 'Create pay components' },
+    { action: 'pos:payroll:adjustments:read', description: 'List and view payroll adjustments' },
+    { action: 'pos:payroll:adjustments:create', description: 'Create payroll adjustments' },
+    { action: 'pos:payroll:runs:read', description: 'List and view pay runs' },
+    { action: 'pos:payroll:runs:build', description: 'Build a new pay run' },
+    { action: 'pos:payroll:runs:approve', description: 'Approve a pay run' },
+    { action: 'pos:payroll:runs:pay', description: 'Mark a pay run as paid' },
+    { action: 'pos:payroll:slips:read', description: 'List and view pay slips' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -509,6 +520,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:workforce:schedules:publish',
         'pos:workforce:coverage-rules:read',
         'pos:workforce:coverage-rules:create',
+        // M26: Payroll Engine + Pay Runs + Payslips (Owner: full access)
+        'pos:payroll:components:read',
+        'pos:payroll:components:create',
+        'pos:payroll:adjustments:read',
+        'pos:payroll:adjustments:create',
+        'pos:payroll:runs:read',
+        'pos:payroll:runs:build',
+        'pos:payroll:runs:approve',
+        'pos:payroll:runs:pay',
+        'pos:payroll:slips:read',
     ],
     Manager: [
         'identity:user:read',
@@ -669,6 +690,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:workforce:schedules:publish',
         'pos:workforce:coverage-rules:read',
         'pos:workforce:coverage-rules:create',
+        // M26: Payroll Engine + Pay Runs + Payslips (Manager: full access except pay)
+        'pos:payroll:components:read',
+        'pos:payroll:components:create',
+        'pos:payroll:adjustments:read',
+        'pos:payroll:adjustments:create',
+        'pos:payroll:runs:read',
+        'pos:payroll:runs:build',
+        'pos:payroll:runs:approve',
+        'pos:payroll:slips:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -722,6 +752,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         // M24: Attendance + Leave (Accountant: read-only for attendance/leave)
         'pos:hr:attendance:read',
         'pos:hr:leave:read',
+        // M26: Payroll Engine (Accountant: read-only for payroll + slips)
+        'pos:payroll:components:read',
+        'pos:payroll:adjustments:read',
+        'pos:payroll:runs:read',
+        'pos:payroll:slips:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -855,6 +890,12 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:workforce:schedules:read',
         'pos:workforce:schedules:create',
         'pos:workforce:coverage-rules:read',
+        // M26: Payroll Engine (Supervisor: read + create adjustments)
+        'pos:payroll:components:read',
+        'pos:payroll:adjustments:read',
+        'pos:payroll:adjustments:create',
+        'pos:payroll:runs:read',
+        'pos:payroll:slips:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -914,6 +955,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         // M25: Scheduling (Cashier: read-only roster)
         'pos:workforce:templates:read',
         'pos:workforce:schedules:read',
+        // M26: Payroll (Cashier: read own slips only)
+        'pos:payroll:slips:read',
     ],
     Chef: [
         'identity:user:read',
@@ -992,6 +1035,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         // M25: Scheduling (Waiter: read-only roster)
         'pos:workforce:templates:read',
         'pos:workforce:schedules:read',
+        // M26: Payroll (Waiter: read own slips only)
+        'pos:payroll:slips:read',
     ],
     Bartender: [
         'identity:user:read',
@@ -5333,6 +5378,95 @@ async function seedWorkforceData(
     return { created, skipped };
 }
 
+// ── M26: Payroll Seed ──
+
+async function seedPayrollData(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findFirst({ where: { organizationId: orgId, slug: branchCode } });
+    if (!branch) {
+        console.log('  ⚠  No branch found — skipping payroll seed');
+        return { created, skipped };
+    }
+    const branchId = branch.id;
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    if (!owner) {
+        console.log('  ⚠  Owner user not found — skipping payroll seed');
+        return { created, skipped };
+    }
+
+    // 1) Pay Components
+    const componentDefs = [
+        { code: 'BASIC-SAL', name: 'Basic Salary', componentType: 'EARNING' as const, taxable: true, defaultAmount: 0 },
+        { code: 'TRANSPORT', name: 'Transport Allowance', componentType: 'EARNING' as const, taxable: false, defaultAmount: 50000 },
+        { code: 'HOUSING', name: 'Housing Allowance', componentType: 'EARNING' as const, taxable: false, defaultAmount: 100000 },
+        { code: 'NSSF-EMP', name: 'NSSF Employee Contribution', componentType: 'DEDUCTION' as const, taxable: false, defaultAmount: 25000 },
+        { code: 'PAYE', name: 'PAYE Tax', componentType: 'DEDUCTION' as const, taxable: false, defaultAmount: 0, calculationMethod: 'PAYE_BRACKET' },
+        { code: 'NSSF-ER', name: 'NSSF Employer Contribution', componentType: 'EMPLOYER_COST' as const, taxable: false, defaultAmount: 50000 },
+    ];
+
+    for (const def of componentDefs) {
+        const existing = await prisma.payComponent.findUnique({
+            where: { orgId_code: { orgId, code: def.code } },
+        });
+        if (existing) {
+            console.log(`  ⏭  PayComponent "${def.code}" exists — skipped`);
+            skipped++;
+            continue;
+        }
+        await prisma.payComponent.create({
+            data: {
+                orgId,
+                branchId,
+                code: def.code,
+                name: def.name,
+                componentType: def.componentType,
+                taxable: def.taxable,
+                defaultAmount: def.defaultAmount,
+                calculationMethod: def.calculationMethod,
+            },
+        });
+        console.log(`  ✅ PayComponent "${def.code}" created`);
+        created++;
+    }
+
+    // 2) Payroll Adjustment (demo bonus for first active employee)
+    const firstEmployee = await prisma.employee.findFirst({
+        where: { orgId, status: 'ACTIVE' },
+    });
+    if (firstEmployee) {
+        const adjExists = await prisma.payrollAdjustment.findFirst({
+            where: { orgId, employeeId: firstEmployee.id, adjustmentType: 'BONUS' },
+        });
+        if (adjExists) {
+            console.log(`  ⏭  Demo PayrollAdjustment exists — skipped`);
+            skipped++;
+        } else {
+            await prisma.payrollAdjustment.create({
+                data: {
+                    orgId,
+                    branchId,
+                    employeeId: firstEmployee.id,
+                    adjustmentType: 'BONUS',
+                    amount: 100000,
+                    effectiveDate: new Date(),
+                    notes: 'Demo performance bonus',
+                    createdById: owner.id,
+                },
+            });
+            console.log(`  ✅ Demo PayrollAdjustment (BONUS) created`);
+            created++;
+        }
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -5552,6 +5686,11 @@ async function main(): Promise<void> {
     const workforceResult = await seedWorkforceData(orgResult.orgId, 'main');
     console.log(`   Created: ${workforceResult.created}, Skipped: ${workforceResult.skipped}\n`);
 
+    // 41) Seed Payroll (M26)
+    console.log('── Payroll Engine + Pay Runs + Payslips (M26) ──');
+    const payrollResult = await seedPayrollData(orgResult.orgId, 'main');
+    console.log(`   Created: ${payrollResult.created}, Skipped: ${payrollResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -5652,6 +5791,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm25-scheduling-templates-duty-roster',
         `Workforce: ${workforceResult.created}c/${workforceResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm26-payroll-engine-pay-runs-payslips',
+        `Payroll: ${payrollResult.created}c/${payrollResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 
