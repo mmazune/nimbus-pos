@@ -257,6 +257,40 @@ Quick-reference of **every API endpoint** with Postman collection mapping.
 
 ---
 
+## Documents + Uploads + Attachments (M22)
+
+| Method | Path                                        | Collection                             |
+| ------ | ------------------------------------------- | -------------------------------------- |
+| POST   | `/api/documents/upload`                     | M22-Documents-Uploads-Attachments      |
+| GET    | `/api/documents`                            | M22-Documents-Uploads-Attachments      |
+| GET    | `/api/documents/storage-config`             | M22-Documents-Uploads-Attachments      |
+| PATCH  | `/api/documents/storage-config/:providerType` | M22-Documents-Uploads-Attachments    |
+| GET    | `/api/documents/:id`                        | M22-Documents-Uploads-Attachments      |
+| GET    | `/api/documents/:id/download`               | M22-Documents-Uploads-Attachments      |
+| DELETE | `/api/documents/:id`                        | M22-Documents-Uploads-Attachments      |
+| POST   | `/api/documents/:id/link`                   | M22-Documents-Uploads-Attachments      |
+| GET    | `/api/documents/:id/links`                  | M22-Documents-Uploads-Attachments      |
+| PATCH  | `/api/documents/:id/metadata`               | M22-Documents-Uploads-Attachments      |
+
+---
+
+## Employees + Contracts + HR Core (M23)
+
+| Method | Path                                        | Collection                             |
+| ------ | ------------------------------------------- | -------------------------------------- |
+| POST   | `/api/hr/employees`                         | M23-Employees-Contracts-HR-Core        |
+| GET    | `/api/hr/employees`                         | M23-Employees-Contracts-HR-Core        |
+| GET    | `/api/hr/employees/:id`                     | M23-Employees-Contracts-HR-Core        |
+| PATCH  | `/api/hr/employees/:id`                     | M23-Employees-Contracts-HR-Core        |
+| POST   | `/api/hr/contracts`                         | M23-Employees-Contracts-HR-Core        |
+| GET    | `/api/hr/contracts`                         | M23-Employees-Contracts-HR-Core        |
+| POST   | `/api/hr/positions`                         | M23-Employees-Contracts-HR-Core        |
+| GET    | `/api/hr/positions`                         | M23-Employees-Contracts-HR-Core        |
+| POST   | `/api/hr/compensation-profiles`             | M23-Employees-Contracts-HR-Core        |
+| GET    | `/api/hr/compensation-profiles`             | M23-Employees-Contracts-HR-Core        |
+
+---
+
 ## Common Pitfalls & Known Issues
 
 ### 1. Login returns 201, not 200

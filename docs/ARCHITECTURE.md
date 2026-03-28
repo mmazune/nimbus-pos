@@ -1008,3 +1008,64 @@ will migrate to cloud object storage (S3/GCS).
 - Shared role-filtered navigation
 - React Query for API state
 - Offline awareness reserved for reliability milestone (M41)
+
+## M23 — Employees + Contracts + HR Core
+
+### Overview
+
+M23 adds the foundational HR layer: employee master data, employment contracts, organizational positions, and compensation profiles. This module stores **who works here** only — attendance, scheduling, payroll, and performance are reserved for later milestones (M27+).
+
+### Models
+
+- **Employee** — Core HR record per org. Auto-generates `employeeCode` as `EMP-XXXXX`. Optional link to a `User` account (unique per employee), position, and compensation profile. Tracks status (ACTIVE, ON_LEAVE, SUSPENDED, TERMINATED) and employment type (PERMANENT, TEMPORARY, CASUAL, CONTRACTOR).
+- **EmploymentContract** — Formal contract record per employee. Auto-generates `contractNumber` as `CTR-XXXXX`. Tracks contract period (startsAt, endsAt), salary basis + amount, and status lifecycle (DRAFT → ACTIVE → EXPIRED/TERMINATED).
+- **Position** — Organizational position template (e.g., Head Chef, Waiter). Unique `code` per org.
+- **CompensationProfile** — Salary template (e.g., Monthly Senior, Daily Casual). Unique `code` per org.
+
+### Enums
+
+| Enum             | Values                                      |
+| ---------------- | ------------------------------------------- |
+| EmployeeStatus   | ACTIVE, ON_LEAVE, SUSPENDED, TERMINATED     |
+| EmploymentType   | PERMANENT, TEMPORARY, CASUAL, CONTRACTOR    |
+| ContractStatus   | DRAFT, ACTIVE, EXPIRED, TERMINATED          |
+| SalaryBasis      | HOURLY, DAILY, WEEKLY, MONTHLY              |
+
+### Endpoints
+
+All under `/api/hr`, protected by JwtAuthGuard + PermissionGuard + BranchContextGuard.
+
+- `POST /api/hr/employees` — Create employee
+- `GET /api/hr/employees` — List employees (paginated, filterable by status/type/positionId)
+- `GET /api/hr/employees/:id` — Get employee with contracts + position
+- `PATCH /api/hr/employees/:id` — Update employee fields
+- `POST /api/hr/contracts` — Create employment contract
+- `GET /api/hr/contracts` — List contracts (filterable by employeeId/status)
+- `POST /api/hr/positions` — Create position
+- `GET /api/hr/positions` — List all positions for org
+- `POST /api/hr/compensation-profiles` — Create compensation profile
+- `GET /api/hr/compensation-profiles` — List all compensation profiles for org
+
+### M23 Permissions
+
+| Permission                     | Description                       |
+| ------------------------------ | --------------------------------- |
+| pos:hr:employees:read          | List and view employees           |
+| pos:hr:employees:create        | Create employee records           |
+| pos:hr:employees:update        | Update employee records           |
+| pos:hr:contracts:read          | List and view employment contracts|
+| pos:hr:contracts:create        | Create employment contracts       |
+| pos:hr:positions:read          | List and view positions           |
+| pos:hr:positions:create        | Create positions                  |
+| pos:hr:compensation:read       | List and view compensation profiles|
+| pos:hr:compensation:create     | Create compensation profiles      |
+
+### M23 Audit Events
+
+| Action                         | Trigger                                     |
+| ------------------------------ | ------------------------------------------- |
+| EMPLOYEE_CREATED               | New employee record created                 |
+| EMPLOYEE_UPDATED               | Employee fields updated                     |
+| CONTRACT_CREATED               | Employment contract created                 |
+| POSITION_CREATED               | Position template created                   |
+| COMPENSATION_PROFILE_CREATED   | Compensation profile template created       |

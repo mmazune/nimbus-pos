@@ -17,7 +17,7 @@ The central HR record. Each employee has a unique `employeeCode` per organizatio
 | employeeCode | String | Unique per org, auto-generated |
 | firstName, lastName | String | Required |
 | status | EmployeeStatus | ACTIVE, ON_LEAVE, SUSPENDED, TERMINATED |
-| employmentType | EmploymentType | PERMANENT, TEMPORARY, CASUAL, INTERN |
+| employmentType | EmploymentType | PERMANENT, TEMPORARY, CASUAL, CONTRACTOR |
 | positionId | FK → Position | Optional link to position |
 | compensationProfileId | FK → CompensationProfile | Optional link |
 | userId | FK → User | Optional, unique per employee |

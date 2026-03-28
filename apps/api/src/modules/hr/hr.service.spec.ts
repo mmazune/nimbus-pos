@@ -140,12 +140,17 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValue(null);
       prisma.employee.create.mockResolvedValue(mockEmployee);
 
-      const result = await service.createEmployee('user-1', ctx, {
-        firstName: 'John',
-        lastName: 'Doe',
-        hireDate: '2024-01-15',
-        employmentType: 'PERMANENT' as any,
-      }, meta);
+      const result = await service.createEmployee(
+        'user-1',
+        ctx,
+        {
+          firstName: 'John',
+          lastName: 'Doe',
+          hireDate: '2024-01-15',
+          employmentType: 'PERMANENT' as any,
+        },
+        meta,
+      );
 
       expect(result).toBeDefined();
       expect(result.firstName).toBe('John');
@@ -159,13 +164,18 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValue(null);
       prisma.employee.create.mockResolvedValue({ ...mockEmployee, employeeCode: 'CHEF-001' });
 
-      const result = await service.createEmployee('user-1', ctx, {
-        employeeCode: 'CHEF-001',
-        firstName: 'John',
-        lastName: 'Doe',
-        hireDate: '2024-01-15',
-        employmentType: 'PERMANENT' as any,
-      }, meta);
+      const result = await service.createEmployee(
+        'user-1',
+        ctx,
+        {
+          employeeCode: 'CHEF-001',
+          firstName: 'John',
+          lastName: 'Doe',
+          hireDate: '2024-01-15',
+          employmentType: 'PERMANENT' as any,
+        },
+        meta,
+      );
 
       expect(result.employeeCode).toBe('CHEF-001');
     });
@@ -175,12 +185,17 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValue(null);
       prisma.employee.create.mockResolvedValue({ ...mockEmployee, userId: null });
 
-      const result = await service.createEmployee('user-1', ctx, {
-        firstName: 'Jane',
-        lastName: 'Doe',
-        hireDate: '2024-01-15',
-        employmentType: 'TEMPORARY' as any,
-      }, meta);
+      const result = await service.createEmployee(
+        'user-1',
+        ctx,
+        {
+          firstName: 'Jane',
+          lastName: 'Doe',
+          hireDate: '2024-01-15',
+          employmentType: 'TEMPORARY' as any,
+        },
+        meta,
+      );
 
       expect(result.userId).toBeNull();
     });
@@ -191,13 +206,18 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValueOnce(mockEmployee);
 
       await expect(
-        service.createEmployee('user-1', ctx, {
-          employeeCode: 'EMP-00001',
-          firstName: 'John',
-          lastName: 'Doe',
-          hireDate: '2024-01-15',
-          employmentType: 'PERMANENT' as any,
-        }, meta),
+        service.createEmployee(
+          'user-1',
+          ctx,
+          {
+            employeeCode: 'EMP-00001',
+            firstName: 'John',
+            lastName: 'Doe',
+            hireDate: '2024-01-15',
+            employmentType: 'PERMANENT' as any,
+          },
+          meta,
+        ),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -207,13 +227,18 @@ describe('HrService', () => {
       prisma.user.findUnique.mockResolvedValue(null); // user not found
 
       await expect(
-        service.createEmployee('user-1', ctx, {
-          userId: 'nonexistent-user',
-          firstName: 'John',
-          lastName: 'Doe',
-          hireDate: '2024-01-15',
-          employmentType: 'PERMANENT' as any,
-        }, meta),
+        service.createEmployee(
+          'user-1',
+          ctx,
+          {
+            userId: 'nonexistent-user',
+            firstName: 'John',
+            lastName: 'Doe',
+            hireDate: '2024-01-15',
+            employmentType: 'PERMANENT' as any,
+          },
+          meta,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -226,13 +251,18 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValueOnce({ ...mockEmployee, userId: 'user-2' });
 
       await expect(
-        service.createEmployee('user-1', ctx, {
-          userId: 'user-2',
-          firstName: 'John',
-          lastName: 'Doe',
-          hireDate: '2024-01-15',
-          employmentType: 'PERMANENT' as any,
-        }, meta),
+        service.createEmployee(
+          'user-1',
+          ctx,
+          {
+            userId: 'user-2',
+            firstName: 'John',
+            lastName: 'Doe',
+            hireDate: '2024-01-15',
+            employmentType: 'PERMANENT' as any,
+          },
+          meta,
+        ),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -244,9 +274,15 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValue(mockEmployee);
       prisma.employee.update.mockResolvedValue({ ...mockEmployee, firstName: 'Jane' });
 
-      const result = await service.updateEmployee('user-1', ctx, 'emp-1', {
-        firstName: 'Jane',
-      }, meta);
+      const result = await service.updateEmployee(
+        'user-1',
+        ctx,
+        'emp-1',
+        {
+          firstName: 'Jane',
+        },
+        meta,
+      );
 
       expect(result.firstName).toBe('Jane');
       expect(audit.log).toHaveBeenCalledWith(
@@ -274,9 +310,15 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValue(mockEmployee);
       prisma.employee.update.mockResolvedValue({ ...mockEmployee, status: 'ON_LEAVE' });
 
-      await service.updateEmployee('user-1', ctx, 'emp-1', {
-        status: 'ON_LEAVE' as any,
-      }, meta);
+      await service.updateEmployee(
+        'user-1',
+        ctx,
+        'emp-1',
+        {
+          status: 'ON_LEAVE' as any,
+        },
+        meta,
+      );
 
       expect(audit.log).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -363,12 +405,17 @@ describe('HrService', () => {
       prisma.employmentContract.findUnique.mockResolvedValue(null);
       prisma.employmentContract.create.mockResolvedValue(mockContract);
 
-      const result = await service.createContract('user-1', ctx, {
-        employeeId: 'emp-1',
-        startsAt: '2024-01-15',
-        salaryBasis: 'MONTHLY' as any,
-        salaryAmount: 5000000,
-      }, meta);
+      const result = await service.createContract(
+        'user-1',
+        ctx,
+        {
+          employeeId: 'emp-1',
+          startsAt: '2024-01-15',
+          salaryBasis: 'MONTHLY' as any,
+          salaryAmount: 5000000,
+        },
+        meta,
+      );
 
       expect(result).toBeDefined();
       expect(result.contractNumber).toBe('CTR-00001');
@@ -382,12 +429,17 @@ describe('HrService', () => {
       prisma.employmentContract.findUnique.mockResolvedValue(mockContract);
 
       await expect(
-        service.createContract('user-1', ctx, {
-          contractNumber: 'CTR-00001',
-          employeeId: 'emp-1',
-          startsAt: '2024-01-15',
-          salaryBasis: 'MONTHLY' as any,
-        }, meta),
+        service.createContract(
+          'user-1',
+          ctx,
+          {
+            contractNumber: 'CTR-00001',
+            employeeId: 'emp-1',
+            startsAt: '2024-01-15',
+            salaryBasis: 'MONTHLY' as any,
+          },
+          meta,
+        ),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -395,11 +447,16 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.createContract('user-1', ctx, {
-          employeeId: 'nonexistent',
-          startsAt: '2024-01-15',
-          salaryBasis: 'MONTHLY' as any,
-        }, meta),
+        service.createContract(
+          'user-1',
+          ctx,
+          {
+            employeeId: 'nonexistent',
+            startsAt: '2024-01-15',
+            salaryBasis: 'MONTHLY' as any,
+          },
+          meta,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -407,11 +464,16 @@ describe('HrService', () => {
       prisma.employee.findUnique.mockResolvedValue({ ...mockEmployee, orgId: 'org-other' });
 
       await expect(
-        service.createContract('user-1', ctx, {
-          employeeId: 'emp-1',
-          startsAt: '2024-01-15',
-          salaryBasis: 'MONTHLY' as any,
-        }, meta),
+        service.createContract(
+          'user-1',
+          ctx,
+          {
+            employeeId: 'emp-1',
+            startsAt: '2024-01-15',
+            salaryBasis: 'MONTHLY' as any,
+          },
+          meta,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -439,11 +501,16 @@ describe('HrService', () => {
       prisma.position.findUnique.mockResolvedValue(null);
       prisma.position.create.mockResolvedValue(mockPosition);
 
-      const result = await service.createPosition('user-1', ctx, {
-        code: 'HEAD-CHEF',
-        title: 'Head Chef',
-        department: 'Kitchen',
-      }, meta);
+      const result = await service.createPosition(
+        'user-1',
+        ctx,
+        {
+          code: 'HEAD-CHEF',
+          title: 'Head Chef',
+          department: 'Kitchen',
+        },
+        meta,
+      );
 
       expect(result.code).toBe('HEAD-CHEF');
       expect(audit.log).toHaveBeenCalledWith(
@@ -455,10 +522,15 @@ describe('HrService', () => {
       prisma.position.findUnique.mockResolvedValue(mockPosition);
 
       await expect(
-        service.createPosition('user-1', ctx, {
-          code: 'HEAD-CHEF',
-          title: 'Head Chef',
-        }, meta),
+        service.createPosition(
+          'user-1',
+          ctx,
+          {
+            code: 'HEAD-CHEF',
+            title: 'Head Chef',
+          },
+          meta,
+        ),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -483,12 +555,17 @@ describe('HrService', () => {
       prisma.compensationProfile.findUnique.mockResolvedValue(null);
       prisma.compensationProfile.create.mockResolvedValue(mockProfile);
 
-      const result = await service.createCompensationProfile('user-1', ctx, {
-        code: 'MONTHLY-STANDARD',
-        salaryBasis: 'MONTHLY' as any,
-        baseAmount: 3000000,
-        currency: 'UGX',
-      }, meta);
+      const result = await service.createCompensationProfile(
+        'user-1',
+        ctx,
+        {
+          code: 'MONTHLY-STANDARD',
+          salaryBasis: 'MONTHLY' as any,
+          baseAmount: 3000000,
+          currency: 'UGX',
+        },
+        meta,
+      );
 
       expect(result.code).toBe('MONTHLY-STANDARD');
       expect(audit.log).toHaveBeenCalledWith(
@@ -500,10 +577,15 @@ describe('HrService', () => {
       prisma.compensationProfile.findUnique.mockResolvedValue(mockProfile);
 
       await expect(
-        service.createCompensationProfile('user-1', ctx, {
-          code: 'MONTHLY-STANDARD',
-          salaryBasis: 'MONTHLY' as any,
-        }, meta),
+        service.createCompensationProfile(
+          'user-1',
+          ctx,
+          {
+            code: 'MONTHLY-STANDARD',
+            salaryBasis: 'MONTHLY' as any,
+          },
+          meta,
+        ),
       ).rejects.toThrow(ConflictException);
     });
   });

@@ -57,7 +57,9 @@ export class HrService {
       where: { orgId_employeeCode: { orgId, employeeCode } },
     });
     if (existing) {
-      throw new ConflictException(`Employee code "${employeeCode}" already exists in this organization`);
+      throw new ConflictException(
+        `Employee code "${employeeCode}" already exists in this organization`,
+      );
     }
 
     // Validate userId if provided
@@ -71,7 +73,9 @@ export class HrService {
         where: { userId: dto.userId },
       });
       if (linkedEmployee) {
-        throw new ConflictException(`User "${dto.userId}" is already linked to employee "${linkedEmployee.employeeCode}"`);
+        throw new ConflictException(
+          `User "${dto.userId}" is already linked to employee "${linkedEmployee.employeeCode}"`,
+        );
       }
     }
 
@@ -79,7 +83,9 @@ export class HrService {
     if (dto.positionId) {
       const position = await this.prisma.position.findUnique({ where: { id: dto.positionId } });
       if (!position || position.orgId !== orgId) {
-        throw new BadRequestException(`Position "${dto.positionId}" not found in this organization`);
+        throw new BadRequestException(
+          `Position "${dto.positionId}" not found in this organization`,
+        );
       }
     }
 
@@ -89,7 +95,9 @@ export class HrService {
         where: { id: dto.compensationProfileId },
       });
       if (!profile || profile.orgId !== orgId) {
-        throw new BadRequestException(`Compensation profile "${dto.compensationProfileId}" not found in this organization`);
+        throw new BadRequestException(
+          `Compensation profile "${dto.compensationProfileId}" not found in this organization`,
+        );
       }
     }
 
@@ -153,7 +161,9 @@ export class HrService {
     if (dto.positionId) {
       const position = await this.prisma.position.findUnique({ where: { id: dto.positionId } });
       if (!position || position.orgId !== orgId) {
-        throw new BadRequestException(`Position "${dto.positionId}" not found in this organization`);
+        throw new BadRequestException(
+          `Position "${dto.positionId}" not found in this organization`,
+        );
       }
     }
 
@@ -163,7 +173,9 @@ export class HrService {
         where: { id: dto.compensationProfileId },
       });
       if (!profile || profile.orgId !== orgId) {
-        throw new BadRequestException(`Compensation profile "${dto.compensationProfileId}" not found in this organization`);
+        throw new BadRequestException(
+          `Compensation profile "${dto.compensationProfileId}" not found in this organization`,
+        );
       }
     }
 
@@ -173,13 +185,17 @@ export class HrService {
     if (dto.middleName !== undefined) data.middleName = dto.middleName;
     if (dto.phone !== undefined) data.phone = dto.phone;
     if (dto.email !== undefined) data.email = dto.email;
-    if (dto.dateOfBirth !== undefined) data.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
+    if (dto.dateOfBirth !== undefined)
+      data.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.employmentType !== undefined) data.employmentType = dto.employmentType;
     if (dto.positionId !== undefined) data.positionId = dto.positionId || null;
-    if (dto.compensationProfileId !== undefined) data.compensationProfileId = dto.compensationProfileId || null;
-    if (dto.emergencyContactName !== undefined) data.emergencyContactName = dto.emergencyContactName;
-    if (dto.emergencyContactPhone !== undefined) data.emergencyContactPhone = dto.emergencyContactPhone;
+    if (dto.compensationProfileId !== undefined)
+      data.compensationProfileId = dto.compensationProfileId || null;
+    if (dto.emergencyContactName !== undefined)
+      data.emergencyContactName = dto.emergencyContactName;
+    if (dto.emergencyContactPhone !== undefined)
+      data.emergencyContactPhone = dto.emergencyContactPhone;
     if (dto.address !== undefined) data.address = dto.address || Prisma.JsonNull;
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.metadata !== undefined) data.metadata = dto.metadata || Prisma.JsonNull;
@@ -197,9 +213,10 @@ export class HrService {
       entityId: updated.id,
       metadata: {
         updatedFields: Object.keys(data),
-        statusChange: dto.status && dto.status !== employee.status
-          ? { from: employee.status, to: dto.status }
-          : undefined,
+        statusChange:
+          dto.status && dto.status !== employee.status
+            ? { from: employee.status, to: dto.status }
+            : undefined,
         ...auditMeta,
       },
     });
@@ -243,10 +260,7 @@ export class HrService {
     return { data, total, skip, take };
   }
 
-  async getEmployee(
-    ctx: { branchId: string; organizationId: string },
-    employeeId: string,
-  ) {
+  async getEmployee(ctx: { branchId: string; organizationId: string }, employeeId: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
       include: {
@@ -285,7 +299,9 @@ export class HrService {
       where: { orgId_contractNumber: { orgId, contractNumber } },
     });
     if (existing) {
-      throw new ConflictException(`Contract number "${contractNumber}" already exists in this organization`);
+      throw new ConflictException(
+        `Contract number "${contractNumber}" already exists in this organization`,
+      );
     }
 
     const contract = await this.prisma.employmentContract.create({
@@ -365,7 +381,9 @@ export class HrService {
       where: { orgId_code: { orgId, code: dto.code } },
     });
     if (existing) {
-      throw new ConflictException(`Position code "${dto.code}" already exists in this organization`);
+      throw new ConflictException(
+        `Position code "${dto.code}" already exists in this organization`,
+      );
     }
 
     const position = await this.prisma.position.create({
@@ -414,7 +432,9 @@ export class HrService {
       where: { orgId_code: { orgId, code: dto.code } },
     });
     if (existing) {
-      throw new ConflictException(`Compensation profile code "${dto.code}" already exists in this organization`);
+      throw new ConflictException(
+        `Compensation profile code "${dto.code}" already exists in this organization`,
+      );
     }
 
     const profile = await this.prisma.compensationProfile.create({
