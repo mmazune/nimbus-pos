@@ -219,6 +219,8 @@ model User {
     leaveRequestsRequested  LeaveRequest[]       @relation("LeaveRequestedBy")
     leaveRequestsReviewed   LeaveRequest[]       @relation("LeaveReviewedBy")
     shiftSwapsApproved      ShiftSwapRequest[]   @relation("ShiftSwapApprovedBy")
+    // M25 — Scheduling + Templates + Duty Roster
+    schedulesPublished      Schedule[]           @relation("SchedulePublishedBy")
 
     @@map("users")
 }
@@ -429,6 +431,11 @@ model Organization {
     leaveRequests          LeaveRequest[]
     shiftSwapRequests      ShiftSwapRequest[]
     attendancePolicies     AttendancePolicy[]
+    // M25 — Scheduling + Templates + Duty Roster
+    shiftTemplates         ShiftTemplate[]
+    schedules              Schedule[]
+    scheduleAssignments    ScheduleAssignment[]
+    coverageRules          CoverageRule[]
 
     @@map("organizations")
 }
@@ -512,6 +519,11 @@ model Branch {
     leaveRequests       LeaveRequest[]
     shiftSwapRequests   ShiftSwapRequest[]
     attendancePolicies  AttendancePolicy[]
+    // M25 — Scheduling + Templates + Duty Roster
+    shiftTemplates      ShiftTemplate[]
+    schedules           Schedule[]
+    scheduleAssignments ScheduleAssignment[]
+    coverageRules       CoverageRule[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2901,6 +2913,8 @@ model Employee {
     leaveRequests       LeaveRequest[]       @relation("LeaveRequestEmployee")
     shiftSwapsRequested ShiftSwapRequest[]   @relation("ShiftSwapRequester")
     shiftSwapsTargeted  ShiftSwapRequest[]   @relation("ShiftSwapTarget")
+    // M25 — Scheduling + Templates + Duty Roster
+    scheduleAssignments ScheduleAssignment[]
 
     @@unique([orgId, employeeCode])
     @@index([orgId])
@@ -2966,6 +2980,9 @@ model Position {
     organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
     branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
     employees    Employee[]
+    // M25 — Scheduling + Templates + Duty Roster
+    shiftTemplates ShiftTemplate[]
+    coverageRules  CoverageRule[]
 
     @@unique([orgId, code])
     @@index([orgId])
@@ -3163,4 +3180,160 @@ model AttendancePolicy {
     @@index([active])
     @@index([orgId, branchId, active])
     @@map("attendance_policies")
+}
+
+// ── M25 Enums ──
+
+enum ScheduleStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+enum CoverageRuleStatus {
+    ACTIVE
+    INACTIVE
+}
+
+enum CoverageSeverity {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+}
+
+// ── M25 Models ──
+
+/// Reusable shift template defining a time window, expected headcount, and optional role/position scope.
+model ShiftTemplate {
+    id                String   @id @default(cuid())
+    orgId             String   @map("org_id")
+    branchId          String?  @map("branch_id")
+    code              String
+    name              String
+    startsAtTime      String   @map("starts_at_time")
+    endsAtTime        String   @map("ends_at_time")
+    roleKey           String?  @map("role_key")
+    positionId        String?  @map("position_id")
+    expectedHeadcount Int      @default(1) @map("expected_headcount")
+    active            Boolean  @default(true)
+    notes             String?
+    metadata          Json?
+    createdAt         DateTime @default(now()) @map("created_at")
+    updatedAt         DateTime @updatedAt @map("updated_at")
+
+    organization        Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch              Branch?              @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    position            Position?            @relation(fields: [positionId], references: [id], onDelete: SetNull)
+    scheduleAssignments ScheduleAssignment[]
+
+    @@unique([orgId, code])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([code])
+    @@index([roleKey])
+    @@index([positionId])
+    @@index([active])
+    @@index([orgId, branchId, active])
+    @@map("shift_templates")
+}
+
+/// A schedule covering a date range for a branch, with versioned publish flow.
+model Schedule {
+    id            String         @id @default(cuid())
+    orgId         String         @map("org_id")
+    branchId      String         @map("branch_id")
+    name          String
+    dateFrom      DateTime       @map("date_from") @db.Date
+    dateTo        DateTime       @map("date_to") @db.Date
+    status        ScheduleStatus @default(DRAFT)
+    version       Int            @default(1)
+    publishedAt   DateTime?      @map("published_at")
+    publishedById String?        @map("published_by_id")
+    notes         String?
+    metadata      Json?
+    createdAt     DateTime       @default(now()) @map("created_at")
+    updatedAt     DateTime       @updatedAt @map("updated_at")
+
+    organization Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch               @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    publishedBy  User?                @relation("SchedulePublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+    assignments  ScheduleAssignment[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([status])
+    @@index([dateFrom])
+    @@index([dateTo])
+    @@index([orgId, branchId, status])
+    @@index([orgId, branchId, dateFrom, dateTo])
+    @@map("schedules")
+}
+
+/// Assignment of an employee to a shift within a schedule.
+model ScheduleAssignment {
+    id              String   @id @default(cuid())
+    orgId           String   @map("org_id")
+    branchId        String   @map("branch_id")
+    scheduleId      String   @map("schedule_id")
+    shiftTemplateId String   @map("shift_template_id")
+    employeeId      String   @map("employee_id")
+    shiftDate       DateTime @map("shift_date") @db.Date
+    startsAt        DateTime? @map("starts_at")
+    endsAt          DateTime? @map("ends_at")
+    roleKey         String?  @map("role_key")
+    status          String?
+    notes           String?
+    metadata        Json?
+    createdAt       DateTime @default(now()) @map("created_at")
+    updatedAt       DateTime @updatedAt @map("updated_at")
+
+    organization  Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch        Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+    schedule      Schedule      @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+    shiftTemplate ShiftTemplate @relation(fields: [shiftTemplateId], references: [id], onDelete: Cascade)
+    employee      Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+    @@unique([scheduleId, shiftTemplateId, employeeId, shiftDate])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([scheduleId])
+    @@index([shiftTemplateId])
+    @@index([employeeId])
+    @@index([shiftDate])
+    @@index([status])
+    @@index([roleKey])
+    @@index([orgId, branchId, shiftDate])
+    @@map("schedule_assignments")
+}
+
+/// Coverage rule defining minimum headcount requirements for a role/position in a time window.
+model CoverageRule {
+    id               String             @id @default(cuid())
+    orgId            String             @map("org_id")
+    branchId         String?            @map("branch_id")
+    name             String
+    roleKey          String?            @map("role_key")
+    positionId       String?            @map("position_id")
+    minimumHeadcount Int                @default(1) @map("minimum_headcount")
+    appliesFromTime  String?            @map("applies_from_time")
+    appliesToTime    String?            @map("applies_to_time")
+    status           CoverageRuleStatus @default(ACTIVE)
+    severity         CoverageSeverity   @default(MEDIUM)
+    notes            String?
+    metadata         Json?
+    createdAt        DateTime           @default(now()) @map("created_at")
+    updatedAt        DateTime           @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    position     Position?    @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([roleKey])
+    @@index([positionId])
+    @@index([status])
+    @@index([orgId, branchId, status])
+    @@map("coverage_rules")
 }
