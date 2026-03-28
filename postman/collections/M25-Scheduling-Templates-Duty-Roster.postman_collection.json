@@ -36,9 +36,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -46,8 +55,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/templates",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "templates"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "templates"
+                            ]
                         }
                     }
                 },
@@ -70,14 +85,31 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/templates?active=true",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "templates"],
-                            "query": [{ "key": "active", "value": "true" }]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "templates"
+                            ],
+                            "query": [
+                                {
+                                    "key": "active",
+                                    "value": "true"
+                                }
+                            ]
                         }
                     }
                 }
@@ -108,9 +140,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -118,8 +159,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/schedules",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "schedules"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "schedules"
+                            ]
                         }
                     }
                 },
@@ -128,9 +175,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -138,8 +194,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/schedules",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "schedules"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "schedules"
+                            ]
                         }
                     }
                 },
@@ -162,13 +224,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/schedules",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "schedules"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "schedules"
+                            ]
                         }
                     }
                 },
@@ -190,13 +264,26 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/schedules/{{scheduleId}}",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "schedules", "{{scheduleId}}"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "schedules",
+                                "{{scheduleId}}"
+                            ]
                         }
                     }
                 },
@@ -219,9 +306,18 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -229,8 +325,16 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/schedules/{{scheduleId}}/publish",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "schedules", "{{scheduleId}}", "publish"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "schedules",
+                                "{{scheduleId}}",
+                                "publish"
+                            ]
                         }
                     }
                 },
@@ -252,13 +356,27 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/schedules/{{scheduleId}}/archive",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "schedules", "{{scheduleId}}", "archive"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "schedules",
+                                "{{scheduleId}}",
+                                "archive"
+                            ]
                         }
                     }
                 }
@@ -286,16 +404,34 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/roster?dateFrom=2025-06-01&dateTo=2025-06-30",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "roster"],
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "roster"
+                            ],
                             "query": [
-                                { "key": "dateFrom", "value": "2025-06-01" },
-                                { "key": "dateTo", "value": "2025-06-30" }
+                                {
+                                    "key": "dateFrom",
+                                    "value": "2025-06-01"
+                                },
+                                {
+                                    "key": "dateTo",
+                                    "value": "2025-06-30"
+                                }
                             ]
                         }
                     }
@@ -326,9 +462,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -336,8 +481,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/coverage-rules",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "coverage-rules"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "coverage-rules"
+                            ]
                         }
                     }
                 },
@@ -359,13 +510,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/coverage-rules",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "coverage-rules"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "coverage-rules"
+                            ]
                         }
                     }
                 }
@@ -392,16 +555,34 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/workforce/coverage-gaps?dateFrom=2025-06-16&dateTo=2025-06-22",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "workforce", "coverage-gaps"],
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "workforce",
+                                "coverage-gaps"
+                            ],
                             "query": [
-                                { "key": "dateFrom", "value": "2025-06-16" },
-                                { "key": "dateTo", "value": "2025-06-22" }
+                                {
+                                    "key": "dateFrom",
+                                    "value": "2025-06-16"
+                                },
+                                {
+                                    "key": "dateTo",
+                                    "value": "2025-06-22"
+                                }
                             ]
                         }
                     }
