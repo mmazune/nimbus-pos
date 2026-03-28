@@ -7,4 +7,4 @@ import { DocumentsService } from './documents.service';
   providers: [DocumentsService],
   exports: [DocumentsService],
 })
-export class DocumentsModule {}
+export class DocumentsModule { }
