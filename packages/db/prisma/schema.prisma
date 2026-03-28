@@ -21,6 +21,7 @@
 // M19 models: KpiSnapshot, KpiSubscription + KpiScopeType, KpiMetricWindow, KpiSubscriptionStatus enums
 // M20 models: ReportRun, ExportArtifact + ReportType, ReportWindow, ExportFormat, ReportRunStatus, ExportArtifactStatus enums
 // M21 models: Feedback, FeedbackTag, NpsSummary, FeedbackRequest + FeedbackStatus, FeedbackSource, FeedbackSentiment, FeedbackRequestStatus, NpsBucket enums
+// M22 models: Document, DocumentLink, StorageProviderConfig + DocumentStatus, DocumentType, DocumentLinkType, StorageProviderType enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -203,6 +204,10 @@ model User {
     feedbacksResolved       Feedback[]           @relation("FeedbackResolvedBy")
     feedbackTagsCreated     FeedbackTag[]        @relation("FeedbackTagCreatedBy")
     feedbackRequestsCreated FeedbackRequest[]    @relation("FeedbackRequestCreatedBy")
+    // M22 — Documents + Uploads
+    documentsUploaded       Document[]           @relation("DocumentUploadedBy")
+    documentsDeleted        Document[]           @relation("DocumentDeletedBy")
+    documentLinksCreated    DocumentLink[]       @relation("DocumentLinkCreatedBy")
 
     @@map("users")
 }
@@ -399,6 +404,10 @@ model Organization {
     feedbackTags        FeedbackTag[]
     npsSummaries        NpsSummary[]
     feedbackRequests    FeedbackRequest[]
+    // M22 — Documents + Uploads
+    documents              Document[]
+    documentLinks          DocumentLink[]
+    storageProviderConfigs StorageProviderConfig[]
 
     @@map("organizations")
 }
@@ -469,6 +478,9 @@ model Branch {
     feedbackTags        FeedbackTag[]
     npsSummaries        NpsSummary[]
     feedbackRequests    FeedbackRequest[]
+    // M22 — Documents + Uploads
+    documents           Document[]
+    documentLinks       DocumentLink[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2654,4 +2666,136 @@ model FeedbackRequest {
     @@index([source])
     @@index([orgId, branchId, status])
     @@map("feedback_requests")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// M22 — Documents + Uploads + Attachments
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Enums (M22) ──
+
+enum DocumentStatus {
+    ACTIVE
+    DELETED
+}
+
+enum DocumentType {
+    RECEIPT
+    INVOICE
+    CONTRACT
+    PAYSLIP
+    REPORT_EXPORT
+    ATTACHMENT
+    OTHER
+}
+
+enum DocumentLinkType {
+    ORDER
+    RESERVATION
+    EVENT
+    REPORT_RUN
+    EXPORT_ARTIFACT
+    USER
+    EMPLOYEE
+    VENDOR
+    CUSTOMER
+    OTHER
+}
+
+enum StorageProviderType {
+    LOCAL
+    S3
+    GCS
+    OTHER
+}
+
+// ── M22 Models ──
+
+/// Uploaded document / file with checksum-based deduplication.
+model Document {
+    id               String              @id @default(cuid())
+    orgId            String              @map("org_id")
+    branchId         String?             @map("branch_id")
+    fileName         String              @map("file_name")
+    originalFileName String              @map("original_file_name")
+    mimeType         String              @map("mime_type")
+    fileExtension    String?             @map("file_extension")
+    fileSizeBytes    Int                 @map("file_size_bytes")
+    checksum         String
+    storageProvider  StorageProviderType @map("storage_provider")
+    storagePath      String              @map("storage_path")
+    documentType     DocumentType        @map("document_type")
+    status           DocumentStatus      @default(ACTIVE)
+    uploadedById     String              @map("uploaded_by_id")
+    uploadedAt       DateTime            @default(now()) @map("uploaded_at")
+    deletedAt        DateTime?           @map("deleted_at")
+    deletedById      String?             @map("deleted_by_id")
+    metadata         Json?
+    createdAt        DateTime            @default(now()) @map("created_at")
+    updatedAt        DateTime            @updatedAt @map("updated_at")
+
+    organization Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    uploadedBy   User           @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+    deletedBy    User?          @relation("DocumentDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+    links        DocumentLink[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([documentType])
+    @@index([status])
+    @@index([checksum])
+    @@index([uploadedById])
+    @@index([orgId, branchId, status])
+    @@index([orgId, checksum])
+    @@map("documents")
+}
+
+/// Link between a document and a business record (order, reservation, etc.).
+model DocumentLink {
+    id                String           @id @default(cuid())
+    orgId             String           @map("org_id")
+    branchId          String?          @map("branch_id")
+    documentId        String           @map("document_id")
+    linkType          DocumentLinkType @map("link_type")
+    linkedRecordId    String           @map("linked_record_id")
+    linkedRecordLabel String?          @map("linked_record_label")
+    createdById       String           @map("created_by_id")
+    metadata          Json?
+    createdAt         DateTime         @default(now()) @map("created_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    document     Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+    createdBy    User         @relation("DocumentLinkCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+    @@unique([documentId, linkType, linkedRecordId])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([documentId])
+    @@index([linkType])
+    @@index([linkedRecordId])
+    @@index([linkType, linkedRecordId])
+    @@map("document_links")
+}
+
+/// Per-org storage provider configuration (LOCAL for v1).
+model StorageProviderConfig {
+    id                String              @id @default(cuid())
+    orgId             String              @map("org_id")
+    providerType      StorageProviderType @map("provider_type")
+    enabled           Boolean             @default(true)
+    bucketOrContainer String?             @map("bucket_or_container")
+    basePath          String?             @map("base_path")
+    publicBaseUrl     String?             @map("public_base_url")
+    metadata          Json?
+    createdAt         DateTime            @default(now()) @map("created_at")
+    updatedAt         DateTime            @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+    @@unique([orgId, providerType])
+    @@index([orgId])
+    @@index([providerType])
+    @@map("storage_provider_configs")
 }

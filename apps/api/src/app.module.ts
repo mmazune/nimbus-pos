@@ -24,6 +24,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardsModule } from './modules/dashboards/dashboards.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 
 @Module({
   imports: [
@@ -50,8 +51,9 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
     DashboardsModule,
     ReportsModule,
     FeedbackModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
