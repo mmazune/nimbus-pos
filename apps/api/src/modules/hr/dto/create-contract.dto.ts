@@ -1,48 +1,48 @@
 import {
-    IsString,
-    IsOptional,
-    IsEnum,
-    IsDateString,
-    IsObject,
-    MaxLength,
-    IsNumber,
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+  IsObject,
+  MaxLength,
+  IsNumber,
 } from 'class-validator';
 import { ContractStatus, SalaryBasis } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class CreateContractDto {
-    @IsString()
-    employeeId!: string;
+  @IsString()
+  employeeId!: string;
 
-    @IsString()
-    @IsOptional()
-    @MaxLength(50)
-    contractNumber?: string;
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  contractNumber?: string;
 
-    @IsEnum(ContractStatus)
-    @IsOptional()
-    contractStatus?: ContractStatus;
+  @IsEnum(ContractStatus)
+  @IsOptional()
+  contractStatus?: ContractStatus;
 
-    @IsDateString()
-    startsAt!: string;
+  @IsDateString()
+  startsAt!: string;
 
-    @IsDateString()
-    @IsOptional()
-    endsAt?: string;
+  @IsDateString()
+  @IsOptional()
+  endsAt?: string;
 
-    @IsEnum(SalaryBasis)
-    salaryBasis!: SalaryBasis;
+  @IsEnum(SalaryBasis)
+  salaryBasis!: SalaryBasis;
 
-    @IsNumber({ maxDecimalPlaces: 2 })
-    @IsOptional()
-    @Type(() => Number)
-    salaryAmount?: number;
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  salaryAmount?: number;
 
-    @IsString()
-    @IsOptional()
-    termsSummary?: string;
+  @IsString()
+  @IsOptional()
+  termsSummary?: string;
 
-    @IsObject()
-    @IsOptional()
-    metadata?: Record<string, any>;
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, any>;
 }

@@ -3,8 +3,8 @@ import { HrController } from './hr.controller';
 import { HrService } from './hr.service';
 
 @Module({
-    controllers: [HrController],
-    providers: [HrService],
-    exports: [HrService],
+  controllers: [HrController],
+  providers: [HrService],
+  exports: [HrService],
 })
-export class HrModule { }
+export class HrModule {}

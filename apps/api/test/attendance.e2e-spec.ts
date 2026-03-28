@@ -588,9 +588,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     });
 
     it('should 401 without auth token', async () => {
-      await request(app.getHttpServer())
-        .get('/api/hr/attendance')
-        .expect(401);
+      await request(app.getHttpServer()).get('/api/hr/attendance').expect(401);
     });
   });
 });
