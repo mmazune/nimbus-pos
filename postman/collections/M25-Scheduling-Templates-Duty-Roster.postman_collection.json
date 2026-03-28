@@ -1,0 +1,412 @@
+{
+    "info": {
+        "name": "M25 - Scheduling + Templates + Duty Roster",
+        "description": "API collection for M25 — Shift Templates, Schedules, Roster, Coverage Rules & Gaps",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Shift Templates",
+            "item": [
+                {
+                    "name": "Create Shift Template",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('shiftTemplateId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "    pm.test('has code', () => pm.expect(body.code).to.be.a('string'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"WEEKDAY-AM\",\n    \"name\": \"Weekday Morning\",\n    \"startsAtTime\": \"06:00\",\n    \"endsAtTime\": \"14:00\",\n    \"expectedHeadcount\": 3\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/templates",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "templates"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Shift Templates",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/templates?active=true",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "templates"],
+                            "query": [{ "key": "active", "value": "true" }]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Schedules",
+            "item": [
+                {
+                    "name": "Create Schedule",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('scheduleId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "    pm.test('status is DRAFT', () => pm.expect(body.status).to.eql('DRAFT'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Week 26 Schedule\",\n    \"dateFrom\": \"2025-06-23\",\n    \"dateTo\": \"2025-06-29\",\n    \"notes\": \"Created via Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/schedules",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "schedules"]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Schedule with Assignments",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Week 27 With Assignments\",\n    \"dateFrom\": \"2025-06-30\",\n    \"dateTo\": \"2025-07-06\",\n    \"assignments\": [\n        {\n            \"shiftTemplateId\": \"{{shiftTemplateId}}\",\n            \"employeeId\": \"{{employeeId}}\",\n            \"shiftDate\": \"2025-06-30\"\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/schedules",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "schedules"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Schedules",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/schedules",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "schedules"]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Schedule by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.eql(pm.environment.get('scheduleId')));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/schedules/{{scheduleId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "schedules", "{{scheduleId}}"]
+                        }
+                    }
+                },
+                {
+                    "name": "Publish Schedule",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is PUBLISHED', () => pm.expect(body.status).to.eql('PUBLISHED'));",
+                                    "pm.test('has publishedAt', () => pm.expect(body.publishedAt).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"Published via Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/schedules/{{scheduleId}}/publish",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "schedules", "{{scheduleId}}", "publish"]
+                        }
+                    }
+                },
+                {
+                    "name": "Archive Schedule",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is ARCHIVED', () => pm.expect(body.status).to.eql('ARCHIVED'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/schedules/{{scheduleId}}/archive",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "schedules", "{{scheduleId}}", "archive"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Roster",
+            "item": [
+                {
+                    "name": "Get Roster",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/roster?dateFrom=2025-06-01&dateTo=2025-06-30",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "roster"],
+                            "query": [
+                                { "key": "dateFrom", "value": "2025-06-01" },
+                                { "key": "dateTo", "value": "2025-06-30" }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Coverage Rules",
+            "item": [
+                {
+                    "name": "Create Coverage Rule",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('coverageRuleId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Kitchen Morning Coverage\",\n    \"roleKey\": \"COOK\",\n    \"minimumHeadcount\": 2,\n    \"appliesFromTime\": \"06:00\",\n    \"appliesToTime\": \"14:00\",\n    \"severity\": \"HIGH\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/coverage-rules",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "coverage-rules"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Coverage Rules",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('is array', () => pm.expect(body).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/coverage-rules",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "coverage-rules"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Coverage Gaps",
+            "item": [
+                {
+                    "name": "Get Coverage Gaps",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has gaps array', () => pm.expect(body.gaps).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/workforce/coverage-gaps?dateFrom=2025-06-16&dateTo=2025-06-22",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "workforce", "coverage-gaps"],
+                            "query": [
+                                { "key": "dateFrom", "value": "2025-06-16" },
+                                { "key": "dateTo", "value": "2025-06-22" }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

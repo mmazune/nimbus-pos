@@ -38,6 +38,7 @@
 | **Documents / Uploads**             | `apps/api/src/modules/documents/`    | M22       | ✅ Implemented |
 | **HR / Employees + Contracts**      | `apps/api/src/modules/hr/`           | M23       | ✅ Implemented |
 | **HR / Attendance + Leave + Swaps** | `apps/api/src/modules/attendance/`   | M24       | ✅ Implemented |
+| **Scheduling + Templates + Roster** | `apps/api/src/modules/workforce/`    | M25       | ✅ Implemented |
 | **HR / Scheduling / Roster**        | `apps/api/src/modules/hr/`           | M29       | ⬜ Planned     |
 | **Payroll**                         | `apps/api/src/modules/payroll/`      | M30       | ⬜ Planned     |
 | **Staff Insights**                  | `apps/api/src/modules/hr/`           | M31       | ⬜ Planned     |

@@ -305,6 +305,15 @@ const PERMISSIONS_DATA = [
     { action: 'pos:hr:attendance-policy:read', description: 'List and view attendance policies' },
     { action: 'pos:hr:attendance-policy:create', description: 'Create attendance policies' },
     { action: 'pos:hr:attendance-policy:update', description: 'Update attendance policies' },
+
+    // ── M25: Scheduling + Templates + Duty Roster ──
+    { action: 'pos:workforce:templates:read', description: 'List and view shift templates' },
+    { action: 'pos:workforce:templates:create', description: 'Create shift templates' },
+    { action: 'pos:workforce:schedules:read', description: 'List and view schedules and roster' },
+    { action: 'pos:workforce:schedules:create', description: 'Create schedules with assignments' },
+    { action: 'pos:workforce:schedules:publish', description: 'Publish or archive schedules' },
+    { action: 'pos:workforce:coverage-rules:read', description: 'List and view coverage rules and gaps' },
+    { action: 'pos:workforce:coverage-rules:create', description: 'Create coverage rules' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -492,6 +501,14 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:attendance-policy:read',
         'pos:hr:attendance-policy:create',
         'pos:hr:attendance-policy:update',
+        // M25: Scheduling + Templates + Duty Roster (Owner: full access)
+        'pos:workforce:templates:read',
+        'pos:workforce:templates:create',
+        'pos:workforce:schedules:read',
+        'pos:workforce:schedules:create',
+        'pos:workforce:schedules:publish',
+        'pos:workforce:coverage-rules:read',
+        'pos:workforce:coverage-rules:create',
     ],
     Manager: [
         'identity:user:read',
@@ -644,6 +661,14 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:shift-swaps:read',
         'pos:hr:shift-swaps:approve',
         'pos:hr:attendance-policy:read',
+        // M25: Scheduling + Templates + Duty Roster (Manager: full access)
+        'pos:workforce:templates:read',
+        'pos:workforce:templates:create',
+        'pos:workforce:schedules:read',
+        'pos:workforce:schedules:create',
+        'pos:workforce:schedules:publish',
+        'pos:workforce:coverage-rules:read',
+        'pos:workforce:coverage-rules:create',
     ],
     Accountant: [
         'identity:user:read',
@@ -825,6 +850,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:shift-swaps:read',
         'pos:hr:shift-swaps:approve',
         'pos:hr:attendance-policy:read',
+        // M25: Scheduling + Templates + Duty Roster (Supervisor: read + create schedules)
+        'pos:workforce:templates:read',
+        'pos:workforce:schedules:read',
+        'pos:workforce:schedules:create',
+        'pos:workforce:coverage-rules:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -881,6 +911,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:leave:read',
         'pos:hr:shift-swaps:create',
         'pos:hr:shift-swaps:read',
+        // M25: Scheduling (Cashier: read-only roster)
+        'pos:workforce:templates:read',
+        'pos:workforce:schedules:read',
     ],
     Chef: [
         'identity:user:read',
@@ -956,6 +989,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:hr:leave:read',
         'pos:hr:shift-swaps:create',
         'pos:hr:shift-swaps:read',
+        // M25: Scheduling (Waiter: read-only roster)
+        'pos:workforce:templates:read',
+        'pos:workforce:schedules:read',
     ],
     Bartender: [
         'identity:user:read',
@@ -5141,6 +5177,162 @@ async function seedAttendanceData(
     return { created, skipped };
 }
 
+// ── M25: Scheduling + Templates + Duty Roster Seed Data ──
+
+async function seedWorkforceData(
+    orgId: string,
+    branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    // Find branch
+    const branch = await prisma.branch.findFirst({ where: { orgId, code: branchCode } });
+    if (!branch) {
+        console.log(`  ⚠️  Branch "${branchCode}" not found — skipping workforce data`);
+        return { created, skipped };
+    }
+
+    // Shift Templates
+    const templates = [
+        { code: 'WEEKDAY-AM', name: 'Weekday Morning', startsAtTime: '06:00', endsAtTime: '14:00', expectedHeadcount: 3 },
+        { code: 'WEEKDAY-PM', name: 'Weekday Evening', startsAtTime: '14:00', endsAtTime: '22:00', expectedHeadcount: 4 },
+        { code: 'WEEKEND-BRU', name: 'Weekend Brunch', startsAtTime: '08:00', endsAtTime: '15:00', expectedHeadcount: 5 },
+        { code: 'EVENT-NIGHT', name: 'Event Night', startsAtTime: '18:00', endsAtTime: '02:00', expectedHeadcount: 6 },
+    ];
+
+    for (const t of templates) {
+        const existing = await prisma.shiftTemplate.findUnique({
+            where: { orgId_code: { orgId, code: t.code } },
+        });
+        if (existing) {
+            console.log(`  ⏭  ShiftTemplate "${t.code}" already exists — skipped`);
+            skipped++;
+        } else {
+            await prisma.shiftTemplate.create({
+                data: { orgId, branchId: branch.id, ...t },
+            });
+            console.log(`  ✅ ShiftTemplate "${t.code}" created`);
+            created++;
+        }
+    }
+
+    // Find employees for assignments
+    const employees = await prisma.employee.findMany({
+        where: { orgId },
+        take: 2,
+    });
+
+    // Schedules: 1 DRAFT + 1 PUBLISHED
+    const draftName = 'Week 26 Draft';
+    const publishedName = 'Week 25 Published';
+    const ownerUser = await prisma.user.findFirst({ where: { email: 'owner@demo.local' } });
+
+    const existingDraft = await prisma.schedule.findFirst({ where: { orgId, name: draftName } });
+    if (existingDraft) {
+        console.log(`  ⏭  Schedule "${draftName}" already exists — skipped`);
+        skipped++;
+    } else {
+        const tmplAm = await prisma.shiftTemplate.findUnique({ where: { orgId_code: { orgId, code: 'WEEKDAY-AM' } } });
+        const scheduleData: any = {
+            orgId,
+            branchId: branch.id,
+            name: draftName,
+            dateFrom: new Date('2025-06-23'),
+            dateTo: new Date('2025-06-29'),
+            status: 'DRAFT',
+        };
+        if (employees.length && tmplAm) {
+            scheduleData.assignments = {
+                createMany: {
+                    data: [
+                        {
+                            orgId,
+                            branchId: branch.id,
+                            shiftTemplateId: tmplAm.id,
+                            employeeId: employees[0].id,
+                            shiftDate: new Date('2025-06-23'),
+                        },
+                    ],
+                },
+            };
+        }
+        await prisma.schedule.create({ data: scheduleData });
+        console.log(`  ✅ Schedule "${draftName}" created`);
+        created++;
+    }
+
+    const existingPublished = await prisma.schedule.findFirst({ where: { orgId, name: publishedName } });
+    if (existingPublished) {
+        console.log(`  ⏭  Schedule "${publishedName}" already exists — skipped`);
+        skipped++;
+    } else {
+        const tmplPm = await prisma.shiftTemplate.findUnique({ where: { orgId_code: { orgId, code: 'WEEKDAY-PM' } } });
+        const pubData: any = {
+            orgId,
+            branchId: branch.id,
+            name: publishedName,
+            dateFrom: new Date('2025-06-16'),
+            dateTo: new Date('2025-06-22'),
+            status: 'PUBLISHED',
+            publishedAt: new Date(),
+            publishedById: ownerUser?.id,
+            version: 2,
+        };
+        if (employees.length >= 2 && tmplPm) {
+            pubData.assignments = {
+                createMany: {
+                    data: [
+                        {
+                            orgId,
+                            branchId: branch.id,
+                            shiftTemplateId: tmplPm.id,
+                            employeeId: employees[0].id,
+                            shiftDate: new Date('2025-06-16'),
+                        },
+                        {
+                            orgId,
+                            branchId: branch.id,
+                            shiftTemplateId: tmplPm.id,
+                            employeeId: employees[1].id,
+                            shiftDate: new Date('2025-06-16'),
+                        },
+                    ],
+                },
+            };
+        }
+        await prisma.schedule.create({ data: pubData });
+        console.log(`  ✅ Schedule "${publishedName}" created`);
+        created++;
+    }
+
+    // Coverage Rule
+    const ruleName = 'Kitchen Morning Coverage';
+    const existingRule = await prisma.coverageRule.findFirst({ where: { orgId, name: ruleName } });
+    if (existingRule) {
+        console.log(`  ⏭  CoverageRule "${ruleName}" already exists — skipped`);
+        skipped++;
+    } else {
+        await prisma.coverageRule.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                name: ruleName,
+                roleKey: 'COOK',
+                minimumHeadcount: 2,
+                appliesFromTime: '06:00',
+                appliesToTime: '14:00',
+                status: 'ACTIVE',
+                severity: 'HIGH',
+            },
+        });
+        console.log(`  ✅ CoverageRule "${ruleName}" created`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -5355,6 +5547,11 @@ async function main(): Promise<void> {
     const attendanceResult = await seedAttendanceData(orgResult.orgId, 'main');
     console.log(`   Created: ${attendanceResult.created}, Skipped: ${attendanceResult.skipped}\n`);
 
+    // 40) Seed Workforce / Scheduling (M25)
+    console.log('── Scheduling + Templates + Duty Roster (M25) ──');
+    const workforceResult = await seedWorkforceData(orgResult.orgId, 'main');
+    console.log(`   Created: ${workforceResult.created}, Skipped: ${workforceResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -5451,6 +5648,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm24-attendance-leave-shift-swaps',
         `Attendance: ${attendanceResult.created}c/${attendanceResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm25-scheduling-templates-duty-roster',
+        `Workforce: ${workforceResult.created}c/${workforceResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 
