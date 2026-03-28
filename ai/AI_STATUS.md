@@ -3,12 +3,12 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M21 ✅
-- Last completed milestone: M21 — Customer Feedback + NPS + QR Follow-up
-- Next milestone: M22 — TBD
+- Current milestone: M22 ✅
+- Last completed milestone: M22 — Documents + Uploads + Attachments
+- Next milestone: M23 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
-- Date updated: 2026-03-29
+- Date updated: 2026-03-30
 
 ## Environment
 
@@ -595,6 +595,30 @@
 - [x] DONE: All M21 closure gates confirmed ✅
 
 ### M22+
+
+### M22 — Documents + Uploads + Attachments ✅
+
+- [x] Prisma schema: 4 enums + 3 models (Document, DocumentLink, StorageProviderConfig)
+- [x] Migration #27: `20260330000000_m22_documents_uploads_attachments`
+- [x] DTOs: 5 + barrel export
+- [x] Service: `documents.service.ts` — 10 methods (upload, list, get, download, delete, link, getLinks, updateMetadata, getStorageConfig, updateStorageConfig)
+- [x] Controller: 10 endpoints (auth + branch-scoped, multipart upload)
+- [x] Module registered in `app.module.ts` (27 modules total)
+- [x] Permissions: 8 new (pos:documents:*) — 130 total
+- [x] Role-permission matrix updated for all roles
+- [x] Unit tests: documents.service.spec.ts
+- [x] E2e tests: documents.e2e-spec.ts
+- [x] Seed: idempotent — StorageProviderConfig + 3 sample documents
+- [x] Postman collection: M22-Documents-Uploads-Attachments (13 requests)
+- [x] Docs: DOCUMENTS_ATTACHMENTS_GUIDE.md created
+- [x] Audit events: DOCUMENT_UPLOADED, DOCUMENT_DEDUPE_HIT, DOCUMENT_LINKED, DOCUMENT_DELETED, DOCUMENT_DOWNLOAD_ACCESSED, DOCUMENT_ACCESS_DENIED, DOCUMENT_METADATA_UPDATED, STORAGE_CONFIG_UPDATED
+- [x] Checksum dedup: SHA-256 per-org + ACTIVE status check
+- [x] File storage: LOCAL filesystem at uploads/{orgId}/{uuid}{ext}
+- [x] M13.1 (MTN native) = PENDING (untouched)
+- [x] M13.2 (Airtel native) = PENDING (untouched)
+- [x] DONE: All M22 closure gates confirmed ✅
+
+### M23+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

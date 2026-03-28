@@ -272,6 +272,15 @@ const PERMISSIONS_DATA = [
     { action: 'pos:feedback:request:cancel', description: 'Cancel pending feedback requests' },
     { action: 'pos:feedback:public:token:read', description: 'Public: look up feedback token (no auth)' },
     { action: 'pos:feedback:analytics:read', description: 'View feedback analytics and trends' },
+    // ── M22: Documents + Uploads + Attachments ──
+    { action: 'pos:documents:upload', description: 'Upload documents and files' },
+    { action: 'pos:documents:read', description: 'List and view documents' },
+    { action: 'pos:documents:download', description: 'Download document files' },
+    { action: 'pos:documents:delete', description: 'Soft-delete documents' },
+    { action: 'pos:documents:link', description: 'Link documents to business records' },
+    { action: 'pos:documents:metadata:update', description: 'Update document metadata' },
+    { action: 'pos:documents:storage-config:read', description: 'View storage provider configuration' },
+    { action: 'pos:documents:storage-config:update', description: 'Update storage provider configuration' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -428,6 +437,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:feedback:nps:read',
         'pos:feedback:request:cancel',
         'pos:feedback:analytics:read',
+        // M22: Documents + Uploads + Attachments
+        'pos:documents:upload',
+        'pos:documents:read',
+        'pos:documents:download',
+        'pos:documents:delete',
+        'pos:documents:link',
+        'pos:documents:metadata:update',
+        'pos:documents:storage-config:read',
+        'pos:documents:storage-config:update',
     ],
     Manager: [
         'identity:user:read',
@@ -553,6 +571,14 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:feedback:nps:read',
         'pos:feedback:request:cancel',
         'pos:feedback:analytics:read',
+        // M22: Documents + Uploads + Attachments (Manager: full access except storage-config:update)
+        'pos:documents:upload',
+        'pos:documents:read',
+        'pos:documents:download',
+        'pos:documents:delete',
+        'pos:documents:link',
+        'pos:documents:metadata:update',
+        'pos:documents:storage-config:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -594,6 +620,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         // M21: Customer Feedback (Accountant: read-only)
         'pos:feedback:read',
         'pos:feedback:nps:read',
+        // M22: Documents + Uploads + Attachments (Accountant: upload/read/download for financial docs)
+        'pos:documents:upload',
+        'pos:documents:read',
+        'pos:documents:download',
+        'pos:documents:link',
     ],
     Supervisor: [
         'identity:user:read',
@@ -702,6 +733,12 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:feedback:nps:read',
         'pos:feedback:request:cancel',
         'pos:feedback:analytics:read',
+        // M22: Documents + Uploads + Attachments (Supervisor: upload/read/download/link/delete)
+        'pos:documents:upload',
+        'pos:documents:read',
+        'pos:documents:download',
+        'pos:documents:delete',
+        'pos:documents:link',
     ],
     Cashier: [
         'identity:user:read',
@@ -749,6 +786,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         // M21: Customer Feedback (Cashier: create requests + read)
         'pos:feedback:read',
         'pos:feedback:request:create',
+        // M22: Documents (Cashier: read only)
+        'pos:documents:read',
     ],
     Chef: [
         'identity:user:read',
@@ -815,6 +854,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         // M21: Customer Feedback (Waiter: create requests + read)
         'pos:feedback:read',
         'pos:feedback:request:create',
+        // M22: Documents (Waiter: read only)
+        'pos:documents:read',
     ],
     Bartender: [
         'identity:user:read',
@@ -4522,6 +4563,104 @@ async function seedReportsData(
     return { created, skipped };
 }
 
+// ── M22 — Documents + Uploads + Attachments ──
+
+async function seedDocumentsData(
+    orgId: string,
+    branchSlug: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findFirst({ where: { organizationId: orgId, slug: branchSlug } });
+    if (!branch) {
+        console.log('  ❌ Branch not found — skipping documents seed');
+        return { created, skipped };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    if (!owner) {
+        console.log('  ❌ Owner user not found — skipping documents seed');
+        return { created, skipped };
+    }
+
+    // Seed a StorageProviderConfig for LOCAL
+    const existingConfig = await prisma.storageProviderConfig.findUnique({
+        where: { orgId_providerType: { orgId, providerType: 'LOCAL' } },
+    });
+    if (existingConfig) {
+        console.log('  ⏭  StorageProviderConfig (LOCAL) already exists — skipped');
+        skipped++;
+    } else {
+        await prisma.storageProviderConfig.create({
+            data: {
+                orgId,
+                providerType: 'LOCAL',
+                enabled: true,
+                basePath: 'uploads',
+            },
+        });
+        console.log('  ✅ StorageProviderConfig (LOCAL) created');
+        created++;
+    }
+
+    // Seed sample documents
+    const sampleDocs = [
+        {
+            fileName: 'sample-receipt-001.pdf',
+            originalFileName: 'Daily Receipt - 2026-03-30.pdf',
+            mimeType: 'application/pdf',
+            fileExtension: '.pdf',
+            fileSizeBytes: 12480,
+            checksum: 'sha256-seed-receipt-001',
+            documentType: 'RECEIPT' as const,
+        },
+        {
+            fileName: 'sample-invoice-001.pdf',
+            originalFileName: 'Supplier Invoice INV-2026-0042.pdf',
+            mimeType: 'application/pdf',
+            fileExtension: '.pdf',
+            fileSizeBytes: 28672,
+            checksum: 'sha256-seed-invoice-001',
+            documentType: 'INVOICE' as const,
+        },
+        {
+            fileName: 'sample-contract-001.docx',
+            originalFileName: 'Service Agreement - Nimbus Ltd.docx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            fileExtension: '.docx',
+            fileSizeBytes: 45056,
+            checksum: 'sha256-seed-contract-001',
+            documentType: 'CONTRACT' as const,
+        },
+    ];
+
+    for (const doc of sampleDocs) {
+        const existing = await prisma.document.findFirst({
+            where: { orgId, checksum: doc.checksum, status: 'ACTIVE' },
+        });
+        if (existing) {
+            console.log(`  ⏭  Document "${doc.originalFileName}" already exists — skipped`);
+            skipped++;
+            continue;
+        }
+        const newDoc = await prisma.document.create({
+            data: {
+                orgId,
+                branchId: branch.id,
+                ...doc,
+                storageProvider: 'LOCAL',
+                storagePath: `${orgId}/${doc.fileName}`,
+                uploadedById: owner.id,
+            },
+        });
+        console.log(`  ✅ Document "${doc.originalFileName}" created — ${newDoc.id}`);
+        created++;
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -4721,6 +4860,11 @@ async function main(): Promise<void> {
     const reportsResult = await seedReportsData(orgResult.orgId, 'MAIN');
     console.log(`   Created: ${reportsResult.created}, Skipped: ${reportsResult.skipped}\n`);
 
+    // 37) Seed Documents + Uploads + Attachments (M22)
+    console.log('── Documents + Uploads + Attachments (M22) ──');
+    const documentsResult = await seedDocumentsData(orgResult.orgId, 'main');
+    console.log(`   Created: ${documentsResult.created}, Skipped: ${documentsResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -4805,6 +4949,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm20-reporting-exports',
         `Reports: ${reportsResult.created}c/${reportsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm22-documents-uploads',
+        `Documents: ${documentsResult.created}c/${documentsResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 
