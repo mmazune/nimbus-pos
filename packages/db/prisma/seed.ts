@@ -281,6 +281,17 @@ const PERMISSIONS_DATA = [
     { action: 'pos:documents:metadata:update', description: 'Update document metadata' },
     { action: 'pos:documents:storage-config:read', description: 'View storage provider configuration' },
     { action: 'pos:documents:storage-config:update', description: 'Update storage provider configuration' },
+
+    // ── M23: Employees + Contracts + HR Core ──
+    { action: 'pos:hr:employees:read', description: 'List and view employees' },
+    { action: 'pos:hr:employees:create', description: 'Create employee records' },
+    { action: 'pos:hr:employees:update', description: 'Update employee records' },
+    { action: 'pos:hr:contracts:read', description: 'List and view employment contracts' },
+    { action: 'pos:hr:contracts:create', description: 'Create employment contracts' },
+    { action: 'pos:hr:positions:read', description: 'List and view positions' },
+    { action: 'pos:hr:positions:create', description: 'Create positions' },
+    { action: 'pos:hr:compensation:read', description: 'List and view compensation profiles' },
+    { action: 'pos:hr:compensation:create', description: 'Create compensation profiles' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -446,6 +457,16 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:documents:metadata:update',
         'pos:documents:storage-config:read',
         'pos:documents:storage-config:update',
+        // M23: Employees + Contracts + HR Core (Owner: full access)
+        'pos:hr:employees:read',
+        'pos:hr:employees:create',
+        'pos:hr:employees:update',
+        'pos:hr:contracts:read',
+        'pos:hr:contracts:create',
+        'pos:hr:positions:read',
+        'pos:hr:positions:create',
+        'pos:hr:compensation:read',
+        'pos:hr:compensation:create',
     ],
     Manager: [
         'identity:user:read',
@@ -579,6 +600,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:documents:link',
         'pos:documents:metadata:update',
         'pos:documents:storage-config:read',
+        // M23: Employees + Contracts + HR Core (Manager: full access except compensation:create)
+        'pos:hr:employees:read',
+        'pos:hr:employees:create',
+        'pos:hr:employees:update',
+        'pos:hr:contracts:read',
+        'pos:hr:contracts:create',
+        'pos:hr:positions:read',
+        'pos:hr:positions:create',
+        'pos:hr:compensation:read',
     ],
     Accountant: [
         'identity:user:read',
@@ -625,6 +655,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:documents:read',
         'pos:documents:download',
         'pos:documents:link',
+        // M23: Employees + Contracts + HR Core (Accountant: read-only for payroll context)
+        'pos:hr:employees:read',
+        'pos:hr:contracts:read',
+        'pos:hr:compensation:read',
     ],
     Supervisor: [
         'identity:user:read',
@@ -739,6 +773,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
         'pos:documents:download',
         'pos:documents:delete',
         'pos:documents:link',
+        // M23: Employees + Contracts + HR Core (Supervisor: read employees + contracts)
+        'pos:hr:employees:read',
+        'pos:hr:contracts:read',
+        'pos:hr:positions:read',
     ],
     Cashier: [
         'identity:user:read',
@@ -4661,6 +4699,231 @@ async function seedDocumentsData(
     return { created, skipped };
 }
 
+// ── M23: Employees + Contracts + HR Core seed ──
+
+async function seedHrData(
+    orgId: string,
+    branchSlug: string,
+): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+
+    const branch = await prisma.branch.findFirst({ where: { organizationId: orgId, slug: branchSlug } });
+    if (!branch) {
+        console.log('  ❌ Branch not found — skipping HR seed');
+        return { created, skipped };
+    }
+
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    if (!owner) {
+        console.log('  ❌ Owner user not found — skipping HR seed');
+        return { created, skipped };
+    }
+
+    // Seed Positions
+    const positions = [
+        { code: 'HEAD-CHEF', title: 'Head Chef', department: 'Kitchen', level: 'Senior' },
+        { code: 'SOUS-CHEF', title: 'Sous Chef', department: 'Kitchen', level: 'Mid' },
+        { code: 'LINE-COOK', title: 'Line Cook', department: 'Kitchen', level: 'Junior' },
+        { code: 'HEAD-WAITER', title: 'Head Waiter', department: 'Service', level: 'Senior' },
+        { code: 'WAITER', title: 'Waiter', department: 'Service', level: 'Junior' },
+        { code: 'BARTENDER', title: 'Bartender', department: 'Bar', level: 'Mid' },
+        { code: 'CASHIER', title: 'Cashier', department: 'Front', level: 'Junior' },
+        { code: 'MANAGER', title: 'Restaurant Manager', department: 'Management', level: 'Senior' },
+    ];
+
+    const positionIds: Record<string, string> = {};
+
+    for (const pos of positions) {
+        const existing = await prisma.position.findUnique({
+            where: { orgId_code: { orgId, code: pos.code } },
+        });
+        if (existing) {
+            console.log(`  ⏭  Position "${pos.code}" already exists — skipped`);
+            positionIds[pos.code] = existing.id;
+            skipped++;
+        } else {
+            const p = await prisma.position.create({
+                data: { orgId, branchId: branch.id, ...pos, active: true },
+            });
+            console.log(`  ✅ Position "${pos.code}" created`);
+            positionIds[pos.code] = p.id;
+            created++;
+        }
+    }
+
+    // Seed Compensation Profiles
+    const compProfiles = [
+        { code: 'MONTHLY-SENIOR', salaryBasis: 'MONTHLY' as const, baseAmount: 5000000, currency: 'UGX' },
+        { code: 'MONTHLY-MID', salaryBasis: 'MONTHLY' as const, baseAmount: 3000000, currency: 'UGX' },
+        { code: 'MONTHLY-JUNIOR', salaryBasis: 'MONTHLY' as const, baseAmount: 1500000, currency: 'UGX' },
+        { code: 'DAILY-CASUAL', salaryBasis: 'DAILY' as const, baseAmount: 50000, currency: 'UGX' },
+    ];
+
+    const profileIds: Record<string, string> = {};
+
+    for (const cp of compProfiles) {
+        const existing = await prisma.compensationProfile.findUnique({
+            where: { orgId_code: { orgId, code: cp.code } },
+        });
+        if (existing) {
+            console.log(`  ⏭  CompensationProfile "${cp.code}" already exists — skipped`);
+            profileIds[cp.code] = existing.id;
+            skipped++;
+        } else {
+            const p = await prisma.compensationProfile.create({
+                data: { orgId, branchId: branch.id, ...cp, active: true },
+            });
+            console.log(`  ✅ CompensationProfile "${cp.code}" created`);
+            profileIds[cp.code] = p.id;
+            created++;
+        }
+    }
+
+    // Seed Employees
+    const employees = [
+        {
+            employeeCode: 'EMP-00001',
+            firstName: 'Alice',
+            lastName: 'Nakamya',
+            phone: '+256700100001',
+            email: 'alice.nakamya@nimbus.local',
+            hireDate: new Date('2023-03-01'),
+            employmentType: 'PERMANENT' as const,
+            positionCode: 'HEAD-CHEF',
+            profileCode: 'MONTHLY-SENIOR',
+        },
+        {
+            employeeCode: 'EMP-00002',
+            firstName: 'Brian',
+            lastName: 'Okello',
+            phone: '+256700100002',
+            email: 'brian.okello@nimbus.local',
+            hireDate: new Date('2023-06-15'),
+            employmentType: 'PERMANENT' as const,
+            positionCode: 'HEAD-WAITER',
+            profileCode: 'MONTHLY-MID',
+        },
+        {
+            employeeCode: 'EMP-00003',
+            firstName: 'Cissy',
+            lastName: 'Apio',
+            phone: '+256700100003',
+            email: 'cissy.apio@nimbus.local',
+            hireDate: new Date('2024-01-10'),
+            employmentType: 'TEMPORARY' as const,
+            positionCode: 'LINE-COOK',
+            profileCode: 'MONTHLY-JUNIOR',
+        },
+        {
+            employeeCode: 'EMP-00004',
+            firstName: 'David',
+            lastName: 'Ssemakula',
+            phone: '+256700100004',
+            email: null,
+            hireDate: new Date('2024-06-01'),
+            employmentType: 'CASUAL' as const,
+            positionCode: 'WAITER',
+            profileCode: 'DAILY-CASUAL',
+        },
+    ];
+
+    const employeeIds: Record<string, string> = {};
+
+    for (const emp of employees) {
+        const existing = await prisma.employee.findUnique({
+            where: { orgId_employeeCode: { orgId, employeeCode: emp.employeeCode } },
+        });
+        if (existing) {
+            console.log(`  ⏭  Employee "${emp.employeeCode}" already exists — skipped`);
+            employeeIds[emp.employeeCode] = existing.id;
+            skipped++;
+        } else {
+            const e = await prisma.employee.create({
+                data: {
+                    orgId,
+                    branchId: branch.id,
+                    employeeCode: emp.employeeCode,
+                    firstName: emp.firstName,
+                    lastName: emp.lastName,
+                    phone: emp.phone,
+                    email: emp.email,
+                    hireDate: emp.hireDate,
+                    status: 'ACTIVE',
+                    employmentType: emp.employmentType,
+                    positionId: positionIds[emp.positionCode] || null,
+                    compensationProfileId: profileIds[emp.profileCode] || null,
+                },
+            });
+            console.log(`  ✅ Employee "${emp.employeeCode} — ${emp.firstName} ${emp.lastName}" created`);
+            employeeIds[emp.employeeCode] = e.id;
+            created++;
+        }
+    }
+
+    // Seed Employment Contracts
+    const contracts = [
+        {
+            contractNumber: 'CTR-00001',
+            employeeCode: 'EMP-00001',
+            contractStatus: 'ACTIVE' as const,
+            startsAt: new Date('2023-03-01'),
+            salaryBasis: 'MONTHLY' as const,
+            salaryAmount: 5000000,
+            termsSummary: 'Permanent head chef, 12-month renewable contract',
+        },
+        {
+            contractNumber: 'CTR-00002',
+            employeeCode: 'EMP-00002',
+            contractStatus: 'ACTIVE' as const,
+            startsAt: new Date('2023-06-15'),
+            salaryBasis: 'MONTHLY' as const,
+            salaryAmount: 3000000,
+            termsSummary: 'Head waiter, indefinite contract',
+        },
+        {
+            contractNumber: 'CTR-00003',
+            employeeCode: 'EMP-00003',
+            contractStatus: 'DRAFT' as const,
+            startsAt: new Date('2024-01-10'),
+            endsAt: new Date('2024-07-10'),
+            salaryBasis: 'MONTHLY' as const,
+            salaryAmount: 1500000,
+            termsSummary: 'Temporary line cook, 6-month fixed',
+        },
+    ];
+
+    for (const ctr of contracts) {
+        const existing = await prisma.employmentContract.findUnique({
+            where: { orgId_contractNumber: { orgId, contractNumber: ctr.contractNumber } },
+        });
+        if (existing) {
+            console.log(`  ⏭  Contract "${ctr.contractNumber}" already exists — skipped`);
+            skipped++;
+        } else {
+            await prisma.employmentContract.create({
+                data: {
+                    orgId,
+                    branchId: branch.id,
+                    employeeId: employeeIds[ctr.employeeCode],
+                    contractNumber: ctr.contractNumber,
+                    contractStatus: ctr.contractStatus,
+                    startsAt: ctr.startsAt,
+                    endsAt: (ctr as any).endsAt || null,
+                    salaryBasis: ctr.salaryBasis,
+                    salaryAmount: ctr.salaryAmount,
+                    termsSummary: ctr.termsSummary,
+                    createdById: owner.id,
+                },
+            });
+            console.log(`  ✅ Contract "${ctr.contractNumber}" created`);
+            created++;
+        }
+    }
+
+    return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -4865,6 +5128,11 @@ async function main(): Promise<void> {
     const documentsResult = await seedDocumentsData(orgResult.orgId, 'main');
     console.log(`   Created: ${documentsResult.created}, Skipped: ${documentsResult.skipped}\n`);
 
+    // 38) Seed Employees + Contracts + HR Core (M23)
+    console.log('── Employees + Contracts + HR Core (M23) ──');
+    const hrResult = await seedHrData(orgResult.orgId, 'main');
+    console.log(`   Created: ${hrResult.created}, Skipped: ${hrResult.skipped}\n`);
+
     // Record seed execution
     await recordSeedRun(
         'm1-baseline',
@@ -4953,6 +5221,10 @@ async function main(): Promise<void> {
     await recordSeedRun(
         'm22-documents-uploads',
         `Documents: ${documentsResult.created}c/${documentsResult.skipped}s`,
+    );
+    await recordSeedRun(
+        'm23-employees-contracts-hr',
+        `HR: ${hrResult.created}c/${hrResult.skipped}s`,
     );
     console.log('── SeedHistory markers recorded ──\n');
 
