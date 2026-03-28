@@ -260,6 +260,27 @@ nimbus-pos/
 │   │   │       │       ├── dashboard-query.dto.ts
 │   │   │       │       ├── refresh-kpi.dto.ts
 │   │   │       │       └── stream-metrics-query.dto.ts
+│   │   │       ├── reports/
+│   │   │       │   ├── reports.module.ts
+│   │   │       │   ├── reports.controller.ts
+│   │   │       │   ├── reports.service.ts
+│   │   │       │   ├── reports.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── feedback/
+│   │   │       │   ├── feedback.module.ts
+│   │   │       │   ├── feedback.controller.ts
+│   │   │       │   ├── feedback.public.controller.ts
+│   │   │       │   ├── feedback.service.ts
+│   │   │       │   ├── feedback.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-feedback-request.dto.ts
+│   │   │       │       ├── submit-public-feedback.dto.ts
+│   │   │       │       ├── list-feedback-query.dto.ts
+│   │   │       │       ├── tag-feedback.dto.ts
+│   │   │       │       ├── acknowledge-feedback.dto.ts
+│   │   │       │       ├── resolve-feedback.dto.ts
+│   │   │       │       └── nps-summary-query.dto.ts
 │   │   │       └── tenancy/
 │   │   │           ├── tenancy.controller.ts
 │   │   │           ├── tenancy.module.ts
@@ -290,7 +311,9 @@ nimbus-pos/
 │   │       ├── reservations.e2e-spec.ts
 │   │       ├── events.e2e-spec.ts
 │   │       ├── analytics.e2e-spec.ts
-│   │       └── dashboards.e2e-spec.ts
+│   │       ├── dashboards.e2e-spec.ts
+│   │       ├── reports.e2e-spec.ts
+│   │       └── feedback.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -351,6 +374,12 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260327100000_m19_dashboards_kpi_streams/
 │   │   │           └── migration.sql
+│   │   │       └── 20260328000000_m20_reporting_v1_exports/
+│   │   │           └── migration.sql
+│   │   │       └── 20260328000000_m20_1_reporting_depth/
+│   │   │           └── migration.sql
+│   │   │       └── 20260329000000_m21_feedback_nps_qr_followup/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -363,7 +392,10 @@ nimbus-pos/
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── API_CONVENTIONS.md
-│   └── MODULES.md
+│   ├── MODULES.md
+│   ├── POSTMAN_ENDPOINT_GUIDE.md
+│   ├── FEEDBACK_NPS_GUIDE.md
+│   └── REPORT_CATALOG_GUIDE.md
 │
 └── postman/
     ├── POSTMAN_GUIDE.md
@@ -390,7 +422,10 @@ nimbus-pos/
     │   ├── M16-Reservations-Deposits-Seating.postman_collection.json
     │   ├── M17-Events-Booking-Portal-Ticketing.postman_collection.json
     │   ├── M18-Anomaly-Detection-Anti-Theft.postman_collection.json
-    │   └── M19-Operational-Dashboards-KPI-Streams.postman_collection.json
+│   │   ├── M19-Operational-Dashboards-KPI-Streams.postman_collection.json
+│   │   ├── M20-Reporting-v1-Exports.postman_collection.json
+│   │   ├── M20_1-Reporting-Depth-Finalization.postman_collection.json
+│   │   └── M21-Customer-Feedback-NPS-QR-Followup.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```

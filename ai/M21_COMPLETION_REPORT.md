@@ -2,13 +2,13 @@
 
 ## Milestone Summary
 
-| Field | Value |
-|-------|-------|
-| Milestone | M21 |
-| Title | Customer Feedback + NPS + QR Follow-up |
-| Branch | `milestone/m21-feedback-nps-qr-follow-up` |
-| Date | 2026-03-29 |
-| Status | ✅ Complete |
+| Field     | Value                                     |
+| --------- | ----------------------------------------- |
+| Milestone | M21                                       |
+| Title     | Customer Feedback + NPS + QR Follow-up    |
+| Branch    | `milestone/m21-feedback-nps-qr-follow-up` |
+| Date      | 2026-03-29                                |
+| Status    | ✅ Complete                               |
 
 ## Deliverables
 
@@ -29,20 +29,20 @@
 
 ### Endpoints (12 total)
 
-| # | Method | Path | Auth | Permission |
-|---|--------|------|------|------------|
-| 1 | POST | `/feedback/requests` | JWT | `pos:feedback:request:create` |
-| 2 | GET | `/feedback/requests` | JWT | `pos:feedback:read` |
-| 3 | PATCH | `/feedback/requests/:id/cancel` | JWT | `pos:feedback:request:cancel` |
-| 4 | GET | `/feedback` | JWT | `pos:feedback:read` |
-| 5 | GET | `/feedback/:id` | JWT | `pos:feedback:read` |
-| 6 | PATCH | `/feedback/:id/tag` | JWT | `pos:feedback:tag` |
-| 7 | GET | `/feedback/tags` | JWT | `pos:feedback:read` |
-| 8 | PATCH | `/feedback/:id/acknowledge` | JWT | `pos:feedback:acknowledge` |
-| 9 | PATCH | `/feedback/:id/resolve` | JWT | `pos:feedback:resolve` |
-| 10 | GET | `/feedback/nps-summary` | JWT | `pos:feedback:nps:read` |
-| 11 | GET | `/feedback/public/token/:token` | None | — |
-| 12 | POST | `/feedback/public` | None | — |
+| #   | Method | Path                            | Auth | Permission                    |
+| --- | ------ | ------------------------------- | ---- | ----------------------------- |
+| 1   | POST   | `/feedback/requests`            | JWT  | `pos:feedback:request:create` |
+| 2   | GET    | `/feedback/requests`            | JWT  | `pos:feedback:read`           |
+| 3   | PATCH  | `/feedback/requests/:id/cancel` | JWT  | `pos:feedback:request:cancel` |
+| 4   | GET    | `/feedback`                     | JWT  | `pos:feedback:read`           |
+| 5   | GET    | `/feedback/:id`                 | JWT  | `pos:feedback:read`           |
+| 6   | PATCH  | `/feedback/:id/tag`             | JWT  | `pos:feedback:tag`            |
+| 7   | GET    | `/feedback/tags`                | JWT  | `pos:feedback:read`           |
+| 8   | PATCH  | `/feedback/:id/acknowledge`     | JWT  | `pos:feedback:acknowledge`    |
+| 9   | PATCH  | `/feedback/:id/resolve`         | JWT  | `pos:feedback:resolve`        |
+| 10  | GET    | `/feedback/nps-summary`         | JWT  | `pos:feedback:nps:read`       |
+| 11  | GET    | `/feedback/public/token/:token` | None | —                             |
+| 12  | POST   | `/feedback/public`              | None | —                             |
 
 ### Permissions (9 new → 122 total)
 
@@ -58,11 +58,11 @@
 
 ### Tests
 
-| Suite | Count | Status |
-|-------|-------|--------|
-| Unit (feedback.service.spec.ts) | 34 | ✅ All pass |
-| E2e (feedback.e2e-spec.ts) | 25 | ✅ All pass |
-| **Total M21** | **59** | ✅ |
+| Suite                           | Count  | Status      |
+| ------------------------------- | ------ | ----------- |
+| Unit (feedback.service.spec.ts) | 34     | ✅ All pass |
+| E2e (feedback.e2e-spec.ts)      | 25     | ✅ All pass |
+| **Total M21**                   | **59** | ✅          |
 
 ### Seed
 
@@ -99,9 +99,20 @@
 - [x] TypeScript: `tsc --noEmit` → 0 errors
 - [x] Unit tests: 34/34 pass
 - [x] E2e tests: 25/25 pass
-- [x] Seed: idempotent (ran twice)
-- [x] Migration applied: #26
-- [x] Postman collection created
-- [x] AI_STATUS.md updated
-- [x] MODULES.md updated
-- [x] M13.1/M13.2 remain PENDING (not touched)
+- [x] Seed: idempotent (ran twice — Created: 0 both runs)
+- [x] Migration applied: #26 (prisma migrate deploy — "No pending migrations")
+- [x] Postman collection created: 14 requests, all baseUrl+path correct
+- [x] AI_STATUS.md updated (full M21 checklist)
+- [x] MODULES.md updated (M21 ✅)
+- [x] POSTMAN_ENDPOINT_GUIDE.md updated (M21 section added)
+- [x] repo file tree.txt updated (feedback module, migrations, Postman, docs)
+- [x] M21_COMPLETION_REPORT.md finalized
+- [x] M13.1/M13.2 remain PENDING (untouched)
+- [x] ESLint: 0 errors (15 pre-existing no-explicit-any warnings only)
+- [x] DB verified: 9 feedback permissions + 122 total, 524 role-perm mappings
+- [x] Seeded users verified: owner/manager/chef/cashier/waiter — all active
+- [x] Public flow safety: no orgId/token/createdById leaks in public responses
+- [x] Guard coverage verified: 401 / 400 / 403 / 409 all tested
+- [x] CI: .github/workflows/branch-validation.yml exists and is valid
+- [x] Postman collection: baseUrl=localhost:3001, all paths use /api/..., pm.environment.set used for all runtime captures
+- [x] Git commit: `m21 scaffold ok` on branch `milestone/m21-feedback-nps-qr-follow-up`

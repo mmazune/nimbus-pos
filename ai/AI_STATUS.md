@@ -387,6 +387,7 @@
 - [x] Branch-wide pre-existing e2e bugs fixed: payments (stale lifecycle URLs + auto-close), orders (close payload + response shape + TAKEAWAY guard), kds (HTTP 201 status + timeouts), inventory (unitCost decimal regex + Decimal serialization), quick-pin (self-healing PIN issuance in beforeAll); global 10000/15000 ms per-test timeouts raised to 30000 ms across all spec files
 
 ### M15 — Shifts / Till Sessions / Cash Reconciliation
+
 > Branch: `milestone/m15-shifts-tills-reconciliation`
 
 - [x] Prisma schema: 4 enums (ShiftStatus, TillSessionStatus, CashMovementType, VarianceStatus) + 4 models (Shift, TillSession, CashMovement, ShiftCloseSummary)
@@ -415,6 +416,7 @@
 - [x] DONE: All 16 verification gates confirmed ✅
 
 ### M16 — Reservations + Deposits + Seating Bridge
+
 > Branch: `milestone/m16-reservations-deposits-seating`
 
 - [x] Prisma schema: 4 enums (ReservationStatus, ReservationSource, ReservationDepositStatus, ReservationEventType) + 3 models (Reservation, ReservationDeposit, ReservationEvent)
@@ -450,6 +452,7 @@
 - [x] DONE: All verification gates confirmed ✅
 
 ### M17 — Events + Booking Portal + Ticketing
+
 > Branch: `milestone/m17-events-booking-ticketing`
 
 - [x] Prisma schema: 5 enums (EventStatus, EventBookingStatus, TicketStatus, TicketClassType, CheckInStatus) + 6 models (Event, EventTicketClass, EventBooking, EventTicket, EventCheckIn, EventAuditLog)
@@ -575,13 +578,21 @@
 - [x] Admin controller: 10 endpoints (auth + branch-scoped)
 - [x] Public controller: 2 endpoints (no auth, token-protected)
 - [x] Module registered in `app.module.ts`
-- [x] Permissions: 9 new (pos:feedback:*)
-- [x] Role-permission matrix: 33 new mappings
-- [x] Unit tests: 34 passing
-- [x] E2e tests: 25 passing
-- [x] Seed: idempotent (permissions + role mappings)
-- [x] Postman collection: M21-Customer-Feedback-NPS-QR-Followup
-- [x] TypeScript: 0 errors
+- [x] Permissions: 9 new (pos:feedback:\*) — 122 total
+- [x] Role-permission matrix: 33 new mappings — 524 total
+- [x] Unit tests: 34/34 passing
+- [x] E2e tests: 25/25 passing
+- [x] Seed: idempotent (verified x2)
+- [x] TypeScript: `tsc --noEmit` → 0 errors
+- [x] ESLint: 0 errors (15 pre-existing no-explicit-any warnings)
+- [x] Postman collection: M21-Customer-Feedback-NPS-QR-Followup (14 requests)
+- [x] Docs: FEEDBACK_NPS_GUIDE.md, MODULES.md, POSTMAN_ENDPOINT_GUIDE.md, repo file tree.txt updated
+- [x] Public flow: safe — no orgId/token/internal ID leaks in public responses
+- [x] Guard coverage: 401 (no auth), 400 (missing branch / invalid payload), 403 (insufficient permissions), 409 (duplicate submit) all verified
+- [x] CI: branch-validation.yml exists and is valid
+- [x] M13.1 (MTN native) = PENDING (untouched)
+- [x] M13.2 (Airtel native) = PENDING (untouched)
+- [x] DONE: All M21 closure gates confirmed ✅
 
 ### M22+
 
