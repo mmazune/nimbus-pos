@@ -702,8 +702,8 @@
 - [x] Endpoints: 10 (GET/PATCH weights, POST generate/GET/GET:id insights, POST/GET awards, POST generate/GET/PATCH:id suggestions)
 - [x] Permissions: 7 new (`pos:staff:insights:read`, `pos:staff:awards:create/read`, `pos:staff:promotions:generate/decide`, `pos:staff:weights:read/update`)
 - [x] Role matrix updated: Owner (full 7), Manager (6, no weights:update), Supervisor (insights:read + awards:read), Accountant (none)
-- [x] Unit tests: `staff-insights.service.spec.ts` — 18 tests covering all service methods + error paths
-- [x] E2e tests: `staff-insights.e2e-spec.ts` — 18 tests covering all endpoints
+- [x] Unit tests: `staff-insights.service.spec.ts` — 20 tests covering all service methods + error paths
+- [x] E2e tests: `staff-insights.e2e-spec.ts` — 20 tests covering all endpoints
 - [x] Seed: 1 insight snapshot, 1 award, 1 promotion suggestion, idempotent
 - [x] Postman: `M27-Staff-Insights-Awards-Promotion-Suggestions.postman_collection.json` (10 requests)
 - [x] Docs: STAFF_INSIGHTS_GUIDE.md, M27_COMPLETION_REPORT.md, AI_STATUS.md updated

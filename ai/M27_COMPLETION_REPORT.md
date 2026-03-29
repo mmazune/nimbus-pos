@@ -12,8 +12,8 @@
 | New Module            | `StaffInsightsModule`                                                |
 | Endpoints             | 10                                                                   |
 | Permissions           | 7 new                                                                |
-| Unit Tests            | 18 tests in `staff-insights.service.spec.ts`                         |
-| E2e Tests             | 18 tests in `staff-insights.e2e-spec.ts`                             |
+| Unit Tests            | 20 tests in `staff-insights.service.spec.ts`                         |
+| E2e Tests             | 20 tests in `staff-insights.e2e-spec.ts`                             |
 | Postman Requests      | 10                                                                   |
 | Seed Data             | 3 records (1 snapshot, 1 award, 1 promotion suggestion)              |
 | M13.1 (MTN Native)    | PENDING — untouched                                                  |
@@ -118,8 +118,10 @@ apps/api/src/modules/staff-insights/
 
 ## Verification Status
 
-- [ ] `pnpm lint` — 0 errors (pre-existing warnings allowed)
-- [ ] `pnpm jest --passWithNoTests` — all unit tests pass
-- [ ] `pnpm test:e2e` — all e2e tests pass
-- [ ] Seed runs twice idempotently
-- [ ] Postman collection manually validated
+- [x] `pnpm lint` — 0 errors, 24 warnings (pre-existing `no-explicit-any`)
+- [x] `pnpm jest` — 20/20 unit tests pass
+- [x] `pnpm test:e2e` — 20/20 e2e tests pass
+- [x] Seed runs idempotently (all 3 M27 records skipped on re-run)
+- [x] Postman collection manually validated (10 requests, `baseUrl=http://localhost:3001`, runtime captures)
+- [x] `pnpm dev:api` starts cleanly, all 10 routes mapped
+- [x] Manual API smoke test: GET/weights ✓, GET/insights ✓, GET/awards ✓, GET/promotions ✓, 401 ✓, 403 ✓
