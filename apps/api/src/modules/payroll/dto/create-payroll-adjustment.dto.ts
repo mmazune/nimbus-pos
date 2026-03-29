@@ -3,25 +3,25 @@ import { Type } from 'class-transformer';
 import { PayrollAdjustmentType } from '@prisma/client';
 
 export class CreatePayrollAdjustmentDto {
-  @IsString()
-  employeeId!: string;
+    @IsString()
+    employeeId!: string;
 
-  @IsOptional()
-  @IsString()
-  payComponentId?: string;
+    @IsOptional()
+    @IsString()
+    payComponentId?: string;
 
-  @IsEnum(PayrollAdjustmentType)
-  adjustmentType!: PayrollAdjustmentType;
+    @IsEnum(PayrollAdjustmentType)
+    adjustmentType!: PayrollAdjustmentType;
 
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Type(() => Number)
-  amount!: number;
+    @IsNumber({ maxDecimalPlaces: 2 })
+    @Type(() => Number)
+    amount!: number;
 
-  @IsDateString()
-  effectiveDate!: string;
+    @IsDateString()
+    effectiveDate!: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  notes?: string;
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000)
+    notes?: string;
 }

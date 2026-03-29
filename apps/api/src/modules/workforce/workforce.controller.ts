@@ -28,7 +28,7 @@ import { CurrentUser, Permissions, RequireBranchContext } from '../../common/dec
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class WorkforceController {
-  constructor(private readonly workforceService: WorkforceService) {}
+  constructor(private readonly workforceService: WorkforceService) { }
 
   // ── Shift Templates ──
 

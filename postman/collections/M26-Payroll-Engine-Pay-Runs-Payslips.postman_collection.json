@@ -36,9 +36,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -46,8 +55,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/components",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "components"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
                         }
                     }
                 },
@@ -72,9 +87,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -82,8 +106,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/components",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "components"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
                         }
                     }
                 },
@@ -104,13 +134,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/components",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "components"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
                         }
                     }
                 }
@@ -141,9 +183,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -151,8 +202,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/adjustments",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "adjustments"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "adjustments"
+                            ]
                         }
                     }
                 },
@@ -175,13 +232,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/adjustments",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "adjustments"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "adjustments"
+                            ]
                         }
                     }
                 }
@@ -215,9 +284,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -225,8 +303,15 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/runs/build",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "runs", "build"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "build"
+                            ]
                         }
                     }
                 },
@@ -247,9 +332,18 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -257,8 +351,16 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}/approve",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "runs", "{{payRunId}}", "approve"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}",
+                                "approve"
+                            ]
                         }
                     }
                 },
@@ -279,9 +381,18 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -289,8 +400,16 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}/pay",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "runs", "{{payRunId}}", "pay"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}",
+                                "pay"
+                            ]
                         }
                     }
                 },
@@ -313,13 +432,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/runs",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "runs"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs"
+                            ]
                         }
                     }
                 },
@@ -341,13 +472,26 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "runs", "{{payRunId}}"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}"
+                            ]
                         }
                     }
                 }
@@ -374,13 +518,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/slips",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "slips"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "slips"
+                            ]
                         }
                     }
                 },
@@ -400,15 +556,30 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/slips?payRunId={{payRunId}}",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "slips"],
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "slips"
+                            ],
                             "query": [
-                                { "key": "payRunId", "value": "{{payRunId}}" }
+                                {
+                                    "key": "payRunId",
+                                    "value": "{{payRunId}}"
+                                }
                             ]
                         }
                     }
@@ -431,13 +602,26 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/payroll/slips/{{paySlipId}}",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "payroll", "slips", "{{paySlipId}}"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "slips",
+                                "{{paySlipId}}"
+                            ]
                         }
                     }
                 }
