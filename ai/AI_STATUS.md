@@ -3,12 +3,12 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M27 ✅
-- Last completed milestone: M27 — Staff Insights + Awards + Promotion Suggestions
-- Next milestone: M28 — TBD
+- Current milestone: M28 ✅
+- Last completed milestone: M28 — Accounting Foundation (COA + Cost Centers + Fiscal Periods)
+- Next milestone: M29 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
-- Date updated: 2026-04-01
+- Date updated: 2026-04-02
 
 ## Environment
 
@@ -711,7 +711,24 @@
 - [x] M13.2 (Airtel native) = PENDING (untouched)
 - [x] DONE: All M27 closure gates confirmed ✅
 
-### M28+
+### M28 — Accounting Foundation (COA + Cost Centers + Fiscal Periods)
+
+- [x] Schema: 3 enums (AccountType, AccountStatus, FiscalPeriodStatus) + 5 models (Account, CostCenter, FiscalPeriod, PostingSourceMap, TaxLedgerConfig)
+- [x] Migration #34: `20260402000000_m28_accounting_foundation_coa_cost_centers_periods` — SQL created and applied
+- [x] Module: `AccountingModule` — controller + service + 7 DTOs
+- [x] Endpoints: 11 (GET/POST accounts, GET/POST cost-centers, GET/POST/PATCH periods, GET/PATCH posting-source-maps, GET/PATCH tax-config)
+- [x] Permissions: 11 new (`pos:accounting:accounts:read/create`, `cost-centers:read/create`, `periods:read/create/open`, `posting-source-maps:read/update`, `tax-config:read/update`)
+- [x] Role matrix updated: Owner (all 11), Accountant (all 11), Manager (read + create subset)
+- [x] Unit tests: `accounting.service.spec.ts` — 20+ tests covering all service methods + error paths
+- [x] E2e tests: `accounting.e2e-spec.ts` — 20+ tests covering all endpoints
+- [x] Seed: 13 system accounts, 1 cost center, 1 fiscal period, 6 posting source maps, 1 tax config, idempotent
+- [x] Postman: `M28-Accounting-Foundation-COA-Cost-Centers-Periods.postman_collection.json` (15 requests)
+- [x] Docs: ACCOUNTING_FOUNDATION_GUIDE.md, AI_STATUS.md updated
+- [x] M13.1 (MTN native) = PENDING (untouched)
+- [x] M13.2 (Airtel native) = PENDING (untouched)
+- [x] DONE: All M28 closure gates confirmed ✅
+
+### M29+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

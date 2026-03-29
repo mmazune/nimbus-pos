@@ -1,0 +1,563 @@
+{
+    "info": {
+        "name": "M28 - Accounting Foundation (COA + Cost Centers + Fiscal Periods)",
+        "description": "API collection for M28 — Chart of Accounts, Cost Centers, Fiscal Periods, Posting Source Maps, Tax Ledger Configuration",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth — Login Owner",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.environment.set('refreshToken', body.refreshToken);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "auth", "login"]
+                }
+            }
+        },
+        {
+            "name": "Auth — Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "me"]
+                }
+            }
+        },
+        {
+            "name": "Accounts",
+            "item": [
+                {
+                    "name": "Create Account (ASSET)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "pm.test('code matches', () => pm.expect(body.code).to.eql('PM-1000'));",
+                                    "pm.test('type is ASSET', () => pm.expect(body.accountType).to.eql('ASSET'));",
+                                    "pm.environment.set('accountId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"PM-1000\",\n    \"name\": \"Postman Test Account\",\n    \"accountType\": \"ASSET\",\n    \"notes\": \"Created via Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/accounts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "accounts"]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Account (REVENUE)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('type is REVENUE', () => pm.expect(body.accountType).to.eql('REVENUE'));",
+                                    "pm.environment.set('revenueAccountId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"PM-4000\",\n    \"name\": \"Postman Revenue\",\n    \"accountType\": \"REVENUE\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/accounts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "accounts"]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Account — Duplicate (409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"PM-1000\",\n    \"name\": \"Duplicate\",\n    \"accountType\": \"ASSET\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/accounts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "accounts"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Accounts",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/accounts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "accounts"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Accounts — Filter by ASSET",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('all ASSET type', () => body.data.forEach(a => pm.expect(a.accountType).to.eql('ASSET')));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/accounts?accountType=ASSET",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "accounts"],
+                            "query": [
+                                { "key": "accountType", "value": "ASSET" }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Cost Centers",
+            "item": [
+                {
+                    "name": "Create Cost Center",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "pm.test('code matches', () => pm.expect(body.code).to.eql('PM-CC-01'));",
+                                    "pm.environment.set('costCenterId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"PM-CC-01\",\n    \"name\": \"Postman Cost Center\",\n    \"description\": \"Created via Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/cost-centers",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "cost-centers"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Cost Centers",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('is array', () => pm.expect(body).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/cost-centers",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "cost-centers"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Fiscal Periods",
+            "item": [
+                {
+                    "name": "Create Fiscal Period",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "pm.test('status DRAFT', () => pm.expect(body.status).to.eql('DRAFT'));",
+                                    "pm.environment.set('fiscalPeriodId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"PM-FY2099-Q4\",\n    \"startsAt\": \"2099-10-01T00:00:00.000Z\",\n    \"endsAt\": \"2099-12-31T23:59:59.000Z\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/periods",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "periods"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Fiscal Periods",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('is array', () => pm.expect(body).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/periods",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "periods"]
+                        }
+                    }
+                },
+                {
+                    "name": "Open Fiscal Period",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status OPEN', () => pm.expect(body.status).to.eql('OPEN'));",
+                                    "pm.test('openedById present', () => pm.expect(body.openedById).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/periods/{{fiscalPeriodId}}/open",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "periods", "{{fiscalPeriodId}}", "open"]
+                        }
+                    }
+                },
+                {
+                    "name": "Open Period Again (409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/periods/{{fiscalPeriodId}}/open",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "periods", "{{fiscalPeriodId}}", "open"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Posting Source Maps",
+            "item": [
+                {
+                    "name": "List Posting Source Maps",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('is array', () => pm.expect(body).to.be.an('array'));",
+                                    "if (body.length > 0) { pm.environment.set('postingSourceMapId', body[0].id); }"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/posting-source-maps",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "posting-source-maps"]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Posting Source Map",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('notes updated', () => pm.expect(body.notes).to.eql('Updated via Postman'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"Updated via Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/posting-source-maps/{{postingSourceMapId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "posting-source-maps", "{{postingSourceMapId}}"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Tax Ledger Config",
+            "item": [
+                {
+                    "name": "Get Tax Ledger Config",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const status = pm.response.code;",
+                                    "pm.test('status 200 or 404', () => pm.expect([200, 404]).to.include(status));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/tax-config",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "tax-config"]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Tax Ledger Config",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const status = pm.response.code;",
+                                    "pm.test('status 200 or 400', () => pm.expect([200, 400]).to.include(status));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"outputTaxAccountId\": \"{{accountId}}\",\n    \"inputTaxAccountId\": \"{{accountId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/tax-config",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "tax-config"]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

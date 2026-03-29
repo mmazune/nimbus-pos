@@ -26,6 +26,8 @@
 // M24 models: AttendanceRecord, LeaveRequest, ShiftSwapRequest, AttendancePolicy + AttendanceStatus, LeaveRequestStatus, LeaveType, ShiftSwapStatus enums
 // M25 models: ShiftTemplate, Schedule, ScheduleAssignment, CoverageRule + ScheduleStatus, CoverageRuleStatus, CoverageSeverity enums
 // M26 models: PayComponent, PayrollAdjustment, PayRun, PaySlip + PayRunStatus, PayComponentType, PaySlipStatus, PayrollAdjustmentType enums
+// M27 models: StaffInsightSnapshot, StaffAward, PromotionSuggestion + StaffInsightStatus, AwardType, PromotionSuggestionStatus enums
+// M28 models: Account, CostCenter, FiscalPeriod, PostingSourceMap, TaxLedgerConfig + AccountType, AccountStatus, FiscalPeriodStatus enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -233,6 +235,10 @@ model User {
     awardsCreated             StaffAward[]           @relation("AwardCreatedBy")
     promotionsGenerated       PromotionSuggestion[]  @relation("PromotionGeneratedBy")
     promotionsDecided         PromotionSuggestion[]  @relation("PromotionDecidedBy")
+    // M28 — Accounting Foundation
+    fiscalPeriodsOpened       FiscalPeriod[]         @relation("FiscalPeriodOpenedBy")
+    fiscalPeriodsClosed       FiscalPeriod[]         @relation("FiscalPeriodClosedBy")
+    fiscalPeriodsLocked       FiscalPeriod[]         @relation("FiscalPeriodLockedBy")
 
     @@map("users")
 }
@@ -457,6 +463,12 @@ model Organization {
     staffInsightSnapshots  StaffInsightSnapshot[]
     staffAwards            StaffAward[]
     promotionSuggestions   PromotionSuggestion[]
+    // M28 — Accounting Foundation
+    accounts               Account[]
+    costCenters            CostCenter[]
+    fiscalPeriods          FiscalPeriod[]
+    postingSourceMaps      PostingSourceMap[]
+    taxLedgerConfigs       TaxLedgerConfig[]
 
     @@map("organizations")
 }
@@ -554,6 +566,9 @@ model Branch {
     staffInsightSnapshots StaffInsightSnapshot[]
     staffAwards          StaffAward[]
     promotionSuggestions PromotionSuggestion[]
+    // M28 — Accounting Foundation
+    accounts             Account[]
+    costCenters          CostCenter[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -3685,4 +3700,180 @@ model PromotionSuggestion {
     @@index([orgId, branchId, status])
     @@index([orgId, branchId, periodStart, periodEnd])
     @@map("promotion_suggestions")
+}
+
+// ── M28 Enums ──
+
+enum AccountType {
+    ASSET
+    LIABILITY
+    EQUITY
+    REVENUE
+    EXPENSE
+}
+
+enum AccountStatus {
+    ACTIVE
+    INACTIVE
+    SYSTEM_LOCKED
+}
+
+enum FiscalPeriodStatus {
+    DRAFT
+    OPEN
+    CLOSED
+    LOCKED
+}
+
+// ── M28 Models ──
+
+/// Chart of accounts entry. Supports account hierarchy via parentAccountId.
+model Account {
+    id                  String        @id @default(cuid())
+    orgId               String        @map("org_id")
+    branchId            String?       @map("branch_id")
+    code                String
+    name                String
+    accountType         AccountType   @map("account_type")
+    parentAccountId     String?       @map("parent_account_id")
+    status              AccountStatus @default(ACTIVE)
+    systemManaged       Boolean       @default(false) @map("system_managed")
+    allowManualPosting  Boolean       @default(true) @map("allow_manual_posting")
+    taxRelevant         Boolean       @default(false) @map("tax_relevant")
+    notes               String?
+    metadata            Json?
+    createdAt           DateTime      @default(now()) @map("created_at")
+    updatedAt           DateTime      @updatedAt @map("updated_at")
+
+    organization          Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch                Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    parentAccount         Account?          @relation("AccountHierarchy", fields: [parentAccountId], references: [id], onDelete: SetNull)
+    childAccounts         Account[]         @relation("AccountHierarchy")
+    debitPostingSourceMaps  PostingSourceMap[] @relation("DebitAccount")
+    creditPostingSourceMaps PostingSourceMap[] @relation("CreditAccount")
+    outputTaxConfigs      TaxLedgerConfig[] @relation("OutputTaxAccount")
+    inputTaxConfigs       TaxLedgerConfig[] @relation("InputTaxAccount")
+    discountConfigs       TaxLedgerConfig[] @relation("DiscountAccount")
+    depositLiabilityConfigs TaxLedgerConfig[] @relation("DepositLiabilityAccount")
+    payrollPayableConfigs TaxLedgerConfig[] @relation("PayrollPayableAccount")
+
+    @@unique([orgId, code])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([accountType])
+    @@index([status])
+    @@index([parentAccountId])
+    @@index([systemManaged])
+    @@index([orgId, accountType, status])
+    @@map("accounts")
+}
+
+/// Cost center / department used for later operational and financial attribution.
+model CostCenter {
+    id          String   @id @default(cuid())
+    orgId       String   @map("org_id")
+    branchId    String?  @map("branch_id")
+    code        String
+    name        String
+    description String?
+    active      Boolean  @default(true)
+    metadata    Json?
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+    @@unique([orgId, code])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([code])
+    @@index([active])
+    @@index([orgId, active])
+    @@map("cost_centers")
+}
+
+/// Fiscal period for an organization. Supports DRAFT→OPEN→CLOSED→LOCKED lifecycle.
+model FiscalPeriod {
+    id          String             @id @default(cuid())
+    orgId       String             @map("org_id")
+    name        String
+    startsAt    DateTime           @map("starts_at")
+    endsAt      DateTime           @map("ends_at")
+    status      FiscalPeriodStatus @default(DRAFT)
+    openedAt    DateTime?          @map("opened_at")
+    openedById  String?            @map("opened_by_id")
+    closedAt    DateTime?          @map("closed_at")
+    closedById  String?            @map("closed_by_id")
+    lockedAt    DateTime?          @map("locked_at")
+    lockedById  String?            @map("locked_by_id")
+    metadata    Json?
+    createdAt   DateTime           @default(now()) @map("created_at")
+    updatedAt   DateTime           @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    openedBy     User?        @relation("FiscalPeriodOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
+    closedBy     User?        @relation("FiscalPeriodClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+    lockedBy     User?        @relation("FiscalPeriodLockedBy", fields: [lockedById], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([status])
+    @@index([startsAt])
+    @@index([endsAt])
+    @@index([orgId, status])
+    @@index([orgId, startsAt, endsAt])
+    @@map("fiscal_periods")
+}
+
+/// Maps an operational source document type to default debit/credit accounts for future journal posting.
+model PostingSourceMap {
+    id                  String   @id @default(cuid())
+    orgId               String   @map("org_id")
+    sourceKey           String   @map("source_key")
+    debitAccountId      String?  @map("debit_account_id")
+    creditAccountId     String?  @map("credit_account_id")
+    costCenterRequired  Boolean  @default(false) @map("cost_center_required")
+    active              Boolean  @default(true)
+    notes               String?
+    metadata            Json?
+    createdAt           DateTime @default(now()) @map("created_at")
+    updatedAt           DateTime @updatedAt @map("updated_at")
+
+    organization   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    debitAccount   Account?     @relation("DebitAccount", fields: [debitAccountId], references: [id], onDelete: SetNull)
+    creditAccount  Account?     @relation("CreditAccount", fields: [creditAccountId], references: [id], onDelete: SetNull)
+
+    @@unique([orgId, sourceKey])
+    @@index([orgId])
+    @@index([sourceKey])
+    @@index([active])
+    @@index([orgId, active])
+    @@map("posting_source_maps")
+}
+
+/// Tax-ledger configuration linking key tax/discount/liability accounts for future tax-aware postings.
+model TaxLedgerConfig {
+    id                       String   @id @default(cuid())
+    orgId                    String   @map("org_id")
+    outputTaxAccountId       String?  @map("output_tax_account_id")
+    inputTaxAccountId        String?  @map("input_tax_account_id")
+    discountAccountId        String?  @map("discount_account_id")
+    depositLiabilityAccountId String? @map("deposit_liability_account_id")
+    payrollPayableAccountId  String?  @map("payroll_payable_account_id")
+    active                   Boolean  @default(true)
+    metadata                 Json?
+    createdAt                DateTime @default(now()) @map("created_at")
+    updatedAt                DateTime @updatedAt @map("updated_at")
+
+    organization          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    outputTaxAccount      Account?     @relation("OutputTaxAccount", fields: [outputTaxAccountId], references: [id], onDelete: SetNull)
+    inputTaxAccount       Account?     @relation("InputTaxAccount", fields: [inputTaxAccountId], references: [id], onDelete: SetNull)
+    discountAccount       Account?     @relation("DiscountAccount", fields: [discountAccountId], references: [id], onDelete: SetNull)
+    depositLiabilityAccount Account?   @relation("DepositLiabilityAccount", fields: [depositLiabilityAccountId], references: [id], onDelete: SetNull)
+    payrollPayableAccount Account?     @relation("PayrollPayableAccount", fields: [payrollPayableAccountId], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([active])
+    @@index([orgId, active])
+    @@map("tax_ledger_configs")
 }

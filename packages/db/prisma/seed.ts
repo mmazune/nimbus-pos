@@ -387,6 +387,18 @@ const PERMISSIONS_DATA = [
   { action: 'pos:staff:promotions:decide', description: 'Accept or reject promotion suggestions' },
   { action: 'pos:staff:weights:read', description: 'View staff insight scoring weights' },
   { action: 'pos:staff:weights:update', description: 'Update staff insight scoring weights' },
+  // ── M28: Accounting Foundation (COA + Cost Centers + Fiscal Periods) ──
+  { action: 'pos:accounting:accounts:read', description: 'List and view chart of accounts' },
+  { action: 'pos:accounting:accounts:create', description: 'Create new accounts in COA' },
+  { action: 'pos:accounting:cost-centers:read', description: 'List and view cost centers' },
+  { action: 'pos:accounting:cost-centers:create', description: 'Create cost centers' },
+  { action: 'pos:accounting:periods:read', description: 'List and view fiscal periods' },
+  { action: 'pos:accounting:periods:create', description: 'Create fiscal periods' },
+  { action: 'pos:accounting:periods:open', description: 'Open a draft fiscal period' },
+  { action: 'pos:accounting:posting-source-maps:read', description: 'List posting source maps' },
+  { action: 'pos:accounting:posting-source-maps:update', description: 'Update posting source maps' },
+  { action: 'pos:accounting:tax-config:read', description: 'View tax ledger configuration' },
+  { action: 'pos:accounting:tax-config:update', description: 'Update tax ledger configuration' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -600,6 +612,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:staff:promotions:decide',
     'pos:staff:weights:read',
     'pos:staff:weights:update',
+    // M28: Accounting Foundation (Owner: full access)
+    'pos:accounting:accounts:read',
+    'pos:accounting:accounts:create',
+    'pos:accounting:cost-centers:read',
+    'pos:accounting:cost-centers:create',
+    'pos:accounting:periods:read',
+    'pos:accounting:periods:create',
+    'pos:accounting:periods:open',
+    'pos:accounting:posting-source-maps:read',
+    'pos:accounting:posting-source-maps:update',
+    'pos:accounting:tax-config:read',
+    'pos:accounting:tax-config:update',
   ],
   Manager: [
     'identity:user:read',
@@ -776,6 +800,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:staff:promotions:generate',
     'pos:staff:promotions:decide',
     'pos:staff:weights:read',
+    // M28: Accounting Foundation (Manager: read + create, no tax-config:update)
+    'pos:accounting:accounts:read',
+    'pos:accounting:accounts:create',
+    'pos:accounting:cost-centers:read',
+    'pos:accounting:cost-centers:create',
+    'pos:accounting:periods:read',
+    'pos:accounting:periods:create',
+    'pos:accounting:posting-source-maps:read',
+    'pos:accounting:tax-config:read',
   ],
   Accountant: [
     'identity:user:read',
@@ -834,6 +867,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:payroll:adjustments:read',
     'pos:payroll:runs:read',
     'pos:payroll:slips:read',
+    // M28: Accounting Foundation (Accountant: full access — primary domain)
+    'pos:accounting:accounts:read',
+    'pos:accounting:accounts:create',
+    'pos:accounting:cost-centers:read',
+    'pos:accounting:cost-centers:create',
+    'pos:accounting:periods:read',
+    'pos:accounting:periods:create',
+    'pos:accounting:periods:open',
+    'pos:accounting:posting-source-maps:read',
+    'pos:accounting:posting-source-maps:update',
+    'pos:accounting:tax-config:read',
+    'pos:accounting:tax-config:update',
   ],
   Supervisor: [
     'identity:user:read',
@@ -6266,6 +6311,195 @@ async function seedStaffInsightsData(
   return { created, skipped };
 }
 
+// ── M28: Accounting Foundation ──
+
+async function seedAccountingFoundationData(
+  orgId: string,
+  branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+  let created = 0;
+  let skipped = 0;
+
+  const branch = await prisma.branch.findFirst({
+    where: { organizationId: orgId, slug: branchCode },
+  });
+  if (!branch) {
+    console.log('  ⚠  Branch not found — skipping Accounting Foundation seed');
+    return { created, skipped };
+  }
+  const branchId = branch.id;
+
+  // System COA accounts
+  const SYSTEM_ACCOUNTS = [
+    { code: '1000', name: 'Cash on Hand', accountType: 'ASSET' as const },
+    { code: '1010', name: 'Bank Account', accountType: 'ASSET' as const },
+    { code: '1200', name: 'Inventory', accountType: 'ASSET' as const },
+    { code: '1300', name: 'Accounts Receivable', accountType: 'ASSET' as const },
+    { code: '2000', name: 'Accounts Payable', accountType: 'LIABILITY' as const },
+    { code: '2100', name: 'Deposit Liability', accountType: 'LIABILITY' as const },
+    { code: '2200', name: 'Output Tax Payable', accountType: 'LIABILITY' as const },
+    { code: '2300', name: 'Payroll Payable', accountType: 'LIABILITY' as const },
+    { code: '3000', name: 'Owner Equity', accountType: 'EQUITY' as const },
+    { code: '4000', name: 'Sales Revenue', accountType: 'REVENUE' as const },
+    { code: '5000', name: 'Cost of Goods Sold', accountType: 'EXPENSE' as const },
+    { code: '5100', name: 'Discounts Given', accountType: 'EXPENSE' as const },
+    { code: '5200', name: 'Input Tax Recoverable', accountType: 'ASSET' as const },
+  ];
+
+  for (const acct of SYSTEM_ACCOUNTS) {
+    const existing = await prisma.account.findUnique({
+      where: { orgId_code: { orgId, code: acct.code } },
+    });
+    if (existing) {
+      console.log(`  ⏭  Account ${acct.code} exists — skipped`);
+      skipped++;
+    } else {
+      await prisma.account.create({
+        data: {
+          orgId,
+          branchId,
+          code: acct.code,
+          name: acct.name,
+          accountType: acct.accountType,
+          systemManaged: true,
+          allowManualPosting: false,
+        },
+      });
+      console.log(`  ✅ Account ${acct.code} (${acct.name}) created`);
+      created++;
+    }
+  }
+
+  // Cost center
+  const existingCC = await prisma.costCenter.findUnique({
+    where: { orgId_code: { orgId, code: 'CC-KITCHEN' } },
+  });
+  if (existingCC) {
+    console.log('  ⏭  CostCenter CC-KITCHEN exists — skipped');
+    skipped++;
+  } else {
+    await prisma.costCenter.create({
+      data: {
+        orgId,
+        branchId,
+        code: 'CC-KITCHEN',
+        name: 'Kitchen Operations',
+        description: 'Primary kitchen cost center',
+      },
+    });
+    console.log('  ✅ CostCenter CC-KITCHEN created');
+    created++;
+  }
+
+  // Fiscal period (current quarter)
+  const now = new Date();
+  const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+  const qEnd = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 0, 23, 59, 59);
+  const periodName = `FY${qStart.getFullYear()}-Q${Math.floor(qStart.getMonth() / 3) + 1}`;
+
+  const existingPeriod = await prisma.fiscalPeriod.findFirst({
+    where: { orgId, name: periodName },
+  });
+  if (existingPeriod) {
+    console.log(`  ⏭  FiscalPeriod ${periodName} exists — skipped`);
+    skipped++;
+  } else {
+    const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+    await prisma.fiscalPeriod.create({
+      data: {
+        orgId,
+        name: periodName,
+        startsAt: qStart,
+        endsAt: qEnd,
+        status: 'OPEN',
+        openedAt: new Date(),
+        openedById: owner?.id,
+      },
+    });
+    console.log(`  ✅ FiscalPeriod ${periodName} created (OPEN)`);
+    created++;
+  }
+
+  // Posting source maps
+  const SOURCE_MAPS = [
+    { sourceKey: 'ORDER_REVENUE', description: 'Revenue from POS orders' },
+    { sourceKey: 'PAYMENT_RECEIVED', description: 'Cash/card payments received' },
+    { sourceKey: 'REFUND_ISSUED', description: 'Refunds issued to customers' },
+    { sourceKey: 'INVENTORY_PURCHASE', description: 'Inventory stock purchases' },
+    { sourceKey: 'PAYROLL_EXPENSE', description: 'Payroll run disbursements' },
+    { sourceKey: 'DEPOSIT_COLLECTED', description: 'Reservation deposits collected' },
+  ];
+
+  // Get account IDs for posting maps
+  const revenueAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '4000' } } });
+  const cashAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '1000' } } });
+  const cogsAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '5000' } } });
+  const inventoryAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '1200' } } });
+  const payrollAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '2300' } } });
+  const depositAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '2100' } } });
+
+  const sourceMapDefaults: Record<string, { debit?: string; credit?: string }> = {
+    ORDER_REVENUE: { debit: cashAcct?.id, credit: revenueAcct?.id },
+    PAYMENT_RECEIVED: { debit: cashAcct?.id, credit: revenueAcct?.id },
+    REFUND_ISSUED: { debit: revenueAcct?.id, credit: cashAcct?.id },
+    INVENTORY_PURCHASE: { debit: inventoryAcct?.id, credit: cashAcct?.id },
+    PAYROLL_EXPENSE: { debit: payrollAcct?.id, credit: cashAcct?.id },
+    DEPOSIT_COLLECTED: { debit: cashAcct?.id, credit: depositAcct?.id },
+  };
+
+  for (const sm of SOURCE_MAPS) {
+    const existing = await prisma.postingSourceMap.findUnique({
+      where: { orgId_sourceKey: { orgId, sourceKey: sm.sourceKey } },
+    });
+    if (existing) {
+      console.log(`  ⏭  PostingSourceMap ${sm.sourceKey} exists — skipped`);
+      skipped++;
+    } else {
+      const defaults = sourceMapDefaults[sm.sourceKey] || {};
+      await prisma.postingSourceMap.create({
+        data: {
+          orgId,
+          sourceKey: sm.sourceKey,
+          debitAccountId: defaults.debit,
+          creditAccountId: defaults.credit,
+          notes: sm.description,
+        },
+      });
+      console.log(`  ✅ PostingSourceMap ${sm.sourceKey} created`);
+      created++;
+    }
+  }
+
+  // Tax ledger config
+  const existingTaxConfig = await prisma.taxLedgerConfig.findFirst({
+    where: { orgId, active: true },
+  });
+  if (existingTaxConfig) {
+    console.log('  ⏭  TaxLedgerConfig exists — skipped');
+    skipped++;
+  } else {
+    const outputTaxAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '2200' } } });
+    const inputTaxAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '5200' } } });
+    const discountAcct = await prisma.account.findUnique({ where: { orgId_code: { orgId, code: '5100' } } });
+
+    await prisma.taxLedgerConfig.create({
+      data: {
+        orgId,
+        outputTaxAccountId: outputTaxAcct?.id,
+        inputTaxAccountId: inputTaxAcct?.id,
+        discountAccountId: discountAcct?.id,
+        depositLiabilityAccountId: depositAcct?.id,
+        payrollPayableAccountId: payrollAcct?.id,
+        active: true,
+      },
+    });
+    console.log('  ✅ TaxLedgerConfig created');
+    created++;
+  }
+
+  return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -6497,6 +6731,13 @@ async function main(): Promise<void> {
   const staffInsightsResult = await seedStaffInsightsData(orgResult.orgId, 'main');
   console.log(
     `   Created: ${staffInsightsResult.created}, Skipped: ${staffInsightsResult.skipped}\n`,
+  );
+
+  // 43) Seed Accounting Foundation (M28)
+  console.log('── Accounting Foundation — COA + Cost Centers + Fiscal Periods (M28) ──');
+  const accountingResult = await seedAccountingFoundationData(orgResult.orgId, 'main');
+  console.log(
+    `   Created: ${accountingResult.created}, Skipped: ${accountingResult.skipped}\n`,
   );
 
   // Record seed execution
