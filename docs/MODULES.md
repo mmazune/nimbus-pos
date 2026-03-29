@@ -39,8 +39,8 @@
 | **HR / Employees + Contracts**      | `apps/api/src/modules/hr/`           | M23       | ✅ Implemented |
 | **HR / Attendance + Leave + Swaps** | `apps/api/src/modules/attendance/`   | M24       | ✅ Implemented |
 | **Scheduling + Templates + Roster** | `apps/api/src/modules/workforce/`    | M25       | ✅ Implemented |
+| **Payroll Engine + Pay Runs + Payslips** | `apps/api/src/modules/payroll/` | M26       | ✅ Implemented |
 | **HR / Scheduling / Roster**        | `apps/api/src/modules/hr/`           | M29       | ⬜ Planned     |
-| **Payroll**                         | `apps/api/src/modules/payroll/`      | M30       | ⬜ Planned     |
 | **Staff Insights**                  | `apps/api/src/modules/hr/`           | M31       | ⬜ Planned     |
 | **Accounting (COA, GL, AP, AR)**    | `apps/api/src/modules/accounting/`   | M32–M36   | ⬜ Planned     |
 | **Budgets / Forecasts**             | `apps/api/src/modules/accounting/`   | M37       | ⬜ Planned     |

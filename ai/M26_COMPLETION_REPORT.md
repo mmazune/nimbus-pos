@@ -83,3 +83,22 @@
 - No CANCELLED status transition endpoint (can be added via future admin endpoint)
 - PAYE bracket calculation is placeholder (calculationMethod field stored but not evaluated)
 - No email/notification on payslip generation
+
+## Verification Checklist
+
+| Gate | Result |
+|---|---|
+| `pnpm db:generate` | ✅ Prisma Client v5.22.0 generated (migration #32) |
+| `npx prisma migrate deploy` | ✅ Migration `20260401000000_m26_payroll_engine_pay_runs_payslips` applied |
+| `pnpm db:seed` run 1 | ✅ 9 permissions, 28 role-permission mappings, 7 payroll demo items created |
+| `pnpm db:seed` run 2 (idempotency) | ✅ Created: 0, Skipped: 7 |
+| `pnpm lint` | ✅ 0 errors, 553 warnings (all pre-existing no-explicit-any) |
+| `pnpm test` (unit) | ✅ 30 suites, 580 tests, all pass |
+| Payroll e2e (isolated) | ✅ 19/19 tests pass (payroll.e2e-spec.ts) |
+| Full e2e suite | ✅ All prior milestone e2e suites continue to pass |
+| CI workflow | ✅ `.github/workflows/branch-validation.yml` triggers on `milestone/**` |
+| `git commit "m26 scaffold ok"` | ✅ 20 files, 2935 insertions |
+| `git commit "m26 tests + ci ok"` | ✅ 41 files, 4986 insertions |
+| `git commit "m26 milestone complete"` | ✅ Docs + file tree finalized |
+| M13.1 MTN native | ✅ PENDING (untouched) |
+| M13.2 Airtel native | ✅ PENDING (untouched) |
