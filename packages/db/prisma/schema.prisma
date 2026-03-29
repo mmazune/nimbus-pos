@@ -228,6 +228,11 @@ model User {
     payRunsApproved         PayRun[]             @relation("PayRunApprovedBy")
     payRunsPaid             PayRun[]             @relation("PayRunPaidBy")
     payrollAdjustmentsCreated PayrollAdjustment[] @relation("PayrollAdjustmentCreatedBy")
+    // M27 — Staff Insights + Awards + Promotion Suggestions
+    insightsGenerated         StaffInsightSnapshot[] @relation("InsightGeneratedBy")
+    awardsCreated             StaffAward[]           @relation("AwardCreatedBy")
+    promotionsGenerated       PromotionSuggestion[]  @relation("PromotionGeneratedBy")
+    promotionsDecided         PromotionSuggestion[]  @relation("PromotionDecidedBy")
 
     @@map("users")
 }
@@ -448,6 +453,10 @@ model Organization {
     payrollAdjustments     PayrollAdjustment[]
     payRuns                PayRun[]
     paySlips               PaySlip[]
+    // M27 — Staff Insights + Awards + Promotion Suggestions
+    staffInsightSnapshots  StaffInsightSnapshot[]
+    staffAwards            StaffAward[]
+    promotionSuggestions   PromotionSuggestion[]
 
     @@map("organizations")
 }
@@ -541,6 +550,10 @@ model Branch {
     payrollAdjustments  PayrollAdjustment[]
     payRuns             PayRun[]
     paySlips            PaySlip[]
+    // M27 — Staff Insights + Awards + Promotion Suggestions
+    staffInsightSnapshots StaffInsightSnapshot[]
+    staffAwards          StaffAward[]
+    promotionSuggestions PromotionSuggestion[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -2935,6 +2948,10 @@ model Employee {
     // M26 — Payroll Engine + Pay Runs + Payslips
     payrollAdjustments  PayrollAdjustment[]
     paySlips            PaySlip[]
+    // M27 — Staff Insights + Awards + Promotion Suggestions
+    insightSnapshots      StaffInsightSnapshot[]
+    staffAwards           StaffAward[]
+    promotionSuggestions  PromotionSuggestion[]
 
     @@unique([orgId, employeeCode])
     @@index([orgId])
@@ -3003,6 +3020,9 @@ model Position {
     // M25 — Scheduling + Templates + Duty Roster
     shiftTemplates ShiftTemplate[]
     coverageRules  CoverageRule[]
+    // M27 — Staff Insights + Awards + Promotion Suggestions
+    promotionsCurrent   PromotionSuggestion[] @relation("PromotionCurrentPosition")
+    promotionsSuggested PromotionSuggestion[] @relation("PromotionSuggestedPosition")
 
     @@unique([orgId, code])
     @@index([orgId])
@@ -3527,4 +3547,142 @@ model PaySlip {
     @@index([orgId, branchId, status])
     @@index([payRunId, employeeId])
     @@map("pay_slips")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// M27 — Staff Insights + Awards + Promotion Suggestions
+// ═══════════════════════════════════════════════════════════════════
+
+enum StaffInsightStatus {
+    ACTIVE
+    ARCHIVED
+}
+
+enum AwardType {
+    EMPLOYEE_OF_MONTH
+    RELIABILITY
+    SALES_EXCELLENCE
+    CUSTOMER_DELIGHT
+    TEAMWORK
+    OTHER
+}
+
+enum PromotionSuggestionStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+    DISMISSED
+}
+
+/// Composite staff insight snapshot for a period. Stores explainable scoring breakdown.
+model StaffInsightSnapshot {
+    id               String             @id @default(cuid())
+    orgId            String             @map("org_id")
+    branchId         String?            @map("branch_id")
+    employeeId       String             @map("employee_id")
+    periodStart      DateTime           @map("period_start") @db.Date
+    periodEnd        DateTime           @map("period_end") @db.Date
+    status           StaffInsightStatus @default(ACTIVE)
+    salesScore       Decimal            @default(0) @map("sales_score") @db.Decimal(10, 2)
+    reliabilityScore Decimal            @default(0) @map("reliability_score") @db.Decimal(10, 2)
+    attendanceScore  Decimal            @default(0) @map("attendance_score") @db.Decimal(10, 2)
+    wastageScore     Decimal            @default(0) @map("wastage_score") @db.Decimal(10, 2)
+    riskPenalty      Decimal            @default(0) @map("risk_penalty") @db.Decimal(10, 2)
+    compositeScore   Decimal            @default(0) @map("composite_score") @db.Decimal(10, 2)
+    weights          Json
+    sourceSummary    Json               @map("source_summary")
+    generatedAt      DateTime           @default(now()) @map("generated_at")
+    generatedById    String             @map("generated_by_id")
+    metadata         Json?
+    createdAt        DateTime           @default(now()) @map("created_at")
+    updatedAt        DateTime           @updatedAt @map("updated_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    generatedBy  User         @relation("InsightGeneratedBy", fields: [generatedById], references: [id], onDelete: Cascade)
+
+    @@unique([orgId, employeeId, periodStart, periodEnd])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([employeeId])
+    @@index([status])
+    @@index([periodStart])
+    @@index([periodEnd])
+    @@index([compositeScore])
+    @@index([orgId, branchId, status])
+    @@index([orgId, branchId, periodStart, periodEnd])
+    @@map("staff_insight_snapshots")
+}
+
+/// Award given to a staff member for a recognized achievement.
+model StaffAward {
+    id          String    @id @default(cuid())
+    orgId       String    @map("org_id")
+    branchId    String?   @map("branch_id")
+    employeeId  String    @map("employee_id")
+    awardType   AwardType @map("award_type")
+    periodStart DateTime  @map("period_start") @db.Date
+    periodEnd   DateTime  @map("period_end") @db.Date
+    title       String
+    reason      String?
+    createdById String    @map("created_by_id")
+    createdAt   DateTime  @default(now()) @map("created_at")
+    metadata    Json?
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    createdBy    User         @relation("AwardCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([employeeId])
+    @@index([awardType])
+    @@index([periodStart])
+    @@index([periodEnd])
+    @@index([createdById])
+    @@index([orgId, branchId, awardType])
+    @@map("staff_awards")
+}
+
+/// Promotion suggestion generated from staff insight data.
+model PromotionSuggestion {
+    id                  String                    @id @default(cuid())
+    orgId               String                    @map("org_id")
+    branchId            String?                   @map("branch_id")
+    employeeId          String                    @map("employee_id")
+    currentPositionId   String?                   @map("current_position_id")
+    suggestedPositionId String?                   @map("suggested_position_id")
+    periodStart         DateTime                  @map("period_start") @db.Date
+    periodEnd           DateTime                  @map("period_end") @db.Date
+    status              PromotionSuggestionStatus @default(PENDING)
+    generatedById       String                    @map("generated_by_id")
+    decidedById         String?                   @map("decided_by_id")
+    decidedAt           DateTime?                 @map("decided_at")
+    decisionNotes       String?                   @map("decision_notes")
+    rationale           Json
+    createdAt           DateTime                  @default(now()) @map("created_at")
+    updatedAt           DateTime                  @updatedAt @map("updated_at")
+    metadata            Json?
+
+    organization     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch           Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    employee         Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    currentPosition  Position?    @relation("PromotionCurrentPosition", fields: [currentPositionId], references: [id], onDelete: SetNull)
+    suggestedPosition Position?   @relation("PromotionSuggestedPosition", fields: [suggestedPositionId], references: [id], onDelete: SetNull)
+    generatedBy      User         @relation("PromotionGeneratedBy", fields: [generatedById], references: [id], onDelete: Cascade)
+    decidedBy        User?        @relation("PromotionDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([employeeId])
+    @@index([status])
+    @@index([periodStart])
+    @@index([periodEnd])
+    @@index([generatedById])
+    @@index([decidedById])
+    @@index([orgId, branchId, status])
+    @@index([orgId, branchId, periodStart, periodEnd])
+    @@map("promotion_suggestions")
 }

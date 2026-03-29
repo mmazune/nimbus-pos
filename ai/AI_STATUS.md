@@ -3,12 +3,12 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M26 ✅
-- Last completed milestone: M26 — Payroll Engine + Pay Runs + Payslips
-- Next milestone: M27 — TBD
+- Current milestone: M27 ✅
+- Last completed milestone: M27 — Staff Insights + Awards + Promotion Suggestions
+- Next milestone: M28 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
-- Date updated: 2026-03-30
+- Date updated: 2026-04-01
 
 ## Environment
 
@@ -694,7 +694,24 @@
 - [x] M13.2 (Airtel native) = PENDING (untouched)
 - [x] DONE: All M26 closure gates confirmed ✅
 
-### M27+
+### M27 — Staff Insights + Awards + Promotion Suggestions
+
+- [x] Schema: 3 enums (StaffInsightStatus, AwardType, PromotionSuggestionStatus) + 3 models (StaffInsightSnapshot, StaffAward, PromotionSuggestion)
+- [x] Migration #33: `20260401100000_m27_staff_insights_awards_promotions` — SQL created and applied
+- [x] Module: `StaffInsightsModule` — controller + service + 5 DTOs
+- [x] Endpoints: 10 (GET/PATCH weights, POST generate/GET/GET:id insights, POST/GET awards, POST generate/GET/PATCH:id suggestions)
+- [x] Permissions: 7 new (`pos:staff:insights:read`, `pos:staff:awards:create/read`, `pos:staff:promotions:generate/decide`, `pos:staff:weights:read/update`)
+- [x] Role matrix updated: Owner (full 7), Manager (6, no weights:update), Supervisor (insights:read + awards:read), Accountant (none)
+- [x] Unit tests: `staff-insights.service.spec.ts` — 18 tests covering all service methods + error paths
+- [x] E2e tests: `staff-insights.e2e-spec.ts` — 18 tests covering all endpoints
+- [x] Seed: 1 insight snapshot, 1 award, 1 promotion suggestion, idempotent
+- [x] Postman: `M27-Staff-Insights-Awards-Promotion-Suggestions.postman_collection.json` (10 requests)
+- [x] Docs: STAFF_INSIGHTS_GUIDE.md, M27_COMPLETION_REPORT.md, AI_STATUS.md updated
+- [x] M13.1 (MTN native) = PENDING (untouched)
+- [x] M13.2 (Airtel native) = PENDING (untouched)
+- [x] DONE: All M27 closure gates confirmed ✅
+
+### M28+
 
 Track each milestone in order as it is completed. Add one checklist block per milestone as implementation proceeds.
 

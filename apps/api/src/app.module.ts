@@ -29,6 +29,7 @@ import { HrModule } from './modules/hr/hr.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { StaffInsightsModule } from './modules/staff-insights/staff-insights.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     AttendanceModule,
     WorkforceModule,
     PayrollModule,
+    StaffInsightsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

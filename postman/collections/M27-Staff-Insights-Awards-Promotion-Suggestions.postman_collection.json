@@ -1,0 +1,362 @@
+{
+    "info": {
+        "name": "M27 - Staff Insights + Awards + Promotion Suggestions",
+        "description": "API collection for M27 — Staff Insight Snapshots, configurable scoring weights, Staff Awards (with risk-block rule), Promotion Suggestion generation + decision workflow",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Scoring Weights",
+            "item": [
+                {
+                    "name": "Get Scoring Weights",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has salesWeight', () => pm.expect(body.salesWeight).to.be.a('number'));",
+                                    "pm.test('has reliabilityWeight', () => pm.expect(body.reliabilityWeight).to.be.a('number'));",
+                                    "pm.test('has attendanceWeight', () => pm.expect(body.attendanceWeight).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/weights",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "weights"]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Scoring Weights",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('salesWeight updated', () => pm.expect(body.salesWeight).to.eql(30));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"salesWeight\": 30\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/weights",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "weights"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Staff Insights",
+            "item": [
+                {
+                    "name": "Generate Staff Insights",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('is array', () => pm.expect(body).to.be.an('array'));",
+                                    "    if (body.length > 0) {",
+                                    "        pm.environment.set('insightSnapshotId', body[0].id);",
+                                    "        pm.environment.set('insightEmployeeId', body[0].employeeId);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"periodStart\": \"2025-03-01\",\n    \"periodEnd\": \"2025-03-31\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/insights/generate",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "insights", "generate"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Staff Insights",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/insights",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "insights"]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Employee Insight Detail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('is array', () => pm.expect(body).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/insights/{{insightEmployeeId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "insights", "{{insightEmployeeId}}"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Staff Awards",
+            "item": [
+                {
+                    "name": "Create Staff Award",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('staffAwardId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "    pm.test('awardType is EMPLOYEE_OF_MONTH', () => pm.expect(body.awardType).to.eql('EMPLOYEE_OF_MONTH'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"employeeId\": \"{{insightEmployeeId}}\",\n    \"awardType\": \"EMPLOYEE_OF_MONTH\",\n    \"periodStart\": \"2025-03-01\",\n    \"periodEnd\": \"2025-03-31\",\n    \"title\": \"Top Performer — March 2025\",\n    \"reason\": \"Consistently high composite score and zero absences\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/awards",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "awards"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Staff Awards",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/awards",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "awards"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Promotion Suggestions",
+            "item": [
+                {
+                    "name": "Generate Promotion Suggestions",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('is array', () => pm.expect(body).to.be.an('array'));",
+                                    "    if (body.length > 0) {",
+                                    "        pm.environment.set('promotionSuggestionId', body[0].id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"periodStart\": \"2025-03-01\",\n    \"periodEnd\": \"2025-03-31\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/promotion-suggestions/generate",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "promotion-suggestions", "generate"]
+                        }
+                    }
+                },
+                {
+                    "name": "List Promotion Suggestions",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/promotion-suggestions",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "promotion-suggestions"]
+                        }
+                    }
+                },
+                {
+                    "name": "Decide Promotion Suggestion (Accept)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "    pm.test('status is ACCEPTED', () => pm.expect(body.status).to.eql('ACCEPTED'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"decision\": \"ACCEPTED\",\n    \"decisionNotes\": \"Approved via Postman — excellent performance\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/staff/promotion-suggestions/{{promotionSuggestionId}}/decision",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "staff", "promotion-suggestions", "{{promotionSuggestionId}}", "decision"]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
