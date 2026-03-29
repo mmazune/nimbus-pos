@@ -346,6 +346,12 @@ nimbus-pos/
 │   │   │       │   ├── staff-insights.service.ts
 │   │   │       │   ├── staff-insights.service.spec.ts
 │   │   │       │   └── dto/
+│   │   │       ├── accounting/
+│   │   │       │   ├── accounting.module.ts
+│   │   │       │   ├── accounting.controller.ts
+│   │   │       │   ├── accounting.service.ts
+│   │   │       │   ├── accounting.service.spec.ts
+│   │   │       │   └── dto/
 │   │   │       └── tenancy/
 │   │   │           ├── tenancy.controller.ts
 │   │   │           ├── tenancy.module.ts
@@ -384,7 +390,8 @@ nimbus-pos/
 │   │       ├── attendance.e2e-spec.ts
 │   │       ├── workforce.e2e-spec.ts
 │   │       ├── payroll.e2e-spec.ts
-│   │       └── staff-insights.e2e-spec.ts
+│   │       ├── staff-insights.e2e-spec.ts
+│   │       └── accounting.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -465,6 +472,8 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260401100000_m27_staff_insights_awards_promotions/
 │   │   │           └── migration.sql
+│   │   │       └── 20260402000000_m28_accounting_foundation_coa_cost_centers_periods/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -484,7 +493,8 @@ nimbus-pos/
 │   ├── DOCUMENTS_GUIDE.md
 │   └── SCHEDULING_ROSTER_GUIDE.md
 │   ├── PAYROLL_GUIDE.md
-│   └── STAFF_INSIGHTS_GUIDE.md
+│   ├── STAFF_INSIGHTS_GUIDE.md
+│   └── ACCOUNTING_FOUNDATION_GUIDE.md
 │
 └── postman/
     ├── POSTMAN_GUIDE.md
@@ -520,7 +530,8 @@ nimbus-pos/
 │   │   ├── M24-Attendance-Leave-Shift-Swaps.postman_collection.json
 │   │   ├── M25-Scheduling-Templates-Duty-Roster.postman_collection.json
 │   │   ├── M26-Payroll-Engine-Pay-Runs-Payslips.postman_collection.json
-│   │   └── M27-Staff-Insights-Awards-Promotion-Suggestions.postman_collection.json
+│   │   ├── M27-Staff-Insights-Awards-Promotion-Suggestions.postman_collection.json
+│   │   └── M28-Accounting-Foundation-COA-Cost-Centers-Periods.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```

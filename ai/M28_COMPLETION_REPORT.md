@@ -63,8 +63,8 @@ All new permissions follow the `pos:accounting:*` namespace.
 
 ## Tests
 
-- **Unit tests:** `accounting.service.spec.ts` — 20+ tests
-- **E2e tests:** `accounting.e2e-spec.ts` — 20+ tests
+- **Unit tests:** `accounting.service.spec.ts` — 26 tests
+- **E2e tests:** `accounting.e2e-spec.ts` — 21 tests
 
 ## Seed Data
 
