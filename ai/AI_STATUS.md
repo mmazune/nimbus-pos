@@ -3,9 +3,9 @@
 ## Current State
 
 - Repo name: nimbus-pos
-- Current milestone: M28 ✅
-- Last completed milestone: M28 — Accounting Foundation (COA + Cost Centers + Fiscal Periods)
-- Next milestone: M29 — TBD
+- Current milestone: M29 ✅
+- Last completed milestone: M29 — General Ledger + Journal Entries + Posting Engine
+- Next milestone: M30 — TBD
 - M13.1 (MTN Native) = PENDING
 - M13.2 (Airtel Native) = PENDING
 - Date updated: 2026-04-02

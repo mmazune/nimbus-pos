@@ -289,6 +289,19 @@ Quick-reference of **every API endpoint** with Postman collection mapping.
 | POST   | `/api/hr/compensation-profiles`             | M23-Employees-Contracts-HR-Core        |
 | GET    | `/api/hr/compensation-profiles`             | M23-Employees-Contracts-HR-Core        |
 
+### M29 — General Ledger + Journals + Posting Engine
+
+| Method | Endpoint                                    | Collection                                     |
+| ------ | ------------------------------------------- | ---------------------------------------------- |
+| POST   | `/api/accounting/journals`                  | M29-General-Ledger-Journals-Posting-Engine      |
+| GET    | `/api/accounting/journals`                  | M29-General-Ledger-Journals-Posting-Engine      |
+| GET    | `/api/accounting/journals/:id`              | M29-General-Ledger-Journals-Posting-Engine      |
+| POST   | `/api/accounting/journals/:id/reverse`      | M29-General-Ledger-Journals-Posting-Engine      |
+| POST   | `/api/accounting/posting/replay`            | M29-General-Ledger-Journals-Posting-Engine      |
+| GET    | `/api/accounting/posting-runs`              | M29-General-Ledger-Journals-Posting-Engine      |
+| GET    | `/api/accounting/posting-errors`            | M29-General-Ledger-Journals-Posting-Engine      |
+| GET    | `/api/accounting/posting-errors/:id`        | M29-General-Ledger-Journals-Posting-Engine      |
+
 ---
 
 ## Common Pitfalls & Known Issues

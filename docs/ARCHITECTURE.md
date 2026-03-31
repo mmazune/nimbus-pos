@@ -1069,3 +1069,58 @@ All under `/api/hr`, protected by JwtAuthGuard + PermissionGuard + BranchContext
 | CONTRACT_CREATED               | Employment contract created                 |
 | POSITION_CREATED               | Position template created                   |
 | COMPENSATION_PROFILE_CREATED   | Compensation profile template created       |
+
+## M29 — General Ledger + Journal Entries + Posting Engine
+
+### Purpose
+
+Double-entry General Ledger with automated posting engine. Journal entries must always balance (total debits = total credits). The posting engine replays accounting events from PostingSourceMaps into journal entries, with idempotent run keys and error tracking.
+
+### Models
+
+- **JournalEntry** — Double-entry header. Auto-generates `journalNumber` as `JNL-XXXXXX`. Tracks status lifecycle (DRAFT → POSTED → REVERSED), optional source key linkage, fiscal period, and self-referential reversal chain.
+- **JournalLine** — Individual debit/credit line within a journal entry. Links to Account and optional CostCenter. Direction enum (DEBIT/CREDIT) with Decimal(10,2) amounts.
+- **PostingRun** — Execution record for automated posting. Idempotent via unique `runKey` per org. Tracks status (RUNNING → SUCCEEDED/FAILED), duration, and generated journal entry.
+- **PostingError** — Error record when posting fails. Tracks error message, source context, and resolution status (OPEN → RESOLVED/IGNORED).
+
+### Enums
+
+| Enum               | Values                         |
+| ------------------ | ------------------------------ |
+| JournalStatus      | DRAFT, POSTED, REVERSED        |
+| PostingRunStatus   | RUNNING, SUCCEEDED, FAILED     |
+| PostingErrorStatus | OPEN, RESOLVED, IGNORED        |
+| JournalLineDirection | DEBIT, CREDIT                |
+
+### Endpoints
+
+All under `/api/accounting`, protected by JwtAuthGuard + PermissionGuard + BranchContextGuard.
+
+- `POST /api/accounting/journals` — Create balanced journal entry (auto-POSTED)
+- `GET /api/accounting/journals` — List journals (paginated, filterable by status/sourceKey/dateRange)
+- `GET /api/accounting/journals/:id` — Get journal with lines and relations
+- `POST /api/accounting/journals/:id/reverse` — Create compensating reversal entry
+- `POST /api/accounting/posting/replay` — Replay posting from source map (idempotent)
+- `GET /api/accounting/posting-runs` — List posting runs (paginated)
+- `GET /api/accounting/posting-errors` — List posting errors (filterable by status)
+- `GET /api/accounting/posting-errors/:id` — Get posting error detail
+
+### M29 Permissions
+
+| Permission                          | Description                        |
+| ----------------------------------- | ---------------------------------- |
+| pos:accounting:journals:read        | List and view journal entries      |
+| pos:accounting:journals:create      | Create journal entries             |
+| pos:accounting:journals:reverse     | Reverse journal entries            |
+| pos:accounting:posting:replay       | Replay posting from source maps    |
+| pos:accounting:posting-runs:read    | List and view posting runs         |
+| pos:accounting:posting-errors:read  | List and view posting errors       |
+
+### M29 Audit Events
+
+| Action                   | Trigger                                       |
+| ------------------------ | --------------------------------------------- |
+| JOURNAL_CREATED          | New journal entry created                     |
+| JOURNAL_REVERSED         | Journal entry reversed (compensating entry)   |
+| POSTING_RUN_CREATED      | Posting engine replay executed                |
+| POSTING_ERROR_RECORDED   | Posting error captured during replay          |
