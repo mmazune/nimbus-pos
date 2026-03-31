@@ -399,6 +399,13 @@ const PERMISSIONS_DATA = [
   { action: 'pos:accounting:posting-source-maps:update', description: 'Update posting source maps' },
   { action: 'pos:accounting:tax-config:read', description: 'View tax ledger configuration' },
   { action: 'pos:accounting:tax-config:update', description: 'Update tax ledger configuration' },
+  // M29: General Ledger + Journal Entries + Posting Engine
+  { action: 'pos:accounting:journals:read', description: 'List and view journal entries' },
+  { action: 'pos:accounting:journals:create', description: 'Create manual journal entries' },
+  { action: 'pos:accounting:journals:reverse', description: 'Reverse posted journal entries' },
+  { action: 'pos:accounting:posting:replay', description: 'Replay posting from source documents' },
+  { action: 'pos:accounting:posting-runs:read', description: 'List posting runs' },
+  { action: 'pos:accounting:posting-errors:read', description: 'List and view posting errors' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -624,6 +631,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:posting-source-maps:update',
     'pos:accounting:tax-config:read',
     'pos:accounting:tax-config:update',
+    // M29: General Ledger (Owner: full access)
+    'pos:accounting:journals:read',
+    'pos:accounting:journals:create',
+    'pos:accounting:journals:reverse',
+    'pos:accounting:posting:replay',
+    'pos:accounting:posting-runs:read',
+    'pos:accounting:posting-errors:read',
   ],
   Manager: [
     'identity:user:read',
@@ -809,6 +823,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:periods:create',
     'pos:accounting:posting-source-maps:read',
     'pos:accounting:tax-config:read',
+    // M29: General Ledger (Manager: read-only)
+    'pos:accounting:journals:read',
+    'pos:accounting:posting-runs:read',
+    'pos:accounting:posting-errors:read',
   ],
   Accountant: [
     'identity:user:read',
@@ -879,6 +897,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:posting-source-maps:update',
     'pos:accounting:tax-config:read',
     'pos:accounting:tax-config:update',
+    // M29: General Ledger (Accountant: full access — primary domain)
+    'pos:accounting:journals:read',
+    'pos:accounting:journals:create',
+    'pos:accounting:journals:reverse',
+    'pos:accounting:posting:replay',
+    'pos:accounting:posting-runs:read',
+    'pos:accounting:posting-errors:read',
   ],
   Supervisor: [
     'identity:user:read',
@@ -6500,6 +6525,190 @@ async function seedAccountingFoundationData(
   return { created, skipped };
 }
 
+// ── M29: General Ledger Seed Data ──
+
+async function seedLedgerData(
+  orgId: string,
+  _branchLabel: string,
+): Promise<{ created: number; skipped: number }> {
+  let created = 0;
+  let skipped = 0;
+
+  // Find the branch
+  const branch = await prisma.branch.findFirst({ where: { organizationId: orgId } });
+  if (!branch) {
+    console.log('  ⏭  No branch found — skipping ledger seed');
+    return { created, skipped };
+  }
+
+  // Find owner user for postedById
+  const owner = await prisma.user.findFirst({
+    where: { email: 'owner@demo.local' },
+  });
+  if (!owner) {
+    console.log('  ⏭  No owner user found — skipping ledger seed');
+    return { created, skipped };
+  }
+
+  // Find two accounts for journal lines
+  const accounts = await prisma.account.findMany({
+    where: { orgId, status: 'ACTIVE' },
+    take: 4,
+  });
+  if (accounts.length < 2) {
+    console.log('  ⏭  Not enough active accounts — skipping ledger seed');
+    return { created, skipped };
+  }
+
+  // Find open fiscal period
+  const period = await prisma.fiscalPeriod.findFirst({
+    where: { orgId, status: 'OPEN' },
+  });
+
+  // 1) Sample opening balance journal
+  const existingJournal = await prisma.journalEntry.findFirst({
+    where: { orgId, reference: 'SEED-Opening-Balance' },
+  });
+  if (!existingJournal) {
+    const journal = await prisma.journalEntry.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        journalNumber: 'JNL-000001',
+        journalDate: new Date('2024-01-01'),
+        status: 'POSTED',
+        reference: 'SEED-Opening-Balance',
+        description: 'Opening balance — seeded demo entry',
+        fiscalPeriodId: period?.id || null,
+        totalDebit: 10000.0,
+        totalCredit: 10000.0,
+        postedAt: new Date(),
+        postedById: owner.id,
+        lines: {
+          create: [
+            {
+              orgId,
+              accountId: accounts[0].id,
+              direction: 'DEBIT',
+              amount: 10000.0,
+              description: 'Opening cash balance',
+            },
+            {
+              orgId,
+              accountId: accounts[1].id,
+              direction: 'CREDIT',
+              amount: 10000.0,
+              description: 'Opening equity',
+            },
+          ],
+        },
+      },
+    });
+    console.log(`  ✅ Journal "${journal.journalNumber}" (Opening Balance) created`);
+    created++;
+  } else {
+    console.log('  ⏭  Opening balance journal already exists — skipped');
+    skipped++;
+  }
+
+  // 2) Sample posting run (demonstrating engine flow)
+  const existingRun = await prisma.postingRun.findFirst({
+    where: { orgId, runKey: 'ORDER_REVENUE:seed-demo-001' },
+  });
+  if (!existingRun) {
+    const journalForRun = await prisma.journalEntry.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        journalNumber: 'JNL-000002',
+        journalDate: new Date(),
+        status: 'POSTED',
+        sourceKey: 'ORDER_REVENUE',
+        sourceDocumentId: 'seed-demo-001',
+        description: 'Auto-posted from ORDER_REVENUE / seed-demo-001',
+        totalDebit: 150.0,
+        totalCredit: 150.0,
+        postedAt: new Date(),
+        postedById: owner.id,
+        lines: {
+          create: [
+            {
+              orgId,
+              accountId: accounts[0].id,
+              direction: 'DEBIT',
+              amount: 150.0,
+              description: 'ORDER_REVENUE debit',
+            },
+            {
+              orgId,
+              accountId: accounts[1].id,
+              direction: 'CREDIT',
+              amount: 150.0,
+              description: 'ORDER_REVENUE credit',
+            },
+          ],
+        },
+      },
+    });
+
+    await prisma.postingRun.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        sourceKey: 'ORDER_REVENUE',
+        sourceDocumentId: 'seed-demo-001',
+        status: 'SUCCEEDED',
+        runKey: 'ORDER_REVENUE:seed-demo-001',
+        journalEntryId: journalForRun.id,
+        finishedAt: new Date(),
+      },
+    });
+    console.log('  ✅ PostingRun (ORDER_REVENUE / SUCCEEDED) created');
+    created++;
+  } else {
+    console.log('  ⏭  Demo posting run already exists — skipped');
+    skipped++;
+  }
+
+  // 3) Sample posting error
+  const existingError = await prisma.postingError.findFirst({
+    where: { orgId, sourceKey: 'SEED_UNKNOWN_KEY' },
+  });
+  if (!existingError) {
+    const failedRun = await prisma.postingRun.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        sourceKey: 'SEED_UNKNOWN_KEY',
+        status: 'FAILED',
+        runKey: 'SEED_UNKNOWN_KEY:manual',
+        errorCount: 1,
+        finishedAt: new Date(),
+      },
+    });
+
+    await prisma.postingError.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        postingRunId: failedRun.id,
+        sourceKey: 'SEED_UNKNOWN_KEY',
+        status: 'OPEN',
+        code: 'POSTING_FAILED',
+        message: 'No active posting source map found for key: SEED_UNKNOWN_KEY',
+        details: { note: 'Sample seed posting error for demo' },
+      },
+    });
+    console.log('  ✅ PostingError (SEED_UNKNOWN_KEY / OPEN) created');
+    created++;
+  } else {
+    console.log('  ⏭  Demo posting error already exists — skipped');
+    skipped++;
+  }
+
+  return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -6740,6 +6949,13 @@ async function main(): Promise<void> {
     `   Created: ${accountingResult.created}, Skipped: ${accountingResult.skipped}\n`,
   );
 
+  // 44) Seed General Ledger + Journal Entries + Posting Engine (M29)
+  console.log('── General Ledger + Journal Entries + Posting Engine (M29) ──');
+  const ledgerResult = await seedLedgerData(orgResult.orgId, 'main');
+  console.log(
+    `   Created: ${ledgerResult.created}, Skipped: ${ledgerResult.skipped}\n`,
+  );
+
   // Record seed execution
   await recordSeedRun(
     'm1-baseline',
@@ -6844,6 +7060,10 @@ async function main(): Promise<void> {
   await recordSeedRun(
     'm26-payroll-engine-pay-runs-payslips',
     `Payroll: ${payrollResult.created}c/${payrollResult.skipped}s`,
+  );
+  await recordSeedRun(
+    'm29-general-ledger-journals-posting',
+    `Ledger: ${ledgerResult.created}c/${ledgerResult.skipped}s`,
   );
   console.log('── SeedHistory markers recorded ──\n');
 

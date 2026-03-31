@@ -28,6 +28,7 @@
 // M26 models: PayComponent, PayrollAdjustment, PayRun, PaySlip + PayRunStatus, PayComponentType, PaySlipStatus, PayrollAdjustmentType enums
 // M27 models: StaffInsightSnapshot, StaffAward, PromotionSuggestion + StaffInsightStatus, AwardType, PromotionSuggestionStatus enums
 // M28 models: Account, CostCenter, FiscalPeriod, PostingSourceMap, TaxLedgerConfig + AccountType, AccountStatus, FiscalPeriodStatus enums
+// M29 models: JournalEntry, JournalLine, PostingRun, PostingError + JournalStatus, PostingRunStatus, PostingErrorStatus, JournalLineDirection enums
 // All IDs use cuid2-compatible strings.
 
 generator client {
@@ -239,6 +240,8 @@ model User {
     fiscalPeriodsOpened       FiscalPeriod[]         @relation("FiscalPeriodOpenedBy")
     fiscalPeriodsClosed       FiscalPeriod[]         @relation("FiscalPeriodClosedBy")
     fiscalPeriodsLocked       FiscalPeriod[]         @relation("FiscalPeriodLockedBy")
+    // M29 — General Ledger + Journal Entries + Posting Engine
+    journalEntriesPosted      JournalEntry[]         @relation("JournalPostedBy")
 
     @@map("users")
 }
@@ -469,6 +472,11 @@ model Organization {
     fiscalPeriods          FiscalPeriod[]
     postingSourceMaps      PostingSourceMap[]
     taxLedgerConfigs       TaxLedgerConfig[]
+    // M29 — General Ledger + Journal Entries + Posting Engine
+    journalEntries         JournalEntry[]
+    journalLines           JournalLine[]
+    postingRuns            PostingRun[]
+    postingErrors          PostingError[]
 
     @@map("organizations")
 }
@@ -569,6 +577,10 @@ model Branch {
     // M28 — Accounting Foundation
     accounts             Account[]
     costCenters          CostCenter[]
+    // M29 — General Ledger + Journal Entries + Posting Engine
+    journalEntries       JournalEntry[]
+    postingRuns          PostingRun[]
+    postingErrors        PostingError[]
 
     @@unique([organizationId, code])
     @@index([organizationId])
@@ -3725,6 +3737,32 @@ enum FiscalPeriodStatus {
     LOCKED
 }
 
+// ── M29 Enums ──
+
+enum JournalStatus {
+    DRAFT
+    POSTED
+    REVERSED
+}
+
+enum PostingRunStatus {
+    PENDING
+    SUCCEEDED
+    FAILED
+    PARTIAL
+}
+
+enum PostingErrorStatus {
+    OPEN
+    RESOLVED
+    DISMISSED
+}
+
+enum JournalLineDirection {
+    DEBIT
+    CREDIT
+}
+
 // ── M28 Models ──
 
 /// Chart of accounts entry. Supports account hierarchy via parentAccountId.
@@ -3756,6 +3794,8 @@ model Account {
     discountConfigs       TaxLedgerConfig[] @relation("DiscountAccount")
     depositLiabilityConfigs TaxLedgerConfig[] @relation("DepositLiabilityAccount")
     payrollPayableConfigs TaxLedgerConfig[] @relation("PayrollPayableAccount")
+    // M29 — GL journal lines
+    journalLines           JournalLine[]
 
     @@unique([orgId, code])
     @@index([orgId])
@@ -3783,6 +3823,8 @@ model CostCenter {
 
     organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
     branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    // M29 — GL journal lines
+    journalLines JournalLine[]
 
     @@unique([orgId, code])
     @@index([orgId])
@@ -3815,6 +3857,8 @@ model FiscalPeriod {
     openedBy     User?        @relation("FiscalPeriodOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
     closedBy     User?        @relation("FiscalPeriodClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
     lockedBy     User?        @relation("FiscalPeriodLockedBy", fields: [lockedById], references: [id], onDelete: SetNull)
+    // M29 — GL journal entries
+    journalEntries JournalEntry[]
 
     @@index([orgId])
     @@index([status])
@@ -3876,4 +3920,146 @@ model TaxLedgerConfig {
     @@index([active])
     @@index([orgId, active])
     @@map("tax_ledger_configs")
+}
+
+// ── M29 Models ──
+
+/// A balanced journal entry in the general ledger. Source-traceable, immutable once posted.
+model JournalEntry {
+    id                String        @id @default(cuid())
+    orgId             String        @map("org_id")
+    branchId          String?       @map("branch_id")
+    journalNumber     String        @map("journal_number")
+    journalDate       DateTime      @map("journal_date") @db.Date
+    status            JournalStatus @default(DRAFT)
+    sourceKey         String?       @map("source_key")
+    sourceDocumentId  String?       @map("source_document_id")
+    reference         String?
+    description       String?
+    fiscalPeriodId    String?       @map("fiscal_period_id")
+    reversedFromId    String?       @unique @map("reversed_from_id")
+    reversalOfId      String?       @unique @map("reversal_of_id")
+    totalDebit        Decimal       @default(0) @map("total_debit") @db.Decimal(10, 2)
+    totalCredit       Decimal       @default(0) @map("total_credit") @db.Decimal(10, 2)
+    postedAt          DateTime?     @map("posted_at")
+    postedById        String?       @map("posted_by_id")
+    metadata          Json?
+    createdAt         DateTime      @default(now()) @map("created_at")
+    updatedAt         DateTime      @updatedAt @map("updated_at")
+
+    organization    Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch          Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    fiscalPeriod    FiscalPeriod?  @relation(fields: [fiscalPeriodId], references: [id], onDelete: SetNull)
+    postedBy        User?          @relation("JournalPostedBy", fields: [postedById], references: [id], onDelete: SetNull)
+    reversedFrom    JournalEntry?  @relation("JournalReversal", fields: [reversedFromId], references: [id], onDelete: SetNull)
+    reversalEntry   JournalEntry?  @relation("JournalReversal")
+    lines           JournalLine[]
+    postingRuns     PostingRun[]
+
+    @@unique([orgId, journalNumber])
+    @@index([orgId])
+    @@index([branchId])
+    @@index([journalNumber])
+    @@index([journalDate])
+    @@index([status])
+    @@index([sourceKey])
+    @@index([sourceDocumentId])
+    @@index([fiscalPeriodId])
+    @@index([orgId, status])
+    @@index([orgId, journalDate])
+    @@index([orgId, sourceKey, sourceDocumentId])
+    @@map("journal_entries")
+}
+
+/// A single debit or credit line within a journal entry.
+model JournalLine {
+    id             String              @id @default(cuid())
+    orgId          String              @map("org_id")
+    journalEntryId String              @map("journal_entry_id")
+    accountId      String              @map("account_id")
+    costCenterId   String?             @map("cost_center_id")
+    direction      JournalLineDirection
+    amount         Decimal             @db.Decimal(10, 2)
+    description    String?
+    metadata       Json?
+    createdAt      DateTime            @default(now()) @map("created_at")
+    updatedAt      DateTime            @updatedAt @map("updated_at")
+
+    organization   Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+    account        Account        @relation(fields: [accountId], references: [id], onDelete: Restrict)
+    costCenter     CostCenter?    @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([journalEntryId])
+    @@index([accountId])
+    @@index([costCenterId])
+    @@index([direction])
+    @@index([orgId, accountId])
+    @@map("journal_lines")
+}
+
+/// A posting run tracks automated journal creation from a source document.
+model PostingRun {
+    id               String          @id @default(cuid())
+    orgId            String          @map("org_id")
+    branchId         String?         @map("branch_id")
+    sourceKey        String          @map("source_key")
+    sourceDocumentId String?         @map("source_document_id")
+    status           PostingRunStatus @default(PENDING)
+    journalEntryId   String?         @map("journal_entry_id")
+    startedAt        DateTime        @default(now()) @map("started_at")
+    finishedAt       DateTime?       @map("finished_at")
+    runKey           String?         @map("run_key")
+    errorCount       Int             @default(0) @map("error_count")
+    metadata         Json?
+    createdAt        DateTime        @default(now()) @map("created_at")
+    updatedAt        DateTime        @updatedAt @map("updated_at")
+
+    organization   Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    journalEntry   JournalEntry?  @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+    postingErrors  PostingError[]
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([sourceKey])
+    @@index([sourceDocumentId])
+    @@index([status])
+    @@index([runKey])
+    @@index([journalEntryId])
+    @@index([orgId, sourceKey, sourceDocumentId])
+    @@index([orgId, runKey])
+    @@map("posting_runs")
+}
+
+/// A recorded error from a posting run — stored for replay and investigation.
+model PostingError {
+    id               String            @id @default(cuid())
+    orgId            String            @map("org_id")
+    branchId         String?           @map("branch_id")
+    postingRunId     String?           @map("posting_run_id")
+    sourceKey        String            @map("source_key")
+    sourceDocumentId String?           @map("source_document_id")
+    status           PostingErrorStatus @default(OPEN)
+    code             String
+    message          String
+    details          Json?
+    createdAt        DateTime          @default(now()) @map("created_at")
+    updatedAt        DateTime          @updatedAt @map("updated_at")
+
+    organization   Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    branch         Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+    postingRun     PostingRun?    @relation(fields: [postingRunId], references: [id], onDelete: SetNull)
+
+    @@index([orgId])
+    @@index([branchId])
+    @@index([postingRunId])
+    @@index([sourceKey])
+    @@index([sourceDocumentId])
+    @@index([status])
+    @@index([code])
+    @@index([orgId, status])
+    @@index([orgId, sourceKey])
+    @@map("posting_errors")
 }
