@@ -1,24 +1,7 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
-import {
-  JwtAuthGuard,
-  PermissionGuard,
-  BranchContextGuard,
-} from '../../common/guards';
-import {
-  CurrentUser,
-  Permissions,
-  RequireBranchContext,
-} from '../../common/decorators';
+import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
+import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
 import { LedgerService } from './ledger.service';
 import {
   CreateJournalEntryDto,
@@ -53,10 +36,7 @@ export class LedgerController {
 
   @Get('journals')
   @Permissions('pos:accounting:journals:read')
-  async listJournals(
-    @Query() query: ListJournalsQueryDto,
-    @Req() req: Request,
-  ) {
+  async listJournals(@Query() query: ListJournalsQueryDto, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.ledgerService.listJournals({
       orgId: ctx.organizationId,
@@ -72,10 +52,7 @@ export class LedgerController {
 
   @Get('journals/:id')
   @Permissions('pos:accounting:journals:read')
-  async getJournal(
-    @Param('id') id: string,
-    @Req() req: Request,
-  ) {
+  async getJournal(@Param('id') id: string, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.ledgerService.getJournal({
       orgId: ctx.organizationId,
@@ -156,10 +133,7 @@ export class LedgerController {
 
   @Get('posting-errors/:id')
   @Permissions('pos:accounting:posting-errors:read')
-  async getPostingError(
-    @Param('id') id: string,
-    @Req() req: Request,
-  ) {
+  async getPostingError(@Param('id') id: string, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.ledgerService.getPostingError({
       orgId: ctx.organizationId,

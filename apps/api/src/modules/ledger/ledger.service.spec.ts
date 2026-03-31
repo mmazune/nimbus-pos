@@ -22,7 +22,7 @@ const mockAccount2 = {
   status: 'ACTIVE',
 };
 
-const mockCostCenter = {
+const _mockCostCenter = {
   id: 'cc-1',
   orgId: 'org-1',
   code: 'MAIN',
@@ -398,8 +398,8 @@ describe('LedgerService', () => {
       const postedJournal = { ...mockJournal, status: 'POSTED' };
       prisma.journalEntry.findFirst
         .mockResolvedValueOnce(postedJournal) // original lookup
-        .mockResolvedValueOnce(null)          // check for existing reversal
-        .mockResolvedValueOnce(null);         // journal number lookup
+        .mockResolvedValueOnce(null) // check for existing reversal
+        .mockResolvedValueOnce(null); // journal number lookup
 
       const reversalJournal = {
         ...mockJournal,
@@ -464,8 +464,8 @@ describe('LedgerService', () => {
 
     it('should reject if journal already has a reversal', async () => {
       prisma.journalEntry.findFirst
-        .mockResolvedValueOnce({ ...mockJournal, status: 'POSTED' })    // original
-        .mockResolvedValueOnce({ id: 'existing-reversal' });            // existing reversal
+        .mockResolvedValueOnce({ ...mockJournal, status: 'POSTED' }) // original
+        .mockResolvedValueOnce({ id: 'existing-reversal' }); // existing reversal
 
       await expect(
         service.reverseJournal({
@@ -660,7 +660,12 @@ describe('LedgerService', () => {
         id: 'err-1',
         orgId: 'org-1',
         status: 'OPEN',
-        postingRun: { id: 'run-1', sourceKey: 'ORDER_REVENUE', status: 'FAILED', runKey: 'ORDER_REVENUE:doc-1' },
+        postingRun: {
+          id: 'run-1',
+          sourceKey: 'ORDER_REVENUE',
+          status: 'FAILED',
+          runKey: 'ORDER_REVENUE:doc-1',
+        },
       };
       prisma.postingError.findFirst.mockResolvedValue(mockError);
 

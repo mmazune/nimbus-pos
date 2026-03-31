@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
-import { AuditService, AuditEntry } from '../../common/audit';
+import { AuditService } from '../../common/audit';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -105,9 +105,7 @@ export class LedgerService {
       const foundCcIds = new Set(costCenters.map((c) => c.id));
       for (const id of costCenterIds) {
         if (!foundCcIds.has(id)) {
-          throw new BadRequestException(
-            `Cost center ${id} not found or inactive`,
-          );
+          throw new BadRequestException(`Cost center ${id} not found or inactive`);
         }
       }
     }
@@ -118,9 +116,7 @@ export class LedgerService {
         where: { id: dto.fiscalPeriodId, orgId, status: 'OPEN' },
       });
       if (!period) {
-        throw new BadRequestException(
-          'Fiscal period not found or not in OPEN status',
-        );
+        throw new BadRequestException('Fiscal period not found or not in OPEN status');
       }
     }
 

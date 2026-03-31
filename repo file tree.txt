@@ -281,6 +281,59 @@ nimbus-pos/
 │   │   │       │       ├── acknowledge-feedback.dto.ts
 │   │   │       │       ├── resolve-feedback.dto.ts
 │   │   │       │       └── nps-summary-query.dto.ts
+│   │   │       ├── documents/
+│   │   │       │   ├── documents.module.ts
+│   │   │       │   ├── documents.controller.ts
+│   │   │       │   ├── documents.service.ts
+│   │   │       │   ├── documents.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── hr/
+│   │   │       │   ├── hr.module.ts
+│   │   │       │   ├── hr.controller.ts
+│   │   │       │   ├── hr.service.ts
+│   │   │       │   ├── hr.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── attendance/
+│   │   │       │   ├── attendance.module.ts
+│   │   │       │   ├── attendance.controller.ts
+│   │   │       │   ├── attendance.service.ts
+│   │   │       │   ├── attendance.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── workforce/
+│   │   │       │   ├── workforce.module.ts
+│   │   │       │   ├── workforce.controller.ts
+│   │   │       │   ├── workforce.service.ts
+│   │   │       │   ├── workforce.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── payroll/
+│   │   │       │   ├── payroll.module.ts
+│   │   │       │   ├── payroll.controller.ts
+│   │   │       │   ├── payroll.service.ts
+│   │   │       │   ├── payroll.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── staff-insights/
+│   │   │       │   ├── staff-insights.module.ts
+│   │   │       │   ├── staff-insights.controller.ts
+│   │   │       │   ├── staff-insights.service.ts
+│   │   │       │   ├── staff-insights.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── accounting/
+│   │   │       │   ├── accounting.module.ts
+│   │   │       │   ├── accounting.controller.ts
+│   │   │       │   ├── accounting.service.ts
+│   │   │       │   ├── accounting.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       ├── ledger/
+│   │   │       │   ├── ledger.module.ts
+│   │   │       │   ├── ledger.controller.ts
+│   │   │       │   ├── ledger.service.ts
+│   │   │       │   ├── ledger.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-journal-entry.dto.ts
+│   │   │       │       ├── list-journals-query.dto.ts
+│   │   │       │       ├── replay-posting.dto.ts
+│   │   │       │       └── reverse-journal.dto.ts
 │   │   │       └── tenancy/
 │   │   │           ├── tenancy.controller.ts
 │   │   │           ├── tenancy.module.ts
@@ -313,7 +366,15 @@ nimbus-pos/
 │   │       ├── analytics.e2e-spec.ts
 │   │       ├── dashboards.e2e-spec.ts
 │   │       ├── reports.e2e-spec.ts
-│   │       └── feedback.e2e-spec.ts
+│   │       ├── feedback.e2e-spec.ts
+│   │       ├── documents.e2e-spec.ts
+│   │       ├── hr.e2e-spec.ts
+│   │       ├── attendance.e2e-spec.ts
+│   │       ├── workforce.e2e-spec.ts
+│   │       ├── payroll.e2e-spec.ts
+│   │       ├── staff-insights.e2e-spec.ts
+│   │       ├── accounting.e2e-spec.ts
+│   │       └── ledger.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -380,6 +441,24 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260329000000_m21_feedback_nps_qr_followup/
 │   │   │           └── migration.sql
+│   │   │       └── 20260330000000_m22_documents_uploads_attachments/
+│   │   │           └── migration.sql
+│   │   │       └── 20260330100000_m23_employees_contracts_hr_core/
+│   │   │           └── migration.sql
+│   │   │       └── 20260330110000_m23_fix_employee_status_on_leave/
+│   │   │           └── migration.sql
+│   │   │       └── 20260330200000_m24_attendance_leave_shift_swaps/
+│   │   │           └── migration.sql
+│   │   │       └── 20260331000000_m25_scheduling_templates_duty_roster/
+│   │   │           └── migration.sql
+│   │   │       └── 20260401000000_m26_payroll_engine_pay_runs_payslips/
+│   │   │           └── migration.sql
+│   │   │       └── 20260401100000_m27_staff_insights_awards_promotions/
+│   │   │           └── migration.sql
+│   │   │       └── 20260402000000_m28_accounting_foundation_coa_cost_centers_periods/
+│   │   │           └── migration.sql
+│   │   │       └── 20260402100000_m29_general_ledger_journals_posting/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -395,7 +474,15 @@ nimbus-pos/
 │   ├── MODULES.md
 │   ├── POSTMAN_ENDPOINT_GUIDE.md
 │   ├── FEEDBACK_NPS_GUIDE.md
-│   └── REPORT_CATALOG_GUIDE.md
+│   ├── REPORT_CATALOG_GUIDE.md
+│   ├── DOCUMENTS_ATTACHMENTS_GUIDE.md
+│   ├── HR_CORE_GUIDE.md
+│   ├── ATTENDANCE_LEAVE_SWAPS_GUIDE.md
+│   ├── SCHEDULING_ROSTER_GUIDE.md
+│   ├── PAYROLL_PAYRUNS_PAYSLIPS_GUIDE.md
+│   ├── STAFF_INSIGHTS_GUIDE.md
+│   ├── ACCOUNTING_FOUNDATION_GUIDE.md
+│   └── GL_POSTING_ENGINE_GUIDE.md
 │
 └── postman/
     ├── POSTMAN_GUIDE.md
@@ -425,7 +512,15 @@ nimbus-pos/
 │   │   ├── M19-Operational-Dashboards-KPI-Streams.postman_collection.json
 │   │   ├── M20-Reporting-v1-Exports.postman_collection.json
 │   │   ├── M20_1-Reporting-Depth-Finalization.postman_collection.json
-│   │   └── M21-Customer-Feedback-NPS-QR-Followup.postman_collection.json
+│   │   ├── M21-Customer-Feedback-NPS-QR-Followup.postman_collection.json
+│   │   ├── M22-Documents-Uploads-Attachments.postman_collection.json
+│   │   ├── M23-Employees-Contracts-HR-Core.postman_collection.json
+│   │   ├── M24-Attendance-Leave-Shift-Swaps.postman_collection.json
+│   │   ├── M25-Scheduling-Templates-Duty-Roster.postman_collection.json
+│   │   ├── M26-Payroll-Engine-Pay-Runs-Payslips.postman_collection.json
+│   │   ├── M27-Staff-Insights-Awards-Promotion-Suggestions.postman_collection.json
+│   │   ├── M28-Accounting-Foundation-COA-Cost-Centers-Periods.postman_collection.json
+│   │   └── M29-General-Ledger-Journals-Posting-Engine.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
 ```
