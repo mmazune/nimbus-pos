@@ -61,14 +61,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "auth",
-                        "login"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "auth", "login"]
                 }
             },
             "event": [
@@ -91,13 +85,8 @@
                 "header": [],
                 "url": {
                     "raw": "{{baseUrl}}/api/me",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "me"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "me"]
                 }
             },
             "event": [
@@ -119,14 +108,8 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    },
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "body": {
                     "mode": "raw",
@@ -134,14 +117,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/positions",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "positions"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "positions"]
                 }
             },
             "event": [
@@ -163,21 +140,12 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/positions",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "positions"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "positions"]
                 }
             },
             "event": [
@@ -197,14 +165,8 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    },
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "body": {
                     "mode": "raw",
@@ -212,14 +174,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/compensation-profiles",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "compensation-profiles"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "compensation-profiles"]
                 }
             },
             "event": [
@@ -241,21 +197,12 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/compensation-profiles",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "compensation-profiles"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "compensation-profiles"]
                 }
             },
             "event": [
@@ -275,14 +222,8 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    },
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "body": {
                     "mode": "raw",
@@ -290,14 +231,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/employees",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "employees"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"]
                 }
             },
             "event": [
@@ -320,21 +255,12 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/employees",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "employees"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"]
                 }
             },
             "event": [
@@ -356,26 +282,14 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/employees?employmentType=PERMANENT",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "employees"
-                    ],
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"],
                     "query": [
-                        {
-                            "key": "employmentType",
-                            "value": "PERMANENT"
-                        }
+                        { "key": "employmentType", "value": "PERMANENT" }
                     ]
                 }
             },
@@ -397,22 +311,12 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/employees/{{employeeId}}",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "employees",
-                        "{{employeeId}}"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees", "{{employeeId}}"]
                 }
             },
             "event": [
@@ -434,14 +338,8 @@
             "request": {
                 "method": "PATCH",
                 "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    },
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "body": {
                     "mode": "raw",
@@ -449,15 +347,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/employees/{{employeeId}}",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "employees",
-                        "{{employeeId}}"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees", "{{employeeId}}"]
                 }
             },
             "event": [
@@ -478,14 +369,8 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    },
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "Content-Type", "value": "application/json" },
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "body": {
                     "mode": "raw",
@@ -493,14 +378,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/contracts",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "contracts"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "contracts"]
                 }
             },
             "event": [
@@ -523,21 +402,12 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    {
-                        "key": "X-Branch-Id",
-                        "value": "{{branchId}}"
-                    }
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/hr/contracts",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "hr",
-                        "contracts"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "contracts"]
                 }
             },
             "event": [

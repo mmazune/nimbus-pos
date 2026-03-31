@@ -7,4 +7,4 @@ import { WorkforceService } from './workforce.service';
   providers: [WorkforceService],
   exports: [WorkforceService],
 })
-export class WorkforceModule { }
+export class WorkforceModule {}

@@ -30,7 +30,10 @@
             "request": {
                 "method": "POST",
                 "header": [
-                    { "key": "Content-Type", "value": "application/json" }
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
                 ],
                 "body": {
                     "mode": "raw",
@@ -38,8 +41,14 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "auth", "login"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
                 }
             }
         },
@@ -62,12 +71,20 @@
             "request": {
                 "method": "GET",
                 "header": [
-                    { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/me",
-                    "host": ["{{baseUrl}}"],
-                    "path": ["api", "me"]
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
                 }
             }
         },
@@ -95,9 +112,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -105,8 +131,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/accounts",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "accounts"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "accounts"
+                            ]
                         }
                     }
                 },
@@ -129,9 +161,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -139,8 +180,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/accounts",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "accounts"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "accounts"
+                            ]
                         }
                     }
                 },
@@ -160,9 +207,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -170,8 +226,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/accounts",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "accounts"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "accounts"
+                            ]
                         }
                     }
                 },
@@ -194,13 +256,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/accounts",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "accounts"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "accounts"
+                            ]
                         }
                     }
                 },
@@ -222,15 +296,30 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/accounts?accountType=ASSET",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "accounts"],
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "accounts"
+                            ],
                             "query": [
-                                { "key": "accountType", "value": "ASSET" }
+                                {
+                                    "key": "accountType",
+                                    "value": "ASSET"
+                                }
                             ]
                         }
                     }
@@ -260,9 +349,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -270,8 +368,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/cost-centers",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "cost-centers"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "cost-centers"
+                            ]
                         }
                     }
                 },
@@ -293,13 +397,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/cost-centers",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "cost-centers"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "cost-centers"
+                            ]
                         }
                     }
                 }
@@ -328,9 +444,18 @@
                     "request": {
                         "method": "POST",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -338,8 +463,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/periods",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "periods"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "periods"
+                            ]
                         }
                     }
                 },
@@ -361,13 +492,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/periods",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "periods"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "periods"
+                            ]
                         }
                     }
                 },
@@ -390,13 +533,27 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/periods/{{fiscalPeriodId}}/open",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "periods", "{{fiscalPeriodId}}", "open"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "periods",
+                                "{{fiscalPeriodId}}",
+                                "open"
+                            ]
                         }
                     }
                 },
@@ -416,13 +573,27 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/periods/{{fiscalPeriodId}}/open",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "periods", "{{fiscalPeriodId}}", "open"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "periods",
+                                "{{fiscalPeriodId}}",
+                                "open"
+                            ]
                         }
                     }
                 }
@@ -450,13 +621,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/posting-source-maps",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "posting-source-maps"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "posting-source-maps"
+                            ]
                         }
                     }
                 },
@@ -478,9 +661,18 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -488,8 +680,15 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/posting-source-maps/{{postingSourceMapId}}",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "posting-source-maps", "{{postingSourceMapId}}"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "posting-source-maps",
+                                "{{postingSourceMapId}}"
+                            ]
                         }
                     }
                 }
@@ -515,13 +714,25 @@
                     "request": {
                         "method": "GET",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/tax-config",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "tax-config"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "tax-config"
+                            ]
                         }
                     }
                 },
@@ -542,9 +753,18 @@
                     "request": {
                         "method": "PATCH",
                         "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -552,8 +772,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/tax-config",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "accounting", "tax-config"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "tax-config"
+                            ]
                         }
                     }
                 }

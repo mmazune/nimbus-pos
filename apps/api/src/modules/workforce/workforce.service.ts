@@ -22,7 +22,7 @@ export class WorkforceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) { }
+  ) {}
 
   // ── Shift Templates ──
 

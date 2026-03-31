@@ -53,14 +53,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/auth/login",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "auth",
-                        "login"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "auth", "login"]
                 }
             },
             "event": [
@@ -83,13 +77,8 @@
                 "header": [],
                 "url": {
                     "raw": "{{baseUrl}}/api/me",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "me"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "me"]
                 }
             },
             "event": [
@@ -122,14 +111,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/upload",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "upload"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "upload"]
                 }
             },
             "event": [
@@ -198,22 +181,11 @@
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/documents?skip=0&take=10",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents"
-                    ],
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents"],
                     "query": [
-                        {
-                            "key": "skip",
-                            "value": "0"
-                        },
-                        {
-                            "key": "take",
-                            "value": "10"
-                        }
+                        { "key": "skip", "value": "0" },
+                        { "key": "take", "value": "10" }
                     ]
                 }
             },
@@ -243,18 +215,10 @@
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/documents?documentType=RECEIPT",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents"
-                    ],
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents"],
                     "query": [
-                        {
-                            "key": "documentType",
-                            "value": "RECEIPT"
-                        }
+                        { "key": "documentType", "value": "RECEIPT" }
                     ]
                 }
             },
@@ -281,14 +245,8 @@
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/{{documentId}}",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "{{documentId}}"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "{{documentId}}"]
                 }
             },
             "event": [
@@ -317,15 +275,8 @@
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/{{documentId}}/download",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "{{documentId}}",
-                        "download"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "{{documentId}}", "download"]
                 }
             },
             "event": [
@@ -360,15 +311,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/{{documentId}}/link",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "{{documentId}}",
-                        "link"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "{{documentId}}", "link"]
                 }
             },
             "event": [
@@ -397,15 +341,8 @@
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/{{documentId}}/links",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "{{documentId}}",
-                        "links"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "{{documentId}}", "links"]
                 }
             },
             "event": [
@@ -442,15 +379,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/{{documentId}}/metadata",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "{{documentId}}",
-                        "metadata"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "{{documentId}}", "metadata"]
                 }
             },
             "event": [
@@ -476,14 +406,8 @@
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/storage-config",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "storage-config"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "storage-config"]
                 }
             },
             "event": [
@@ -519,15 +443,8 @@
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/storage-config/LOCAL",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "storage-config",
-                        "LOCAL"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "storage-config", "LOCAL"]
                 }
             },
             "event": [
@@ -553,14 +470,8 @@
                 ],
                 "url": {
                     "raw": "{{baseUrl}}/api/documents/{{documentId}}",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "api",
-                        "documents",
-                        "{{documentId}}"
-                    ]
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "documents", "{{documentId}}"]
                 }
             },
             "event": [
