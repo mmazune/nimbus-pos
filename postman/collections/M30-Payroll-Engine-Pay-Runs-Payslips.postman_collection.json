@@ -1,0 +1,1189 @@
+{
+    "info": {
+        "name": "M30 - Payroll Engine + Pay Runs + Payslips",
+        "description": "API collection for M30 (ROADMAP) — Pay Components, Payroll Adjustments, Pay Runs (DRAFT→APPROVED→PAID), Pay Slips.\n\nNote: This milestone was previously tracked as M26 in internal AI_STATUS due to a 4-number offset from ROADMAP from M10 onward. ROADMAP.md is now the authoritative numbering source.\n\nPrerequisites:\n- POST /api/auth/login to capture {{accessToken}}\n- Ensure {{branchId}} is set (from /api/me)\n- Ensure {{employeeId}} is set (from /api/hr/employees)\n\nManual Checklist:\n1. Login as owner — capture accessToken\n2. Set branchId env variable from /api/me\n3. Get an employeeId from GET /api/hr/employees\n4. Run requests in folder order: Components → Adjustments → Pay Runs → Pay Slips\n5. Verify Build Pay Run returns status DRAFT with paySlips array\n6. Verify Approve transitions to APPROVED and payslips become FINAL\n7. Verify Pay transitions to PAID with postingPayload present\n8. Verify Get Pay Slip shows componentSnapshot with basePay, grossPay, netPay\n9. Verify pay-before-approve returns 400\n10. Verify approve-twice returns 400\n11. Verify Chef role returns 403 on all write endpoints\n12. Verify GET /api/payroll/payslips/:id returns same data as /slips/:id",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Login (Owner)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200 || pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('accessToken', body.accessToken);",
+                                    "    pm.test('status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                                    "    pm.test('has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login (Chef — limited permissions)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200 || pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('chefToken', body.accessToken);",
+                                    "    pm.test('status 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"chef@demo.local\",\n    \"password\": \"Chef#123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Pay Components",
+            "item": [
+                {
+                    "name": "Create Pay Component (Earning)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('payComponentId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "    pm.test('componentType is EARNING', () => pm.expect(body.componentType).to.eql('EARNING'));",
+                                    "    pm.test('code matches', () => pm.expect(body.code).to.be.a('string'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"M30-BASIC\",\n    \"name\": \"M30 Basic Salary\",\n    \"componentType\": \"EARNING\",\n    \"taxable\": true,\n    \"defaultAmount\": 600000\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/components",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Pay Component (Deduction)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('deductionComponentId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('type DEDUCTION', () => pm.expect(body.componentType).to.eql('DEDUCTION'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"M30-NSSF\",\n    \"name\": \"M30 NSSF Deduction\",\n    \"componentType\": \"DEDUCTION\",\n    \"taxable\": false,\n    \"defaultAmount\": 30000\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/components",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Duplicate Component (Expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409 on duplicate code', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"M30-BASIC\",\n    \"name\": \"Duplicate\",\n    \"componentType\": \"EARNING\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/components",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Component — Chef Denied (Expect 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 403 for Chef', () => pm.response.to.have.status(403));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"CHEF-COMP\",\n    \"name\": \"Chef Component\",\n    \"componentType\": \"EARNING\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/components",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Pay Components",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/components",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "components"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Payroll Adjustments",
+            "item": [
+                {
+                    "name": "Create Payroll Adjustment (Bonus)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('adjustmentId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "    pm.test('type BONUS', () => pm.expect(body.adjustmentType).to.eql('BONUS'));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"employeeId\": \"{{employeeId}}\",\n    \"adjustmentType\": \"BONUS\",\n    \"amount\": 150000,\n    \"effectiveDate\": \"2099-07-15\",\n    \"notes\": \"Q2 performance bonus — M30 test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Adjustment — Unknown Employee (Expect 404)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 404 for unknown employee', () => pm.response.to.have.status(404));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"employeeId\": \"nonexistent-employee-id\",\n    \"adjustmentType\": \"BONUS\",\n    \"amount\": 50000,\n    \"effectiveDate\": \"2099-07-15\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Payroll Adjustments",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Pay Runs",
+            "item": [
+                {
+                    "name": "Build Pay Run (DRAFT)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.environment.set('payRunId', body.id);",
+                                    "    pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "    pm.test('status is DRAFT', () => pm.expect(body.status).to.eql('DRAFT'));",
+                                    "    pm.test('has paySlips array', () => pm.expect(body.paySlips).to.be.an('array'));",
+                                    "    pm.test('employeeCount > 0', () => pm.expect(body.employeeCount).to.be.above(0));",
+                                    "    pm.test('grossTotal is string (Decimal safety)', () => pm.expect(typeof body.grossTotal).to.eql('string').or.pm.expect(typeof body.grossTotal).to.eql('number'));",
+                                    "    if (body.paySlips && body.paySlips.length > 0) {",
+                                    "        pm.environment.set('paySlipId', body.paySlips[0].id);",
+                                    "        pm.test('payslip has componentSnapshot', () => pm.expect(body.paySlips[0].componentSnapshot).to.be.an('object'));",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"M30 July 2099\",\n    \"periodStart\": \"2099-07-01\",\n    \"periodEnd\": \"2099-07-31\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/build",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "build"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Build Overlapping Run (Expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409 for overlapping period', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Overlap Run\",\n    \"periodStart\": \"2099-07-10\",\n    \"periodEnd\": \"2099-07-20\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/build",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "build"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Pay Before Approve (State Machine — Expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400 — cannot pay DRAFT run', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"Attempting to pay before approve\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}/pay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}",
+                                "pay"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Approve Pay Run (DRAFT → APPROVED)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is APPROVED', () => pm.expect(body.status).to.eql('APPROVED'));",
+                                    "pm.test('approvedAt is set', () => pm.expect(body.approvedAt).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"Approved via Postman M30\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}",
+                                "approve"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Approve Again (Expect 400 — already APPROVED)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400 — cannot re-approve', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}",
+                                "approve"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Pay Pay Run (APPROVED → PAID)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is PAID', () => pm.expect(body.status).to.eql('PAID'));",
+                                    "pm.test('paidAt is set', () => pm.expect(body.paidAt).to.be.a('string'));",
+                                    "pm.test('postingPayload is present', () => {",
+                                    "    pm.expect(body.postingPayload).to.not.be.null;",
+                                    "    pm.expect(body.postingPayload).to.not.be.undefined;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"July 2099 disbursement via Postman M30\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}/pay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}",
+                                "pay"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Pay Again (Expect 400 — already PAID)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400 — cannot re-pay', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}/pay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}",
+                                "pay"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Pay Runs",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Pay Run by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has paySlips', () => pm.expect(body.paySlips).to.be.an('array'));",
+                                    "pm.test('has builtBy', () => pm.expect(body.builtBy).to.be.an('object'));",
+                                    "pm.test('status is PAID', () => pm.expect(body.status).to.eql('PAID'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/{{payRunId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "{{payRunId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Pay Run — Not Found (Expect 404)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 404 for missing run', () => pm.response.to.have.status(404));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/runs/nonexistent-run-id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "runs",
+                                "nonexistent-run-id"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Pay Slips",
+            "item": [
+                {
+                    "name": "List Pay Slips",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/slips",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "slips"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Pay Slips by Pay Run",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/slips?payRunId={{payRunId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "slips"
+                            ],
+                            "query": [
+                                {
+                                    "key": "payRunId",
+                                    "value": "{{payRunId}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Pay Slip by ID (via /slips/:id)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has componentSnapshot', () => pm.expect(body.componentSnapshot).to.be.an('object'));",
+                                    "pm.test('snapshot has grossPay', () => pm.expect(body.componentSnapshot.grossPay).to.not.be.undefined);",
+                                    "pm.test('snapshot has netPay', () => pm.expect(body.componentSnapshot.netPay).to.not.be.undefined);",
+                                    "pm.test('snapshot has basePay', () => pm.expect(body.componentSnapshot.basePay).to.not.be.undefined);",
+                                    "pm.test('has employee', () => pm.expect(body.employee).to.be.an('object'));",
+                                    "pm.test('has payRun', () => pm.expect(body.payRun).to.be.an('object'));",
+                                    "pm.test('status is PAID', () => pm.expect(body.status).to.eql('PAID'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/slips/{{paySlipId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "slips",
+                                "{{paySlipId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Pay Slip by ID (via /payslips/:id — ROADMAP canonical)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200 — ROADMAP canonical path works', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has componentSnapshot', () => pm.expect(body.componentSnapshot).to.be.an('object'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/payslips/{{paySlipId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "payslips",
+                                "{{paySlipId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Pay Slip — Not Found (Expect 404)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 404 for missing slip', () => pm.response.to.have.status(404));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payroll/slips/nonexistent-slip-id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payroll",
+                                "slips",
+                                "nonexistent-slip-id"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

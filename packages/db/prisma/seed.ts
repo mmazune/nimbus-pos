@@ -1,4 +1,4 @@
-import { PrismaClient, RoleLevel, JobRole } from '@prisma/client';
+﻿import { PrismaClient, RoleLevel, JobRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -406,6 +406,62 @@ const PERMISSIONS_DATA = [
   { action: 'pos:accounting:posting:replay', description: 'Replay posting from source documents' },
   { action: 'pos:accounting:posting-runs:read', description: 'List posting runs' },
   { action: 'pos:accounting:posting-errors:read', description: 'List and view posting errors' },
+  // ── M40: Alerts + Digests + Real-Time Owner Views ──
+  { action: 'alerts:read', description: 'List alert rules, channels, and recent deliveries' },
+  { action: 'alerts:rule:write', description: 'Create or update alert rules (and enable/disable)' },
+  { action: 'alerts:channel:read', description: 'List alert channels (EMAIL / SMS / SLACK)' },
+  { action: 'alerts:channel:write', description: 'Create or update alert channels' },
+  { action: 'alerts:test', description: 'Dispatch a manual test alert through configured channels' },
+  { action: 'alerts:delivery:read', description: 'List alert delivery attempts and outcomes' },
+  { action: 'alerts:delivery:retry', description: 'Manually retry a failed alert delivery' },
+  { action: 'alerts:digest:read', description: 'List scheduled digests and their last run status' },
+  { action: 'alerts:digest:write', description: 'Create, update, or run scheduled digests' },
+  { action: 'owner:live:read', description: 'Read the real-time owner live operational feed' },
+  // M41 — Reliability Layer
+  { action: 'sync:jobs:read', description: 'List and inspect offline sync jobs' },
+  { action: 'sync:jobs:write', description: 'Submit offline sync replay batches' },
+  { action: 'sync:jobs:retry', description: 'Manually retry a failed offline sync job' },
+  { action: 'sync:conflicts:read', description: 'List sync replay conflicts' },
+  { action: 'sync:conflicts:resolve', description: 'Resolve or dismiss sync replay conflicts' },
+  { action: 'idempotency:inspect', description: 'Inspect idempotency key records (debug)' },
+  // M42 — Feature Flags + Maintenance Windows + Training Mode
+  { action: 'flags:read', description: 'List and inspect feature flags' },
+  { action: 'flags:write', description: 'Create, update, enable/disable feature flags' },
+  { action: 'flags:audit:read', description: 'Read the control-plane audit trail' },
+  { action: 'maintenance:read', description: 'List and inspect maintenance windows' },
+  { action: 'maintenance:write', description: 'Create, update, activate or cancel maintenance windows' },
+  { action: 'training:session:start', description: 'Start a training (sandbox) session' },
+  { action: 'training:session:read', description: 'List and inspect training sessions' },
+  { action: 'training:session:end', description: 'End or cancel a training (sandbox) session' },
+  // BG1 — Invitation Acceptance + Password Lifecycle + Frontline Staff Onboarding
+  { action: 'onboarding:invitation:write', description: 'Resend or revoke org invitations' },
+  { action: 'hr:frontline-staff:create', description: 'One-call frontline staff onboarding (User+Membership+Employee+QuickPIN)' },
+  // BG1.1 — Frontline Quick PIN Admin (manager-facing)
+  { action: 'auth:quick-pin:read', description: 'Read Quick PIN status for a frontline staff member (no PIN value returned)' },
+  { action: 'auth:quick-pin:write', description: 'Reset / regenerate / enable / disable Quick PIN for a frontline staff member' },
+  // BG2 — Unified Approvals Inbox + Global Audit Timeline
+  { action: 'approvals:read', description: 'Read the unified cross-domain approvals inbox' },
+  { action: 'approvals:decide', description: 'Approve or reject items in the unified approvals inbox (delegates to underlying domain service)' },
+  { action: 'audit:read', description: 'Read the global audit timeline (cross-domain audit log read API)' },
+  // BG4.A — Receipts surface (closed-Order receipt view + reprint + send + history)
+  { action: 'pos:receipt:read', description: 'Read a normalized receipt for a closed/voided order plus its print/send history' },
+  { action: 'pos:receipt:reprint', description: 'Reprint a receipt; records a RECEIPT_REPRINTED audit row' },
+  { action: 'pos:receipt:send', description: 'Send a receipt via supported delivery channels (records PENDING delivery; no live adapter yet)' },
+  // BG4.B — POS Order Handoff (split-bill / split-items / merge / transfer-table / transfer-server / move-items)
+  { action: 'pos:order:split', description: 'Split an open POS order — covers POST /api/pos/orders/:id/split-bill (non-physical bill split) and POST /api/pos/orders/:id/split-items (physical split into a child order)' },
+  { action: 'pos:order:merge', description: 'Merge two open POS orders — POST /api/pos/orders/merge. Source becomes VOIDED with mergedIntoOrderId pointing at the target' },
+  { action: 'pos:order:transfer', description: 'Transfer an open POS order to another table or server — POST /api/pos/orders/:id/transfer-table or /transfer-server' },
+  { action: 'pos:order:move-items', description: 'Move selected items between two open POS orders — POST /api/pos/orders/:id/move-items' },
+  // BG5 — Device / Printer / Terminal Registry
+  { action: 'devices:read', description: 'Read device registry (list / detail / history) and printer route configuration' },
+  { action: 'devices:write', description: 'Activate (register) a new operational device — POST /api/devices/activate or /api/devices/kds/register' },
+  { action: 'devices:status:write', description: 'Change a device status (ACTIVE / INACTIVE / DISABLED / RETIRED) — PATCH /api/devices/:id/status' },
+  { action: 'devices:routes:write', description: 'Upsert / disable a printer route — POST /api/devices/printers/routes' },
+  { action: 'devices:terminals:write', description: 'Pair / unpair a payment-terminal stub — POST /api/devices/terminals/pair, PATCH /api/devices/terminals/:id/unpair' },
+  // BG6 — Unified export / download facade
+  { action: 'exports:read', description: 'List/read export artefacts via the unified facade — GET /api/exports, GET /api/exports/:id' },
+  { action: 'exports:write', description: 'Request a new export via the unified facade — POST /api/exports (delegates to underlying domain generator)' },
+  { action: 'exports:download', description: 'Download an export artefact via the unified facade — GET /api/exports/:id/download' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -638,6 +694,62 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:posting:replay',
     'pos:accounting:posting-runs:read',
     'pos:accounting:posting-errors:read',
+    // M40: Alerts + Digests + Real-Time Owner Views (Owner: full)
+    'alerts:read',
+    'alerts:rule:write',
+    'alerts:channel:read',
+    'alerts:channel:write',
+    'alerts:test',
+    'alerts:delivery:read',
+    'alerts:delivery:retry',
+    'alerts:digest:read',
+    'alerts:digest:write',
+    'owner:live:read',
+    // M41: Reliability Layer (Owner: full)
+    'sync:jobs:read',
+    'sync:jobs:write',
+    'sync:jobs:retry',
+    'sync:conflicts:read',
+    'sync:conflicts:resolve',
+    'idempotency:inspect',
+    // M42: Feature Flags + Maintenance + Training (Owner: full)
+    'flags:read',
+    'flags:write',
+    'flags:audit:read',
+    'maintenance:read',
+    'maintenance:write',
+    'training:session:start',
+    'training:session:read',
+    'training:session:end',
+    // BG1: Invitation lifecycle + Frontline staff onboard (Owner: full)
+    'onboarding:invitation:write',
+    'hr:frontline-staff:create',
+    // BG1.1: Frontline Quick PIN admin (Owner: full)
+    'auth:quick-pin:read',
+    'auth:quick-pin:write',
+    // BG2: Unified Approvals Inbox + Global Audit Timeline (Owner: full)
+    'approvals:read',
+    'approvals:decide',
+    'audit:read',
+    // BG4.A: Receipts surface (Owner: full)
+    'pos:receipt:read',
+    'pos:receipt:reprint',
+    'pos:receipt:send',
+    // BG4.B: POS Order Handoff (Owner: full)
+    'pos:order:split',
+    'pos:order:merge',
+    'pos:order:transfer',
+    'pos:order:move-items',
+    // BG5: Device / Printer / Terminal Registry (Owner: full)
+    'devices:read',
+    'devices:write',
+    'devices:status:write',
+    'devices:routes:write',
+    'devices:terminals:write',
+    // BG6: Unified export/download facade (Owner: full)
+    'exports:read',
+    'exports:write',
+    'exports:download',
   ],
   Manager: [
     'identity:user:read',
@@ -827,6 +939,56 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:journals:read',
     'pos:accounting:posting-runs:read',
     'pos:accounting:posting-errors:read',
+    // M40: Alerts + Digests + Real-Time Owner Views (Manager: ops-day-to-day)
+    'alerts:read',
+    'alerts:rule:write',
+    'alerts:channel:read',
+    'alerts:test',
+    'alerts:delivery:read',
+    'alerts:delivery:retry',
+    'alerts:digest:read',
+    'alerts:digest:write',
+    // M41 (Manager: replay/retry/resolve, no idempotency:inspect)
+    'sync:jobs:read',
+    'sync:jobs:write',
+    'sync:jobs:retry',
+    'sync:conflicts:read',
+    'sync:conflicts:resolve',
+    // M42 (Manager: read flags + maintenance, run training; cannot mutate flags / windows / audit log)
+    'flags:read',
+    'maintenance:read',
+    'training:session:start',
+    'training:session:read',
+    'training:session:end',
+    // BG1: Manager can resend/revoke invites and onboard frontline staff
+    'onboarding:invitation:write',
+    'hr:frontline-staff:create',
+    // BG1.1: Manager can inspect + reset + enable/disable frontline Quick PINs
+    'auth:quick-pin:read',
+    'auth:quick-pin:write',
+    // BG2: Unified Approvals Inbox + Global Audit Timeline (Manager: full)
+    'approvals:read',
+    'approvals:decide',
+    'audit:read',
+    // BG4.A: Receipts surface (Manager: full)
+    'pos:receipt:read',
+    'pos:receipt:reprint',
+    'pos:receipt:send',
+    // BG4.B: POS Order Handoff (Manager: full)
+    'pos:order:split',
+    'pos:order:merge',
+    'pos:order:transfer',
+    'pos:order:move-items',
+    // BG5: Device / Printer / Terminal Registry (Manager: full)
+    'devices:read',
+    'devices:write',
+    'devices:status:write',
+    'devices:routes:write',
+    'devices:terminals:write',
+    // BG6: Unified export/download facade (Manager: full)
+    'exports:read',
+    'exports:write',
+    'exports:download',
   ],
   Accountant: [
     'identity:user:read',
@@ -904,6 +1066,22 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:posting:replay',
     'pos:accounting:posting-runs:read',
     'pos:accounting:posting-errors:read',
+    // M40: Alerts + Digests + Real-Time Owner Views (Accountant: read-focused)
+    'alerts:read',
+    'alerts:channel:read',
+    'alerts:delivery:read',
+    'alerts:digest:read',
+    // M41 (Accountant: read-only)
+    'sync:jobs:read',
+    'sync:conflicts:read',
+    // M42 (Accountant: read-only)
+    'flags:read',
+    'maintenance:read',
+    'training:session:read',
+    // BG6: Unified export/download facade (Accountant: full — primary consumer)
+    'exports:read',
+    'exports:write',
+    'exports:download',
   ],
   Supervisor: [
     'identity:user:read',
@@ -1107,6 +1285,17 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:workforce:schedules:read',
     // M26: Payroll (Cashier: read own slips only)
     'pos:payroll:slips:read',
+    // BG4.A: Receipts surface (Cashier: read + reprint + send)
+    'pos:receipt:read',
+    'pos:receipt:reprint',
+    'pos:receipt:send',
+    // BG4.B: POS Order Handoff (Cashier: split + merge + transfer + move-items)
+    'pos:order:split',
+    'pos:order:merge',
+    'pos:order:transfer',
+    'pos:order:move-items',
+    // BG5: Device / Printer / Terminal Registry (Cashier: read-only)
+    'devices:read',
   ],
   Chef: [
     'identity:user:read',
@@ -1187,6 +1376,15 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:workforce:schedules:read',
     // M26: Payroll (Waiter: read own slips only)
     'pos:payroll:slips:read',
+    // BG4.A: Receipts surface (Waiter: read + reprint + send)
+    'pos:receipt:read',
+    'pos:receipt:reprint',
+    'pos:receipt:send',
+    // BG4.B: POS Order Handoff (Waiter: transfer + move-items only — split/merge are cashier scope)
+    'pos:order:transfer',
+    'pos:order:move-items',
+    // BG5: Device / Printer / Terminal Registry (Waiter: read-only)
+    'devices:read',
   ],
   Bartender: [
     'identity:user:read',
@@ -1438,33 +1636,33 @@ const MEMBERSHIP_SEED: {
   branchCodes: string[];
   defaultBranch: string;
 }[] = [
-  {
-    email: 'owner@demo.local',
-    roleName: 'Owner',
-    branchCodes: ['MAIN', 'DOWNTOWN'],
-    defaultBranch: 'MAIN',
-  },
-  {
-    email: 'manager@demo.local',
-    roleName: 'Manager',
-    branchCodes: ['MAIN', 'DOWNTOWN'],
-    defaultBranch: 'MAIN',
-  },
-  {
-    email: 'accountant@demo.local',
-    roleName: 'Accountant',
-    branchCodes: ['MAIN', 'DOWNTOWN'],
-    defaultBranch: 'MAIN',
-  },
-  {
-    email: 'cashier@demo.local',
-    roleName: 'Cashier',
-    branchCodes: ['MAIN'],
-    defaultBranch: 'MAIN',
-  },
-  { email: 'chef@demo.local', roleName: 'Chef', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
-  { email: 'waiter@demo.local', roleName: 'Waiter', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
-];
+    {
+      email: 'owner@demo.local',
+      roleName: 'Owner',
+      branchCodes: ['MAIN', 'DOWNTOWN'],
+      defaultBranch: 'MAIN',
+    },
+    {
+      email: 'manager@demo.local',
+      roleName: 'Manager',
+      branchCodes: ['MAIN', 'DOWNTOWN'],
+      defaultBranch: 'MAIN',
+    },
+    {
+      email: 'accountant@demo.local',
+      roleName: 'Accountant',
+      branchCodes: ['MAIN', 'DOWNTOWN'],
+      defaultBranch: 'MAIN',
+    },
+    {
+      email: 'cashier@demo.local',
+      roleName: 'Cashier',
+      branchCodes: ['MAIN'],
+      defaultBranch: 'MAIN',
+    },
+    { email: 'chef@demo.local', roleName: 'Chef', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
+    { email: 'waiter@demo.local', roleName: 'Waiter', branchCodes: ['MAIN'], defaultBranch: 'MAIN' },
+  ];
 
 async function seedOrganization(): Promise<{ orgId: string; created: boolean }> {
   const existing = await prisma.organization.findUnique({ where: { slug: ORG_SEED.slug } });
@@ -1589,10 +1787,10 @@ const DEMO_QUICK_PINS: {
   tier: 'LOW_6' | 'HIGH_8';
   pinLength: number;
 }[] = [
-  { email: 'waiter@demo.local', pin: '123456', tier: 'LOW_6', pinLength: 6 },
-  { email: 'cashier@demo.local', pin: '654321', tier: 'LOW_6', pinLength: 6 },
-  { email: 'manager@demo.local', pin: '12345678', tier: 'HIGH_8', pinLength: 8 },
-];
+    { email: 'waiter@demo.local', pin: '123456', tier: 'LOW_6', pinLength: 6 },
+    { email: 'cashier@demo.local', pin: '654321', tier: 'LOW_6', pinLength: 6 },
+    { email: 'manager@demo.local', pin: '12345678', tier: 'HIGH_8', pinLength: 8 },
+  ];
 
 // Add supervisor seed if user exists
 // Note: We don't seed a supervisor user in M2, but we handle it gracefully
@@ -6709,6 +6907,756 @@ async function seedLedgerData(
   return { created, skipped };
 }
 
+// ── M40: Alerts + Digests + Real-Time Owner Views ──
+
+async function seedAlertsData(
+  _orgId: string,
+  branchCode: string,
+): Promise<{ created: number; skipped: number }> {
+  let created = 0;
+  let skipped = 0;
+
+  // M40 deliberately resolves the org through owner@demo.local's first ACTIVE
+  // membership so that seeded alerts/channels/digests live in the SAME org
+  // that AlertsService.resolveOrgContext() resolves at request time.
+  const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+  if (!owner) {
+    console.log(`  ⚠️  owner@demo.local not found — skipping alerts seed`);
+    return { created, skipped };
+  }
+  const ownerMembership = await prisma.membership.findFirst({
+    where: { userId: owner.id, status: 'ACTIVE' },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!ownerMembership) {
+    console.log(`  ⚠️  owner@demo.local has no ACTIVE membership — skipping alerts seed`);
+    return { created, skipped };
+  }
+  const orgId = ownerMembership.organizationId;
+
+  const branch = await prisma.branch.findFirst({
+    where: { organizationId: orgId, code: branchCode },
+  });
+  if (!branch) {
+    console.log(`  ⚠️  Branch ${branchCode} not found — skipping alerts seed`);
+    return { created, skipped };
+  }
+
+  // 1) Channels
+  const CHANNELS: Array<{
+    code: string;
+    name: string;
+    type: 'EMAIL' | 'SMS' | 'SLACK';
+    config: Record<string, unknown>;
+  }> = [
+      {
+        code: 'email-owner',
+        name: 'Owner email',
+        type: 'EMAIL',
+        config: { to: 'owner@demo.local' },
+      },
+      {
+        code: 'sms-manager',
+        name: 'Manager SMS',
+        type: 'SMS',
+        config: { to: '+15555550199' },
+      },
+      {
+        code: 'slack-ops',
+        name: 'Ops Slack channel',
+        type: 'SLACK',
+        config: { channel: '#nimbus-ops' },
+      },
+    ];
+
+  const channelByCode = new Map<string, { id: string; type: string }>();
+  for (const ch of CHANNELS) {
+    const existing = await prisma.alertChannel.findUnique({
+      where: { orgId_code: { orgId, code: ch.code } },
+    });
+    if (existing) {
+      channelByCode.set(ch.code, { id: existing.id, type: existing.type });
+      console.log(`  ⏭  AlertChannel ${ch.code} exists — skipped`);
+      skipped++;
+      continue;
+    }
+    const row = await prisma.alertChannel.create({
+      data: {
+        orgId,
+        code: ch.code,
+        name: ch.name,
+        type: ch.type as any,
+        status: 'ACTIVE',
+        config: ch.config as any,
+      },
+    });
+    channelByCode.set(ch.code, { id: row.id, type: row.type });
+    console.log(`  ✅ AlertChannel ${ch.code} (${ch.type}) created`);
+    created++;
+  }
+
+  // 2) Rules — covers low-stock, cash variance, booking reminder, owner SaaS billing
+  const RULES: Array<{
+    code: string;
+    name: string;
+    type:
+    | 'LOW_STOCK'
+    | 'CASH_VARIANCE'
+    | 'BOOKING_REMINDER'
+    | 'BILLING_PAYMENT_FAILURE'
+    | 'OVERDUE_VENDOR_BILL'
+    | 'SHIFT_NOT_CLOSED';
+    severity: 'INFO' | 'WARNING' | 'CRITICAL';
+    alertCategory: 'OPERATIONAL_IMMEDIATE' | 'OWNER_FINANCE' | 'BOOKING_EVENT' | 'TECHNICAL_INTEGRATION';
+    channelIntent: 'MOBILE_SMS' | 'EMAIL_DIGEST' | 'SLACK_WEBHOOK' | 'ALL_CHANNELS';
+    branchScoped?: boolean;
+    thresholdConfig?: Record<string, unknown>;
+    channelCodes: string[];
+  }> = [
+      {
+        code: 'low-stock-default',
+        name: 'Low stock — default reorder threshold',
+        type: 'LOW_STOCK',
+        severity: 'WARNING',
+        alertCategory: 'OPERATIONAL_IMMEDIATE',
+        channelIntent: 'MOBILE_SMS',
+        branchScoped: true,
+        thresholdConfig: { mode: 'reorder-level' },
+        channelCodes: ['email-owner', 'slack-ops'],
+      },
+      {
+        code: 'cash-variance-default',
+        name: 'Cash variance ≥ $20 on shift close',
+        type: 'CASH_VARIANCE',
+        severity: 'CRITICAL',
+        alertCategory: 'OPERATIONAL_IMMEDIATE',
+        channelIntent: 'ALL_CHANNELS',
+        branchScoped: true,
+        thresholdConfig: { absVariance: 20 },
+        channelCodes: ['email-owner', 'sms-manager', 'slack-ops'],
+      },
+      {
+        code: 'booking-reminder-24h',
+        name: 'Reservation reminder — next 24h',
+        type: 'BOOKING_REMINDER',
+        severity: 'INFO',
+        alertCategory: 'BOOKING_EVENT',
+        channelIntent: 'EMAIL_DIGEST',
+        branchScoped: true,
+        thresholdConfig: { windowMinutes: 60 * 24 },
+        channelCodes: ['email-owner'],
+      },
+      {
+        code: 'billing-payment-failure-saas',
+        name: 'Owner SaaS billing payment failure',
+        type: 'BILLING_PAYMENT_FAILURE',
+        severity: 'CRITICAL',
+        alertCategory: 'OWNER_FINANCE',
+        channelIntent: 'ALL_CHANNELS',
+        thresholdConfig: { statuses: ['PAST_DUE', 'GRACE_PERIOD'] },
+        channelCodes: ['email-owner', 'sms-manager', 'slack-ops'],
+      },
+      {
+        code: 'overdue-vendor-bill',
+        name: 'Overdue vendor bills',
+        type: 'OVERDUE_VENDOR_BILL',
+        severity: 'WARNING',
+        alertCategory: 'OWNER_FINANCE',
+        channelIntent: 'EMAIL_DIGEST',
+        thresholdConfig: { daysOverdue: 0 },
+        channelCodes: ['email-owner'],
+      },
+      {
+        code: 'shift-not-closed-16h',
+        name: 'Shift open over 16 hours',
+        type: 'SHIFT_NOT_CLOSED',
+        severity: 'WARNING',
+        alertCategory: 'OPERATIONAL_IMMEDIATE',
+        channelIntent: 'SLACK_WEBHOOK',
+        branchScoped: true,
+        thresholdConfig: { olderThanHours: 16 },
+        channelCodes: ['slack-ops'],
+      },
+    ];
+
+  const ruleByCode = new Map<string, { id: string; severity: string; type: string }>();
+  for (const r of RULES) {
+    const existing = await prisma.alertRule.findUnique({
+      where: { orgId_code: { orgId, code: r.code } },
+    });
+    if (existing) {
+      ruleByCode.set(r.code, { id: existing.id, severity: existing.severity, type: existing.type });
+      console.log(`  ⏭  AlertRule ${r.code} exists — skipped`);
+      skipped++;
+      continue;
+    }
+    const sourceModule = (() => {
+      switch (r.type) {
+        case 'LOW_STOCK':
+          return 'inventory';
+        case 'CASH_VARIANCE':
+        case 'SHIFT_NOT_CLOSED':
+          return 'shifts';
+        case 'BOOKING_REMINDER':
+          return 'reservations';
+        case 'BILLING_PAYMENT_FAILURE':
+          return 'billing';
+        case 'OVERDUE_VENDOR_BILL':
+          return 'accounts-payable';
+      }
+    })();
+    const row = await prisma.alertRule.create({
+      data: {
+        orgId,
+        branchId: r.branchScoped ? branch.id : null,
+        code: r.code,
+        name: r.name,
+        type: r.type as any,
+        severity: r.severity as any,
+        status: 'ACTIVE',
+        sourceModule: sourceModule!,
+        alertCategory: r.alertCategory as any,
+        channelIntent: r.channelIntent as any,
+        thresholdConfig: (r.thresholdConfig ?? {}) as any,
+        channelCodes: r.channelCodes,
+        escalationConfig: {} as any,
+      },
+    });
+    ruleByCode.set(r.code, { id: row.id, severity: row.severity, type: row.type });
+    console.log(`  ✅ AlertRule ${r.code} (${r.type}) created`);
+    created++;
+  }
+
+  // 3) Daily owner digest schedule
+  const DIGEST_CODE = 'daily-owner-summary';
+  const existingDigest = await prisma.digestSchedule.findUnique({
+    where: { orgId_code: { orgId, code: DIGEST_CODE } },
+  });
+  if (!existingDigest) {
+    await prisma.digestSchedule.create({
+      data: {
+        orgId,
+        code: DIGEST_CODE,
+        name: 'Daily Owner Summary',
+        description:
+          'Aggregates low-stock, cash-variance, upcoming reservations, ' +
+          'billing risk, and overdue vendor bills.',
+        digestType: 'owner-daily',
+        frequency: 'DAILY',
+        hourLocal: 7,
+        timezone: 'UTC',
+        channelCodes: ['email-owner', 'slack-ops'],
+        status: 'ACTIVE',
+        nextRunAt: (() => {
+          const n = new Date();
+          n.setUTCMinutes(0, 0, 0);
+          n.setUTCHours(7);
+          if (n.getTime() <= Date.now()) n.setUTCDate(n.getUTCDate() + 1);
+          return n;
+        })(),
+      },
+    });
+    console.log(`  ✅ DigestSchedule ${DIGEST_CODE} (DAILY) created`);
+    created++;
+  } else {
+    console.log(`  ⏭  DigestSchedule ${DIGEST_CODE} exists — skipped`);
+    skipped++;
+  }
+
+  // 4) Representative deliveries — one SENT, one FAILED retryable, one RETRY_EXHAUSTED
+  const lowStockRule = ruleByCode.get('low-stock-default');
+  const cashRule = ruleByCode.get('cash-variance-default');
+  const billingRule = ruleByCode.get('billing-payment-failure-saas');
+  const emailCh = channelByCode.get('email-owner');
+  const slackCh = channelByCode.get('slack-ops');
+  const smsCh = channelByCode.get('sms-manager');
+
+  const DELIVERIES: Array<{
+    dedupeKey: string;
+    ruleId: string | null;
+    channelId: string;
+    alertType: string;
+    severity: string;
+    status: 'SENT' | 'RETRY_SCHEDULED' | 'RETRY_EXHAUSTED' | 'FAILED';
+    attemptCount: number;
+    failureReason?: string;
+    lastError?: string;
+    sentAt?: Date | null;
+  }> = [];
+
+  if (lowStockRule && emailCh) {
+    DELIVERIES.push({
+      dedupeKey: 'seed-m40-low-stock-sent',
+      ruleId: lowStockRule.id,
+      channelId: emailCh.id,
+      alertType: 'LOW_STOCK',
+      severity: 'WARNING',
+      status: 'SENT',
+      attemptCount: 1,
+      sentAt: new Date(Date.now() - 60 * 60 * 1000),
+    });
+  }
+  if (cashRule && slackCh) {
+    DELIVERIES.push({
+      dedupeKey: 'seed-m40-cash-variance-retry',
+      ruleId: cashRule.id,
+      channelId: slackCh.id,
+      alertType: 'CASH_VARIANCE',
+      severity: 'CRITICAL',
+      status: 'RETRY_SCHEDULED',
+      attemptCount: 1,
+      failureReason: 'SLACK_DISPATCH_ERROR',
+      lastError: 'Simulated transient slack 503',
+    });
+  }
+  if (billingRule && smsCh) {
+    DELIVERIES.push({
+      dedupeKey: 'seed-m40-billing-failed',
+      ruleId: billingRule.id,
+      channelId: smsCh.id,
+      alertType: 'BILLING_PAYMENT_FAILURE',
+      severity: 'CRITICAL',
+      status: 'RETRY_EXHAUSTED',
+      attemptCount: 3,
+      failureReason: 'BAD_RECIPIENT',
+      lastError: 'SMS provider rejected number after 3 attempts',
+    });
+  }
+
+  for (const d of DELIVERIES) {
+    const existing = await prisma.alertDelivery.findFirst({
+      where: { orgId, dedupeKey: d.dedupeKey, channelId: d.channelId },
+    });
+    if (existing) {
+      console.log(`  ⏭  AlertDelivery ${d.dedupeKey} exists — skipped`);
+      skipped++;
+      continue;
+    }
+    await prisma.alertDelivery.create({
+      data: {
+        orgId,
+        ruleId: d.ruleId,
+        channelId: d.channelId,
+        alertType: d.alertType as any,
+        severity: d.severity as any,
+        status: d.status as any,
+        attemptCount: d.attemptCount,
+        maxAttempts: 3,
+        payload: {
+          title: `Seed: ${d.alertType}`,
+          message: 'Deterministic seed delivery for M40 demos',
+          severity: d.severity,
+          alertType: d.alertType,
+        } as any,
+        lastError: d.lastError ?? null,
+        failureReason: d.failureReason ?? null,
+        dedupeKey: d.dedupeKey,
+        sentAt: d.sentAt ?? null,
+        nextRetryAt:
+          d.status === 'RETRY_SCHEDULED'
+            ? new Date(Date.now() + 5 * 60 * 1000)
+            : null,
+        isTest: false,
+        triggeredById: owner?.id ?? null,
+      },
+    });
+    console.log(`  ✅ AlertDelivery ${d.dedupeKey} (${d.status}) created`);
+    created++;
+  }
+
+  // 5) A handful of OwnerLiveEvents to seed the live feed
+  const LIVE_EVENTS: Array<{
+    type:
+    | 'LOW_STOCK'
+    | 'CASH_VARIANCE'
+    | 'BOOKING_REMINDER'
+    | 'BILLING_PAYMENT_FAILURE'
+    | 'INFO';
+    severity: 'INFO' | 'WARNING' | 'CRITICAL';
+    title: string;
+    message: string;
+    sourceModule: string;
+    sourceRef: string;
+  }> = [
+      {
+        type: 'INFO',
+        severity: 'INFO',
+        title: 'Owner live feed initialised',
+        message: 'Seed bootstrap event — confirms feed plumbing.',
+        sourceModule: 'alerts',
+        sourceRef: 'seed:bootstrap',
+      },
+      {
+        type: 'LOW_STOCK',
+        severity: 'WARNING',
+        title: 'Seed: low stock signal',
+        message: 'Demo low-stock event surfaced on the owner feed.',
+        sourceModule: 'inventory',
+        sourceRef: 'seed:low-stock-demo',
+      },
+      {
+        type: 'BILLING_PAYMENT_FAILURE',
+        severity: 'CRITICAL',
+        title: 'Seed: SaaS billing payment risk',
+        message: 'Owner SaaS billing demo signal (PAST_DUE).',
+        sourceModule: 'billing',
+        sourceRef: 'seed:billing-past-due',
+      },
+    ];
+  for (const ev of LIVE_EVENTS) {
+    const existing = await prisma.ownerLiveEvent.findFirst({
+      where: { orgId, sourceRef: ev.sourceRef },
+    });
+    if (existing) {
+      console.log(`  ⏭  OwnerLiveEvent ${ev.sourceRef} exists — skipped`);
+      skipped++;
+      continue;
+    }
+    await prisma.ownerLiveEvent.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        type: ev.type as any,
+        severity: ev.severity as any,
+        title: ev.title,
+        message: ev.message,
+        sourceModule: ev.sourceModule,
+        sourceRef: ev.sourceRef,
+        payload: {} as any,
+      },
+    });
+    console.log(`  ✅ OwnerLiveEvent ${ev.sourceRef} (${ev.type}) created`);
+    created++;
+  }
+
+  return { created, skipped };
+}
+
+// ─────────────────────────────────────────────────────────────
+// M41 — Reliability Layer (Idempotency + Sync Jobs + Conflicts)
+// ─────────────────────────────────────────────────────────────
+
+async function seedReliabilityData(): Promise<{ created: number; skipped: number }> {
+  let created = 0;
+  let skipped = 0;
+
+  const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+  if (!owner) {
+    console.log('  ⚠️  owner@demo.local not found — skipping reliability seed');
+    return { created, skipped };
+  }
+  const ownerMembership = await prisma.membership.findFirst({
+    where: { userId: owner.id, status: 'ACTIVE' },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!ownerMembership) {
+    console.log('  ⚠️  owner@demo.local has no ACTIVE membership — skipping reliability seed');
+    return { created, skipped };
+  }
+  const orgId = ownerMembership.organizationId;
+
+  // 1) Sample successful idempotency key
+  const sampleKey = 'seed-m41-payment-intent-001';
+  const existingIdem = await prisma.idempotencyKey.findUnique({
+    where: {
+      scope_key_routeMethod_routePath: {
+        scope: 'payment-intent',
+        key: sampleKey,
+        routeMethod: 'POST',
+        routePath: '/api/payments/intents',
+      },
+    },
+  });
+  if (!existingIdem) {
+    await prisma.idempotencyKey.create({
+      data: {
+        orgId,
+        actorUserId: owner.id,
+        scope: 'payment-intent',
+        key: sampleKey,
+        routeMethod: 'POST',
+        routePath: '/api/payments/intents',
+        requestHash: 'seed-fingerprint-001',
+        status: 'SUCCEEDED',
+        statusCode: 200,
+        responseBody: { ok: true, intentId: 'seed-intent-001' } as any,
+        responseRef: 'PaymentIntent:seed-intent-001',
+        completedAt: new Date(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    });
+    console.log(`  ✅ IdempotencyKey ${sampleKey} (SUCCEEDED) created`);
+    created++;
+  } else {
+    console.log(`  ⏭  IdempotencyKey ${sampleKey} already exists — skipped`);
+    skipped++;
+  }
+
+  // 2) Successful generic-replay sync job
+  const succeededCmid = 'seed-m41-cmid-success-001';
+  const existingSucceeded = await prisma.syncJob.findUnique({
+    where: { orgId_clientMutationId: { orgId, clientMutationId: succeededCmid } },
+  });
+  if (!existingSucceeded) {
+    await prisma.syncJob.create({
+      data: {
+        orgId,
+        actorUserId: owner.id,
+        type: 'GENERIC_REPLAY',
+        status: 'SUCCEEDED',
+        origin: 'OFFLINE_CLIENT',
+        clientMutationId: succeededCmid,
+        idempotencyKey: 'seed-m41-replay-key-001',
+        requestBody: { sample: 'echo' } as any,
+        intentSummary: 'Seed generic replay (succeeded)',
+        capturedAt: new Date(Date.now() - 60 * 60 * 1000),
+        attemptCount: 1,
+        completedAt: new Date(),
+        resultRef: 'GenericReplay:seed-001',
+        resultSummary: { echoed: true, receivedKeys: ['sample'] } as any,
+      },
+    });
+    console.log(`  ✅ SyncJob ${succeededCmid} (SUCCEEDED) created`);
+    created++;
+  } else {
+    skipped++;
+  }
+
+  // 3) Retryable sync job (still pending)
+  const retryableCmid = 'seed-m41-cmid-retry-001';
+  const existingRetryable = await prisma.syncJob.findUnique({
+    where: { orgId_clientMutationId: { orgId, clientMutationId: retryableCmid } },
+  });
+  if (!existingRetryable) {
+    await prisma.syncJob.create({
+      data: {
+        orgId,
+        actorUserId: owner.id,
+        type: 'PAYMENT_CAPTURE',
+        status: 'RETRYABLE',
+        origin: 'SERVICE_WORKER',
+        clientMutationId: retryableCmid,
+        idempotencyKey: 'seed-m41-retry-key-001',
+        routeMethod: 'POST',
+        routePath: '/api/payments/intents/seed-intent-002/capture',
+        requestBody: { amount: '50.00' } as any,
+        intentSummary: 'Capture pending — connectivity flapped',
+        capturedAt: new Date(Date.now() - 30 * 60 * 1000),
+        attemptCount: 2,
+        lastAttemptAt: new Date(Date.now() - 5 * 60 * 1000),
+        nextRetryAt: new Date(Date.now() + 4 * 60 * 1000),
+        lastError: 'Upstream timed out — will retry',
+        failureReason: 'UPSTREAM_TIMEOUT',
+      },
+    });
+    console.log(`  ✅ SyncJob ${retryableCmid} (RETRYABLE) created`);
+    created++;
+  } else {
+    skipped++;
+  }
+
+  // 4) Conflict sync job + open conflict
+  const conflictCmid = 'seed-m41-cmid-conflict-001';
+  let conflictJob = await prisma.syncJob.findUnique({
+    where: { orgId_clientMutationId: { orgId, clientMutationId: conflictCmid } },
+  });
+  if (!conflictJob) {
+    conflictJob = await prisma.syncJob.create({
+      data: {
+        orgId,
+        actorUserId: owner.id,
+        type: 'RESERVATION_CONFIRM',
+        status: 'CONFLICT',
+        origin: 'OFFLINE_CLIENT',
+        clientMutationId: conflictCmid,
+        requestBody: { reservationId: 'seed-resv-001', confirmedAt: new Date().toISOString() } as any,
+        intentSummary: 'Confirm reservation after offline window',
+        capturedAt: new Date(Date.now() - 90 * 60 * 1000),
+        attemptCount: 1,
+        completedAt: new Date(),
+        lastError: 'Reservation already cancelled by host',
+        failureReason: 'STATE_TRANSITION_INVALID',
+      },
+    });
+    console.log(`  ✅ SyncJob ${conflictCmid} (CONFLICT) created`);
+    created++;
+  } else {
+    skipped++;
+  }
+
+  const existingConflict = await prisma.syncConflict.findFirst({
+    where: { jobId: conflictJob.id, status: 'OPEN' },
+  });
+  if (!existingConflict) {
+    await prisma.syncConflict.create({
+      data: {
+        orgId,
+        jobId: conflictJob.id,
+        type: 'RESERVATION_CONFIRM',
+        status: 'OPEN',
+        targetEntity: 'Reservation',
+        targetEntityId: 'seed-resv-001',
+        clientPayload: { confirmedAt: new Date().toISOString() } as any,
+        serverState: { status: 'CANCELLED', cancelledAt: new Date(Date.now() - 60 * 60 * 1000).toISOString() } as any,
+        diffSummary: 'Client tried CONFIRM; server has CANCELLED',
+        reason: 'STATE_TRANSITION_INVALID',
+      },
+    });
+    console.log(`  ✅ SyncConflict for ${conflictCmid} created`);
+    created++;
+  } else {
+    skipped++;
+  }
+
+  return { created, skipped };
+}
+
+// ── M42: Feature Flags + Maintenance Windows + Training Mode ──
+
+async function seedControlPlaneData(): Promise<{ created: number; skipped: number }> {
+  let created = 0;
+  let skipped = 0;
+
+  const owner = await prisma.user.findUnique({ where: { email: 'owner@demo.local' } });
+  if (!owner) {
+    console.log('  ⚠️  owner@demo.local not found — skipping control-plane seed');
+    return { created, skipped };
+  }
+  const ownerMembership = await prisma.membership.findFirst({
+    where: { userId: owner.id, status: 'ACTIVE' },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!ownerMembership) {
+    console.log('  ⚠️  owner@demo.local has no ACTIVE membership — skipping control-plane seed');
+    return { created, skipped };
+  }
+  const orgId = ownerMembership.organizationId;
+
+  // 1) Feature flags (5 representative)
+  const flagDefs: Array<{
+    key: string;
+    name: string;
+    description: string;
+    status: 'ENABLED' | 'DISABLED';
+    rolloutPercent: number;
+  }> = [
+      { key: 'alerts_owner_live_beta', name: 'Owner Live Feed (Beta)', description: 'Beta toggle for the owner real-time live feed.', status: 'ENABLED', rolloutPercent: 100 },
+      { key: 'public_booking_beta', name: 'Public Booking (Beta)', description: 'Public-facing booking commerce surface.', status: 'DISABLED', rolloutPercent: 0 },
+      { key: 'franchise_analytics_beta', name: 'Franchise Analytics (Beta)', description: 'Cross-branch franchise analytics dashboards.', status: 'ENABLED', rolloutPercent: 50 },
+      { key: 'training_mode_enabled', name: 'Training Mode', description: 'Org-level switch enabling sandboxed training sessions.', status: 'ENABLED', rolloutPercent: 100 },
+      { key: 'maintenance_write_blocking_enabled', name: 'Maintenance Write-Blocking', description: 'Org-level switch enabling BLOCK_WRITES maintenance windows.', status: 'ENABLED', rolloutPercent: 100 },
+    ];
+  for (const f of flagDefs) {
+    const existing = await prisma.featureFlag.findFirst({
+      where: { scope: 'ORG', key: f.key, orgId, branchId: null },
+    });
+    if (existing) {
+      skipped++;
+      continue;
+    }
+    await prisma.featureFlag.create({
+      data: {
+        key: f.key,
+        name: f.name,
+        description: f.description,
+        scope: 'ORG',
+        orgId,
+        status: f.status,
+        rolloutPercent: f.rolloutPercent,
+        createdById: owner.id,
+        updatedById: owner.id,
+      },
+    });
+    console.log(`  ✅ FeatureFlag ${f.key} (${f.status}) created`);
+    created++;
+  }
+
+  // 2) Scheduled (future) maintenance window — ANNOUNCEMENT_ONLY so no
+  //    existing tests are blocked by the mere existence of this window.
+  const winCode = 'm42-seed-quarterly-maintenance';
+  const existingWin = await prisma.maintenanceWindow.findFirst({
+    where: { orgId, code: winCode },
+  });
+  if (!existingWin) {
+    const now = new Date();
+    await prisma.maintenanceWindow.create({
+      data: {
+        orgId,
+        code: winCode,
+        title: 'Quarterly Maintenance (Scheduled)',
+        message: 'Routine maintenance window. Advisory only — no writes blocked.',
+        mode: 'ANNOUNCEMENT_ONLY',
+        status: 'SCHEDULED',
+        blockCategories: [],
+        startsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        endsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000),
+        createdById: owner.id,
+        updatedById: owner.id,
+      },
+    });
+    console.log(`  ✅ MaintenanceWindow ${winCode} (SCHEDULED, ANNOUNCEMENT_ONLY) created`);
+    created++;
+  } else {
+    skipped++;
+  }
+
+  // 3) Sample completed training session (history demo)
+  const existingSess = await prisma.trainingSession.findFirst({
+    where: { orgId, label: 'Owner onboarding walkthrough (seed)' },
+  });
+  if (!existingSess) {
+    const startedAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await prisma.trainingSession.create({
+      data: {
+        orgId,
+        actorUserId: owner.id,
+        label: 'Owner onboarding walkthrough (seed)',
+        purpose: 'Initial sandbox walkthrough for owner onboarding.',
+        mode: 'SIMULATION_ONLY',
+        status: 'COMPLETED',
+        startedAt,
+        expiresAt: new Date(startedAt.getTime() + 60 * 60 * 1000),
+        endedAt: new Date(startedAt.getTime() + 30 * 60 * 1000),
+        endedById: owner.id,
+        metadata: { sourceSeed: 'm42' },
+      },
+    });
+    console.log(`  ✅ TrainingSession (seed COMPLETED) created`);
+    created++;
+  } else {
+    skipped++;
+  }
+
+  // 4) One audit row (FLAG_ENABLED for alerts_owner_live_beta)
+  const seededFlag = await prisma.featureFlag.findFirst({
+    where: { scope: 'ORG', key: 'alerts_owner_live_beta', orgId },
+  });
+  if (seededFlag) {
+    const existingAudit = await prisma.flagAudit.findFirst({
+      where: { orgId, flagId: seededFlag.id, action: 'FLAG_ENABLED' },
+    });
+    if (!existingAudit) {
+      await prisma.flagAudit.create({
+        data: {
+          orgId,
+          action: 'FLAG_ENABLED',
+          flagId: seededFlag.id,
+          actorUserId: owner.id,
+          beforeState: { status: 'DISABLED' } as any,
+          afterState: { status: 'ENABLED' } as any,
+          note: 'Seed: enabling owner live feed beta',
+        },
+      });
+      console.log(`  ✅ FlagAudit FLAG_ENABLED for alerts_owner_live_beta created`);
+      created++;
+    } else {
+      skipped++;
+    }
+  }
+
+  return { created, skipped };
+}
+
 // ── Main Runner ──
 
 async function main(): Promise<void> {
@@ -6956,6 +7904,21 @@ async function main(): Promise<void> {
     `   Created: ${ledgerResult.created}, Skipped: ${ledgerResult.skipped}\n`,
   );
 
+  // 45) Seed Alerts + Digests + Owner Live Views (M40)
+  console.log('── Alerts + Digests + Owner Live Views (M40) ──');
+  const alertsResult = await seedAlertsData(orgResult.orgId, 'MAIN');
+  console.log(`   Created: ${alertsResult.created}, Skipped: ${alertsResult.skipped}\n`);
+
+  // 46) Seed Reliability Layer (M41)
+  console.log('── Reliability: Idempotency + Sync Jobs + Conflicts (M41) ──');
+  const reliabilityResult = await seedReliabilityData();
+  console.log(`   Created: ${reliabilityResult.created}, Skipped: ${reliabilityResult.skipped}\n`);
+
+  // 47) Seed Control Plane (M42)
+  console.log('── Control Plane: Feature Flags + Maintenance Windows + Training Mode (M42) ──');
+  const controlPlaneResult = await seedControlPlaneData();
+  console.log(`   Created: ${controlPlaneResult.created}, Skipped: ${controlPlaneResult.skipped}\n`);
+
   // Record seed execution
   await recordSeedRun(
     'm1-baseline',
@@ -7064,6 +8027,50 @@ async function main(): Promise<void> {
   await recordSeedRun(
     'm29-general-ledger-journals-posting',
     `Ledger: ${ledgerResult.created}c/${ledgerResult.skipped}s`,
+  );
+  await recordSeedRun(
+    'm40-alerts-digests-owner-live',
+    `Alerts/Channels/Digests/Deliveries/LiveEvents: ${alertsResult.created}c/${alertsResult.skipped}s`,
+  );
+  await recordSeedRun(
+    'm41-reliability-layer',
+    `Idempotency+SyncJobs+Conflicts: ${reliabilityResult.created}c/${reliabilityResult.skipped}s`,
+  );
+  await recordSeedRun(
+    'm42-control-plane',
+    `FeatureFlags+MaintenanceWindows+TrainingSessions+FlagAudits: ${controlPlaneResult.created}c/${controlPlaneResult.skipped}s`,
+  );
+  await recordSeedRun(
+    'bg1-invitation-password-frontline',
+    'BG1: Invitation lifecycle + Password reset + Frontline staff onboarding (perms+role bindings)',
+  );
+  await recordSeedRun(
+    'bg1.1-frontline-quick-pin-admin',
+    'BG1.1: Frontline PIN-first refinement + manager Quick PIN admin (auth:quick-pin:read|write granted to Owner+Manager)',
+  );
+  await recordSeedRun(
+    'bg2-unified-approvals-and-audit-timeline',
+    'BG2: Unified Approvals Inbox + Global Audit Timeline (approvals:read|decide + audit:read granted to Owner+Manager)',
+  );
+  await recordSeedRun(
+    'bg3-reliability-rollout',
+    'BG3: Reliability rollout — Idempotency-Key support added across payments/refunds/AR/AP/payroll/shifts/tills/public-bookings/inventory/sync.replay; maintenance-window blocking applied to BILLING/ACCOUNTING/INVENTORY/PUBLIC_BOOKING categories; training-mode short-circuit applied to payments.intents/refunds.create/inventory.adjustments/public.reservations.confirm. No new permissions or schema.',
+  );
+  await recordSeedRun(
+    'bg4a-receipts-surface',
+    'BG4.A: Receipts surface — pos:receipt:read|reprint|send granted to Owner+Manager+Cashier+Waiter. No schema change. Receipt id == orderId; reprint/send wrapped by BG3 facade (idempotency-optional). Send currently records PENDING delivery (no live email/SMS/WhatsApp adapter); RECEIPT_VIEWED/REPRINTED/SENT audit actions feed BG2 audit timeline.',
+  );
+  await recordSeedRun(
+    'bg4b-pos-order-handoff',
+    'BG4.B: POS Order Handoff — split-bill / split-items / merge / transfer-table / transfer-server / move-items endpoints under /api/pos/orders/*. Adds Order.splitFromOrderId + Order.mergedIntoOrderId self-references (additive nullable FKs). Permissions: pos:order:split (Owner+Manager+Cashier), pos:order:merge (Owner+Manager+Cashier), pos:order:transfer (Owner+Manager+Cashier+Waiter), pos:order:move-items (Owner+Manager+Cashier+Waiter); Chef denied across all four. All six endpoints wrapped by BG3 facade (category:null, idempotencyMode:optional). KDS strategy: existing tickets preserved + metadata-marked (bg4bSupersededBy / bg4bMergedInto / bg4bItemsMovedTo); destination orders not auto-republished.',
+  );
+  await recordSeedRun(
+    'bg5-device-printer-terminal-registry',
+    'BG5: Device / Printer / Terminal Registry — Device + PrinterRoute models (additive). Endpoints under /api/devices/*: activate, list, detail, history, status, kds/register, printers/routes (upsert/list), terminals/pair, terminals/:id/unpair. Permissions: devices:read (Owner+Manager+Cashier+Waiter), devices:write|status:write|routes:write|terminals:write (Owner+Manager); Chef denied across all five. Mutating endpoints wrapped by BG3 facade (category:null, idempotencyMode:optional). Terminal pairing is STUB only (no live card-terminal traffic); printer routing is configuration metadata (no driver invocation).',
+  );
+  await recordSeedRun(
+    'bg6-exports-and-downloads',
+    'BG6: Unified export/download facade + AP supplier detail. Adds GET /api/accounting/ap/suppliers/:id (closes BG0 missing route, permission accounting:ap:bill:read). New /api/exports surface (POST/GET/GET-detail/GET-download) normalises report exports + document downloads behind a single envelope; exportId encoded as <domain>:<id>. Permissions: exports:read|write|download granted to Owner+Manager+Accountant; Chef denied. POST /api/exports wrapped by BG3 facade (category:null, idempotencyMode:optional). No new schema, no new migration; delegates to ReportsService.createExport / DocumentsService.downloadDocument. Public diner payments still PENDING; PesaPal still owner-SaaS only.',
   );
   console.log('── SeedHistory markers recorded ──\n');
 

@@ -11,12 +11,16 @@ import {
 } from './dto';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
+import { Bg3ReliabilityService, BG3_CATEGORY } from '../bg3-reliability';
 
 @Controller('payroll')
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class PayrollController {
-  constructor(private readonly payrollService: PayrollService) {}
+  constructor(
+    private readonly payrollService: PayrollService,
+    private readonly bg3: Bg3ReliabilityService,
+  ) { }
 
   // ── Pay Components ──
 
@@ -113,10 +117,25 @@ export class PayrollController {
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.payrollService.payPayRun(user.id, ctx, id, dto, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.bg3.guard(
+      {
+        req,
+        scope: 'payroll.runs.pay',
+        routeMethod: 'PATCH',
+        routePath: `/api/payroll/runs/${id}/pay`,
+        category: BG3_CATEGORY.ACCOUNTING,
+        idempotencyMode: 'optional',
+        fingerprintSource: { id, dto },
+        actorUserId: user.id,
+        orgId: ctx?.organizationId ?? null,
+        branchId: ctx?.branchId ?? null,
+      },
+      () =>
+        this.payrollService.payPayRun(user.id, ctx, id, dto, {
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        }),
+    );
   }
 
   @Get('runs')
@@ -156,6 +175,33 @@ export class PayrollController {
   @Get('slips/:id')
   @Permissions('pos:payroll:slips:read')
   async getPaySlip(@Param('id') id: string, @Req() req: Request) {
+    const ctx = (req as any).branchContext;
+    return this.payrollService.getPaySlip(ctx, id);
+  }
+
+  // ── Pay Slips (ROADMAP M30 canonical path aliases) ──
+
+  @Get('payslips')
+  @Permissions('pos:payroll:slips:read')
+  async listPaySlipsAlias(
+    @Query('payRunId') payRunId: string,
+    @Query('employeeId') employeeId: string,
+    @Query('skip') skip: string,
+    @Query('take') take: string,
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.payrollService.listPaySlips(ctx, {
+      payRunId,
+      employeeId,
+      skip: skip ? Number(skip) : undefined,
+      take: take ? Number(take) : undefined,
+    });
+  }
+
+  @Get('payslips/:id')
+  @Permissions('pos:payroll:slips:read')
+  async getPaySlipAlias(@Param('id') id: string, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.payrollService.getPaySlip(ctx, id);
   }

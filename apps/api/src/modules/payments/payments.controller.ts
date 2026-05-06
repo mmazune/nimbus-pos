@@ -25,13 +25,15 @@ import {
 } from './dto';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
+import { Bg3ReliabilityService, BG3_CATEGORY } from '../bg3-reliability';
 
 @Controller()
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+    private readonly bg3: Bg3ReliabilityService,
+  ) { }
 
   // ── Close Order with Payment ──
   @Post('pos/orders/:id/close')
@@ -46,10 +48,25 @@ export class PaymentsController {
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.paymentsService.closeOrderWithPayment(user.id, ctx, id, dto, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.bg3.guard(
+      {
+        req,
+        scope: 'payments.order.close',
+        routeMethod: 'POST',
+        routePath: `/api/pos/orders/${id}/close`,
+        category: BG3_CATEGORY.BILLING,
+        idempotencyMode: 'optional',
+        fingerprintSource: { id, dto },
+        actorUserId: user.id,
+        orgId: ctx?.organizationId ?? null,
+        branchId: ctx?.branchId ?? null,
+      },
+      () =>
+        this.paymentsService.closeOrderWithPayment(user.id, ctx, id, dto, {
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        }),
+    );
   }
 
   // ── Create MOMO Payment Intent ──
@@ -63,10 +80,33 @@ export class PaymentsController {
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.paymentsService.createPaymentIntent(user.id, ctx, dto, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.bg3.guard(
+      {
+        req,
+        scope: 'payments.intents.create',
+        routeMethod: 'POST',
+        routePath: '/api/payments/intents',
+        category: BG3_CATEGORY.BILLING,
+        idempotencyMode: 'optional',
+        fingerprintSource: dto,
+        actorUserId: user.id,
+        orgId: ctx?.organizationId ?? null,
+        branchId: ctx?.branchId ?? null,
+        trainingSimulator: (): any => ({
+          id: `sim-intent-${Date.now()}`,
+          orderId: (dto as any).orderId,
+          provider: (dto as any).provider,
+          amount: (dto as any).amount,
+          currency: (dto as any).currency ?? 'UGX',
+          status: 'SIMULATED_PENDING',
+        }),
+      },
+      () =>
+        this.paymentsService.createPaymentIntent(user.id, ctx, dto, {
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        }),
+    );
   }
 
   // ── Get Payment Intent ──

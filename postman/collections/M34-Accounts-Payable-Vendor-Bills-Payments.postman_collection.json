@@ -1,0 +1,1069 @@
+{
+    "info": {
+        "name": "M34 - Accounts Payable + Vendor Bills + Payments",
+        "description": "API collection for M34 — AP suppliers, vendor bills (create, list, get, approve), AP payments with allocations, credit notes, and aging summary",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth — Login Owner",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.environment.set('refreshToken', body.refreshToken);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Auth — Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Suppliers",
+            "item": [
+                {
+                    "name": "Create Supplier",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body).to.have.property('id'));",
+                                    "pm.environment.set('supplierId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Postman Produce Ltd\",\n    \"code\": \"PM-SUP-001\",\n    \"currencyCode\": \"UGX\",\n    \"paymentTermsDays\": 30,\n    \"email\": \"pm@producelimited.local\",\n    \"phone\": \"+256700000099\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/suppliers",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "suppliers"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Suppliers",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/suppliers",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "suppliers"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Vendor Bills",
+            "item": [
+                {
+                    "name": "Create Vendor Bill",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is DRAFT', () => pm.expect(body.status).to.eql('DRAFT'));",
+                                    "pm.test('has billNumber', () => pm.expect(body.billNumber).to.be.a('string'));",
+                                    "pm.environment.set('vendorBillId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"supplierId\": \"{{supplierId}}\",\n    \"sourceType\": \"MANUAL_SERVICE\",\n    \"billDate\": \"2025-01-15\",\n    \"issueDate\": \"2025-01-15\",\n    \"dueDate\": \"2025-02-14\",\n    \"notes\": \"Postman test bill\",\n    \"lines\": [\n        {\n            \"description\": \"Fresh vegetables delivery\",\n            \"quantity\": 5,\n            \"unitPrice\": \"100000\",\n            \"taxRate\": 18\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/bills",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "bills"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Vendor Bills",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/bills",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "bills"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Vendor Bills (filtered by supplierId)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/bills?supplierId={{supplierId}}&status=DRAFT",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "bills"
+                            ],
+                            "query": [
+                                {
+                                    "key": "supplierId",
+                                    "value": "{{supplierId}}"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "DRAFT"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Vendor Bill by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('id matches', () => pm.expect(body.id).to.eql(pm.environment.get('vendorBillId')));",
+                                    "pm.test('has lines', () => pm.expect(body.lines).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/bills/{{vendorBillId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "bills",
+                                "{{vendorBillId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Approve Vendor Bill",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is APPROVED', () => pm.expect(body.status).to.eql('APPROVED'));",
+                                    "pm.test('approvedById set', () => pm.expect(body.approvedById).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/bills/{{vendorBillId}}/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "bills",
+                                "{{vendorBillId}}",
+                                "approve"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Approve Already-Approved Bill (expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/bills/{{vendorBillId}}/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "bills",
+                                "{{vendorBillId}}",
+                                "approve"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "AP Payments",
+            "item": [
+                {
+                    "name": "Create AP Payment (Full Allocation)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body).to.have.property('id'));",
+                                    "pm.test('has paymentNumber', () => pm.expect(body.paymentNumber).to.be.a('string'));",
+                                    "pm.environment.set('apPaymentId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"supplierId\": \"{{supplierId}}\",\n    \"amount\": \"590000\",\n    \"paymentDate\": \"2025-01-20\",\n    \"paymentMethod\": \"BANK_TRANSFER\",\n    \"reference\": \"TXN-PM-001\",\n    \"notes\": \"Full settlement\",\n    \"allocations\": [\n        {\n            \"vendorBillId\": \"{{vendorBillId}}\",\n            \"amount\": \"590000\"\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/payments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "payments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create AP Payment (Allocation Mismatch — expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"supplierId\": \"{{supplierId}}\",\n    \"amount\": \"1000000\",\n    \"paymentDate\": \"2025-01-20\",\n    \"paymentMethod\": \"CASH\",\n    \"allocations\": [\n        {\n            \"vendorBillId\": \"{{vendorBillId}}\",\n            \"amount\": \"500000\"\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/payments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "payments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List AP Payments",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/payments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "payments"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Credit Notes",
+            "item": [
+                {
+                    "name": "Create Credit Note",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is OPEN', () => pm.expect(body.status).to.eql('OPEN'));",
+                                    "pm.test('has creditNoteNumber', () => pm.expect(body.creditNoteNumber).to.be.a('string'));",
+                                    "pm.environment.set('creditNoteId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"supplierId\": \"{{supplierId}}\",\n    \"issueDate\": \"2025-01-18\",\n    \"totalAmount\": \"50000\",\n    \"reason\": \"Overcharged on Invoice #INV-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/credit-notes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "credit-notes"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Credit Notes",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/credit-notes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "credit-notes"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Aging Summary",
+            "item": [
+                {
+                    "name": "Get AP Aging Summary",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has buckets', () => pm.expect(pm.response.json()).to.have.property('buckets'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/aging",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "aging"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Recurring Bill Profiles",
+            "item": [
+                {
+                    "name": "Create Recurring Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.environment.set('recurringProfileId', body.id);",
+                                    "pm.test('has profileName', () => pm.expect(body).to.have.property('profileName'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"supplierId\": \"{{supplierId}}\",\n    \"profileName\": \"Monthly Internet\",\n    \"cadence\": \"MONTHLY\",\n    \"expectedAmount\": \"150000\",\n    \"nextDueDate\": \"2025-04-01\",\n    \"startDate\": \"2025-01-01\",\n    \"description\": \"Fibre internet subscription\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/recurring-profiles",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "recurring-profiles"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Recurring Profiles",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/recurring-profiles",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "recurring-profiles"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Recurring Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"expectedAmount\": \"175000\",\n    \"description\": \"Updated amount\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/recurring-profiles/{{recurringProfileId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "recurring-profiles",
+                                "{{recurringProfileId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Generate Bill from Recurring Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has bill id', () => pm.expect(pm.response.json()).to.have.property('id'));",
+                                    "pm.test('sourceType is RECURRING', () => pm.expect(pm.response.json().sourceType).to.equal('RECURRING'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/recurring-profiles/{{recurringProfileId}}/generate-bill",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "recurring-profiles",
+                                "{{recurringProfileId}}",
+                                "generate-bill"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Payable Reminders",
+            "item": [
+                {
+                    "name": "Generate Reminders",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has generated count', () => pm.expect(pm.response.json()).to.have.property('generated'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/reminders/generate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "reminders",
+                                "generate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Reminders",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/reminders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "reminders"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Dismiss Reminder",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200 or 404', () => {",
+                                    "    pm.expect([200, 404]).to.include(pm.response.code);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ap/reminders/{{reminderId}}/dismiss",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "ap",
+                                "reminders",
+                                "{{reminderId}}",
+                                "dismiss"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

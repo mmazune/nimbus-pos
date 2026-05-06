@@ -1,0 +1,703 @@
+{
+    "info": {
+        "_postman_id": "m39-plan-catalog-correction",
+        "name": "M39 Plan-Catalog Correction — SOLO / GROWTH / FRANCHISE (location-only enforcement)",
+        "description": "## What this collection covers\n\nThis collection enforces and verifies the **M39 Plan-Catalog Correction**:\n\n- Plan codes are **SOLO**, **GROWTH**, **FRANCHISE** (Starter is removed everywhere).\n- **Pricing (locked):** SOLO USD 80/mo (864/yr), GROWTH USD 150/mo (1620/yr), FRANCHISE USD 200/mo (2160/yr) — annual ≈ 10% discount.\n- **All plans grant the full Nimbus feature set.** POS, KDS, inventory, accounting, HR, reporting, analytics, reservations, events, developer portal, franchise-style consolidation and HQ analytics are available on every plan.\n- The **only enforced commercial cap is location count**: SOLO=1, GROWTH=3, FRANCHISE=4+ (effectively unlimited).\n- Adding a 4th location on GROWTH must require an upgrade to FRANCHISE.\n\n## Audiences\n\n- **Owner** — restaurant owner using the SaaS\n- **Developer** — owner-side or trusted vendor consuming the developer portal\n- **Nimbus Internal Admin** — Nimbus ops staff managing the SaaS plan catalog (NEW in this correction)\n\n## Folder structure\n\n1. `A. Auth` — login as owner\n2. `B. Plan Catalog (public + billing)` — list plans, billing overview with locationCapacity\n3. `C. Subscription` — view + change plan; verifies enforcement is location-only\n4. `D. Developer Portal` — API keys, webhooks, usage, dev-admins (with explanations)\n5. `E. Location Enforcement` — verify SOLO blocks 2nd branch, FRANCHISE allows many\n6. `F. Ops Portal — Plan Catalog Admin` (Nimbus internal only) — full CRUD on plan catalog",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "planId",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "A. Auth",
+            "description": "Login as the demo owner. Owner has both `billing:*` and `ops:plans:*` permissions in the seed, so the same token exercises every folder.",
+            "item": [
+                {
+                    "name": "Login (owner)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.collectionVariables.set('accessToken', json.accessToken);",
+                                    "pm.collectionVariables.set('orgId', json.user?.organizationId || '');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"email\": \"owner@demo.local\", \"password\": \"Owner#123\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. Plan Catalog (owner-facing)",
+            "description": "Owner-facing reads of the plan catalog and billing overview. Verifies the corrected pricing, the absence of feature gating, and the new `locationCapacity` block.",
+            "item": [
+                {
+                    "name": "1. List public plans (unauthenticated marketing page)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Returns SOLO / GROWTH / FRANCHISE only', () => {",
+                                    "  const codes = (json.plans || json).map(p => p.code).sort();",
+                                    "  pm.expect(codes).to.include.members(['solo', 'growth', 'franchise']);",
+                                    "  pm.expect(codes).to.not.include('starter');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/api/public/plans",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "public",
+                                "plans"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "2. List plans (authenticated billing catalog)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/billing/plans",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "billing",
+                                "plans"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "3. Billing overview (shows locationCapacity + upgradeRequired)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('locationCapacity block present', () => pm.expect(json.locationCapacity).to.be.an('object'));",
+                                    "pm.test('plan code is solo/growth/franchise', () => pm.expect(['solo','growth','franchise']).to.include(json.plan.code));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/billing",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "billing"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. Subscription change (location-only enforcement)",
+            "description": "Plan changes only fail when current locations exceed the target plan cap. Users / API keys / webhooks are NOT gated.",
+            "item": [
+                {
+                    "name": "Change to GROWTH (always allowed if ≤ 3 locations)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"planCode\": \"growth\", \"billingCycle\": \"MONTHLY\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/billing/subscription",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "billing",
+                                "subscription"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Change to SOLO (blocked if org has > 1 active location)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"planCode\": \"solo\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/billing/subscription",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "billing",
+                                "subscription"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Developer Portal (with usage + admins)",
+            "description": "The Nimbus developer portal. Available on EVERY plan — there is no plan-tier gating on API keys, webhooks or usage. Each request below explains who uses it and why.",
+            "item": [
+                {
+                    "name": "POST /dev/api-keys — create API key",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"name\": \"Backoffice integration\", \"scopes\": [\"orders:read\", \"reports:read\"] }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/api-keys",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "api-keys"
+                            ]
+                        },
+                        "description": "**Audience:** owner-facing / trusted developer-facing.\n\n**Why:** creates a long-lived API key for trusted backend or system integrations — restaurant-owned systems, franchise IT teams, accounting integrations, or vendor middleware.\n\n**Real-world example:** a franchise IT team needs a key for their nightly ETL job that pulls sales into their warehouse. They call this endpoint, copy the `key` field (returned in plaintext exactly once), and store it in their secret manager.\n\n**Plan gating:** none — available on every plan."
+                    }
+                },
+                {
+                    "name": "GET /dev/api-keys — list keys",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/api-keys",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "api-keys"
+                            ]
+                        },
+                        "description": "**Audience:** owner-facing / developer-facing.\n\n**Why:** lists existing keys for auditing and managing integrations. Secrets are never returned again — only the prefix.\n\n**Real-world example:** the owner reviews which third-party integrations still hold a key when an employee leaves the partner vendor."
+                    }
+                },
+                {
+                    "name": "POST /dev/api-keys/:id/revoke — revoke a key",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/api-keys/REPLACE_ME/revoke",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "api-keys",
+                                "REPLACE_ME",
+                                "revoke"
+                            ]
+                        },
+                        "description": "**Audience:** owner-facing.\n\n**Why:** permanently disables a key (cannot be undone). Use this when a vendor relationship ends or a key is suspected of being leaked.\n\n**Real-world example:** the warehouse contractor's laptop is stolen — the owner immediately revokes that key."
+                    }
+                },
+                {
+                    "name": "POST /dev/webhooks — register an outbound webhook",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"url\": \"https://owner.example.com/hooks/nimbus\", \"events\": [\"order.completed\", \"payment.captured\"] }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/webhooks",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "webhooks"
+                            ]
+                        },
+                        "description": "**Audience:** owner-facing / developer-facing.\n\n**Why:** registers an outbound Nimbus webhook destination for customer-owned systems. Nimbus will POST signed payloads to the URL whenever the subscribed events fire.\n\n**Real-world example:** the owner's CRM wants to capture every completed order to update loyalty points. Devs register `https://crm.example.com/nimbus-webhook` for `order.completed`."
+                    }
+                },
+                {
+                    "name": "GET /dev/webhooks — list configured webhooks",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/webhooks",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "webhooks"
+                            ]
+                        },
+                        "description": "**Audience:** owner-facing.\n\n**Why:** lists every outbound webhook destination currently configured for the org, including delivery health.\n\n**Real-world example:** the owner reviews failing endpoints after a vendor's domain change."
+                    }
+                },
+                {
+                    "name": "PATCH /dev/webhooks/:id — update URL / events / status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"url\": \"https://owner.example.com/hooks/nimbus-v2\", \"status\": \"ACTIVE\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/webhooks/REPLACE_ME",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "webhooks",
+                                "REPLACE_ME"
+                            ]
+                        },
+                        "description": "**Audience:** developer-facing.\n\n**Why:** rotates the destination URL, changes event subscriptions, or toggles active/inactive without losing delivery history.\n\n**Real-world example:** the vendor migrates to a new HTTPS endpoint and asks the owner to update the URL."
+                    }
+                },
+                {
+                    "name": "GET /dev/usage — usage + plan-cap context (location-first)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/usage",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "usage"
+                            ]
+                        },
+                        "description": "**Audience:** owner-facing / developer-facing.\n\n**Why:** returns current usage and plan-cap context. In M39 the **primary enforced plan metric is location count** — the response surfaces a top-level `locations` block with `current`, `allowed`, `upgradeRequired`, and `recommendedNextPlan`. Other counters (active users, API keys, webhook endpoints) are shown for visibility but are NOT enforced.\n\n**Real-world example:** the dev portal's dashboard polls this endpoint to render a 'Locations 3 / 3 — upgrade to Franchise to add another' banner."
+                    }
+                },
+                {
+                    "name": "GET /dev/admins — protected internal/high-trust dev admins",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/admins",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "admins"
+                            ]
+                        },
+                        "description": "**Audience:** Nimbus-internal / high-trust developer-admins.\n\n**Why:** lists protected internal/high-trust developer-admin accounts that have elevated developer-portal access according to the M39 protected-admin rule. These accounts cannot be edited or removed via normal user-management endpoints.\n\n**Real-world example:** Nimbus support audits which internal staff hold dev-admin status before granting impersonation tokens."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Location Enforcement",
+            "description": "Verifies the location-only cap. Adding a branch beyond `maxLocations` returns HTTP 409 with `code: PLAN_LOCATION_LIMIT_REACHED` and a `recommendedNextPlan` upgrade hint.",
+            "item": [
+                {
+                    "name": "Create branch (allowed when below cap)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"name\": \"Branch 2\", \"code\": \"BR2\", \"slug\": \"branch-2\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orgs/{{orgId}}/branches",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orgs",
+                                "{{orgId}}",
+                                "branches"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create branch on SOLO (blocked — expect 409 with PLAN_LOCATION_LIMIT_REACHED)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"name\": \"Branch X\", \"code\": \"BRX\", \"slug\": \"branch-x\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orgs/{{orgId}}/branches",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orgs",
+                                "{{orgId}}",
+                                "branches"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. Ops Portal — Plan Catalog Admin (Nimbus internal only)",
+            "description": "**INTERNAL ONLY.** These endpoints are reserved for Nimbus internal admins (require `ops:plans:read` or `ops:plans:write`). They allow editing plan name / pricing / location cap / status / commercial wording without redeploying.",
+            "item": [
+                {
+                    "name": "GET /ops/plans — list plan catalog",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('policy.featureGating is false', () => pm.expect(json.policy.featureGating).to.eql(false));",
+                                    "if (json.plans && json.plans.length) pm.collectionVariables.set('planId', json.plans[0].id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ops/plans",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ops",
+                                "plans"
+                            ]
+                        },
+                        "description": "**Audience:** Nimbus-internal.\n\n**Why:** returns the full SaaS plan catalog with prices, location caps, status, and a `policy` block that explicitly states `featureGating: false`.\n\n**Real-world example:** ops opens the internal admin UI to compare current pricing before launching a promo."
+                    }
+                },
+                {
+                    "name": "POST /ops/plans — create a new plan",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"enterprise\",\n  \"name\": \"Enterprise\",\n  \"description\": \"Custom-priced tier for very large operators (10+ locations).\",\n  \"priceMonthly\": 400,\n  \"priceAnnual\": 4320,\n  \"maxLocations\": 999999,\n  \"supportTier\": \"priority\",\n  \"sortOrder\": 4\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ops/plans",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ops",
+                                "plans"
+                            ]
+                        },
+                        "description": "**Audience:** Nimbus-internal.\n\n**Why:** creates a new plan in DRAFT state. Annual price must not exceed 12 × monthly price. Plans are inactive until status is moved to ACTIVE.\n\n**Real-world example:** Nimbus product team sets up an Enterprise tier for an upcoming sales campaign."
+                    }
+                },
+                {
+                    "name": "PATCH /ops/plans/:id — update name / price / cap / wording",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"priceMonthly\": 160, \"priceAnnual\": 1728, \"description\": \"Updated commercial wording for the Growth plan.\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ops/plans/{{planId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ops",
+                                "plans",
+                                "{{planId}}"
+                            ]
+                        },
+                        "description": "**Audience:** Nimbus-internal.\n\n**Why:** updates any subset of plan fields. If the new `maxLocations` would orphan existing subscribers (they already have more locations than the new cap), the request is refused with `409` and the offending org IDs are returned.\n\n**Real-world example:** Nimbus raises GROWTH pricing by USD 10 and updates the marketing copy."
+                    }
+                },
+                {
+                    "name": "PATCH /ops/plans/:id/status — activate / archive a plan",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{ \"status\": \"ACTIVE\" }"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ops/plans/{{planId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ops",
+                                "plans",
+                                "{{planId}}",
+                                "status"
+                            ]
+                        },
+                        "description": "**Audience:** Nimbus-internal.\n\n**Why:** flips a plan between DRAFT, ACTIVE and ARCHIVED. ARCHIVE is refused if any live subscribers still hold the plan, unless `force: true` is supplied.\n\n**Real-world example:** ops promotes the new Enterprise plan from DRAFT to ACTIVE so sales can start selling it."
+                    }
+                },
+                {
+                    "name": "GET /ops/plans/:id/subscribers — who is on this plan",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/ops/plans/{{planId}}/subscribers",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ops",
+                                "plans",
+                                "{{planId}}",
+                                "subscribers"
+                            ]
+                        },
+                        "description": "**Audience:** Nimbus-internal.\n\n**Why:** lists every organization currently on the plan, including their active-location count and an `overCap` flag if they exceed the plan's `maxLocations`.\n\n**Real-world example:** Nimbus support reviews who is on GROWTH before lowering its location cap from 3 to 2."
+                    }
+                }
+            ]
+        }
+    ]
+}

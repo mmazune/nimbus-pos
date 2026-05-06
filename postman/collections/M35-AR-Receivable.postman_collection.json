@@ -1,0 +1,680 @@
+{
+    "info": {
+        "name": "M35 - Accounts Receivable + Invoicing + Direct Bill",
+        "description": "API collection for M35 — AR customer accounts, invoices (create, list, get), receipts with allocations, aging summary, and AR credit notes.\n\nManual checklist:\n1. Run Auth — Login Owner\n2. Run Auth — Get Branch ID\n3. Create Customer Account → captures {{arAccountId}}\n4. Create Invoice 1 (ISSUED) → captures {{arInvoiceId}}\n5. Create Invoice 2 (for receipt test) → captures {{arInvoiceId2}}\n6. Create Receipt (partial) against invoice 2 → captures {{arReceiptId}}\n7. Verify Invoice 2 status → PARTIALLY_PAID\n8. Get Aging Summary\n9. Create AR Credit Note (without invoice)\n10. Create AR Credit Note (linked to invoice 1)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth — Login Owner",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.environment.set('refreshToken', body.refreshToken);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "auth", "login"]
+                }
+            }
+        },
+        {
+            "name": "Auth — Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "me"]
+                }
+            }
+        },
+        {
+            "name": "Customer Accounts",
+            "item": [
+                {
+                    "name": "POST Create Customer Account",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "pm.test('type is CORPORATE', () => pm.expect(body.type).to.eql('CORPORATE'));",
+                                    "pm.environment.set('arAccountId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Postman Corp Ltd\",\n    \"code\": \"PM-CORP-001\",\n    \"type\": \"CORPORATE\",\n    \"contactName\": \"Jane Doe\",\n    \"email\": \"billing@postmancorp.local\",\n    \"phone\": \"+256700000099\",\n    \"currencyCode\": \"UGX\",\n    \"creditLimit\": \"10000000\",\n    \"notes\": \"Postman test corporate account\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/accounts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "accounts"]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Create Customer Account — Duplicate Code (expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Postman Corp Duplicate\",\n    \"code\": \"PM-CORP-001\",\n    \"type\": \"CORPORATE\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/accounts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "accounts"]
+                        }
+                    }
+                },
+                {
+                    "name": "GET List Customer Accounts",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/accounts?status=ACTIVE",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "accounts"],
+                            "query": [{ "key": "status", "value": "ACTIVE" }]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Customer Account by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('id matches', () => pm.expect(body.id).to.eql(pm.environment.get('arAccountId')));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/accounts/{{arAccountId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "accounts", "{{arAccountId}}"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Invoices",
+            "item": [
+                {
+                    "name": "POST Create Invoice (ISSUED)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is ISSUED', () => pm.expect(body.status).to.eql('ISSUED'));",
+                                    "pm.test('invoice number format', () => pm.expect(body.invoiceNumber).to.match(/^INV-\\d{6}$/));",
+                                    "pm.test('has lines', () => pm.expect(body.lines).to.be.an('array').with.lengthOf(2));",
+                                    "pm.environment.set('arInvoiceId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customerAccountId\": \"{{arAccountId}}\",\n    \"invoiceDate\": \"2025-04-10\",\n    \"dueDate\": \"2025-05-10\",\n    \"currencyCode\": \"UGX\",\n    \"sourceType\": \"DIRECT_BILL\",\n    \"notes\": \"Monthly corporate services\",\n    \"lines\": [\n        {\n            \"description\": \"Conference catering — half day\",\n            \"quantity\": 30,\n            \"unitPrice\": \"10000\",\n            \"taxRate\": 18\n        },\n        {\n            \"description\": \"Meeting room hire\",\n            \"quantity\": 1,\n            \"unitPrice\": \"150000\",\n            \"taxRate\": 0\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/invoices",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "invoices"]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Create Invoice 2 (for receipt allocation)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "pm.environment.set('arInvoiceId2', pm.response.json().id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customerAccountId\": \"{{arAccountId}}\",\n    \"invoiceDate\": \"2025-04-10\",\n    \"dueDate\": \"2025-04-20\",\n    \"currencyCode\": \"UGX\",\n    \"sourceType\": \"CORPORATE\",\n    \"lines\": [\n        {\n            \"description\": \"Annual gala dinner — 100 pax\",\n            \"quantity\": 100,\n            \"unitPrice\": \"8000\",\n            \"taxRate\": 18\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/invoices",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "invoices"]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Create Invoice — Missing customerAccountId (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"invoiceDate\": \"2025-04-10\",\n    \"dueDate\": \"2025-05-10\",\n    \"lines\": [{\"description\": \"X\", \"quantity\": 1, \"unitPrice\": \"100\"}]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/invoices",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "invoices"]
+                        }
+                    }
+                },
+                {
+                    "name": "GET List Invoices",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/invoices?status=ISSUED",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "invoices"],
+                            "query": [{ "key": "status", "value": "ISSUED" }]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Invoice by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('id matches', () => pm.expect(body.id).to.eql(pm.environment.get('arInvoiceId')));",
+                                    "pm.test('has lines', () => pm.expect(body.lines).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/invoices/{{arInvoiceId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "invoices", "{{arInvoiceId}}"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Receipts",
+            "item": [
+                {
+                    "name": "POST Create Receipt (partial settlement)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "pm.test('has allocations', () => pm.expect(body.allocations).to.be.an('array').with.lengthOf(1));",
+                                    "pm.environment.set('arReceiptId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customerAccountId\": \"{{arAccountId}}\",\n    \"receiptDate\": \"2025-04-12\",\n    \"amount\": \"300000\",\n    \"paymentMethod\": \"BANK_TRANSFER\",\n    \"reference\": \"TXN-PM-AR-001\",\n    \"currencyCode\": \"UGX\",\n    \"notes\": \"Partial payment via bank transfer\",\n    \"allocations\": [\n        {\n            \"invoiceId\": \"{{arInvoiceId2}}\",\n            \"amount\": \"300000\"\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/receipts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "receipts"]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Create Receipt — Allocation Mismatch (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customerAccountId\": \"{{arAccountId}}\",\n    \"receiptDate\": \"2025-04-12\",\n    \"amount\": \"999999\",\n    \"paymentMethod\": \"CASH\",\n    \"allocations\": [\n        {\n            \"invoiceId\": \"{{arInvoiceId2}}\",\n            \"amount\": \"500000\"\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/receipts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "receipts"]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Invoice 2 — Verify PARTIALLY_PAID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is PARTIALLY_PAID', () => pm.expect(body.status).to.eql('PARTIALLY_PAID'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/invoices/{{arInvoiceId2}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "invoices", "{{arInvoiceId2}}"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Aging Summary",
+            "item": [
+                {
+                    "name": "GET Aging Summary",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has accounts array', () => pm.expect(body.accounts).to.be.an('array'));",
+                                    "pm.test('has totals', () => pm.expect(body.totals).to.be.an('object'));",
+                                    "pm.test('totals has grandTotal', () => pm.expect(body.totals.grandTotal).to.be.a('string'));",
+                                    "pm.test('totals has grand_1_30', () => pm.expect(body.totals.grand_1_30).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/aging",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "aging"]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Aging Summary — with asOf filter",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/aging?asOf=2025-05-01",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "aging"],
+                            "query": [{ "key": "asOf", "value": "2025-05-01" }]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Aging Summary — No Auth (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 401', () => pm.response.to.have.status(401));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [{ "key": "x-branch-id", "value": "{{branchId}}" }],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/aging",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "aging"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "AR Credit Notes",
+            "item": [
+                {
+                    "name": "POST Create AR Credit Note (no invoice)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is OPEN', () => pm.expect(body.status).to.eql('OPEN'));",
+                                    "pm.test('credit note number format', () => pm.expect(body.creditNoteNumber).to.match(/^AR-CN-/));",
+                                    "pm.environment.set('arCreditNoteId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customerAccountId\": \"{{arAccountId}}\",\n    \"creditNoteDate\": \"2025-04-12\",\n    \"amount\": \"50000\",\n    \"currencyCode\": \"UGX\",\n    \"reason\": \"Service adjustment — Postman test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/credit-notes",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "credit-notes"]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Create AR Credit Note (linked to invoice)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('invoiceId set', () => pm.expect(body.invoiceId).to.eql(pm.environment.get('arInvoiceId')));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customerAccountId\": \"{{arAccountId}}\",\n    \"invoiceId\": \"{{arInvoiceId}}\",\n    \"creditNoteDate\": \"2025-04-12\",\n    \"amount\": \"20000\",\n    \"currencyCode\": \"UGX\",\n    \"reason\": \"Partial invoice reversal — Postman test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/credit-notes",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "credit-notes"]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Create AR Credit Note — Missing Required Fields (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customerAccountId\": \"{{arAccountId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/credit-notes",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "credit-notes"]
+                        }
+                    }
+                },
+                {
+                    "name": "GET List AR Credit Notes",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has data array', () => pm.expect(body.data).to.be.an('array'));",
+                                    "pm.test('has total', () => pm.expect(body.total).to.be.a('number'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "x-branch-id", "value": "{{branchId}}" }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/ar/credit-notes",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "accounting", "ar", "credit-notes"]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

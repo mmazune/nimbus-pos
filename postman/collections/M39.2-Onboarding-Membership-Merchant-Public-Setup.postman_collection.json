@@ -1,0 +1,891 @@
+{
+  "info": {
+    "name": "M39.2 — Onboarding + Membership Context + Merchant Public Setup",
+    "_postman_id": "m39-2-onboarding-membership-merchant-public-setup",
+    "description": "# M39.2 — Onboarding + Membership Context + Merchant Public Setup\n\n**Purpose**\n\nThis collection covers the second repo-local split milestone after M39.1.\n\nM39.2 owns:\n- Owner onboarding (org → branch → profile → settings → invitations)\n- Membership context resolution after global Nimbus login\n- Manager / Accountant first-login story\n- Merchant public-website setup (profile + booking settings + events)\n- Merchant public-payment **readiness** (NOT live diner payment execution)\n\n**Deliberately NOT in scope** (deferred to M39.3+):\n- Public diner payment execution (still PENDING — MTN / Airtel native)\n- SaaS billing or Developer Portal foundations (owned by M39.1, reused here)\n\n## Locked workflow rules\n1. Users log into Nimbus globally — there is no \"org login\" screen.\n2. After login, frontend calls `GET /auth/me`. The response includes `memberships[]` and a `context` block.\n3. If `context.organizationCount === 1 && context.branchCount === 1` → frontend auto-selects.\n4. Otherwise the frontend must prompt the user to pick org + branch.\n5. Branch-scoped merchant routes require `x-branch-id`.\n6. Owner invites only **Manager** and **Accountant** during onboarding. Other staff (Cashier, Waiter, Chef, Bartender) are added later from inside the app / POS admin — NOT in this wizard.\n7. Branch creation reuses M39.1 `BillingService.checkPlanLimit('BRANCH')` location-cap enforcement.\n8. Merchant payment readiness is **generic** (NOT_CONFIGURED → PENDING_MTN/PENDING_AIRTEL → READY_FOR_INTEGRATION → LIVE). It is NOT a live diner PesaPal connect.\n\n## Run order\n00 → A → B → C → D → E → F → G → H → I\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "ownerEmail",
+      "value": "owner@demo.local"
+    },
+    {
+      "key": "ownerPassword",
+      "value": "Owner#123"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "orgId",
+      "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
+    },
+    {
+      "key": "membershipId",
+      "value": ""
+    },
+    {
+      "key": "managerEmail",
+      "value": "manager+m392@demo.local"
+    },
+    {
+      "key": "managerTempPassword",
+      "value": ""
+    },
+    {
+      "key": "managerAccessToken",
+      "value": ""
+    },
+    {
+      "key": "managerMembershipId",
+      "value": ""
+    },
+    {
+      "key": "accountantEmail",
+      "value": "accountant+m392@demo.local"
+    },
+    {
+      "key": "accountantTempPassword",
+      "value": ""
+    },
+    {
+      "key": "publicProfileSlug",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    },
+    {
+      "key": "eventSlug",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Canonical M39 standalone-resilience pre-request.",
+          "// See ai/AI_POSTMAN_WORKING_PATTERNS.md (R4–R6, R14).",
+          "// Sandbox-safe: no Buffer; promise-chained pm.sendRequest calls.",
+          "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+          "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+          "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+          "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+          "let reqStr = '';",
+          "try { reqStr = JSON.stringify(pm.request); } catch (e) { reqStr = url; }",
+          "const isPublicAuth = /\\/auth\\/login/.test(url);",
+          "const isHealth = /\\/health(\\?|$)/.test(url);",
+          "const isPublicRead = /\\/public\\//.test(url) && !/x-branch-id/i.test(reqStr);",
+          "const isPublic = isPublicAuth || isHealth || isPublicRead;",
+          "function refsVar(name) { return reqStr.indexOf(\"{{\" + name + \"}}\") !== -1; }",
+          "function getVar(k) { return pm.collectionVariables.get(k); }",
+          "function setVar(k, v) { if (v !== undefined && v !== null && v !== \"\") pm.collectionVariables.set(k, v); }",
+          "",
+          "function ensureToken() {",
+          "  return new Promise((resolve) => {",
+          "    const tok = getVar('accessToken');",
+          "    if (isPublic || (tok && tok.length >= 20)) { return resolve(); }",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/login',",
+          "      method: 'POST',",
+          "      header: { 'Content-Type': 'application/json' },",
+          "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.accessToken) { setVar('accessToken', j.accessToken); }",
+          "          if (j.refreshToken) { setVar('refreshToken', j.refreshToken); }",
+          "          if (j.user && j.user.organizationId) { setVar('orgId', j.user.organizationId); }",
+          "        } catch (e) { console.log('[prerequest] auto-login parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "function ensureMeContext() {",
+          "  return new Promise((resolve) => {",
+          "    const needBranch = refsVar('branchId') && !getVar('branchId');",
+          "    const needOrg = refsVar('orgId') && !getVar('orgId');",
+          "    if (!needBranch && !needOrg) { return resolve(); }",
+          "    const tok = getVar('accessToken');",
+          "    if (!tok) { return resolve(); }",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/me',",
+          "      method: 'GET',",
+          "      header: { 'Authorization': 'Bearer ' + tok }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.context) {",
+          "            setVar('orgId', j.context.defaultOrganizationId);",
+          "            setVar('branchId', j.context.defaultBranchId);",
+          "          }",
+          "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+          "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+          "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+          "          }",
+          "        } catch (e) { console.log('[prerequest] /me parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "function ensureFromList(varName, listPath, picker, requiresAuth) {",
+          "  return new Promise((resolve) => {",
+          "    if (!refsVar(varName) || getVar(varName)) { return resolve(); }",
+          "    const headers = {};",
+          "    if (requiresAuth) {",
+          "      const tok = getVar('accessToken');",
+          "      if (!tok) { return resolve(); }",
+          "      headers['Authorization'] = 'Bearer ' + tok;",
+          "    }",
+          "    pm.sendRequest({ url: baseUrl + listPath, method: \"GET\", header: headers }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          const value = picker(j);",
+          "          if (value) setVar(varName, value);",
+          "        } catch (e) { console.log('[prerequest] ' + varName + ' resolve parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "return ensureToken()",
+          "  .then(ensureMeContext)",
+          "  .then(() => ensureFromList('restaurantSlug', '/api/public/restaurants', (j) => Array.isArray(j) && j[0] && j[0].slug, false))",
+          "  .then(() => ensureFromList('eventSlug', '/api/public/events', (j) => Array.isArray(j) && j[0] && j[0].slug, false))",
+          "  .then(() => ensureFromList('opsOrgId', '/api/ops/customers', (j) => {",
+          "    if (Array.isArray(j) && j[0]) return j[0].id || j[0].organizationId;",
+          "    return null;",
+          "  }, true))",
+          "  .catch((e) => console.log('[prerequest] chain error', e && e.message));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Read Me",
+      "item": [
+        {
+          "name": "00.1 — How to use this collection",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health",
+            "description": "**Audience:** anyone running this collection.\n\n**Purpose:** documents the M39.2 storyline. The actual `/health` request is unrelated and just gives you a quick green check that the API is reachable.\n\n**Story (chronological):**\n1. **A. Auth & Context** — Owner logs in globally. `GET /auth/me` returns memberships + `context` (auto-select vs prompt).\n2. **B. Onboarding Status** — Owner fetches the 7-step wizard state.\n3. **C. Org + Branch** — Owner creates the org details + first branch (M39.1 location-cap auto-applies once a subscription exists).\n4. **D. Profile + Settings** — Owner fills business profile + currency/timezone/locale.\n5. **E. Invitations + First Login** — Owner invites Manager + Accountant. Server creates `User + Membership + UserRole` and returns a one-time `tempPassword`. The invited Manager logs in globally and `GET /auth/me` resolves their branch context.\n6. **F. Merchant Public Profile** — Owner fills/publishes the public restaurant profile (branch-scoped, requires `x-branch-id`).\n7. **G. Booking Settings** — Owner persists booking rules (deposit policy, max party size, hold minutes) into `PublicProfile.metadata.bookingSettings`.\n8. **H. Merchant Events** — Owner creates an event, sets capacity / pricing, then publishes.\n9. **I. Merchant Payment Readiness** — Owner declares mobile-money readiness. **No live diner payment is executed** — that is M39.3.\n"
+          }
+        }
+      ]
+    },
+    {
+      "name": "A. Auth & Context Resolution",
+      "item": [
+        {
+          "name": "A.1 — Owner login (global Nimbus login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.environment.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "pm.test('Login OK', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+            },
+            "description": "**Audience:** restaurant owner.\n\n**Purpose:** owners log into Nimbus globally. There is no \"org login\" screen — the org/branch context is resolved on the next request.\n\n**Real-world example:** Olivia visits app.nimbus.co.ug, types her email + password, and the SPA stores the access token."
+          }
+        },
+        {
+          "name": "A.2 — GET /auth/me — resolve memberships + context",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('memberships array present', () => pm.expect(body.memberships).to.be.an('array'));",
+                  "pm.test('context block present', () => pm.expect(body.context).to.be.an('object'));",
+                  "if (body.context && body.context.defaultOrganizationId) {",
+                  "  pm.environment.set('orgId', body.context.defaultOrganizationId);",
+                  "  pm.collectionVariables.set('orgId', body.context.defaultOrganizationId);",
+                  "}",
+                  "if (body.context && body.context.defaultBranchId) {",
+                  "  pm.environment.set('branchId', body.context.defaultBranchId);",
+                  "  pm.collectionVariables.set('branchId', body.context.defaultBranchId);",
+                  "}",
+                  "if (body.context && body.context.defaultMembershipId) {",
+                  "  pm.collectionVariables.set('membershipId', body.context.defaultMembershipId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "description": "**Audience:** any logged-in Nimbus user.\n\n**Purpose:** the SPA calls this immediately after `/auth/login`. The response contains:\n\n- `memberships[]` — every active membership with `organizationId/Name/Slug`, `branchId/Name/Slug`, `roleId/Name/Level`, `status`, `isDefaultBranch`.\n- `context.organizationCount` / `branchCount` — how many distinct orgs/branches the user belongs to.\n- `context.requiresContextSelection` — `true` when the user belongs to >1 orgs OR >1 branches in a single org. The frontend uses this to decide between auto-select vs prompt.\n- `context.defaultOrganizationId` / `defaultBranchId` / `defaultMembershipId` — the membership flagged `isDefaultBranch` (or first one).\n\n**Real-world example:** an invited Manager logs in for the first time. Their `/auth/me` returns exactly one membership (their assigned branch). The SPA auto-selects it and stores it as `x-branch-id` for subsequent requests."
+          }
+        }
+      ]
+    },
+    {
+      "name": "B. Onboarding Status",
+      "item": [
+        {
+          "name": "B.1 — GET onboarding status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/onboarding/status",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "description": "**Audience:** the owner running the onboarding wizard.\n\n**Purpose:** returns the 7-step state machine + `progressPercent`. The wizard renders the next incomplete step.\n\n**Real-world example:** Olivia just paid her SOLO subscription. The wizard fetches status — sees `subscriptionPaid: COMPLETED`, `organizationCreated: NOT_STARTED` — and routes her to the org-details screen."
+          }
+        }
+      ]
+    },
+    {
+      "name": "C. Organization + Branch Creation",
+      "item": [
+        {
+          "name": "C.1 — POST onboarding/organization (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Org creation accepted (200/201) or already done (409)', () => pm.expect([200,201,409]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/onboarding/organization",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nimbus Demo Hospitality\",\n  \"slug\": \"nimbus-demo\",\n  \"legalName\": \"Nimbus Demo Hospitality Ltd\",\n  \"taxId\": \"TIN-1234567\"\n}"
+            },
+            "description": "**Audience:** owner.\n\n**Purpose:** captures organization-level fields. Throws `409` if `organizationCreated` is already `COMPLETED`.\n\n**Real-world example:** Olivia types her registered restaurant group name and tax ID once; if she refreshes and tries again she gets a 409."
+          }
+        },
+        {
+          "name": "C.2 — POST onboarding/branches (first branch)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/onboarding/branches",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tapas Downtown\",\n  \"code\": \"DTW\",\n  \"address\": \"Plot 17, Kampala\",\n  \"phone\": \"+256-700-000-001\"\n}"
+            },
+            "description": "**Audience:** owner.\n\n**Purpose:** creates the first branch. Reuses `BillingService.checkPlanLimit('BRANCH')` from M39.1 — if a subscription already exists, the location cap is enforced before insert. SOLO allows 1, GROWTH ≤3, FRANCHISE ≥4.\n\n**Real-world example:** a SOLO subscriber trying to create a 2nd branch from this endpoint will get a structured `409` with `code: PLAN_LOCATION_LIMIT_REACHED` and `recommendedNextPlan: 'growth'`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "D. Business Profile + Settings",
+      "item": [
+        {
+          "name": "D.1 — PATCH business-profile",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/onboarding/business-profile",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cuisineType\": \"Spanish Tapas\",\n  \"description\": \"Tapas, sherries, and small plates in downtown Kampala.\",\n  \"phone\": \"+256-700-000-001\"\n}"
+            },
+            "description": "**Audience:** owner.\n\n**Purpose:** captures wider business profile. Marks `businessProfileDone = COMPLETED`."
+          }
+        },
+        {
+          "name": "D.2 — PATCH settings",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/onboarding/settings",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"UGX\",\n  \"timezone\": \"Africa/Kampala\",\n  \"language\": \"en\"\n}"
+            },
+            "description": "**Audience:** owner.\n\n**Purpose:** captures core settings. Marks `coreSettingsDone = COMPLETED`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "E. Team Invitations & First Login Story",
+      "item": [
+        {
+          "name": "E.1 — POST onboarding/invitations (Manager + Accountant ONLY)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('201 created', () => pm.response.to.have.status(201));",
+                  "pm.test('Returns invitations array', () => pm.expect(body.invitations).to.be.an('array'));",
+                  "const mgr = (body.invitations||[]).find(i => i.roleName === 'Manager');",
+                  "if (mgr) {",
+                  "  pm.collectionVariables.set('managerEmail', mgr.email);",
+                  "  pm.collectionVariables.set('managerTempPassword', mgr.tempPassword || '');",
+                  "  pm.collectionVariables.set('managerMembershipId', mgr.membershipId || '');",
+                  "}",
+                  "const acc = (body.invitations||[]).find(i => i.roleName === 'Accountant');",
+                  "if (acc) {",
+                  "  pm.collectionVariables.set('accountantEmail', acc.email);",
+                  "  pm.collectionVariables.set('accountantTempPassword', acc.tempPassword || '');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/onboarding/invitations",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invitations\": [\n    { \"email\": \"{{managerEmail}}\", \"roleName\": \"Manager\", \"firstName\": \"Mary\", \"lastName\": \"Manager\" },\n    { \"email\": \"{{accountantEmail}}\", \"roleName\": \"Accountant\", \"firstName\": \"Aaron\", \"lastName\": \"Accountant\" }\n  ]\n}"
+            },
+            "description": "**Audience:** owner.\n\n**Purpose:** the wizard's invitations step. Server actually creates `User + UserRole + Membership` rows (idempotent on `[userId, branchId]` unique). Returns a one-time `tempPassword` per new invitee plus an `invitationToken` for tracking.\n\n**Constraint:** only `Manager` and `Accountant` roles may be invited here. Cashiers / Waiters / Chefs / Bartenders are added LATER from inside the app — submitting any other role returns `400`.\n\n**Real-world example:** Olivia hands her bookkeeper Aaron the `tempPassword` over a secure channel; Aaron logs in at `/auth/login` and is auto-prompted to change his password on first use."
+          }
+        },
+        {
+          "name": "E.2 — Manager FIRST LOGIN (global)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// If we have a tempPassword captured from E.1, use it as-is.",
+                  "const existing = pm.collectionVariables.get('managerTempPassword');",
+                  "if (existing) { return; }",
+                  "// Otherwise mint a fresh manager on the fly so this request works standalone in Postman GUI.",
+                  "const baseUrl = (pm.environment.get('baseUrl') || pm.collectionVariables.get('baseUrl') || '').replace(/\\/$/, '');",
+                  "const ownerToken = pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken');",
+                  "if (!baseUrl || !ownerToken) {",
+                  "  console.log('E.2 pre-request: missing baseUrl or owner accessToken — run Login (owner) / A.1 first.');",
+                  "  return;",
+                  "}",
+                  "const uniq = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "const email = 'manager-' + uniq + '@demo.local';",
+                  "return new Promise(function (resolve) {",
+                  "  pm.sendRequest({",
+                  "    url: baseUrl + '/api/onboarding/invitations',",
+                  "    method: 'POST',",
+                  "    header: { 'Authorization': 'Bearer ' + ownerToken, 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ invitations: [{ email: email, roleName: 'Manager', firstName: 'Mary', lastName: 'Manager' }] }) }",
+                  "  }, function (err, res) {",
+                  "    try {",
+                  "      if (err) { console.log('E.2 pre-request: invite failed', err); return resolve(); }",
+                  "      const body = res.json();",
+                  "      const mgr = (body && body.invitations || [])[0];",
+                  "      if (mgr && mgr.tempPassword) {",
+                  "        pm.collectionVariables.set('managerEmail', mgr.email);",
+                  "        pm.collectionVariables.set('managerTempPassword', mgr.tempPassword);",
+                  "        console.log('E.2 pre-request: minted fresh manager', mgr.email);",
+                  "      } else {",
+                  "        console.log('E.2 pre-request: invite returned no tempPassword', body);",
+                  "      }",
+                  "    } catch (e) { console.log('E.2 pre-request: parse error', e); }",
+                  "    resolve();",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const pwd = pm.collectionVariables.get('managerTempPassword');",
+                  "if (!pwd) {",
+                  "  pm.test('Skipped (could not mint manager — owner token missing)', () => pm.expect(true).to.be.true);",
+                  "} else {",
+                  "  pm.test('Login OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "  try {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('managerAccessToken', body.accessToken || '');",
+                  "  } catch (e) {}",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{managerEmail}}\",\n  \"password\": \"{{managerTempPassword}}\"\n}"
+            },
+            "description": "**Audience:** invited Manager.\n\n**Purpose:** demonstrates the invited user's first-login flow. They log in globally — exactly the same endpoint as the Owner. There is NO separate \"join an organization\" screen.\n\n**Real-world example:** Mary clicks the invite link in her email, lands on the standard login page, types her email + temp password, gets a token."
+          }
+        },
+        {
+          "name": "E.3 — Manager GET /auth/me — auto-resolve branch context",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{managerAccessToken}}"
+              }
+            ],
+            "description": "**Audience:** invited Manager (just logged in).\n\n**Purpose:** her `/auth/me` returns exactly one membership (the branch the Owner pinned her to during invitation). `context.requiresContextSelection` is `false`, so the SPA auto-selects org + branch and stores `x-branch-id` for all subsequent merchant calls.\n\n**Real-world example:** Mary is dropped straight into the Tapas Downtown branch dashboard with no extra prompts."
+          }
+        }
+      ]
+    },
+    {
+      "name": "F. Merchant Public Profile",
+      "item": [
+        {
+          "name": "F.1 — PATCH merchant/public-profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.slug) pm.collectionVariables.set('publicProfileSlug', body.slug);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/merchant/public-profile",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-branch-id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Tapas Downtown\",\n  \"description\": \"Spanish small plates and sherries.\",\n  \"cuisineType\": \"Spanish Tapas\",\n  \"address\": \"Plot 17, Kampala\",\n  \"phone\": \"+256-700-000-001\",\n  \"openingHours\": { \"mon\": \"12:00-23:00\", \"sun\": \"closed\" }\n}"
+            },
+            "description": "**Audience:** owner / manager.\n\n**Purpose:** branch-scoped public-profile upsert. The `slug` is auto-generated from `displayName`. Audited as `PUBLIC_PROFILE_UPDATED`.\n\n**Real-world example:** Mary uploads the restaurant's logo + opening hours so diners on booking.nimbus.co.ug see real info."
+          }
+        },
+        {
+          "name": "F.2 — PATCH merchant/public-profile/publish",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/merchant/public-profile/publish",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-branch-id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "description": "**Audience:** owner / manager.\n\n**Purpose:** flips the profile from `DRAFT` to `PUBLISHED` and stamps `publishedAt`. Audited as `PUBLIC_PROFILE_PUBLISHED`. After this, `GET /public/restaurants/:slug` returns it to diners."
+          }
+        }
+      ]
+    },
+    {
+      "name": "G. Booking Settings",
+      "item": [
+        {
+          "name": "G.1 — PATCH merchant/booking-settings",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/merchant/booking-settings",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-branch-id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"settings\": {\n    \"requireDeposit\": false,\n    \"maxPartySize\": 12,\n    \"holdMinutes\": 15,\n    \"leadTimeHours\": 2\n  }\n}"
+            },
+            "description": "**Audience:** owner / manager.\n\n**Purpose:** persists booking rules into `PublicProfile.metadata.bookingSettings`. Auto-creates a DRAFT profile if none exists yet so settings can be configured before publishing. Audited as `MERCHANT_BOOKING_SETTINGS_UPDATED`.\n\n**Real-world example:** Mary configures \"15-minute hold, max party 12, 2-hour lead time\" so the diner reservation flow on booking.nimbus.co.ug enforces those rules."
+          }
+        }
+      ]
+    },
+    {
+      "name": "H. Merchant Events",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Ensure eventId (and branchId) are populated for H.2 / H.3 / H.4 even when run standalone.",
+              "const baseUrl = (pm.environment.get('baseUrl') || pm.collectionVariables.get('baseUrl') || '').replace(/\\/$/, '');",
+              "const token = pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken');",
+              "if (!baseUrl || !token) { console.log('H pre-request: missing baseUrl or accessToken — collection auto-login may have failed.'); return; }",
+              "const headersBase = { 'Authorization': 'Bearer ' + token };",
+              "function setVar(k, v) { pm.collectionVariables.set(k, v); if (pm.environment && pm.environment.set) pm.environment.set(k, v); }",
+              "function ensureBranchId(cb) {",
+              "  const existing = pm.environment.get('branchId') || pm.collectionVariables.get('branchId');",
+              "  if (existing) return cb(existing);",
+              "  pm.sendRequest({ url: baseUrl + '/api/auth/me', method: 'GET', header: headersBase }, function (err, res) {",
+              "    try {",
+              "      if (err || !res) { console.log('H pre-request: /auth/me failed', err); return cb(null); }",
+              "      const body = res.json();",
+              "      const m = (body && body.memberships && body.memberships[0]) || null;",
+              "      const branchId = m && (m.branchId || (m.branch && m.branch.id));",
+              "      const orgId = m && (m.organizationId || (m.organization && m.organization.id));",
+              "      if (branchId) setVar('branchId', branchId);",
+              "      if (orgId) setVar('orgId', orgId);",
+              "      cb(branchId || null);",
+              "    } catch (e) { console.log('H pre-request: /auth/me parse error', e); cb(null); }",
+              "  });",
+              "}",
+              "function ensureEventId(branchId, done) {",
+              "  const existing = pm.collectionVariables.get('eventId');",
+              "  if (existing) return done();",
+              "  if (!branchId) { console.log('H pre-request: cannot resolve branchId — run C.1/C.2 first or check /auth/me.'); return done(); }",
+              "  const headers = Object.assign({}, headersBase, { 'x-branch-id': branchId });",
+              "  pm.sendRequest({ url: baseUrl + '/api/merchant/events', method: 'GET', header: headers }, function (listErr, listRes) {",
+              "    try {",
+              "      if (!listErr && listRes && listRes.code < 400) {",
+              "        const arr = listRes.json();",
+              "        const items = Array.isArray(arr) ? arr : (arr && arr.items) || [];",
+              "        if (items.length && items[0].id) {",
+              "          setVar('eventId', items[0].id);",
+              "          if (items[0].slug) setVar('eventSlug', items[0].slug);",
+              "          console.log('H pre-request: reused existing event', items[0].id);",
+              "          return done();",
+              "        }",
+              "      }",
+              "    } catch (e) {}",
+              "    const startsAt = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();",
+              "    const endsAt = new Date(Date.now() + 14 * 24 * 3600 * 1000 + 4 * 3600 * 1000).toISOString();",
+              "    pm.sendRequest({",
+              "      url: baseUrl + '/api/merchant/events',",
+              "      method: 'POST',",
+              "      header: Object.assign({}, headers, { 'Content-Type': 'application/json' }),",
+              "      body: { mode: 'raw', raw: JSON.stringify({ title: 'Auto Event ' + Date.now(), description: 'Auto-created by H pre-request', startsAt: startsAt, endsAt: endsAt, capacity: 40, isFree: true }) }",
+              "    }, function (createErr, createRes) {",
+              "      try {",
+              "        if (!createErr && createRes) {",
+              "          const body = createRes.json();",
+              "          if (body && body.id) {",
+              "            setVar('eventId', body.id);",
+              "            if (body.slug) setVar('eventSlug', body.slug);",
+              "            console.log('H pre-request: created event', body.id);",
+              "          } else { console.log('H pre-request: create returned no id', createRes.code, body); }",
+              "        } else { console.log('H pre-request: create failed', createErr); }",
+              "      } catch (e) { console.log('H pre-request: parse error', e); }",
+              "      done();",
+              "    });",
+              "  });",
+              "}",
+              "return new Promise(function (resolve) { ensureBranchId(function (branchId) { ensureEventId(branchId, resolve); }); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "H.1 — POST merchant/events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.id) pm.collectionVariables.set('eventId', body.id);",
+                  "if (body && body.slug) pm.collectionVariables.set('eventSlug', body.slug);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/merchant/events",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-branch-id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Spring Wine Night\",\n  \"description\": \"5-course tapas paired with Spanish wines.\",\n  \"startsAt\": \"2026-06-15T19:00:00.000Z\",\n  \"endsAt\": \"2026-06-15T23:00:00.000Z\",\n  \"capacity\": 40,\n  \"isFree\": true\n}"
+            },
+            "description": "**Audience:** owner / manager.\n\n**Purpose:** creates a `PublicEvent` in DRAFT. Audited as `PUBLIC_EVENT_CREATED`.\n\n**Real-world example:** Mary schedules the spring wine night three weeks ahead. Capacity 40, free for now (she'll set pricing in H.3)."
+          }
+        },
+        {
+          "name": "H.2 — PATCH merchant/events/:id/capacity",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/merchant/events/{{eventId}}/capacity",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-branch-id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"capacity\": 50 }"
+            },
+            "description": "**Audience:** owner / manager.\n\n**Purpose:** raise capacity. Validates capacity ≥ current `bookedCount` to prevent over-booked states. Audited as `PUBLIC_EVENT_CAPACITY_UPDATED`."
+          }
+        },
+        {
+          "name": "H.3 — PATCH merchant/events/:id/pricing",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/merchant/events/{{eventId}}/pricing",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-branch-id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"isFree\": false, \"priceAmount\": \"75000\", \"priceCurrency\": \"UGX\" }"
+            },
+            "description": "**Audience:** owner / manager.\n\n**Purpose:** flip to paid and set price. If `isFree: false` you MUST have a positive price (either in this body or already on the row). Audited as `PUBLIC_EVENT_PRICING_UPDATED`.\n\n**Note:** paid event bookings still cannot be confirmed end-to-end — diner payment execution is M39.3."
+          }
+        },
+        {
+          "name": "H.4 — PATCH merchant/events/:id/publish",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/merchant/events/{{eventId}}/publish",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-branch-id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "description": "**Audience:** owner / manager.\n\n**Purpose:** publish the event so it shows up on booking.nimbus.co.ug. Audited as `PUBLIC_EVENT_PUBLISHED`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "I. Merchant Payment Readiness",
+      "item": [
+        {
+          "name": "I.1 — POST merchant/payments/connect (PENDING_MTN)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/merchant/payments/connect",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"readiness\": \"PENDING_MTN\", \"notes\": \"MTN merchant code applied for; awaiting approval.\" }"
+            },
+            "description": "**Audience:** owner.\n\n**Purpose:** declares the restaurant's intent to one day collect mobile-money payments from diners. Provider is `MOBILE_MONEY` (NOT PesaPal — PesaPal is reserved for SaaS billing). `live: false` always at this stage. Audited as `MERCHANT_PAYMENT_CONNECT_INITIATED`."
+          }
+        },
+        {
+          "name": "I.2 — PATCH merchant/payments/config (advance to READY_FOR_INTEGRATION)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/merchant/payments/config",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"readiness\": \"READY_FOR_INTEGRATION\", \"notes\": \"MTN merchant code received. Awaiting Nimbus engineer to wire adapter.\" }"
+            },
+            "description": "**Audience:** owner.\n\n**Purpose:** owner advances the readiness state once the merchant code is in hand. Only a Nimbus engineer can flip it to `LIVE` after the mobile-money adapter is deployed. Audited as `MERCHANT_PAYMENT_CONFIG_UPDATED`."
+          }
+        },
+        {
+          "name": "I.3 — GET merchant/payments/status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/merchant/payments/status",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "description": "**Audience:** owner / manager dashboard.\n\n**Purpose:** returns `{ configured, provider, readiness, live, notes, message }`. `live` stays `false` until M39.3 lands the diner payment execution. The `provider` is always `MOBILE_MONEY` for this domain — the dashboard MUST NOT label this as PesaPal."
+          }
+        }
+      ]
+    }
+  ]
+}

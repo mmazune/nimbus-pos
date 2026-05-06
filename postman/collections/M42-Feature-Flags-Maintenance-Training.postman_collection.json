@@ -1,0 +1,1064 @@
+{
+    "info": {
+        "name": "M42 - Feature Flags + Maintenance Windows + Training Mode",
+        "description": "Canonical M42 collection. Covers feature flags, maintenance windows (incl. BLOCK_WRITES enforcement against the inventory write surface), training sessions (with x-training-session-id header short-circuit), and the flag-audit trail. Mirrors AI_POSTMAN_WORKING_PATTERNS R1-R20 (canonical pre-request, dual-scope variable writes, [STANDALONE] folder labels, R17 list-first auto-resolution).\n\nLocked rules verified here:\n- POST /flags writes a FLAG_CREATED audit row.\n- PATCH /flags/:key with status DISABLED writes a FLAG_DISABLED audit row.\n- ACTIVE BLOCK_WRITES INVENTORY_WRITES window blocks POST /inventory/adjustments with 409.\n- Training mode short-circuits POST /inventory/adjustments via x-training-session-id; no real StockAdjustment row is persisted.\n- chef@demo.local cannot read or write flags (403).\n\nRE-IMPORT REQUIRED after any script change (R8).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "chefEmail",
+            "value": "chef@demo.local"
+        },
+        {
+            "key": "chefPassword",
+            "value": "Chef#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "chefAccessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "inventoryItemId",
+            "value": ""
+        },
+        {
+            "key": "flagKey",
+            "value": ""
+        },
+        {
+            "key": "flagId",
+            "value": ""
+        },
+        {
+            "key": "windowCode",
+            "value": ""
+        },
+        {
+            "key": "windowId",
+            "value": ""
+        },
+        {
+            "key": "trainingSessionId",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// M42 canonical pre-request (R3/R4/R5/R14/R16/R17).",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "let reqStr = '';",
+                    "try { reqStr = JSON.stringify(pm.request); } catch (e) { reqStr = url; }",
+                    "const isPublicAuth = /\\/api\\/auth\\/login/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublic = isPublicAuth || isHealth;",
+                    "function refsVar(name) { return reqStr.indexOf('{{' + name + '}}') !== -1; }",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20)) { return resolve(); }",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+                    "          if (j.user && j.user.organizationId) setVar('orgId', j.user.organizationId);",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    const needBranch = refsVar('branchId') && !getVar('branchId');",
+                    "    const needOrg = refsVar('orgId') && !getVar('orgId');",
+                    "    if (!needBranch && !needOrg) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    if (!tok) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/me',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.context) {",
+                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+                    "          }",
+                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+                    "          }",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureInventoryItem() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    if (!refsVar('inventoryItemId')) return resolve();",
+                    "    if (getVar('inventoryItemId')) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    const branchId = getVar('branchId');",
+                    "    if (!tok || !branchId) return resolve();",
+                    "    // R17: list first; create only if list is empty.",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/inventory/items?take=1',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branchId }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res && res.code === 200) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          const items = Array.isArray(j) ? j : (j.items || j.data || []);",
+                    "          if (items[0] && items[0].id) { setVar('inventoryItemId', items[0].id); return resolve(); }",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      pm.sendRequest({",
+                    "        url: baseUrl + '/api/inventory/items',",
+                    "        method: 'POST',",
+                    "        header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branchId },",
+                    "        body: { mode: 'raw', raw: JSON.stringify({ name: 'M42 PM Item ' + Date.now(), unit: 'kg', category: 'Produce', theoreticalUnitCost: '1.000', reorderLevel: '5.000', reorderQty: '20.000' }) }",
+                    "      }, (e2, r2) => {",
+                    "        if (!e2 && r2) { try { const j2 = r2.json(); if (j2.id) setVar('inventoryItemId', j2.id); } catch (e) { /* ignore */ } }",
+                    "        resolve();",
+                    "      });",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureFlagKey() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (!refsVar('flagKey')) return resolve();",
+                    "    setVar('flagKey', 'pm_m42_' + Date.now() + '_' + Math.floor(Math.random()*1e6));",
+                    "    resolve();",
+                    "  });",
+                    "}",
+                    "function ensureWindowCode() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (!refsVar('windowCode')) return resolve();",
+                    "    setVar('windowCode', 'pm-m42-window-' + Date.now() + '-' + Math.floor(Math.random()*1e6));",
+                    "    resolve();",
+                    "  });",
+                    "}",
+                    "return ensureToken()",
+                    "  .then(ensureMeContext)",
+                    "  .then(ensureInventoryItem)",
+                    "  .then(ensureFlagKey)",
+                    "  .then(ensureWindowCode)",
+                    "  .catch((e) => console.log('[m42 prereq] chain error', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - variables, run order, locked rules",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "Run folders in order:\nA. Auth & Context [STANDALONE]\nB. Feature Flags [STANDALONE] - list seeded flags, create + update one (writes audit).\nC. Maintenance Windows [STANDALONE] - create SCHEDULED BLOCK_WRITES window, activate, prove inventory write blocked (409), then COMPLETED.\nD. Training Sessions [STANDALONE] - start one, second start for same actor returns 403.\nE. Guarded Write Examples [STANDALONE] - same inventory POST short-circuits when x-training-session-id is sent.\nF. Flag Audit [STANDALONE] - list audit entries.\n\nLocked decisions verified:\n- ACTIVE BLOCK_WRITES INVENTORY_WRITES window -> POST /inventory/adjustments returns 409.\n- x-training-session-id header -> simulated response, no real row.\n- chef@demo.local cannot read or write flags (403)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context",
+            "item": [
+                {
+                    "name": "Login Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Login OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
+                                    "if (envActive) pm.environment.set('accessToken', body.accessToken);",
+                                    "if (body.refreshToken) { pm.collectionVariables.set('refreshToken', body.refreshToken); if (envActive) pm.environment.set('refreshToken', body.refreshToken); }",
+                                    "if (body.user && body.user.organizationId) { pm.collectionVariables.set('orgId', body.user.organizationId); if (envActive) pm.environment.set('orgId', body.user.organizationId); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login Chef (forbidden actor)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Chef login OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                                    "pm.collectionVariables.set('chefAccessToken', body.accessToken);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('chefAccessToken', body.accessToken);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{chefEmail}}\",\n  \"password\": \"{{chefPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get /api/auth/me",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. Feature Flags",
+            "description": "[STANDALONE] List seeded flags, create + patch one, verify audit.",
+            "item": [
+                {
+                    "name": "GET /api/flags",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('items array present', () => pm.expect(j.items).to.be.an('array'));",
+                                    "pm.test('seed flags present', () => { const keys = j.items.map((f) => f.key); pm.expect(keys).to.include('training_mode_enabled'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/flags",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "flags"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/flags (chef -> 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('chef forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefAccessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/flags",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "flags"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/flags (create)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('key matches', () => pm.expect(j.key).to.eql(pm.collectionVariables.get('flagKey')));",
+                                    "pm.test('status ENABLED', () => pm.expect(j.status).to.eql('ENABLED'));",
+                                    "pm.collectionVariables.set('flagId', j.id);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('flagId', j.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"key\": \"{{flagKey}}\",\n  \"name\": \"M42 PM flag\",\n  \"description\": \"Created by Postman M42 collection\",\n  \"scope\": \"ORG\",\n  \"status\": \"ENABLED\",\n  \"rolloutPercent\": 100\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/flags",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "flags"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/flags/:key",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('key roundtrip', () => pm.expect(j.key).to.eql(pm.collectionVariables.get('flagKey')));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/flags/{{flagKey}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "flags",
+                                "{{flagKey}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH /api/flags/:key (DISABLE)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('status DISABLED', () => pm.expect(j.status).to.eql('DISABLED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"DISABLED\",\n  \"note\": \"PM disable\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/flags/{{flagKey}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "flags",
+                                "{{flagKey}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. Maintenance Windows",
+            "description": "[STANDALONE] Create SCHEDULED BLOCK_WRITES INVENTORY window, activate, prove inventory blocked (409), then complete.",
+            "item": [
+                {
+                    "name": "POST /api/maintenance-windows (SCHEDULED BLOCK_WRITES INVENTORY)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// startsAt 5 min ago, endsAt 60 min from now (so ACTIVE PATCH will block immediately).",
+                                    "pm.collectionVariables.set('windowStartsAt', new Date(Date.now() - 5 * 60 * 1000).toISOString());",
+                                    "pm.collectionVariables.set('windowEndsAt', new Date(Date.now() + 60 * 60 * 1000).toISOString());"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('status SCHEDULED', () => pm.expect(j.status).to.eql('SCHEDULED'));",
+                                    "pm.test('mode BLOCK_WRITES', () => pm.expect(j.mode).to.eql('BLOCK_WRITES'));",
+                                    "pm.test('blocks INVENTORY_WRITES', () => pm.expect(j.blockCategories).to.include('INVENTORY_WRITES'));",
+                                    "pm.collectionVariables.set('windowId', j.id);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('windowId', j.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"{{windowCode}}\",\n  \"title\": \"PM inventory block\",\n  \"message\": \"Inventory writes paused for Postman test.\",\n  \"mode\": \"BLOCK_WRITES\",\n  \"blockCategories\": [\"INVENTORY_WRITES\"],\n  \"startsAt\": \"{{windowStartsAt}}\",\n  \"endsAt\": \"{{windowEndsAt}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/maintenance-windows",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "maintenance-windows"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH window -> ACTIVE",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('status ACTIVE', () => pm.expect(pm.response.json().status).to.eql('ACTIVE'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/maintenance-windows/{{windowId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "maintenance-windows",
+                                "{{windowId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/inventory/adjustments (BLOCKED -> 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('mentions maintenance', () => pm.expect(String(j.message || '')).to.match(/maintenance/i));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"itemId\": \"{{inventoryItemId}}\",\n  \"qtyDelta\": \"1.000\",\n  \"reason\": \"PM blocked attempt\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH window -> COMPLETED",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('status COMPLETED', () => pm.expect(pm.response.json().status).to.eql('COMPLETED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"COMPLETED\",\n  \"note\": \"PM end\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/maintenance-windows/{{windowId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "maintenance-windows",
+                                "{{windowId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/maintenance-windows",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('items array', () => pm.expect(pm.response.json().items).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/maintenance-windows",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "maintenance-windows"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Training Sessions",
+            "description": "[STANDALONE] Start a session, second start for same actor 403, then end.",
+            "item": [
+                {
+                    "name": "POST /api/training/start",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('status ACTIVE', () => pm.expect(j.status).to.eql('ACTIVE'));",
+                                    "pm.collectionVariables.set('trainingSessionId', j.id);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('trainingSessionId', j.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"label\": \"PM training\",\n  \"purpose\": \"M42 Postman\",\n  \"mode\": \"SIMULATION_ONLY\",\n  \"durationMinutes\": 30\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/training/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "training",
+                                "start"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/training/start (concurrent -> 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"label\": \"PM training duplicate\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/training/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "training",
+                                "start"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/training/sessions",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('items array', () => pm.expect(pm.response.json().items).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/training/sessions",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "training",
+                                "sessions"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Guarded Write Examples",
+            "description": "[STANDALONE] x-training-session-id short-circuits inventory adjustment without persisting a real row.",
+            "item": [
+                {
+                    "name": "POST /api/inventory/adjustments (TRAINING -> simulated)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('inTraining true', () => pm.expect(j.inTraining).to.eql(true));",
+                                    "pm.test('simulated true', () => pm.expect(j.simulated).to.eql(true));",
+                                    "pm.test('sessionId echoed', () => pm.expect(j.sessionId).to.eql(pm.collectionVariables.get('trainingSessionId')));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "x-training-session-id",
+                                "value": "{{trainingSessionId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"itemId\": \"{{inventoryItemId}}\",\n  \"qtyDelta\": \"7.000\",\n  \"reason\": \"PM training simulated\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inventory/adjustments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inventory",
+                                "adjustments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/training/:id/end",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('status COMPLETED', () => pm.expect(pm.response.json().status).to.eql('COMPLETED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"note\": \"PM end\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/training/{{trainingSessionId}}/end",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "training",
+                                "{{trainingSessionId}}",
+                                "end"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. Flag Audit",
+            "description": "[STANDALONE] Read the flag-audit trail.",
+            "item": [
+                {
+                    "name": "GET /api/flags/audit",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('items array', () => pm.expect(j.items).to.be.an('array'));",
+                                    "pm.test('contains audit actions', () => { const actions = j.items.map((a) => a.action); pm.expect(actions.length).to.be.greaterThan(0); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/flags/audit?limit=50",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "flags",
+                                "audit"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

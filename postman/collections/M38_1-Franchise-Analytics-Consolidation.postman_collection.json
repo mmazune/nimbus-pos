@@ -1,0 +1,590 @@
+{
+  "info": {
+    "_postman_id": "m38-1-franchise-analytics-consolidation",
+    "name": "M38.1 - Franchise Analytics + Consolidation",
+    "description": "Franchise Analytics and Consolidation endpoints for M38.1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "default"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "branchId",
+      "value": "",
+      "type": "default"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login Owner",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('Has accessToken', () => pm.expect(resp.accessToken).to.be.a('string'));",
+              "pm.collectionVariables.set('accessToken', resp.accessToken);",
+              "try { pm.environment.set('accessToken', resp.accessToken); } catch(e) {}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"email\": \"owner@demo.local\", \"password\": \"Owner#123\" }"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Consolidated Finance - GET",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has consolidated', () => pm.expect(resp.consolidated).to.be.an('object'));",
+              "pm.test('Has branches', () => pm.expect(resp.branches).to.be.an('array'));",
+              "pm.test('Has calculationBasis', () => pm.expect(resp.calculationBasis).to.be.an('object'));",
+              "if (resp.branches.length > 0) {",
+              "  pm.collectionVariables.set('branchId', resp.branches[0].branchId);",
+              "  try { pm.environment.set('branchId', resp.branches[0].branchId); } catch(e) {}",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/consolidated-finance?windowType=MONTHLY",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "consolidated-finance"
+          ],
+          "query": [
+            {
+              "key": "windowType",
+              "value": "MONTHLY"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Consolidated Finance - Generate Snapshot",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Status COMPLETED', () => pm.expect(resp.status).to.eql('COMPLETED'));",
+              "pm.test('Has runId', () => pm.expect(resp.runId).to.be.a('string'));",
+              "pm.test('Has metricsCount', () => pm.expect(resp.metricsCount).to.be.at.least(1));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/consolidated-finance/generate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "consolidated-finance",
+            "generate"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Financial Comparison - GET",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has portfolioAverage', () => pm.expect(resp.portfolioAverage).to.be.an('object'));",
+              "pm.test('Has bestBranch', () => pm.expect(resp.bestBranch).to.be.an('object'));",
+              "pm.test('Has worstBranch', () => pm.expect(resp.worstBranch).to.be.an('object'));",
+              "pm.test('Branches have vsPortfolio', () => {",
+              "  resp.branches.forEach(b => pm.expect(b.vsPortfolio).to.be.an('object'));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/financial-comparison",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "financial-comparison"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Waste Benchmarks - GET",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has portfolioAverage', () => pm.expect(resp.portfolioAverage).to.be.an('object'));",
+              "pm.test('Has branches', () => pm.expect(resp.branches).to.be.an('array'));",
+              "pm.test('Has calculationBasis', () => pm.expect(resp.calculationBasis).to.be.an('object'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/waste-benchmarks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "waste-benchmarks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Waste Benchmarks - Generate",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has branches', () => pm.expect(resp.branches).to.be.an('array'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/waste-benchmarks/generate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "waste-benchmarks",
+            "generate"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Scorecards - GET",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has branches', () => pm.expect(resp.branches).to.be.an('array'));",
+              "pm.test('7 domains per branch', () => {",
+              "  resp.branches.forEach(b => pm.expect(b.domains.length).to.eql(7));",
+              "});",
+              "pm.test('Tiers are valid', () => {",
+              "  resp.branches.forEach(b => b.domains.forEach(d => {",
+              "    pm.expect(['STRONG', 'WATCH', 'AT_RISK']).to.include(d.tier);",
+              "  }));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/scorecards",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "scorecards"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Scorecards - Generate",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has branches', () => pm.expect(resp.branches).to.be.an('array'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/scorecards/generate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "scorecards",
+            "generate"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Deep Rankings - Generate",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has rankings object', () => pm.expect(resp.rankings).to.be.an('object'));",
+              "pm.test('Contains PRIME_COST', () => pm.expect(resp.rankings.PRIME_COST).to.be.an('array'));",
+              "pm.test('Contains WASTE_EFFICIENCY', () => pm.expect(resp.rankings.WASTE_EFFICIENCY).to.be.an('array'));",
+              "pm.test('Contains GROSS_MARGIN', () => pm.expect(resp.rankings.GROSS_MARGIN).to.be.an('array'));",
+              "pm.test('totalRankings > 0', () => pm.expect(resp.totalRankings).to.be.at.least(1));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/rankings/generate-deep",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "rankings",
+            "generate-deep"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Drilldown - Revenue",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('metricFamily is REVENUE', () => pm.expect(resp.metricFamily).to.eql('REVENUE'));",
+              "pm.test('Has drilldown', () => pm.expect(resp.drilldown).to.be.an('object'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/drilldown?branchId={{branchId}}&metricFamily=REVENUE",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "drilldown"
+          ],
+          "query": [
+            {
+              "key": "branchId",
+              "value": "{{branchId}}"
+            },
+            {
+              "key": "metricFamily",
+              "value": "REVENUE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Drilldown - COGS",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('metricFamily is COGS', () => pm.expect(resp.metricFamily).to.eql('COGS'));",
+              "pm.test('Has drilldown', () => pm.expect(resp.drilldown).to.be.an('object'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/drilldown?branchId={{branchId}}&metricFamily=COGS",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "drilldown"
+          ],
+          "query": [
+            {
+              "key": "branchId",
+              "value": "{{branchId}}"
+            },
+            {
+              "key": "metricFamily",
+              "value": "COGS"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Drilldown - PRIME_COST",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const resp = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('metricFamily is PRIME_COST', () => pm.expect(resp.metricFamily).to.eql('PRIME_COST'));",
+              "pm.test('Has cogs + labor drilldown', () => {",
+              "  pm.expect(resp.drilldown.cogs).to.be.an('object');",
+              "  pm.expect(resp.drilldown.labor).to.be.an('object');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/drilldown?branchId={{branchId}}&metricFamily=PRIME_COST",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "drilldown"
+          ],
+          "query": [
+            {
+              "key": "branchId",
+              "value": "{{branchId}}"
+            },
+            {
+              "key": "metricFamily",
+              "value": "PRIME_COST"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Drilldown - 400 missing branchId",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/franchise/drilldown?metricFamily=REVENUE",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "franchise",
+            "drilldown"
+          ],
+          "query": [
+            {
+              "key": "metricFamily",
+              "value": "REVENUE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

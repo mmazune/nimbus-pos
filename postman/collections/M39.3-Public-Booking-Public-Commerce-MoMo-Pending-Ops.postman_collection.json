@@ -1,0 +1,764 @@
+{
+  "info": {
+    "name": "M39.3 — Public Booking + Public Commerce (MoMo Pending) + Nimbus Ops Portal",
+    "_postman_id": "m39-3-public-booking-public-commerce-momo-pending-ops",
+    "description": "# M39.3 — Public Booking Website + Public Commerce Payment Skeleton + Nimbus Ops Portal\n\n**Purpose**\n\nThird repo-local split milestone after M39.1 (commercial foundation) and M39.2 (onboarding + merchant public setup). M39.3 fully owns:\n\n- **Public diner browse flows** — restaurants, restaurant detail + availability, restaurant events, public events list/detail. **No auth required.**\n- **Reservation hold + confirm** — 15-minute hold expiry, audited.\n- **Event-booking hold + confirm** — capacity enforcement, audited. Free events confirm cleanly; paid events return a clear refusal until M39.x mobile-money execution lands.\n- **Public commerce payment skeleton** — `/public/payments/*` routes that always return `{ status: \"PENDING_INTEGRATION\", provider: \"MOBILE_MONEY\", message: \"...\" }`. **NOT LIVE. NOT PesaPal.**\n- **Nimbus Ops Portal** — internal-only `/ops/*` views over customers, subscriptions due / grace period, onboarding pipeline, merchant payment readiness, and ops support sessions.\n\n## Locked rules\n1. **No auth on `/public/*` browse + holds + confirms.**\n2. **Public payments are NOT live.** Every `/public/payments/*` request must return `PENDING_INTEGRATION` / `MOBILE_MONEY`. Do not describe them as PesaPal — PesaPal is reserved for owner SaaS subscription billing only (see M39.1).\n3. **Callback / IPN routes are reserved future contracts only.** They acknowledge inbound calls but do not execute any provider flow.\n4. **Ops support sessions** here are explicitly the internal Nimbus-staff view and are separate from the owner-facing `/support/sessions` foundation introduced in M39.1.\n5. Only **published** restaurants and events appear on public endpoints.\n\n## Continuity from M39.1 + M39.2\n- Reuses `PublicProfile`, `PublicEvent`, `ReservationHold`, `EventBookingHold`, `PendingPaymentIntent`, `MerchantPaymentConfig`, `SupportSession`, `Subscription`, `OnboardingProgress` schemas — **no migration in M39.3**.\n- Reuses M39.1 SaaS PesaPal billing, Developer Portal, plan catalog policies untouched.\n- Reuses M39.2 onboarding + booking-settings persistence + event capacity / pricing rules untouched.\n\n## Run order\n00 → A → B → C → D → E → F\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "ownerEmail",
+      "value": "owner@demo.local"
+    },
+    {
+      "key": "ownerPassword",
+      "value": "Owner#123"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
+    },
+    {
+      "key": "restaurantSlug",
+      "value": ""
+    },
+    {
+      "key": "eventSlug",
+      "value": ""
+    },
+    {
+      "key": "reservationHoldId",
+      "value": ""
+    },
+    {
+      "key": "eventBookingHoldId",
+      "value": ""
+    },
+    {
+      "key": "supportSessionId",
+      "value": ""
+    },
+    {
+      "key": "opsOrgId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Canonical M39 standalone-resilience pre-request.",
+          "// See ai/AI_POSTMAN_WORKING_PATTERNS.md (R4–R6, R14).",
+          "// Sandbox-safe: no Buffer; promise-chained pm.sendRequest calls.",
+          "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+          "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+          "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+          "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+          "let reqStr = '';",
+          "try { reqStr = JSON.stringify(pm.request); } catch (e) { reqStr = url; }",
+          "const isPublicAuth = /\\/auth\\/login/.test(url);",
+          "const isHealth = /\\/health(\\?|$)/.test(url);",
+          "const isPublicRead = /\\/public\\//.test(url) && !/x-branch-id/i.test(reqStr);",
+          "const isPublic = isPublicAuth || isHealth || isPublicRead;",
+          "function refsVar(name) { return reqStr.indexOf(\"{{\" + name + \"}}\") !== -1; }",
+          "function getVar(k) { return pm.collectionVariables.get(k); }",
+          "function setVar(k, v) { if (v !== undefined && v !== null && v !== \"\") pm.collectionVariables.set(k, v); }",
+          "",
+          "function ensureToken() {",
+          "  return new Promise((resolve) => {",
+          "    const tok = getVar('accessToken');",
+          "    if (isPublic || (tok && tok.length >= 20)) { return resolve(); }",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/login',",
+          "      method: 'POST',",
+          "      header: { 'Content-Type': 'application/json' },",
+          "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.accessToken) { setVar('accessToken', j.accessToken); }",
+          "          if (j.refreshToken) { setVar('refreshToken', j.refreshToken); }",
+          "          if (j.user && j.user.organizationId) { setVar('orgId', j.user.organizationId); }",
+          "        } catch (e) { console.log('[prerequest] auto-login parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "function ensureMeContext() {",
+          "  return new Promise((resolve) => {",
+          "    const needBranch = refsVar('branchId') && !getVar('branchId');",
+          "    const needOrg = refsVar('orgId') && !getVar('orgId');",
+          "    if (!needBranch && !needOrg) { return resolve(); }",
+          "    const tok = getVar('accessToken');",
+          "    if (!tok) { return resolve(); }",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/me',",
+          "      method: 'GET',",
+          "      header: { 'Authorization': 'Bearer ' + tok }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.context) {",
+          "            setVar('orgId', j.context.defaultOrganizationId);",
+          "            setVar('branchId', j.context.defaultBranchId);",
+          "          }",
+          "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+          "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+          "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+          "          }",
+          "        } catch (e) { console.log('[prerequest] /me parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "function ensureFromList(varName, listPath, picker, requiresAuth) {",
+          "  return new Promise((resolve) => {",
+          "    if (!refsVar(varName) || getVar(varName)) { return resolve(); }",
+          "    const headers = {};",
+          "    if (requiresAuth) {",
+          "      const tok = getVar('accessToken');",
+          "      if (!tok) { return resolve(); }",
+          "      headers['Authorization'] = 'Bearer ' + tok;",
+          "    }",
+          "    pm.sendRequest({ url: baseUrl + listPath, method: \"GET\", header: headers }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          const value = picker(j);",
+          "          if (value) setVar(varName, value);",
+          "        } catch (e) { console.log('[prerequest] ' + varName + ' resolve parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "return ensureToken()",
+          "  .then(ensureMeContext)",
+          "  .then(() => ensureFromList('restaurantSlug', '/api/public/restaurants', (j) => Array.isArray(j) && j[0] && j[0].slug, false))",
+          "  .then(() => ensureFromList('eventSlug', '/api/public/events', (j) => Array.isArray(j) && j[0] && j[0].slug, false))",
+          "  .then(() => ensureFromList('opsOrgId', '/api/ops/customers', (j) => {",
+          "    if (Array.isArray(j) && j[0]) return j[0].id || j[0].organizationId;",
+          "    return null;",
+          "  }, true))",
+          "  .catch((e) => console.log('[prerequest] chain error', e && e.message));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Read Me",
+      "item": [
+        {
+          "name": "00.1 — How to use this collection",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health",
+            "description": "**Audience:** anyone running this M39.3 collection.\n\n**Story:**\n1. **A. Public Restaurant Browse** — anonymous diner lists published restaurants, opens one by slug, checks availability.\n2. **B. Public Event Browse** — anonymous diner browses upcoming public events.\n3. **C. Reservation Holds + Confirm** — anonymous diner places a 15-minute reservation hold, then confirms (free / no-payment path).\n4. **D. Event Booking Holds + Confirm** — anonymous diner holds tickets for a free event, then confirms. Capacity is enforced.\n5. **E. Public Commerce Payments — Pending Mobile Money Integration** — every request returns `PENDING_INTEGRATION` / `MOBILE_MONEY`. **DO NOT describe as PesaPal.** Callback / IPN routes are reserved-future-contract scaffolds.\n6. **F. Nimbus Ops Portal** — internal Nimbus staff view: customers, subscriptions due / grace, onboarding pipeline, merchant payment readiness, support sessions open / list / close.\n\n**Reminder:**\n- A–E are public/no-auth except the payment scaffold which still accepts the request (no auth, no execution).\n- F requires a Nimbus internal staff bearer with `ops:*` permissions.\n\nThis `GET /health` request is just a green-check that the API is reachable."
+          }
+        },
+        {
+          "name": "00.2 — Owner login (only needed for F. Ops Portal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.environment.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "pm.test('Login OK', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+            },
+            "description": "**Audience:** Nimbus internal staff (using the demo owner here for convenience).\n\n**Purpose:** captures `accessToken` for use in folder F (Ops Portal). Folders A–E need NO token.\n\n**Real-world example:** before opening the Nimbus internal ops dashboard."
+          }
+        }
+      ]
+    },
+    {
+      "name": "A. Public Restaurant Browse",
+      "item": [
+        {
+          "name": "A.1 — List published restaurants (no auth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length > 0) {",
+                  "  pm.environment.set('restaurantSlug', body[0].slug);",
+                  "  pm.collectionVariables.set('restaurantSlug', body[0].slug);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/restaurants",
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** lists every restaurant whose `PublicProfile` is `PUBLISHED`.\n\n**Real-world example:** the homepage of `book.nimbus.app` showing all live restaurants."
+          }
+        },
+        {
+          "name": "A.2 — Get restaurant by slug (no auth)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/restaurants/{{restaurantSlug}}",
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** returns the public-facing PublicProfile for a single restaurant. 404 if the slug is unknown or unpublished.\n\n**Real-world example:** clicking a restaurant card on the public site."
+          }
+        },
+        {
+          "name": "A.3 — Get restaurant availability (no auth)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/restaurants/{{restaurantSlug}}/availability",
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** returns table availability for the restaurant's branch — total tables and currently-AVAILABLE tables.\n\n**Real-world example:** the booking widget showing 'X tables available right now'."
+          }
+        },
+        {
+          "name": "A.4 — Get restaurant's events (no auth)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/restaurants/{{restaurantSlug}}/events",
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** returns the published events hosted by this restaurant.\n\n**Real-world example:** the 'Upcoming events at this restaurant' section of the restaurant page."
+          }
+        }
+      ]
+    },
+    {
+      "name": "B. Public Event Browse",
+      "item": [
+        {
+          "name": "B.1 — List upcoming public events (no auth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length > 0) {",
+                  "  pm.environment.set('eventSlug', body[0].slug);",
+                  "  pm.collectionVariables.set('eventSlug', body[0].slug);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/events",
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** lists all `PUBLISHED` events with `startsAt` in the future.\n\n**Real-world example:** the 'Upcoming Events' page of the public site."
+          }
+        },
+        {
+          "name": "B.2 — Get event by slug (no auth)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/events/{{eventSlug}}",
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** returns the public detail of a single event. 404 if unknown or unpublished.\n\n**Real-world example:** opening the event detail page from a discovery list."
+          }
+        }
+      ]
+    },
+    {
+      "name": "C. Reservation Holds + Confirm",
+      "item": [
+        {
+          "name": "C.1 — Hold a reservation (no auth, 15-min expiry)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.environment.set('reservationHoldId', body.holdId);",
+                  "pm.collectionVariables.set('reservationHoldId', body.holdId);",
+                  "pm.test('Hold created', () => {",
+                  "  pm.expect(body.status).to.eql('HELD');",
+                  "  pm.expect(body.expiresAt).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/reservations/hold",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restaurantSlug\": \"{{restaurantSlug}}\",\n  \"guestName\": \"Jane Diner\",\n  \"guestEmail\": \"jane@example.com\",\n  \"guestPhone\": \"+256700000001\",\n  \"partySize\": 4,\n  \"requestedDate\": \"2026-06-01\",\n  \"requestedTime\": \"19:00\",\n  \"notes\": \"Window table if possible\"\n}"
+            },
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** creates a `ReservationHold` with status `HELD` and a 15-minute `expiresAt`. Audited as `PUBLIC_RESERVATION_HOLD_CREATED`.\n\n**Real-world example:** diner clicks 'Hold this slot' before entering payment / confirmation details. No deposit is required at this step."
+          }
+        },
+        {
+          "name": "C.2 — Confirm the held reservation (no auth, free path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/reservations/confirm",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"holdId\": \"{{reservationHoldId}}\"\n}"
+            },
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** flips the hold to `CONFIRMED` (free / no-payment path). Audited as `PUBLIC_RESERVATION_CONFIRMED`.\n\n**Errors:**\n- 409 if the hold is not `HELD` or has expired (in which case the hold flips to `EXPIRED` and `PUBLIC_RESERVATION_HOLD_EXPIRED` is audited).\n\n**Future-compat:** when deposits are introduced, this endpoint will require a successful `intentId` from `/public/payments/reservations/checkout-session` first."
+          }
+        }
+      ]
+    },
+    {
+      "name": "D. Event Booking Holds + Confirm",
+      "item": [
+        {
+          "name": "D.1 — Hold event tickets (no auth, capacity enforced)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.environment.set('eventBookingHoldId', body.holdId);",
+                  "pm.collectionVariables.set('eventBookingHoldId', body.holdId);",
+                  "pm.test('Hold created', () => {",
+                  "  pm.expect(body.status).to.eql('HELD');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/event-bookings/hold",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventSlug\": \"{{eventSlug}}\",\n  \"guestName\": \"Sam Guest\",\n  \"guestEmail\": \"sam@example.com\",\n  \"guestPhone\": \"+256700000002\",\n  \"ticketCount\": 2,\n  \"notes\": \"Vegetarian table\"\n}"
+            },
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** holds N tickets for an event. Refuses with 409 if `bookedCount + ticketCount > capacity` (when capacity > 0). 15-min `expiresAt`. Audited as `PUBLIC_EVENT_BOOKING_HOLD_CREATED`.\n\n**Real-world example:** diner reserves 2 tickets for a Friday wine night before paying."
+          }
+        },
+        {
+          "name": "D.2 — Confirm event booking (no auth, free event path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/event-bookings/confirm",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"holdId\": \"{{eventBookingHoldId}}\"\n}"
+            },
+            "description": "**Audience:** anonymous public diner.\n\n**Purpose:** confirms a free event booking — increments `PublicEvent.bookedCount` and flips the hold to `CONFIRMED`. Audited as `PUBLIC_EVENT_BOOKING_CONFIRMED`.\n\n**Errors:**\n- 409 if the hold has expired (audited as `PUBLIC_EVENT_BOOKING_HOLD_EXPIRED`).\n- 409 with message `Public commerce payments are pending implementation.` if the underlying event is paid (`isFree=false`). Use folder E to obtain a `PENDING_INTEGRATION` intent until MTN/Airtel ships."
+          }
+        }
+      ]
+    },
+    {
+      "name": "E. Public Commerce Payments — Pending Mobile Money Integration",
+      "item": [
+        {
+          "name": "E.0 — READ FIRST: this folder is NOT LIVE",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health",
+            "description": "**Audience:** anyone testing E.\n\n**Purpose:** banner. Every request in folder E will return:\n\n```json\n{\n  \"status\": \"PENDING_INTEGRATION\",\n  \"provider\": \"MOBILE_MONEY\",\n  \"message\": \"Public commerce payment execution is not yet enabled pending MTN/Airtel integration confirmation.\"\n}\n```\n\n**Rules:**\n- These endpoints are NOT PesaPal. PesaPal is reserved exclusively for owner SaaS subscription billing — see M39.1.\n- Callback / IPN are **reserved future contracts**. They acknowledge inbound calls but do not execute any provider flow.\n- `reconcile-status` echoes the `orderTrackingId` for traceability and returns the same pending response.\n- Every `checkout-session` call still creates a `PendingPaymentIntent` row and emits `PUBLIC_PAYMENT_CHECKOUT_ATTEMPTED` in the audit log."
+          }
+        },
+        {
+          "name": "E.1 — Reservation checkout session (PENDING)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Always create a FRESH hold so checkout-session is exercised against a HELD record",
+                  "// (the C.1/C.2 hold has been CONFIRMED by this point and is no longer eligible).",
+                  "const slug = pm.collectionVariables.get('restaurantSlug');",
+                  "if (!slug) { console.log('No restaurantSlug — skipping E.1'); return; }",
+                  "pm.sendRequest({",
+                  "  url: pm.collectionVariables.get('baseUrl') + '/public/reservations/hold',",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({",
+                  "    restaurantSlug: slug,",
+                  "    guestName: 'Pay Diner',",
+                  "    guestEmail: 'pay@example.com',",
+                  "    guestPhone: '+256700000099',",
+                  "    partySize: 2,",
+                  "    requestedDate: '2026-07-01',",
+                  "    requestedTime: '20:00'",
+                  "  }) }",
+                  "}, (err, res) => {",
+                  "  if (err) { console.log('hold sendRequest error', err); return; }",
+                  "  try { const j = res.json(); if (j.holdId) pm.collectionVariables.set('reservationHoldId', j.holdId); } catch (e) {}",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns PENDING_INTEGRATION (200/201) or refusal (400)', () => pm.expect([200,201,400]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/payments/reservations/checkout-session",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"holdId\": \"{{reservationHoldId}}\"\n}"
+            },
+            "description": "**Audience:** anonymous public diner (future flow).\n\n**Purpose:** **scaffold only.** Validates the hold exists and is `HELD`, persists a `PendingPaymentIntent` for traceability, and returns the uniform `PENDING_INTEGRATION` / `MOBILE_MONEY` response. **No PesaPal. No execution.**\n\n**Real-world example (future):** when deposits are required, the diner will hit this endpoint right after `C.1` to obtain an MTN/Airtel STK push reference. Today, it just returns the pending banner."
+          }
+        },
+        {
+          "name": "E.2 — Event-booking checkout session (PENDING)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Always create a FRESH event-booking hold (D.1/D.2 hold has been CONFIRMED).",
+                  "const slug = pm.collectionVariables.get('eventSlug');",
+                  "if (!slug) { console.log('No eventSlug — skipping E.2'); return; }",
+                  "pm.sendRequest({",
+                  "  url: pm.collectionVariables.get('baseUrl') + '/public/event-bookings/hold',",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({",
+                  "    eventSlug: slug,",
+                  "    guestName: 'Pay Guest',",
+                  "    guestEmail: 'paye@example.com',",
+                  "    guestPhone: '+256700000098',",
+                  "    ticketCount: 1",
+                  "  }) }",
+                  "}, (err, res) => {",
+                  "  if (err) { console.log('hold sendRequest error', err); return; }",
+                  "  try { const j = res.json(); if (j.holdId) pm.collectionVariables.set('eventBookingHoldId', j.holdId); } catch (e) {}",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns PENDING_INTEGRATION (200/201) or refusal (400)', () => pm.expect([200,201,400]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/payments/event-bookings/checkout-session",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"holdId\": \"{{eventBookingHoldId}}\"\n}"
+            },
+            "description": "**Audience:** anonymous public diner (future flow).\n\n**Purpose:** **scaffold only.** Same shape as E.1, for paid event tickets. Returns `PENDING_INTEGRATION` / `MOBILE_MONEY`."
+          }
+        },
+        {
+          "name": "E.3 — Provider callback (RESERVED FUTURE CONTRACT)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/payments/callback?OrderTrackingId=ot-future-123",
+            "description": "**Audience:** future MTN/Airtel provider redirect.\n\n**Purpose:** **scaffold only.** Acknowledges the inbound call and returns the pending banner. No provider is wired up. Reserved so the integration adapter has a stable contract."
+          }
+        },
+        {
+          "name": "E.4 — Provider IPN (RESERVED FUTURE CONTRACT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/payments/ipn",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"OrderTrackingId\": \"ot-future-123\",\n  \"OrderNotificationType\": \"IPN\",\n  \"OrderMerchantReference\": \"REF-DEMO\"\n}"
+            },
+            "description": "**Audience:** future MTN/Airtel webhook.\n\n**Purpose:** **scaffold only.** Returns the pending banner. Will be replaced by the real provider adapter in a later milestone."
+          }
+        },
+        {
+          "name": "E.5 — Reconcile status (PENDING)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/public/payments/reconcile-status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderTrackingId\": \"ot-future-123\"\n}"
+            },
+            "description": "**Audience:** anonymous public diner (future flow).\n\n**Purpose:** **scaffold only.** Echoes `orderTrackingId` and returns the pending banner. Future implementation will resolve real status against MTN/Airtel."
+          }
+        }
+      ]
+    },
+    {
+      "name": "F. Nimbus Ops Portal",
+      "item": [
+        {
+          "name": "F.1 — List customers (orgs + subscriptions)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length > 0) {",
+                  "  pm.environment.set('opsOrgId', body[0].id);",
+                  "  pm.collectionVariables.set('opsOrgId', body[0].id);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/customers",
+            "description": "**Audience:** Nimbus internal staff (`ops:customers:read`).\n\n**Purpose:** lists every restaurant org with their current subscription summary.\n\n**Real-world example:** the 'Customers' tab of the Nimbus internal admin dashboard."
+          }
+        },
+        {
+          "name": "F.2 — Get customer detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/customers/{{opsOrgId}}",
+            "description": "**Audience:** Nimbus internal staff (`ops:customers:read`).\n\n**Purpose:** returns full lifecycle visibility for a single customer org — branches, subscription, onboarding progress, merchant payment readiness, and a sample of memberships.\n\n**Real-world example:** clicking into a customer card from F.1."
+          }
+        },
+        {
+          "name": "F.3 — Subscriptions due in next 7 days",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/subscriptions/due",
+            "description": "**Audience:** Nimbus internal staff (`ops:subscriptions:read`).\n\n**Purpose:** lists ACTIVE subscriptions whose `currentPeriodEnd` is within 7 days — the renewal pipeline.\n\n**Real-world example:** the 'Renewals this week' widget on the ops dashboard."
+          }
+        },
+        {
+          "name": "F.4 — Subscriptions in grace period",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/subscriptions/grace-period",
+            "description": "**Audience:** Nimbus internal staff (`ops:subscriptions:read`).\n\n**Purpose:** lists `GRACE_PERIOD` subscriptions — owners who have failed billing and are within their grace window.\n\n**Real-world example:** customer-success follow-up queue."
+          }
+        },
+        {
+          "name": "F.5 — Onboarding pipeline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/onboarding/pipeline",
+            "description": "**Audience:** Nimbus internal staff (`ops:onboarding:read`).\n\n**Purpose:** lists every org whose `OnboardingProgress.completedAt` is null — i.e. customers still mid-wizard.\n\n**Real-world example:** spotting orgs stuck on a step (e.g. invitations not sent) so a CSM can reach out."
+          }
+        },
+        {
+          "name": "F.6 — Merchant payment readiness status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/merchant-payments/status",
+            "description": "**Audience:** Nimbus internal staff (`ops:merchant-payments:read`).\n\n**Purpose:** lists every `MerchantPaymentConfig` row — `NOT_CONFIGURED | PENDING_MTN | PENDING_AIRTEL | READY_FOR_INTEGRATION | LIVE | DISABLED` (`provider = 'MOBILE_MONEY'`).\n\n**Real-world example:** ops queue of merchants waiting for MTN/Airtel onboarding to complete before public diner payments go live."
+          }
+        },
+        {
+          "name": "F.7 — List ops support sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/support/sessions",
+            "description": "**Audience:** Nimbus internal staff (`ops:support:read`).\n\n**Purpose:** lists the most recent 50 ops support sessions, with the customer org and the staff who opened/closed them.\n\n**Note:** this is the **internal Nimbus-staff** support view. It is intentionally separate from the **owner-facing** `/support/sessions` foundation introduced in M39.1."
+          }
+        },
+        {
+          "name": "F.8 — Open ops support session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.environment.set('supportSessionId', body.id);",
+                  "pm.collectionVariables.set('supportSessionId', body.id);",
+                  "pm.test('Created', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/support/sessions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orgId\": \"{{opsOrgId}}\",\n  \"reason\": \"Customer reported KDS not showing new orders\",\n  \"notes\": \"Investigating BullMQ worker health\"\n}"
+            },
+            "description": "**Audience:** Nimbus internal staff (`ops:support:write`).\n\n**Purpose:** opens a new support session against a customer org. Audited as `SUPPORT_SESSION_OPENED`. Auto-expires in 4 hours.\n\n**Real-world example:** an ops engineer starts a session before reaching into a customer's data to debug."
+          }
+        },
+        {
+          "name": "F.9 — Close ops support session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/ops/support/sessions/{{supportSessionId}}/close",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"closedReason\": \"Issue resolved — restarted KDS worker, customer confirmed orders flowing\"\n}"
+            },
+            "description": "**Audience:** Nimbus internal staff (`ops:support:write`).\n\n**Purpose:** closes the session, recording who closed it and why. Audited as `SUPPORT_SESSION_CLOSED`. Refuses with 409 if the session is not OPEN."
+          }
+        }
+      ]
+    }
+  ]
+}

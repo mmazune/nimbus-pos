@@ -14,12 +14,16 @@ import { RefundsService } from './refunds.service';
 import { CreateRefundDto, ApproveRefundDto, PostCloseVoidDto } from './dto';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
+import { Bg3ReliabilityService, BG3_CATEGORY } from '../bg3-reliability';
 
 @Controller('pos')
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class RefundsController {
-  constructor(private readonly refundsService: RefundsService) {}
+  constructor(
+    private readonly refundsService: RefundsService,
+    private readonly bg3: Bg3ReliabilityService,
+  ) { }
 
   @Post('orders/:id/refunds')
   @Permissions('pos:refund:create')
@@ -30,10 +34,31 @@ export class RefundsController {
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.refundsService.createRefund(user.id, ctx, orderId, dto, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.bg3.guard(
+      {
+        req,
+        scope: 'refunds.create',
+        routeMethod: 'POST',
+        routePath: `/api/pos/orders/${orderId}/refunds`,
+        category: BG3_CATEGORY.BILLING,
+        idempotencyMode: 'optional',
+        fingerprintSource: { orderId, dto },
+        actorUserId: user.id,
+        orgId: ctx?.organizationId ?? null,
+        branchId: ctx?.branchId ?? null,
+        trainingSimulator: (): any => ({
+          id: `sim-refund-${Date.now()}`,
+          orderId,
+          amount: (dto as any).amount,
+          status: 'SIMULATED_PENDING_APPROVAL',
+        }),
+      },
+      () =>
+        this.refundsService.createRefund(user.id, ctx, orderId, dto, {
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        }),
+    );
   }
 
   @Post('refunds/:id/approve')

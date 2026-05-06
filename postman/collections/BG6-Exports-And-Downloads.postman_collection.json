@@ -1,0 +1,747 @@
+{
+    "info": {
+        "name": "BG6 - Exports / Downloads + AP Supplier Detail",
+        "description": "BG6 collection. Validates the unified Exports facade and the closing AP supplier detail route:\n\n- `GET  /api/accounting/ap/suppliers/:id` — closes the BG0 missing-route gap. Returns supplier + summary block + recentBills + recentPayments. Permission: `accounting:ap:bill:read`.\n- `POST /api/exports`              — request a new export (sourceDomain=reports, reportRunId, format=CSV|PDF). Wrapped by BG3 facade (category:null, idempotencyMode:optional). Permission: `exports:write`.\n- `GET  /api/exports`              — paginated history list across both `reports` and `documents` source domains. Permission: `exports:read`.\n- `GET  /api/exports/:id`          — detail returning the unified envelope. Permission: `exports:read`.\n- `GET  /api/exports/:id/download` — streams the artefact bytes. Permission: `exports:download`.\n\nUnified envelope: `{ exportId, sourceDomain, sourceType, sourceRefId, requestedBy, requestedAt, status, format, fileName, contentType, fileSizeBytes, checksum, readyAt, failedAt, failureReason, downloadReady, downloadUrl, retentionExpiresAt }`. `exportId = '<sourceDomain>:<id>'`. Status mapping: PENDING→QUEUED, READY→COMPLETED, FAILED→FAILED.\n\nLocked rules verified:\n- `/api/auth/me` canonical (R14).\n- POST /api/auth/login accepts [200, 201] (R12).\n- New permissions: `exports:read | exports:write | exports:download` granted to Owner / Manager / Accountant. **Chef intentionally denied** — verified 403.\n- BG3 facade reused for the one mutating route (`POST /api/exports`).\n- No new schema (delegates to existing ExportArtifact + Document tables).\n- Public diner payments still PENDING (out of scope).\n- PesaPal owner-SaaS-only (out of scope).\n- No hotel structures.\n- Async vs sync semantics preserved honestly: report exports complete synchronously today; envelope still expresses status + downloadReady so a future async pipeline does not break the contract.\n\n⚠️ **Re-import required after any script change.** Postman caches scripts at import time.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        { "key": "baseUrl", "value": "http://localhost:3001" },
+        { "key": "ownerEmail", "value": "owner@demo.local" },
+        { "key": "ownerPassword", "value": "Owner#123" },
+        { "key": "chefEmail", "value": "chef@demo.local" },
+        { "key": "chefPassword", "value": "Chef#123" },
+        { "key": "accessToken", "value": "" },
+        { "key": "refreshToken", "value": "" },
+        { "key": "chefToken", "value": "" },
+        { "key": "orgId", "value": "" },
+        { "key": "branchId", "value": "" },
+        { "key": "bg6Suffix", "value": "" },
+        { "key": "bg6IdemKey", "value": "" },
+        { "key": "bg6SupplierId", "value": "" },
+        { "key": "bg6ReportRunId", "value": "" },
+        { "key": "bg6ExportId", "value": "" },
+        { "key": "bg6ExportIdReplay", "value": "" }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// BG6 canonical pre-request (R3/R4/R5/R12/R14/R16). Mirrors BG5.",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "const isPublicAuth = /\\/api\\/auth\\/(login|forgot-password|reset-password|invitations\\/accept|quick-pin-login)/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublic = isPublicAuth || isHealth;",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function isJwtFresh(tok) {",
+                    "  try {",
+                    "    if (!tok || typeof tok !== 'string') return false;",
+                    "    const parts = tok.split('.'); if (parts.length < 2) return false;",
+                    "    const b = parts[1].replace(/-/g, '+').replace(/_/g, '/');",
+                    "    const pad = b + '==='.slice((b.length + 3) % 4);",
+                    "    const payload = JSON.parse((typeof Buffer !== 'undefined' ? Buffer.from(pad, 'base64').toString('utf8') : atob(pad)));",
+                    "    return payload && payload.exp && (payload.exp * 1000 - Date.now()) > 60000;",
+                    "  } catch (e) { return false; }",
+                    "}",
+                    "function ensureSuffix() {",
+                    "  if (!getVar('bg6Suffix')) {",
+                    "    const s = String(Date.now()) + '-' + Math.floor(Math.random()*1e4);",
+                    "    setVar('bg6Suffix', s);",
+                    "    setVar('bg6IdemKey', 'bg6-export-' + s);",
+                    "  }",
+                    "}",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20 && isJwtFresh(tok))) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    if (getVar('branchId') && getVar('orgId')) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    if (!tok) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/me',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.context) {",
+                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+                    "          }",
+                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+                    "          }",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureChefToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    const tok = getVar('chefToken');",
+                    "    if (tok && tok.length >= 20 && isJwtFresh(tok)) return resolve();",
+                    "    const e = getVar('chefEmail') || 'chef@demo.local';",
+                    "    const p = getVar('chefPassword') || 'Chef#123';",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: e, password: p }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try { const j = res.json(); if (j.accessToken) setVar('chefToken', j.accessToken); } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "ensureSuffix();",
+                    "return ensureToken().then(ensureMeContext).then(ensureChefToken).catch((e) => console.log('[bg6 prereq] chain error', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - variables, run order, locked rules",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "health"]
+                        },
+                        "description": "⚠️ **Re-import required after any script change.**\n\n## Run order\n1. **A. Auth & Context Baseline** — login owner + canonical /api/auth/me + login chef.\n2. **B. AP Supplier Detail** — create supplier fixture + GET detail + 404 + 403.\n3. **C. Create Export** — generate report run + POST /api/exports + validation 400s.\n4. **D. Export List / Detail** — GET list + filter + GET detail + malformed/unknown.\n5. **E. Download** — GET /api/exports/:id/download (stream).\n6. **F. Edge Cases / Conflicts** — unsupported sourceDomain, malformed exportId.\n7. **G. Permission Denial** — chef → 403 on every facade route + AP detail.\n8. **H. Reliability / Idempotency** — Idempotency-Key replay returns identical exportId.\n\n## Auto-populated variables\n- `accessToken`, `chefToken`, `orgId`, `branchId` (login + /api/auth/me).\n- `bg6Suffix`, `bg6IdemKey` (per-run).\n- `bg6SupplierId`, `bg6ReportRunId`, `bg6ExportId`, `bg6ExportIdReplay` (fixture writes).\n\n## Locked rules verified\n- `/api/auth/me` canonical (R14).\n- BG3 facade reused for POST /api/exports (`category: null`, `idempotencyMode: 'optional'`).\n- Permissions `exports:{read,write,download}` granted to Owner/Manager/Accountant; chef denied.\n- No new schema — delegates to existing ExportArtifact + Document tables.\n- Public diner payments still PENDING (untouched).\n- PesaPal owner-SaaS-only (untouched).\n- No hotel structures.\n- Async vs sync semantics preserved honestly via status + downloadReady envelope fields."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context Baseline",
+            "item": [
+                {
+                    "name": "Login Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('accessToken', body.accessToken);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+                    }
+                },
+                {
+                    "name": "GET /api/auth/me (canonical context)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "const ctx = body.context || (body.memberships && body.memberships[0]) || {};",
+                                    "const org = ctx.defaultOrganizationId || ctx.organizationId || ctx.orgId;",
+                                    "const branch = ctx.defaultBranchId || ctx.branchId;",
+                                    "pm.test('Has org + branch', () => { pm.expect(org).to.be.a('string'); pm.expect(branch).to.be.a('string'); });",
+                                    "pm.collectionVariables.set('orgId', org);",
+                                    "pm.collectionVariables.set('branchId', branch);",
+                                    "if (pm.environment && pm.environment.name) { pm.environment.set('orgId', org); pm.environment.set('branchId', branch); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+                        "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+                    }
+                },
+                {
+                    "name": "Login Chef",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                                    "pm.collectionVariables.set('chefToken', body.accessToken);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('chefToken', body.accessToken);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{chefEmail}}\",\n  \"password\": \"{{chefPassword}}\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. AP Supplier Detail",
+            "item": [
+                {
+                    "name": "[STANDALONE] Create Supplier Fixture",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Created [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "const id = body.id || (body.supplier && body.supplier.id);",
+                                    "pm.test('Has supplier id', () => pm.expect(id).to.be.a('string'));",
+                                    "pm.collectionVariables.set('bg6SupplierId', id);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('bg6SupplierId', id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"name\": \"BG6 Supplier {{bg6Suffix}}\",\n  \"code\": \"BG6S-{{bg6Suffix}}\",\n  \"contactName\": \"BG6 Contact\",\n  \"email\": \"bg6-{{bg6Suffix}}@example.test\",\n  \"phone\": \"+250788000000\",\n  \"currencyCode\": \"USD\",\n  \"paymentTermDays\": 30\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/accounting/ap/suppliers", "host": ["{{baseUrl}}"], "path": ["api", "accounting", "ap", "suppliers"] }
+                    }
+                },
+                {
+                    "name": "GET /api/accounting/ap/suppliers/:id (owner happy)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Has supplier + summary', () => { pm.expect(body.supplier).to.be.an('object'); pm.expect(body.summary).to.be.an('object'); });",
+                                    "pm.test('Summary fields present', () => {",
+                                    "  pm.expect(body.summary).to.have.property('billCount');",
+                                    "  pm.expect(body.summary).to.have.property('openBillCount');",
+                                    "  pm.expect(body.summary).to.have.property('outstandingTotal');",
+                                    "  pm.expect(body.summary).to.have.property('paidTotal');",
+                                    "});",
+                                    "pm.test('Recent arrays', () => { pm.expect(body.recentBills).to.be.an('array'); pm.expect(body.recentPayments).to.be.an('array'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/accounting/ap/suppliers/{{bg6SupplierId}}", "host": ["{{baseUrl}}"], "path": ["api", "accounting", "ap", "suppliers", "{{bg6SupplierId}}"] }
+                    }
+                },
+                {
+                    "name": "GET supplier (404 unknown id)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/accounting/ap/suppliers/sup_does_not_exist_xyz", "host": ["{{baseUrl}}"], "path": ["api", "accounting", "ap", "suppliers", "sup_does_not_exist_xyz"] }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. Create Export",
+            "item": [
+                {
+                    "name": "[STANDALONE] Generate Daily-Sales Report Run",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const today = new Date().toISOString().slice(0,10);",
+                                    "pm.collectionVariables.set('bg6Today', today);"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Created [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "const id = body.id || (body.run && body.run.id);",
+                                    "pm.test('Has report run id', () => pm.expect(id).to.be.a('string'));",
+                                    "pm.collectionVariables.set('bg6ReportRunId', id);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('bg6ReportRunId', id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"reportWindow\": \"DAY\",\n  \"dateFrom\": \"{{bg6Today}}\",\n  \"dateTo\": \"{{bg6Today}}\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/reports/daily-sales", "host": ["{{baseUrl}}"], "path": ["api", "reports", "daily-sales"] }
+                    }
+                },
+                {
+                    "name": "POST /api/exports (owner CSV happy)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Envelope ok', () => { pm.expect(body.ok).to.eql(true); pm.expect(body.action).to.eql('EXPORT_REQUESTED'); });",
+                                    "pm.test('exportId prefixed reports:', () => pm.expect(body.export.exportId).to.match(/^reports:/));",
+                                    "pm.test('Status COMPLETED + downloadReady', () => { pm.expect(body.export.status).to.eql('COMPLETED'); pm.expect(body.export.downloadReady).to.eql(true); });",
+                                    "pm.collectionVariables.set('bg6ExportId', body.export.exportId);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('bg6ExportId', body.export.exportId);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"CSV\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                },
+                {
+                    "name": "POST /api/exports (400 missing reportRunId)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"format\": \"CSV\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Export List / Detail",
+            "item": [
+                {
+                    "name": "GET /api/exports (list)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Has data + pagination', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.total).to.be.a('number'); pm.expect(body.page).to.eql(1); });",
+                                    "pm.test('Rows have unified envelope', () => {",
+                                    "  for (const r of body.data) {",
+                                    "    pm.expect(['reports','documents']).to.include(r.sourceDomain);",
+                                    "    pm.expect(r.exportId).to.match(/^(reports|documents):/);",
+                                    "    pm.expect(['QUEUED','RUNNING','COMPLETED','FAILED','EXPIRED']).to.include(r.status);",
+                                    "  }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports?pageSize=10", "host": ["{{baseUrl}}"], "path": ["api", "exports"], "query": [{ "key": "pageSize", "value": "10" }] }
+                    }
+                },
+                {
+                    "name": "GET /api/exports?sourceDomain=reports",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('All rows are reports', () => { for (const r of body.data) pm.expect(r.sourceDomain).to.eql('reports'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports?sourceDomain=reports&pageSize=20", "host": ["{{baseUrl}}"], "path": ["api", "exports"], "query": [{ "key": "sourceDomain", "value": "reports" }, { "key": "pageSize", "value": "20" }] }
+                    }
+                },
+                {
+                    "name": "GET /api/exports/:id (detail)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('exportId matches', () => pm.expect(body.export.exportId).to.eql(pm.collectionVariables.get('bg6ExportId')));",
+                                    "pm.test('Has downloadUrl', () => pm.expect(body.export.downloadUrl).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports/{{bg6ExportId}}", "host": ["{{baseUrl}}"], "path": ["api", "exports", "{{bg6ExportId}}"] }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Download",
+            "item": [
+                {
+                    "name": "GET /api/exports/:id/download (owner stream)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('Content-Type is text/csv', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.include('text/csv'));",
+                                    "pm.test('Content-Disposition attachment', () => pm.expect(pm.response.headers.get('Content-Disposition') || '').to.include('attachment'));",
+                                    "pm.test('Body non-empty', () => pm.expect((pm.response.text() || '').length).to.be.above(0));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports/{{bg6ExportId}}/download", "host": ["{{baseUrl}}"], "path": ["api", "exports", "{{bg6ExportId}}", "download"] }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. Edge Cases / Conflicts",
+            "item": [
+                {
+                    "name": "POST /api/exports (400 unsupported sourceDomain)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"payroll\",\n  \"format\": \"CSV\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                },
+                {
+                    "name": "GET /api/exports/:id (400 malformed id)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports/this-is-not-a-valid-id", "host": ["{{baseUrl}}"], "path": ["api", "exports", "this-is-not-a-valid-id"] }
+                    }
+                },
+                {
+                    "name": "GET /api/exports/:id (404 unknown report)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports/reports:does_not_exist_xyz", "host": ["{{baseUrl}}"], "path": ["api", "exports", "reports:does_not_exist_xyz"] }
+                    }
+                },
+                {
+                    "name": "GET /api/exports/:id/download (400 malformed)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports/no-prefix/download", "host": ["{{baseUrl}}"], "path": ["api", "exports", "no-prefix", "download"] }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "G. Permission Denial",
+            "item": [
+                {
+                    "name": "Chef GET supplier detail (403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{chefToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/accounting/ap/suppliers/{{bg6SupplierId}}", "host": ["{{baseUrl}}"], "path": ["api", "accounting", "ap", "suppliers", "{{bg6SupplierId}}"] }
+                    }
+                },
+                {
+                    "name": "Chef POST /api/exports (403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{chefToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"CSV\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                },
+                {
+                    "name": "Chef GET /api/exports list (403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{chefToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                },
+                {
+                    "name": "Chef GET /api/exports/:id/download (403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": { "type": "text/javascript", "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"] }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer {{chefToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                        ],
+                        "url": { "raw": "{{baseUrl}}/api/exports/{{bg6ExportId}}/download", "host": ["{{baseUrl}}"], "path": ["api", "exports", "{{bg6ExportId}}", "download"] }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "H. Reliability / Idempotency Checks",
+            "item": [
+                {
+                    "name": "POST /api/exports (Idempotency-Key first PDF)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Has exportId', () => pm.expect(body.export.exportId).to.match(/^reports:/));",
+                                    "pm.collectionVariables.set('bg6ExportIdReplay', body.export.exportId);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('bg6ExportIdReplay', body.export.exportId);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" },
+                            { "key": "Idempotency-Key", "value": "{{bg6IdemKey}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"PDF\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                },
+                {
+                    "name": "POST /api/exports (Idempotency-Key replay)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Replay returns identical exportId', () => pm.expect(body.export.exportId).to.eql(pm.collectionVariables.get('bg6ExportIdReplay')));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" },
+                            { "key": "Idempotency-Key", "value": "{{bg6IdemKey}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"PDF\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                }
+            ]
+        }
+    ]
+}

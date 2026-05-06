@@ -1,0 +1,800 @@
+{
+    "info": {
+        "name": "M38 - Franchise + Multi-Branch Suite",
+        "description": "API collection for M38. Covers: HQ overview, branch rankings, budget rollups, inter-branch transfers, procurement pressure, and digest subscriptions.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_postman_id": "m38-franchise-multi-branch-suite"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth — Login Owner",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027has accessToken\u0027, () =\u003e pm.expect(body.accessToken).to.be.a(\u0027string\u0027));",
+                            "pm.collectionVariables.set(\u0027accessToken\u0027, body.accessToken);",
+                            "pm.collectionVariables.set(\u0027refreshToken\u0027, body.refreshToken);",
+                            "if (typeof pm.environment !== \u0027undefined\u0027 \u0026\u0026 pm.environment.has(\u0027accessToken\u0027)) {",
+                            "    pm.environment.set(\u0027accessToken\u0027, body.accessToken);",
+                            "    pm.environment.set(\u0027refreshToken\u0027, body.refreshToken);",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Auth — Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "const orgs = body.organizations || [];",
+                            "pm.test(\u0027has organizations\u0027, () =\u003e pm.expect(orgs).to.be.an(\u0027array\u0027).with.length.greaterThan(0));",
+                            "if (orgs.length \u003e 0) {",
+                            "    const org = orgs[0];",
+                            "    const setVar = (k, v) =\u003e {",
+                            "        pm.collectionVariables.set(k, v);",
+                            "        try { pm.environment.set(k, v); } catch(e) {}",
+                            "    };",
+                            "    setVar(\u0027orgId\u0027, org.id);",
+                            "    const branches = org.branches || [];",
+                            "    if (branches.length \u003e 0) {",
+                            "        setVar(\u0027branchId\u0027, branches[0].id);",
+                            "        setVar(\u0027mainBranchId\u0027, branches[0].id);",
+                            "    }",
+                            "    if (branches.length \u003e 1) {",
+                            "        setVar(\u0027downtownBranchId\u0027, branches[1].id);",
+                            "    }",
+                            "    pm.test(\u0027found 2+ branches\u0027, () =\u003e pm.expect(branches.length).to.be.at.least(2));",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Franchise Overview",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027has branches array\u0027, () =\u003e pm.expect(body.branches).to.be.an(\u0027array\u0027));",
+                            "pm.test(\u0027branchCount \u003e= 2\u0027, () =\u003e pm.expect(body.branchCount).to.be.at.least(2));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/overview",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "overview"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Generate Rankings",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027returns array\u0027, () =\u003e pm.expect(body).to.be.an(\u0027array\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/rankings/generate",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "rankings",
+                        "generate"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Rankings",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027has rankings object\u0027, () =\u003e pm.expect(body.rankings).to.be.an(\u0027object\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/rankings",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "rankings"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Budget Rollups",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027has portfolio\u0027, () =\u003e pm.expect(body.portfolio).to.be.an(\u0027object\u0027));",
+                            "pm.test(\u0027has branches\u0027, () =\u003e pm.expect(body.branches).to.be.an(\u0027array\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/budgets",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "budgets"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Budget Rollups — Filtered by Branch",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027single branch\u0027, () =\u003e pm.expect(body.branches).to.have.length(1));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/budgets?branchId={{mainBranchId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "budgets"
+                    ],
+                    "query": [
+                        {
+                            "key": "branchId",
+                            "value": "{{mainBranchId}}"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Transfer",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027has transferNumber\u0027, () =\u003e pm.expect(body.transferNumber).to.match(/^TRF-/));",
+                            "pm.collectionVariables.set(\u0027transferId\u0027, body.id);",
+                            "try { pm.environment.set(\u0027transferId\u0027, body.id); } catch(e) {}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"fromBranchId\": \"{{mainBranchId}}\",\n    \"toBranchId\": \"{{downtownBranchId}}\",\n    \"transferType\": \"STOCK\",\n    \"urgency\": \"MEDIUM\",\n    \"quantity\": 10,\n    \"estimatedValue\": 120000,\n    \"rationale\": \"Downtown low on key ingredients\",\n    \"notes\": \"Postman test transfer\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/transfers",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "transfers"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Transfers",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027is array\u0027, () =\u003e pm.expect(body).to.be.an(\u0027array\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/transfers",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "transfers"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Transfer by ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027matches id\u0027, () =\u003e pm.expect(body.id).to.eql(pm.environment.get(\u0027transferId\u0027)));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/transfers/{{transferId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "transfers",
+                        "{{transferId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Approve Transfer (REQUESTED → APPROVED)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027status APPROVED\u0027, () =\u003e pm.expect(body.status).to.eql(\u0027APPROVED\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"status\": \"APPROVED\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/transfers/{{transferId}}/status",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "transfers",
+                        "{{transferId}}",
+                        "status"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Transition Transfer (APPROVED → IN_TRANSIT)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027status IN_TRANSIT\u0027, () =\u003e pm.expect(body.status).to.eql(\u0027IN_TRANSIT\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"status\": \"IN_TRANSIT\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/transfers/{{transferId}}/status",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "transfers",
+                        "{{transferId}}",
+                        "status"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Complete Transfer (IN_TRANSIT → COMPLETED)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027status COMPLETED\u0027, () =\u003e pm.expect(body.status).to.eql(\u0027COMPLETED\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"status\": \"COMPLETED\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/transfers/{{transferId}}/status",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "transfers",
+                        "{{transferId}}",
+                        "status"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Procurement Pressure",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027has branches\u0027, () =\u003e pm.expect(body.branches).to.be.an(\u0027array\u0027));",
+                            "pm.test(\u0027has totalUrgentCount\u0027, () =\u003e pm.expect(body).to.have.property(\u0027totalUrgentCount\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/procurement-pressure",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "procurement-pressure"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Digest Subscription",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027has digestType\u0027, () =\u003e pm.expect(body.digestType).to.eql(\u0027EXECUTIVE_SUMMARY\u0027));",
+                            "pm.collectionVariables.set(\u0027digestSubscriptionId\u0027, body.id);",
+                            "try { pm.environment.set(\u0027digestSubscriptionId\u0027, body.id); } catch(e) {}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"digestType\": \"EXECUTIVE_SUMMARY\",\n    \"frequency\": \"DAILY\",\n    \"channel\": \"EMAIL\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/digests",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "digests"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Digest Subscriptions",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027is array\u0027, () =\u003e pm.expect(body).to.be.an(\u0027array\u0027));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/digests",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "digests"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Update Digest Subscription",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "pm.test(\u0027isActive false\u0027, () =\u003e pm.expect(body.isActive).to.eql(false));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"isActive\": false,\n    \"frequency\": \"WEEKLY\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/digests/{{digestSubscriptionId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "digests",
+                        "{{digestSubscriptionId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Auth — Login Chef",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.collectionVariables.set(\u0027chefAccessToken\u0027, body.accessToken);",
+                            "try { pm.environment.set(\u0027chefAccessToken\u0027, body.accessToken); } catch(e) {}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"chef@demo.local\",\n    \"password\": \"Chef#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Franchise Overview — 403 Chef",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\u0027status 403\u0027, () =\u003e pm.response.to.have.status(403));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{chefAccessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/franchise/overview",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "franchise",
+                        "overview"
+                    ]
+                }
+            }
+        }
+    ]
+}

@@ -1,7 +1,9 @@
-import { Controller, Post, Get, Patch, Body, UseGuards, Req, Param } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, UseGuards, Req, Param, HttpCode } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { QuickPinService } from './quick-pin.service';
+import { InvitationLifecycleService } from './invitation-lifecycle.service';
+import { PasswordLifecycleService } from './password-lifecycle.service';
 import {
   LoginDto,
   PinLoginDto,
@@ -10,6 +12,10 @@ import {
   IssueQuickPinDto,
   ResetQuickPinDto,
   UpdateQuickPinSettingsDto,
+  AcceptInvitationDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ForcePasswordChangeDto,
 } from './dto';
 import { JwtAuthGuard, PermissionGuard, PlatformAccessGuard } from '../../common/guards';
 import { CurrentUser, Permissions } from '../../common/decorators';
@@ -19,7 +25,9 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly quickPinService: QuickPinService,
-  ) {}
+    private readonly invitationLifecycle: InvitationLifecycleService,
+    private readonly passwordLifecycle: PasswordLifecycleService,
+  ) { }
 
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request) {
@@ -152,5 +160,50 @@ export class AuthController {
   @Permissions('identity:user:read')
   async quickPinStatus(@Param('id') userId: string) {
     return this.quickPinService.getQuickPinStatus(userId);
+  }
+
+  // ── BG1: Invitation Acceptance ──
+
+  @Post('invitations/accept')
+  @HttpCode(200)
+  async acceptInvitation(@Body() dto: AcceptInvitationDto, @Req() req: Request) {
+    return this.invitationLifecycle.accept(dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  // ── BG1: Password Lifecycle ──
+
+  @Post('forgot-password')
+  @HttpCode(200)
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
+    return this.passwordLifecycle.forgotPassword(dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request) {
+    return this.passwordLifecycle.resetPassword(dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Post('force-password-change')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async forcePasswordChange(
+    @CurrentUser() user: { id: string },
+    @Body() dto: ForcePasswordChangeDto,
+    @Req() req: Request,
+  ) {
+    return this.passwordLifecycle.forcePasswordChange(user.id, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 }

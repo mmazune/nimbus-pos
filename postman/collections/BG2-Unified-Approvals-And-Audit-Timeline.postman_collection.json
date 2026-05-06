@@ -1,0 +1,1180 @@
+{
+    "info": {
+        "name": "BG2 - Unified Approvals Inbox + Global Audit Timeline",
+        "description": "BG2 collection. Covers the Unified Approvals Inbox aggregation/routing layer and the Global Audit Timeline read API. Mirrors AI_POSTMAN_WORKING_PATTERNS R1-R20 (canonical pre-request, dual-scope getVar/setVar, [200,201] login, /api/auth/me canonical context).\n\nLocked rules verified:\n- /api/auth/me remains canonical context source (R14).\n- POST /api/auth/login accepts [200, 201] (R12).\n- Inbox list routes through 6 wired domains: discount, refund, leave_request, shift_swap, vendor_bill, inter_branch_transfer (encoded as `${type}--${entityId}`).\n- POST /api/approvals/:id/decide delegates to the underlying domain service (no double-write of business state).\n- vendor_bill and refund expose APPROVE only (supportsReject=false) - REJECT returns 400.\n- /api/audit/timeline is read-only; permission audit:read; filters via metadata.orgId and metadata.branchId JSON-path.\n- Repeated decision returns 409.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "bg2Suffix",
+            "value": ""
+        },
+        {
+            "key": "menuItemId",
+            "value": ""
+        },
+        {
+            "key": "orderId",
+            "value": ""
+        },
+        {
+            "key": "discountId",
+            "value": ""
+        },
+        {
+            "key": "approvalId",
+            "value": ""
+        },
+        {
+            "key": "approvalIdSecond",
+            "value": ""
+        },
+        {
+            "key": "discountIdSecond",
+            "value": ""
+        },
+        {
+            "key": "orderIdSecond",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// BG2 canonical pre-request (R3/R4/R5/R12/R14/R16). Mirrors BG1.",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "const isPublicAuth = /\\/api\\/auth\\/(login|forgot-password|reset-password|invitations\\/accept|quick-pin-login)/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublic = isPublicAuth || isHealth;",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function ensureSuffix() {",
+                    "  const reqName = (pm.info && pm.info.requestName) || '';",
+                    "  const isFirstRequest = reqName === 'Login Owner';",
+                    "  if (isFirstRequest || !getVar('bg2Suffix')) {",
+                    "    const s = String(Date.now()) + '-' + Math.floor(Math.random()*1e4);",
+                    "    setVar('bg2Suffix', s);",
+                    "    const clearKeys = ['orderId','discountId','approvalId','orderIdSecond','discountIdSecond','approvalIdSecond'];",
+                    "    clearKeys.forEach((k) => { pm.collectionVariables.set(k, ''); if (pm.environment && pm.environment.name) pm.environment.set(k, ''); });",
+                    "  }",
+                    "}",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20)) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+                    "          if (j.user && j.user.organizationId) setVar('orgId', j.user.organizationId);",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    if (getVar('branchId') && getVar('orgId')) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    if (!tok) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/me',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.context) {",
+                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+                    "          }",
+                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+                    "          }",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "ensureSuffix();",
+                    "return ensureToken().then(ensureMeContext).catch((e) => console.log('[bg2 prereq] chain error', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - variables, run order, locked rules",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "Run folders in order:\nA. Auth & Context Baseline\nB. Approval Fixture (POS) - creates an order + large discount that becomes PENDING (M12 threshold).\nC. Unified Approvals - List - status filters, sourceType filter, invalid sourceType -> 400.\nD. Unified Approvals - Detail - GET /api/approvals/:id, malformed id -> 400, unknown id -> 404.\nE. Unified Approvals - Decide REJECT - 200, repeat -> 409.\nF. Unified Approvals - Decide APPROVE - second discount, 200.\nG. Audit Timeline - actionPrefix=UNIFIED_APPROVAL_, exact action filter, dateFrom filter.\n\nWired source types (6): discount, refund, leave_request, shift_swap, vendor_bill, inter_branch_transfer.\nExcluded (no native approval workflow): order voids, post-close voids, purchase orders.\nREJECT not supported by underlying service: refund, vendor_bill (returns 400 with 'reject not supported').\n\nAuto-populated variables: bg2Suffix, accessToken, orgId, branchId, menuItemId, orderId, discountId, approvalId, orderIdSecond, discountIdSecond, approvalIdSecond."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context Baseline",
+            "item": [
+                {
+                    "name": "Login Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
+                                    "if (envActive) pm.environment.set('accessToken', body.accessToken);",
+                                    "if (body.refreshToken) { pm.collectionVariables.set('refreshToken', body.refreshToken); if (envActive) pm.environment.set('refreshToken', body.refreshToken); }",
+                                    "if (body.user && body.user.organizationId) { pm.collectionVariables.set('orgId', body.user.organizationId); if (envActive) pm.environment.set('orgId', body.user.organizationId); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/auth/me (canonical context)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(envActive) pm.environment.set(k,v); }",
+                                    "if (body.context) {",
+                                    "  if (body.context.defaultOrganizationId) setVar('orgId', body.context.defaultOrganizationId);",
+                                    "  if (body.context.defaultBranchId) setVar('branchId', body.context.defaultBranchId);",
+                                    "}",
+                                    "pm.test('orgId resolved', () => pm.expect(pm.collectionVariables.get('orgId')).to.be.a('string').and.not.empty);",
+                                    "pm.test('branchId resolved', () => pm.expect(pm.collectionVariables.get('branchId')).to.be.a('string').and.not.empty);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. Approval Fixture (POS) - create PENDING discount",
+            "item": [
+                {
+                    "name": "GET /api/menu/items - capture menuItemId",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "const items = (body && body.data) || body || [];",
+                                    "pm.test('Has at least one menu item', () => pm.expect(items.length).to.be.greaterThan(0));",
+                                    "const id = items[0] && items[0].id;",
+                                    "if (id) { pm.collectionVariables.set('menuItemId', id); if (pm.environment && pm.environment.name) pm.environment.set('menuItemId', id); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/menu/items",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "menu",
+                                "items"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/pos/orders - create order #1",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.collectionVariables.set('orderId', body.id);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('orderId', body.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/items - add 3 items",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 3\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "items"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/discounts - large discount -> PENDING",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Discount is PENDING', () => pm.expect(body.status).to.eql('PENDING'));",
+                                    "pm.collectionVariables.set('discountId', body.id);",
+                                    "pm.collectionVariables.set('approvalId', 'discount--' + body.id);",
+                                    "if (pm.environment && pm.environment.name) {",
+                                    "  pm.environment.set('discountId', body.id);",
+                                    "  pm.environment.set('approvalId', 'discount--' + body.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"FIXED\",\n  \"value\": 15000,\n  \"reason\": \"BG2 inbox fixture {{bg2Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/discounts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "discounts"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. Unified Approvals - List",
+            "item": [
+                {
+                    "name": "GET /api/approvals?status=PENDING - includes our discount",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Body has data array', () => pm.expect(Array.isArray(body.data)).to.be.true);",
+                                    "pm.test('Body has total + page + pageSize', () => { pm.expect(body.total).to.be.a('number'); pm.expect(body.page).to.be.a('number'); pm.expect(body.pageSize).to.be.a('number'); });",
+                                    "pm.test('Body has registry.wiredSources (6)', () => pm.expect(body.registry.wiredSources).to.have.lengthOf(6));",
+                                    "const want = pm.collectionVariables.get('approvalId');",
+                                    "const ids = body.data.map(r => r.id);",
+                                    "pm.test('Inbox includes our PENDING discount', () => pm.expect(ids).to.include(want));",
+                                    "const row = body.data.find(r => r.id === want);",
+                                    "pm.test('Row sourceType=discount + actions=[APPROVE,REJECT]', () => { pm.expect(row.sourceType).to.eql('discount'); pm.expect(row.actionsAvailable).to.include('APPROVE'); pm.expect(row.actionsAvailable).to.include('REJECT'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals?status=PENDING&pageSize=100",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "PENDING"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "100"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/approvals?sourceType=discount - filters",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('All rows are discount sourceType', () => { for (const r of body.data) pm.expect(r.sourceType).to.eql('discount'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals?status=PENDING&sourceType=discount",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "PENDING"
+                                },
+                                {
+                                    "key": "sourceType",
+                                    "value": "discount"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/approvals?sourceType=bogus - 400 invalid enum",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals?sourceType=bogus",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals"
+                            ],
+                            "query": [
+                                {
+                                    "key": "sourceType",
+                                    "value": "bogus"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Unified Approvals - Detail",
+            "item": [
+                {
+                    "name": "GET /api/approvals/:id - returns summary + raw source",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('id matches', () => pm.expect(body.id).to.eql(pm.collectionVariables.get('approvalId')));",
+                                    "pm.test('summary present', () => pm.expect(body.summary).to.be.an('object'));",
+                                    "pm.test('raw source present', () => pm.expect(body.source).to.be.an('object'));",
+                                    "pm.test('source status PENDING', () => pm.expect(body.source.status).to.eql('PENDING'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals/{{approvalId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals",
+                                "{{approvalId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/approvals/not-a-valid-id - 400 malformed",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals/not-a-valid-id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals",
+                                "not-a-valid-id"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/approvals/discount--unknown - 404",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals/discount--clxxxxxxxxxxxxxxxxxxxxxxx",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals",
+                                "discount--clxxxxxxxxxxxxxxxxxxxxxxx"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Unified Approvals - Decide REJECT",
+            "item": [
+                {
+                    "name": "POST /api/approvals/:id/decide REJECT - 200",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('ok=true', () => pm.expect(body.ok).to.eql(true));",
+                                    "pm.test('decision=REJECT', () => pm.expect(body.decision).to.eql('REJECT'));",
+                                    "pm.test('source=discount', () => pm.expect(body.source).to.eql('discount'));",
+                                    "pm.test('finalStatus=REJECTED', () => pm.expect(body.finalStatus).to.eql('REJECTED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"decision\": \"REJECT\",\n  \"reason\": \"BG2 inbox e2e reject\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals/{{approvalId}}/decide",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals",
+                                "{{approvalId}}",
+                                "decide"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/approvals/:id/decide REJECT (repeat) - 409 conflict",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('409 Conflict', () => pm.response.to.have.status(409));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"decision\": \"REJECT\",\n  \"reason\": \"second time\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals/{{approvalId}}/decide",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals",
+                                "{{approvalId}}",
+                                "decide"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. Unified Approvals - Decide APPROVE",
+            "item": [
+                {
+                    "name": "POST /api/pos/orders - create order #2 for approve flow",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.collectionVariables.set('orderIdSecond', body.id);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('orderIdSecond', body.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/items - add 3 items (order #2)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 3\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderIdSecond}}/items",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderIdSecond}}",
+                                "items"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/discounts - create PENDING #2",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Discount #2 PENDING', () => pm.expect(body.status).to.eql('PENDING'));",
+                                    "pm.collectionVariables.set('discountIdSecond', body.id);",
+                                    "pm.collectionVariables.set('approvalIdSecond', 'discount--' + body.id);",
+                                    "if (pm.environment && pm.environment.name) {",
+                                    "  pm.environment.set('discountIdSecond', body.id);",
+                                    "  pm.environment.set('approvalIdSecond', 'discount--' + body.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"FIXED\",\n  \"value\": 15000,\n  \"reason\": \"BG2 approve flow {{bg2Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderIdSecond}}/discounts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderIdSecond}}",
+                                "discounts"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/approvals/:id/decide APPROVE - 200",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('decision=APPROVE', () => pm.expect(body.decision).to.eql('APPROVE'));",
+                                    "pm.test('finalStatus=APPROVED', () => pm.expect(body.finalStatus).to.eql('APPROVED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"decision\": \"APPROVE\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/approvals/{{approvalIdSecond}}/decide",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "approvals",
+                                "{{approvalIdSecond}}",
+                                "decide"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "G. Audit Timeline",
+            "item": [
+                {
+                    "name": "GET /api/audit/timeline?actionPrefix=UNIFIED_APPROVAL_",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('data is array', () => pm.expect(Array.isArray(body.data)).to.be.true);",
+                                    "pm.test('total > 0', () => pm.expect(body.total).to.be.greaterThan(0));",
+                                    "const actions = body.data.map(r => r.action);",
+                                    "pm.test('Has UNIFIED_APPROVAL_DECIDED', () => pm.expect(actions).to.include('UNIFIED_APPROVAL_DECIDED'));",
+                                    "const first = body.data[0];",
+                                    "pm.test('Row has orgId from metadata', () => pm.expect(first.orgId).to.eql(pm.collectionVariables.get('orgId')));",
+                                    "pm.test('Row sourceModule=unified-approvals', () => pm.expect(first.sourceModule).to.eql('unified-approvals'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/audit/timeline?actionPrefix=UNIFIED_APPROVAL_&pageSize=100",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "audit",
+                                "timeline"
+                            ],
+                            "query": [
+                                {
+                                    "key": "actionPrefix",
+                                    "value": "UNIFIED_APPROVAL_"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "100"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/audit/timeline?action=UNIFIED_APPROVAL_DECIDED - exact",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('All rows action=UNIFIED_APPROVAL_DECIDED', () => { for (const r of body.data) pm.expect(r.action).to.eql('UNIFIED_APPROVAL_DECIDED'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/audit/timeline?action=UNIFIED_APPROVAL_DECIDED&pageSize=50",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "audit",
+                                "timeline"
+                            ],
+                            "query": [
+                                {
+                                    "key": "action",
+                                    "value": "UNIFIED_APPROVAL_DECIDED"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "50"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

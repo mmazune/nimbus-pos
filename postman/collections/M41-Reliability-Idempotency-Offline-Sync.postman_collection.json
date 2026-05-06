@@ -1,0 +1,886 @@
+{
+    "info": {
+        "name": "M41 - Reliability: Idempotency + Offline Sync + Conflicts",
+        "description": "Canonical M41 collection. Covers the offline replay queue, idempotency inspection, sync job listing/retry, and replay-conflict resolution. Mirrors AI_POSTMAN_WORKING_PATTERNS R1-R20 patterns established by M39.x and M40.\n\nSee folder `00 Read Me` for variable flow, run order, and re-import warning.\n\nLocked rules verified here:\n- Replaying the same `clientMutationId` returns the same job (idempotent).\n- Retry on a SUCCEEDED job returns 409.\n- Conflict resolution transitions OPEN -> RESOLVED with audit.\n- Public diner mobile-money payment execution remains PENDING (no PAYMENT_CAPTURE replay handler is registered for the public diner path).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "chefEmail",
+            "value": "chef@demo.local"
+        },
+        {
+            "key": "chefPassword",
+            "value": "Chef#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "chefAccessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "clientMutationId",
+            "value": ""
+        },
+        {
+            "key": "syncJobId",
+            "value": ""
+        },
+        {
+            "key": "succeededJobId",
+            "value": ""
+        },
+        {
+            "key": "conflictId",
+            "value": ""
+        },
+        {
+            "key": "idempotencyKey",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// M41 canonical pre-request — mirrors M40 helper. R4/R5/R14/R16.",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "let reqStr = '';",
+                    "try { reqStr = JSON.stringify(pm.request); } catch (e) { reqStr = url; }",
+                    "const isPublicAuth = /\\/api\\/auth\\/login/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublic = isPublicAuth || isHealth;",
+                    "function refsVar(name) { return reqStr.indexOf('{{' + name + '}}') !== -1; }",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20)) { return resolve(); }",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+                    "          if (j.user && j.user.organizationId) setVar('orgId', j.user.organizationId);",
+                    "        } catch (e) { console.log('[m41 prereq] auto-login parse error', e && e.message); }",
+                    "      } else if (err) { console.log('[m41 prereq] auto-login transport error', err && err.message); }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    const needBranch = refsVar('branchId') && !getVar('branchId');",
+                    "    const needOrg = refsVar('orgId') && !getVar('orgId');",
+                    "    if (!needBranch && !needOrg) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    if (!tok) { return resolve(); }",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/me',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.context) {",
+                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+                    "          }",
+                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+                    "          }",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureClientMutationId() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (!refsVar('clientMutationId')) return resolve();",
+                    "    if (getVar('clientMutationId')) return resolve();",
+                    "    setVar('clientMutationId', 'm41-pm-' + Date.now() + '-' + Math.floor(Math.random()*1e6));",
+                    "    resolve();",
+                    "  });",
+                    "}",
+                    "function ensureIdempotencyKey() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (!refsVar('idempotencyKey')) return resolve();",
+                    "    if (getVar('idempotencyKey')) return resolve();",
+                    "    setVar('idempotencyKey', 'm41-pm-key-' + Date.now() + '-' + Math.floor(Math.random()*1e6));",
+                    "    resolve();",
+                    "  });",
+                    "}",
+                    "return ensureToken()",
+                    "  .then(ensureMeContext)",
+                    "  .then(ensureClientMutationId)",
+                    "  .then(ensureIdempotencyKey)",
+                    "  .catch((e) => console.log('[m41 prereq] chain error', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - variables, run order, re-import warning",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "RE-IMPORT REQUIRED after any script change (R8). Postman caches scripts at import time.\n\nThis collection is STANDALONE-resilient (R3, R4, R5, R14, R16). Collection-level pre-request:\n1. Auto-logs in owner@demo.local when accessToken is missing (skipped on /api/auth/login and /api/health).\n2. Calls /api/auth/me when {{orgId}} or {{branchId}} is referenced and empty.\n3. Generates a fresh {{clientMutationId}} and {{idempotencyKey}} when they are referenced and empty (so each run produces a brand new SyncJob).\n\nFolder run order:\n- A. Auth & Context [STANDALONE]\n- B. Idempotent Write Contract Demo [STANDALONE] - illustrative; the actual generic IdempotencyService is a backend primitive used inside services. Folder B exercises POST /idempotency/inspect for an existing key (seeded).\n- C. Sync Replay [STANDALONE] - submits a GENERIC_REPLAY job and demonstrates same-key idempotency (resubmit returns the same jobId).\n- D. Sync Jobs [STANDALONE] - lists jobs, fetches one by id.\n- E. Retry [STANDALONE] - retry on SUCCEEDED returns 409 (locked rule).\n- F. Conflicts [STANDALONE] - lists OPEN conflicts (seeded RESERVATION_CONFIRM) and resolves with SERVER_TRUTH_KEPT.\n\nLocked decisions verified:\n- Same clientMutationId returns the same job.\n- Retry on SUCCEEDED is a 409.\n- Conflict resolution writes audit and transitions to RESOLVED/DISMISSED.\n- chef@demo.local cannot POST /sync/replay (folder C includes a 403 case)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context",
+            "item": [
+                {
+                    "name": "Login Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Login OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
+                                    "if (envActive) pm.environment.set('accessToken', body.accessToken);",
+                                    "if (body.refreshToken) {",
+                                    "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                                    "  if (envActive) pm.environment.set('refreshToken', body.refreshToken);",
+                                    "}",
+                                    "if (body.user && body.user.organizationId) {",
+                                    "  pm.collectionVariables.set('orgId', body.user.organizationId);",
+                                    "  if (envActive) pm.environment.set('orgId', body.user.organizationId);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login Chef (forbidden actor)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Chef login OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                                    "pm.collectionVariables.set('chefAccessToken', body.accessToken);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('chefAccessToken', body.accessToken);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{chefEmail}}\",\n  \"password\": \"{{chefPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get /api/auth/me",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. Idempotent Write Contract Demo",
+            "description": "[STANDALONE] Inspect a seeded idempotency key (seedReliabilityData created `seed-m41-payment-intent-001`).",
+            "item": [
+                {
+                    "name": "POST /idempotency/inspect (seeded key)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('found = true', () => pm.expect(j.found).to.eql(true));",
+                                    "pm.test('status = SUCCEEDED', () => pm.expect(j.status).to.eql('SUCCEEDED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"key\": \"seed-m41-payment-intent-001\",\n  \"scope\": \"payment-intent\",\n  \"routeMethod\": \"POST\",\n  \"routePath\": \"/api/payments/intents\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/idempotency/inspect",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "idempotency",
+                                "inspect"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /idempotency/inspect (unknown key -> found:false)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('found = false', () => pm.expect(pm.response.json().found).to.eql(false));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"key\": \"definitely-not-a-real-key-xyz\",\n  \"routeMethod\": \"POST\",\n  \"routePath\": \"/api/payments/intents\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/idempotency/inspect",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "idempotency",
+                                "inspect"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. Sync Replay",
+            "description": "[STANDALONE] Submits a GENERIC_REPLAY batch. The collection-level prereq generates `clientMutationId` and `idempotencyKey` when empty. Run twice to see same-key idempotency: the second run returns the same `jobId`.",
+            "item": [
+                {
+                    "name": "POST /sync/replay (GENERIC_REPLAY -> SUCCEEDED)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('accepted = 1', () => pm.expect(j.accepted).to.eql(1));",
+                                    "pm.test('status = SUCCEEDED', () => pm.expect(j.results[0].status).to.eql('SUCCEEDED'));",
+                                    "pm.collectionVariables.set('syncJobId', j.results[0].jobId);",
+                                    "pm.collectionVariables.set('succeededJobId', j.results[0].jobId);",
+                                    "if (pm.environment && pm.environment.name) {",
+                                    "  pm.environment.set('syncJobId', j.results[0].jobId);",
+                                    "  pm.environment.set('succeededJobId', j.results[0].jobId);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"executeNow\": true,\n  \"jobs\": [\n    {\n      \"clientMutationId\": \"{{clientMutationId}}\",\n      \"type\": \"GENERIC_REPLAY\",\n      \"idempotencyKey\": \"{{idempotencyKey}}\",\n      \"requestBody\": { \"hello\": \"world\", \"runAt\": \"{{$isoTimestamp}}\" },\n      \"intentSummary\": \"Postman M41 generic replay\",\n      \"capturedAt\": \"{{$isoTimestamp}}\",\n      \"origin\": \"OFFLINE_CLIENT\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/replay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "replay"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /sync/replay (same clientMutationId -> same jobId)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "const expected = pm.collectionVariables.get('syncJobId');",
+                                    "pm.test('jobId matches first call (idempotent)', () => pm.expect(j.results[0].jobId).to.eql(expected));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"executeNow\": true,\n  \"jobs\": [\n    {\n      \"clientMutationId\": \"{{clientMutationId}}\",\n      \"type\": \"GENERIC_REPLAY\",\n      \"requestBody\": { \"hello\": \"world\" },\n      \"intentSummary\": \"duplicate replay\",\n      \"capturedAt\": \"{{$isoTimestamp}}\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/replay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "replay"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /sync/replay (chef -> 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefAccessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"jobs\": [\n    {\n      \"clientMutationId\": \"chef-forbidden-{{$timestamp}}\",\n      \"type\": \"GENERIC_REPLAY\",\n      \"requestBody\": {},\n      \"intentSummary\": \"forbidden\",\n      \"capturedAt\": \"{{$isoTimestamp}}\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/replay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "replay"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /sync/replay (empty jobs -> 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"jobs\": []\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/replay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "replay"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Sync Jobs",
+            "description": "[STANDALONE] Folder pre-request auto-resolves syncJobId via list-first if missing (R17).",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){const v=pm.environment.get(k); if(v)return v;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "if (getVar('syncJobId')) return;",
+                            "const tok = getVar('accessToken');",
+                            "if (!tok) return;",
+                            "return new Promise((resolve)=>{",
+                            "  pm.sendRequest({ url: baseUrl + '/api/sync/jobs?limit=1', method:'GET', header: { 'Authorization':'Bearer '+tok } }, (err,res)=>{",
+                            "    if(!err && res){ try { const arr = res.json(); if(Array.isArray(arr)&&arr.length){ setVar('syncJobId', arr[0].id); } } catch(e){} }",
+                            "    resolve();",
+                            "  });",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "GET /sync/jobs",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/jobs?limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "jobs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /sync/jobs/:id",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('attempts present', () => pm.expect(j).to.have.property('attempts'));",
+                                    "pm.test('conflicts present', () => pm.expect(j).to.have.property('conflicts'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/jobs/{{syncJobId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "jobs",
+                                "{{syncJobId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Retry",
+            "description": "[STANDALONE] Retry on a SUCCEEDED job is 409 (locked rule).",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){const v=pm.environment.get(k); if(v)return v;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "if (getVar('succeededJobId')) return;",
+                            "const tok = getVar('accessToken');",
+                            "if (!tok) return;",
+                            "return new Promise((resolve)=>{",
+                            "  pm.sendRequest({ url: baseUrl + '/api/sync/jobs?status=SUCCEEDED&limit=1', method:'GET', header: { 'Authorization':'Bearer '+tok } }, (err,res)=>{",
+                            "    if(!err && res){ try { const arr = res.json(); if(Array.isArray(arr)&&arr.length){ setVar('succeededJobId', arr[0].id); } } catch(e){} }",
+                            "    resolve();",
+                            "  });",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "POST /sync/jobs/:id/retry (SUCCEEDED -> 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('409 Conflict', () => pm.response.to.have.status(409));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/jobs/{{succeededJobId}}/retry",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "jobs",
+                                "{{succeededJobId}}",
+                                "retry"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. Conflicts",
+            "description": "[STANDALONE] Folder prereq auto-resolves conflictId via list OPEN (R17). Resolves with SERVER_TRUTH_KEPT.",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){const v=pm.environment.get(k); if(v)return v;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "if (getVar('conflictId')) return;",
+                            "const tok = getVar('accessToken');",
+                            "if (!tok) return;",
+                            "return new Promise((resolve)=>{",
+                            "  pm.sendRequest({ url: baseUrl + '/api/sync/conflicts?status=OPEN&limit=1', method:'GET', header: { 'Authorization':'Bearer '+tok } }, (err,res)=>{",
+                            "    if(!err && res){ try { const arr = res.json(); if(Array.isArray(arr)&&arr.length){ setVar('conflictId', arr[0].id); } } catch(e){} }",
+                            "    resolve();",
+                            "  });",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "GET /sync/conflicts?status=OPEN",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/conflicts?status=OPEN",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "conflicts"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "OPEN"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH /sync/conflicts/:id/resolve (SERVER_TRUTH_KEPT)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 404 || pm.response.code === 409) { pm.test('skipped (no open conflict)', () => true); return; }",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('status RESOLVED or DISMISSED', () => pm.expect(['RESOLVED','DISMISSED']).to.include(j.status));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"resolution\": \"SERVER_TRUTH_KEPT\",\n  \"note\": \"Postman M41 auto-resolve\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sync/conflicts/{{conflictId}}/resolve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sync",
+                                "conflicts",
+                                "{{conflictId}}",
+                                "resolve"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -3,6 +3,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { CreateStockBatchDto, CreateStockAdjustmentDto } from './dto';
+import { ControlPlaneService } from '../controlplane/controlplane.service';
 
 interface BranchContext {
   branchId: string;
@@ -13,6 +14,7 @@ interface BranchContext {
 interface RequestMeta {
   ipAddress?: string;
   userAgent?: string;
+  trainingSessionId?: string | null;
 }
 
 @Injectable()
@@ -20,7 +22,8 @@ export class InventoryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) {}
+    private readonly controlPlane: ControlPlaneService,
+  ) { }
 
   // ── Stock Batches ──
 
@@ -143,6 +146,36 @@ export class InventoryService {
     dto: CreateStockAdjustmentDto,
     meta: RequestMeta,
   ) {
+    // M42: refuse the write if an ACTIVE BLOCK_WRITES maintenance window
+    // currently covers INVENTORY_WRITES. Audit-logged inside the facade.
+    await this.controlPlane.assertWriteAllowed({
+      orgId: ctx.organizationId,
+      branchId: ctx.branchId,
+      actorUserId: userId,
+      category: 'INVENTORY_WRITES',
+      operation: 'inventory.createStockAdjustment',
+    });
+
+    // M42: short-circuit when the actor has an ACTIVE training session.
+    // No real batch / adjustment / audit row is persisted in that case.
+    const sim = await this.controlPlane.checkTrainingMode(
+      ctx.organizationId,
+      userId,
+      meta.trainingSessionId ?? null,
+      'inventory.createStockAdjustment',
+    );
+    if (sim) {
+      return {
+        ...sim,
+        request: {
+          itemId: dto.itemId,
+          qtyDelta: dto.qtyDelta,
+          reason: dto.reason ?? null,
+          branchId: ctx.branchId,
+        },
+      };
+    }
+
     const item = await this.prisma.inventoryItem.findFirst({
       where: { id: dto.itemId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });

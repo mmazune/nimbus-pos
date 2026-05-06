@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InventoryService } from './inventory.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { ControlPlaneService } from '../controlplane/controlplane.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -9,6 +10,7 @@ describe('InventoryService', () => {
   let service: InventoryService;
   let prisma: Record<string, any>;
   let audit: { log: jest.Mock };
+  let controlPlane: { assertWriteAllowed: jest.Mock; checkTrainingMode: jest.Mock };
 
   const mockBranchCtx = {
     branchId: 'branch-1',
@@ -37,12 +39,17 @@ describe('InventoryService', () => {
     };
 
     audit = { log: jest.fn().mockResolvedValue(undefined) };
+    controlPlane = {
+      assertWriteAllowed: jest.fn().mockResolvedValue(undefined),
+      checkTrainingMode: jest.fn().mockResolvedValue(null),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         InventoryService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: ControlPlaneService, useValue: controlPlane },
       ],
     }).compile();
 
@@ -234,7 +241,7 @@ describe('InventoryService', () => {
         mockMeta,
       );
 
-      expect(result.id).toBe('adj-1');
+      expect((result as { id: string }).id).toBe('adj-1');
       expect(prisma.stockBatch.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({

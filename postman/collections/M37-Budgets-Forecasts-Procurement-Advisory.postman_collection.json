@@ -1,0 +1,1109 @@
+{
+    "info": {
+        "name": "M37 - Budgets + Forecasts + Procurement Advisory",
+        "description": "API collection for M37 — budget CRUD, GL actuals refresh, franchise forecast runs, demand calendar management, and procurement advisory suggestions.\n\nManual checklist:\n1. Run Auth — Login Owner\n2. Run Auth — Get Branch ID\n3. List Budgets (empty)\n4. Create Budget → captures {{budgetId}}\n5. Get Budget by ID\n6. Update Actuals (GL refresh)\n7. List Budgets (with status filter)\n8. List Demand Calendar\n9. Create Demand Calendar Entry → captures {{demandCalendarId}}\n10. Get Demand Calendar Entry by ID\n11. Update Demand Calendar Entry\n12. Get Forecast (force refresh) → captures {{forecastRunId}}\n13. Get Forecast (cached)\n14. List Procurement Suggestions → captures {{procurementSuggestionId}}\n15. Review Procurement Suggestion (REVIEWED)\n16. Review Procurement Suggestion (DISMISSED — non-PENDING → 400)\n17. Delete Demand Calendar Entry",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth — Login Owner",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.environment.set('refreshToken', body.refreshToken);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Auth — Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Budgets",
+            "item": [
+                {
+                    "name": "List Budgets",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Budgets (filter by status=DRAFT)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('all DRAFT', () => {",
+                                    "  const body = pm.response.json();",
+                                    "  body.forEach(b => pm.expect(b.status).to.eql('DRAFT'));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets?status=DRAFT",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "DRAFT"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Budget",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "pm.test('has lines', () => pm.expect(body.lines).to.be.an('array'));",
+                                    "pm.environment.set('budgetId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Q2 2026 Operational Budget\",\n    \"periodStart\": \"2026-04-01\",\n    \"periodEnd\": \"2026-06-30\",\n    \"budgetType\": \"OPERATIONAL\",\n    \"version\": 1,\n    \"notes\": \"Q2 branch budget — Postman test\",\n    \"lines\": [\n        {\n            \"category\": \"Food Cost\",\n            \"dimension\": \"Kitchen\",\n            \"budgetAmount\": 600000\n        },\n        {\n            \"category\": \"Labour\",\n            \"dimension\": \"FOH\",\n            \"budgetAmount\": 400000\n        },\n        {\n            \"category\": \"Utilities\",\n            \"budgetAmount\": 150000\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Budget — Duplicate (expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Duplicate Q2 Budget\",\n    \"periodStart\": \"2026-04-01\",\n    \"periodEnd\": \"2026-06-30\",\n    \"budgetType\": \"OPERATIONAL\",\n    \"version\": 1,\n    \"lines\": [\n        { \"category\": \"Misc\", \"budgetAmount\": 10000 }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Budget — Missing Required Fields (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Incomplete Budget\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Budget by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('id matches', () => pm.expect(body.id).to.eql(pm.environment.get('budgetId')));",
+                                    "pm.test('has lines', () => pm.expect(body.lines).to.be.an('array').with.lengthOf(3));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets/{{budgetId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets",
+                                "{{budgetId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Budget by ID — Not Found (expect 404)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 404', () => pm.response.to.have.status(404));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets/nonexistent-id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets",
+                                "nonexistent-id"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Actuals (GL refresh)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('id matches', () => pm.expect(body.id).to.eql(pm.environment.get('budgetId')));",
+                                    "pm.test('has lines', () => pm.expect(body.lines).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"windowStart\": \"2026-04-01\",\n    \"windowEnd\": \"2026-06-30\",\n    \"notes\": \"Manual actuals refresh — Postman test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets/{{budgetId}}/update-actuals",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets",
+                                "{{budgetId}}",
+                                "update-actuals"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Actuals — Not Found (expect 404)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 404', () => pm.response.to.have.status(404));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/budgets/nonexistent-id/update-actuals",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "budgets",
+                                "nonexistent-id",
+                                "update-actuals"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Forecast",
+            "item": [
+                {
+                    "name": "Get Forecast — Branch (force refresh)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                                    "pm.test('status COMPLETED', () => pm.expect(body.status).to.eql('COMPLETED'));",
+                                    "pm.test('forecastType BRANCH', () => pm.expect(body.forecastType).to.eql('BRANCH'));",
+                                    "pm.environment.set('forecastRunId', body.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/franchise/forecast?forecastType=BRANCH&refresh=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "franchise",
+                                "forecast"
+                            ],
+                            "query": [
+                                {
+                                    "key": "forecastType",
+                                    "value": "BRANCH"
+                                },
+                                {
+                                    "key": "refresh",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Forecast — Branch (cached)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has id', () => pm.expect(pm.response.json().id).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/franchise/forecast?forecastType=BRANCH",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "franchise",
+                                "forecast"
+                            ],
+                            "query": [
+                                {
+                                    "key": "forecastType",
+                                    "value": "BRANCH"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Forecast — No Auth (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 401', () => pm.response.to.have.status(401));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/franchise/forecast?forecastType=BRANCH",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "franchise",
+                                "forecast"
+                            ],
+                            "query": [
+                                {
+                                    "key": "forecastType",
+                                    "value": "BRANCH"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Demand Calendar",
+            "item": [
+                {
+                    "name": "List Demand Calendar",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/demand-calendar",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "demand-calendar"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Demand Calendar Entry",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.environment.set('demandCalendarId', body.id);",
+                                    "pm.test('has calendarType', () => pm.expect(body.calendarType).to.eql('SPORTS_NIGHT'));",
+                                    "pm.test('has expectedCovers', () => pm.expect(body.expectedCovers).to.eql(100));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"calendarType\": \"SPORTS_NIGHT\",\n    \"daypart\": \"DINNER\",\n    \"title\": \"Postman Premier League Night\",\n    \"dateStart\": \"2028-02-01\",\n    \"dateEnd\": \"2028-02-01\",\n    \"expectedCovers\": 100,\n    \"demandMultiplier\": 1.8,\n    \"revenueUpliftPct\": 40,\n    \"itemNotes\": \"Wings, nachos, beer kegs\",\n    \"notes\": \"Created via Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/demand-calendar",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "demand-calendar"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Demand Calendar Entry by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has title', () => pm.expect(pm.response.json().title).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/demand-calendar/{{demandCalendarId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "demand-calendar",
+                                "{{demandCalendarId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Demand Calendar Entry",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('covers updated', () => pm.expect(pm.response.json().expectedCovers).to.eql(120));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"expectedCovers\": 120,\n    \"notes\": \"Updated via Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/demand-calendar/{{demandCalendarId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "demand-calendar",
+                                "{{demandCalendarId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Demand Calendar Entry",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/demand-calendar/{{demandCalendarId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "demand-calendar",
+                                "{{demandCalendarId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Demand Calendar — Filter by Type",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/demand-calendar?calendarType=BRUNCH",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "demand-calendar"
+                            ],
+                            "query": [
+                                {
+                                    "key": "calendarType",
+                                    "value": "BRUNCH"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Procurement Suggestions",
+            "item": [
+                {
+                    "name": "List Procurement Suggestions",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                                    "const body = pm.response.json();",
+                                    "if (body.length > 0) {",
+                                    "  pm.environment.set('procurementSuggestionId', body[0].id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/procurement-suggestions",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "procurement-suggestions"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Review Procurement Suggestion (REVIEWED)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status REVIEWED', () => pm.expect(body.status).to.eql('REVIEWED'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"REVIEWED\",\n    \"reviewNotes\": \"Reviewed and approved for ordering — Postman test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/procurement-suggestions/{{procurementSuggestionId}}/review",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "procurement-suggestions",
+                                "{{procurementSuggestionId}}",
+                                "review"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Review Procurement Suggestion — Already Reviewed (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"DISMISSED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/procurement-suggestions/{{procurementSuggestionId}}/review",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "procurement-suggestions",
+                                "{{procurementSuggestionId}}",
+                                "review"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Review Procurement Suggestion — Not Found (expect 404)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 404', () => pm.response.to.have.status(404));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"REVIEWED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/finance/procurement-suggestions/nonexistent-id/review",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "finance",
+                                "procurement-suggestions",
+                                "nonexistent-id",
+                                "review"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

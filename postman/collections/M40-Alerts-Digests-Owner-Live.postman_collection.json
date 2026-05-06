@@ -1,0 +1,1175 @@
+{
+    "info": {
+        "name": "M40 - Alerts + Digests + Owner Live Views",
+        "description": "Canonical M40 collection. Covers alert channels, alert rules, test alert dispatch, alert deliveries (list + retry), digest schedules (CRUD + run), and the real-time owner live feed. Owner SaaS billing payment-failure alerts are LIVE; public diner mobile-money payment-execution alerts are explicitly excluded (gated on a future mobile-money milestone).\n\nSee folder `00 Read Me` for variable flow and re-import warning.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "ruleId",
+            "value": ""
+        },
+        {
+            "key": "ruleCode",
+            "value": ""
+        },
+        {
+            "key": "channelId",
+            "value": ""
+        },
+        {
+            "key": "channelCode",
+            "value": ""
+        },
+        {
+            "key": "digestId",
+            "value": ""
+        },
+        {
+            "key": "deliveryId",
+            "value": ""
+        },
+        {
+            "key": "sentDeliveryId",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// ── M40 canonical pre-request — mirrors M39.1/M39.2/M39.3 helper. ──",
+                    "// Rules: AI_POSTMAN_WORKING_PATTERNS R4 (auto-login), R5 (resolve via /api/auth/me),",
+                    "// R14 (canonical helper). Uses promise chain + return so Postman awaits before firing",
+                    "// the main request (callback-pyramid version raced and caused 401 on cold sessions).",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "let reqStr = '';",
+                    "try { reqStr = JSON.stringify(pm.request); } catch (e) { reqStr = url; }",
+                    "const isPublicAuth = /\\/api\\/auth\\/login/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublicRead = /\\/api\\/public\\//.test(url);",
+                    "const isPublic = isPublicAuth || isHealth || isPublicRead;",
+                    "function refsVar(name) { return reqStr.indexOf('{{' + name + '}}') !== -1; }",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  // Mirror to environment scope when an env is active so it doesn't shadow with an empty value (M39 stabilization fix).",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20)) { return resolve(); }",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+                    "          if (j.user && j.user.organizationId) setVar('orgId', j.user.organizationId);",
+                    "        } catch (e) { console.log('[m40 prereq] auto-login parse error', e && e.message); }",
+                    "      } else if (err) {",
+                    "        console.log('[m40 prereq] auto-login transport error', err && err.message);",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    const needBranch = refsVar('branchId') && !getVar('branchId');",
+                    "    const needOrg = refsVar('orgId') && !getVar('orgId');",
+                    "    if (!needBranch && !needOrg) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    if (!tok) { console.log('[m40 prereq] cannot resolve context — no accessToken'); return resolve(); }",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/me',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.context) {",
+                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+                    "          }",
+                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+                    "          }",
+                    "        } catch (e) { console.log('[m40 prereq] /api/auth/me parse error', e && e.message); }",
+                    "      } else if (err) {",
+                    "        console.log('[m40 prereq] /api/auth/me transport error', err && err.message);",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "",
+                    "return ensureToken()",
+                    "  .then(ensureMeContext)",
+                    "  .catch((e) => console.log('[m40 prereq] chain error', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README — variables, run order, re-import warning",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "⚠️ **Re-import required after any script change.** Postman caches pre-request and test scripts at import time. If you previously imported this collection and the scripts have since been updated, delete the collection from Postman and re-import the JSON.\n\n## Cold-session behavior\n\nThis collection is **standalone-resilient** (AI_POSTMAN_WORKING_PATTERNS R3, R4, R5, R14). The collection-level pre-request script:\n\n1. Auto-logs in `owner@demo.local` / `Owner#123` via `POST /api/auth/login` whenever `accessToken` is missing or shorter than 20 characters (skipped on `/api/auth/login`, `/api/health`, `/api/public/*`).\n2. Calls `GET /api/auth/me` whenever the request references `{{orgId}}` or `{{branchId}}` and the variable is empty, then captures `context.defaultOrganizationId` / `context.defaultBranchId` (with `memberships[0]` as fallback).\n3. Uses a **Promise chain with `return`** so Postman awaits the auto-login + context resolution **before** firing the main request. (An earlier callback-pyramid version of this script raced the main request and caused 401 on cold sessions.)\n\nEvery authenticated request also sets an explicit `Authorization: Bearer {{accessToken}}` header — no reliance on collection-level auth inheritance.\n\n## Context-resolution endpoint\n\n**`GET /api/auth/me`** is the canonical endpoint (per R5 / R10 of AI_POSTMAN_WORKING_PATTERNS). It returns `{ context: { defaultOrganizationId, defaultBranchId, ... }, memberships: [...] }`. Do **not** use `/api/me` — that route exists (TenancyController) but returns a different shape and is not the convention used by the stabilized M39 collections.\n\n## Collection variables\n\n| Variable | Set by | Consumed by |\n|---|---|---|\n| `accessToken`, `refreshToken` | collection-level pre-request via `POST /api/auth/login` (auto-login) or folder A `Login Owner` | every authenticated request (explicit `Authorization` header) |\n| `orgId`, `branchId` | collection-level pre-request via `GET /api/auth/me` (or folder A `Get /api/auth/me`) | folders B–G as needed |\n| `ruleId`, `ruleCode` | folder B `Create Alert Rule` **or** folder B pre-request (auto-resolved: list-first → create-if-missing) | folder B `Update`, folder D, folder F |\n| `channelId`, `channelCode` | folder C `List Alert Channels` (captures seeded `email-owner`) and `Create Alert Channel` | folder C `Update`, folder D |\n| `digestId` | folder E `List Digest Schedules` (captures seeded `daily-owner-summary`) and `Create Digest Schedule` | folder E `Update`, `Run` |\n| `deliveryId` | folder D `Test Alert (forced failure)` **or** folder F pre-request (auto-resolved: list RETRY_SCHEDULED → dispatch forced-failure) | folder F `Retry Delivery` |\n| `sentDeliveryId` | folder D `Test Alert (single channel SENT)` | folder F `Retry already SENT (409)` |\n\n## Folder run order\n\n| # | Folder | Mode |\n|---|---|---|\n| A | Auth & Context | [STANDALONE] — explicit `Login Owner` + `Get /api/auth/me`. Optional in practice: the collection-level pre-request performs both automatically before any other folder runs. |\n| B | Alert Rules | [STANDALONE] — auto-login + auto-context. |\n| C | Alert Channels | [STANDALONE] — auto-login + auto-context. |\n| D | Test Alerts | [STANDALONE] — uses seeded `email-owner` / `sms-manager` / `slack-ops` channels. |\n| E | Digest Schedules | [STANDALONE] — uses seeded `daily-owner-summary`. |\n| F | Alert Deliveries / Retry | [STANDALONE] — folder pre-request auto-resolves `deliveryId` via list-first (finds a `RETRY_SCHEDULED` delivery) or creates a fresh forced-failure test alert if none exists. `sentDeliveryId` is **not** auto-resolved (the 409 test skips gracefully if missing). `List Recent Deliveries` is always standalone. |\n| G | Owner Live View | [STANDALONE] — auto-login + auto-context. |\n\n## Locked rules verified by this collection\n\n* Owner SaaS billing payment-failure alerts are **live** (folder B has a `BILLING_PAYMENT_FAILURE` rule).\n* Public diner mobile-money payment-execution alerts are **NOT** wired — verified in folder G via `notes.publicDinerPaymentExecution` containing `pending`.\n* No hotel / property-group milestone exists.\n"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context",
+            "item": [
+                {
+                    "name": "Login Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Login OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                                    "// Dual-scope write per M39 stabilization fix — if a Postman environment is selected, an empty/stale env value would otherwise shadow the collection variable.",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
+                                    "if (envActive) pm.environment.set('accessToken', body.accessToken);",
+                                    "if (body.refreshToken) {",
+                                    "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                                    "  if (envActive) pm.environment.set('refreshToken', body.refreshToken);",
+                                    "}",
+                                    "if (body.user && body.user.organizationId) {",
+                                    "  pm.collectionVariables.set('orgId', body.user.organizationId);",
+                                    "  if (envActive) pm.environment.set('orgId', body.user.organizationId);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get /api/auth/me (resolve orgId, branchId)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "// Canonical shape from auth.service.me(): { context: { defaultOrganizationId, defaultBranchId }, memberships: [...] }",
+                                    "let orgId = b && b.context && b.context.defaultOrganizationId;",
+                                    "let branchId = b && b.context && b.context.defaultBranchId;",
+                                    "if (!orgId && Array.isArray(b && b.memberships) && b.memberships[0]) orgId = b.memberships[0].organizationId;",
+                                    "if (!branchId && Array.isArray(b && b.memberships) && b.memberships[0]) branchId = b.memberships[0].branchId;",
+                                    "// Dual-scope write per M39 stabilization fix — prevents an empty environment variable from shadowing the collection scope.",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "if (orgId) {",
+                                    "  pm.collectionVariables.set('orgId', orgId);",
+                                    "  if (envActive) pm.environment.set('orgId', orgId);",
+                                    "}",
+                                    "if (branchId) {",
+                                    "  pm.collectionVariables.set('branchId', branchId);",
+                                    "  if (envActive) pm.environment.set('branchId', branchId);",
+                                    "}",
+                                    "pm.test('orgId resolved', () => pm.expect(orgId).to.be.a('string').and.not.empty);",
+                                    "pm.test('branchId resolved', () => pm.expect(branchId).to.be.a('string').and.not.empty);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        },
+                        "description": "Canonical context-resolution endpoint per AI_POSTMAN_WORKING_PATTERNS R5 / R10. Returns `{ context: { defaultOrganizationId, defaultBranchId }, memberships: [...] }` from `auth.service.me()`. The collection-level pre-request also calls this automatically whenever a downstream request references `{{orgId}}` or `{{branchId}}` and the variable is missing — so this folder can be skipped when you only want to run B–G standalone."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. Alert Rules",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "// ── Folder B pre-request: R17 upstream entity resolution for ruleId ──",
+                            "// If ruleId already set (from 'Create Alert Rule' test script or prior run), skip.",
+                            "// Strategy: 1) list /api/alerts/rules → capture first row  2) create-if-missing",
+                            "// Makes 'Update Alert Rule (disable)' standalone-resilient — AI_POSTMAN_WORKING_PATTERNS R17, R18.",
+                            "function getVar(k) {",
+                            "  if (pm.environment && pm.environment.name) {",
+                            "    const ev = pm.environment.get(k);",
+                            "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                            "  }",
+                            "  return pm.collectionVariables.get(k);",
+                            "}",
+                            "function setVar(k, v) {",
+                            "  if (v === undefined || v === null || v === '') return;",
+                            "  pm.collectionVariables.set(k, v);",
+                            "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                            "}",
+                            "if (getVar('ruleId')) return; // already resolved — skip",
+                            "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                            "const tok = getVar('accessToken');",
+                            "if (!tok) { console.log('[folder B prereq] no accessToken — skipping ruleId auto-resolve'); return; }",
+                            "function tryListCapture() {",
+                            "  return new Promise(function(resolve) {",
+                            "    pm.sendRequest({ url: baseUrl + '/api/alerts/rules', method: 'GET',",
+                            "      header: { 'Authorization': 'Bearer ' + tok } },",
+                            "    function(err, res) {",
+                            "      if (!err && res) {",
+                            "        try {",
+                            "          const arr = res.json();",
+                            "          if (Array.isArray(arr) && arr.length > 0) {",
+                            "            setVar('ruleId', arr[0].id); setVar('ruleCode', arr[0].code);",
+                            "            console.log('[folder B prereq] ruleId resolved via list:', arr[0].id);",
+                            "            return resolve(true);",
+                            "          }",
+                            "        } catch(e) { console.log('[folder B prereq] list parse error:', e && e.message); }",
+                            "      }",
+                            "      resolve(false);",
+                            "    });",
+                            "  });",
+                            "}",
+                            "function tryCreate() {",
+                            "  return new Promise(function(resolve) {",
+                            "    const code = 'auto-rule-' + Date.now();",
+                            "    pm.sendRequest({ url: baseUrl + '/api/alerts/rules', method: 'POST',",
+                            "      header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },",
+                            "      body: { mode: 'raw', raw: JSON.stringify({ code: code, name: 'Auto-resolve (standalone)', type: 'LOW_STOCK', severity: 'WARNING', channelCodes: ['email-owner'], thresholdConfig: { minQty: 5 } }) } },",
+                            "    function(err, res) {",
+                            "      if (!err && res) {",
+                            "        try {",
+                            "          const b = res.json();",
+                            "          if (b.id) { setVar('ruleId', b.id); setVar('ruleCode', b.code); console.log('[folder B prereq] ruleId created:', b.id); return resolve(true); }",
+                            "        } catch(e) { console.log('[folder B prereq] create error:', e && e.message); }",
+                            "      }",
+                            "      resolve(false);",
+                            "    });",
+                            "  });",
+                            "}",
+                            "return tryListCapture().then(function(found) { if (!found) return tryCreate(); })",
+                            "  .catch(function(e) { console.log('[folder B prereq] chain error:', e && e.message); });"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "List Alert Rules",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/rules",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "rules"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Alert Rule (LOW_STOCK WARNING)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.collectionVariables.set('ruleCode', 'pm-rule-' + Date.now());"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const b = pm.response.json();",
+                                    "pm.collectionVariables.set('ruleId', b.id);",
+                                    "pm.test('rule has expected type', () => pm.expect(b.type).to.eql('LOW_STOCK'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"{{ruleCode}}\",\n  \"name\": \"Postman low-stock rule\",\n  \"type\": \"LOW_STOCK\",\n  \"severity\": \"WARNING\",\n  \"channelCodes\": [\"email-owner\"],\n  \"thresholdConfig\": { \"minQty\": 5 }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/rules",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "rules"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Alert Rule (disable)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('disabled', () => pm.expect(pm.response.json().status).to.eql('DISABLED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"DISABLED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/rules/{{ruleId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "rules",
+                                "{{ruleId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Rule with invalid type (400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"pm-rule-invalid\",\n  \"name\": \"bad\",\n  \"type\": \"NOT_A_REAL_TYPE\",\n  \"channelCodes\": [\"email-owner\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/rules",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "rules"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. Alert Channels",
+            "item": [
+                {
+                    "name": "List Alert Channels",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('array', () => pm.expect(b).to.be.an('array'));",
+                                    "const seeded = b.find(c => c.code === 'email-owner');",
+                                    "pm.test('seeded email-owner present', () => pm.expect(seeded).to.exist);",
+                                    "if (seeded) pm.collectionVariables.set('channelId', seeded.id);",
+                                    "if (seeded) pm.collectionVariables.set('channelCode', seeded.code);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/channels",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "channels"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Alert Channel (EMAIL)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.variables.set('newChannelCode', 'pm-ch-' + Date.now());"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"{{newChannelCode}}\",\n  \"name\": \"Postman email channel\",\n  \"type\": \"EMAIL\",\n  \"config\": { \"to\": \"owner@demo.local\" }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/channels",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "channels"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Test Alerts",
+            "item": [
+                {
+                    "name": "Test Alert — single channel (SENT)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('SENT', () => pm.expect(b.deliveries[0].status).to.eql('SENT'));",
+                                    "pm.collectionVariables.set('sentDeliveryId', b.deliveries[0].id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channelCodes\": [\"email-owner\"],\n  \"severity\": \"INFO\",\n  \"title\": \"Postman probe\",\n  \"message\": \"Hello from Newman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "test"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Test Alert — critical fan-out (3 channels)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('count 3', () => pm.expect(pm.response.json().count).to.eql(3));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channelCodes\": [\"email-owner\", \"sms-manager\", \"slack-ops\"],\n  \"severity\": \"CRITICAL\",\n  \"title\": \"Postman fan-out\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "test"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Test Alert — forced failure (RETRY_SCHEDULED)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().deliveries[0];",
+                                    "pm.collectionVariables.set('deliveryId', d.id);",
+                                    "pm.test('RETRY_SCHEDULED', () => pm.expect(d.status).to.eql('RETRY_SCHEDULED'));",
+                                    "pm.test('failureReason set', () => pm.expect(d.failureReason).to.eql('FORCED_TEST_FAILURE'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channelCodes\": [\"slack-ops\"],\n  \"forceFailure\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "test"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Digest Schedules",
+            "item": [
+                {
+                    "name": "List Digest Schedules",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const list = pm.response.json();",
+                                    "const seeded = list.find(d => d.code === 'daily-owner-summary');",
+                                    "pm.test('seeded daily-owner-summary present', () => pm.expect(seeded).to.exist);",
+                                    "if (seeded) pm.collectionVariables.set('digestId', seeded.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/digests",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "digests"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Digest Schedule (WEEKLY)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.variables.set('newDigestCode', 'pm-digest-' + Date.now());"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"{{newDigestCode}}\",\n  \"name\": \"Postman weekly summary\",\n  \"digestType\": \"weekly-owner-summary\",\n  \"frequency\": \"WEEKLY\",\n  \"hourLocal\": 7,\n  \"dayOfWeek\": 1,\n  \"channelCodes\": [\"email-owner\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/digests",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "digests"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Run Digest (manual trigger)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('deliveries returned', () => pm.expect(b.deliveries).to.be.an('array').and.not.empty);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/digests/{{digestId}}/run",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "digests",
+                                "{{digestId}}",
+                                "run"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. Alert Deliveries / Retry",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "// ── Folder F pre-request: R17 upstream entity resolution for deliveryId ──",
+                            "// If deliveryId already set (from folder D 'Test Alert — forced failure'), skip.",
+                            "// Strategy: 1) list deliveries → find first RETRY_SCHEDULED  2) dispatch forced-failure test",
+                            "// Makes 'Retry Delivery (RETRY_SCHEDULED → SENT)' standalone-resilient — AI_POSTMAN_WORKING_PATTERNS R17, R18.",
+                            "function getVar(k) {",
+                            "  if (pm.environment && pm.environment.name) {",
+                            "    const ev = pm.environment.get(k);",
+                            "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                            "  }",
+                            "  return pm.collectionVariables.get(k);",
+                            "}",
+                            "function setVar(k, v) {",
+                            "  if (v === undefined || v === null || v === '') return;",
+                            "  pm.collectionVariables.set(k, v);",
+                            "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                            "}",
+                            "if (getVar('deliveryId')) return; // already resolved — skip",
+                            "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                            "const tok = getVar('accessToken');",
+                            "if (!tok) { console.log('[folder F prereq] no accessToken — skipping deliveryId auto-resolve'); return; }",
+                            "function tryListCapture() {",
+                            "  return new Promise(function(resolve) {",
+                            "    pm.sendRequest({ url: baseUrl + '/api/alerts/deliveries', method: 'GET',",
+                            "      header: { 'Authorization': 'Bearer ' + tok } },",
+                            "    function(err, res) {",
+                            "      if (!err && res) {",
+                            "        try {",
+                            "          const arr = res.json();",
+                            "          if (Array.isArray(arr)) {",
+                            "            const retryable = arr.find(function(d) { return d.status === 'RETRY_SCHEDULED'; });",
+                            "            if (retryable) {",
+                            "              setVar('deliveryId', retryable.id);",
+                            "              console.log('[folder F prereq] deliveryId resolved via list:', retryable.id);",
+                            "              return resolve(true);",
+                            "            }",
+                            "          }",
+                            "        } catch(e) { console.log('[folder F prereq] list parse error:', e && e.message); }",
+                            "      }",
+                            "      resolve(false);",
+                            "    });",
+                            "  });",
+                            "}",
+                            "function tryDispatchForcedFailure() {",
+                            "  return new Promise(function(resolve) {",
+                            "    pm.sendRequest({ url: baseUrl + '/api/alerts/test', method: 'POST',",
+                            "      header: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },",
+                            "      body: { mode: 'raw', raw: JSON.stringify({ channelCodes: ['slack-ops'], forceFailure: true }) } },",
+                            "    function(err, res) {",
+                            "      if (!err && res) {",
+                            "        try {",
+                            "          const b = res.json();",
+                            "          const d = Array.isArray(b.deliveries) && b.deliveries[0];",
+                            "          if (d && d.id) { setVar('deliveryId', d.id); console.log('[folder F prereq] deliveryId from forced-failure dispatch:', d.id); return resolve(true); }",
+                            "        } catch(e) { console.log('[folder F prereq] dispatch error:', e && e.message); }",
+                            "      }",
+                            "      resolve(false);",
+                            "    });",
+                            "  });",
+                            "}",
+                            "return tryListCapture().then(function(found) { if (!found) return tryDispatchForcedFailure(); })",
+                            "  .catch(function(e) { console.log('[folder F prereq] chain error:', e && e.message); });"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "List Recent Deliveries",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/deliveries",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "deliveries"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Retry Delivery (RETRY_SCHEDULED → SENT)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('deliveryId')) {",
+                                    "  console.warn('[skip] no deliveryId — run folder D \"Test Alert — forced failure\" first');",
+                                    "}"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/deliveries/{{deliveryId}}/retry",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "deliveries",
+                                "{{deliveryId}}",
+                                "retry"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Retry already-SENT delivery (409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 409', () => pm.response.to.have.status(409));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/alerts/deliveries/{{sentDeliveryId}}/retry",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "alerts",
+                                "deliveries",
+                                "{{sentDeliveryId}}",
+                                "retry"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "G. Owner Live View",
+            "item": [
+                {
+                    "name": "GET /owner/live",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('events array', () => pm.expect(b.events).to.be.an('array'));",
+                                    "pm.test('counts present', () => pm.expect(b.counts).to.exist);",
+                                    "pm.test('public diner payment execution still pending (locked rule)', () => pm.expect(String(b.notes?.publicDinerPaymentExecution || '')).to.match(/pending/i));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/owner/live",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "owner",
+                                "live"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

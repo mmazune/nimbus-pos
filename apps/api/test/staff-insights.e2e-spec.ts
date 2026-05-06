@@ -17,7 +17,7 @@ describe('Staff Insights + Awards + Promotion Suggestions (e2e)', () => {
 
   // IDs captured during tests
   let employeeId: string;
-  let insightId: string;
+  let _insightId: string;
   let awardId: string;
   let promotionSuggestionId: string;
 
@@ -160,7 +160,7 @@ describe('Staff Insights + Awards + Promotion Suggestions (e2e)', () => {
       expect(res.status).toBe(201);
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBeGreaterThan(0);
-      insightId = res.body[0]?.id;
+      _insightId = res.body[0]?.id;
     });
 
     it('should be idempotent for same period', async () => {

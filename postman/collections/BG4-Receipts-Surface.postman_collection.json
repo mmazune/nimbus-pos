@@ -1,0 +1,984 @@
+{
+    "info": {
+        "name": "BG4.A - Receipts Surface (View / Reprint / Send / History)",
+        "description": "BG4.A collection. Validates the four POS receipt endpoints introduced in `apps/api/src/modules/receipts`:\n- `GET /api/receipts/:id` — normalized receipt view with totals, items, payments, branch/org/footer, history counts. Audits `RECEIPT_VIEWED` (fire-and-forget).\n- `GET /api/receipts/:id/history` — paginated audit timeline (merges receipt-side + order-lifecycle rows).\n- `POST /api/receipts/:id/reprint` — wrapped via BG3 facade (category=null, idempotency optional). Audits `RECEIPT_REPRINTED`.\n- `POST /api/receipts/:id/send` — wrapped via BG3 facade. Returns 202 with `status: 'PENDING'`, `supported: false`, `reason: 'NO_LIVE_DELIVERY_ADAPTER'` (no live adapter wired this milestone). Audits `RECEIPT_SENT`.\n\nLocked rules verified:\n- `/api/auth/me` remains canonical context source (R14).\n- `POST /api/auth/login` accepts [200, 201] (R12).\n- New permissions: `pos:receipt:read | pos:receipt:reprint | pos:receipt:send` granted to Owner/Manager/Cashier/Waiter. **Chef intentionally denied** to verify role gating still enforces 403.\n- BG3 idempotency facade reused (NOT parallel). Reprint/send accept optional `Idempotency-Key`; replay returns the cached body byte-for-byte (same `deliveryId` for send).\n- No schema change. Receipt id == order id. Receipt history is derived from `AuditLog` (entityType `receipt` + order-lifecycle entries on entityType `order`).\n- Public diner payments still PENDING (out of scope here).\n- BG4.B (split / merge / transfer / move-items) is deferred to next prompt.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "chefEmail",
+            "value": "chef@demo.local"
+        },
+        {
+            "key": "chefPassword",
+            "value": "Chef#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "chefToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "bg4aSuffix",
+            "value": ""
+        },
+        {
+            "key": "idemKeyReprint",
+            "value": ""
+        },
+        {
+            "key": "idemKeySend",
+            "value": ""
+        },
+        {
+            "key": "receiptOrderId",
+            "value": ""
+        },
+        {
+            "key": "lastDeliveryId",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// BG4.A canonical pre-request (R3/R4/R5/R12/R14/R16). Mirrors BG3.",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "const isPublicAuth = /\\/api\\/auth\\/(login|forgot-password|reset-password|invitations\\/accept|quick-pin-login)/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublic = isPublicAuth || isHealth;",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function ensureSuffix() {",
+                    "  const reqName = (pm.info && pm.info.requestName) || '';",
+                    "  const isFirstRequest = reqName === 'Login Owner';",
+                    "  if (isFirstRequest || !getVar('bg4aSuffix')) {",
+                    "    const s = String(Date.now()) + '-' + Math.floor(Math.random()*1e4);",
+                    "    setVar('bg4aSuffix', s);",
+                    "    setVar('idemKeyReprint', 'bg4a-rprint-' + s);",
+                    "    setVar('idemKeySend', 'bg4a-send-' + s);",
+                    "  }",
+                    "}",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20)) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+                    "          if (j.user && j.user.organizationId) setVar('orgId', j.user.organizationId);",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    if (getVar('branchId') && getVar('orgId')) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    if (!tok) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/me',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.context) {",
+                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+                    "          }",
+                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+                    "          }",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureChefToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    const tok = getVar('chefToken');",
+                    "    if (tok && tok.length >= 20) return resolve();",
+                    "    const chefEmail = getVar('chefEmail') || 'chef@demo.local';",
+                    "    const chefPassword = getVar('chefPassword') || 'Chef#123';",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: chefEmail, password: chefPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('chefToken', j.accessToken);",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureClosedOrder() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    if (getVar('receiptOrderId')) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    const branch = getVar('branchId');",
+                    "    if (!tok || !branch) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/pos/orders?status=CLOSED&pageSize=1',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          const arr = Array.isArray(j) ? j : (j.data || j.items || []);",
+                    "          if (arr.length && arr[0].id) setVar('receiptOrderId', arr[0].id);",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "ensureSuffix();",
+                    "return ensureToken().then(ensureMeContext).then(ensureChefToken).then(ensureClosedOrder).catch((e) => console.log('[bg4a prereq] chain error', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - variables, run order, locked rules",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "⚠️ **Re-import required after any script change.**\n\n## Run order\n1. **A. Auth & Context Baseline** — login owner + canonical /api/auth/me + login chef.\n2. **B. Receipt Read & History** — GET /api/receipts/:id and /:id/history (read + pagination).\n3. **C. Receipt Reprint** — POST /:id/reprint (200) + idempotency replay.\n4. **D. Receipt Send (PENDING — no live adapter)** — POST /:id/send (202, supported:false) + idempotency replay (same deliveryId).\n5. **E. Permission Denial — Chef** — chef → 403 on read/reprint/send.\n6. **F. Edge Cases** — unknown receipt id → 404, unknown channel → 400.\n\n## Auto-populated variables\n- `accessToken`, `chefToken`, `orgId`, `branchId` (from login + /api/auth/me).\n- `bg4aSuffix`, `idemKeyReprint`, `idemKeySend` (per-run).\n- `receiptOrderId` (auto-resolved via GET /api/pos/orders?status=CLOSED&pageSize=1). If your dev DB has no closed orders, run BG3 or the BG4.A e2e first to create one.\n\n## Locked rules verified\n- /api/auth/me canonical.\n- New `pos:receipt:*` perms on Owner/Manager/Cashier/Waiter; chef denied.\n- BG3 facade reused for reprint/send (idempotency optional, category=null).\n- Send returns 202 + `{ status:'PENDING', supported:false, reason:'NO_LIVE_DELIVERY_ADAPTER' }`. No real outbound delivery.\n- No schema change; receipt id == order id."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context Baseline",
+            "item": [
+                {
+                    "name": "Login Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
+                                    "if (envActive) pm.environment.set('accessToken', body.accessToken);",
+                                    "if (body.refreshToken) { pm.collectionVariables.set('refreshToken', body.refreshToken); if (envActive) pm.environment.set('refreshToken', body.refreshToken); }",
+                                    "if (body.user && body.user.organizationId) { pm.collectionVariables.set('orgId', body.user.organizationId); if (envActive) pm.environment.set('orgId', body.user.organizationId); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/auth/me (canonical context)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "function setBoth(k,v){ if(v===undefined||v===null||v==='') return; pm.collectionVariables.set(k,v); if(envActive) pm.environment.set(k,v); }",
+                                    "if (body.context && body.context.defaultBranchId) setBoth('branchId', body.context.defaultBranchId);",
+                                    "if (body.context && body.context.defaultOrganizationId) setBoth('orgId', body.context.defaultOrganizationId);",
+                                    "if (Array.isArray(body.memberships) && body.memberships.length) {",
+                                    "  if (!pm.collectionVariables.get('orgId')) setBoth('orgId', body.memberships[0].organizationId);",
+                                    "  if (!pm.collectionVariables.get('branchId')) setBoth('branchId', body.memberships[0].branchId);",
+                                    "}",
+                                    "pm.test('Has branchId', () => pm.expect(pm.collectionVariables.get('branchId') || (pm.environment && pm.environment.get('branchId'))).to.be.a('string').and.not.empty);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login Chef",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "if (body.accessToken) { pm.collectionVariables.set('chefToken', body.accessToken); if (envActive) pm.environment.set('chefToken', body.accessToken); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{chefEmail}}\",\n  \"password\": \"{{chefPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Resolve receiptOrderId (latest CLOSED order)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "const arr = Array.isArray(body) ? body : (body.data || body.items || []);",
+                                    "pm.test('At least one CLOSED order in dev DB', () => pm.expect(arr.length).to.be.greaterThan(0));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "if (arr.length && arr[0].id) { pm.collectionVariables.set('receiptOrderId', arr[0].id); if (envActive) pm.environment.set('receiptOrderId', arr[0].id); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders?status=CLOSED&pageSize=1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "CLOSED"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. Receipt Read & History",
+            "item": [
+                {
+                    "name": "GET /api/receipts/:id (Owner) -> 200",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('receiptId == orderId', () => pm.expect(b.receiptId).to.eql(b.orderId));",
+                                    "pm.test('totals shape', () => pm.expect(b.totals).to.be.an('object'));",
+                                    "pm.test('items[]', () => pm.expect(b.items).to.be.an('array'));",
+                                    "pm.test('payments[]', () => pm.expect(b.payments).to.be.an('array'));",
+                                    "pm.test('history shape', () => pm.expect(b.history).to.be.an('object'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/receipts/:id/history (page=1 pageSize=20)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('paginated shape', () => { pm.expect(b).to.have.property('data'); pm.expect(b).to.have.property('total'); pm.expect(b).to.have.property('page'); pm.expect(b).to.have.property('pageSize'); });",
+                                    "pm.test('data is array', () => pm.expect(b.data).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/history?page=1&pageSize=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "history"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "20"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. Receipt Reprint",
+            "item": [
+                {
+                    "name": "POST /api/receipts/:id/reprint (with Idempotency-Key)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('action RECEIPT_REPRINTED', () => pm.expect(b.action).to.eql('RECEIPT_REPRINTED'));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "const expectedReceiptId = pm.collectionVariables.get('receiptOrderId') || (envActive ? pm.environment.get('receiptOrderId') : '');",
+                                    "pm.test('receiptId matches', () => pm.expect(b.receiptId).to.eql(expectedReceiptId));",
+                                    "pm.test('printable view present', () => pm.expect(b.printable).to.be.an('object'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idemKeyReprint}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"customer requested duplicate\",\n  \"copies\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/reprint",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "reprint"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/receipts/:id/reprint (replay same Idempotency-Key)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK (replay)', () => pm.response.to.have.status(200));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('action RECEIPT_REPRINTED (replay)', () => pm.expect(b.action).to.eql('RECEIPT_REPRINTED'));",
+                                    "pm.test('reprintedAt is a string', () => pm.expect(b.reprintedAt).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idemKeyReprint}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"customer requested duplicate\",\n  \"copies\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/reprint",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "reprint"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Receipt Send (PENDING - no live adapter)",
+            "item": [
+                {
+                    "name": "POST /api/receipts/:id/send (email, with Idempotency-Key) -> 202",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('202 Accepted', () => pm.response.to.have.status(202));",
+                                    "const b = pm.response.json();",
+                                    "pm.test('action RECEIPT_SENT', () => pm.expect(b.action).to.eql('RECEIPT_SENT'));",
+                                    "pm.test('status PENDING', () => pm.expect(b.status).to.eql('PENDING'));",
+                                    "pm.test('supported is false', () => pm.expect(b.supported).to.eql(false));",
+                                    "pm.test('reason NO_LIVE_DELIVERY_ADAPTER', () => pm.expect(b.reason).to.eql('NO_LIVE_DELIVERY_ADAPTER'));",
+                                    "pm.test('deliveryId is a string', () => pm.expect(b.deliveryId).to.be.a('string'));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "if (b.deliveryId) { pm.collectionVariables.set('lastDeliveryId', b.deliveryId); if (envActive) pm.environment.set('lastDeliveryId', b.deliveryId); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idemKeySend}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channel\": \"email\",\n  \"recipient\": \"guest@example.com\",\n  \"locale\": \"en\",\n  \"note\": \"Sent from BG4.A Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "send"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/receipts/:id/send (replay same Idempotency-Key) -> same deliveryId",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('202 Accepted (replay)', () => pm.response.to.have.status(202));",
+                                    "const b = pm.response.json();",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "const expectedDelivery = pm.collectionVariables.get('lastDeliveryId') || (envActive ? pm.environment.get('lastDeliveryId') : '');",
+                                    "pm.test('deliveryId matches first call', () => pm.expect(b.deliveryId).to.eql(expectedDelivery));",
+                                    "pm.test('still PENDING', () => pm.expect(b.status).to.eql('PENDING'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idemKeySend}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channel\": \"email\",\n  \"recipient\": \"guest@example.com\",\n  \"locale\": \"en\",\n  \"note\": \"Sent from BG4.A Postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "send"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Permission Denial - Chef",
+            "item": [
+                {
+                    "name": "GET /api/receipts/:id (chef) -> 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/receipts/:id/reprint (chef) -> 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"chef-denied\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/reprint",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "reprint"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/receipts/:id/send (chef) -> 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channel\": \"email\",\n  \"recipient\": \"guest@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "send"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. Edge Cases",
+            "item": [
+                {
+                    "name": "GET /api/receipts/{unknown} -> 404",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/00000000-0000-0000-0000-000000000000",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "00000000-0000-0000-0000-000000000000"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/receipts/:id/send with unknown channel -> 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channel\": \"telegram\",\n  \"recipient\": \"@guest\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptOrderId}}/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptOrderId}}",
+                                "send"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

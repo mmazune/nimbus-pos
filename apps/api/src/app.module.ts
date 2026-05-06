@@ -32,6 +32,29 @@ import { PayrollModule } from './modules/payroll/payroll.module';
 import { StaffInsightsModule } from './modules/staff-insights/staff-insights.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
+import { AccountsPayableModule } from './modules/accounts-payable/accounts-payable.module';
+import { AccountsReceivableModule } from './modules/accounts-receivable/accounts-receivable.module';
+import { BankRecModule } from './modules/bank-rec/bank-rec.module';
+import { BudgetModule } from './modules/budget/budget.module';
+import { FranchiseModule } from './modules/franchise/franchise.module';
+import { FranchiseAnalyticsModule } from './modules/franchise-analytics/franchise-analytics.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { BillingPesapalModule } from './modules/billing-pesapal/billing-pesapal.module';
+import { ClientOnboardingModule } from './modules/client-onboarding/client-onboarding.module';
+import { MerchantPaymentsModule } from './modules/merchant-payments/merchant-payments.module';
+import { PublicCommerceModule } from './modules/public-commerce/public-commerce.module';
+import { PublicCommercePaymentsModule } from './modules/public-commerce-payments/public-commerce-payments.module';
+import { OpsPortalModule } from './modules/ops-portal/ops-portal.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
+import { ReliabilityModule } from './modules/reliability/reliability.module';
+import { ControlPlaneModule } from './modules/controlplane/controlplane.module';
+import { Bg3ReliabilityModule } from './modules/bg3-reliability';
+import { UnifiedApprovalsModule } from './modules/unified-approvals/unified-approvals.module';
+import { AuditTimelineModule } from './modules/audit-timeline/audit-timeline.module';
+import { ReceiptsModule } from './modules/receipts/receipts.module';
+import { PosHandoffModule } from './modules/pos-handoff/pos-handoff.module';
+import { DeviceRegistryModule } from './modules/device-registry/device-registry.module';
+import { ExportsModule } from './modules/exports/exports.module';
 
 @Module({
   imports: [
@@ -66,8 +89,31 @@ import { LedgerModule } from './modules/ledger/ledger.module';
     StaffInsightsModule,
     AccountingModule,
     LedgerModule,
+    AccountsPayableModule,
+    AccountsReceivableModule,
+    BankRecModule,
+    BudgetModule,
+    FranchiseModule,
+    FranchiseAnalyticsModule,
+    BillingModule,
+    BillingPesapalModule,
+    ClientOnboardingModule,
+    MerchantPaymentsModule,
+    PublicCommerceModule,
+    PublicCommercePaymentsModule,
+    OpsPortalModule,
+    AlertsModule,
+    ReliabilityModule,
+    ControlPlaneModule,
+    Bg3ReliabilityModule,
+    UnifiedApprovalsModule,
+    AuditTimelineModule,
+    ReceiptsModule,
+    PosHandoffModule,
+    DeviceRegistryModule,
+    ExportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

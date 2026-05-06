@@ -1,0 +1,1297 @@
+{
+  "info": {
+    "_postman_id": "m39-1-commercial-foundation",
+    "name": "M39.1 — Commercial Foundation + SaaS Billing + Developer Portal",
+    "description": "## What this collection covers\n\nM39.1 is the **commercial and platform-control foundation** of Nimbus.\n\nIt fully owns:\n\n- **Plan catalog** — SOLO / GROWTH / FRANCHISE only.\n- **Pricing (locked):** SOLO USD 80/mo (864/yr), GROWTH USD 150/mo (1620/yr), FRANCHISE USD 200/mo (2160/yr) — annual ≈ 10% discount.\n- **Subscription lifecycle** — PENDING_PAYMENT → ACTIVE → GRACE_PERIOD / PAST_DUE / SUSPENDED / CANCELLED, plus monthly ↔ annual and solo ↔ growth ↔ franchise transitions.\n- **Location-only enforcement** — the only commercial cap on plans is location count. There is **no feature gating**. Every plan grants the full Nimbus feature set (POS, KDS, inventory, accounting, HR, reporting, analytics, reservations, events, developer portal, franchise / HQ analytics).\n- **PesaPal SaaS billing — LIVE** for restaurant owners paying Nimbus subscriptions. This is the only live PesaPal flow in the repo. Owners pay Nimbus; restaurants do NOT take diner payments through this flow.\n- **Developer portal** — full-access integration API keys, outbound webhooks, usage with location-cap context, protected dev-admin listing.\n- **Support-session foundation** — owner-facing.\n- **Internal plan-catalog admin** — Nimbus internal admins manage prices / caps / status without redeploys.\n\n## What M39.1 does NOT own\n\n- Public commerce (restaurants, events, holds) — kept where the M39 reconstruction left it; will move under M39.2+.\n- Merchant payment connectivity (mobile money) — pending and labelled NOT LIVE.\n- Public-side diner payments — pending and labelled NOT LIVE.\n\n## Audiences\n\n- **Owner** — restaurant owner using the SaaS.\n- **Developer** — owner-side or trusted vendor consuming the developer portal.\n- **Nimbus Internal Admin** — Nimbus ops staff managing the SaaS plan catalog.\n\n## Folder structure\n\n1. `00 Read Me` — orientation only.\n2. `A. Auth` — login as owner.\n3. `B. Plan Catalog & Billing Overview` — public plans, billing-side plans, billing overview with locationCapacity.\n4. `C. Subscription Change (location-only enforcement)` — change plans + billing cycle; verifies location-only enforcement.\n5. `D. SaaS Billing via PesaPal` — checkout-session, callback, IPN, reconcile-status (LIVE).\n6. `E. Developer Portal` — API keys, webhooks, usage (location-led), dev-admins.\n7. `F. Support Sessions` — owner-facing open / list / close.\n8. `G. Ops Plan Catalog Admin` — Nimbus-internal CRUD on the plan catalog.\n\n## Postman conventions\n\n- `accessToken` is auto-captured by `A. Auth → Login (owner)`.\n- All authenticated requests send `Authorization: Bearer {{accessToken}}`.\n- PesaPal `callback` and `ipn` requests are public (no auth header) — they are reached by PesaPal, not the owner.\n- Login is asserted as 200 OR 201 because Nest's default for POST is 201 while the auth controller may return 200 in some builds; both are acceptable as long as `accessToken` is set.\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "ownerEmail",
+      "value": "owner@demo.local"
+    },
+    {
+      "key": "ownerPassword",
+      "value": "Owner#123"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "orgId",
+      "value": ""
+    },
+    {
+      "key": "planId",
+      "value": ""
+    },
+    {
+      "key": "apiKeyId",
+      "value": ""
+    },
+    {
+      "key": "webhookId",
+      "value": ""
+    },
+    {
+      "key": "supportSessionId",
+      "value": ""
+    },
+    {
+      "key": "orderTrackingId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Canonical M39 standalone-resilience pre-request.",
+          "// See ai/AI_POSTMAN_WORKING_PATTERNS.md (R4–R6, R14).",
+          "// Sandbox-safe: no Buffer; promise-chained pm.sendRequest calls.",
+          "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+          "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+          "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+          "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+          "let reqStr = '';",
+          "try { reqStr = JSON.stringify(pm.request); } catch (e) { reqStr = url; }",
+          "const isPublicAuth = /\\/auth\\/login/.test(url);",
+          "const isHealth = /\\/health(\\?|$)/.test(url);",
+          "const isPublicRead = /\\/public\\//.test(url) && !/x-branch-id/i.test(reqStr);",
+          "const isPublic = isPublicAuth || isHealth || isPublicRead;",
+          "function refsVar(name) { return reqStr.indexOf(\"{{\" + name + \"}}\") !== -1; }",
+          "function getVar(k) { return pm.collectionVariables.get(k); }",
+          "function setVar(k, v) { if (v !== undefined && v !== null && v !== \"\") pm.collectionVariables.set(k, v); }",
+          "",
+          "function ensureToken() {",
+          "  return new Promise((resolve) => {",
+          "    const tok = getVar('accessToken');",
+          "    if (isPublic || (tok && tok.length >= 20)) { return resolve(); }",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/login',",
+          "      method: 'POST',",
+          "      header: { 'Content-Type': 'application/json' },",
+          "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.accessToken) { setVar('accessToken', j.accessToken); }",
+          "          if (j.refreshToken) { setVar('refreshToken', j.refreshToken); }",
+          "          if (j.user && j.user.organizationId) { setVar('orgId', j.user.organizationId); }",
+          "        } catch (e) { console.log('[prerequest] auto-login parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "function ensureMeContext() {",
+          "  return new Promise((resolve) => {",
+          "    const needBranch = refsVar('branchId') && !getVar('branchId');",
+          "    const needOrg = refsVar('orgId') && !getVar('orgId');",
+          "    if (!needBranch && !needOrg) { return resolve(); }",
+          "    const tok = getVar('accessToken');",
+          "    if (!tok) { return resolve(); }",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/me',",
+          "      method: 'GET',",
+          "      header: { 'Authorization': 'Bearer ' + tok }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.context) {",
+          "            setVar('orgId', j.context.defaultOrganizationId);",
+          "            setVar('branchId', j.context.defaultBranchId);",
+          "          }",
+          "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+          "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+          "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+          "          }",
+          "        } catch (e) { console.log('[prerequest] /me parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "function ensureFromList(varName, listPath, picker, requiresAuth) {",
+          "  return new Promise((resolve) => {",
+          "    if (!refsVar(varName) || getVar(varName)) { return resolve(); }",
+          "    const headers = {};",
+          "    if (requiresAuth) {",
+          "      const tok = getVar('accessToken');",
+          "      if (!tok) { return resolve(); }",
+          "      headers['Authorization'] = 'Bearer ' + tok;",
+          "    }",
+          "    pm.sendRequest({ url: baseUrl + listPath, method: \"GET\", header: headers }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          const value = picker(j);",
+          "          if (value) setVar(varName, value);",
+          "        } catch (e) { console.log('[prerequest] ' + varName + ' resolve parse error', e && e.message); }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "",
+          "return ensureToken()",
+          "  .then(ensureMeContext)",
+          "  .then(() => ensureFromList('restaurantSlug', '/api/public/restaurants', (j) => Array.isArray(j) && j[0] && j[0].slug, false))",
+          "  .then(() => ensureFromList('eventSlug', '/api/public/events', (j) => Array.isArray(j) && j[0] && j[0].slug, false))",
+          "  .then(() => ensureFromList('opsOrgId', '/api/ops/customers', (j) => {",
+          "    if (Array.isArray(j) && j[0]) return j[0].id || j[0].organizationId;",
+          "    return null;",
+          "  }, true))",
+          "  .catch((e) => console.log('[prerequest] chain error', e && e.message));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Read Me",
+      "description": "Open this folder first. The collection is ordered as a journey: log in → look at plans → understand what's enforced → run a SaaS PesaPal checkout → use the developer portal → open a support session → (as Nimbus internal) manage the plan catalog.\n\n**Locked rules**\n\n- SOLO = 1 location, GROWTH = up to 3, FRANCHISE = 4+.\n- Pricing: 80 / 150 / 200 USD per month; annual ≈ ×10.8.\n- All plans = full feature access. Only location count is enforced.\n- PesaPal is LIVE for owner SaaS billing only.\n- API keys are full-access integration keys for trusted backend systems — NOT for staff, NOT for browsers, NOT for diners.",
+      "item": [
+        {
+          "name": "README (no request)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Health check stand-in. Use this to confirm the API is up before exercising the rest of the collection."
+          }
+        }
+      ]
+    },
+    {
+      "name": "A. Auth",
+      "description": "Login as the demo owner. Owner has all M39.1 permissions in the seed:\n\n- `billing:read`, `billing:subscription:write`, `billing:pesapal:checkout`\n- `dev:api-key:read|write`, `dev:webhook:read|write`, `dev:usage:read`\n- `support:session:read|write`\n- `ops:plans:read|write`, `ops:customers:read`, `ops:subscriptions:read`, `ops:onboarding:read`, `ops:support:read|write`\n\nThe same token therefore exercises every folder.",
+      "item": [
+        {
+          "name": "Login (owner)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Login OK (200 or 201)', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "// Set on BOTH scopes — if a Postman environment is selected, an empty/stale env value would otherwise shadow the collection variable.",
+                  "if (pm.environment && pm.environment.name) {",
+                  "  pm.environment.set('accessToken', json.accessToken);",
+                  "  if (json.refreshToken) pm.environment.set('refreshToken', json.refreshToken);",
+                  "}",
+                  "pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "if (json.user && json.user.organizationId) {",
+                  "  pm.collectionVariables.set('orgId', json.user.organizationId);",
+                  "  if (pm.environment && pm.environment.name) pm.environment.set('orgId', json.user.organizationId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"owner@demo.local\", \"password\": \"Owner#123\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Audience:** restaurant owner.\n\n**Why:** issues the bearer token used by every other request in this collection.\n\n**Real-world example:** owner clicks 'Log in' on the Nimbus dashboard."
+          }
+        }
+      ]
+    },
+    {
+      "name": "B. Plan Catalog & Billing Overview",
+      "description": "Read-only views of the plan catalog and the org's billing state. Confirms M39.1 wording: SOLO / GROWTH / FRANCHISE, no feature gating, location-led capacity.",
+      "item": [
+        {
+          "name": "1. GET /public/plans — public marketing catalog (unauthenticated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('No feature gating policy', () => pm.expect(json.policy.featureGating).to.eql(false));",
+                  "pm.test('Plans are SOLO / GROWTH / FRANCHISE only', () => {",
+                  "  const codes = json.plans.map(p => p.code).sort();",
+                  "  pm.expect(codes).to.include.members(['solo', 'growth', 'franchise']);",
+                  "  pm.expect(codes).to.not.include('starter');",
+                  "});",
+                  "pm.test('Pricing is locked (SOLO 80, GROWTH 150, FRANCHISE 200)', () => {",
+                  "  const byCode = Object.fromEntries(json.plans.map(p => [p.code, p]));",
+                  "  pm.expect(byCode.solo.priceMonthly).to.eql(80);",
+                  "  pm.expect(byCode.growth.priceMonthly).to.eql(150);",
+                  "  pm.expect(byCode.franchise.priceMonthly).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/public/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "plans"
+              ]
+            },
+            "description": "**Audience:** anyone (unauthenticated).\n\n**Why:** the marketing site lists Nimbus plans here. Returns the locked SOLO / GROWTH / FRANCHISE catalog with pricing, annual discount %, location cap, and a `policy.featureGating: false` flag so the UI knows to hide tier-based feature lists.\n\n**Real-world example:** a prospective restaurant owner visits the pricing page and sees three side-by-side plans differing only by allowed locations."
+          }
+        },
+        {
+          "name": "2. GET /billing/plans — authenticated billing catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "plans"
+              ]
+            },
+            "description": "**Audience:** authenticated owner.\n\n**Why:** the in-app upgrade screen lists active plans. Identical commercial information as `/public/plans` but accessed from inside the dashboard.\n\n**Real-world example:** owner clicks 'Upgrade plan' inside Nimbus."
+          }
+        },
+        {
+          "name": "3. GET /billing — billing overview with locationCapacity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('locationCapacity block present', () => pm.expect(json.locationCapacity).to.be.an('object'));",
+                  "pm.test('plan code is solo/growth/franchise', () => pm.expect(['solo','growth','franchise']).to.include(json.plan.code));",
+                  "pm.test('upgradeRequired is a boolean', () => pm.expect(json.locationCapacity.upgradeRequired).to.be.a('boolean'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** the single source of truth for the billing dashboard. Returns:\n\n- `subscription` — id, status, billingCycle, period dates.\n- `plan` — current plan code/name/pricing.\n- `locationCapacity` — `{ current, allowed, upgradeRequired, recommendedNextPlan, note }` — the field the UI leads with.\n- `currentUsage` — for context only; nothing else is enforced.\n\n**Real-world example:** GROWTH customer with 3 active locations sees `upgradeRequired=false`. The same customer trying to add a 4th location will see `upgradeRequired=true, recommendedNextPlan=franchise`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "C. Subscription Change (location-only enforcement)",
+      "description": "Plan changes only fail when current locations exceed the target plan cap. Users / API keys / webhooks are intentionally NOT gated.",
+      "item": [
+        {
+          "name": "Change plan to GROWTH (always allowed if ≤ 3 locations)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"planCode\": \"growth\", \"billingCycle\": \"MONTHLY\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "subscription"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** changes the subscribed plan. GROWTH allows up to 3 active locations, so this succeeds for any org with ≤ 3 active branches.\n\n**Real-world example:** SOLO customer adds a second branch — they upgrade to GROWTH first."
+          }
+        },
+        {
+          "name": "Change plan to FRANCHISE (unlocks 4+ locations)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Plan is FRANCHISE', () => pm.expect((body.plan && body.plan.code) || body.planCode).to.eql('franchise'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"planCode\": \"franchise\", \"billingCycle\": \"MONTHLY\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "subscription"
+              ]
+            },
+            "description": "**Audience:** owner of a multi-location group.\n\n**Why:** FRANCHISE removes the location cap (4+ branches allowed) and unlocks `franchiseEnabled: true` so the franchise / HQ analytics surfaces become usable. Any current branch count is allowed.\n\n**Real-world example:** Olivia opens her 4th outlet — she upgrades from GROWTH to FRANCHISE first; the next `POST onboarding/branches` succeeds instead of returning `PLAN_LOCATION_LIMIT_REACHED`."
+          }
+        },
+        {
+          "name": "Change to ANNUAL billing cycle",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"billingCycle\": \"ANNUAL\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "subscription"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** flips the same plan from monthly to annual (≈ 10% saving baked into seeded pricing). No location-cap checks needed for cycle changes.\n\n**Real-world example:** owner switches to annual to lock in the lower effective price."
+          }
+        },
+        {
+          "name": "Change to SOLO (BLOCKED if org has > 1 active location)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 409) {",
+                  "  const body = pm.response.json();",
+                  "  pm.test('Conflict mentions locations', () => pm.expect(JSON.stringify(body)).to.match(/location/i));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"planCode\": \"solo\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "subscription"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** demonstrates location-only downgrade enforcement. SOLO allows exactly 1 active location — if the org currently has more, this returns 409 with a `violations` payload citing the location count.\n\n**Real-world example:** GROWTH customer with 2 branches tries to downgrade to SOLO — they must close or transfer one branch first."
+          }
+        },
+        {
+          "name": "Suspend subscription (reversible lifecycle demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status is SUSPENDED', () => pm.expect(body.status).to.eql('SUSPENDED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"SUSPENDED\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "subscription"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** demonstrates the reversible part of the lifecycle. SUSPENDED can be flipped back to ACTIVE at any time, so this collection stays runnable end-to-end. The terminal CANCELLED transition is intentionally NOT exercised here — running it would block every downstream create (`Subscription is cancelled. Cannot create resources.`). Operators wanting to test cancellation can manually PATCH `{ status: 'CANCELLED', cancelReason: '...' }`.\n\n**Real-world example:** PesaPal payment failed past the grace period — Nimbus suspends the org until they retry the SaaS checkout."
+          }
+        },
+        {
+          "name": "Reactivate subscription (restore ACTIVE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Status is ACTIVE', () => pm.expect(body.status).to.eql('ACTIVE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"ACTIVE\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "subscription"
+              ]
+            },
+            "description": "**Audience:** owner / Nimbus support.\n\n**Why:** reverses the previous SUSPENDED transition so subsequent folders (developer portal, support sessions, ops admin) can run cleanly without `Subscription is cancelled. Cannot create resources.` errors."
+          }
+        }
+      ]
+    },
+    {
+      "name": "D. SaaS Billing via PesaPal",
+      "description": "**LIVE.** This is the only live PesaPal flow in the repo. Owners pay Nimbus for their SaaS subscription. The flow:\n\n1. `POST /billing/pesapal/checkout-session` → returns a redirect URL to PesaPal-hosted payment page and an `orderTrackingId`.\n2. Customer completes payment on PesaPal.\n3. `GET /billing/pesapal/callback` is called by PesaPal in the customer's browser.\n4. `POST /billing/pesapal/ipn` is called server-to-server by PesaPal.\n5. `POST /billing/pesapal/reconcile-status` lets ops force-poll PesaPal if a callback / IPN is delayed.\n\nNimbus stores only safe payment references (`orderTrackingId`, `merchantReference`, `status`) and never raw card data. Subscription transitions to ACTIVE only after a verified COMPLETED status.",
+      "item": [
+        {
+          "name": "1. Create PesaPal checkout session (LIVE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.orderTrackingId) pm.collectionVariables.set('orderTrackingId', json.orderTrackingId);",
+                  "  pm.test('orderTrackingId returned', () => pm.expect(json.orderTrackingId).to.be.a('string'));",
+                  "  // redirectUrl depends on PesaPal sandbox reachability; tolerate missing.",
+                  "  if (json.redirectUrl) {",
+                  "    pm.test('redirectUrl is a string when returned', () => pm.expect(json.redirectUrl).to.be.a('string'));",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"planCode\": \"growth\", \"billingCycle\": \"MONTHLY\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/pesapal/checkout-session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "pesapal",
+                "checkout-session"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** the entry point of every SaaS payment. Returns the PesaPal redirect URL; the owner is sent there to enter card / mobile-money details on PesaPal's hosted page. Re-running with an already-INITIATED transaction auto-cancels the old one and starts a fresh session.\n\n**Real-world example:** owner clicks 'Pay now' on the upgrade screen.\n\n**Env vars required on the server:** `PESAPAL_CONSUMER_KEY`, `PESAPAL_CONSUMER_SECRET`, `PESAPAL_BASE_URL`, `PESAPAL_IPN_CALLBACK_URL`. Without them, the endpoint returns 500."
+          }
+        },
+        {
+          "name": "2. PesaPal callback (browser-redirected, public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/pesapal/callback?OrderTrackingId={{orderTrackingId}}&OrderMerchantReference=demo-ref&pesapal_transaction_tracking_id=demo-pesapal-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "pesapal",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "OrderTrackingId",
+                  "value": "{{orderTrackingId}}"
+                },
+                {
+                  "key": "OrderMerchantReference",
+                  "value": "demo-ref"
+                },
+                {
+                  "key": "pesapal_transaction_tracking_id",
+                  "value": "demo-pesapal-id"
+                }
+              ]
+            },
+            "description": "**Audience:** PesaPal → owner's browser.\n\n**Why:** PesaPal redirects the customer back here after they finish the hosted payment. The handler reads the order's status from PesaPal and updates the local PesapalTransaction.\n\n**Real-world example:** after the owner pays, PesaPal pushes them to this URL."
+          }
+        },
+        {
+          "name": "3. PesaPal IPN (server-to-server, public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"OrderTrackingId\": \"{{orderTrackingId}}\", \"OrderMerchantReference\": \"demo-ref\", \"OrderNotificationType\": \"IPNCHANGE\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/pesapal/ipn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "pesapal",
+                "ipn"
+              ]
+            },
+            "description": "**Audience:** PesaPal → Nimbus.\n\n**Why:** the authoritative payment notification. Even if the browser callback fails, this server-to-server hit settles the transaction and (on COMPLETED) flips the subscription to ACTIVE.\n\n**Real-world example:** runs in the background after every successful or failed payment."
+          }
+        },
+        {
+          "name": "4. Reconcile status (force re-poll)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"orderTrackingId\": \"{{orderTrackingId}}\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/pesapal/reconcile-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "billing",
+                "pesapal",
+                "reconcile-status"
+              ]
+            },
+            "description": "**Audience:** owner or Nimbus support.\n\n**Why:** pulls the current PesaPal status on demand when the callback / IPN never arrived. Idempotent — safe to retry.\n\n**Real-world example:** owner says 'I paid but my plan didn't activate' — support clicks 'Reconcile' which calls this endpoint."
+          }
+        }
+      ]
+    },
+    {
+      "name": "E. Developer Portal",
+      "description": "Available on EVERY plan — there is no plan-tier gating. API keys here are **full-access integration keys** for trusted backend systems (owner-controlled servers, franchise IT, accounting integrations). They are NOT for staff, NOT for browsers, and NOT for diners. Outbound webhooks are completely separate from PesaPal callbacks.",
+      "item": [
+        {
+          "name": "POST /dev/api-keys — create full-access integration key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('apiKeyId', json.id);",
+                  "  pm.test('plaintext key returned exactly once', () => pm.expect(json.key).to.be.a('string'));",
+                  "  pm.test('keyPrefix starts with nk_', () => pm.expect(json.keyPrefix).to.match(/^nk_/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Backoffice integration\", \"scopes\": [\"orders:read\", \"reports:read\"] }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "api-keys"
+              ]
+            },
+            "description": "**Audience:** owner-facing / trusted developer.\n\n**Why:** creates a long-lived API key for trusted backend / system integrations. The plaintext `key` field is returned ONLY here — store it in a secret manager.\n\n**Real-world example:** a franchise IT team needs a key for their nightly ETL job that pulls sales into their warehouse.\n\n**Plan gating:** none — available on every plan."
+          }
+        },
+        {
+          "name": "GET /dev/api-keys — list keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "api-keys"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** lists existing keys with prefix + last-used + status. Secrets are never returned again.\n\n**Real-world example:** owner reviews which integrations still hold a key when an employee leaves the partner vendor."
+          }
+        },
+        {
+          "name": "POST /dev/api-keys/:id/revoke — revoke a key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/api-keys/{{apiKeyId}}/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "api-keys",
+                "{{apiKeyId}}",
+                "revoke"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** permanently disables a key. Cannot be undone.\n\n**Real-world example:** the warehouse contractor's laptop is stolen — owner immediately revokes that key."
+          }
+        },
+        {
+          "name": "POST /dev/webhooks — register OUTBOUND developer webhook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('webhookId', json.id);",
+                  "  pm.test('signing secret returned once', () => pm.expect(json.signingSecret).to.match(/^whsec_/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"url\": \"https://owner.example.com/hooks/nimbus\", \"description\": \"Owner SIEM forwarder\", \"events\": [\"ORDER_CREATED\", \"ORDER_CLOSED\"] }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "webhooks"
+              ]
+            },
+            "description": "**Audience:** owner-side integration developer.\n\n**Why:** registers an URL Nimbus calls when listed events fire. **This is OUTBOUND from Nimbus to the customer's URL — completely separate from PesaPal payment callbacks** (which arrive in `D. SaaS Billing via PesaPal`).\n\n**Real-world example:** owner forwards every completed order into their data warehouse."
+          }
+        },
+        {
+          "name": "GET /dev/webhooks — list webhooks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "webhooks"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** lists registered outbound webhooks with delivery / failure stats.\n\n**Real-world example:** owner debugging missing events checks `failureCount` and `lastFailedAt` here."
+          }
+        },
+        {
+          "name": "PATCH /dev/webhooks/:id — update / disable webhook",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"INACTIVE\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/webhooks/{{webhookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "webhooks",
+                "{{webhookId}}"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** flip an outbound webhook between ACTIVE / INACTIVE, change URL, change events.\n\n**Real-world example:** integration's URL changes — owner updates it without losing the existing signing secret."
+          }
+        },
+        {
+          "name": "GET /dev/usage — usage with location-cap context (location-led)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('locations block leads the response', () => pm.expect(json.locations).to.be.an('object'));",
+                  "pm.test('locations.note explains location-only enforcement', () => pm.expect(json.locations.note).to.match(/location/i));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/usage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "usage"
+              ]
+            },
+            "description": "**Audience:** developer / owner.\n\n**Why:** the developer-portal usage screen. The response leads with `locations: { current, allowed, upgradeRequired, recommendedNextPlan, note }` because that is the only enforced metric. `currentState.{branches,activeUsers,apiKeys,webhookEndpoints}` is included for context only.\n\n**Real-world example:** developer is curious whether they are near any limit — the only meaningful number is the location count."
+          }
+        },
+        {
+          "name": "GET /dev/admins — protected dev-admin listing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/admins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dev",
+                "admins"
+              ]
+            },
+            "description": "**Audience:** owner / Nimbus support.\n\n**Why:** lists `DevAdmin` rows with the `isProtected` flag. Protected dev-admins are immune to permission downgrades — useful for the bootstrap account."
+          }
+        }
+      ]
+    },
+    {
+      "name": "F. Support Sessions",
+      "description": "Owner-facing support-session foundation. An open session represents a time-boxed window during which Nimbus support has the owner's permission to inspect or act. Ops-facing extensions live under `G. Ops Plan Catalog Admin → /ops/support/...`.",
+      "item": [
+        {
+          "name": "POST /support/sessions — open a session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('supportSessionId', json.id);",
+                  "  pm.test('status OPEN', () => pm.expect(json.status).to.eql('OPEN'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"reason\": \"Need help reconciling yesterday's till\", \"notes\": \"Demo support session opened from Postman\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/support/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "sessions"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** opens a 4-hour window (default) for support to assist. Audited as `SUPPORT_SESSION_OPENED`.\n\n**Real-world example:** owner opens a session before calling support so the support engineer can act immediately."
+          }
+        },
+        {
+          "name": "GET /support/sessions — list this org's sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "sessions"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** review history of support sessions and their reasons.\n\n**Real-world example:** owner audits which support sessions were opened in the last 90 days."
+          }
+        },
+        {
+          "name": "PATCH /support/sessions/:id/close — close a session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"closedReason\": \"Issue resolved\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/support/sessions/{{supportSessionId}}/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "sessions",
+                "{{supportSessionId}}",
+                "close"
+              ]
+            },
+            "description": "**Audience:** owner.\n\n**Why:** explicitly closes a session before its 4-hour expiry. Audited as `SUPPORT_SESSION_CLOSED`.\n\n**Real-world example:** the issue is fixed — owner closes the session immediately rather than waiting for it to expire."
+          }
+        }
+      ]
+    },
+    {
+      "name": "G. Ops Plan Catalog Admin",
+      "description": "Nimbus internal admins only. Manage the plan catalog without redeploys. Locked invariants:\n\n- Annual price ≤ 12 × monthly (refusal otherwise — annual is a discount, never a premium).\n- Lowering `maxLocations` is refused if any subscriber currently exceeds the new cap.\n- Archiving a plan with live subscribers is refused unless `force: true`.\n\nGuarded by `ops:plans:read` / `ops:plans:write`. Audited as `OPS_PLAN_CREATED / OPS_PLAN_UPDATED / OPS_PLAN_STATUS_CHANGED`.",
+      "item": [
+        {
+          "name": "GET /ops/plans — full catalog (with policy.featureGating: false)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('policy.featureGating is false', () => pm.expect(json.policy.featureGating).to.eql(false));",
+                  "if (json.plans && json.plans.length > 0) {",
+                  "  const growth = json.plans.find(p => p.code === 'growth');",
+                  "  if (growth) pm.collectionVariables.set('planId', growth.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "plans"
+              ]
+            },
+            "description": "**Audience:** Nimbus internal admin.\n\n**Why:** read the full plan catalog with admin metadata (DRAFT / ACTIVE / ARCHIVED, sortOrder, annualDiscountPct, locked feature policy).\n\n**Real-world example:** ops verifies prices are correct before a price-update campaign."
+          }
+        },
+        {
+          "name": "POST /ops/plans — create a new plan (DRAFT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"code\": \"enterprise-pilot\", \"name\": \"Enterprise Pilot\", \"description\": \"Internal pilot plan\", \"priceMonthly\": 350, \"priceAnnual\": 3780, \"maxLocations\": 25, \"trialDays\": 30, \"gracePeriodDays\": 14, \"supportTier\": \"premium\", \"sortOrder\": 50 }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "plans"
+              ]
+            },
+            "description": "**Audience:** Nimbus internal admin.\n\n**Why:** spin up a new plan in DRAFT status. Annual is validated to be ≤ 12 × monthly. Feature defaults are full access.\n\n**Real-world example:** ops introduces a 25-location enterprise pilot for one prospective customer."
+          }
+        },
+        {
+          "name": "PATCH /ops/plans/:id — rename, change price, change location cap",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Growth (revised wording)\", \"priceMonthly\": 150, \"priceAnnual\": 1620, \"maxLocations\": 3 }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/plans/{{planId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "plans",
+                "{{planId}}"
+              ]
+            },
+            "description": "**Audience:** Nimbus internal admin.\n\n**Why:** mutate any commercial field. Refuses to lower `maxLocations` below any current subscriber's active-location count.\n\n**Real-world example:** ops adjusts GROWTH from 5 → 3 locations after the corrected business rule lands."
+          }
+        },
+        {
+          "name": "PATCH /ops/plans/:id/status — flip DRAFT / ACTIVE / ARCHIVED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"ACTIVE\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/plans/{{planId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "plans",
+                "{{planId}}",
+                "status"
+              ]
+            },
+            "description": "**Audience:** Nimbus internal admin.\n\n**Why:** publish a DRAFT plan, or retire (ARCHIVED) one. Archiving a plan with live subscribers is refused unless `force: true` is passed.\n\n**Real-world example:** ops promotes the Enterprise Pilot from DRAFT to ACTIVE once pricing is approved."
+          }
+        },
+        {
+          "name": "GET /ops/plans/:id/subscribers — who is on this plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/plans/{{planId}}/subscribers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "plans",
+                "{{planId}}",
+                "subscribers"
+              ]
+            },
+            "description": "**Audience:** Nimbus internal admin.\n\n**Why:** list every org subscribed to this plan plus their active-locations count and an `overCap` flag (e.g. after a cap was lowered).\n\n**Real-world example:** ops checks who is grandfathered above the new cap before sending a migration email."
+          }
+        }
+      ]
+    }
+  ]
+}

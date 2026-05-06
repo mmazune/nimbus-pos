@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { TenancyService } from './tenancy.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { BillingService } from '../billing/billing.service';
 
 describe('TenancyService', () => {
   let service: TenancyService;
@@ -35,10 +36,17 @@ describe('TenancyService', () => {
     session: {
       findUnique: jest.fn(),
     },
+    subscription: {
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
   };
 
   const mockAudit = {
     log: jest.fn().mockResolvedValue(undefined),
+  };
+
+  const mockBilling = {
+    checkPlanLimit: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -47,6 +55,7 @@ describe('TenancyService', () => {
         TenancyService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditService, useValue: mockAudit },
+        { provide: BillingService, useValue: mockBilling },
       ],
     }).compile();
 

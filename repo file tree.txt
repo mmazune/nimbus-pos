@@ -44,7 +44,24 @@ nimbus-pos/
 │   ├── M12_COMPLETION_REPORT.md
 │   ├── M13_COMPLETION_REPORT.md
 │   ├── M13_1_COMPLETION_REPORT.md
-│   └── M14_COMPLETION_REPORT.md
+│   ├── M14_COMPLETION_REPORT.md
+│   ├── M15_COMPLETION_REPORT.md
+│   ├── M16_COMPLETION_REPORT.md
+│   ├── M17_COMPLETION_REPORT.md
+│   ├── M18_COMPLETION_REPORT.md
+│   ├── M19_COMPLETION_REPORT.md
+│   ├── M20_COMPLETION_REPORT.md
+│   ├── M20_1_COMPLETION_REPORT.md
+│   ├── M21_COMPLETION_REPORT.md
+│   ├── M22_COMPLETION_REPORT.md
+│   ├── M23_COMPLETION_REPORT.md
+│   ├── M24_COMPLETION_REPORT.md
+│   ├── M25_COMPLETION_REPORT.md
+│   ├── M26_COMPLETION_REPORT.md
+│   ├── M27_COMPLETION_REPORT.md
+│   ├── M28_COMPLETION_REPORT.md
+│   ├── M29_COMPLETION_REPORT.md
+│   └── M30_COMPLETION_REPORT.md
 │
 ├── apps/
 │   ├── api/
@@ -334,6 +351,53 @@ nimbus-pos/
 │   │   │       │       ├── list-journals-query.dto.ts
 │   │   │       │       ├── replay-posting.dto.ts
 │   │   │       │       └── reverse-journal.dto.ts
+│   │   │       ├── accounts-payable/
+│   │   │       │   ├── accounts-payable.module.ts
+│   │   │       │   ├── accounts-payable.controller.ts
+│   │   │       │   ├── accounts-payable.service.ts
+│   │   │       │   ├── accounts-payable.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-supplier.dto.ts
+│   │   │       │       ├── create-vendor-bill.dto.ts
+│   │   │       │       ├── create-ap-payment.dto.ts
+│   │   │       │       ├── create-credit-note.dto.ts
+│   │   │       │       └── list-bills-query.dto.ts
+│   │   │       ├── accounts-receivable/
+│   │   │       │   ├── accounts-receivable.module.ts
+│   │   │       │   ├── accounts-receivable.controller.ts
+│   │   │       │   ├── accounts-receivable.service.ts
+│   │   │       │   ├── accounts-receivable.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-customer-account.dto.ts
+│   │   │       │       ├── create-invoice.dto.ts
+│   │   │       │       ├── create-receipt.dto.ts
+│   │   │       │       ├── create-ar-credit-note.dto.ts
+│   │   │       │       ├── list-accounts-query.dto.ts
+│   │   │       │       └── aging-query.dto.ts
+│   │   │       ├── bank-rec/
+│   │   │       │   ├── bank-rec.module.ts
+│   │   │       │   ├── bank-rec.controller.ts
+│   │   │       │   ├── bank-rec.service.ts
+│   │   │       │   ├── bank-rec.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-bank-account.dto.ts
+│   │   │       │       ├── import-bank-statement.dto.ts
+│   │   │       │       ├── create-reconciliation.dto.ts
+│   │   │       │       └── match-line.dto.ts
+│   │   │       ├── budget/
+│   │   │       │   ├── budget.module.ts
+│   │   │       │   ├── budget.controller.ts
+│   │   │       │   ├── budget.service.ts
+│   │   │       │   ├── budget.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       ├── create-budget.dto.ts
+│   │   │       │       ├── list-budgets-query.dto.ts
+│   │   │       │       ├── update-actuals.dto.ts
+│   │   │       │       └── list-forecast-query.dto.ts
 │   │   │       └── tenancy/
 │   │   │           ├── tenancy.controller.ts
 │   │   │           ├── tenancy.module.ts
@@ -374,7 +438,11 @@ nimbus-pos/
 │   │       ├── payroll.e2e-spec.ts
 │   │       ├── staff-insights.e2e-spec.ts
 │   │       ├── accounting.e2e-spec.ts
-│   │       └── ledger.e2e-spec.ts
+│   │       ├── ledger.e2e-spec.ts
+│   │       ├── accounts-payable.e2e-spec.ts
+│   │       ├── accounts-receivable.e2e-spec.ts
+│   │       ├── bank-rec.e2e-spec.ts
+│   │       └── budget.e2e-spec.ts
 │   ├── web/
 │   │   ├── package.json
 │   │   └── src/
@@ -459,6 +527,8 @@ nimbus-pos/
 │   │   │           └── migration.sql
 │   │   │       └── 20260402100000_m29_general_ledger_journals_posting/
 │   │   │           └── migration.sql
+│   │   │       └── 20260406000000_m34_accounts_payable/
+│   │   │           └── migration.sql
 │   │   └── src/
 │   │       ├── client.ts
 │   │       └── index.ts
@@ -482,7 +552,8 @@ nimbus-pos/
 │   ├── PAYROLL_PAYRUNS_PAYSLIPS_GUIDE.md
 │   ├── STAFF_INSIGHTS_GUIDE.md
 │   ├── ACCOUNTING_FOUNDATION_GUIDE.md
-│   └── GL_POSTING_ENGINE_GUIDE.md
+│   ├── GL_POSTING_ENGINE_GUIDE.md
+│   └── ACCOUNTS_PAYABLE_GUIDE.md
 │
 └── postman/
     ├── POSTMAN_GUIDE.md
@@ -520,7 +591,54 @@ nimbus-pos/
 │   │   ├── M26-Payroll-Engine-Pay-Runs-Payslips.postman_collection.json
 │   │   ├── M27-Staff-Insights-Awards-Promotion-Suggestions.postman_collection.json
 │   │   ├── M28-Accounting-Foundation-COA-Cost-Centers-Periods.postman_collection.json
-│   │   └── M29-General-Ledger-Journals-Posting-Engine.postman_collection.json
+│   │   ├── M29-General-Ledger-Journals-Posting-Engine.postman_collection.json
+│   │   ├── M30-Payroll-Engine-Pay-Runs-Payslips.postman_collection.json
+│   │   ├── M34-Accounts-Payable-Vendor-Bills-Payments.postman_collection.json
+│   │   ├── M35-AR-Receivable.postman_collection.json
+│   │   ├── M36-Bank-Rec-Period-Close.postman_collection.json
+│   │   ├── M37-Budgets-Forecasts-Procurement-Advisory.postman_collection.json
+│   │   ├── M40-Alerts-Digests-Owner-Live.postman_collection.json
+│   │   ├── M41-Reliability-Idempotency-Offline-Sync.postman_collection.json
+│   │   └── M42-Feature-Flags-Maintenance-Training.postman_collection.json
     └── environments/
         └── dev.postman_environment.json
+```
+
+## M41 additions (2026-04-28)
+
+```text
+apps/api/src/modules/reliability/
+├── dto/
+│   └── index.ts
+├── idempotency.service.ts
+├── replay-dispatcher.service.ts
+├── sync.service.ts
+├── reliability.controller.ts
+└── reliability.module.ts
+
+apps/api/test/sync.e2e-spec.ts
+docs/SYNC_CONTRACT.md
+packages/db/prisma/migrations/20260428000000_m41_reliability_layer/migration.sql
+postman/collections/M41-Reliability-Idempotency-Offline-Sync.postman_collection.json
+ai/M41_COMPLETION_REPORT.md
+```
+
+## M42 additions (2026-04-29)
+
+```text
+apps/api/src/modules/controlplane/
+├── dto/
+│   └── index.ts
+├── flag-audit.service.ts
+├── feature-flag.service.ts
+├── maintenance-window.service.ts
+├── training-session.service.ts
+├── controlplane.service.ts
+├── controlplane.controller.ts
+└── controlplane.module.ts
+
+apps/api/test/control-plane.e2e-spec.ts
+packages/db/prisma/migrations/20260429000000_m42_feature_flags_maintenance_training/migration.sql
+postman/collections/M42-Feature-Flags-Maintenance-Training.postman_collection.json
+ai/M42_COMPLETION_REPORT.md
 ```

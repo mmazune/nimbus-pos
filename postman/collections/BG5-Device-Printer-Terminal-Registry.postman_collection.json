@@ -1,0 +1,1679 @@
+{
+    "info": {
+        "name": "BG5 - Device / Printer / Terminal Registry",
+        "description": "BG5 collection. Validates the ten device/printer/terminal registry endpoints introduced in `apps/api/src/modules/device-registry`:\n\n- `POST /api/devices/activate` — generic device activation (POS_TERMINAL | KDS_SCREEN | PRINTER | PAYMENT_TERMINAL_STUB). Idempotent on `activationCode`. Audits `DEVICE_ACTIVATED`.\n- `POST /api/devices/kds/register` — KDS sugar over /activate (auto type=KDS_SCREEN). Audits `KDS_DEVICE_REGISTERED` in addition.\n- `GET /api/devices` — paginated list with filters (type/status/station).\n- `GET /api/devices/:id` — detail; for PRINTER also includes its routes.\n- `GET /api/devices/:id/history` — audit timeline of registry events.\n- `PATCH /api/devices/:id/status` — update status. Rejects RETIRED → other (400 `DEVICE_STATUS_TRANSITION_INVALID`).\n- `POST /api/devices/printers/routes` — upsert `PrinterRoute` keyed by (branchId, routeType, station, printerId). Validates printer is type PRINTER and ACTIVE. Audits `PRINTER_ROUTE_CONFIGURED` or `PRINTER_ROUTE_DISABLED` based on `enabled`.\n- `GET /api/devices/printers/routes` — list routes.\n- `POST /api/devices/terminals/pair` — STUB pairing of PAYMENT_TERMINAL_STUB → POS_TERMINAL. No live card-terminal traffic. Returns `mode: 'STUB'`. Audits `TERMINAL_PAIRED`.\n- `PATCH /api/devices/terminals/:id/unpair` — STUB unpair. Idempotent (returns `TERMINAL_NOT_PAIRED` if already unpaired).\n\nAll mutating endpoints are wrapped via the BG3 reliability facade (`Bg3ReliabilityService.guard`) with `category: null` and `idempotencyMode: 'optional'`. Replays of `Idempotency-Key` return the cached response body.\n\nLocked rules verified:\n- `/api/auth/me` remains canonical context source (R14).\n- `POST /api/auth/login` accepts [200, 201] (R12).\n- New permissions: `devices:read | devices:write | devices:status:write | devices:routes:write | devices:terminals:write`.\n- Owner / Manager get all five. Cashier / Waiter get only `devices:read`. **Chef intentionally denied** to verify role gating still enforces 403.\n- Public diner payments still PENDING (out of scope).\n- PesaPal owner-SaaS-only (out of scope).\n- No hotel structures.\n- Schema additive only: 2 new tables (`devices`, `printer_routes`) + 3 new enums. No back-relations on Branch/Organization to keep them byte-stable.\n- Terminal pairing is STUB only (no card-terminal driver invocation). Printer routing is configuration metadata only (no print driver invocation).\n\n⚠️ **Re-import required after any script change.** Postman caches pre-request and test scripts at import time.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "chefEmail",
+            "value": "chef@demo.local"
+        },
+        {
+            "key": "chefPassword",
+            "value": "Chef#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "chefToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "bg5Suffix",
+            "value": ""
+        },
+        {
+            "key": "idemKeyActivate",
+            "value": ""
+        },
+        {
+            "key": "posDeviceId",
+            "value": ""
+        },
+        {
+            "key": "kdsDeviceId",
+            "value": ""
+        },
+        {
+            "key": "printerDeviceId",
+            "value": ""
+        },
+        {
+            "key": "terminalDeviceId",
+            "value": ""
+        },
+        {
+            "key": "printerRouteId",
+            "value": ""
+        },
+        {
+            "key": "idempotentDeviceId",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// BG5 canonical pre-request (R3/R4/R5/R12/R14/R16). Mirrors BG4.B.",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "const isPublicAuth = /\\/api\\/auth\\/(login|forgot-password|reset-password|invitations\\/accept|quick-pin-login)/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublic = isPublicAuth || isHealth;",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function isJwtFresh(tok) {",
+                    "  try {",
+                    "    if (!tok || typeof tok !== 'string') return false;",
+                    "    const parts = tok.split('.'); if (parts.length < 2) return false;",
+                    "    const b = parts[1].replace(/-/g, '+').replace(/_/g, '/');",
+                    "    const pad = b + '==='.slice((b.length + 3) % 4);",
+                    "    const payload = JSON.parse((typeof Buffer !== 'undefined' ? Buffer.from(pad, 'base64').toString('utf8') : atob(pad)));",
+                    "    return payload && payload.exp && (payload.exp * 1000 - Date.now()) > 60000;",
+                    "  } catch (e) { return false; }",
+                    "}",
+                    "function ensureSuffix() {",
+                    "  if (!getVar('bg5Suffix')) {",
+                    "    const s = String(Date.now()) + '-' + Math.floor(Math.random()*1e4);",
+                    "    setVar('bg5Suffix', s);",
+                    "    setVar('idemKeyActivate', 'bg5-activate-' + s);",
+                    "  }",
+                    "}",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20 && isJwtFresh(tok))) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    if (getVar('branchId') && getVar('orgId')) return resolve();",
+                    "    const tok = getVar('accessToken');",
+                    "    if (!tok) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/me',",
+                    "      method: 'GET',",
+                    "      header: { 'Authorization': 'Bearer ' + tok }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try {",
+                    "          const j = res.json();",
+                    "          if (j.context) {",
+                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+                    "          }",
+                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+                    "          }",
+                    "        } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureChefToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    const tok = getVar('chefToken');",
+                    "    if (tok && tok.length >= 20 && isJwtFresh(tok)) return resolve();",
+                    "    const e = getVar('chefEmail') || 'chef@demo.local';",
+                    "    const p = getVar('chefPassword') || 'Chef#123';",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: e, password: p }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) {",
+                    "        try { const j = res.json(); if (j.accessToken) setVar('chefToken', j.accessToken); } catch (e) { /* ignore */ }",
+                    "      }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "ensureSuffix();",
+                    "return ensureToken().then(ensureMeContext).then(ensureChefToken).catch((e) => console.log('[bg5 prereq] chain error', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - variables, run order, locked rules",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "⚠️ **Re-import required after any script change.**\n\n## Run order\n1. **A. Auth & Context Baseline** — login owner + canonical /api/auth/me + login chef.\n2. **B. Device Activation** — POS / Printer / Terminal activation, validation, conflicts, idempotency.\n3. **C. KDS Registration** — KDS sugar.\n4. **D. Printer Routes** — upsert + list + non-PRINTER 400.\n5. **E. Terminal Pair / Unpair** — STUB pairing + unpair (idempotent).\n6. **F. List / Detail / Status / History**.\n7. **G. Permission Denial — Chef** — chef → 403 on every write.\n\n## Auto-populated variables\n- `accessToken`, `chefToken`, `orgId`, `branchId` (from login + /api/auth/me).\n- `bg5Suffix`, `idemKeyActivate` (per-run).\n- `posDeviceId`, `kdsDeviceId`, `printerDeviceId`, `terminalDeviceId`, `printerRouteId`, `idempotentDeviceId` (written by fixture requests).\n\n## Locked rules verified\n- `/api/auth/me` canonical (R14).\n- BG3 facade reused for all writes (`category: null`, `idempotencyMode: 'optional'`).\n- New `devices:{read,write,status:write,routes:write,terminals:write}` perms; chef denied.\n- Schema additive only: 2 new tables + 3 new enums. No back-relations on Branch/Organization.\n- Terminal pairing is STUB; printer routing is metadata-only.\n- Public diner payments still PENDING (untouched).\n- PesaPal owner-SaaS-only (untouched).\n- No hotel structures."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context Baseline",
+            "item": [
+                {
+                    "name": "Login Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
+                                    "if (body.refreshToken) pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/auth/me (canonical context)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "const ctx = body.context || (body.memberships && body.memberships[0]) || {};",
+                                    "const org = ctx.defaultOrganizationId || ctx.organizationId || ctx.orgId;",
+                                    "const branch = ctx.defaultBranchId || ctx.branchId;",
+                                    "pm.test('orgId present', () => pm.expect(org).to.be.a('string'));",
+                                    "pm.test('branchId present', () => pm.expect(branch).to.be.a('string'));",
+                                    "if (org) pm.collectionVariables.set('orgId', org);",
+                                    "if (branch) pm.collectionVariables.set('branchId', branch);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login Chef (for 403 checks)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "if (body.accessToken) pm.collectionVariables.set('chefToken', body.accessToken);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{chefEmail}}\",\n  \"password\": \"{{chefPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "B. Device Activation",
+            "item": [
+                {
+                    "name": "POST /api/devices/activate (POS_TERMINAL)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
+                                    "pm.test('device.type=POS_TERMINAL', () => pm.expect(j.device.type).to.eql('POS_TERMINAL'));",
+                                    "pm.test('device.status=ACTIVE', () => pm.expect(j.device.status).to.eql('ACTIVE'));",
+                                    "pm.test('activationCode is string', () => pm.expect(j.device.activationCode).to.be.a('string'));",
+                                    "pm.collectionVariables.set('posDeviceId', j.device.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"POS_TERMINAL\",\n  \"name\": \"bg5-pos-{{bg5Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/devices/activate (PRINTER)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('device.type=PRINTER', () => pm.expect(j.device.type).to.eql('PRINTER'));",
+                                    "pm.collectionVariables.set('printerDeviceId', j.device.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"PRINTER\",\n  \"name\": \"bg5-printer-{{bg5Suffix}}\",\n  \"station\": \"BAR\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /api/devices/activate (PAYMENT_TERMINAL_STUB)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('device.type=PAYMENT_TERMINAL_STUB', () => pm.expect(j.device.type).to.eql('PAYMENT_TERMINAL_STUB'));",
+                                    "pm.collectionVariables.set('terminalDeviceId', j.device.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"PAYMENT_TERMINAL_STUB\",\n  \"name\": \"bg5-term-{{bg5Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /activate without type → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"bg5-bad-{{bg5Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /activate duplicate name → 409 DEVICE_NAME_CONFLICT",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                                    "const j = pm.response.json();",
+                                    "const code = (j.message && j.message.code) || j.code;",
+                                    "pm.test('code=DEVICE_NAME_CONFLICT', () => pm.expect(code).to.eql('DEVICE_NAME_CONFLICT'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"POS_TERMINAL\",\n  \"name\": \"bg5-pos-{{bg5Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /activate (idempotency-key #1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.collectionVariables.set('idempotentDeviceId', j.device.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idemKeyActivate}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"POS_TERMINAL\",\n  \"name\": \"bg5-idem-{{bg5Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /activate (idempotency-key replay #2 → same device.id)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "const expected = pm.collectionVariables.get('idempotentDeviceId');",
+                                    "pm.test('Replay returns same device.id', () => pm.expect(j.device.id).to.eql(expected));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idemKeyActivate}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"POS_TERMINAL\",\n  \"name\": \"bg5-idem-{{bg5Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "C. KDS Registration",
+            "item": [
+                {
+                    "name": "POST /api/devices/kds/register",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('action=KDS_DEVICE_REGISTERED', () => pm.expect(j.action).to.eql('KDS_DEVICE_REGISTERED'));",
+                                    "pm.test('device.type=KDS_SCREEN', () => pm.expect(j.device.type).to.eql('KDS_SCREEN'));",
+                                    "pm.collectionVariables.set('kdsDeviceId', j.device.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"bg5-kds-{{bg5Suffix}}\",\n  \"station\": \"KITCHEN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/kds/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "kds",
+                                "register"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "D. Printer Routes",
+            "item": [
+                {
+                    "name": "POST /printers/routes (BAR enabled) → PRINTER_ROUTE_CONFIGURED",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('action=PRINTER_ROUTE_CONFIGURED', () => pm.expect(j.action).to.eql('PRINTER_ROUTE_CONFIGURED'));",
+                                    "pm.test('route.routeType=BAR', () => pm.expect(j.route.routeType).to.eql('BAR'));",
+                                    "pm.collectionVariables.set('printerRouteId', j.route.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"printerId\": \"{{printerDeviceId}}\",\n  \"routeType\": \"BAR\",\n  \"station\": \"BAR\",\n  \"enabled\": true,\n  \"priority\": 50\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/printers/routes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "printers",
+                                "routes"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /printers/routes (BAR disabled) → PRINTER_ROUTE_DISABLED, same id",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('action=PRINTER_ROUTE_DISABLED', () => pm.expect(j.action).to.eql('PRINTER_ROUTE_DISABLED'));",
+                                    "const expectedId = pm.collectionVariables.get('printerRouteId');",
+                                    "pm.test('same route.id (upsert)', () => pm.expect(j.route.id).to.eql(expectedId));",
+                                    "pm.test('route.enabled=false', () => pm.expect(j.route.enabled).to.eql(false));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"printerId\": \"{{printerDeviceId}}\",\n  \"routeType\": \"BAR\",\n  \"station\": \"BAR\",\n  \"enabled\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/printers/routes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "printers",
+                                "routes"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST /printers/routes wrong type → 400 DEVICE_NOT_PRINTER",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                                    "const j = pm.response.json();",
+                                    "const code = (j.message && j.message.code) || j.code;",
+                                    "pm.test('code=DEVICE_NOT_PRINTER', () => pm.expect(code).to.eql('DEVICE_NOT_PRINTER'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"printerId\": \"{{posDeviceId}}\",\n  \"routeType\": \"RECEIPT\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/printers/routes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "printers",
+                                "routes"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /printers/routes (filter by printerId)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('data is array', () => pm.expect(j.data).to.be.an('array'));",
+                                    "pm.test('total >= 1', () => pm.expect(j.total).to.be.at.least(1));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/printers/routes?printerId={{printerDeviceId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "printers",
+                                "routes"
+                            ],
+                            "query": [
+                                {
+                                    "key": "printerId",
+                                    "value": "{{printerDeviceId}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "E. Terminal Pair / Unpair (STUB)",
+            "item": [
+                {
+                    "name": "POST /terminals/pair (STUB)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('mode=STUB', () => pm.expect(j.mode).to.eql('STUB'));",
+                                    "pm.test('action=TERMINAL_PAIRED', () => pm.expect(j.action).to.eql('TERMINAL_PAIRED'));",
+                                    "const target = pm.collectionVariables.get('posDeviceId');",
+                                    "pm.test('paired to POS', () => pm.expect(j.terminal.pairedToDeviceId).to.eql(target));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"terminalDeviceId\": \"{{terminalDeviceId}}\",\n  \"pairedToDeviceId\": \"{{posDeviceId}}\",\n  \"provider\": \"mock-acquirer\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/terminals/pair",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "terminals",
+                                "pair"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH /terminals/:id/unpair",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('mode=STUB', () => pm.expect(j.mode).to.eql('STUB'));",
+                                    "pm.test('pairedToDeviceId is null', () => pm.expect(j.terminal.pairedToDeviceId).to.be.null);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"newman test cleanup\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/terminals/{{terminalDeviceId}}/unpair",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "terminals",
+                                "{{terminalDeviceId}}",
+                                "unpair"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH /terminals/:id/unpair (already unpaired → TERMINAL_NOT_PAIRED)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('action=TERMINAL_NOT_PAIRED', () => pm.expect(j.action).to.eql('TERMINAL_NOT_PAIRED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/terminals/{{terminalDeviceId}}/unpair",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "terminals",
+                                "{{terminalDeviceId}}",
+                                "unpair"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "F. List / Detail / Status / History",
+            "item": [
+                {
+                    "name": "GET /api/devices",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('data is array', () => pm.expect(j.data).to.be.an('array'));",
+                                    "pm.test('total is number', () => pm.expect(j.total).to.be.a('number'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/devices?type=POS_TERMINAL",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('all rows are POS_TERMINAL', () => { for (const d of j.data) pm.expect(d.type).to.eql('POS_TERMINAL'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices?type=POS_TERMINAL",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices"
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "POS_TERMINAL"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/devices/:id (POS detail)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('id matches', () => pm.expect(j.id).to.eql(pm.collectionVariables.get('posDeviceId')));",
+                                    "pm.test('routes is array', () => pm.expect(j.routes).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/{{posDeviceId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "{{posDeviceId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/devices/:id 404 (unknown id)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/00000000-0000-0000-0000-000000000000",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "00000000-0000-0000-0000-000000000000"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH /api/devices/:id/status (ACTIVE → INACTIVE)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('action=DEVICE_STATUS_CHANGED', () => pm.expect(j.action).to.eql('DEVICE_STATUS_CHANGED'));",
+                                    "pm.test('device.status=INACTIVE', () => pm.expect(j.device.status).to.eql('INACTIVE'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"INACTIVE\",\n  \"reason\": \"newman regression\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/{{posDeviceId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "{{posDeviceId}}",
+                                "status"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH /api/devices/:id/status (no-op same status)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('action=DEVICE_STATUS_UNCHANGED', () => pm.expect(j.action).to.eql('DEVICE_STATUS_UNCHANGED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/{{posDeviceId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "{{posDeviceId}}",
+                                "status"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET /api/devices/:id/history",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('data is array', () => pm.expect(j.data).to.be.an('array'));",
+                                    "pm.test('total >= 2 (activate + status change)', () => pm.expect(j.total).to.be.at.least(2));",
+                                    "const actions = j.data.map(r => r.action);",
+                                    "pm.test('includes DEVICE_ACTIVATED', () => pm.expect(actions).to.include('DEVICE_ACTIVATED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/{{posDeviceId}}/history",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "{{posDeviceId}}",
+                                "history"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "G. Permission Denial — Chef",
+            "item": [
+                {
+                    "name": "Chef → POST /activate → 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"POS_TERMINAL\",\n  \"name\": \"chef-bad-{{bg5Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/activate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Chef → POST /kds/register → 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"chef-kds-{{bg5Suffix}}\",\n  \"station\": \"KITCHEN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/kds/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "kds",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Chef → POST /printers/routes → 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"printerId\": \"{{printerDeviceId}}\",\n  \"routeType\": \"RECEIPT\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/printers/routes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "printers",
+                                "routes"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Chef → POST /terminals/pair → 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"terminalDeviceId\": \"{{terminalDeviceId}}\",\n  \"pairedToDeviceId\": \"{{posDeviceId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/terminals/pair",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "terminals",
+                                "pair"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Chef → PATCH /:id/status → 403",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{chefToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"DISABLED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/devices/{{posDeviceId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "devices",
+                                "{{posDeviceId}}",
+                                "status"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

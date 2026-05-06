@@ -16,7 +16,7 @@ describe('Ledger (e2e)', () => {
   let reversalJournalId: string;
   let accountId1: string;
   let accountId2: string;
-  let postingRunId: string;
+  let _postingRunId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -378,7 +378,7 @@ describe('Ledger (e2e)', () => {
       expect(res.status).toBe(201);
       expect(res.body.alreadyPosted).toBe(false);
       expect(res.body.postingRun).toBeDefined();
-      postingRunId = res.body.postingRun.id;
+      _postingRunId = res.body.postingRun.id;
     });
 
     it('should return idempotent result for same source document', async () => {

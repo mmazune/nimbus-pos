@@ -1,0 +1,815 @@
+{
+    "info": {
+        "name": "M36 - Bank Reconciliation + Period Close (Simplified)",
+        "description": "Simplified M36 collection � bank accounts, bank statement import, manual bank entries, reconciliation (create/get/match/skip/complete), period close with retained earnings, and period lock.\n\nManual checklist:\n1. Auth Login Owner\n2. Auth Get Branch ID\n3. Create Bank Account\n4. List Bank Accounts\n5. Import Bank Statement\n6. List / Get Bank Statements\n7. Create Manual Bank Entry\n8. Create Reconciliation\n9. List / Get Reconciliation\n10. Match Statement Line\n11. Skip Statement Line\n12. Complete Reconciliation\n13. List Period Close Runs\n14. Create Test Fiscal Period (unique dates — auto-captures ID)\n15. Close Fiscal Period\n16. Lock Fiscal Period",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth � Login Owner",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('accessToken', body.accessToken);",
+                            "pm.environment.set('refreshToken', body.refreshToken);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"email\": \"owner@demo.local\",\n    \"password\": \"Owner#123\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Auth � Get Branch ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "const body = pm.response.json();",
+                            "const bid = body.defaultBranch?.id || body.organizations?.[0]?.branches?.[0]?.id || body.memberships?.[0]?.branchId;",
+                            "pm.environment.set('branchId', bid);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/me",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "me"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Bank Account",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('bankAccountId', body.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Postman Bank Account\",\n    \"accountCode\": \"PM-BA-001\",\n    \"bankName\": \"Stanbic Bank Uganda\",\n    \"currencyCode\": \"UGX\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/bank-accounts",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "bank-accounts"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Bank Accounts",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/bank-accounts",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "bank-accounts"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Import Bank Statement",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('bankStatementId', body.id);",
+                            "if (body.lines && body.lines.length > 0) { pm.environment.set('bankStatementLineId', body.lines[0].id); }",
+                            "if (body.lines && body.lines.length > 1) { pm.environment.set('bankStatementLineId2', body.lines[1].id); }"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bankAccountId\": \"{{bankAccountId}}\",\n    \"statementDate\": \"2025-01-31\",\n    \"periodStart\": \"2025-01-01\",\n    \"periodEnd\": \"2025-01-31\",\n    \"openingBalance\": 1000000,\n    \"closingBalance\": 2500000,\n    \"reference\": \"PM-STMT-001\",\n    \"lines\": [\n        { \"txDate\": \"2025-01-15\", \"description\": \"Sales collection\", \"amount\": 2500000, \"direction\": \"CREDIT\", \"reference\": \"COL-001\" },\n        { \"txDate\": \"2025-01-20\", \"description\": \"Supplier payment\", \"amount\": 1000000, \"direction\": \"DEBIT\", \"reference\": \"PAY-001\" }\n    ]\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/bank-statements/import",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "bank-statements",
+                        "import"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Bank Statements",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/bank-statements",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "bank-statements"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Bank Statement by ID",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('has lines', () => pm.expect(pm.response.json().lines).to.be.an('array'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/bank-statements/{{bankStatementId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "bank-statements",
+                        "{{bankStatementId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Manual Bank Entry",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('manualEntryId', body.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bankAccountId\": \"{{bankAccountId}}\",\n    \"txDate\": \"2025-01-31\",\n    \"amount\": 15000,\n    \"direction\": \"DEBIT\",\n    \"description\": \"Monthly bank service charge\",\n    \"entryType\": \"BANK_CHARGE\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/manual-bank-entries",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "manual-bank-entries"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Reconciliation",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('reconciliationId', body.id);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bankAccountId\": \"{{bankAccountId}}\",\n    \"bankStatementId\": \"{{bankStatementId}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/reconciliation",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "reconciliation"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Reconciliations",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/reconciliation",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "reconciliation"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Reconciliation (live difference)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('has difference', () => pm.expect(pm.response.json().difference).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/reconciliation/{{reconciliationId}}",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "reconciliation",
+                        "{{reconciliationId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Match Statement Line",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('status MATCHED', () => pm.expect(pm.response.json().status).to.eql('MATCHED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bankStatementLineId\": \"{{bankStatementLineId}}\",\n    \"manualEntryId\": \"{{manualEntryId}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/reconciliation/{{reconciliationId}}/match",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "reconciliation",
+                        "{{reconciliationId}}",
+                        "match"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Skip Statement Line",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));",
+                            "pm.test('status SKIPPED', () => pm.expect(pm.response.json().status).to.eql('SKIPPED'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"bankStatementLineId\": \"{{bankStatementLineId2}}\",\n    \"notes\": \"Not relevant to this period\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/reconciliation/{{reconciliationId}}/skip",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "reconciliation",
+                        "{{reconciliationId}}",
+                        "skip"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Complete Reconciliation",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const status = pm.response.code;",
+                            "pm.test('status 200 or 400', () => pm.expect([200, 400]).to.include(status));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/reconciliation/{{reconciliationId}}/complete",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "reconciliation",
+                        "{{reconciliationId}}",
+                        "complete"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Period Close Runs",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 200', () => pm.response.to.have.status(200));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/period-close-runs",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "period-close-runs"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Create Test Fiscal Period (for close/lock)",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "exec": [
+                            "const ms = Date.now();",
+                            "const hr = Math.floor(ms / 3600000);",
+                            "const yr = 2100 + (hr % 7899);",
+                            "const pad = n => String(n).padStart(2, '0');",
+                            "pm.environment.set('tmpPeriodStart', yr + '-01-01');",
+                            "pm.environment.set('tmpPeriodEnd', yr + '-03-28');",
+                            "pm.environment.set('tmpPeriodName', 'Test-Period-Y' + yr);"
+                        ],
+                        "type": "text/javascript"
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('status 201', () => pm.response.to.have.status(201));",
+                            "const body = pm.response.json();",
+                            "pm.environment.set('fiscalPeriodId', body.id);",
+                            "pm.test('fiscalPeriodId captured', () => pm.expect(body.id).to.be.a('string'));"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"{{tmpPeriodName}}\",\n    \"startsAt\": \"{{tmpPeriodStart}}\",\n    \"endsAt\": \"{{tmpPeriodEnd}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/periods",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "periods"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Close Fiscal Period",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const status = pm.response.code;",
+                            "pm.test('status 200 or 409', () => pm.expect([200, 409]).to.include(status));",
+                            "if (status === 200) { pm.test('status CLOSED', () => pm.expect(pm.response.json().status).to.eql('CLOSED')); }"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"notes\": \"Postman close test\" }"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/periods/{{fiscalPeriodId}}/close",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "periods",
+                        "{{fiscalPeriodId}}",
+                        "close"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Lock Fiscal Period",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const status = pm.response.code;",
+                            "pm.test('status 200 or 409', () => pm.expect([200, 409]).to.include(status));",
+                            "if (status === 200) { pm.test('status LOCKED', () => pm.expect(pm.response.json().status).to.eql('LOCKED')); }"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/accounting/periods/{{fiscalPeriodId}}/lock",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "accounting",
+                        "periods",
+                        "{{fiscalPeriodId}}",
+                        "lock"
+                    ]
+                }
+            }
+        }
+    ]
+}

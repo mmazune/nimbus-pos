@@ -354,22 +354,74 @@ export class AuthService {
       ),
     ];
 
+    // ── M39.2 — Membership Context Resolution ──
+    // After a global Nimbus login, the frontend does NOT show an "org login"
+    // screen. It calls GET /auth/me and uses the returned `memberships` +
+    // `context` block to either auto-select (one org / one branch) or prompt
+    // the user to pick an org / branch.
+    const memberships = await this.prisma.membership.findMany({
+      where: { userId, status: 'ACTIVE' },
+      include: {
+        organization: { select: { id: true, name: true, slug: true, status: true } },
+        branch: { select: { id: true, name: true, slug: true, status: true } },
+        role: { select: { id: true, name: true, level: true, jobRole: true } },
+      },
+      orderBy: [{ isDefaultBranch: 'desc' }, { createdAt: 'asc' }],
+    });
+
+    const membershipDtos = memberships.map((m) => ({
+      id: m.id,
+      organizationId: m.organizationId,
+      organizationName: m.organization.name,
+      organizationSlug: m.organization.slug,
+      organizationStatus: m.organization.status,
+      branchId: m.branchId,
+      branchName: m.branch.name,
+      branchSlug: m.branch.slug,
+      branchStatus: m.branch.status,
+      roleId: m.roleId,
+      roleName: m.role.name,
+      roleLevel: m.role.level,
+      jobRole: m.role.jobRole,
+      status: m.status,
+      isDefaultBranch: m.isDefaultBranch,
+    }));
+
+    const orgIds = [...new Set(membershipDtos.map((m) => m.organizationId))];
+    const branchIds = [...new Set(membershipDtos.map((m) => m.branchId))];
+
+    const defaultMembership =
+      membershipDtos.find((m) => m.isDefaultBranch) || membershipDtos[0] || null;
+
+    const requiresContextSelection =
+      orgIds.length > 1 || (orgIds.length === 1 && branchIds.length > 1);
+
     return {
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      displayName: user.displayName,
       isActive: user.isActive,
       roles,
       permissions,
+      memberships: membershipDtos,
+      context: {
+        organizationCount: orgIds.length,
+        branchCount: branchIds.length,
+        requiresContextSelection,
+        defaultOrganizationId: defaultMembership?.organizationId ?? null,
+        defaultBranchId: defaultMembership?.branchId ?? null,
+        defaultMembershipId: defaultMembership?.id ?? null,
+      },
       session: session
         ? {
-            id: session.id,
-            platform: session.platform,
-            source: session.source,
-            lastActivityAt: session.lastActivityAt,
-            createdAt: session.createdAt,
-          }
+          id: session.id,
+          platform: session.platform,
+          source: session.source,
+          lastActivityAt: session.lastActivityAt,
+          createdAt: session.createdAt,
+        }
         : null,
     };
   }

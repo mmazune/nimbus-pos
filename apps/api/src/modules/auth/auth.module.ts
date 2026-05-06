@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { QuickPinService } from './quick-pin.service';
+import { InvitationLifecycleService } from './invitation-lifecycle.service';
+import { PasswordLifecycleService } from './password-lifecycle.service';
 import { JwtStrategy } from './jwt.strategy';
 
 @Module({
@@ -23,7 +25,18 @@ import { JwtStrategy } from './jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, QuickPinService, JwtStrategy],
-  exports: [AuthService, QuickPinService],
+  providers: [
+    AuthService,
+    QuickPinService,
+    InvitationLifecycleService,
+    PasswordLifecycleService,
+    JwtStrategy,
+  ],
+  exports: [
+    AuthService,
+    QuickPinService,
+    InvitationLifecycleService,
+    PasswordLifecycleService,
+  ],
 })
-export class AuthModule {}
+export class AuthModule { }

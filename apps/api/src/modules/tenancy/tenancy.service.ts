@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { BillingService } from '../billing/billing.service';
 import { CreateOrgDto, CreateBranchDto, CreateMembershipDto } from './dto';
 
 interface RequestMeta {
@@ -18,7 +19,8 @@ export class TenancyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) {}
+    private readonly billing: BillingService,
+  ) { }
 
   // ── Organizations ──
 
@@ -95,6 +97,17 @@ export class TenancyService {
     const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
     if (!org) {
       throw new NotFoundException('Organization not found');
+    }
+
+    // ── M39 PLAN-CATALOG CORRECTION ──
+    // Enforce location (branch) cap from the active subscription. This is the
+    // ONLY plan-level enforcement applied during branch creation. Customers
+    // hitting their cap receive a structured upgrade-required ConflictException.
+    // If the org has no subscription yet (e.g. fresh seed), enforcement is
+    // skipped — the onboarding flow attaches a subscription before this point.
+    const hasSubscription = await this.prisma.subscription.findUnique({ where: { orgId } });
+    if (hasSubscription) {
+      await this.billing.checkPlanLimit(orgId, 'BRANCH', actorUserId);
     }
 
     // If code is provided, check uniqueness within org
@@ -397,14 +410,14 @@ export class TenancyService {
       defaultBranch,
       session: session
         ? {
-            id: session.id,
-            platform: session.platform,
-            source: session.source,
-            orgId: session.orgId,
-            branchId: session.branchId,
-            lastActivityAt: session.lastActivityAt,
-            createdAt: session.createdAt,
-          }
+          id: session.id,
+          platform: session.platform,
+          source: session.source,
+          orgId: session.orgId,
+          branchId: session.branchId,
+          lastActivityAt: session.lastActivityAt,
+          createdAt: session.createdAt,
+        }
         : null,
     };
   }
