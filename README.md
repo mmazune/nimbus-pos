@@ -2,7 +2,7 @@
 
 **Nimbus POS** is a full-stack, enterprise-grade hospitality Point-of-Sale platform purpose-built for restaurants, bars, and multi-branch food & beverage operations. It is not a wrapper around a generic POS SDK — every domain has been designed from scratch with hospitality-specific business logic. The system covers the entire operating lifecycle of a modern F&B business in a single codebase: front-of-house order management, a live Kitchen Display System, table reservations, events & ticketing with QR check-in, FIFO inventory costing, recipe-driven true COGS calculation, multi-dimensional HR & payroll, a complete double-entry accounting suite, franchise HQ consolidation, SaaS subscription billing, real-time anomaly & anti-theft detection, and a reliability layer engineered for intermittent-connectivity edge environments.
 
-The backend is **100% complete** through milestone BG6 — 50 database migrations, 55 Postman collections with Newman validation, 60 milestone completion reports, ~700 unit tests, and ~500 end-to-end tests. The Next.js frontend shell is the next phase.
+The backend is **100% complete** through milestone **BG7** — 51 database migrations, 56 Postman collections with Newman validation, 61 milestone completion reports, ~700 unit tests, and ~500 end-to-end tests. The Next.js frontend shell is the next phase.
 
 ---
 
@@ -52,14 +52,14 @@ HR, payroll, inventory, accounting, reservations, and POS all share the same dat
 ┌─────────────────────────────────▼───────────────────────────────────┐
 │  NestJS API  (apps/api)                                             │
 │                                                                     │
-│  52 feature modules · JWT guard · Permission guard · Branch guard  │
+│  54 feature modules · JWT guard · Permission guard · Branch guard  │
 │  class-validator DTOs · Audit logging · BG3 reliability facade     │
 │  Prisma client · Decimal(10,2) money fields · cuid2 IDs            │
 └──────────────┬──────────────────────────────────────┬──────────────┘
                │                                      │
 ┌──────────────▼──────────────┐         ┌─────────────▼──────────────┐
 │  Neon Postgres               │         │  Redis + BullMQ            │
-│  50 migrations               │         │  (jobs contracted;         │
+│  51 migrations               │         │  (jobs contracted;         │
 │  Prisma ORM                  │         │   background workers       │
 │  cuid2 PKs everywhere        │         │   deferred)                │
 │  Append-only ledgers         │         └────────────────────────────┘
@@ -92,7 +92,7 @@ HR, payroll, inventory, accounting, reservations, and POS all share the same dat
 | Validation      | class-validator + class-transformer            |
 | Auth            | JWT access + refresh tokens; PIN-first login   |
 | Frontend        | Next.js Pages Router + React Query + Tailwind (M43+) |
-| API Testing     | Postman / Newman (55 collections)              |
+| API Testing     | Postman / Newman (56 collections)              |
 | Automated Tests | Jest + Supertest (~1,200+ tests)               |
 | IDs             | cuid2                                          |
 | Docs            | Markdown + OpenAPI/Swagger                     |
@@ -104,19 +104,19 @@ HR, payroll, inventory, accounting, reservations, and POS all share the same dat
 ```
 nimbus-pos/
 ├── apps/
-│   ├── api/                  # NestJS API — 52 feature modules
+│   ├── api/                  # NestJS API — 54 feature modules
 │   ├── web/                  # Next.js backoffice UI  (M43+)
 │   ├── desktop/              # POS desktop shell      (deferred)
 │   └── mobile/               # Mobile companion       (deferred)
 ├── packages/
-│   ├── db/                   # Prisma schema, 50 migrations, seed, client
+│   ├── db/                   # Prisma schema, 51 migrations, seed, client
 │   └── shared/               # Shared types, enums, DTOs
 ├── docs/                     # Architecture & convention docs
 ├── ai/                       # Milestone completion reports, AI governance
 │   ├── AI_STATUS.md          # Live progress tracker
-│   └── M*_COMPLETION_REPORT.md  # 60 detailed completion reports
+│   └── M*_COMPLETION_REPORT.md  # 61 detailed completion reports
 └── postman/
-    ├── collections/          # 55 Postman collections
+    ├── collections/          # 56 Postman collections
     └── environments/         # Dev / staging environments
 ```
 
@@ -765,6 +765,47 @@ The reliability layer was designed for the reality of a busy restaurant environm
 
 **Permissions:** `exports:read`, `exports:write`, `exports:download` — Owner / Manager / Accountant; Chef denied all routes.
 
+### 44. HMS Integration — Read-Only `/api/hms/*` Facade
+
+Nimbus POS is the restaurant half of a two-system hospitality suite. **nimbus-hms** (the hotel/property-management counterpart) needs a complete, real-time view of every POS event so it can post restaurant charges to guest folios, reconcile event-bookings against hotel reservations, and include POS revenue in its daily flash report. BG7 delivers this contract surface.
+
+**Authentication via API Key.** The HMS system authenticates with an opaque `nk_`-prefixed API key minted from the existing dev portal (`POST /api/dev/api-keys`). Keys are SHA-256-hashed at rest — the plaintext is returned exactly once on creation. Send it as `x-api-key: <key>` or `Authorization: ApiKey <key>`. A new `ApiKeyAuthGuard` validates status, expiry, and synthesises a `req.user` carrying the implicit permission `hms:read:*` — allowing the existing `PermissionGuard` to enforce `@Permissions('hms:read:*')` without any special branching.
+
+**Key scope.** A key is either:
+- **Organisation-wide** (`branchId` omitted on creation) — sees every branch and may filter per request with `?branchId=`
+- **Branch-scoped** (`branchId` set on creation) — every read is locked to that branch; `?branchId=` parameter is ignored
+
+**18 read-only endpoints under `/api/hms/*`:**
+
+| Endpoint | Data |
+|---|---|
+| `GET /hms/whoami` | API key identity, scope, granted permissions |
+| `GET /hms/access-logs` | Paginated journal of prior HMS requests |
+| `GET /hms/organization` | Organisation profile and scope envelope |
+| `GET /hms/branches` | All branches visible to the key |
+| `GET /hms/orders` | Paginated POS orders (`from`, `to`, `status?`, `branchId?`) |
+| `GET /hms/orders/:id` | Single order with line items and payments |
+| `GET /hms/payments` | Paginated payments |
+| `GET /hms/refunds` | Paginated refunds |
+| `GET /hms/sales/summary` | Daily sales summary — revenue, covers, voids |
+| `GET /hms/reservations` | Paginated restaurant reservations |
+| `GET /hms/events` | Paginated events |
+| `GET /hms/event-bookings` | Paginated event bookings with ticket counts |
+| `GET /hms/menu` | Full menu catalog (categories, items, pricing) |
+| `GET /hms/inventory` | Inventory items and current stock levels |
+| `GET /hms/shifts` | Paginated shift records |
+| `GET /hms/accounting/accounts` | Chart of accounts |
+| `GET /hms/accounting/invoices` | AR customer invoices |
+| `GET /hms/accounting/vendor-bills` | AP vendor bills |
+
+**Access audit journal.** Every reached HMS request is journaled to `integration_access_logs` (route, method, status, duration, IP, user-agent). The HMS can pull its own request history via `GET /api/hms/access-logs` — full request traceability without touching any other audit surface.
+
+**Security guarantees.** `hms:read:*` is never attached to any human role and never appears in JWT claims — even the broadest OWNER role cannot accidentally reach `/api/hms/*`. All Prisma selects use explicit `select:` lists — no key hashes, no plaintext secrets, no PII beyond what the HMS legitimately needs.
+
+**Intentionally read-only.** Write-back surfaces (push charges to hotel folio, sync hotel-side adjustments back to POS) are deferred to a future BG milestone.
+
+**Integration spec.** The long-form field-by-field integration specification, recommended polling cadence, and POS→HMS concept mapping live at [docs/NIMBUS_POS_FOR_HMS_INTEGRATION_SPEC.md](docs/NIMBUS_POS_FOR_HMS_INTEGRATION_SPEC.md).
+
 ---
 
 ## Cross-Cutting Infrastructure
@@ -772,7 +813,7 @@ The reliability layer was designed for the reality of a busy restaurant environm
 ### RBAC & Permission System
 
 - ~200+ permissions seeded across all modules
-- Granular namespaces: `pos:*`, `accounting:*`, `finance:*`, `franchise:*`, `alerts:*`, `devices:*`, `exports:*`, `billing:*`, `dev:*`, `ops:*`, `sync:*`, `idempotency:*`, `hr:*`, `payroll:*`, `reports:*`, `reservations:*`, `events:*`
+- Granular namespaces: `pos:*`, `accounting:*`, `finance:*`, `franchise:*`, `alerts:*`, `devices:*`, `exports:*`, `billing:*`, `dev:*`, `ops:*`, `sync:*`, `idempotency:*`, `hr:*`, `payroll:*`, `reports:*`, `reservations:*`, `events:*`, `hms:*`
 - Guard chain on every endpoint: `JwtAuthGuard` → `PermissionGuard` → `BranchContextGuard`
 - Chef is intentionally denied on all financial, management, and receipt surfaces — used as a test control in every milestone's e2e suite to verify role gating actually works
 
@@ -860,9 +901,10 @@ Demo data: Organisation *Nimbus Hospitality Group*, branch *Tapas Downtown*, 9 d
 | Audit Timeline | `audit-timeline` | 1 |
 | Device Registry | `device-registry` | 10 |
 | Exports | `exports` | 5 |
+| HMS Integration | `hms` | 18 |
 | Public Commerce | `public-commerce`, `merchant-payments` | 12 |
 
-**Total: ~400+ endpoints across 52 modules.**
+**Total: ~420+ endpoints across 54 modules.**
 
 ---
 
@@ -898,7 +940,7 @@ Every milestone delivers a minimum test set:
 **Current coverage:**
 - ~700 unit tests across 40+ spec files
 - ~500 e2e tests across 45+ e2e spec files
-- 55 Postman / Newman collections (23 to 68 assertions per collection)
+- 56 Postman / Newman collections (23 to 68 assertions per collection)
 
 ```bash
 # Unit tests
@@ -927,7 +969,7 @@ pnpm install
 # 3. Generate Prisma client
 pnpm db:generate
 
-# 4. Apply all 50 migrations
+# 4. Apply all 51 migrations
 pnpm db:migrate
 
 # 5. Seed the database (fully idempotent — safe to run multiple times)
@@ -1020,6 +1062,7 @@ JWT_REFRESH_SECRET=<strong-random-secret>
 | BG4.B | Order Handoff (Split / Merge / Transfer) | ✅ |
 | BG5 | Device / Printer / Terminal Registry | ✅ |
 | BG6 | Unified Exports / Downloads Facade + AP Supplier Detail | ✅ |
+| BG7 | HMS Integration — Read-Only `/api/hms/*` Facade + API Key Auth | ✅ |
 | M43 | Frontend Shell + Role-Based Workspaces | ⬜ Next |
 | M44 | Frontend POS + KDS + Backoffice Vertical Screens | ⬜ |
 | M45 | Passkeys + MFA + SSO/SCIM | ⬜ |
@@ -1033,6 +1076,7 @@ JWT_REFRESH_SECRET=<strong-random-secret>
 | Item | Status |
 |---|---|
 | Airtel Money native integration (M13.2) | Not started |
+| HMS write-back endpoints (push charges, hotel sync) | Deferred — BG7 is read-only only |
 | Live receipt delivery (email / SMS / WhatsApp) | Contracted — `POST /receipts/:id/send` returns 202 PENDING |
 | Live card-terminal driver | STUB only — pairing is metadata |
 | Live printer dispatch driver | Metadata only — routes configured, no print engine |
@@ -1051,8 +1095,32 @@ JWT_REFRESH_SECRET=<strong-random-secret>
 - [ai/AI_STATUS.md](ai/AI_STATUS.md) — Live progress tracker with per-milestone summaries
 - [postman/POSTMAN_GUIDE.md](postman/POSTMAN_GUIDE.md) — How to run Postman collections
 - [ai/AI_POSTMAN_WORKING_PATTERNS.md](ai/AI_POSTMAN_WORKING_PATTERNS.md) — Newman/Postman rules and patterns
-- `ai/M*_COMPLETION_REPORT.md` — Detailed completion reports for every milestone (60 reports)
+- `ai/M*_COMPLETION_REPORT.md` — Detailed completion reports for every milestone (61 reports)
 - `docs/` — Architecture and API convention docs
+
+---
+
+## HMS Integration (`/api/hms/*`) — BG7 ✅ 2026-05-08
+
+**nimbus-pos** is the restaurant/POS half of a two-system suite. The other half — **nimbus-hms** (a separate codebase) — runs the hotel/property side: rooms, folios, guest profiles, housekeeping. BG7 ships the read-only contract surface the HMS consumes to keep its folios, restaurant charges, event bookings, and accounting mirrors in sync with this POS.
+
+**Authentication.** The HMS authenticates with an opaque `nk_`-prefixed API key minted from the existing dev portal (`POST /api/dev/api-keys`). Send it as either `x-api-key: <key>` or `Authorization: ApiKey <key>`. Keys are SHA-256-hashed at rest; the plaintext is returned exactly once on creation. A new `ApiKeyAuthGuard` validates `status='ACTIVE'` and `expiresAt`, then synthesises `req.user` with `hms:read:*` — the existing `PermissionGuard` enforces access without any special HMS branching.
+
+**Key scope.** A key is either:
+- **Organization-wide** (`branchId` omitted on creation) — sees every branch in the org; filter per request with `?branchId=<id>`
+- **Branch-scoped** (`branchId` set on creation) — every read is locked to that single branch; `?branchId=` is ignored
+
+**18 read-only GET endpoints under `/api/hms/*`** (see Feature Domain §44 for the full table). Pagination: `limit` (≤200) + `skip`; time windows: `from` / `to` (ISO-8601). No POST/PATCH/DELETE on `/api/hms/*`.
+
+**Schema.** Migration `20260508000000_bg7_hms_integration`: `api_keys` gains `branch_id` (FK→branches, ON DELETE SET NULL) and `last_used_ip`; new table `integration_access_logs` journals every reached HMS request with route, method, status code, duration, IP, user-agent, and `metadata JSONB`.
+
+**Audit journal.** Every reached HMS request is journaled to `integration_access_logs` via `HmsAccessLogInterceptor` (best-effort, swallowed on failure). The HMS can pull its own request history via `GET /api/hms/access-logs`.
+
+**Permissions.** `hms:read:*` is granted **implicitly by the API key** — it is never attached to any human role and never appears in JWT claims. Human users cannot reach `/api/hms/*` regardless of role.
+
+**Write-back deferred.** Pushing charges to hotel folios and syncing hotel-side adjustments back to POS are deferred to a future BG milestone.
+
+**For the parallel HMS implementer:** the long-form integration spec lives at [docs/NIMBUS_POS_FOR_HMS_INTEGRATION_SPEC.md](docs/NIMBUS_POS_FOR_HMS_INTEGRATION_SPEC.md) — every request/response shape, field-by-field types, recommended polling cadence, and POS→HMS concept mapping.
 
 ---
 

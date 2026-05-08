@@ -510,6 +510,19 @@ export class BillingService {
     async createApiKey(orgId: string, dto: CreateApiKeyDto, userId: string) {
         await this.checkPlanLimit(orgId, 'API_KEY', userId);
 
+        // BG7 — branchId restriction is optional. If provided, validate that
+        // the branch belongs to this org so a malicious owner cannot bind a
+        // key to a foreign branch.
+        if (dto.branchId) {
+            const branch = await this.prisma.branch.findFirst({
+                where: { id: dto.branchId, organizationId: orgId },
+                select: { id: true },
+            });
+            if (!branch) {
+                throw new NotFoundException('Branch not found in this organization');
+            }
+        }
+
         // Generate a secure random key
         const rawKey = randomBytes(32).toString('hex');
         const keyPrefix = `nk_${rawKey.substring(0, 8)}`;
@@ -518,6 +531,7 @@ export class BillingService {
         const apiKey = await this.prisma.apiKey.create({
             data: {
                 orgId,
+                branchId: dto.branchId ?? null,
                 name: dto.name,
                 keyPrefix,
                 keyHash,
@@ -531,7 +545,7 @@ export class BillingService {
             action: 'API_KEY_CREATED',
             entityType: 'ApiKey',
             entityId: apiKey.id,
-            metadata: { name: dto.name, keyPrefix, scopes: dto.scopes },
+            metadata: { name: dto.name, keyPrefix, scopes: dto.scopes, branchId: apiKey.branchId },
         });
 
         // Return full key only once
@@ -541,6 +555,8 @@ export class BillingService {
             keyPrefix: apiKey.keyPrefix,
             key: rawKey,
             scopes: apiKey.scopes,
+            branchId: apiKey.branchId,
+            scope: apiKey.branchId ? 'BRANCH' : 'ORGANIZATION',
             status: apiKey.status,
             createdAt: apiKey.createdAt,
         };
@@ -556,7 +572,9 @@ export class BillingService {
                 keyPrefix: true,
                 status: true,
                 scopes: true,
+                branchId: true,
                 lastUsedAt: true,
+                lastUsedIp: true,
                 expiresAt: true,
                 createdAt: true,
                 revokedAt: true,

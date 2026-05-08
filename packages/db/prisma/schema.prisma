@@ -566,6 +566,7 @@ model Organization {
     subscription                Subscription?
     usageMeters                 UsageMeter[]
     apiKeys                     ApiKey[]
+    integrationAccessLogs       IntegrationAccessLog[]
     webhookEndpoints            WebhookEndpoint[]
     supportSessions             SupportSession[]
     // M39 Reconstruction — SaaS Billing + Onboarding + Merchant + Public Commerce + Ops
@@ -5907,15 +5908,23 @@ model UsageMeter {
 }
 
 /// Programmatic API key for org integrations.
+///
+/// BG7 — adds optional `branchId` (null = org-wide key, set = restricted to a
+/// single branch) and `lastUsedIp` for inbound HMS-integration audit. The FK
+/// to `Branch` is enforced at the DB layer only (no `@relation` here, no
+/// back-relation on `Branch`) to keep `Branch` byte-stable, mirroring the
+/// BG1/BG5 precedent for byte-stable parent models.
 model ApiKey {
     id          String       @id @default(cuid())
     orgId       String       @map("org_id")
+    branchId    String?      @map("branch_id")
     name        String
     keyPrefix   String       @map("key_prefix")
     keyHash     String       @map("key_hash")
     status      ApiKeyStatus @default(ACTIVE)
     scopes      String[]     @default([])
     lastUsedAt  DateTime?    @map("last_used_at")
+    lastUsedIp  String?      @map("last_used_ip")
     expiresAt   DateTime?    @map("expires_at")
     createdById String       @map("created_by_id")
     revokedAt   DateTime?    @map("revoked_at")
@@ -5924,15 +5933,45 @@ model ApiKey {
     createdAt   DateTime     @default(now()) @map("created_at")
     updatedAt   DateTime     @updatedAt @map("updated_at")
 
-    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-    createdBy    User         @relation("ApiKeyCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-    revokedBy    User?        @relation("ApiKeyRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+    organization    Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    createdBy       User                   @relation("ApiKeyCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+    revokedBy       User?                  @relation("ApiKeyRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+    integrationLogs IntegrationAccessLog[]
 
     @@index([orgId])
     @@index([keyPrefix])
     @@index([orgId, status])
     @@index([status])
+    @@index([branchId])
     @@map("api_keys")
+}
+
+/// BG7 — Append-only access journal for inbound API-key authenticated HMS
+/// reads. One row per request. The FK to `Branch` is enforced at the DB
+/// layer only (no `@relation`) to keep `Branch` byte-stable.
+model IntegrationAccessLog {
+    id          String   @id @default(cuid())
+    orgId       String   @map("org_id")
+    apiKeyId    String   @map("api_key_id")
+    branchId    String?  @map("branch_id")
+    routeMethod String   @map("route_method")
+    routePath   String   @map("route_path")
+    statusCode  Int      @map("status_code")
+    durationMs  Int      @map("duration_ms")
+    ipAddress   String?  @map("ip_address")
+    userAgent   String?  @map("user_agent")
+    requestId   String?  @map("request_id")
+    metadata    Json?
+    createdAt   DateTime @default(now()) @map("created_at")
+
+    organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    apiKey       ApiKey       @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+    @@index([orgId, createdAt(sort: Desc)])
+    @@index([apiKeyId, createdAt(sort: Desc)])
+    @@index([branchId])
+    @@index([statusCode])
+    @@map("integration_access_logs")
 }
 
 /// Outbound webhook registration.

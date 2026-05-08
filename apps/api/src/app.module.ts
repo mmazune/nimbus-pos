@@ -55,6 +55,7 @@ import { ReceiptsModule } from './modules/receipts/receipts.module';
 import { PosHandoffModule } from './modules/pos-handoff/pos-handoff.module';
 import { DeviceRegistryModule } from './modules/device-registry/device-registry.module';
 import { ExportsModule } from './modules/exports/exports.module';
+import { HmsIntegrationModule } from './modules/hms-integration';
 
 @Module({
   imports: [
@@ -112,6 +113,7 @@ import { ExportsModule } from './modules/exports/exports.module';
     PosHandoffModule,
     DeviceRegistryModule,
     ExportsModule,
+    HmsIntegrationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

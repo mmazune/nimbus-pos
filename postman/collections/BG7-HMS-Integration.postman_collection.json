@@ -1,0 +1,1315 @@
+{
+    "info": {
+        "name": "BG7 - HMS Integration",
+        "description": "BG7 collection. Validates inbound API-key authentication and the read-only `/api/hms/*` façade introduced in `apps/api/src/modules/hms-integration`.\n\nFolder run order:\n1. **00 Read Me** — variables + run order.\n2. **A. Auth & Context Baseline** — owner JWT login (R12) + `/api/auth/me` (R14).\n3. **B. Mint Keys (org-wide + branch-scoped + revoked)** — uses the existing M39 `POST /api/dev/api-keys` surface, which BG7 extended with optional `branchId`. The plaintext key is captured to a collection variable exactly once.\n4. **C. HMS Auth (negative cases)** — missing key / unknown key / revoked key all return 401.\n5. **D. HMS Whoami + Branches** — proves org-wide vs branch-scoped tenancy isolation.\n6. **E. HMS Sales surface** — `/orders`, `/payments`, `/refunds`, `/sales/summary`.\n7. **F. HMS Hospitality surface** — `/reservations`, `/events`, `/event-bookings`.\n8. **G. HMS Catalog/Inventory** — `/menu`, `/inventory`.\n9. **H. HMS Operations** — `/shifts`, `/accounting/accounts`, `/accounting/invoices`, `/accounting/vendor-bills`.\n10. **I. Access Journal** — `/access-logs` proves every prior request was journaled.\n\n⚠️ **Re-import required after any script change.** Postman caches pre-request and test scripts at import time.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "bg7Suffix",
+            "value": ""
+        },
+        {
+            "key": "hmsOrgKey",
+            "value": ""
+        },
+        {
+            "key": "hmsOrgKeyId",
+            "value": ""
+        },
+        {
+            "key": "hmsBranchKey",
+            "value": ""
+        },
+        {
+            "key": "hmsBranchKeyId",
+            "value": ""
+        },
+        {
+            "key": "hmsRevokedKey",
+            "value": ""
+        },
+        {
+            "key": "hmsRevokedKeyId",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// BG7 canonical pre-request (R3/R4/R5/R12/R14/R16). Mirrors BG5/BG6.",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "const isPublicAuth = /\\/api\\/auth\\/(login|forgot-password|reset-password|invitations\\/accept|quick-pin-login)/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "// HMS routes are authenticated by x-api-key, NOT by the owner JWT, so they don't need the JWT pre-resolved.",
+                    "const isHmsRoute = /\\/api\\/hms\\//.test(url);",
+                    "const isPublic = isPublicAuth || isHealth || isHmsRoute;",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function isJwtFresh(tok) {",
+                    "  try {",
+                    "    if (!tok || typeof tok !== 'string') return false;",
+                    "    const parts = tok.split('.'); if (parts.length < 2) return false;",
+                    "    const b = parts[1].replace(/-/g, '+').replace(/_/g, '/');",
+                    "    const pad = b + '==='.slice((b.length + 3) % 4);",
+                    "    const payload = JSON.parse((typeof Buffer !== 'undefined' ? Buffer.from(pad, 'base64').toString('utf8') : atob(pad)));",
+                    "    return payload && payload.exp && (payload.exp * 1000 - Date.now()) > 60000;",
+                    "  } catch (e) { return false; }",
+                    "}",
+                    "function ensureSuffix() { if (!getVar('bg7Suffix')) setVar('bg7Suffix', String(Date.now())); }",
+                    "function ensureToken() {",
+                    "  return new Promise((resolve) => {",
+                    "    const tok = getVar('accessToken');",
+                    "    if (isPublic || (tok && tok.length >= 20 && isJwtFresh(tok))) return resolve();",
+                    "    pm.sendRequest({",
+                    "      url: baseUrl + '/api/auth/login',",
+                    "      method: 'POST',",
+                    "      header: { 'Content-Type': 'application/json' },",
+                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+                    "    }, (err, res) => {",
+                    "      if (!err && res) { try { const j = res.json(); if (j.accessToken) setVar('accessToken', j.accessToken); if (j.refreshToken) setVar('refreshToken', j.refreshToken); } catch (e) {} }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "function ensureMeContext() {",
+                    "  return new Promise((resolve) => {",
+                    "    if (isPublic) return resolve();",
+                    "    if (getVar('branchId') && getVar('orgId')) return resolve();",
+                    "    const tok = getVar('accessToken'); if (!tok) return resolve();",
+                    "    pm.sendRequest({ url: baseUrl + '/api/auth/me', method: 'GET', header: { 'Authorization': 'Bearer ' + tok } }, (err, res) => {",
+                    "      if (!err && res) { try { const j = res.json();",
+                    "        if (j.context) { if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId); if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId); }",
+                    "        if (Array.isArray(j.memberships) && j.memberships.length) { if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId); if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId); }",
+                    "      } catch (e) {} }",
+                    "      resolve();",
+                    "    });",
+                    "  });",
+                    "}",
+                    "ensureSuffix();",
+                    "return ensureToken().then(ensureMeContext).catch((e) => console.log('[bg7 prereq]', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - run order, variables, locked rules",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "## Run order\n1. **A. Auth Baseline** — login owner + /api/auth/me.\n2. **B. Mint Keys** — org-wide + branch-scoped + revoked.\n3. **C. HMS Auth (negative)** — 401 without key / unknown key / revoked key.\n4. **D. Whoami + Branches** — tenancy isolation.\n5. **E. Sales surface** — orders / payments / refunds / sales summary.\n6. **F. Hospitality** — reservations / events / event-bookings.\n7. **G. Catalog / Inventory** — menu / inventory.\n8. **H. Operations** — shifts / accounting/{accounts,invoices,vendor-bills}.\n9. **I. Access Journal** — /api/hms/access-logs.\n\n## Auto-populated variables\n- `accessToken`, `orgId`, `branchId` (R12/R14).\n- `hmsOrgKey`, `hmsOrgKeyId`, `hmsBranchKey`, `hmsBranchKeyId`, `hmsRevokedKey`, `hmsRevokedKeyId` (folder B).\n\n## Locked rules verified\n- New `ApiKeyAuthGuard` — header `x-api-key` (or `Authorization: ApiKey <key>`), SHA-256 lookup, status=ACTIVE, not expired.\n- Synthetic principal `apikey:<id>` granted `hms:read:*`.\n- `IntegrationAccessLog` row written for every reached request (best-effort).\n- Branch-scoped key forces results to its single branch; org-wide key sees all.\n- Read-only — no POST/PATCH/DELETE on `/api/hms/*`."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth Baseline",
+            "item": [
+                {
+                    "name": "Owner login (asserts [200,201]) — R12",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j = pm.response.json();",
+                                    "pm.test('Login OK', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "pm.collectionVariables.set('accessToken', j.accessToken);",
+                                    "if (pm.environment && pm.environment.name) pm.environment.set('accessToken', j.accessToken);",
+                                    "if (j.refreshToken) { pm.collectionVariables.set('refreshToken', j.refreshToken); if (pm.environment && pm.environment.name) pm.environment.set('refreshToken', j.refreshToken); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "/api/auth/me — canonical context (R14)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j = pm.response.json();",
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const ctx = j.context || (j.memberships && j.memberships[0]) || {};",
+                                    "const orgId = ctx.defaultOrganizationId || ctx.organizationId || ctx.orgId;",
+                                    "const branchId = ctx.defaultBranchId || ctx.branchId;",
+                                    "if (orgId) { pm.collectionVariables.set('orgId', orgId); if (pm.environment && pm.environment.name) pm.environment.set('orgId', orgId); }",
+                                    "if (branchId) { pm.collectionVariables.set('branchId', branchId); if (pm.environment && pm.environment.name) pm.environment.set('branchId', branchId); }"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "B. Mint Keys",
+            "item": [
+                {
+                    "name": "POST /api/dev/api-keys — org-wide",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"bg7-hms-org-{{bg7Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/api-keys",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "api-keys"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j = pm.response.json();",
+                                    "pm.test('201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "pm.test('plaintext key returned once', () => pm.expect(j.key).to.be.a('string'));",
+                                    "pm.test('scope=ORGANIZATION', () => pm.expect(j.scope).to.eql('ORGANIZATION'));",
+                                    "pm.collectionVariables.set('hmsOrgKey', j.key);",
+                                    "pm.collectionVariables.set('hmsOrgKeyId', j.id);",
+                                    "if (pm.environment && pm.environment.name) { pm.environment.set('hmsOrgKey', j.key); pm.environment.set('hmsOrgKeyId', j.id); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/dev/api-keys — branch-scoped",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"bg7-hms-branch-{{bg7Suffix}}\",\n  \"branchId\": \"{{branchId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/api-keys",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "api-keys"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j = pm.response.json();",
+                                    "pm.test('201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "pm.test('scope=BRANCH', () => pm.expect(j.scope).to.eql('BRANCH'));",
+                                    "pm.test('branchId echoed', () => pm.expect(j.branchId).to.eql(pm.collectionVariables.get('branchId')));",
+                                    "pm.collectionVariables.set('hmsBranchKey', j.key);",
+                                    "pm.collectionVariables.set('hmsBranchKeyId', j.id);",
+                                    "if (pm.environment && pm.environment.name) { pm.environment.set('hmsBranchKey', j.key); pm.environment.set('hmsBranchKeyId', j.id); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/dev/api-keys — to-be-revoked",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"bg7-hms-revoked-{{bg7Suffix}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/api-keys",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "api-keys"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j = pm.response.json();",
+                                    "pm.test('201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "pm.collectionVariables.set('hmsRevokedKey', j.key);",
+                                    "pm.collectionVariables.set('hmsRevokedKeyId', j.id);",
+                                    "if (pm.environment && pm.environment.name) { pm.environment.set('hmsRevokedKey', j.key); pm.environment.set('hmsRevokedKeyId', j.id); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/dev/api-keys/:id/revoke",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/dev/api-keys/{{hmsRevokedKeyId}}/revoke",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "dev",
+                                "api-keys",
+                                "{{hmsRevokedKeyId}}",
+                                "revoke"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('revoked', () => pm.expect([200,201]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "C. HMS Auth (negative cases)",
+            "item": [
+                {
+                    "name": "GET /api/hms/whoami — no key (401)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/whoami",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "whoami"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/whoami — bogus key (401 API_KEY_INVALID)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "totally-fake-key-xxxxx"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/whoami",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "whoami"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('401', () => pm.response.to.have.status(401));",
+                                    "const j = pm.response.json(); pm.test('code', () => pm.expect((j.code || (j.message && j.message.code) || (j.error && j.error.code))).to.eql('API_KEY_INVALID'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/whoami — revoked key (401 API_KEY_REVOKED)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsRevokedKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/whoami",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "whoami"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('401', () => pm.response.to.have.status(401));",
+                                    "const j = pm.response.json(); pm.test('code', () => pm.expect((j.code || (j.message && j.message.code) || (j.error && j.error.code))).to.eql('API_KEY_REVOKED'));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "D. HMS Whoami + Branches",
+            "item": [
+                {
+                    "name": "GET /api/hms/whoami — org-wide key",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/whoami",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "whoami"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('scope=ORGANIZATION', () => pm.expect(j.scope).to.eql('ORGANIZATION'));",
+                                    "pm.test('hms:read:*', () => pm.expect(j.grantedPermissions).to.include('hms:read:*'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/whoami — branch key",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsBranchKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/whoami",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "whoami"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('scope=BRANCH', () => pm.expect(j.scope).to.eql('BRANCH'));",
+                                    "pm.test('branchId matches', () => pm.expect(j.branchId).to.eql(pm.collectionVariables.get('branchId')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/branches — org key (>=1)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/branches",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "branches"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('array', () => pm.expect(Array.isArray(j)).to.be.true);",
+                                    "pm.test('>=1', () => pm.expect(j.length).to.be.at.least(1));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/branches — branch key (===1)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsBranchKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/branches",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "branches"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('exactly 1', () => pm.expect(j.length).to.eql(1));",
+                                    "pm.test('matches branchId', () => pm.expect(j[0].id).to.eql(pm.collectionVariables.get('branchId')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/organization",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/organization",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "organization"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('org id matches', () => pm.expect(j.organization.id).to.eql(pm.collectionVariables.get('orgId')));",
+                                    "pm.test('branchScope=ORGANIZATION', () => pm.expect(j.branchScope).to.eql('ORGANIZATION'));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "E. Sales surface",
+            "item": [
+                {
+                    "name": "GET /api/hms/orders?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/orders?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json(); pm.test('paginated', () => { pm.expect(j).to.have.property('total'); pm.expect(j).to.have.property('items'); pm.expect(j.limit).to.eql(5); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/payments?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/payments?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "payments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/refunds?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/refunds?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "refunds"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/sales/summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/sales/summary",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "sales",
+                                "summary"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json(); pm.test('shape', () => { pm.expect(j).to.have.property('totals'); pm.expect(j).to.have.property('window'); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "F. Hospitality",
+            "item": [
+                {
+                    "name": "GET /api/hms/reservations?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/reservations?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "reservations"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/events?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/events?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "events"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/event-bookings?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/event-bookings?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "event-bookings"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "G. Catalog / Inventory",
+            "item": [
+                {
+                    "name": "GET /api/hms/menu?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/menu?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "menu"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/inventory?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/inventory?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "inventory"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "H. Operations",
+            "item": [
+                {
+                    "name": "GET /api/hms/shifts?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/shifts?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "shifts"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/accounting/accounts?limit=10",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/accounting/accounts?limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "accounting",
+                                "accounts"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/accounting/invoices?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/accounting/invoices?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "accounting",
+                                "invoices"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hms/accounting/vendor-bills?limit=5",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/accounting/vendor-bills?limit=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "accounting",
+                                "vendor-bills"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "I. Access Journal",
+            "item": [
+                {
+                    "name": "GET /api/hms/access-logs?limit=20",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-api-key",
+                                "value": "{{hmsOrgKey}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hms/access-logs?limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hms",
+                                "access-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json(); pm.test('items present', () => pm.expect(j.items.length).to.be.at.least(1));",
+                                    "pm.test('apiKeyId matches', () => pm.expect(j.items[0].apiKeyId).to.eql(pm.collectionVariables.get('hmsOrgKeyId')));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

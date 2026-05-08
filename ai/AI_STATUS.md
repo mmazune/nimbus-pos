@@ -32,8 +32,9 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 ## Current State
 
 - Repo name: nimbus-pos
-- Last completed milestone: **BG6 — Unified Exports / Downloads Facade + AP Supplier Detail** ✅ (2026-05-03)
-- Prior milestone: **BG5 — Device / Printer / Terminal Registry** ✅ (2026-05-02)
+- Last completed milestone: **BG7 — HMS Integration (read-only API-key facade for the parallel nimbus-hms property-management system)** ✅ (2026-05-08)
+- Prior milestone: **BG6 — Unified Exports / Downloads Facade + AP Supplier Detail** ✅ (2026-05-03)
+- Pre-BG6 milestone: **BG5 — Device / Printer / Terminal Registry** ✅ (2026-05-02)
 - Pre-BG5 milestone: **BG4.B — POS Order Handoff (Split / Merge / Transfer / Move-Items)** ✅ (2026-05-01)
 - Pre-BG4.B milestone: **BG4.B — POS Order Handoff (Split / Merge / Transfer / Move-Items)** ✅ (2026-05-01)
 - Pre-BG4.B milestone: **BG4.A — Receipts Surface (View / Reprint / Send / History)** ✅ (2026-05-01)
@@ -44,13 +45,18 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 - Pre-BG1 milestone: **M42 — Feature Flags + Maintenance Windows + Training Mode** ✅
 - Pre-frontend verification gate: **BG0 — Route Verification + Contract Cleanup** ✅ (2026-04-29)
 - Stabilization patch 6 — TBD per ROADMAP** (BG5 closes the device-management gap with `POST /api/devices/activate`, KDS registration, printer-route configuration, and STUB terminal pairing.2 / M39.3 hardened for cold-session standalone execution; all hotel / property-group / `M39.4` references removed; `ai/AI_POSTMAN_WORKING_PATTERNS.md` added as the permanent Postman rule book.
-- Next milestone: **BG7 — TBD per ROADMAP** (BG6 closes the download-centre gap with `/api/exports/*` and the missing `GET /api/accounting/ap/suppliers/:id` route).
+- Next milestone: **BG8 — TBD per ROADMAP** (BG7 closes the HMS-integration gap with the `/api/hms/*` read-only façade authenticated by `x-api-key`; the parallel nimbus-hms LLM consumes `docs/NIMBUS_POS_FOR_HMS_INTEGRATION_SPEC.md` to drive its sync). (BG6 closes the download-centre gap with `/api/exports/*` and the missing `GET /api/accounting/ap/suppliers/:id` route).
 - M13.1 (MTN Native) = DONE (code complete; marked PENDING for external delivery)
 - M13.2 (Airtel Native) = NOT STARTED
 - Public diner payments r2
-- Total migrations: 50 (BG6 adds **no migration** — fully additive at the application layer; delegates to existing `ExportArtifact` + `Document` tables)
-- Total Postman collections: 55 (added `postman/collections/BG6-Exports-And-Downloads.postman_collection.json`)
-- Total completion reports: 60 (added `ai/BG6_COMPLETION_REPORT.md`)
+- Total migrations: 51 (BG7 adds `20260508000000_bg7_hms_integration` — extends `api_keys` with `branch_id` + `last_used_ip`, creates `integration_access_logs`)
+- Total Postman collections: 56 (added `postman/collections/BG7-HMS-Integration.postman_collection.json`)
+- Total completion reports: 61 (added `ai/BG7_COMPLETION_REPORT.md`)
+
+### BG7 — HMS Integration (read-only `/api/hms/*` façade authenticated by `x-api-key`) (2026-05-08) ✅
+
+Eighteen new GET endpoints under `/api/hms/*` close the previously empty external-integration gap and form the contract surface that the parallel **nimbus-hms** property-management system consumes to keep its folios, restaurant charges, event bookings, and accounting mirrors in sync with this POS. Endpoints are: `/whoami`, `/access-logs`, `/organization`, `/branches`, `/orders`, `/orders/:id`, `/payments`, `/refunds`, `/sales/summary`, `/reservations`, `/events`, `/event-bookings`, `/menu`, `/inventory`, `/shifts`, `/accounting/accounts`, `/accounting/invoices`, `/accounting/vendor-bills`. Authentication is via the new `ApiKeyAuthGuard` reading header `x-api-key` (or `Authorization: ApiKey <key>`) — the guard SHA-256-hashes the inbound key, looks it up in `api_keys`, validates `status='ACTIVE'` and `expiresAt` (codes `API_KEY_MISSING|INVALID|REVOKED|EXPIRED`), then synthesises `req.user = { id:'apikey:<id>', orgId, branchId, permissions:['hms:read:*', ...scopes], source:'API_KEY' }` so the existing `PermissionGuard` enforces the standard `@Permissions('hms:read:*')` decorator without any branching for the HMS path. The existing M39 surface (`POST /api/dev/api-keys`) was extended with an optional `branchId` field — when set, every HMS read is forced into that single branch (`scope:'BRANCH'`); when absent the key is org-wide (`scope:'ORGANIZATION'`) and may filter by `?branchId=` per request. Schema changes are additive only: `api_keys` gains `branch_id TEXT` (FK→branches ON DELETE SET NULL — no Prisma back-relation on `Branch`, preserving the byte-stable BG1/BG5 precedent) and `last_used_ip TEXT`; new table `integration_access_logs` (`id, org_id, api_key_id, branch_id?, route_method, route_path, status_code, duration_ms, ip_address?, user_agent?, request_id?, metadata JSONB?, created_at`) journals every reached HMS request via `HmsAccessLogInterceptor` (best-effort, swallowed on failure). One new permission seeded — `hms:read:*` — granted **to no human role**; it is implicit in any active API key and never appears in JWT claims. **Read-only**: no POST/PATCH/DELETE on `/api/hms/*` — write surfaces (e.g. checking out a folio, syncing back hotel-side adjustments) are deferred to a future BG. All read methods use explicit Prisma `select:` lists — no key hashes, no plaintext secrets, no PII beyond what the HMS legitimately needs (guest names on reservations, customer names on orders). Public diner payments still PENDING M13.2; PesaPal still owner-SaaS-only; no hotel structures introduced inside POS. Locked rules preserved: byte-stable Branch (no Prisma `@relation` back-ref for `branchId`), Organization back-relation added (consistent with existing `apiKeys` line), no audit-log entries on read-only endpoints (HMS journal is the read trail), `/api/auth/me` untouched. Migration `20260508000000_bg7_hms_integration`. Seed marker `bg7-hms-integration`. e2e `bg7-hms-integration.e2e-spec.ts`: TBD pending run. Newman `BG7-HMS-Integration.postman_collection.json`: TBD pending run.
+
 
 ### BG6 — Unified Exports / Downloads Facade + AP Supplier Detail (2026-05-03) ✅
 

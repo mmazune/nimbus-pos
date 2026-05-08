@@ -7,6 +7,26 @@
 This document is intentionally detailed. It must be sufficient to drive implementation milestone-by-milestone
 without relying on chat memory.
 
+## Current Status (as of 2026-05-08)
+
+| Metric | Value |
+|---|---|
+| Last completed milestone | **BG7 — HMS Integration** ✅ 2026-05-08 |
+| Database migrations | **51** |
+| Postman collections | **56** |
+| Completion reports | **61** (`ai/BG7_COMPLETION_REPORT.md` is the latest) |
+| NestJS feature modules | **54** |
+| API endpoints | **~420+** |
+| Permissions seeded | **~200+** |
+| Unit tests | **~700** |
+| E2E tests | **~500** |
+| Next milestone | **M43 — Frontend Shell + Role-Based Workspaces** |
+
+**All backend milestones (M0–M42) and all gap-fix milestones (BG0–BG7) are complete.**  
+The entire API surface — POS, KDS, payments, inventory, HR, payroll, accounting, franchise, billing, reliability, device registry, HMS integration — is production-code-ready and Newman-validated.
+
+> **Numbering note:** During the rebuild, some milestones were implemented out of ROADMAP order. The early internal numbering (M22–M29) was offset by 4 from ROADMAP numbers due to inventory being split across M9–M13 while the implementation combined them. **This offset has been fully reconciled as of 2026-04-09.** All Postman collections, completion reports, and `ai/AI_STATUS.md` now use ROADMAP numbers. See `ai/AI_STATUS.md` for the historical internal→ROADMAP mapping table.
+
 ## Core Rebuild Decision
 
 We are rebuilding **from scratch**, but we are **not redesigning the product scope downward**.
@@ -97,9 +117,11 @@ Every milestone follows this exact order:
 | **M1**  | Neon + Prisma Baseline + Seed Framework                                 | Easy       | M0         |
 | **M2**  | Auth v1 (Email/Password/PIN) + JWT Sessions + RBAC                      | Easy       | M1         |
 | **M3**  | Multi-Tenancy Core (Org, Branch, Membership, Platform Access)           | Easy       | M2         |
+| **M3.1** | Quick PIN Login Refinement                                             | Easy       | M3         |
 | **M4**  | Organization Settings + Numbering + Accounting Readiness Contracts      | Easy       | M3         |
 | **M5**  | Floor Plans + Tables + Service Areas                                    | Easy       | M4         |
 | **M6**  | Menu Catalog v1 (Categories, Items, Tax Categories, Availability)       | Medium     | M5         |
+| **M6.1** | Menu Taxonomy (Browse Groups, Sections) + Serving Formats              | Medium     | M6         |
 | **M7**  | Modifiers + Option Sets + Combo Rules                                   | Medium     | M6         |
 | **M8**  | Recipe BOM + Yield + Costing Contracts                                  | Medium     | M7         |
 | **M9**  | Inventory Master Data (Items, Units, Categories, Reorder Policies)      | Medium     | M8         |
@@ -107,6 +129,8 @@ Every milestone follows this exact order:
 | **M11** | Suppliers + Purchase Orders                                             | Medium     | M10        |
 | **M12** | Goods Receipts + Landed Cost + Batch Receiving                          | Medium     | M11        |
 | **M13** | Stock Counts + Variance + Wastage + Adjustments                         | Medium     | M12        |
+| **M13.1** | MTN Mobile Money Native (Request-to-Pay + IPN Webhook) *(code complete; external delivery pending)* | Hard | M13 |
+| **M13.2** | Airtel Money Native *(not started)*                                  | Hard       | M13.1      |
 | **M14** | POS Orders Core (Draft -> Sent -> Served -> Closed)                     | Hard       | M13        |
 | **M15** | KDS + Station Routing + SLA Timers                                      | Medium     | M14        |
 | **M16** | Discounts + Manager Overrides + Void Rules                              | Medium     | M15        |
@@ -114,10 +138,12 @@ Every milestone follows this exact order:
 | **M18** | Payments v1 (Cash, Card Stub, Mobile Money Intents)                     | Hard       | M17        |
 | **M19** | Refunds + Post-Close Voids + Receipt Reprints                           | Hard       | M18        |
 | **M20** | Reservations + Deposits + Seating Bridge                                | Medium     | M19        |
+| **M20.1** | Reservation Depth Finalization + Cancellation Policy                 | Medium     | M20        |
 | **M21** | Events + Booking Portal + Ticketing                                     | Hard       | M20        |
 | **M22** | Anomaly Detection + Anti-Theft Signals                                  | Hard       | M21        |
 | **M23** | Operational Dashboards + KPI Streams                                    | Medium     | M22        |
 | **M24** | Reporting v1 + Exports (CSV/PDF)                                        | Hard       | M23        |
+| **M24.1** | Reporting Depth Finalization (XLSX, JSON, per-role filters)          | Hard       | M24        |
 | **M25** | Customer Feedback + NPS + QR Follow-up                                  | Medium     | M24        |
 | **M26** | Documents + Uploads + Attachments                                       | Medium     | M25        |
 | **M27** | Employees + Contracts + HR Core                                         | Medium     | M26        |
@@ -132,11 +158,25 @@ Every milestone follows this exact order:
 | **M36** | Bank Reconciliation + Period Close + Locks                              | Complex    | M35        |
 | **M37** | Budgets + Forecasts + Procurement Advisory                              | Hard       | M36        |
 | **M38** | Franchise + Multi-Branch Suite                                          | Hard       | M37        |
+| **M38.1** | Franchise Analytics + Cross-Branch Consolidation                     | Hard       | M38        |
 | **M39** | Billing + Subscription Plans + Dev Portal                               | Hard       | M38        |
+| **M39.1** | Commercial Foundation + SaaS Billing + PesaPal v3                    | Hard       | M39        |
+| **M39.2** | Onboarding + Membership + Merchant + Public Setup                     | Hard       | M39.1      |
+| **M39.3** | Public Booking + Public Commerce + MoMo Pending Ops                   | Hard       | M39.2      |
 | **M40** | Alerts + Digests + Real-Time Owner Views                                | Medium     | M39        |
 | **M41** | Reliability Layer (Idempotency + Offline Contracts + Sync)              | Complex    | M40        |
 | **M42** | Feature Flags + Maintenance Windows + Training Mode                     | Medium     | M41        |
-| **M43** | Frontend Shell + Role-Based Workspaces                                  | Hard       | M42        |
+| **BG0** | Route Verification + Contract Cleanup *(pre-frontend gate)*             | Easy       | M42        |
+| **BG1** | Invitation Acceptance + Password Lifecycle + Frontline Onboarding       | Medium     | BG0        |
+| **BG1.1** | Quick PIN Admin + PIN-First Login Refinement                          | Easy       | BG1        |
+| **BG2** | Unified Approvals Inbox + Global Audit Timeline                         | Medium     | BG1.1      |
+| **BG3** | Reliability Rollout (Idempotency + Maintenance/Training — 16 surfaces)  | Medium     | BG2        |
+| **BG4.A** | Receipts Surface (View / Reprint / Send / History)                   | Easy       | BG3        |
+| **BG4.B** | POS Order Handoff (Split / Merge / Transfer / Move-Items)             | Medium     | BG4.A      |
+| **BG5** | Device / Printer / Terminal Registry                                    | Medium     | BG4.B      |
+| **BG6** | Unified Exports / Downloads Facade + AP Supplier Detail                 | Easy       | BG5        |
+| **BG7** | HMS Integration — Read-Only `/api/hms/*` Facade + API Key Auth          | Medium     | BG6        |
+| **M43** | Frontend Shell + Role-Based Workspaces                                  | Hard       | BG7        |
 | **M44** | Frontend POS + KDS + Backoffice Vertical Screens                        | Complex    | M43        |
 | **M45** | Passkeys + MFA + SSO/SCIM                                               | Hard       | M44        |
 | **M46** | Deferred Hardware Wave (Badges/MSR + Smart Spouts + Peripheral Drivers) | Complex    | M45        |
@@ -2563,7 +2603,381 @@ explicitly required for continuity.
 - AI status update
 - milestone completion report
 
-# Appendix A — Suggested Permission Families
+---
+
+# BG Series — Backend Gap-Fix Milestones
+
+The BG series consists of milestone-grade gap fixes applied *after* M0–M42 were complete, before the frontend gate opened. Each BG milestone has full e2e tests, Postman collections, and a completion report. They are tracked in `ai/AI_STATUS.md` and `ai/BG*_COMPLETION_REPORT.md`.
+
+## Milestone Status Summary
+
+| #       | Milestone                                                        | Status     | Date       |
+| ------- | ---------------------------------------------------------------- | ---------- | ---------- |
+| **BG0** | Route Verification + Contract Cleanup                           | ✅ Done    | 2026-04-29 |
+| **BG1** | Invitation Acceptance + Password Lifecycle + Frontline Onboard  | ✅ Done    | 2026-04-30 |
+| **BG1.1** | Quick PIN Admin + PIN-First Login Refinement                  | ✅ Done    | 2026-04-30 |
+| **BG2** | Unified Approvals Inbox + Global Audit Timeline                 | ✅ Done    | 2026-04-30 |
+| **BG3** | Reliability Rollout (16 risky write surfaces)                   | ✅ Done    | 2026-04-30 |
+| **BG4.A** | Receipts Surface (View / Reprint / Send / History)            | ✅ Done    | 2026-05-01 |
+| **BG4.B** | POS Order Handoff (Split / Merge / Transfer / Move-Items)     | ✅ Done    | 2026-05-01 |
+| **BG5** | Device / Printer / Terminal Registry                            | ✅ Done    | 2026-05-02 |
+| **BG6** | Unified Exports / Downloads Facade + AP Supplier Detail         | ✅ Done    | 2026-05-03 |
+| **BG7** | HMS Integration — Read-Only `/api/hms/*` Facade + API Key Auth  | ✅ Done    | 2026-05-08 |
+| **BG8** | TBD — next gap identified post-BG7                              | ⬜ Pending | —          |
+
+---
+
+# BG0 — Route Verification + Contract Cleanup
+
+### Outcome
+
+Pre-frontend verification gate. Code-first classification of every endpoint declared in M0–M42 against live NestJS source and the 48 Postman collections. No code changes — classification and handoff only.
+
+### Scope
+
+- Classify all 53 unresolved route entries: `VERIFIED_IN_CODE`, `INTENTIONALLY_REMOVED`, `MISSING_IMPLEMENT`, `DEV_OR_INTERNAL_ONLY`, `BLOCKED_PENDING_PROVIDER`
+- Lock canonical context route as `GET /api/auth/me` (supersedes `GET /api/me`)
+- Confirm PesaPal `/api/billing/pesapal/*` = owner SaaS billing only
+- Confirm `/api/public/payments/*` = scaffold only (MTN/Airtel blocked)
+- Produce `ai/nimbus_route_verification_checklist_m0_m42.csv`
+
+### Result
+
+47 of 53 rows frontend-ready. 5 blocked-pending-provider, 2 dev-internal. Sole `MISSING_IMPLEMENT`: `GET /api/accounting/ap/suppliers/:id` (closed by BG6).
+
+### Dependency Gate
+
+- Must not start until **M42** is complete and verified.
+
+### Deliverables
+
+- `ai/nimbus_route_verification_checklist_m0_m42.csv` (12-column classification)
+- `ai/BG0_ROUTE_VERIFICATION_COMPLETION_REPORT.md`
+- `ai/AI_STATUS.md` updated
+
+---
+
+# BG1 — Invitation Acceptance + Password Lifecycle + Frontline Staff Onboarding
+
+### Outcome
+
+Closes the invited-user lifecycle gap and removes cross-module choreography from frontline staff creation. A single POST can create User + Role + Membership + Employee + QuickPIN atomically.
+
+### Scope
+
+- `Invitation` model: token lifecycle (PENDING → ACCEPTED → REVOKED → EXPIRED), SHA-256 hashed token storage, 14-day TTL
+- `PasswordResetToken` model: FORGOT_PASSWORD / INVITATION_FIRST_LOGIN / FORCE_RESET_BY_ADMIN purposes
+- `User.mustChangePassword` flag
+- `POST /api/auth/invitations/accept` — public, sets password, marks invitation ACCEPTED
+- `POST /api/auth/forgot-password` — anti-enumeration, dev-mode token exposure
+- `POST /api/auth/reset-password` — validates token, rotates password, revokes all sessions
+- `POST /api/auth/force-password-change` — JWT-guarded, enforces new ≠ current
+- `POST /api/onboarding/invitations/:id/resend` — rotates token, extends TTL
+- `PATCH /api/onboarding/invitations/:id/revoke` — idempotent revoke
+- `POST /api/hr/frontline-staff/onboard` — atomic User + Role + Membership + Employee + QuickPIN in `$transaction`
+
+### Migration
+
+`20260430000000_bg1_invitation_password_lifecycle` (48th migration)
+
+### Test Results
+
+- e2e `bg1-onboarding.e2e-spec.ts`: **14/14 passing**
+- Postman `BG1-Invitation-Password-Frontline-Onboarding.postman_collection.json`: **20 requests, 41 assertions, 0 failures**
+
+### Dependency Gate
+
+- Must not start until **BG0** is complete.
+
+---
+
+# BG1.1 — Quick PIN Admin + PIN-First Login Refinement
+
+### Outcome
+
+Frontline staff (Waiter, Cashier, Bartender, Chef, Stock Manager) are PIN-first by default. Managers get safe Quick PIN admin tools without ever seeing stored hashes.
+
+### Scope
+
+- `POST /api/hr/frontline-staff/onboard` refined: phone + name as primary identity; email optional; `authMode` field in response
+- `GET /api/hr/frontline-staff/:id/quick-pin-status` — status read, never leaks hash
+- `POST /api/hr/frontline-staff/:id/quick-pin/reset` — rotates PIN, shows once
+- `PATCH /api/hr/frontline-staff/:id/quick-pin/disable` — idempotent
+- `PATCH /api/hr/frontline-staff/:id/quick-pin/enable` — 409 if no hash ever issued
+- Tier policy: EXCLUDED = {OWNER, ACCOUNTANT, PROCUREMENT, EVENT_MANAGER}; PIN-first = all operational roles
+- Synthetic email `pin-{hex}@nimbus.pin.local` for PIN-only users
+
+### Test Results
+
+- e2e `bg1.1-frontline-pin-admin.e2e-spec.ts`: **14/14 passing** (combined BG1+BG1.1: **28/28**)
+- Postman (BG1 collection extended): **31 requests, 75 assertions, 0 failures**
+
+### Dependency Gate
+
+- Must not start until **BG1** is complete.
+
+---
+
+# BG2 — Unified Approvals Inbox + Global Audit Timeline
+
+### Outcome
+
+Manager-facing aggregator over all approval-bearing workflows and a global filterable audit timeline. No schema change — pure aggregation over existing rows.
+
+### Scope
+
+- `GET /api/approvals` — unified inbox across 6 sources: discount, refund, leave_request, shift_swap, vendor_bill, inter_branch_transfer
+- `GET /api/approvals/:id` — unified detail (ID format: `${sourceType}--${entityId}`)
+- `POST /api/approvals/:id/decide` — approve/reject, routes to correct domain service (REJECT not available for refund or vendor_bill)
+- `GET /api/audit/timeline` — global audit log with 14 filter knobs including `entityType`, `action`, `actionPrefix`, `actorId`, `branchId`, `orgId`, `severity`, `ipAddress`, `platform`, `sessionSource`, date range, pagination
+
+### Permissions
+
+`approvals:read`, `approvals:decide`, `audit:read` — Owner and Manager only; all frontline roles denied.
+
+### Test Results
+
+- e2e `bg2-approvals-and-audit.e2e-spec.ts`: **15/15 passing**
+- Postman `BG2-Unified-Approvals-And-Audit-Timeline.postman_collection.json`: **22 requests, 48 assertions, 0 failures**
+
+### Dependency Gate
+
+- Must not start until **BG1.1** is complete.
+
+---
+
+# BG3 — Reliability Rollout (Idempotency + Maintenance/Training — 16 Surfaces)
+
+### Outcome
+
+The `Bg3ReliabilityService.guard()` facade retrofitted across all 16 high-risk write surfaces that were not yet wrapped. Idempotency replay, maintenance window blocking, and training-mode simulation now consistently enforced.
+
+### Scope
+
+16 write surfaces wrapped — see BG3 Idempotency Facade table in the README for the full list by surface, category, and training-sim flag.
+
+**Error contract enforced on all surfaces:**
+- `409 IDEMPOTENCY_KEY_PAYLOAD_MISMATCH`
+- `409 IDEMPOTENCY_IN_FLIGHT`
+- `409 MAINTENANCE_WINDOW_ACTIVE`
+- `423 MAINTENANCE_WINDOW_BLOCKED`
+
+### Test Results
+
+- e2e `bg3-reliability-rollout.e2e-spec.ts`: passing
+- Postman `BG3-Reliability-Rollout.postman_collection.json`: passing
+
+### Dependency Gate
+
+- Must not start until **BG2** is complete.
+
+---
+
+# BG4.A — Receipts Surface (View / Reprint / Send / History)
+
+### Outcome
+
+Cashiers and managers can view, reprint, and send receipts for any closed/voided order. No schema change — receipt ID equals order ID; view is composed from live data.
+
+### Scope
+
+- `GET /api/receipts/:id` — full receipt view with totals (subtotal, tax, discount, total, paid, outstanding, currencyCode), server identity, branch/org, items, payments, OrgSettings.receiptFooter
+- `GET /api/receipts/:id/history` — paginated audit trail merging receipt-side events with order lifecycle
+- `POST /api/receipts/:id/reprint` — BG3-wrapped, idempotent, body: `{ reason?, copies? (1–10) }`, audits RECEIPT_REPRINTED
+- `POST /api/receipts/:id/send` — 202 PENDING only (no live email/SMS/WhatsApp adapter); returns `{ status:'PENDING', supported:false, reason:'NO_LIVE_DELIVERY_ADAPTER' }`
+
+### Permissions
+
+`pos:receipt:read`, `pos:receipt:reprint`, `pos:receipt:send` — Owner / Manager / Cashier / Waiter. Chef denied all four.
+
+### Test Results
+
+- e2e `bg4-receipts-surface.e2e-spec.ts`: **12/12 passing**
+- Postman `BG4-Receipts-Surface.postman_collection.json`: **19 requests, 37 assertions, 0 failures**
+
+### Dependency Gate
+
+- Must not start until **BG3** is complete.
+
+---
+
+# BG4.B — POS Order Handoff (Split / Merge / Transfer / Move-Items)
+
+### Outcome
+
+Six first-class handoff endpoints enabling real hospitality workflows: bill splitting, table merging, server handover, and item migration between orders.
+
+### Scope
+
+| Endpoint | Operation |
+|---|---|
+| `POST /api/pos/orders/:id/split-bill` | Split into N equal-share child orders |
+| `POST /api/pos/orders/:id/split-items` | Move specific items into a new child order |
+| `POST /api/pos/orders/:id/merge` | Merge two orders into one |
+| `POST /api/pos/orders/:id/transfer-table` | Reassign to a different table |
+| `POST /api/pos/orders/:id/transfer-server` | Reassign to a different server |
+| `POST /api/pos/orders/:id/move-items` | Move specific items between any two orders |
+
+Schema: additive — `Order.splitFromOrderId` / `Order.mergedIntoOrderId` self-FKs (migration `20260501000000_bg4b_pos_order_handoff`).
+
+KDS strategy: source tickets marked SUPERSEDED; destination requires explicit `/send` — no ghost tickets.
+
+### Permissions
+
+`pos:order:split`, `pos:order:merge`, `pos:order:transfer`, `pos:order:move-items` — Owner / Manager / Cashier. Chef denied all four.
+
+### Test Results
+
+- e2e `bg4b-pos-order-handoff.e2e-spec.ts`: **15/15 passing**
+- Postman `BG4B-Pos-Order-Handoff.postman_collection.json`: **37 requests, 48 assertions, 0 failures**
+
+### Dependency Gate
+
+- Must not start until **BG4.A** is complete.
+
+---
+
+# BG5 — Device / Printer / Terminal Registry
+
+### Outcome
+
+Full device lifecycle management for POS terminals, KDS screens, printers, and payment terminal stubs. All device configuration is now first-class database state, not ad-hoc environment config.
+
+### Scope
+
+- `POST /api/devices/activate` — generic activation, idempotent on `activationCode`
+- `POST /api/devices/kds/register` — convenience wrapper for KDS_SCREEN type
+- `GET /api/devices` — paginated list with type/status/station filters
+- `GET /api/devices/:id` — detail (PRINTER includes its routes)
+- `GET /api/devices/:id/history` — device audit timeline
+- `PATCH /api/devices/:id/status` — RETIRED→other rejected (400 `DEVICE_STATUS_TRANSITION_INVALID`)
+- `POST /api/devices/printers/routes` — upsert keyed by `(branchId, routeType, station, printerId)`
+- `GET /api/devices/printers/routes`
+- `POST /api/devices/terminals/pair` — STUB mode; no live card-terminal driver
+- `PATCH /api/devices/terminals/:id/unpair` — idempotent (`TERMINAL_NOT_PAIRED` if already unpaired)
+
+Schema: 2 new tables (`devices`, `printer_routes`) + 3 enums (migration `20260502000000_bg5_device_printer_terminal_registry`).
+
+### Permissions
+
+`devices:read`, `devices:write`, `devices:status:write`, `devices:routes:write`, `devices:terminals:write`. Owner/Manager get all; Cashier/Waiter get read only; Chef denied all.
+
+### Test Results
+
+- e2e `bg5-device-printer-terminal-registry.e2e-spec.ts`: **27/27 passing**
+- Postman `BG5-Device-Printer-Terminal-Registry.postman_collection.json`: **33 requests, 68 assertions, 0 failures**
+
+### Dependency Gate
+
+- Must not start until **BG4.B** is complete.
+
+---
+
+# BG6 — Unified Exports / Downloads Facade + AP Supplier Detail
+
+### Outcome
+
+Single normalised download centre across report exports and uploaded documents; closes the missing AP supplier detail endpoint surfaced by BG0.
+
+### Scope
+
+- `POST /api/exports` — delegates to ReportsService.createExport (BG3-wrapped with `idempotencyMode:'optional'`)
+- `GET /api/exports` — unified list across `ExportArtifact` + `Document` with filters `sourceDomain`, `format`, `requestedBy`, `status`
+- `GET /api/exports/:id` — detail by composite id `<sourceDomain>:<underlyingId>`
+- `GET /api/exports/:id/download` — streams file with correct Content-Type / Content-Disposition
+- `GET /api/accounting/ap/suppliers/:id` — closes the BG0 MISSING_IMPLEMENT gap; returns supplier + roll-up summary + recent bills + recent payments
+
+Status normalisation: `PENDING→QUEUED`, `READY→COMPLETED`, `FAILED→FAILED`; Documents always `COMPLETED`.
+
+No schema/migration change — composite export ID is pure application logic.
+
+### Permissions
+
+`exports:read`, `exports:write`, `exports:download` — Owner / Manager / Accountant. Chef denied all four.
+
+### Bugs Fixed
+
+- Prisma pool exhaustion in getSupplierDetail: 8 `Promise.all` queries serialised to sequential awaits
+- Invalid `VendorPaymentStatus` enum: filtered on non-existent PAID/PARTIAL → corrected to `status:'POSTED'`
+
+### Test Results
+
+- e2e `bg6-exports-and-downloads.e2e-spec.ts`: **17/17 passing**
+- Postman `BG6-Exports-And-Downloads.postman_collection.json`: **26 requests, 44 assertions, 0 failures**
+
+### Dependency Gate
+
+- Must not start until **BG5** is complete.
+
+---
+
+# BG7 — HMS Integration (Read-Only `/api/hms/*` Facade + API Key Auth)
+
+### Outcome
+
+18 GET endpoints that form the contract surface the parallel **nimbus-hms** property-management system consumes to keep its folios, restaurant charges, event bookings, and accounting mirrors in sync with this POS.
+
+### Scope
+
+**Authentication:** New `ApiKeyAuthGuard` reads `x-api-key` header (or `Authorization: ApiKey <key>`). Guard SHA-256-hashes the inbound key, validates `status='ACTIVE'` and `expiresAt`, synthesises `req.user = { id:'apikey:<id>', orgId, branchId, permissions:['hms:read:*', ...scopes] }` — the existing `PermissionGuard` enforces `@Permissions('hms:read:*')` without any HMS-specific branching.
+
+**Key scoping:** `POST /api/dev/api-keys` extended with optional `branchId`. When set, key scope is `BRANCH` (every HMS read locked to that branch). When absent, scope is `ORGANIZATION` (all branches, may filter by `?branchId=`).
+
+**18 read-only endpoints:**
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/hms/whoami` | API key identity and scope |
+| `GET /api/hms/access-logs` | Paginated request journal for this key |
+| `GET /api/hms/organization` | Organisation profile + scope envelope |
+| `GET /api/hms/branches` | Branches visible to the key |
+| `GET /api/hms/orders` | Paginated POS orders |
+| `GET /api/hms/orders/:id` | Single order with items and payments |
+| `GET /api/hms/payments` | Paginated payments |
+| `GET /api/hms/refunds` | Paginated refunds |
+| `GET /api/hms/sales/summary` | Daily revenue / covers / voids summary |
+| `GET /api/hms/reservations` | Paginated restaurant reservations |
+| `GET /api/hms/events` | Paginated events |
+| `GET /api/hms/event-bookings` | Paginated event bookings with ticket counts |
+| `GET /api/hms/menu` | Full menu catalog |
+| `GET /api/hms/inventory` | Inventory items + current stock levels |
+| `GET /api/hms/shifts` | Paginated shifts |
+| `GET /api/hms/accounting/accounts` | Chart of accounts |
+| `GET /api/hms/accounting/invoices` | AR customer invoices |
+| `GET /api/hms/accounting/vendor-bills` | AP vendor bills |
+
+**Access audit:** `HmsAccessLogInterceptor` journals every reached request to `integration_access_logs` (best-effort, swallowed on failure).
+
+**Schema:** migration `20260508000000_bg7_hms_integration`. `api_keys` gains `branch_id` (FK→branches ON DELETE SET NULL) and `last_used_ip`. New table `integration_access_logs` with indexes on `(org_id, created_at DESC)`, `(api_key_id, created_at DESC)`, `branch_id`, `status_code`.
+
+**Security:** `hms:read:*` granted to no human role; never appears in JWT claims. All Prisma selects use explicit `select:` — no key hashes, no PII beyond legitimate HMS need.
+
+**Intentionally read-only.** Write-back (push charges to hotel folio, sync hotel adjustments) deferred to a future BG.
+
+### Permissions
+
+`hms:read:*` — implicit on active API keys only. Never attached to any role in `ROLE_PERM_MATRIX`.
+
+### Migration
+
+`20260508000000_bg7_hms_integration` (51st migration)
+
+### Test Results
+
+- e2e `bg7-hms-integration.e2e-spec.ts`: pending operator run
+- Postman `BG7-HMS-Integration.postman_collection.json`: pending Newman run
+
+### Integration Spec
+
+Full field-by-field type information, recommended polling cadence, and POS→HMS concept mapping: `docs/NIMBUS_POS_FOR_HMS_INTEGRATION_SPEC.md`
+
+### Dependency Gate
+
+- Must not start until **BG6** is complete.
+
+---
+
+
 
 Use permission strings instead of relying only on role levels.
 

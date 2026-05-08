@@ -462,6 +462,10 @@ const PERMISSIONS_DATA = [
   { action: 'exports:read', description: 'List/read export artefacts via the unified facade — GET /api/exports, GET /api/exports/:id' },
   { action: 'exports:write', description: 'Request a new export via the unified facade — POST /api/exports (delegates to underlying domain generator)' },
   { action: 'exports:download', description: 'Download an export artefact via the unified facade — GET /api/exports/:id/download' },
+  // BG7 — HMS Integration façade (read-only, API-key authenticated). The
+  // permission is implicitly granted by the API key itself; no human role
+  // needs to hold it. Listed here so the permission catalog stays complete.
+  { action: 'hms:read:*', description: 'Read everything via the HMS integration façade — /api/hms/* — granted automatically to any active API key' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -8071,6 +8075,10 @@ async function main(): Promise<void> {
   await recordSeedRun(
     'bg6-exports-and-downloads',
     'BG6: Unified export/download facade + AP supplier detail. Adds GET /api/accounting/ap/suppliers/:id (closes BG0 missing route, permission accounting:ap:bill:read). New /api/exports surface (POST/GET/GET-detail/GET-download) normalises report exports + document downloads behind a single envelope; exportId encoded as <domain>:<id>. Permissions: exports:read|write|download granted to Owner+Manager+Accountant; Chef denied. POST /api/exports wrapped by BG3 facade (category:null, idempotencyMode:optional). No new schema, no new migration; delegates to ReportsService.createExport / DocumentsService.downloadDocument. Public diner payments still PENDING; PesaPal still owner-SaaS only.',
+  );
+  await recordSeedRun(
+    'bg7-hms-integration',
+    'BG7: HMS Integration façade (read-only). Adds ApiKey.branchId (nullable; null=org-wide, set=single-branch) + ApiKey.lastUsedIp; new IntegrationAccessLog table (append-only journal). New ApiKeyAuthGuard authenticates inbound requests via x-api-key header (SHA-256 hash lookup) and synthesizes a request principal with permissions=[hms:read:*]. New module hms-integration exposes read-only /api/hms/* endpoints: whoami, access-logs, organization, branches, orders (list+detail), payments, refunds, sales/summary, reservations, events, event-bookings, menu, inventory, shifts, accounting/{accounts,invoices,vendor-bills}. Branch-scoped keys force branchId filter on all results regardless of caller-supplied query params. Every request journaled to integration_access_logs by HmsAccessLogInterceptor. CreateApiKeyDto extended to accept optional branchId (validated to belong to org). New permission hms:read:* listed in catalog but NOT granted to any human role — granted automatically by the API key itself. NO writes; NO mutation surface. Compatible with org-wide HMS (one key sees all restaurants in the org) or single-restaurant HMS (one key per branch).',
   );
   console.log('── SeedHistory markers recorded ──\n');
 
