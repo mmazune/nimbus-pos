@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
@@ -43,6 +44,9 @@ export class AttendanceService {
     });
     if (!employee || employee.orgId !== orgId) {
       throw new NotFoundException(`Employee "${dto.employeeId}" not found in this organization`);
+    }
+    if (employee.userId !== userId) {
+      throw new ForbiddenException('Current user can only clock their own linked employee profile');
     }
 
     const today = new Date();
@@ -141,14 +145,34 @@ export class AttendanceService {
 
   // ── List Attendance ──
 
+  /**
+   * Resolve `mine=true` to the actor's Employee.id. Returns null if no employee
+   * record is linked to this user; callers should short-circuit to empty data.
+   */
+  private async resolveMineEmployeeId(actorUserId: string | undefined): Promise<string | null> {
+    if (!actorUserId) return null;
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId: actorUserId },
+      select: { id: true },
+    });
+    return employee?.id ?? null;
+  }
+
   async listAttendance(
     ctx: { branchId: string; organizationId: string },
     query: ListAttendanceQueryDto,
+    actorUserId?: string,
   ) {
     const { organizationId: orgId, branchId } = ctx;
     const where: Prisma.AttendanceRecordWhereInput = { orgId, branchId };
 
-    if (query.employeeId) where.employeeId = query.employeeId;
+    if (query.mine) {
+      const mineId = await this.resolveMineEmployeeId(actorUserId);
+      if (!mineId) return { data: [], total: 0 };
+      where.employeeId = mineId;
+    } else if (query.employeeId) {
+      where.employeeId = query.employeeId;
+    }
     if (query.status) where.status = query.status;
     if (query.dateFrom || query.dateTo) {
       where.attendanceDate = {};
@@ -186,6 +210,11 @@ export class AttendanceService {
     });
     if (!employee || employee.orgId !== orgId) {
       throw new NotFoundException(`Employee "${dto.employeeId}" not found in this organization`);
+    }
+    if (employee.userId !== userId) {
+      throw new ForbiddenException(
+        'Current user can only create leave for their own linked employee profile',
+      );
     }
 
     // Validate date range
@@ -245,11 +274,18 @@ export class AttendanceService {
   async listLeaveRequests(
     ctx: { branchId: string; organizationId: string },
     query: ListLeaveQueryDto,
+    actorUserId?: string,
   ) {
     const { organizationId: orgId, branchId } = ctx;
     const where: Prisma.LeaveRequestWhereInput = { orgId, branchId };
 
-    if (query.employeeId) where.employeeId = query.employeeId;
+    if (query.mine) {
+      const mineId = await this.resolveMineEmployeeId(actorUserId);
+      if (!mineId) return { data: [], total: 0 };
+      where.employeeId = mineId;
+    } else if (query.employeeId) {
+      where.employeeId = query.employeeId;
+    }
     if (query.status) where.status = query.status;
     if (query.leaveType) where.leaveType = query.leaveType;
 
@@ -343,6 +379,14 @@ export class AttendanceService {
         `Requester employee "${dto.requesterEmployeeId}" not found in this organization`,
       );
     }
+    if (requester.userId !== userId) {
+      throw new ForbiddenException(
+        'Current user can only create shift swaps for their own linked employee profile',
+      );
+    }
+    if (requester.branchId !== branchId) {
+      throw new BadRequestException('Requester employee is not assigned to this branch');
+    }
 
     // Validate target employee
     const target = await this.prisma.employee.findUnique({
@@ -353,12 +397,47 @@ export class AttendanceService {
         `Target employee "${dto.targetEmployeeId}" not found in this organization`,
       );
     }
+    if (target.branchId !== branchId) {
+      throw new BadRequestException('Target employee is not assigned to this branch');
+    }
+
+    const shiftDate = new Date(dto.shiftDate);
+
+    const requesterAssignment = await this.prisma.scheduleAssignment.findFirst({
+      where: {
+        orgId,
+        branchId,
+        employeeId: dto.requesterEmployeeId,
+        shiftDate,
+        schedule: { status: 'PUBLISHED' },
+      },
+    });
+    if (!requesterAssignment) {
+      throw new BadRequestException(
+        'Requester does not have a published roster assignment for this shift date',
+      );
+    }
+
+    const targetAssignment = await this.prisma.scheduleAssignment.findFirst({
+      where: {
+        orgId,
+        branchId,
+        employeeId: dto.targetEmployeeId,
+        shiftDate,
+        schedule: { status: 'PUBLISHED' },
+      },
+    });
+    if (!targetAssignment) {
+      throw new BadRequestException(
+        'Target employee does not have a published roster assignment for this shift date',
+      );
+    }
 
     // Check for duplicate pending swap on same date
     const existingSwap = await this.prisma.shiftSwapRequest.findFirst({
       where: {
         requesterEmployeeId: dto.requesterEmployeeId,
-        shiftDate: new Date(dto.shiftDate),
+        shiftDate,
         status: 'PENDING',
       },
     });
@@ -374,7 +453,7 @@ export class AttendanceService {
         branchId,
         requesterEmployeeId: dto.requesterEmployeeId,
         targetEmployeeId: dto.targetEmployeeId,
-        shiftDate: new Date(dto.shiftDate),
+        shiftDate,
         reason: dto.reason,
       },
     });
@@ -401,11 +480,19 @@ export class AttendanceService {
   async listShiftSwaps(
     ctx: { branchId: string; organizationId: string },
     query: ListShiftSwapsQueryDto,
+    actorUserId?: string,
   ) {
     const { organizationId: orgId, branchId } = ctx;
     const where: Prisma.ShiftSwapRequestWhereInput = { orgId, branchId };
 
-    if (query.employeeId) {
+    if (query.mine) {
+      const mineId = await this.resolveMineEmployeeId(actorUserId);
+      if (!mineId) return { data: [], total: 0 };
+      where.OR = [
+        { requesterEmployeeId: mineId },
+        { targetEmployeeId: mineId },
+      ];
+    } else if (query.employeeId) {
       where.OR = [
         { requesterEmployeeId: query.employeeId },
         { targetEmployeeId: query.employeeId },

@@ -1,0 +1,5 @@
+organizationSlug,name,code,slug,timezone,currencyCode,status,address,phone,metadata
+nimbus,Tapas Downtown,TAPAS_DOWNTOWN,tapas-downtown,Africa/Kampala,UGX,ACTIVE,"14 Acacia Avenue, Central Kampala",+256700100101,"{""personality"": ""flagship tapas and dinner service"", ""dayparts"": [""lunch"", ""dinner""]}"
+nimbus,Rooftop Bar,ROOFTOP_BAR,rooftop-bar,Africa/Kampala,UGX,ACTIVE,"8 Skyline Road, Nakasero",+256700100102,"{""personality"": ""evening lounge and zero-proof mixology"", ""dayparts"": [""evening"", ""late""]}"
+nimbus,Garden Cafe,GARDEN_CAFE,garden-cafe,Africa/Kampala,UGX,ACTIVE,"22 Garden Lane, Kololo",+256700100103,"{""personality"": ""brunch, cafe and family seating"", ""dayparts"": [""breakfast"", ""brunch"", ""lunch""]}"
+nimbus,Events Kitchen / Banquet Hall,EVENTS_KITCHEN,events-kitchen,Africa/Kampala,UGX,ACTIVE,"4 Banquet Crescent, Bugolobi",+256700100104,"{""personality"": ""events, banquets and corporate bookings"", ""dayparts"": [""event"", ""banquet""]}"

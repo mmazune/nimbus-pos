@@ -1,0 +1,9 @@
+key,name,scope,status,rolloutPercent,organizationSlug,branchCode,targeting,metadata
+waiter_mvp,Waiter Mvp,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"
+receipt_pending_send_banner,Receipt Pending Send Banner,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"
+public_momo_provider_pending,Public Momo Provider Pending,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"
+training_mode_demo,Training Mode Demo,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"
+premium_demo_data,Premium Demo Data,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"
+franchise_dashboard_preview,Franchise Dashboard Preview,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"
+inventory_low_stock_demo,Inventory Low Stock Demo,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"
+hms_readonly_demo,Hms Readonly Demo,ORG,ENABLED,100,nimbus,,{},"{""demo"": true}"

@@ -1,0 +1,53 @@
+branchCode,groupName,name,priceDelta,sortOrder,isActive,sku,metadata
+TAPAS_DOWNTOWN,Cooking Preference,Medium,0.00,1,true,TA-COO-1,{}
+TAPAS_DOWNTOWN,Cooking Preference,Well Done,0.00,2,true,TA-COO-2,{}
+TAPAS_DOWNTOWN,Sauce Choice,Herb Sauce,0.00,1,true,TA-SAU-1,{}
+TAPAS_DOWNTOWN,Sauce Choice,Chili Sauce,1500.00,2,true,TA-SAU-2,{}
+TAPAS_DOWNTOWN,Sauce Choice,Yoghurt Sauce,1000.00,3,true,TA-SAU-3,{}
+TAPAS_DOWNTOWN,Side Choice,Herb Fries,0.00,1,true,TA-SID-1,{}
+TAPAS_DOWNTOWN,Side Choice,Seasonal Salad,2500.00,2,true,TA-SID-2,{}
+TAPAS_DOWNTOWN,Side Choice,Flatbread,1000.00,3,true,TA-SID-3,{}
+TAPAS_DOWNTOWN,Drink Temperature,Hot,0.00,1,true,TA-DRI-1,{}
+TAPAS_DOWNTOWN,Drink Temperature,Iced,1000.00,2,true,TA-DRI-2,{}
+TAPAS_DOWNTOWN,Sweetness Level,No Sugar,0.00,1,true,TA-SWE-1,{}
+TAPAS_DOWNTOWN,Sweetness Level,Light Sugar,0.00,2,true,TA-SWE-2,{}
+TAPAS_DOWNTOWN,Sweetness Level,Regular Sweet,0.00,3,true,TA-SWE-3,{}
+ROOFTOP_BAR,Cooking Preference,Medium,0.00,1,true,RO-COO-1,{}
+ROOFTOP_BAR,Cooking Preference,Well Done,0.00,2,true,RO-COO-2,{}
+ROOFTOP_BAR,Sauce Choice,Herb Sauce,0.00,1,true,RO-SAU-1,{}
+ROOFTOP_BAR,Sauce Choice,Chili Sauce,1500.00,2,true,RO-SAU-2,{}
+ROOFTOP_BAR,Sauce Choice,Yoghurt Sauce,1000.00,3,true,RO-SAU-3,{}
+ROOFTOP_BAR,Side Choice,Herb Fries,0.00,1,true,RO-SID-1,{}
+ROOFTOP_BAR,Side Choice,Seasonal Salad,2500.00,2,true,RO-SID-2,{}
+ROOFTOP_BAR,Side Choice,Flatbread,1000.00,3,true,RO-SID-3,{}
+ROOFTOP_BAR,Drink Temperature,Hot,0.00,1,true,RO-DRI-1,{}
+ROOFTOP_BAR,Drink Temperature,Iced,1000.00,2,true,RO-DRI-2,{}
+ROOFTOP_BAR,Sweetness Level,No Sugar,0.00,1,true,RO-SWE-1,{}
+ROOFTOP_BAR,Sweetness Level,Light Sugar,0.00,2,true,RO-SWE-2,{}
+ROOFTOP_BAR,Sweetness Level,Regular Sweet,0.00,3,true,RO-SWE-3,{}
+GARDEN_CAFE,Cooking Preference,Medium,0.00,1,true,GA-COO-1,{}
+GARDEN_CAFE,Cooking Preference,Well Done,0.00,2,true,GA-COO-2,{}
+GARDEN_CAFE,Sauce Choice,Herb Sauce,0.00,1,true,GA-SAU-1,{}
+GARDEN_CAFE,Sauce Choice,Chili Sauce,1500.00,2,true,GA-SAU-2,{}
+GARDEN_CAFE,Sauce Choice,Yoghurt Sauce,1000.00,3,true,GA-SAU-3,{}
+GARDEN_CAFE,Side Choice,Herb Fries,0.00,1,true,GA-SID-1,{}
+GARDEN_CAFE,Side Choice,Seasonal Salad,2500.00,2,true,GA-SID-2,{}
+GARDEN_CAFE,Side Choice,Flatbread,1000.00,3,true,GA-SID-3,{}
+GARDEN_CAFE,Drink Temperature,Hot,0.00,1,true,GA-DRI-1,{}
+GARDEN_CAFE,Drink Temperature,Iced,1000.00,2,true,GA-DRI-2,{}
+GARDEN_CAFE,Sweetness Level,No Sugar,0.00,1,true,GA-SWE-1,{}
+GARDEN_CAFE,Sweetness Level,Light Sugar,0.00,2,true,GA-SWE-2,{}
+GARDEN_CAFE,Sweetness Level,Regular Sweet,0.00,3,true,GA-SWE-3,{}
+EVENTS_KITCHEN,Cooking Preference,Medium,0.00,1,true,EV-COO-1,{}
+EVENTS_KITCHEN,Cooking Preference,Well Done,0.00,2,true,EV-COO-2,{}
+EVENTS_KITCHEN,Sauce Choice,Herb Sauce,0.00,1,true,EV-SAU-1,{}
+EVENTS_KITCHEN,Sauce Choice,Chili Sauce,1500.00,2,true,EV-SAU-2,{}
+EVENTS_KITCHEN,Sauce Choice,Yoghurt Sauce,1000.00,3,true,EV-SAU-3,{}
+EVENTS_KITCHEN,Side Choice,Herb Fries,0.00,1,true,EV-SID-1,{}
+EVENTS_KITCHEN,Side Choice,Seasonal Salad,2500.00,2,true,EV-SID-2,{}
+EVENTS_KITCHEN,Side Choice,Flatbread,1000.00,3,true,EV-SID-3,{}
+EVENTS_KITCHEN,Drink Temperature,Hot,0.00,1,true,EV-DRI-1,{}
+EVENTS_KITCHEN,Drink Temperature,Iced,1000.00,2,true,EV-DRI-2,{}
+EVENTS_KITCHEN,Sweetness Level,No Sugar,0.00,1,true,EV-SWE-1,{}
+EVENTS_KITCHEN,Sweetness Level,Light Sugar,0.00,2,true,EV-SWE-2,{}
+EVENTS_KITCHEN,Sweetness Level,Regular Sweet,0.00,3,true,EV-SWE-3,{}

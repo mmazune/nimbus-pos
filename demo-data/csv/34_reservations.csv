@@ -1,0 +1,121 @@
+organizationSlug,branchCode,reservationNumber,guestName,guestPhone,partySize,reservedFor,status,source,guestEmail,tableLabel,notes,specialRequests,createdByEmail
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0001,Demo Guest 001,+256703100000,5,2026-07-10T09:00:00Z,CONFIRMED,WHATSAPP,guest001@demo.invalid,EV-09,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0002,Demo Guest 002,+256703100001,7,2026-07-30T10:00:00Z,CONFIRMED,WHATSAPP,guest002@demo.invalid,GC-07,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0003,Demo Guest 003,+256703100002,2,2026-06-15T09:30:00Z,COMPLETED,WHATSAPP,guest003@demo.invalid,GC-14,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0004,Demo Guest 004,+256703100003,4,2026-07-05T17:30:00Z,CONFIRMED,INSTAGRAM,guest004@demo.invalid,RB-01,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0005,Demo Guest 005,+256703100004,9,2026-06-14T17:00:00Z,COMPLETED,PHONE,guest005@demo.invalid,EV-05,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0006,Demo Guest 006,+256703100005,10,2026-06-12T17:15:00Z,COMPLETED,INSTAGRAM,guest006@demo.invalid,EV-02,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0007,Demo Guest 007,+256703100006,11,2026-07-25T10:30:00Z,CONFIRMED,MANUAL,guest007@demo.invalid,RB-07,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0008,Demo Guest 008,+256703100007,2,2026-06-13T10:00:00Z,COMPLETED,INSTAGRAM,guest008@demo.invalid,RB-13,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0009,Demo Guest 009,+256703100008,6,2026-06-23T15:15:00Z,COMPLETED,WALK_IN,guest009@demo.invalid,EV-10,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0010,Demo Guest 010,+256703100009,9,2026-07-28T16:15:00Z,CONFIRMED,WALK_IN,guest010@demo.invalid,GC-07,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0011,Demo Guest 011,+256703100010,6,2026-06-17T09:30:00Z,COMPLETED,INSTAGRAM,guest011@demo.invalid,GC-06,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0012,Demo Guest 012,+256703100011,11,2026-05-30T16:15:00Z,COMPLETED,PHONE,guest012@demo.invalid,RB-07,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0013,Demo Guest 013,+256703100012,3,2026-06-12T17:15:00Z,COMPLETED,WALK_IN,guest013@demo.invalid,TD-08,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0014,Demo Guest 014,+256703100013,6,2026-07-15T15:30:00Z,CONFIRMED,PHONE,guest014@demo.invalid,RB-01,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0015,Demo Guest 015,+256703100014,11,2026-07-13T09:00:00Z,PENDING,INSTAGRAM,guest015@demo.invalid,EV-03,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0016,Demo Guest 016,+256703100015,9,2026-06-30T10:15:00Z,CONFIRMED,INSTAGRAM,guest016@demo.invalid,GC-07,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0017,Demo Guest 017,+256703100016,4,2026-06-18T17:00:00Z,COMPLETED,INSTAGRAM,guest017@demo.invalid,EV-01,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0018,Demo Guest 018,+256703100017,8,2026-07-02T09:15:00Z,CONFIRMED,WHATSAPP,guest018@demo.invalid,TD-03,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0019,Demo Guest 019,+256703100018,2,2026-05-26T10:00:00Z,COMPLETED,INSTAGRAM,guest019@demo.invalid,RB-07,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0020,Demo Guest 020,+256703100019,12,2026-07-30T09:15:00Z,CONFIRMED,MANUAL,guest020@demo.invalid,TD-18,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0021,Demo Guest 021,+256703100020,11,2026-07-19T10:15:00Z,CONFIRMED,WALK_IN,guest021@demo.invalid,RB-15,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0022,Demo Guest 022,+256703100021,9,2026-07-17T09:00:00Z,PENDING,PHONE,guest022@demo.invalid,TD-19,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0023,Demo Guest 023,+256703100022,8,2026-07-09T09:15:00Z,PENDING,INSTAGRAM,guest023@demo.invalid,TD-01,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0024,Demo Guest 024,+256703100023,7,2026-06-23T16:00:00Z,COMPLETED,PHONE,guest024@demo.invalid,RB-16,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0025,Demo Guest 025,+256703100024,12,2026-06-25T16:00:00Z,COMPLETED,MANUAL,guest025@demo.invalid,EV-05,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0026,Demo Guest 026,+256703100025,8,2026-06-12T10:30:00Z,COMPLETED,WHATSAPP,guest026@demo.invalid,GC-05,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0027,Demo Guest 027,+256703100026,10,2026-06-28T16:15:00Z,SEATED,INSTAGRAM,guest027@demo.invalid,RB-07,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0028,Demo Guest 028,+256703100027,8,2026-07-23T10:15:00Z,CONFIRMED,PHONE,guest028@demo.invalid,RB-05,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0029,Demo Guest 029,+256703100028,6,2026-06-06T10:00:00Z,COMPLETED,PHONE,guest029@demo.invalid,RB-05,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0030,Demo Guest 030,+256703100029,9,2026-06-09T10:00:00Z,COMPLETED,INSTAGRAM,guest030@demo.invalid,GC-15,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0031,Demo Guest 031,+256703100030,6,2026-07-12T16:30:00Z,CONFIRMED,MANUAL,guest031@demo.invalid,TD-06,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0032,Demo Guest 032,+256703100031,7,2026-06-28T15:30:00Z,SEATED,INSTAGRAM,guest032@demo.invalid,TD-02,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0033,Demo Guest 033,+256703100032,2,2026-07-29T16:00:00Z,PENDING,WHATSAPP,guest033@demo.invalid,TD-11,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0034,Demo Guest 034,+256703100033,3,2026-07-28T09:30:00Z,CONFIRMED,PHONE,guest034@demo.invalid,RB-02,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0035,Demo Guest 035,+256703100034,6,2026-06-12T16:30:00Z,COMPLETED,PHONE,guest035@demo.invalid,EV-05,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0036,Demo Guest 036,+256703100035,11,2026-07-01T15:00:00Z,CONFIRMED,WHATSAPP,guest036@demo.invalid,EV-06,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0037,Demo Guest 037,+256703100036,8,2026-07-25T09:30:00Z,CONFIRMED,WALK_IN,guest037@demo.invalid,GC-03,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0038,Demo Guest 038,+256703100037,9,2026-07-10T10:00:00Z,PENDING,PHONE,guest038@demo.invalid,GC-04,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0039,Demo Guest 039,+256703100038,11,2026-06-02T09:15:00Z,COMPLETED,WHATSAPP,guest039@demo.invalid,RB-07,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0040,Demo Guest 040,+256703100039,6,2026-07-24T09:00:00Z,CONFIRMED,INSTAGRAM,guest040@demo.invalid,EV-10,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0041,Demo Guest 041,+256703100040,7,2026-07-05T16:15:00Z,CONFIRMED,PHONE,guest041@demo.invalid,GC-08,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0042,Demo Guest 042,+256703100041,8,2026-07-17T10:30:00Z,PENDING,WHATSAPP,guest042@demo.invalid,RB-15,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0043,Demo Guest 043,+256703100042,3,2026-07-14T10:15:00Z,CONFIRMED,WHATSAPP,guest043@demo.invalid,TD-08,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0044,Demo Guest 044,+256703100043,10,2026-06-22T16:00:00Z,COMPLETED,WHATSAPP,guest044@demo.invalid,RB-13,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0045,Demo Guest 045,+256703100044,5,2026-07-19T17:15:00Z,CONFIRMED,WHATSAPP,guest045@demo.invalid,EV-03,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0046,Demo Guest 046,+256703100045,12,2026-06-17T17:00:00Z,COMPLETED,WHATSAPP,guest046@demo.invalid,EV-02,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0047,Demo Guest 047,+256703100046,9,2026-06-29T10:15:00Z,SEATED,PHONE,guest047@demo.invalid,EV-08,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0048,Demo Guest 048,+256703100047,3,2026-07-09T09:30:00Z,CONFIRMED,PHONE,guest048@demo.invalid,EV-04,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0049,Demo Guest 049,+256703100048,12,2026-05-26T15:30:00Z,COMPLETED,INSTAGRAM,guest049@demo.invalid,TD-05,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0050,Demo Guest 050,+256703100049,9,2026-07-03T17:00:00Z,CONFIRMED,WHATSAPP,guest050@demo.invalid,GC-17,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0051,Demo Guest 051,+256703100050,9,2026-07-29T09:30:00Z,CONFIRMED,WALK_IN,guest051@demo.invalid,EV-06,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0052,Demo Guest 052,+256703100051,3,2026-05-30T09:30:00Z,COMPLETED,WHATSAPP,guest052@demo.invalid,RB-06,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0053,Demo Guest 053,+256703100052,9,2026-06-24T15:30:00Z,COMPLETED,PHONE,guest053@demo.invalid,RB-06,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0054,Demo Guest 054,+256703100053,4,2026-07-12T16:30:00Z,CONFIRMED,WHATSAPP,guest054@demo.invalid,TD-10,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0055,Demo Guest 055,+256703100054,10,2026-07-21T10:30:00Z,CONFIRMED,INSTAGRAM,guest055@demo.invalid,GC-15,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0056,Demo Guest 056,+256703100055,11,2026-06-18T10:15:00Z,COMPLETED,WHATSAPP,guest056@demo.invalid,TD-07,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0057,Demo Guest 057,+256703100056,10,2026-05-30T09:15:00Z,COMPLETED,PHONE,guest057@demo.invalid,TD-12,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0058,Demo Guest 058,+256703100057,12,2026-07-29T15:30:00Z,CONFIRMED,WHATSAPP,guest058@demo.invalid,GC-04,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0059,Demo Guest 059,+256703100058,8,2026-07-07T17:00:00Z,CONFIRMED,PHONE,guest059@demo.invalid,RB-10,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0060,Demo Guest 060,+256703100059,12,2026-06-28T17:15:00Z,SEATED,PHONE,guest060@demo.invalid,TD-03,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0061,Demo Guest 061,+256703100060,10,2026-07-27T09:15:00Z,CONFIRMED,WALK_IN,guest061@demo.invalid,EV-11,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0062,Demo Guest 062,+256703100061,11,2026-06-03T15:30:00Z,COMPLETED,MANUAL,guest062@demo.invalid,EV-11,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0063,Demo Guest 063,+256703100062,4,2026-07-05T17:30:00Z,CONFIRMED,MANUAL,guest063@demo.invalid,RB-03,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0064,Demo Guest 064,+256703100063,8,2026-07-29T15:30:00Z,CONFIRMED,PHONE,guest064@demo.invalid,RB-06,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0065,Demo Guest 065,+256703100064,5,2026-05-31T15:30:00Z,COMPLETED,MANUAL,guest065@demo.invalid,RB-10,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0066,Demo Guest 066,+256703100065,12,2026-06-29T09:30:00Z,SEATED,MANUAL,guest066@demo.invalid,EV-10,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0067,Demo Guest 067,+256703100066,3,2026-07-10T10:00:00Z,CONFIRMED,MANUAL,guest067@demo.invalid,RB-09,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0068,Demo Guest 068,+256703100067,9,2026-06-14T10:15:00Z,COMPLETED,INSTAGRAM,guest068@demo.invalid,RB-08,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0069,Demo Guest 069,+256703100068,5,2026-05-28T09:00:00Z,COMPLETED,PHONE,guest069@demo.invalid,GC-02,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0070,Demo Guest 070,+256703100069,11,2026-06-05T15:15:00Z,COMPLETED,WALK_IN,guest070@demo.invalid,EV-07,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0071,Demo Guest 071,+256703100070,6,2026-05-30T17:00:00Z,COMPLETED,INSTAGRAM,guest071@demo.invalid,GC-11,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0072,Demo Guest 072,+256703100071,5,2026-06-08T17:30:00Z,COMPLETED,WHATSAPP,guest072@demo.invalid,TD-08,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0073,Demo Guest 073,+256703100072,8,2026-07-11T10:15:00Z,CONFIRMED,INSTAGRAM,guest073@demo.invalid,TD-03,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0074,Demo Guest 074,+256703100073,7,2026-06-05T17:15:00Z,COMPLETED,WALK_IN,guest074@demo.invalid,GC-10,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0075,Demo Guest 075,+256703100074,7,2026-07-02T16:00:00Z,CONFIRMED,WALK_IN,guest075@demo.invalid,GC-03,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0076,Demo Guest 076,+256703100075,5,2026-07-06T16:00:00Z,CONFIRMED,PHONE,guest076@demo.invalid,TD-01,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0077,Demo Guest 077,+256703100076,10,2026-07-08T15:00:00Z,CONFIRMED,PHONE,guest077@demo.invalid,GC-05,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0078,Demo Guest 078,+256703100077,8,2026-07-04T10:15:00Z,CONFIRMED,PHONE,guest078@demo.invalid,TD-02,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0079,Demo Guest 079,+256703100078,11,2026-06-26T09:00:00Z,COMPLETED,PHONE,guest079@demo.invalid,GC-15,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0080,Demo Guest 080,+256703100079,8,2026-06-25T09:30:00Z,COMPLETED,WHATSAPP,guest080@demo.invalid,RB-13,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0081,Demo Guest 081,+256703100080,9,2026-06-10T16:15:00Z,COMPLETED,PHONE,guest081@demo.invalid,TD-15,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0082,Demo Guest 082,+256703100081,2,2026-05-26T10:30:00Z,COMPLETED,WHATSAPP,guest082@demo.invalid,TD-01,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0083,Demo Guest 083,+256703100082,5,2026-06-11T17:00:00Z,COMPLETED,PHONE,guest083@demo.invalid,EV-02,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0084,Demo Guest 084,+256703100083,9,2026-06-11T17:15:00Z,COMPLETED,WALK_IN,guest084@demo.invalid,GC-11,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0085,Demo Guest 085,+256703100084,9,2026-07-09T09:30:00Z,CONFIRMED,INSTAGRAM,guest085@demo.invalid,RB-05,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0086,Demo Guest 086,+256703100085,3,2026-07-10T16:30:00Z,CONFIRMED,INSTAGRAM,guest086@demo.invalid,EV-03,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0087,Demo Guest 087,+256703100086,6,2026-06-03T16:30:00Z,COMPLETED,INSTAGRAM,guest087@demo.invalid,EV-11,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0088,Demo Guest 088,+256703100087,5,2026-07-07T17:00:00Z,CONFIRMED,WHATSAPP,guest088@demo.invalid,GC-11,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0089,Demo Guest 089,+256703100088,11,2026-05-30T17:30:00Z,COMPLETED,MANUAL,guest089@demo.invalid,RB-16,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0090,Demo Guest 090,+256703100089,7,2026-07-21T16:30:00Z,PENDING,WHATSAPP,guest090@demo.invalid,GC-04,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0091,Demo Guest 091,+256703100090,7,2026-05-29T17:30:00Z,COMPLETED,WALK_IN,guest091@demo.invalid,GC-16,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0092,Demo Guest 092,+256703100091,7,2026-06-05T17:15:00Z,COMPLETED,WHATSAPP,guest092@demo.invalid,GC-07,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0093,Demo Guest 093,+256703100092,11,2026-07-11T10:30:00Z,CONFIRMED,WHATSAPP,guest093@demo.invalid,RB-16,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0094,Demo Guest 094,+256703100093,12,2026-07-01T09:15:00Z,CONFIRMED,MANUAL,guest094@demo.invalid,GC-14,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0095,Demo Guest 095,+256703100094,11,2026-07-20T15:15:00Z,CONFIRMED,PHONE,guest095@demo.invalid,GC-18,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0096,Demo Guest 096,+256703100095,11,2026-07-03T17:30:00Z,CONFIRMED,WHATSAPP,guest096@demo.invalid,GC-12,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0097,Demo Guest 097,+256703100096,5,2026-06-03T17:00:00Z,COMPLETED,PHONE,guest097@demo.invalid,RB-14,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0098,Demo Guest 098,+256703100097,3,2026-06-14T09:30:00Z,COMPLETED,MANUAL,guest098@demo.invalid,EV-04,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0099,Demo Guest 099,+256703100098,12,2026-06-25T10:15:00Z,COMPLETED,INSTAGRAM,guest099@demo.invalid,RB-13,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0100,Demo Guest 100,+256703100099,12,2026-07-27T16:15:00Z,CONFIRMED,WALK_IN,guest100@demo.invalid,GC-03,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0101,Demo Guest 101,+256703100100,6,2026-05-29T10:30:00Z,COMPLETED,WHATSAPP,guest101@demo.invalid,GC-12,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0102,Demo Guest 102,+256703100101,4,2026-06-26T09:00:00Z,COMPLETED,WALK_IN,guest102@demo.invalid,GC-09,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0103,Demo Guest 103,+256703100102,7,2026-07-05T10:15:00Z,CONFIRMED,PHONE,guest103@demo.invalid,EV-02,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0104,Demo Guest 104,+256703100103,2,2026-07-02T10:15:00Z,CONFIRMED,PHONE,guest104@demo.invalid,EV-06,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0105,Demo Guest 105,+256703100104,3,2026-07-04T09:00:00Z,CONFIRMED,INSTAGRAM,guest105@demo.invalid,EV-03,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0106,Demo Guest 106,+256703100105,6,2026-06-26T10:15:00Z,COMPLETED,WHATSAPP,guest106@demo.invalid,TD-18,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0107,Demo Guest 107,+256703100106,11,2026-06-19T10:00:00Z,COMPLETED,INSTAGRAM,guest107@demo.invalid,GC-17,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0108,Demo Guest 108,+256703100107,10,2026-06-02T15:30:00Z,COMPLETED,WALK_IN,guest108@demo.invalid,RB-01,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0109,Demo Guest 109,+256703100108,8,2026-07-19T15:30:00Z,CONFIRMED,WHATSAPP,guest109@demo.invalid,EV-02,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0110,Demo Guest 110,+256703100109,5,2026-07-18T15:15:00Z,CONFIRMED,WALK_IN,guest110@demo.invalid,GC-11,Demo reservation,,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0111,Demo Guest 111,+256703100110,8,2026-07-15T15:00:00Z,PENDING,INSTAGRAM,guest111@demo.invalid,TD-10,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0112,Demo Guest 112,+256703100111,11,2026-06-11T16:15:00Z,COMPLETED,PHONE,guest112@demo.invalid,EV-04,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0113,Demo Guest 113,+256703100112,10,2026-06-27T17:00:00Z,COMPLETED,MANUAL,guest113@demo.invalid,RB-10,Demo reservation,,manager@nimbus.demo
+nimbus,GARDEN_CAFE,RES-GARDEN_CAFE-0114,Demo Guest 114,+256703100113,9,2026-07-24T17:30:00Z,CONFIRMED,MANUAL,guest114@demo.invalid,GC-17,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0115,Demo Guest 115,+256703100114,2,2026-05-26T15:15:00Z,COMPLETED,WHATSAPP,guest115@demo.invalid,EV-02,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0116,Demo Guest 116,+256703100115,2,2026-06-25T15:00:00Z,COMPLETED,INSTAGRAM,guest116@demo.invalid,RB-15,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0117,Demo Guest 117,+256703100116,8,2026-06-26T15:15:00Z,COMPLETED,PHONE,guest117@demo.invalid,EV-09,Demo reservation,,manager@nimbus.demo
+nimbus,ROOFTOP_BAR,RES-ROOFTOP_BAR-0118,Demo Guest 118,+256703100117,7,2026-05-29T15:30:00Z,COMPLETED,WALK_IN,guest118@demo.invalid,RB-10,Demo reservation,Window seat if available,manager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,RES-TAPAS_DOWNTOWN-0119,Demo Guest 119,+256703100118,2,2026-07-21T15:00:00Z,CONFIRMED,WALK_IN,guest119@demo.invalid,TD-13,Demo reservation,,manager@nimbus.demo
+nimbus,EVENTS_KITCHEN,RES-EVENTS_KITCHEN-0120,Demo Guest 120,+256703100119,8,2026-06-10T17:00:00Z,COMPLETED,WALK_IN,guest120@demo.invalid,EV-08,Demo reservation,,manager@nimbus.demo

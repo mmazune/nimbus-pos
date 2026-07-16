@@ -1,0 +1,152 @@
+[
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/floor",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_floor-desktop.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:45 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/orders",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_orders-desktop.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:45 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/reservations",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_reservations-desktop.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:45 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/approvals",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_approvals-desktop.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:45 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/me",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_me-desktop.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:45 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/floor",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_floor-mobile.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 390,
+      "horizontalOverflow": true,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:45 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/orders",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_orders-mobile.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 390,
+      "horizontalOverflow": true,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:46 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/reservations",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_reservations-mobile.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 390,
+      "horizontalOverflow": true,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:46 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/approvals",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_approvals-mobile.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 390,
+      "horizontalOverflow": true,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:46 PM\n\nAPI\n\nLocal de"
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/me",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-auth\\supervisor_me-mobile.png",
+    "scan": {
+      "h1": "Service terminal",
+      "url": "/login",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 390,
+      "horizontalOverflow": true,
+      "navText": [],
+      "statusText": "NIMBUS POS\n\nService terminal\n\nShared desktop access for waiter service, cashier settlement, and supervisor floor control. Quick PIN is primary for frontline staff.\n\nWorkstation\n\nPOS Desktop\n\nTime\n\n02:46 PM\n\nAPI\n\nLocal de"
+    }
+  }
+]

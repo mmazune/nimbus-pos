@@ -5,10 +5,16 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
-import { Prisma, OrderStatus } from '@prisma/client';
+import { Prisma, OrderStatus, ShiftStatus, TableStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { KdsService } from '../kds/kds.service';
+import {
+  ActorLike,
+  assertWaiterOrderOwnership,
+  assertWaiterTransitionAllowed,
+  isWaiterOnly,
+} from '../../common/auth';
 import {
   CreateOrderDto,
   AddOrderItemDto,
@@ -26,6 +32,8 @@ interface BranchContext {
 interface RequestMeta {
   ipAddress?: string;
   userAgent?: string;
+  /** Actor with role information. Required for waiter-scope enforcement. */
+  actor?: ActorLike;
 }
 
 // ── State Machine ──
@@ -46,7 +54,7 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly kdsService: KdsService,
-  ) {}
+  ) { }
 
   // ── Order Number Generation ──
   // Format: ORD-XXXXXX, branch-scoped, sequential, concurrency-safe via DB
@@ -67,9 +75,77 @@ export class OrdersService {
     return `ORD-${String(nextSeq).padStart(6, '0')}`;
   }
 
+  // ── Waiter MVP guard helpers ──
+
+  /**
+   * Enforce that waiter-only actors have an OPEN shift on this branch before
+   * performing operational writes. Owners/managers/cashiers are exempt.
+   * Throws 409 SHIFT_NOT_OPEN otherwise.
+   */
+  private async assertWaiterShiftOpen(
+    actor: ActorLike | undefined,
+    ctx: BranchContext,
+  ): Promise<void> {
+    if (!actor || !isWaiterOnly(actor)) return;
+    const openShift = await this.prisma.shift.findFirst({
+      where: {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        openedById: actor.id,
+        status: ShiftStatus.OPEN,
+      },
+      select: { id: true },
+    });
+    if (!openShift) {
+      throw new ConflictException({
+        code: 'SHIFT_NOT_OPEN',
+        message: 'Waiter must open a shift before performing this action',
+      });
+    }
+  }
+
+  /**
+   * Auto-occupy: when a dine-in order with a table becomes operationally
+   * active (SENT), flip the table to OCCUPIED.
+   */
+  private async autoOccupyTable(tableId: string | null | undefined): Promise<void> {
+    if (!tableId) return;
+    await this.prisma.table.updateMany({
+      where: { id: tableId, status: { not: TableStatus.OCCUPIED } },
+      data: { status: TableStatus.OCCUPIED },
+    });
+  }
+
+  /**
+   * Auto-release: when an order moves to a terminal state (CLOSED/VOIDED)
+   * and no other active dine-in orders remain on the table, return the
+   * table to AVAILABLE so it can be re-seated.
+   */
+  private async autoReleaseTableIfIdle(
+    tableId: string | null | undefined,
+    excludeOrderId: string,
+  ): Promise<void> {
+    if (!tableId) return;
+    const activeOnTable = await this.prisma.order.count({
+      where: {
+        tableId,
+        id: { not: excludeOrderId },
+        status: { notIn: [OrderStatus.CLOSED, OrderStatus.VOIDED] },
+      },
+    });
+    if (activeOnTable > 0) return;
+    await this.prisma.table.updateMany({
+      where: { id: tableId, status: TableStatus.OCCUPIED },
+      data: { status: TableStatus.AVAILABLE },
+    });
+  }
+
   // ── Create Order ──
 
   async createOrder(userId: string, ctx: BranchContext, dto: CreateOrderDto, meta: RequestMeta) {
+    // Waiter MVP: require an open shift for waiter-only actors
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
+
     // Validate TAKEAWAY has no table
     if (dto.serviceType === 'TAKEAWAY' && dto.tableId) {
       throw new BadRequestException('Takeaway orders must not have a tableId');
@@ -119,7 +195,7 @@ export class OrdersService {
 
   // ── Get Order ──
 
-  async getOrder(ctx: BranchContext, orderId: string) {
+  async getOrder(ctx: BranchContext, orderId: string, actor?: ActorLike) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
       include: {
@@ -136,23 +212,38 @@ export class OrdersService {
     });
 
     if (!order) throw new NotFoundException('Order not found');
+    if (actor) assertWaiterOrderOwnership(actor, order);
     return order;
   }
 
   // ── List Orders ──
 
-  async listOrders(ctx: BranchContext, query: ListOrdersQueryDto) {
+  async listOrders(ctx: BranchContext, query: ListOrdersQueryDto, actor?: ActorLike) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
-    const where: Record<string, unknown> = {
+    const where: Prisma.OrderWhereInput = {
       branchId: ctx.branchId,
       orgId: ctx.organizationId,
     };
-    if (query.status) where.status = query.status;
-    if (query.serviceType) where.serviceType = query.serviceType;
+    if (query.status) where.status = query.status as OrderStatus;
+    if (query.serviceType) where.serviceType = query.serviceType as Prisma.OrderWhereInput['serviceType'];
     if (query.tableId) where.tableId = query.tableId;
+
+    // Waiter MVP: support userId filter with literal `me`
+    if (query.userId) {
+      const resolved = query.userId === 'me' ? actor?.id : query.userId;
+      if (resolved) where.userId = resolved;
+    }
+
+    // Waiter MVP: support excludeStatus to hide e.g. NEW drafts
+    if (query.excludeStatus && query.excludeStatus.length > 0) {
+      where.status = {
+        ...(typeof where.status === 'string' ? { equals: where.status } : (where.status as object) || {}),
+        notIn: query.excludeStatus as OrderStatus[],
+      } as Prisma.EnumOrderStatusFilter;
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -346,6 +437,8 @@ export class OrdersService {
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
 
     if (order.status === 'CLOSED' || order.status === 'VOIDED') {
       throw new ConflictException(`Cannot add items to a ${order.status} order`);
@@ -413,6 +506,8 @@ export class OrdersService {
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
 
     if (order.status === 'CLOSED' || order.status === 'VOIDED') {
       throw new ConflictException(`Cannot update items on a ${order.status} order`);
@@ -488,6 +583,8 @@ export class OrdersService {
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
 
     if (order.status === 'CLOSED' || order.status === 'VOIDED') {
       throw new ConflictException(`Cannot remove items from a ${order.status} order`);
@@ -536,6 +633,11 @@ export class OrdersService {
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) {
+      assertWaiterOrderOwnership(meta.actor, order);
+      assertWaiterTransitionAllowed(meta.actor, targetStatus);
+    }
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
 
     this.validateTransition(order.status, targetStatus);
 
@@ -543,6 +645,14 @@ export class OrdersService {
       where: { id: orderId },
       data: { status: targetStatus },
     });
+
+    // Waiter MVP — auto-occupy on SENT; auto-release on CLOSED.
+    if (targetStatus === OrderStatus.SENT && order.serviceType === 'DINE_IN') {
+      await this.autoOccupyTable(order.tableId);
+    }
+    if (targetStatus === OrderStatus.CLOSED) {
+      await this.autoReleaseTableIfIdle(order.tableId, orderId);
+    }
 
     await this.audit.log({
       actorUserId: userId,
@@ -673,6 +783,10 @@ export class OrdersService {
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) {
+      assertWaiterOrderOwnership(meta.actor, order);
+      assertWaiterTransitionAllowed(meta.actor, 'VOIDED');
+    }
 
     this.validateTransition(order.status, 'VOIDED');
 
@@ -686,6 +800,11 @@ export class OrdersService {
       where: { id: orderId },
       data: { status: OrderStatus.VOIDED },
     });
+
+    // Waiter MVP — released voided dine-in tables
+    if (order.serviceType === 'DINE_IN') {
+      await this.autoReleaseTableIfIdle(order.tableId, orderId);
+    }
 
     await this.audit.log({
       actorUserId: userId,
@@ -704,5 +823,51 @@ export class OrdersService {
     });
 
     return updated;
+  }
+
+  // ── Request Bill (Waiter MVP) ──
+  // Records an explicit "bill requested" audit event so the cashier flow can
+  // pick it up later. Does NOT mutate payment state or order status.
+  async requestBill(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    meta: RequestMeta,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
+
+    if (order.status === OrderStatus.CLOSED || order.status === OrderStatus.VOIDED) {
+      throw new ConflictException(`Cannot request bill on a ${order.status} order`);
+    }
+
+    await this.audit.log({
+      actorUserId: userId,
+      action: 'ORDER_BILL_REQUESTED',
+      entityType: 'order',
+      entityId: orderId,
+      metadata: {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        tableId: order.tableId,
+        total: order.total?.toString?.() ?? null,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      billRequested: true,
+      requestedAt: new Date().toISOString(),
+    };
   }
 }

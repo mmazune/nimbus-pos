@@ -1,0 +1,152 @@
+[
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/floor",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_floor-desktop.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/floor",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/orders",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_orders-desktop.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/orders",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/reservations",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_reservations-desktop.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/reservations",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/approvals",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_approvals-desktop.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/approvals",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "desktop",
+    "route": "/supervisor/me",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_me-desktop.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/me",
+      "bodyScrollWidth": 1280,
+      "clientWidth": 1280,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/floor",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_floor-mobile.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/floor",
+      "bodyScrollWidth": 390,
+      "clientWidth": 390,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/orders",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_orders-mobile.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/orders",
+      "bodyScrollWidth": 390,
+      "clientWidth": 390,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/reservations",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_reservations-mobile.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/reservations",
+      "bodyScrollWidth": 390,
+      "clientWidth": 390,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/approvals",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_approvals-mobile.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/approvals",
+      "bodyScrollWidth": 390,
+      "clientWidth": 390,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  },
+  {
+    "viewport": "mobile",
+    "route": "/supervisor/me",
+    "status": 200,
+    "screenshot": "C:\\Users\\arman\\Desktop\\nimbus-pos\\_qa-logs\\supervisor-screenshots-final\\supervisor_me-mobile.png",
+    "scan": {
+      "h1": null,
+      "url": "/supervisor/me",
+      "bodyScrollWidth": 390,
+      "clientWidth": 390,
+      "horizontalOverflow": false,
+      "navText": [],
+      "offenderCount": 0
+    }
+  }
+]

@@ -1,0 +1,9 @@
+organizationSlug,branchCode,name,rate,isInclusive,description
+nimbus,TAPAS_DOWNTOWN,VAT 18%,18.00,false,Standard demo VAT
+nimbus,TAPAS_DOWNTOWN,Zero Rated,0.00,false,Demo zero-rate category
+nimbus,ROOFTOP_BAR,VAT 18%,18.00,false,Standard demo VAT
+nimbus,ROOFTOP_BAR,Zero Rated,0.00,false,Demo zero-rate category
+nimbus,GARDEN_CAFE,VAT 18%,18.00,false,Standard demo VAT
+nimbus,GARDEN_CAFE,Zero Rated,0.00,false,Demo zero-rate category
+nimbus,EVENTS_KITCHEN,VAT 18%,18.00,false,Standard demo VAT
+nimbus,EVENTS_KITCHEN,Zero Rated,0.00,false,Demo zero-rate category

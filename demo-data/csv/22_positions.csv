@@ -1,0 +1,49 @@
+organizationSlug,branchCode,code,title,department,level,active,metadata
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-OWNER,Owner / Director,Leadership,L5,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-GM,General Manager,Leadership,L4,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-ACCOUNTANT,Accountant,Finance,L4,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-PROC,Procurement Lead,Procurement,L3,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-STOCK,Stock Manager,Inventory,L3,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-SUP,Floor Supervisor,Service,L3,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-WAITER,Waiter,Service,L2,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-CASHIER,Cashier,Service,L2,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-CHEF,Chef de Partie,Kitchen,L2,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-BARTENDER,Bar Specialist,Bar,L2,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-EVENT,Event Coordinator,Events,L3,true,{}
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-CASUAL,Banquet Casual,Events,L1,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-OWNER,Owner / Director,Leadership,L5,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-GM,General Manager,Leadership,L4,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-ACCOUNTANT,Accountant,Finance,L4,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-PROC,Procurement Lead,Procurement,L3,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-STOCK,Stock Manager,Inventory,L3,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-SUP,Floor Supervisor,Service,L3,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-WAITER,Waiter,Service,L2,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-CASHIER,Cashier,Service,L2,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-CHEF,Chef de Partie,Kitchen,L2,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-BARTENDER,Bar Specialist,Bar,L2,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-EVENT,Event Coordinator,Events,L3,true,{}
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-CASUAL,Banquet Casual,Events,L1,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-OWNER,Owner / Director,Leadership,L5,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-GM,General Manager,Leadership,L4,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-ACCOUNTANT,Accountant,Finance,L4,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-PROC,Procurement Lead,Procurement,L3,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-STOCK,Stock Manager,Inventory,L3,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-SUP,Floor Supervisor,Service,L3,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-WAITER,Waiter,Service,L2,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-CASHIER,Cashier,Service,L2,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-CHEF,Chef de Partie,Kitchen,L2,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-BARTENDER,Bar Specialist,Bar,L2,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-EVENT,Event Coordinator,Events,L3,true,{}
+nimbus,GARDEN_CAFE,GARDEN_CAFE-CASUAL,Banquet Casual,Events,L1,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-OWNER,Owner / Director,Leadership,L5,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-GM,General Manager,Leadership,L4,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-ACCOUNTANT,Accountant,Finance,L4,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-PROC,Procurement Lead,Procurement,L3,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-STOCK,Stock Manager,Inventory,L3,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-SUP,Floor Supervisor,Service,L3,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-WAITER,Waiter,Service,L2,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-CASHIER,Cashier,Service,L2,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-CHEF,Chef de Partie,Kitchen,L2,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-BARTENDER,Bar Specialist,Bar,L2,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-EVENT,Event Coordinator,Events,L3,true,{}
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-CASUAL,Banquet Casual,Events,L1,true,{}

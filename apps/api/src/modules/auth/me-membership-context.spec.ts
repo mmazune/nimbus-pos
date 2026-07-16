@@ -18,6 +18,7 @@ describe('AuthService.me — M39.2 membership context', () => {
             user: { findUnique: jest.fn() },
             session: { findUnique: jest.fn() },
             membership: { findMany: jest.fn() },
+            employee: { findUnique: jest.fn() },
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -76,6 +77,7 @@ describe('AuthService.me — M39.2 membership context', () => {
 
     it('returns memberships array and context when user has one org/one branch', async () => {
         prisma.user.findUnique.mockResolvedValue(userFixture());
+        prisma.employee.findUnique.mockResolvedValue(null);
         prisma.session.findUnique.mockResolvedValue({
             id: 's1', platform: 'WEB', source: 'WEB', lastActivityAt: new Date(), createdAt: new Date(),
         });
@@ -96,6 +98,7 @@ describe('AuthService.me — M39.2 membership context', () => {
 
     it('flags requiresContextSelection when user has multiple orgs', async () => {
         prisma.user.findUnique.mockResolvedValue(userFixture());
+        prisma.employee.findUnique.mockResolvedValue(null);
         prisma.session.findUnique.mockResolvedValue({
             id: 's1', platform: 'WEB', source: 'WEB', lastActivityAt: new Date(), createdAt: new Date(),
         });
@@ -116,6 +119,7 @@ describe('AuthService.me — M39.2 membership context', () => {
 
     it('flags requiresContextSelection when one org but multiple branches', async () => {
         prisma.user.findUnique.mockResolvedValue(userFixture());
+        prisma.employee.findUnique.mockResolvedValue(null);
         prisma.session.findUnique.mockResolvedValue({
             id: 's1', platform: 'WEB', source: 'WEB', lastActivityAt: new Date(), createdAt: new Date(),
         });
@@ -138,6 +142,7 @@ describe('AuthService.me — M39.2 membership context', () => {
 
     it('returns empty memberships and null defaults when user has no memberships (e.g. just-invited user before activation flow finished)', async () => {
         prisma.user.findUnique.mockResolvedValue(userFixture());
+        prisma.employee.findUnique.mockResolvedValue(null);
         prisma.session.findUnique.mockResolvedValue({
             id: 's1', platform: 'WEB', source: 'WEB', lastActivityAt: new Date(), createdAt: new Date(),
         });
@@ -150,5 +155,38 @@ describe('AuthService.me — M39.2 membership context', () => {
         expect(me.context.requiresContextSelection).toBe(false);
         expect(me.context.defaultOrganizationId).toBeNull();
         expect(me.context.defaultBranchId).toBeNull();
+    });
+
+    it('returns a minimal linked employee identity when one exists in the current org', async () => {
+        prisma.user.findUnique.mockResolvedValue(userFixture());
+        prisma.session.findUnique.mockResolvedValue({
+            id: 's1', platform: 'WEB', source: 'WEB', lastActivityAt: new Date(), createdAt: new Date(),
+        });
+        prisma.membership.findMany.mockResolvedValue([membershipFixture()]);
+        prisma.employee.findUnique.mockResolvedValue({
+            id: 'emp-1',
+            employeeCode: 'EMP-001',
+            firstName: 'Olivia',
+            lastName: 'Owner',
+            status: 'ACTIVE',
+            orgId: 'org-1',
+            branchId: 'branch-1',
+            position: { code: 'OWNER', title: 'Owner' },
+        });
+
+        const me = await service.me('u1', 's1');
+
+        expect(me.employee).toEqual({
+            id: 'emp-1',
+            employeeCode: 'EMP-001',
+            displayName: 'Olivia Owner',
+            firstName: 'Olivia',
+            lastName: 'Owner',
+            status: 'ACTIVE',
+            orgId: 'org-1',
+            branchId: 'branch-1',
+            jobRole: 'Owner',
+            positionCode: 'OWNER',
+        });
     });
 });

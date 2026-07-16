@@ -1245,6 +1245,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:discount:read',
     'pos:payment:create',
     'pos:payment:close',
+    'pos:orders:close',
     'pos:payment:intent',
     'pos:payment:read',
     'pos:payment:manual-reference',
@@ -1349,13 +1350,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:till:reconcile',
     'pos:till:safe-drop',
     'pos:till:read',
-    'pos:reservation:create',
+    // Waiter MVP — reservations: read + seat only.
+    // Removed (cashier/host scope): pos:reservation:create, :confirm,
+    // :deposit:record, :deposit:read, :table:assign.
     'pos:reservation:read',
-    'pos:reservation:confirm',
     'pos:reservation:seat',
-    'pos:reservation:deposit:record',
-    'pos:reservation:deposit:read',
-    'pos:reservation:table:assign',
     'pos:event:read',
     'pos:event:booking:create',
     'pos:event:booking:read',
@@ -1384,9 +1383,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:receipt:read',
     'pos:receipt:reprint',
     'pos:receipt:send',
-    // BG4.B: POS Order Handoff (Waiter: transfer + move-items only — split/merge are cashier scope)
-    'pos:order:transfer',
-    'pos:order:move-items',
+    // Waiter MVP — handoff removed from waiter scope.
+    // Removed (cashier scope): pos:order:transfer, pos:order:move-items.
     // BG5: Device / Printer / Terminal Registry (Waiter: read-only)
     'devices:read',
   ],
@@ -1498,7 +1496,48 @@ async function seedRolePermissions(): Promise<{ created: number; skipped: number
   return { created, skipped };
 }
 
-// ── M2: Demo Users ──
+/**
+ * Waiter MVP — explicit revoke of the 7 RolePermissions intentionally
+ * removed from the Waiter role. `seedRolePermissions` only inserts; it
+ * never deletes, so previously seeded waiter grants persist forever
+ * unless we revoke them here. Targeted and idempotent.
+ */
+async function revokeStaleWaiterPermissions(): Promise<{ revoked: number }> {
+  const WAITER_REVOKED_ACTIONS = [
+    'pos:reservation:create',
+    'pos:reservation:confirm',
+    'pos:reservation:deposit:record',
+    'pos:reservation:deposit:read',
+    'pos:reservation:table:assign',
+    'pos:order:transfer',
+    'pos:order:move-items',
+  ];
+
+  const waiterRole = await prisma.role.findUnique({ where: { name: 'Waiter' } });
+  if (!waiterRole) {
+    console.log('  ⚠️  Waiter role not found — skipping revoke');
+    return { revoked: 0 };
+  }
+
+  const perms = await prisma.permission.findMany({
+    where: { action: { in: WAITER_REVOKED_ACTIONS } },
+    select: { id: true, action: true },
+  });
+
+  if (perms.length === 0) return { revoked: 0 };
+
+  const result = await prisma.rolePermission.deleteMany({
+    where: {
+      roleId: waiterRole.id,
+      permissionId: { in: perms.map((p) => p.id) },
+    },
+  });
+
+  for (const p of perms) {
+    console.log(`  ⛔ RolePermission "Waiter" → "${p.action}" (revoked if present)`);
+  }
+  return { revoked: result.count };
+}
 // PINs for testing (before hashing): Owner=1234, Manager=2345, Cashier=3456, Chef=4567, Waiter=5678, Accountant=6789
 
 interface DemoUser {
@@ -7685,6 +7724,14 @@ async function main(): Promise<void> {
   console.log('── RolePermissions ──');
   const rpResult = await seedRolePermissions();
   console.log(`   Created: ${rpResult.created}, Skipped: ${rpResult.skipped}\n`);
+
+  // 4b) Waiter MVP — revoke RolePermissions that were intentionally
+  //     removed from the Waiter scope. The seedRolePermissions function
+  //     is additive-only, so previously granted but now-removed perms
+  //     persist unless explicitly revoked here.
+  console.log('── Waiter MVP tightening (revoke stale perms) ──');
+  const waiterRevoke = await revokeStaleWaiterPermissions();
+  console.log(`   Revoked: ${waiterRevoke.revoked}\n`);
 
   // 5) Seed Demo Users
   console.log('── Users ──');

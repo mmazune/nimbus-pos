@@ -1,0 +1,15 @@
+organizationSlug,branchCode,code,name,accountType,status,systemManaged,allowManualPosting,parentCode,description
+nimbus,,1000,Cash on Hand,ASSET,ACTIVE,true,true,,Demo Cash on Hand
+nimbus,,1010,Bank Account,ASSET,ACTIVE,true,true,,Demo Bank Account
+nimbus,,1100,Accounts Receivable,ASSET,ACTIVE,true,true,,Demo Accounts Receivable
+nimbus,,1200,Inventory Asset,ASSET,ACTIVE,true,true,,Demo Inventory Asset
+nimbus,,2000,Accounts Payable,LIABILITY,ACTIVE,true,true,,Demo Accounts Payable
+nimbus,,2100,Output Tax Payable,LIABILITY,ACTIVE,true,true,,Demo Output Tax Payable
+nimbus,,2200,Deposit Liability,LIABILITY,ACTIVE,true,true,,Demo Deposit Liability
+nimbus,,3000,Owner Equity,EQUITY,ACTIVE,false,true,,Demo Owner Equity
+nimbus,,4000,Sales Revenue,REVENUE,ACTIVE,true,false,,Demo Sales Revenue
+nimbus,,4010,Event Revenue,REVENUE,ACTIVE,false,true,,Demo Event Revenue
+nimbus,,5000,COGS,EXPENSE,ACTIVE,true,false,,Demo COGS
+nimbus,,5100,Payroll Expense,EXPENSE,ACTIVE,false,true,,Demo Payroll Expense
+nimbus,,5200,Wastage Expense,EXPENSE,ACTIVE,false,true,,Demo Wastage Expense
+nimbus,,5300,Utilities Expense,EXPENSE,ACTIVE,false,true,,Demo Utilities Expense

@@ -1,0 +1,19 @@
+invoiceNumber,description,quantity,unitPrice,lineTotal,accountCode,taxAmount
+INV-2026-0001,Demo corporate dining / event invoice,1.00,2241600.00,2241600.00,4000,403500.00
+INV-2026-0002,Demo corporate dining / event invoice,1.00,515100.00,515100.00,4000,92700.00
+INV-2026-0003,Demo corporate dining / event invoice,1.00,2290700.00,2290700.00,4000,412300.00
+INV-2026-0004,Demo corporate dining / event invoice,1.00,1950600.00,1950600.00,4000,351100.00
+INV-2026-0005,Demo corporate dining / event invoice,1.00,1019600.00,1019600.00,4000,183500.00
+INV-2026-0006,Demo corporate dining / event invoice,1.00,1082800.00,1082800.00,4000,194900.00
+INV-2026-0007,Demo corporate dining / event invoice,1.00,571300.00,571300.00,4000,102800.00
+INV-2026-0008,Demo corporate dining / event invoice,1.00,2534500.00,2534500.00,4000,456200.00
+INV-2026-0009,Demo corporate dining / event invoice,1.00,549900.00,549900.00,4000,99000.00
+INV-2026-0010,Demo corporate dining / event invoice,1.00,2430800.00,2430800.00,4000,437500.00
+INV-2026-0011,Demo corporate dining / event invoice,1.00,1057900.00,1057900.00,4000,190400.00
+INV-2026-0012,Demo corporate dining / event invoice,1.00,924200.00,924200.00,4000,166400.00
+INV-2026-0013,Demo corporate dining / event invoice,1.00,2491100.00,2491100.00,4000,448400.00
+INV-2026-0014,Demo corporate dining / event invoice,1.00,537500.00,537500.00,4000,96800.00
+INV-2026-0015,Demo corporate dining / event invoice,1.00,1519400.00,1519400.00,4000,273500.00
+INV-2026-0016,Demo corporate dining / event invoice,1.00,1821000.00,1821000.00,4000,327800.00
+INV-2026-0017,Demo corporate dining / event invoice,1.00,1697400.00,1697400.00,4000,305500.00
+INV-2026-0018,Demo corporate dining / event invoice,1.00,1753200.00,1753200.00,4000,315600.00

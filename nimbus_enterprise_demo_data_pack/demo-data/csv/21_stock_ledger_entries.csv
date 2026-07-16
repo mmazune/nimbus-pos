@@ -1,0 +1,258 @@
+organizationSlug,branchCode,inventoryItemName,adjustmentType,quantity,reason,adjustedAt,metadata,createdByEmail
+nimbus,TAPAS_DOWNTOWN,Chicken Breast,OPENING_BALANCE,99.24,Premium demo opening stock,2026-06-17T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Beef Fillet,OPENING_BALANCE,48.26,Premium demo opening stock,2026-06-01T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Beef Fillet,WASTAGE,-1.32,Prep trim / normal demo wastage,2026-06-22T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Tilapia Fillet,OPENING_BALANCE,51.99,Premium demo opening stock,2026-04-08T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Tilapia Fillet,WASTAGE,-2.47,Prep trim / normal demo wastage,2026-06-23T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Mushrooms,OPENING_BALANCE,110.02,Premium demo opening stock,2026-04-07T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Mushrooms,WASTAGE,-1.06,Prep trim / normal demo wastage,2026-06-19T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Eggplant,OPENING_BALANCE,71.64,Premium demo opening stock,2026-05-27T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Tomatoes,OPENING_BALANCE,29.10,Premium demo opening stock,2026-06-02T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Avocado,OPENING_BALANCE,33.49,Premium demo opening stock,2026-05-22T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Plantain,OPENING_BALANCE,21.63,Premium demo opening stock,2026-05-29T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Lettuce,OPENING_BALANCE,52.21,Premium demo opening stock,2026-04-15T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Lettuce,WASTAGE,-1.39,Prep trim / normal demo wastage,2026-06-13T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Herbs Mix,OPENING_BALANCE,30.95,Premium demo opening stock,2026-04-10T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Potatoes,OPENING_BALANCE,105.95,Premium demo opening stock,2026-04-25T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Flatbread Dough,OPENING_BALANCE,56.89,Premium demo opening stock,2026-04-02T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Flatbread Dough,WASTAGE,-2.05,Prep trim / normal demo wastage,2026-06-18T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Pasta,OPENING_BALANCE,66.83,Premium demo opening stock,2026-05-27T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Rice,OPENING_BALANCE,114.86,Premium demo opening stock,2026-04-15T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Rice,WASTAGE,-1.06,Prep trim / normal demo wastage,2026-06-13T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cheese,OPENING_BALANCE,52.20,Premium demo opening stock,2026-06-13T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cheese,WASTAGE,-2.48,Prep trim / normal demo wastage,2026-06-14T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Yoghurt,OPENING_BALANCE,41.89,Premium demo opening stock,2026-05-14T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cream,OPENING_BALANCE,103.04,Premium demo opening stock,2026-04-06T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cream,WASTAGE,-1.92,Prep trim / normal demo wastage,2026-06-15T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Coffee Beans,OPENING_BALANCE,35.30,Premium demo opening stock,2026-05-02T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Tea Leaves,OPENING_BALANCE,54.78,Premium demo opening stock,2026-04-10T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Mango Pulp,OPENING_BALANCE,110.47,Premium demo opening stock,2026-04-09T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Passion Fruit Pulp,OPENING_BALANCE,50.58,Premium demo opening stock,2026-04-06T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Lime Juice,OPENING_BALANCE,103.34,Premium demo opening stock,2026-06-17T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Ginger Syrup,OPENING_BALANCE,36.85,Premium demo opening stock,2026-05-19T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Hibiscus Syrup,OPENING_BALANCE,25.55,Premium demo opening stock,2026-05-20T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Sparkling Water,OPENING_BALANCE,118.07,Premium demo opening stock,2026-04-20T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Sparkling Water,WASTAGE,-0.21,Prep trim / normal demo wastage,2026-06-29T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Chocolate,OPENING_BALANCE,109.32,Premium demo opening stock,2026-05-30T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Dates,OPENING_BALANCE,118.60,Premium demo opening stock,2026-05-23T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Dates,WASTAGE,-0.84,Prep trim / normal demo wastage,2026-06-21T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Sugar,OPENING_BALANCE,54.59,Premium demo opening stock,2026-04-05T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Flour,OPENING_BALANCE,94.58,Premium demo opening stock,2026-06-12T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Flour,WASTAGE,-0.87,Prep trim / normal demo wastage,2026-06-15T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cooking Oil,OPENING_BALANCE,111.95,Premium demo opening stock,2026-04-10T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Salt,OPENING_BALANCE,67.00,Premium demo opening stock,2026-05-17T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Black Pepper,OPENING_BALANCE,23.78,Premium demo opening stock,2026-04-27T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Black Pepper,WASTAGE,-2.40,Prep trim / normal demo wastage,2026-06-25T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Garlic,OPENING_BALANCE,45.42,Premium demo opening stock,2026-05-26T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Onion,OPENING_BALANCE,43.69,Premium demo opening stock,2026-04-27T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cucumber,OPENING_BALANCE,106.18,Premium demo opening stock,2026-05-31T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cucumber,WASTAGE,-0.70,Prep trim / normal demo wastage,2026-06-22T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Basil,OPENING_BALANCE,54.21,Premium demo opening stock,2026-05-16T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Basil,WASTAGE,-2.26,Prep trim / normal demo wastage,2026-06-29T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cranberry Juice,OPENING_BALANCE,25.88,Premium demo opening stock,2026-05-31T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cranberry Juice,WASTAGE,-0.88,Prep trim / normal demo wastage,2026-06-20T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Vanilla Syrup,OPENING_BALANCE,22.10,Premium demo opening stock,2026-04-01T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Vanilla Syrup,WASTAGE,-2.21,Prep trim / normal demo wastage,2026-06-13T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Oats,OPENING_BALANCE,65.66,Premium demo opening stock,2026-05-25T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Oats,WASTAGE,-1.83,Prep trim / normal demo wastage,2026-06-11T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Bananas,OPENING_BALANCE,74.48,Premium demo opening stock,2026-05-08T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Mini Dessert Base,OPENING_BALANCE,115.13,Premium demo opening stock,2026-05-03T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Mini Dessert Base,WASTAGE,-1.70,Prep trim / normal demo wastage,2026-06-26T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Packaging Box,OPENING_BALANCE,113.72,Premium demo opening stock,2026-04-09T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Packaging Box,WASTAGE,-0.46,Prep trim / normal demo wastage,2026-06-24T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Napkins,OPENING_BALANCE,32.21,Premium demo opening stock,2026-06-12T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Cleaning Solution,OPENING_BALANCE,118.42,Premium demo opening stock,2026-06-03T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,TAPAS_DOWNTOWN,Receipt Paper Roll,OPENING_BALANCE,31.39,Premium demo opening stock,2026-06-20T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Chicken Breast,OPENING_BALANCE,110.03,Premium demo opening stock,2026-05-14T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Chicken Breast,WASTAGE,-1.38,Prep trim / normal demo wastage,2026-06-10T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Beef Fillet,OPENING_BALANCE,68.02,Premium demo opening stock,2026-04-23T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Beef Fillet,WASTAGE,-1.24,Prep trim / normal demo wastage,2026-06-27T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Tilapia Fillet,OPENING_BALANCE,44.25,Premium demo opening stock,2026-05-13T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Mushrooms,OPENING_BALANCE,37.89,Premium demo opening stock,2026-05-18T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Mushrooms,WASTAGE,-0.74,Prep trim / normal demo wastage,2026-06-12T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Eggplant,OPENING_BALANCE,119.00,Premium demo opening stock,2026-06-05T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Tomatoes,OPENING_BALANCE,32.31,Premium demo opening stock,2026-04-26T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Tomatoes,WASTAGE,-1.37,Prep trim / normal demo wastage,2026-06-11T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Avocado,OPENING_BALANCE,116.73,Premium demo opening stock,2026-05-18T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Avocado,WASTAGE,-2.40,Prep trim / normal demo wastage,2026-06-19T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Plantain,OPENING_BALANCE,89.48,Premium demo opening stock,2026-05-24T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Lettuce,OPENING_BALANCE,54.44,Premium demo opening stock,2026-05-16T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Lettuce,WASTAGE,-1.67,Prep trim / normal demo wastage,2026-06-18T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Herbs Mix,OPENING_BALANCE,79.02,Premium demo opening stock,2026-06-01T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Potatoes,OPENING_BALANCE,66.10,Premium demo opening stock,2026-06-06T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Potatoes,WASTAGE,-1.83,Prep trim / normal demo wastage,2026-06-12T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Flatbread Dough,OPENING_BALANCE,29.95,Premium demo opening stock,2026-05-22T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Pasta,OPENING_BALANCE,65.30,Premium demo opening stock,2026-05-18T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Rice,OPENING_BALANCE,79.79,Premium demo opening stock,2026-05-26T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Cheese,OPENING_BALANCE,90.08,Premium demo opening stock,2026-04-18T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Yoghurt,OPENING_BALANCE,61.58,Premium demo opening stock,2026-06-06T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Cream,OPENING_BALANCE,81.56,Premium demo opening stock,2026-06-02T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Coffee Beans,OPENING_BALANCE,59.12,Premium demo opening stock,2026-05-15T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Tea Leaves,OPENING_BALANCE,82.94,Premium demo opening stock,2026-05-31T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Tea Leaves,WASTAGE,-2.18,Prep trim / normal demo wastage,2026-06-11T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Mango Pulp,OPENING_BALANCE,26.11,Premium demo opening stock,2026-04-18T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Passion Fruit Pulp,OPENING_BALANCE,56.19,Premium demo opening stock,2026-05-24T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Lime Juice,OPENING_BALANCE,96.66,Premium demo opening stock,2026-06-03T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Lime Juice,WASTAGE,-1.49,Prep trim / normal demo wastage,2026-06-19T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Ginger Syrup,OPENING_BALANCE,98.72,Premium demo opening stock,2026-04-21T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Hibiscus Syrup,OPENING_BALANCE,102.98,Premium demo opening stock,2026-06-18T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Sparkling Water,OPENING_BALANCE,117.66,Premium demo opening stock,2026-05-02T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Sparkling Water,WASTAGE,-0.97,Prep trim / normal demo wastage,2026-06-21T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Chocolate,OPENING_BALANCE,79.35,Premium demo opening stock,2026-05-06T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Chocolate,WASTAGE,-2.08,Prep trim / normal demo wastage,2026-06-17T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Dates,OPENING_BALANCE,101.36,Premium demo opening stock,2026-05-13T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Sugar,OPENING_BALANCE,53.44,Premium demo opening stock,2026-05-09T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Flour,OPENING_BALANCE,39.15,Premium demo opening stock,2026-04-02T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Flour,WASTAGE,-2.29,Prep trim / normal demo wastage,2026-06-23T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Cooking Oil,OPENING_BALANCE,96.26,Premium demo opening stock,2026-06-09T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Salt,OPENING_BALANCE,51.68,Premium demo opening stock,2026-06-11T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Black Pepper,OPENING_BALANCE,70.43,Premium demo opening stock,2026-05-13T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Garlic,OPENING_BALANCE,41.87,Premium demo opening stock,2026-05-13T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Onion,OPENING_BALANCE,106.45,Premium demo opening stock,2026-04-15T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Onion,WASTAGE,-1.67,Prep trim / normal demo wastage,2026-06-20T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Cucumber,OPENING_BALANCE,71.26,Premium demo opening stock,2026-04-24T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Basil,OPENING_BALANCE,95.54,Premium demo opening stock,2026-04-12T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Basil,WASTAGE,-2.42,Prep trim / normal demo wastage,2026-06-25T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Cranberry Juice,OPENING_BALANCE,76.07,Premium demo opening stock,2026-04-11T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Vanilla Syrup,OPENING_BALANCE,95.32,Premium demo opening stock,2026-04-04T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Oats,OPENING_BALANCE,34.98,Premium demo opening stock,2026-06-13T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Bananas,OPENING_BALANCE,58.09,Premium demo opening stock,2026-06-15T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Bananas,WASTAGE,-1.49,Prep trim / normal demo wastage,2026-06-28T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Mini Dessert Base,OPENING_BALANCE,56.24,Premium demo opening stock,2026-04-26T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Packaging Box,OPENING_BALANCE,66.85,Premium demo opening stock,2026-05-10T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Napkins,OPENING_BALANCE,44.63,Premium demo opening stock,2026-05-19T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Napkins,WASTAGE,-1.73,Prep trim / normal demo wastage,2026-06-19T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,ROOFTOP_BAR,Cleaning Solution,OPENING_BALANCE,117.00,Premium demo opening stock,2026-06-18T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Receipt Paper Roll,OPENING_BALANCE,72.39,Premium demo opening stock,2026-05-18T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,ROOFTOP_BAR,Receipt Paper Roll,WASTAGE,-1.34,Prep trim / normal demo wastage,2026-06-28T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Chicken Breast,OPENING_BALANCE,58.40,Premium demo opening stock,2026-05-14T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Chicken Breast,WASTAGE,-0.45,Prep trim / normal demo wastage,2026-06-19T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Beef Fillet,OPENING_BALANCE,67.77,Premium demo opening stock,2026-06-06T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Beef Fillet,WASTAGE,-1.98,Prep trim / normal demo wastage,2026-06-13T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Tilapia Fillet,OPENING_BALANCE,58.77,Premium demo opening stock,2026-05-13T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Tilapia Fillet,WASTAGE,-2.10,Prep trim / normal demo wastage,2026-06-20T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Mushrooms,OPENING_BALANCE,21.40,Premium demo opening stock,2026-06-15T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Mushrooms,WASTAGE,-1.17,Prep trim / normal demo wastage,2026-06-26T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Eggplant,OPENING_BALANCE,44.70,Premium demo opening stock,2026-06-18T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Eggplant,WASTAGE,-1.54,Prep trim / normal demo wastage,2026-06-27T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Tomatoes,OPENING_BALANCE,109.80,Premium demo opening stock,2026-06-16T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Tomatoes,WASTAGE,-2.36,Prep trim / normal demo wastage,2026-06-17T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Avocado,OPENING_BALANCE,97.83,Premium demo opening stock,2026-04-02T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Plantain,OPENING_BALANCE,87.08,Premium demo opening stock,2026-05-09T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Plantain,WASTAGE,-0.92,Prep trim / normal demo wastage,2026-06-26T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Lettuce,OPENING_BALANCE,70.26,Premium demo opening stock,2026-05-17T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Herbs Mix,OPENING_BALANCE,100.13,Premium demo opening stock,2026-04-01T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Herbs Mix,WASTAGE,-1.08,Prep trim / normal demo wastage,2026-06-18T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Potatoes,OPENING_BALANCE,26.35,Premium demo opening stock,2026-04-19T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Potatoes,WASTAGE,-2.37,Prep trim / normal demo wastage,2026-06-11T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Flatbread Dough,OPENING_BALANCE,34.45,Premium demo opening stock,2026-04-04T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Flatbread Dough,WASTAGE,-0.74,Prep trim / normal demo wastage,2026-06-29T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Pasta,OPENING_BALANCE,91.35,Premium demo opening stock,2026-06-20T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Pasta,WASTAGE,-0.31,Prep trim / normal demo wastage,2026-06-15T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Rice,OPENING_BALANCE,94.52,Premium demo opening stock,2026-06-20T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Cheese,OPENING_BALANCE,30.37,Premium demo opening stock,2026-05-23T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Yoghurt,OPENING_BALANCE,33.99,Premium demo opening stock,2026-04-08T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Yoghurt,WASTAGE,-2.16,Prep trim / normal demo wastage,2026-06-11T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Cream,OPENING_BALANCE,99.19,Premium demo opening stock,2026-04-27T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Cream,WASTAGE,-0.33,Prep trim / normal demo wastage,2026-06-22T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Coffee Beans,OPENING_BALANCE,86.77,Premium demo opening stock,2026-04-09T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Tea Leaves,OPENING_BALANCE,62.41,Premium demo opening stock,2026-04-27T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Tea Leaves,WASTAGE,-1.03,Prep trim / normal demo wastage,2026-06-21T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Mango Pulp,OPENING_BALANCE,62.35,Premium demo opening stock,2026-05-19T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Passion Fruit Pulp,OPENING_BALANCE,30.60,Premium demo opening stock,2026-05-20T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Lime Juice,OPENING_BALANCE,108.94,Premium demo opening stock,2026-04-23T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Ginger Syrup,OPENING_BALANCE,52.25,Premium demo opening stock,2026-05-02T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Ginger Syrup,WASTAGE,-0.32,Prep trim / normal demo wastage,2026-06-23T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Hibiscus Syrup,OPENING_BALANCE,72.57,Premium demo opening stock,2026-05-05T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Hibiscus Syrup,WASTAGE,-1.14,Prep trim / normal demo wastage,2026-06-11T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Sparkling Water,OPENING_BALANCE,90.64,Premium demo opening stock,2026-06-10T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Chocolate,OPENING_BALANCE,106.66,Premium demo opening stock,2026-05-13T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Dates,OPENING_BALANCE,69.13,Premium demo opening stock,2026-04-15T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Sugar,OPENING_BALANCE,50.20,Premium demo opening stock,2026-04-18T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Sugar,WASTAGE,-2.27,Prep trim / normal demo wastage,2026-06-15T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Flour,OPENING_BALANCE,99.09,Premium demo opening stock,2026-04-22T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Cooking Oil,OPENING_BALANCE,109.91,Premium demo opening stock,2026-05-22T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Salt,OPENING_BALANCE,66.91,Premium demo opening stock,2026-05-24T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Salt,WASTAGE,-1.15,Prep trim / normal demo wastage,2026-06-19T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Black Pepper,OPENING_BALANCE,91.79,Premium demo opening stock,2026-05-09T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Garlic,OPENING_BALANCE,36.27,Premium demo opening stock,2026-05-13T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Onion,OPENING_BALANCE,41.30,Premium demo opening stock,2026-05-04T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Cucumber,OPENING_BALANCE,90.47,Premium demo opening stock,2026-04-01T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Basil,OPENING_BALANCE,52.55,Premium demo opening stock,2026-06-04T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Basil,WASTAGE,-2.23,Prep trim / normal demo wastage,2026-06-28T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,GARDEN_CAFE,Cranberry Juice,OPENING_BALANCE,74.60,Premium demo opening stock,2026-05-13T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Vanilla Syrup,OPENING_BALANCE,51.59,Premium demo opening stock,2026-04-13T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Oats,OPENING_BALANCE,107.60,Premium demo opening stock,2026-06-15T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Bananas,OPENING_BALANCE,90.51,Premium demo opening stock,2026-05-22T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Mini Dessert Base,OPENING_BALANCE,85.24,Premium demo opening stock,2026-05-24T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Packaging Box,OPENING_BALANCE,64.23,Premium demo opening stock,2026-04-26T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Napkins,OPENING_BALANCE,108.79,Premium demo opening stock,2026-06-10T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Cleaning Solution,OPENING_BALANCE,75.72,Premium demo opening stock,2026-04-28T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Receipt Paper Roll,OPENING_BALANCE,44.67,Premium demo opening stock,2026-05-23T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,GARDEN_CAFE,Receipt Paper Roll,WASTAGE,-1.88,Prep trim / normal demo wastage,2026-06-29T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Chicken Breast,OPENING_BALANCE,90.83,Premium demo opening stock,2026-06-13T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Beef Fillet,OPENING_BALANCE,63.23,Premium demo opening stock,2026-05-08T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Tilapia Fillet,OPENING_BALANCE,103.96,Premium demo opening stock,2026-06-15T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Mushrooms,OPENING_BALANCE,21.32,Premium demo opening stock,2026-05-29T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Mushrooms,WASTAGE,-1.33,Prep trim / normal demo wastage,2026-06-12T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Eggplant,OPENING_BALANCE,58.20,Premium demo opening stock,2026-05-07T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Tomatoes,OPENING_BALANCE,60.76,Premium demo opening stock,2026-05-03T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Tomatoes,WASTAGE,-0.31,Prep trim / normal demo wastage,2026-06-22T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Avocado,OPENING_BALANCE,112.15,Premium demo opening stock,2026-05-08T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Avocado,WASTAGE,-1.79,Prep trim / normal demo wastage,2026-06-24T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Plantain,OPENING_BALANCE,85.30,Premium demo opening stock,2026-05-03T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Lettuce,OPENING_BALANCE,87.05,Premium demo opening stock,2026-05-09T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Herbs Mix,OPENING_BALANCE,37.66,Premium demo opening stock,2026-05-24T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Potatoes,OPENING_BALANCE,29.93,Premium demo opening stock,2026-05-21T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Flatbread Dough,OPENING_BALANCE,41.57,Premium demo opening stock,2026-05-10T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Flatbread Dough,WASTAGE,-1.47,Prep trim / normal demo wastage,2026-06-21T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Pasta,OPENING_BALANCE,112.53,Premium demo opening stock,2026-06-03T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Rice,OPENING_BALANCE,55.25,Premium demo opening stock,2026-06-19T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Rice,WASTAGE,-2.02,Prep trim / normal demo wastage,2026-06-16T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cheese,OPENING_BALANCE,112.26,Premium demo opening stock,2026-06-01T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Yoghurt,OPENING_BALANCE,119.53,Premium demo opening stock,2026-06-10T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Yoghurt,WASTAGE,-1.79,Prep trim / normal demo wastage,2026-06-11T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cream,OPENING_BALANCE,31.48,Premium demo opening stock,2026-04-20T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cream,WASTAGE,-1.08,Prep trim / normal demo wastage,2026-06-15T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Coffee Beans,OPENING_BALANCE,116.61,Premium demo opening stock,2026-05-10T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Coffee Beans,WASTAGE,-1.79,Prep trim / normal demo wastage,2026-06-29T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Tea Leaves,OPENING_BALANCE,34.30,Premium demo opening stock,2026-04-03T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Mango Pulp,OPENING_BALANCE,43.28,Premium demo opening stock,2026-05-27T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Mango Pulp,WASTAGE,-0.90,Prep trim / normal demo wastage,2026-06-25T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Passion Fruit Pulp,OPENING_BALANCE,31.63,Premium demo opening stock,2026-05-18T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Lime Juice,OPENING_BALANCE,117.63,Premium demo opening stock,2026-04-25T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Lime Juice,WASTAGE,-1.26,Prep trim / normal demo wastage,2026-06-15T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Ginger Syrup,OPENING_BALANCE,31.84,Premium demo opening stock,2026-05-09T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Ginger Syrup,WASTAGE,-0.95,Prep trim / normal demo wastage,2026-06-25T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Hibiscus Syrup,OPENING_BALANCE,71.46,Premium demo opening stock,2026-04-10T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Sparkling Water,OPENING_BALANCE,113.96,Premium demo opening stock,2026-04-09T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Chocolate,OPENING_BALANCE,117.67,Premium demo opening stock,2026-04-08T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Chocolate,WASTAGE,-0.99,Prep trim / normal demo wastage,2026-06-20T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Dates,OPENING_BALANCE,98.40,Premium demo opening stock,2026-05-18T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Sugar,OPENING_BALANCE,70.70,Premium demo opening stock,2026-04-03T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Sugar,WASTAGE,-2.14,Prep trim / normal demo wastage,2026-06-23T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Flour,OPENING_BALANCE,109.16,Premium demo opening stock,2026-06-14T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cooking Oil,OPENING_BALANCE,59.55,Premium demo opening stock,2026-05-26T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cooking Oil,WASTAGE,-2.05,Prep trim / normal demo wastage,2026-06-25T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Salt,OPENING_BALANCE,107.61,Premium demo opening stock,2026-04-02T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Black Pepper,OPENING_BALANCE,50.52,Premium demo opening stock,2026-06-18T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Garlic,OPENING_BALANCE,99.87,Premium demo opening stock,2026-05-29T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Onion,OPENING_BALANCE,27.30,Premium demo opening stock,2026-06-06T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Onion,WASTAGE,-1.71,Prep trim / normal demo wastage,2026-06-17T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cucumber,OPENING_BALANCE,98.90,Premium demo opening stock,2026-05-23T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Basil,OPENING_BALANCE,47.46,Premium demo opening stock,2026-04-16T12:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Basil,WASTAGE,-0.76,Prep trim / normal demo wastage,2026-06-13T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cranberry Juice,OPENING_BALANCE,54.28,Premium demo opening stock,2026-06-16T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Vanilla Syrup,OPENING_BALANCE,97.73,Premium demo opening stock,2026-05-10T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Vanilla Syrup,WASTAGE,-2.25,Prep trim / normal demo wastage,2026-06-12T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Oats,OPENING_BALANCE,109.86,Premium demo opening stock,2026-06-04T10:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Bananas,OPENING_BALANCE,30.01,Premium demo opening stock,2026-04-08T09:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Bananas,WASTAGE,-2.03,Prep trim / normal demo wastage,2026-06-23T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Mini Dessert Base,OPENING_BALANCE,49.67,Premium demo opening stock,2026-04-05T08:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Mini Dessert Base,WASTAGE,-1.69,Prep trim / normal demo wastage,2026-06-13T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Packaging Box,OPENING_BALANCE,43.76,Premium demo opening stock,2026-04-23T07:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Packaging Box,WASTAGE,-0.85,Prep trim / normal demo wastage,2026-06-10T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Napkins,OPENING_BALANCE,84.81,Premium demo opening stock,2026-06-10T11:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Napkins,WASTAGE,-1.16,Prep trim / normal demo wastage,2026-06-16T09:00:00Z,"{""severity"": ""normal""}",chef@nimbus.demo
+nimbus,EVENTS_KITCHEN,Cleaning Solution,OPENING_BALANCE,60.52,Premium demo opening stock,2026-05-28T13:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo
+nimbus,EVENTS_KITCHEN,Receipt Paper Roll,OPENING_BALANCE,95.72,Premium demo opening stock,2026-04-22T06:00:00Z,"{""demo"": ""opening""}",stockmanager@nimbus.demo

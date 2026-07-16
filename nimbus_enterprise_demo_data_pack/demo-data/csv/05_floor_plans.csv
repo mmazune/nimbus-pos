@@ -1,0 +1,10 @@
+organizationSlug,branchCode,name,data,isActive,metadata
+nimbus,TAPAS_DOWNTOWN,Main Dining,"{""layout"": ""demo-grid"", ""branch"": ""TAPAS_DOWNTOWN"", ""zones"": [""Main Dining"", ""Patio"", ""Private Room""]}",true,"{""demo"": true}"
+nimbus,TAPAS_DOWNTOWN,Patio,"{""layout"": ""demo-grid"", ""branch"": ""TAPAS_DOWNTOWN"", ""zones"": [""Main Dining"", ""Patio"", ""Private Room""]}",true,"{""demo"": true}"
+nimbus,TAPAS_DOWNTOWN,Private Room,"{""layout"": ""demo-grid"", ""branch"": ""TAPAS_DOWNTOWN"", ""zones"": [""Main Dining"", ""Patio"", ""Private Room""]}",true,"{""demo"": true}"
+nimbus,ROOFTOP_BAR,Sky Deck,"{""layout"": ""demo-grid"", ""branch"": ""ROOFTOP_BAR"", ""zones"": [""Sky Deck"", ""Lounge""]}",true,"{""demo"": true}"
+nimbus,ROOFTOP_BAR,Lounge,"{""layout"": ""demo-grid"", ""branch"": ""ROOFTOP_BAR"", ""zones"": [""Sky Deck"", ""Lounge""]}",true,"{""demo"": true}"
+nimbus,GARDEN_CAFE,Garden Room,"{""layout"": ""demo-grid"", ""branch"": ""GARDEN_CAFE"", ""zones"": [""Garden Room"", ""Terrace""]}",true,"{""demo"": true}"
+nimbus,GARDEN_CAFE,Terrace,"{""layout"": ""demo-grid"", ""branch"": ""GARDEN_CAFE"", ""zones"": [""Garden Room"", ""Terrace""]}",true,"{""demo"": true}"
+nimbus,EVENTS_KITCHEN,Banquet Hall,"{""layout"": ""demo-grid"", ""branch"": ""EVENTS_KITCHEN"", ""zones"": [""Banquet Hall"", ""Breakout Room""]}",true,"{""demo"": true}"
+nimbus,EVENTS_KITCHEN,Breakout Room,"{""layout"": ""demo-grid"", ""branch"": ""EVENTS_KITCHEN"", ""zones"": [""Banquet Hall"", ""Breakout Room""]}",true,"{""demo"": true}"

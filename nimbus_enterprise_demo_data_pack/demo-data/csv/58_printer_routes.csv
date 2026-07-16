@@ -1,0 +1,13 @@
+branchCode,printerActivationCode,routeType,station,enabled,priority,metadata
+TAPAS_DOWNTOWN,ACT-TAPAS_DOWNTOWN-PRN1,RECEIPT,RECEIPT,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+TAPAS_DOWNTOWN,ACT-TAPAS_DOWNTOWN-PRN1,KITCHEN,KITCHEN,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+TAPAS_DOWNTOWN,ACT-TAPAS_DOWNTOWN-PRN1,BAR,BAR,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+ROOFTOP_BAR,ACT-ROOFTOP_BAR-PRN1,RECEIPT,RECEIPT,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+ROOFTOP_BAR,ACT-ROOFTOP_BAR-PRN1,KITCHEN,KITCHEN,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+ROOFTOP_BAR,ACT-ROOFTOP_BAR-PRN1,BAR,BAR,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+GARDEN_CAFE,ACT-GARDEN_CAFE-PRN1,RECEIPT,RECEIPT,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+GARDEN_CAFE,ACT-GARDEN_CAFE-PRN1,KITCHEN,KITCHEN,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+GARDEN_CAFE,ACT-GARDEN_CAFE-PRN1,BAR,BAR,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+EVENTS_KITCHEN,ACT-EVENTS_KITCHEN-PRN1,RECEIPT,RECEIPT,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+EVENTS_KITCHEN,ACT-EVENTS_KITCHEN-PRN1,KITCHEN,KITCHEN,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"
+EVENTS_KITCHEN,ACT-EVENTS_KITCHEN-PRN1,BAR,BAR,true,1,"{""metadataOnly"": true, ""noPrintDriver"": true}"

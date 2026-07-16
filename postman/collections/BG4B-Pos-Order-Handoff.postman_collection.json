@@ -1,1829 +1,1829 @@
 {
-    "info": {
-        "name": "BG4.B - POS Order Handoff (Split / Merge / Transfer / Move)",
-        "description": "BG4.B collection. Validates the six new POS order handoff endpoints introduced in `apps/api/src/modules/pos-handoff`:\n\n- `POST /api/pos/orders/:id/split-bill` — non-physical bill split (EQUAL or CUSTOM). Persists groups in `Order.metadata.splitBill`. No item / status mutation. Audits `ORDER_SPLIT_BILL`.\n- `POST /api/pos/orders/:id/split-items` — physical split. Creates a child `Order` in NEW status with `splitFromOrderId = source.id`. Reparents whole rows or splits a row when partial. Source KDS tickets are PRESERVED and metadata-marked (`bg4bSupersededBy`). Child order is NOT auto-republished — operator must POST `/:id/send` explicitly. Audits `ORDER_SPLIT_ITEMS` + `ORDER_SPLIT_CHILD_CREATED`.\n- `POST /api/pos/orders/merge` — absorb source into target. Source becomes `VOIDED` with `mergedIntoOrderId = target.id`. Blocks (409 `MERGE_SOURCE_HAS_PAYMENTS`) if source has any PENDING/COMPLETED payments. Source KDS tickets metadata-marked (`bg4bMergedInto`). Audits `ORDER_MERGED` once on each side.\n- `POST /api/pos/orders/:id/transfer-table` — reassigns `Order.tableId`. Audits `ORDER_TRANSFERRED_TABLE`.\n- `POST /api/pos/orders/:id/transfer-server` — reassigns `Order.userId`. Validates target user has an ACTIVE Membership in the same branch. Audits `ORDER_TRANSFERRED_SERVER`.\n- `POST /api/pos/orders/:id/move-items` — partial transfer of items between two open orders. Mirrors split-items semantics; KDS tickets metadata-marked (`bg4bItemsMovedTo`). Audits `ORDER_ITEMS_MOVED` once on each side.\n\nAll six endpoints are wrapped via the BG3 reliability facade (`Bg3ReliabilityService.guard`) with `category: null` and `idempotencyMode: 'optional'`. Replays of `Idempotency-Key` return the exact cached response body.\n\nLocked rules verified:\n- `/api/auth/me` remains canonical context source (R14).\n- `POST /api/auth/login` accepts [200, 201] (R12).\n- New permissions: `pos:order:split | pos:order:merge | pos:order:transfer | pos:order:move-items`.\n- Owner / Manager / Cashier get all four. Waiter gets only `transfer` + `move-items` (split + merge are cashier-scope). **Chef intentionally denied** to verify role gating still enforces 403.\n- Public diner payments still PENDING (out of scope).\n- PesaPal owner-SaaS-only (out of scope).\n- No hotel structures.\n- Schema additive only: two nullable self-FKs on `Order` (`splitFromOrderId`, `mergedIntoOrderId`) + 2 indexes. No destructive change.\n- KDS strategy: PRESERVE-AND-MARK source tickets; destination requires explicit re-`/send`.\n\n⚠️ **Re-import required after any script change.** Postman caches pre-request and test scripts at import time.",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  "info": {
+    "name": "BG4.B - POS Order Handoff (Split / Merge / Transfer / Move)",
+    "description": "BG4.B collection. Validates the six new POS order handoff endpoints introduced in `apps/api/src/modules/pos-handoff`:\n\n- `POST /api/pos/orders/:id/split-bill` — non-physical bill split (EQUAL or CUSTOM). Persists groups in `Order.metadata.splitBill`. No item / status mutation. Audits `ORDER_SPLIT_BILL`.\n- `POST /api/pos/orders/:id/split-items` — physical split. Creates a child `Order` in NEW status with `splitFromOrderId = source.id`. Reparents whole rows or splits a row when partial. Source KDS tickets are PRESERVED and metadata-marked (`bg4bSupersededBy`). Child order is NOT auto-republished — operator must POST `/:id/send` explicitly. Audits `ORDER_SPLIT_ITEMS` + `ORDER_SPLIT_CHILD_CREATED`.\n- `POST /api/pos/orders/merge` — absorb source into target. Source becomes `VOIDED` with `mergedIntoOrderId = target.id`. Blocks (409 `MERGE_SOURCE_HAS_PAYMENTS`) if source has any PENDING/COMPLETED payments. Source KDS tickets metadata-marked (`bg4bMergedInto`). Audits `ORDER_MERGED` once on each side.\n- `POST /api/pos/orders/:id/transfer-table` — reassigns `Order.tableId`. Audits `ORDER_TRANSFERRED_TABLE`.\n- `POST /api/pos/orders/:id/transfer-server` — reassigns `Order.userId`. Validates target user has an ACTIVE Membership in the same branch. Audits `ORDER_TRANSFERRED_SERVER`.\n- `POST /api/pos/orders/:id/move-items` — partial transfer of items between two open orders. Mirrors split-items semantics; KDS tickets metadata-marked (`bg4bItemsMovedTo`). Audits `ORDER_ITEMS_MOVED` once on each side.\n\nAll six endpoints are wrapped via the BG3 reliability facade (`Bg3ReliabilityService.guard`) with `category: null` and `idempotencyMode: 'optional'`. Replays of `Idempotency-Key` return the exact cached response body.\n\nLocked rules verified:\n- `/api/auth/me` remains canonical context source (R14).\n- `POST /api/auth/login` accepts [200, 201] (R12).\n- New permissions: `pos:order:split | pos:order:merge | pos:order:transfer | pos:order:move-items`.\n- Owner / Manager / Cashier get all four. Waiter gets only `transfer` + `move-items` (split + merge are cashier-scope). **Chef intentionally denied** to verify role gating still enforces 403.\n- Public diner payments still PENDING (out of scope).\n- PesaPal owner-SaaS-only (out of scope).\n- No hotel structures.\n- Schema additive only: two nullable self-FKs on `Order` (`splitFromOrderId`, `mergedIntoOrderId`) + 2 indexes. No destructive change.\n- KDS strategy: PRESERVE-AND-MARK source tickets; destination requires explicit re-`/send`.\n\n⚠️ **Re-import required after any script change.** Postman caches pre-request and test scripts at import time.\n\n## Waiter MVP note (2026-05-18)\nWaiter role permissions pos:order:transfer and pos:order:move-items were revoked. All six handoff endpoints (split-bill, split-items, merge, transfer-table, transfer-server, move-items) now 403 for waiter-only actors. Owner/Manager/Cashier behaviour unchanged. Denial coverage lives in WAITER-MVP-Role-Workflow.postman_collection.json folder H.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
     },
-    "variable": [
+    {
+      "key": "ownerEmail",
+      "value": "owner@demo.local"
+    },
+    {
+      "key": "ownerPassword",
+      "value": "Owner#123"
+    },
+    {
+      "key": "chefEmail",
+      "value": "chef@demo.local"
+    },
+    {
+      "key": "chefPassword",
+      "value": "Chef#123"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "chefToken",
+      "value": ""
+    },
+    {
+      "key": "orgId",
+      "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
+    },
+    {
+      "key": "menuItemId",
+      "value": ""
+    },
+    {
+      "key": "tableId",
+      "value": ""
+    },
+    {
+      "key": "altTableId",
+      "value": ""
+    },
+    {
+      "key": "altUserId",
+      "value": ""
+    },
+    {
+      "key": "bg4bSuffix",
+      "value": ""
+    },
+    {
+      "key": "idemKeySplitItems",
+      "value": ""
+    },
+    {
+      "key": "idemKeyMerge",
+      "value": ""
+    },
+    {
+      "key": "fixtureSplitOrderId",
+      "value": ""
+    },
+    {
+      "key": "fixtureSplitItemId",
+      "value": ""
+    },
+    {
+      "key": "fixtureSplitItemsOrderId",
+      "value": ""
+    },
+    {
+      "key": "fixtureSplitItemsItemId",
+      "value": ""
+    },
+    {
+      "key": "fixtureMergeSourceId",
+      "value": ""
+    },
+    {
+      "key": "fixtureMergeTargetId",
+      "value": ""
+    },
+    {
+      "key": "fixtureTransferTableOrderId",
+      "value": ""
+    },
+    {
+      "key": "fixtureTransferServerOrderId",
+      "value": ""
+    },
+    {
+      "key": "fixtureMoveSourceId",
+      "value": ""
+    },
+    {
+      "key": "fixtureMoveSourceItemId",
+      "value": ""
+    },
+    {
+      "key": "fixtureMoveTargetId",
+      "value": ""
+    },
+    {
+      "key": "splitChildOrderId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// BG4.B canonical pre-request (R3/R4/R5/R12/R14/R16). Mirrors BG4.A.",
+          "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+          "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
+          "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
+          "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+          "const isPublicAuth = /\\/api\\/auth\\/(login|forgot-password|reset-password|invitations\\/accept|quick-pin-login)/.test(url);",
+          "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+          "const isPublic = isPublicAuth || isHealth;",
+          "function getVar(k) {",
+          "  if (pm.environment && pm.environment.name) {",
+          "    const ev = pm.environment.get(k);",
+          "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+          "  }",
+          "  return pm.collectionVariables.get(k);",
+          "}",
+          "function setVar(k, v) {",
+          "  if (v === undefined || v === null || v === '') return;",
+          "  pm.collectionVariables.set(k, v);",
+          "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+          "}",
+          "function isJwtFresh(tok) {",
+          "  try {",
+          "    if (!tok || typeof tok !== 'string') return false;",
+          "    const parts = tok.split('.'); if (parts.length < 2) return false;",
+          "    const b = parts[1].replace(/-/g, '+').replace(/_/g, '/');",
+          "    const pad = b + '==='.slice((b.length + 3) % 4);",
+          "    const payload = JSON.parse((typeof Buffer !== 'undefined' ? Buffer.from(pad, 'base64').toString('utf8') : atob(pad)));",
+          "    return payload && payload.exp && (payload.exp * 1000 - Date.now()) > 60000;",
+          "  } catch (e) { return false; }",
+          "}",
+          "function ensureSuffix() {",
+          "  if (!getVar('bg4bSuffix')) {",
+          "    const s = String(Date.now()) + '-' + Math.floor(Math.random()*1e4);",
+          "    setVar('bg4bSuffix', s);",
+          "    setVar('idemKeySplitItems', 'bg4b-split-' + s);",
+          "    setVar('idemKeyMerge', 'bg4b-merge-' + s);",
+          "  }",
+          "}",
+          "function ensureToken() {",
+          "  return new Promise((resolve) => {",
+          "    const tok = getVar('accessToken');",
+          "    if (isPublic || (tok && tok.length >= 20 && isJwtFresh(tok))) return resolve();",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/login',",
+          "      method: 'POST',",
+          "      header: { 'Content-Type': 'application/json' },",
+          "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.accessToken) setVar('accessToken', j.accessToken);",
+          "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
+          "        } catch (e) { /* ignore */ }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "function ensureMeContext() {",
+          "  return new Promise((resolve) => {",
+          "    if (isPublic) return resolve();",
+          "    if (getVar('branchId') && getVar('orgId')) return resolve();",
+          "    const tok = getVar('accessToken');",
+          "    if (!tok) return resolve();",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/me',",
+          "      method: 'GET',",
+          "      header: { 'Authorization': 'Bearer ' + tok }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          if (j.context) {",
+          "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
+          "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
+          "          }",
+          "          if (Array.isArray(j.memberships) && j.memberships.length) {",
+          "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
+          "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
+          "          }",
+          "        } catch (e) { /* ignore */ }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "function ensureChefToken() {",
+          "  return new Promise((resolve) => {",
+          "    if (isPublic) return resolve();",
+          "    const tok = getVar('chefToken');",
+          "    if (tok && tok.length >= 20 && isJwtFresh(tok)) return resolve();",
+          "    const e = getVar('chefEmail') || 'chef@demo.local';",
+          "    const p = getVar('chefPassword') || 'Chef#123';",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/auth/login',",
+          "      method: 'POST',",
+          "      header: { 'Content-Type': 'application/json' },",
+          "      body: { mode: 'raw', raw: JSON.stringify({ email: e, password: p }) }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try { const j = res.json(); if (j.accessToken) setVar('chefToken', j.accessToken); } catch (e) { /* ignore */ }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "function ensureMenuItem() {",
+          "  return new Promise((resolve) => {",
+          "    if (isPublic) return resolve();",
+          "    if (getVar('menuItemId')) return resolve();",
+          "    const tok = getVar('accessToken');",
+          "    const branch = getVar('branchId');",
+          "    if (!tok || !branch) return resolve();",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/menu/catalog',",
+          "      method: 'GET',",
+          "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          const cats = Array.isArray(j) ? j : (j.categories || j.data || []);",
+          "          for (const c of cats) {",
+          "            const items = c.items || c.menuItems || [];",
+          "            if (items.length && items[0].id) { setVar('menuItemId', items[0].id); break; }",
+          "          }",
+          "          if (!getVar('menuItemId')) {",
+          "            // Fallback flat list",
+          "            const arr = j.items || j.menuItems || [];",
+          "            if (arr.length && arr[0].id) setVar('menuItemId', arr[0].id);",
+          "          }",
+          "        } catch (e) { /* ignore */ }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "function ensureTables() {",
+          "  return new Promise((resolve) => {",
+          "    if (isPublic) return resolve();",
+          "    if (getVar('tableId') && getVar('altTableId')) return resolve();",
+          "    const tok = getVar('accessToken');",
+          "    const branch = getVar('branchId');",
+          "    if (!tok || !branch) return resolve();",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/tables',",
+          "      method: 'GET',",
+          "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          const arr = Array.isArray(j) ? j : (j.data || j.items || []);",
+          "          if (arr[0] && arr[0].id) setVar('tableId', arr[0].id);",
+          "          if (arr[1] && arr[1].id) setVar('altTableId', arr[1].id);",
+          "        } catch (e) { /* ignore */ }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "function ensureAltUser() {",
+          "  return new Promise((resolve) => {",
+          "    if (isPublic) return resolve();",
+          "    if (getVar('altUserId')) return resolve();",
+          "    const tok = getVar('accessToken');",
+          "    const org = getVar('orgId');",
+          "    const branch = getVar('branchId');",
+          "    if (!tok || !org || !branch) return resolve();",
+          "    pm.sendRequest({",
+          "      url: baseUrl + '/api/orgs/' + org + '/branches/' + branch + '/memberships',",
+          "      method: 'GET',",
+          "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch }",
+          "    }, (err, res) => {",
+          "      if (!err && res) {",
+          "        try {",
+          "          const j = res.json();",
+          "          const arr = Array.isArray(j) ? j : (j.data || j.items || []);",
+          "          // Pick first ACTIVE membership whose userId is not the current owner.",
+          "          // We don't know the owner id here; the API will reject if invalid, so",
+          "          // we just pick the first non-Owner role membership.",
+          "          const m = arr.find((x) => x.status === 'ACTIVE' && x.user && x.user.email !== ownerEmail) || arr.find((x) => x.status === 'ACTIVE');",
+          "          if (m && m.userId) setVar('altUserId', m.userId);",
+          "        } catch (e) { /* ignore */ }",
+          "      }",
+          "      resolve();",
+          "    });",
+          "  });",
+          "}",
+          "ensureSuffix();",
+          "return ensureToken().then(ensureMeContext).then(ensureChefToken).then(ensureMenuItem).then(ensureTables).then(ensureAltUser).catch((e) => console.log('[bg4b prereq] chain error', e && e.message));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Read Me",
+      "item": [
         {
-            "key": "baseUrl",
-            "value": "http://localhost:3001"
-        },
-        {
-            "key": "ownerEmail",
-            "value": "owner@demo.local"
-        },
-        {
-            "key": "ownerPassword",
-            "value": "Owner#123"
-        },
-        {
-            "key": "chefEmail",
-            "value": "chef@demo.local"
-        },
-        {
-            "key": "chefPassword",
-            "value": "Chef#123"
-        },
-        {
-            "key": "accessToken",
-            "value": ""
-        },
-        {
-            "key": "refreshToken",
-            "value": ""
-        },
-        {
-            "key": "chefToken",
-            "value": ""
-        },
-        {
-            "key": "orgId",
-            "value": ""
-        },
-        {
-            "key": "branchId",
-            "value": ""
-        },
-        {
-            "key": "menuItemId",
-            "value": ""
-        },
-        {
-            "key": "tableId",
-            "value": ""
-        },
-        {
-            "key": "altTableId",
-            "value": ""
-        },
-        {
-            "key": "altUserId",
-            "value": ""
-        },
-        {
-            "key": "bg4bSuffix",
-            "value": ""
-        },
-        {
-            "key": "idemKeySplitItems",
-            "value": ""
-        },
-        {
-            "key": "idemKeyMerge",
-            "value": ""
-        },
-        {
-            "key": "fixtureSplitOrderId",
-            "value": ""
-        },
-        {
-            "key": "fixtureSplitItemId",
-            "value": ""
-        },
-        {
-            "key": "fixtureSplitItemsOrderId",
-            "value": ""
-        },
-        {
-            "key": "fixtureSplitItemsItemId",
-            "value": ""
-        },
-        {
-            "key": "fixtureMergeSourceId",
-            "value": ""
-        },
-        {
-            "key": "fixtureMergeTargetId",
-            "value": ""
-        },
-        {
-            "key": "fixtureTransferTableOrderId",
-            "value": ""
-        },
-        {
-            "key": "fixtureTransferServerOrderId",
-            "value": ""
-        },
-        {
-            "key": "fixtureMoveSourceId",
-            "value": ""
-        },
-        {
-            "key": "fixtureMoveSourceItemId",
-            "value": ""
-        },
-        {
-            "key": "fixtureMoveTargetId",
-            "value": ""
-        },
-        {
-            "key": "splitChildOrderId",
-            "value": ""
+          "name": "README - variables, run order, locked rules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "⚠️ **Re-import required after any script change.**\n\n## Run order (each folder is [STANDALONE] thanks to per-folder fixture creation)\n1. **A. Auth & Context Baseline** — login owner + canonical /api/auth/me + login chef.\n2. **B. Split Bill** — non-physical EQUAL split + CUSTOM-mismatch 400.\n3. **C. Split Items** — physical partial split + idempotency replay.\n4. **D. Merge Orders** — happy-path merge + 409 self-merge / payments-block.\n5. **E. Transfer Table** — happy-path table reassignment.\n6. **F. Transfer Server** — happy-path server reassignment + 403 invalid user.\n7. **G. Move Items** — happy-path cross-order item move.\n8. **H. Permission Denial — Chef** — chef → 403 on every handoff endpoint.\n9. **I. Edge Cases** — order-not-open conflict (409 `ORDER_NOT_OPEN_FOR_HANDOFF`).\n\n## Auto-populated variables\n- `accessToken`, `chefToken`, `orgId`, `branchId` (from login + /api/auth/me).\n- `bg4bSuffix`, `idemKeySplitItems`, `idemKeyMerge` (per-run).\n- `menuItemId` (auto-resolved via `GET /api/menu/items`).\n- `tableId`, `altTableId` (auto-resolved via `GET /api/tables`).\n- `altUserId` (auto-resolved via `GET /api/orgs/:o/branches/:b/memberships`).\n- `fixture*OrderId` and `fixture*ItemId` are written by each folder's first request (fixture creation).\n\n## Locked rules verified\n- `/api/auth/me` canonical (R14).\n- BG3 facade reused for all 6 endpoints (`category: null`, `idempotencyMode: 'optional'`).\n- New `pos:order:{split,merge,transfer,move-items}` perms; chef denied.\n- Schema additive only: two nullable self-FKs on `Order`.\n- KDS PRESERVE-AND-MARK; destination requires explicit `/send`.\n- Public diner payments still PENDING (untouched here).\n- PesaPal owner-SaaS-only (untouched here).\n- No hotel structures."
+          }
         }
-    ],
-    "event": [
+      ]
+    },
+    {
+      "name": "A. Auth & Context Baseline",
+      "item": [
         {
-            "listen": "prerequest",
-            "script": {
+          "name": "Login Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
                 "type": "text/javascript",
                 "exec": [
-                    "// BG4.B canonical pre-request (R3/R4/R5/R12/R14/R16). Mirrors BG4.A.",
-                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
-                    "const ownerEmail = pm.collectionVariables.get('ownerEmail') || 'owner@demo.local';",
-                    "const ownerPassword = pm.collectionVariables.get('ownerPassword') || 'Owner#123';",
-                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
-                    "const isPublicAuth = /\\/api\\/auth\\/(login|forgot-password|reset-password|invitations\\/accept|quick-pin-login)/.test(url);",
-                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
-                    "const isPublic = isPublicAuth || isHealth;",
-                    "function getVar(k) {",
-                    "  if (pm.environment && pm.environment.name) {",
-                    "    const ev = pm.environment.get(k);",
-                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
-                    "  }",
-                    "  return pm.collectionVariables.get(k);",
-                    "}",
-                    "function setVar(k, v) {",
-                    "  if (v === undefined || v === null || v === '') return;",
-                    "  pm.collectionVariables.set(k, v);",
-                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
-                    "}",
-                    "function isJwtFresh(tok) {",
-                    "  try {",
-                    "    if (!tok || typeof tok !== 'string') return false;",
-                    "    const parts = tok.split('.'); if (parts.length < 2) return false;",
-                    "    const b = parts[1].replace(/-/g, '+').replace(/_/g, '/');",
-                    "    const pad = b + '==='.slice((b.length + 3) % 4);",
-                    "    const payload = JSON.parse((typeof Buffer !== 'undefined' ? Buffer.from(pad, 'base64').toString('utf8') : atob(pad)));",
-                    "    return payload && payload.exp && (payload.exp * 1000 - Date.now()) > 60000;",
-                    "  } catch (e) { return false; }",
-                    "}",
-                    "function ensureSuffix() {",
-                    "  if (!getVar('bg4bSuffix')) {",
-                    "    const s = String(Date.now()) + '-' + Math.floor(Math.random()*1e4);",
-                    "    setVar('bg4bSuffix', s);",
-                    "    setVar('idemKeySplitItems', 'bg4b-split-' + s);",
-                    "    setVar('idemKeyMerge', 'bg4b-merge-' + s);",
-                    "  }",
-                    "}",
-                    "function ensureToken() {",
-                    "  return new Promise((resolve) => {",
-                    "    const tok = getVar('accessToken');",
-                    "    if (isPublic || (tok && tok.length >= 20 && isJwtFresh(tok))) return resolve();",
-                    "    pm.sendRequest({",
-                    "      url: baseUrl + '/api/auth/login',",
-                    "      method: 'POST',",
-                    "      header: { 'Content-Type': 'application/json' },",
-                    "      body: { mode: 'raw', raw: JSON.stringify({ email: ownerEmail, password: ownerPassword }) }",
-                    "    }, (err, res) => {",
-                    "      if (!err && res) {",
-                    "        try {",
-                    "          const j = res.json();",
-                    "          if (j.accessToken) setVar('accessToken', j.accessToken);",
-                    "          if (j.refreshToken) setVar('refreshToken', j.refreshToken);",
-                    "        } catch (e) { /* ignore */ }",
-                    "      }",
-                    "      resolve();",
-                    "    });",
-                    "  });",
-                    "}",
-                    "function ensureMeContext() {",
-                    "  return new Promise((resolve) => {",
-                    "    if (isPublic) return resolve();",
-                    "    if (getVar('branchId') && getVar('orgId')) return resolve();",
-                    "    const tok = getVar('accessToken');",
-                    "    if (!tok) return resolve();",
-                    "    pm.sendRequest({",
-                    "      url: baseUrl + '/api/auth/me',",
-                    "      method: 'GET',",
-                    "      header: { 'Authorization': 'Bearer ' + tok }",
-                    "    }, (err, res) => {",
-                    "      if (!err && res) {",
-                    "        try {",
-                    "          const j = res.json();",
-                    "          if (j.context) {",
-                    "            if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId);",
-                    "            if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId);",
-                    "          }",
-                    "          if (Array.isArray(j.memberships) && j.memberships.length) {",
-                    "            if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId);",
-                    "            if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId);",
-                    "          }",
-                    "        } catch (e) { /* ignore */ }",
-                    "      }",
-                    "      resolve();",
-                    "    });",
-                    "  });",
-                    "}",
-                    "function ensureChefToken() {",
-                    "  return new Promise((resolve) => {",
-                    "    if (isPublic) return resolve();",
-                    "    const tok = getVar('chefToken');",
-                    "    if (tok && tok.length >= 20 && isJwtFresh(tok)) return resolve();",
-                    "    const e = getVar('chefEmail') || 'chef@demo.local';",
-                    "    const p = getVar('chefPassword') || 'Chef#123';",
-                    "    pm.sendRequest({",
-                    "      url: baseUrl + '/api/auth/login',",
-                    "      method: 'POST',",
-                    "      header: { 'Content-Type': 'application/json' },",
-                    "      body: { mode: 'raw', raw: JSON.stringify({ email: e, password: p }) }",
-                    "    }, (err, res) => {",
-                    "      if (!err && res) {",
-                    "        try { const j = res.json(); if (j.accessToken) setVar('chefToken', j.accessToken); } catch (e) { /* ignore */ }",
-                    "      }",
-                    "      resolve();",
-                    "    });",
-                    "  });",
-                    "}",
-                    "function ensureMenuItem() {",
-                    "  return new Promise((resolve) => {",
-                    "    if (isPublic) return resolve();",
-                    "    if (getVar('menuItemId')) return resolve();",
-                    "    const tok = getVar('accessToken');",
-                    "    const branch = getVar('branchId');",
-                    "    if (!tok || !branch) return resolve();",
-                    "    pm.sendRequest({",
-                    "      url: baseUrl + '/api/menu/catalog',",
-                    "      method: 'GET',",
-                    "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch }",
-                    "    }, (err, res) => {",
-                    "      if (!err && res) {",
-                    "        try {",
-                    "          const j = res.json();",
-                    "          const cats = Array.isArray(j) ? j : (j.categories || j.data || []);",
-                    "          for (const c of cats) {",
-                    "            const items = c.items || c.menuItems || [];",
-                    "            if (items.length && items[0].id) { setVar('menuItemId', items[0].id); break; }",
-                    "          }",
-                    "          if (!getVar('menuItemId')) {",
-                    "            // Fallback flat list",
-                    "            const arr = j.items || j.menuItems || [];",
-                    "            if (arr.length && arr[0].id) setVar('menuItemId', arr[0].id);",
-                    "          }",
-                    "        } catch (e) { /* ignore */ }",
-                    "      }",
-                    "      resolve();",
-                    "    });",
-                    "  });",
-                    "}",
-                    "function ensureTables() {",
-                    "  return new Promise((resolve) => {",
-                    "    if (isPublic) return resolve();",
-                    "    if (getVar('tableId') && getVar('altTableId')) return resolve();",
-                    "    const tok = getVar('accessToken');",
-                    "    const branch = getVar('branchId');",
-                    "    if (!tok || !branch) return resolve();",
-                    "    pm.sendRequest({",
-                    "      url: baseUrl + '/api/tables',",
-                    "      method: 'GET',",
-                    "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch }",
-                    "    }, (err, res) => {",
-                    "      if (!err && res) {",
-                    "        try {",
-                    "          const j = res.json();",
-                    "          const arr = Array.isArray(j) ? j : (j.data || j.items || []);",
-                    "          if (arr[0] && arr[0].id) setVar('tableId', arr[0].id);",
-                    "          if (arr[1] && arr[1].id) setVar('altTableId', arr[1].id);",
-                    "        } catch (e) { /* ignore */ }",
-                    "      }",
-                    "      resolve();",
-                    "    });",
-                    "  });",
-                    "}",
-                    "function ensureAltUser() {",
-                    "  return new Promise((resolve) => {",
-                    "    if (isPublic) return resolve();",
-                    "    if (getVar('altUserId')) return resolve();",
-                    "    const tok = getVar('accessToken');",
-                    "    const org = getVar('orgId');",
-                    "    const branch = getVar('branchId');",
-                    "    if (!tok || !org || !branch) return resolve();",
-                    "    pm.sendRequest({",
-                    "      url: baseUrl + '/api/orgs/' + org + '/branches/' + branch + '/memberships',",
-                    "      method: 'GET',",
-                    "      header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch }",
-                    "    }, (err, res) => {",
-                    "      if (!err && res) {",
-                    "        try {",
-                    "          const j = res.json();",
-                    "          const arr = Array.isArray(j) ? j : (j.data || j.items || []);",
-                    "          // Pick first ACTIVE membership whose userId is not the current owner.",
-                    "          // We don't know the owner id here; the API will reject if invalid, so",
-                    "          // we just pick the first non-Owner role membership.",
-                    "          const m = arr.find((x) => x.status === 'ACTIVE' && x.user && x.user.email !== ownerEmail) || arr.find((x) => x.status === 'ACTIVE');",
-                    "          if (m && m.userId) setVar('altUserId', m.userId);",
-                    "        } catch (e) { /* ignore */ }",
-                    "      }",
-                    "      resolve();",
-                    "    });",
-                    "  });",
-                    "}",
-                    "ensureSuffix();",
-                    "return ensureToken().then(ensureMeContext).then(ensureChefToken).then(ensureMenuItem).then(ensureTables).then(ensureAltUser).catch((e) => console.log('[bg4b prereq] chain error', e && e.message));"
+                  "const body = pm.response.json();",
+                  "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "const envActive = pm.environment && pm.environment.name;",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "if (envActive) pm.environment.set('accessToken', body.accessToken);",
+                  "if (body.refreshToken) { pm.collectionVariables.set('refreshToken', body.refreshToken); if (envActive) pm.environment.set('refreshToken', body.refreshToken); }"
                 ]
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/auth/me (canonical context)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const envActive = pm.environment && pm.environment.name;",
+                  "function setBoth(k,v){ if(v===undefined||v===null||v==='') return; pm.collectionVariables.set(k,v); if(envActive) pm.environment.set(k,v); }",
+                  "if (body.context && body.context.defaultBranchId) setBoth('branchId', body.context.defaultBranchId);",
+                  "if (body.context && body.context.defaultOrganizationId) setBoth('orgId', body.context.defaultOrganizationId);",
+                  "pm.test('Has branchId', () => pm.expect(pm.collectionVariables.get('branchId')).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          }
         }
-    ],
-    "item": [
+      ]
+    },
+    {
+      "name": "B. Split Bill",
+      "item": [
         {
-            "name": "00 Read Me",
-            "item": [
-                {
-                    "name": "README - variables, run order, locked rules",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/health",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "health"
-                            ]
-                        },
-                        "description": "⚠️ **Re-import required after any script change.**\n\n## Run order (each folder is [STANDALONE] thanks to per-folder fixture creation)\n1. **A. Auth & Context Baseline** — login owner + canonical /api/auth/me + login chef.\n2. **B. Split Bill** — non-physical EQUAL split + CUSTOM-mismatch 400.\n3. **C. Split Items** — physical partial split + idempotency replay.\n4. **D. Merge Orders** — happy-path merge + 409 self-merge / payments-block.\n5. **E. Transfer Table** — happy-path table reassignment.\n6. **F. Transfer Server** — happy-path server reassignment + 403 invalid user.\n7. **G. Move Items** — happy-path cross-order item move.\n8. **H. Permission Denial — Chef** — chef → 403 on every handoff endpoint.\n9. **I. Edge Cases** — order-not-open conflict (409 `ORDER_NOT_OPEN_FOR_HANDOFF`).\n\n## Auto-populated variables\n- `accessToken`, `chefToken`, `orgId`, `branchId` (from login + /api/auth/me).\n- `bg4bSuffix`, `idemKeySplitItems`, `idemKeyMerge` (per-run).\n- `menuItemId` (auto-resolved via `GET /api/menu/items`).\n- `tableId`, `altTableId` (auto-resolved via `GET /api/tables`).\n- `altUserId` (auto-resolved via `GET /api/orgs/:o/branches/:b/memberships`).\n- `fixture*OrderId` and `fixture*ItemId` are written by each folder's first request (fixture creation).\n\n## Locked rules verified\n- `/api/auth/me` canonical (R14).\n- BG3 facade reused for all 6 endpoints (`category: null`, `idempotencyMode: 'optional'`).\n- New `pos:order:{split,merge,transfer,move-items}` perms; chef denied.\n- Schema additive only: two nullable self-FKs on `Order`.\n- KDS PRESERVE-AND-MARK; destination requires explicit `/send`.\n- Public diner payments still PENDING (untouched here).\n- PesaPal owner-SaaS-only (untouched here).\n- No hotel structures."
-                    }
-                }
-            ]
+          "name": "Fixture: create order + add item (split-bill)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureSplitOrderId', j.id);",
+                  "// chain: now add an item — return a Promise so newman awaits it",
+                  "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "const tok = pm.collectionVariables.get('accessToken');",
+                  "const branch = pm.collectionVariables.get('branchId');",
+                  "const mi = pm.collectionVariables.get('menuItemId');",
+                  "return new Promise((resolve) => {",
+                  "  pm.sendRequest({",
+                  "    url: baseUrl + '/api/pos/orders/' + j.id + '/items',",
+                  "    method: 'POST',",
+                  "    header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 3 }) }",
+                  "  }, (err, res) => {",
+                  "    if (!err && res) {",
+                  "      try { const r = res.json(); if (r.items && r.items[0]) pm.collectionVariables.set('fixtureSplitItemId', r.items[0].id); } catch (e) { /* ignore */ }",
+                  "    }",
+                  "    resolve();",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\",\n  \"tableId\": \"{{tableId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
         },
         {
-            "name": "A. Auth & Context Baseline",
-            "item": [
-                {
-                    "name": "Login Owner",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "const body = pm.response.json();",
-                                    "pm.test('Login OK [200,201]', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "pm.test('Has accessToken', () => pm.expect(body.accessToken).to.be.a('string'));",
-                                    "const envActive = pm.environment && pm.environment.name;",
-                                    "pm.collectionVariables.set('accessToken', body.accessToken);",
-                                    "if (envActive) pm.environment.set('accessToken', body.accessToken);",
-                                    "if (body.refreshToken) { pm.collectionVariables.set('refreshToken', body.refreshToken); if (envActive) pm.environment.set('refreshToken', body.refreshToken); }"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/auth/login",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "auth",
-                                "login"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "GET /api/auth/me (canonical context)",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const body = pm.response.json();",
-                                    "const envActive = pm.environment && pm.environment.name;",
-                                    "function setBoth(k,v){ if(v===undefined||v===null||v==='') return; pm.collectionVariables.set(k,v); if(envActive) pm.environment.set(k,v); }",
-                                    "if (body.context && body.context.defaultBranchId) setBoth('branchId', body.context.defaultBranchId);",
-                                    "if (body.context && body.context.defaultOrganizationId) setBoth('orgId', body.context.defaultOrganizationId);",
-                                    "pm.test('Has branchId', () => pm.expect(pm.collectionVariables.get('branchId')).to.be.a('string').and.not.empty);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/auth/me",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "auth",
-                                "me"
-                            ]
-                        }
-                    }
-                }
-            ]
+          "name": "POST /:id/split-bill (EQUAL count=3) — 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
+                  "pm.test('splitMode EQUAL', () => pm.expect(j.splitMode).to.eql('EQUAL'));",
+                  "pm.test('3 groups returned', () => pm.expect(j.splitGroups).to.have.lengthOf(3));",
+                  "pm.test('amountRemaining 0.00', () => pm.expect(j.amountRemaining).to.eql('0.00'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"EQUAL\",\n  \"count\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitOrderId}}/split-bill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureSplitOrderId}}",
+                "split-bill"
+              ]
+            }
+          }
         },
         {
-            "name": "B. Split Bill",
-            "item": [
-                {
-                    "name": "Fixture: create order + add item (split-bill)",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureSplitOrderId', j.id);",
-                                    "// chain: now add an item — return a Promise so newman awaits it",
-                                    "const baseUrl = pm.collectionVariables.get('baseUrl');",
-                                    "const tok = pm.collectionVariables.get('accessToken');",
-                                    "const branch = pm.collectionVariables.get('branchId');",
-                                    "const mi = pm.collectionVariables.get('menuItemId');",
-                                    "return new Promise((resolve) => {",
-                                    "  pm.sendRequest({",
-                                    "    url: baseUrl + '/api/pos/orders/' + j.id + '/items',",
-                                    "    method: 'POST',",
-                                    "    header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
-                                    "    body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 3 }) }",
-                                    "  }, (err, res) => {",
-                                    "    if (!err && res) {",
-                                    "      try { const r = res.json(); if (r.items && r.items[0]) pm.collectionVariables.set('fixtureSplitItemId', r.items[0].id); } catch (e) { /* ignore */ }",
-                                    "    }",
-                                    "    resolve();",
-                                    "  });",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\",\n  \"tableId\": \"{{tableId}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/split-bill (EQUAL count=3) — 200",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const j = pm.response.json();",
-                                    "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
-                                    "pm.test('splitMode EQUAL', () => pm.expect(j.splitMode).to.eql('EQUAL'));",
-                                    "pm.test('3 groups returned', () => pm.expect(j.splitGroups).to.have.lengthOf(3));",
-                                    "pm.test('amountRemaining 0.00', () => pm.expect(j.amountRemaining).to.eql('0.00'));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"mode\": \"EQUAL\",\n  \"count\": 3\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitOrderId}}/split-bill",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureSplitOrderId}}",
-                                "split-bill"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/split-bill (CUSTOM mismatch) — 400",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"mode\": \"CUSTOM\",\n  \"groups\": [{ \"amount\": \"1.00\" }, { \"amount\": \"2.00\" }]\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitOrderId}}/split-bill",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureSplitOrderId}}",
-                                "split-bill"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "C. Split Items",
-            "item": [
-                {
-                    "name": "Fixture: create order (split-items)",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureSplitItemsOrderId', j.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\",\n  \"tableId\": \"{{tableId}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Fixture: add item (split-items)",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Add item OK', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "const itemId = j && j.id ? j.id : (j && j.items && j.items[0] ? j.items[0].id : '');",
-                                    "if (itemId) pm.collectionVariables.set('fixtureSplitItemsItemId', itemId);",
-                                    "pm.test('Has item id', () => pm.expect(pm.collectionVariables.get('fixtureSplitItemsItemId')).to.be.a('string').and.not.empty);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 4\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitItemsOrderId}}/items",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureSplitItemsOrderId}}",
-                                "items"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/split-items (qty=1, with Idempotency-Key) — 200",
-                    "event": [
-                        {
-                            "listen": "prerequest",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "// Ensure the fixture order has an item before splitting.",
-                                    "const orderId = pm.collectionVariables.get('fixtureSplitItemsOrderId');",
-                                    "if (pm.collectionVariables.get('fixtureSplitItemsItemId') || !orderId) return;",
-                                    "const baseUrl = pm.collectionVariables.get('baseUrl');",
-                                    "const tok = pm.collectionVariables.get('accessToken');",
-                                    "const branch = pm.collectionVariables.get('branchId');",
-                                    "const mi = pm.collectionVariables.get('menuItemId');",
-                                    "return new Promise((resolve) => {",
-                                    "  pm.sendRequest({",
-                                    "    url: baseUrl + '/api/pos/orders/' + orderId + '/items',",
-                                    "    method: 'POST',",
-                                    "    header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
-                                    "    body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 4 }) }",
-                                    "  }, (err, res) => {",
-                                    "    if (!err && res) { try { const r = res.json(); if (r.items && r.items[0]) pm.collectionVariables.set('fixtureSplitItemsItemId', r.items[0].id); } catch (e) {} }",
-                                    "    resolve();",
-                                    "  });",
-                                    "});"
-                                ]
-                            }
-                        },
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const j = pm.response.json();",
-                                    "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
-                                    "pm.test('child has splitFromOrderId', () => pm.expect(j.childOrder.splitFromOrderId).to.eql(pm.collectionVariables.get('fixtureSplitItemsOrderId')));",
-                                    "pm.test('child status NEW', () => pm.expect(j.childOrder.status).to.eql('NEW'));",
-                                    "pm.collectionVariables.set('splitChildOrderId', j.childOrder.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Idempotency-Key",
-                                "value": "{{idemKeySplitItems}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"items\": [{ \"orderItemId\": \"{{fixtureSplitItemsItemId}}\", \"quantity\": 1 }],\n  \"reason\": \"Postman split-items happy path\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitItemsOrderId}}/split-items",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureSplitItemsOrderId}}",
-                                "split-items"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/split-items (replay same key) — 200, same child id",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const j = pm.response.json();",
-                                    "pm.test('replay returns same childOrder.id', () => pm.expect(j.childOrder.id).to.eql(pm.collectionVariables.get('splitChildOrderId')));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Idempotency-Key",
-                                "value": "{{idemKeySplitItems}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"items\": [{ \"orderItemId\": \"{{fixtureSplitItemsItemId}}\", \"quantity\": 1 }],\n  \"reason\": \"Postman split-items happy path\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitItemsOrderId}}/split-items",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureSplitItemsOrderId}}",
-                                "split-items"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "D. Merge Orders",
-            "item": [
-                {
-                    "name": "Fixture: create source order + add item",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture source order created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureMergeSourceId', j.id);",
-                                    "const baseUrl = pm.collectionVariables.get('baseUrl');",
-                                    "const tok = pm.collectionVariables.get('accessToken');",
-                                    "const branch = pm.collectionVariables.get('branchId');",
-                                    "const mi = pm.collectionVariables.get('menuItemId');",
-                                    "pm.sendRequest({",
-                                    "  url: baseUrl + '/api/pos/orders/' + j.id + '/items',",
-                                    "  method: 'POST',",
-                                    "  header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
-                                    "  body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 1 }) }",
-                                    "}, () => {});"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Fixture: create target order + add item",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture target order created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureMergeTargetId', j.id);",
-                                    "const baseUrl = pm.collectionVariables.get('baseUrl');",
-                                    "const tok = pm.collectionVariables.get('accessToken');",
-                                    "const branch = pm.collectionVariables.get('branchId');",
-                                    "const mi = pm.collectionVariables.get('menuItemId');",
-                                    "pm.sendRequest({",
-                                    "  url: baseUrl + '/api/pos/orders/' + j.id + '/items',",
-                                    "  method: 'POST',",
-                                    "  header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
-                                    "  body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 2 }) }",
-                                    "}, () => {});"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /merge — 200, source VOIDED",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const j = pm.response.json();",
-                                    "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
-                                    "pm.test('source VOIDED', () => pm.expect(j.sourceOrder.status).to.eql('VOIDED'));",
-                                    "pm.test('mergedIntoOrderId set', () => pm.expect(j.sourceOrder.mergedIntoOrderId).to.eql(pm.collectionVariables.get('fixtureMergeTargetId')));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeSourceId}}\",\n  \"targetOrderId\": \"{{fixtureMergeTargetId}}\",\n  \"reason\": \"Postman merge happy path\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/merge",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "merge"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /merge (self-merge) — 400",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeTargetId}}\",\n  \"targetOrderId\": \"{{fixtureMergeTargetId}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/merge",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "merge"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "E. Transfer Table",
-            "item": [
-                {
-                    "name": "Fixture: create order",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureTransferTableOrderId', j.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\",\n  \"tableId\": \"{{tableId}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/transfer-table — 200",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const j = pm.response.json();",
-                                    "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
-                                    "pm.test('newTableId is altTableId', () => pm.expect(j.newTableId).to.eql(pm.collectionVariables.get('altTableId')));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"targetTableId\": \"{{altTableId}}\",\n  \"reason\": \"window seat requested\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferTableOrderId}}/transfer-table",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureTransferTableOrderId}}",
-                                "transfer-table"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "F. Transfer Server",
-            "item": [
-                {
-                    "name": "Fixture: create order",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureTransferServerOrderId', j.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/transfer-server — 200",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const j = pm.response.json();",
-                                    "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"targetUserId\": \"{{altUserId}}\",\n  \"reason\": \"shift handover\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferServerOrderId}}/transfer-server",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureTransferServerOrderId}}",
-                                "transfer-server"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/transfer-server (invalid user) — 403",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"targetUserId\": \"cl_does_not_exist_pm\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferServerOrderId}}/transfer-server",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureTransferServerOrderId}}",
-                                "transfer-server"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "G. Move Items",
-            "item": [
-                {
-                    "name": "Fixture: create source order (move-items)",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture source created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureMoveSourceId', j.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Fixture: add item to source (move-items)",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Add item OK', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "const itemId = j && j.id ? j.id : (j && j.items && j.items[0] ? j.items[0].id : '');",
-                                    "if (itemId) pm.collectionVariables.set('fixtureMoveSourceItemId', itemId);",
-                                    "pm.test('Has item id', () => pm.expect(pm.collectionVariables.get('fixtureMoveSourceItemId')).to.be.a('string').and.not.empty);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 4\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureMoveSourceId}}/items",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureMoveSourceId}}",
-                                "items"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Fixture: create target order",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Fixture target created', () => pm.expect([200,201]).to.include(pm.response.code));",
-                                    "const j = pm.response.json();",
-                                    "pm.collectionVariables.set('fixtureMoveTargetId', j.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "POST /:id/move-items — 200",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                                    "const j = pm.response.json();",
-                                    "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
-                                    "pm.test('targetOrder has items', () => pm.expect(j.targetOrder.items.length).to.be.greaterThan(0));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"targetOrderId\": \"{{fixtureMoveTargetId}}\",\n  \"items\": [{ \"orderItemId\": \"{{fixtureMoveSourceItemId}}\", \"quantity\": 2 }],\n  \"reason\": \"moved to new bill\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureMoveSourceId}}/move-items",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureMoveSourceId}}",
-                                "move-items"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "H. Permission Denial - Chef",
-            "item": [
-                {
-                    "name": "Chef → POST /:id/split-bill — 403",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{chefToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"mode\": \"EQUAL\",\n  \"count\": 2\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitOrderId}}/split-bill",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureSplitOrderId}}",
-                                "split-bill"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Chef → POST /merge — 403",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{chefToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeSourceId}}\",\n  \"targetOrderId\": \"{{fixtureMergeTargetId}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/merge",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "merge"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Chef → POST /:id/transfer-table — 403",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{chefToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"targetTableId\": \"{{altTableId}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferTableOrderId}}/transfer-table",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureTransferTableOrderId}}",
-                                "transfer-table"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Chef → POST /:id/move-items — 403",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{chefToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"targetOrderId\": \"{{fixtureMoveTargetId}}\",\n  \"items\": [{ \"orderItemId\": \"{{fixtureMoveSourceItemId}}\", \"quantity\": 1 }]\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/{{fixtureMoveSourceId}}/move-items",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "{{fixtureMoveSourceId}}",
-                                "move-items"
-                            ]
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "name": "I. Edge Cases / Conflicts",
-            "item": [
-                {
-                    "name": "Split-bill on unknown order id — 404",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"mode\": \"EQUAL\",\n  \"count\": 2\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/cl_unknown_order_pm/split-bill",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "cl_unknown_order_pm",
-                                "split-bill"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Merge missing required field — 400",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{accessToken}}"
-                            },
-                            {
-                                "key": "X-Branch-Id",
-                                "value": "{{branchId}}"
-                            },
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeSourceId}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/pos/orders/merge",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "pos",
-                                "orders",
-                                "merge"
-                            ]
-                        }
-                    }
-                }
-            ]
+          "name": "POST /:id/split-bill (CUSTOM mismatch) — 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"CUSTOM\",\n  \"groups\": [{ \"amount\": \"1.00\" }, { \"amount\": \"2.00\" }]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitOrderId}}/split-bill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureSplitOrderId}}",
+                "split-bill"
+              ]
+            }
+          }
         }
-    ]
+      ]
+    },
+    {
+      "name": "C. Split Items",
+      "item": [
+        {
+          "name": "Fixture: create order (split-items)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureSplitItemsOrderId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\",\n  \"tableId\": \"{{tableId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fixture: add item (split-items)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Add item OK', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "const itemId = j && j.id ? j.id : (j && j.items && j.items[0] ? j.items[0].id : '');",
+                  "if (itemId) pm.collectionVariables.set('fixtureSplitItemsItemId', itemId);",
+                  "pm.test('Has item id', () => pm.expect(pm.collectionVariables.get('fixtureSplitItemsItemId')).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 4\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitItemsOrderId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureSplitItemsOrderId}}",
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/split-items (qty=1, with Idempotency-Key) — 200",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Ensure the fixture order has an item before splitting.",
+                  "const orderId = pm.collectionVariables.get('fixtureSplitItemsOrderId');",
+                  "if (pm.collectionVariables.get('fixtureSplitItemsItemId') || !orderId) return;",
+                  "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "const tok = pm.collectionVariables.get('accessToken');",
+                  "const branch = pm.collectionVariables.get('branchId');",
+                  "const mi = pm.collectionVariables.get('menuItemId');",
+                  "return new Promise((resolve) => {",
+                  "  pm.sendRequest({",
+                  "    url: baseUrl + '/api/pos/orders/' + orderId + '/items',",
+                  "    method: 'POST',",
+                  "    header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 4 }) }",
+                  "  }, (err, res) => {",
+                  "    if (!err && res) { try { const r = res.json(); if (r.items && r.items[0]) pm.collectionVariables.set('fixtureSplitItemsItemId', r.items[0].id); } catch (e) {} }",
+                  "    resolve();",
+                  "  });",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
+                  "pm.test('child has splitFromOrderId', () => pm.expect(j.childOrder.splitFromOrderId).to.eql(pm.collectionVariables.get('fixtureSplitItemsOrderId')));",
+                  "pm.test('child status NEW', () => pm.expect(j.childOrder.status).to.eql('NEW'));",
+                  "pm.collectionVariables.set('splitChildOrderId', j.childOrder.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKeySplitItems}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [{ \"orderItemId\": \"{{fixtureSplitItemsItemId}}\", \"quantity\": 1 }],\n  \"reason\": \"Postman split-items happy path\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitItemsOrderId}}/split-items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureSplitItemsOrderId}}",
+                "split-items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/split-items (replay same key) — 200, same child id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('replay returns same childOrder.id', () => pm.expect(j.childOrder.id).to.eql(pm.collectionVariables.get('splitChildOrderId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKeySplitItems}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [{ \"orderItemId\": \"{{fixtureSplitItemsItemId}}\", \"quantity\": 1 }],\n  \"reason\": \"Postman split-items happy path\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitItemsOrderId}}/split-items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureSplitItemsOrderId}}",
+                "split-items"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "D. Merge Orders",
+      "item": [
+        {
+          "name": "Fixture: create source order + add item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture source order created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureMergeSourceId', j.id);",
+                  "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "const tok = pm.collectionVariables.get('accessToken');",
+                  "const branch = pm.collectionVariables.get('branchId');",
+                  "const mi = pm.collectionVariables.get('menuItemId');",
+                  "pm.sendRequest({",
+                  "  url: baseUrl + '/api/pos/orders/' + j.id + '/items',",
+                  "  method: 'POST',",
+                  "  header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 1 }) }",
+                  "}, () => {});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fixture: create target order + add item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture target order created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureMergeTargetId', j.id);",
+                  "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "const tok = pm.collectionVariables.get('accessToken');",
+                  "const branch = pm.collectionVariables.get('branchId');",
+                  "const mi = pm.collectionVariables.get('menuItemId');",
+                  "pm.sendRequest({",
+                  "  url: baseUrl + '/api/pos/orders/' + j.id + '/items',",
+                  "  method: 'POST',",
+                  "  header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': branch, 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({ menuItemId: mi, quantity: 2 }) }",
+                  "}, () => {});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /merge — 200, source VOIDED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
+                  "pm.test('source VOIDED', () => pm.expect(j.sourceOrder.status).to.eql('VOIDED'));",
+                  "pm.test('mergedIntoOrderId set', () => pm.expect(j.sourceOrder.mergedIntoOrderId).to.eql(pm.collectionVariables.get('fixtureMergeTargetId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeSourceId}}\",\n  \"targetOrderId\": \"{{fixtureMergeTargetId}}\",\n  \"reason\": \"Postman merge happy path\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/merge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "merge"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /merge (self-merge) — 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeTargetId}}\",\n  \"targetOrderId\": \"{{fixtureMergeTargetId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/merge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "merge"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "E. Transfer Table",
+      "item": [
+        {
+          "name": "Fixture: create order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureTransferTableOrderId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\",\n  \"tableId\": \"{{tableId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/transfer-table — 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
+                  "pm.test('newTableId is altTableId', () => pm.expect(j.newTableId).to.eql(pm.collectionVariables.get('altTableId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetTableId\": \"{{altTableId}}\",\n  \"reason\": \"window seat requested\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferTableOrderId}}/transfer-table",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureTransferTableOrderId}}",
+                "transfer-table"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "F. Transfer Server",
+      "item": [
+        {
+          "name": "Fixture: create order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture order created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureTransferServerOrderId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/transfer-server — 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{altUserId}}\",\n  \"reason\": \"shift handover\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferServerOrderId}}/transfer-server",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureTransferServerOrderId}}",
+                "transfer-server"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/transfer-server (invalid user) — 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"cl_does_not_exist_pm\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferServerOrderId}}/transfer-server",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureTransferServerOrderId}}",
+                "transfer-server"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "G. Move Items",
+      "item": [
+        {
+          "name": "Fixture: create source order (move-items)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture source created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureMoveSourceId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fixture: add item to source (move-items)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Add item OK', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "const itemId = j && j.id ? j.id : (j && j.items && j.items[0] ? j.items[0].id : '');",
+                  "if (itemId) pm.collectionVariables.set('fixtureMoveSourceItemId', itemId);",
+                  "pm.test('Has item id', () => pm.expect(pm.collectionVariables.get('fixtureMoveSourceItemId')).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 4\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureMoveSourceId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureMoveSourceId}}",
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fixture: create target order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fixture target created', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('fixtureMoveTargetId', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"DINE_IN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /:id/move-items — 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ok=true', () => pm.expect(j.ok).to.eql(true));",
+                  "pm.test('targetOrder has items', () => pm.expect(j.targetOrder.items.length).to.be.greaterThan(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetOrderId\": \"{{fixtureMoveTargetId}}\",\n  \"items\": [{ \"orderItemId\": \"{{fixtureMoveSourceItemId}}\", \"quantity\": 2 }],\n  \"reason\": \"moved to new bill\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureMoveSourceId}}/move-items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureMoveSourceId}}",
+                "move-items"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "H. Permission Denial - Chef",
+      "item": [
+        {
+          "name": "Chef → POST /:id/split-bill — 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{chefToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"EQUAL\",\n  \"count\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureSplitOrderId}}/split-bill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureSplitOrderId}}",
+                "split-bill"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Chef → POST /merge — 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{chefToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeSourceId}}\",\n  \"targetOrderId\": \"{{fixtureMergeTargetId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/merge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "merge"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Chef → POST /:id/transfer-table — 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{chefToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetTableId\": \"{{altTableId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureTransferTableOrderId}}/transfer-table",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureTransferTableOrderId}}",
+                "transfer-table"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Chef → POST /:id/move-items — 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{chefToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetOrderId\": \"{{fixtureMoveTargetId}}\",\n  \"items\": [{ \"orderItemId\": \"{{fixtureMoveSourceItemId}}\", \"quantity\": 1 }]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/{{fixtureMoveSourceId}}/move-items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "{{fixtureMoveSourceId}}",
+                "move-items"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "I. Edge Cases / Conflicts",
+      "item": [
+        {
+          "name": "Split-bill on unknown order id — 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"EQUAL\",\n  \"count\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/cl_unknown_order_pm/split-bill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "cl_unknown_order_pm",
+                "split-bill"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Merge missing required field — 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceOrderId\": \"{{fixtureMergeSourceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/orders/merge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "orders",
+                "merge"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
 }

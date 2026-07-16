@@ -1,0 +1,3 @@
+code,title,mode,status,startsAt,endsAt,message,blockCategories,organizationSlug,branchCode
+maintenance-demo-announcement,Demo maintenance announcement,ANNOUNCEMENT_ONLY,SCHEDULED,2026-07-07T09:00:00Z,2026-07-07T11:00:00Z,Demo scheduled maintenance banner only,[],nimbus,
+training-safe-window,Training safety window,ANNOUNCEMENT_ONLY,COMPLETED,2026-06-10T09:00:00Z,2026-06-10T10:00:00Z,Completed demo training window,[],nimbus,

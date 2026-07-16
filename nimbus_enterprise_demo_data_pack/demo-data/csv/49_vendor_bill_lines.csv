@@ -1,0 +1,25 @@
+billNumber,description,quantity,unitCost,lineTotal,accountCode,taxAmount
+VB-2026-0001,Demo vendor service / inventory supply,1.00,251000.00,251000.00,5300,45200.00
+VB-2026-0002,Demo vendor service / inventory supply,1.00,1567100.00,1567100.00,1200,282100.00
+VB-2026-0003,Demo vendor service / inventory supply,1.00,276400.00,276400.00,1200,49800.00
+VB-2026-0004,Demo vendor service / inventory supply,1.00,631700.00,631700.00,1200,113700.00
+VB-2026-0005,Demo vendor service / inventory supply,1.00,2063600.00,2063600.00,5300,371400.00
+VB-2026-0006,Demo vendor service / inventory supply,1.00,936800.00,936800.00,1200,168600.00
+VB-2026-0007,Demo vendor service / inventory supply,1.00,1690700.00,1690700.00,1200,304300.00
+VB-2026-0008,Demo vendor service / inventory supply,1.00,2179300.00,2179300.00,1200,392300.00
+VB-2026-0009,Demo vendor service / inventory supply,1.00,1962000.00,1962000.00,1200,353200.00
+VB-2026-0010,Demo vendor service / inventory supply,1.00,375500.00,375500.00,5300,67600.00
+VB-2026-0011,Demo vendor service / inventory supply,1.00,1905500.00,1905500.00,1200,343000.00
+VB-2026-0012,Demo vendor service / inventory supply,1.00,1811600.00,1811600.00,1200,326100.00
+VB-2026-0013,Demo vendor service / inventory supply,1.00,691100.00,691100.00,1200,124400.00
+VB-2026-0014,Demo vendor service / inventory supply,1.00,849300.00,849300.00,1200,152900.00
+VB-2026-0015,Demo vendor service / inventory supply,1.00,1811700.00,1811700.00,1200,326100.00
+VB-2026-0016,Demo vendor service / inventory supply,1.00,1698000.00,1698000.00,1200,305600.00
+VB-2026-0017,Demo vendor service / inventory supply,1.00,1266200.00,1266200.00,5300,227900.00
+VB-2026-0018,Demo vendor service / inventory supply,1.00,1881500.00,1881500.00,1200,338700.00
+VB-2026-0019,Demo vendor service / inventory supply,1.00,305600.00,305600.00,1200,55000.00
+VB-2026-0020,Demo vendor service / inventory supply,1.00,674400.00,674400.00,1200,121400.00
+VB-2026-0021,Demo vendor service / inventory supply,1.00,2061700.00,2061700.00,1200,371100.00
+VB-2026-0022,Demo vendor service / inventory supply,1.00,1393600.00,1393600.00,1200,250800.00
+VB-2026-0023,Demo vendor service / inventory supply,1.00,1949600.00,1949600.00,5300,350900.00
+VB-2026-0024,Demo vendor service / inventory supply,1.00,1084100.00,1084100.00,1200,195100.00

@@ -1,0 +1,199 @@
+branchCode,menuItemName,modifierGroupName,sortOrder,metadata
+TAPAS_DOWNTOWN,Crispy Plantain Cups,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Crispy Plantain Cups,Side Choice,1,{}
+TAPAS_DOWNTOWN,Tomato Bruschetta,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Tomato Bruschetta,Side Choice,1,{}
+TAPAS_DOWNTOWN,Sesame Chicken Skewers,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Sesame Chicken Skewers,Side Choice,1,{}
+TAPAS_DOWNTOWN,Halloumi Bites,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Halloumi Bites,Side Choice,1,{}
+TAPAS_DOWNTOWN,Grilled Chicken Bowl,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Grilled Chicken Bowl,Side Choice,1,{}
+TAPAS_DOWNTOWN,Garden Vegetable Pasta,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Garden Vegetable Pasta,Side Choice,1,{}
+TAPAS_DOWNTOWN,Beef Fillet Plate,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Beef Fillet Plate,Side Choice,1,{}
+TAPAS_DOWNTOWN,Tilapia Lemon Herb,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Tilapia Lemon Herb,Side Choice,1,{}
+TAPAS_DOWNTOWN,Mushroom Risotto,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Mushroom Risotto,Side Choice,1,{}
+TAPAS_DOWNTOWN,Herb Fries,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Herb Fries,Side Choice,1,{}
+TAPAS_DOWNTOWN,Seasonal Salad,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Seasonal Salad,Side Choice,1,{}
+TAPAS_DOWNTOWN,Garlic Flatbread,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Garlic Flatbread,Side Choice,1,{}
+TAPAS_DOWNTOWN,Passion Fruit Cheesecake,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Passion Fruit Cheesecake,Side Choice,1,{}
+TAPAS_DOWNTOWN,Chocolate Date Tart,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Chocolate Date Tart,Side Choice,1,{}
+TAPAS_DOWNTOWN,Americano,Drink Temperature,1,{}
+TAPAS_DOWNTOWN,Americano,Sweetness Level,1,{}
+TAPAS_DOWNTOWN,Cafe Latte,Drink Temperature,1,{}
+TAPAS_DOWNTOWN,Cafe Latte,Sweetness Level,1,{}
+TAPAS_DOWNTOWN,Spiced Chai,Drink Temperature,1,{}
+TAPAS_DOWNTOWN,Spiced Chai,Sweetness Level,1,{}
+TAPAS_DOWNTOWN,Mint Lime Spritz,Drink Temperature,1,{}
+TAPAS_DOWNTOWN,Mint Lime Spritz,Sweetness Level,1,{}
+TAPAS_DOWNTOWN,Ginger Hibiscus Cooler,Drink Temperature,1,{}
+TAPAS_DOWNTOWN,Ginger Hibiscus Cooler,Sweetness Level,1,{}
+TAPAS_DOWNTOWN,Mango Passion Juice,Drink Temperature,1,{}
+TAPAS_DOWNTOWN,Mango Passion Juice,Sweetness Level,1,{}
+TAPAS_DOWNTOWN,Smoked Eggplant Dip,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Smoked Eggplant Dip,Side Choice,1,{}
+TAPAS_DOWNTOWN,Charred Octopus Style Mushroom,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Charred Octopus Style Mushroom,Side Choice,1,{}
+TAPAS_DOWNTOWN,Chicken Empanada Trio,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Chicken Empanada Trio,Side Choice,1,{}
+TAPAS_DOWNTOWN,Citrus Greens Bowl,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Citrus Greens Bowl,Side Choice,1,{}
+TAPAS_DOWNTOWN,Matoke Croquettes,Sauce Choice,1,{}
+TAPAS_DOWNTOWN,Matoke Croquettes,Side Choice,1,{}
+ROOFTOP_BAR,Crispy Plantain Cups,Sauce Choice,1,{}
+ROOFTOP_BAR,Crispy Plantain Cups,Side Choice,1,{}
+ROOFTOP_BAR,Tomato Bruschetta,Sauce Choice,1,{}
+ROOFTOP_BAR,Tomato Bruschetta,Side Choice,1,{}
+ROOFTOP_BAR,Sesame Chicken Skewers,Sauce Choice,1,{}
+ROOFTOP_BAR,Sesame Chicken Skewers,Side Choice,1,{}
+ROOFTOP_BAR,Halloumi Bites,Sauce Choice,1,{}
+ROOFTOP_BAR,Halloumi Bites,Side Choice,1,{}
+ROOFTOP_BAR,Garden Vegetable Pasta,Sauce Choice,1,{}
+ROOFTOP_BAR,Garden Vegetable Pasta,Side Choice,1,{}
+ROOFTOP_BAR,Tilapia Lemon Herb,Sauce Choice,1,{}
+ROOFTOP_BAR,Tilapia Lemon Herb,Side Choice,1,{}
+ROOFTOP_BAR,Herb Fries,Sauce Choice,1,{}
+ROOFTOP_BAR,Herb Fries,Side Choice,1,{}
+ROOFTOP_BAR,Seasonal Salad,Sauce Choice,1,{}
+ROOFTOP_BAR,Seasonal Salad,Side Choice,1,{}
+ROOFTOP_BAR,Garlic Flatbread,Sauce Choice,1,{}
+ROOFTOP_BAR,Garlic Flatbread,Side Choice,1,{}
+ROOFTOP_BAR,Passion Fruit Cheesecake,Sauce Choice,1,{}
+ROOFTOP_BAR,Passion Fruit Cheesecake,Side Choice,1,{}
+ROOFTOP_BAR,Chocolate Date Tart,Sauce Choice,1,{}
+ROOFTOP_BAR,Chocolate Date Tart,Side Choice,1,{}
+ROOFTOP_BAR,Americano,Drink Temperature,1,{}
+ROOFTOP_BAR,Americano,Sweetness Level,1,{}
+ROOFTOP_BAR,Cafe Latte,Drink Temperature,1,{}
+ROOFTOP_BAR,Cafe Latte,Sweetness Level,1,{}
+ROOFTOP_BAR,Spiced Chai,Drink Temperature,1,{}
+ROOFTOP_BAR,Spiced Chai,Sweetness Level,1,{}
+ROOFTOP_BAR,Mint Lime Sky Spritz,Drink Temperature,1,{}
+ROOFTOP_BAR,Mint Lime Sky Spritz,Sweetness Level,1,{}
+ROOFTOP_BAR,Ginger Hibiscus Rooftop Cooler,Drink Temperature,1,{}
+ROOFTOP_BAR,Ginger Hibiscus Rooftop Cooler,Sweetness Level,1,{}
+ROOFTOP_BAR,Mango Passion Juice,Drink Temperature,1,{}
+ROOFTOP_BAR,Mango Passion Juice,Sweetness Level,1,{}
+ROOFTOP_BAR,Skyline Mezze Cups,Sauce Choice,1,{}
+ROOFTOP_BAR,Skyline Mezze Cups,Side Choice,1,{}
+ROOFTOP_BAR,Cucumber Basil Fizz,Drink Temperature,1,{}
+ROOFTOP_BAR,Cucumber Basil Fizz,Sweetness Level,1,{}
+ROOFTOP_BAR,Rosemary Tonic Highball,Drink Temperature,1,{}
+ROOFTOP_BAR,Rosemary Tonic Highball,Sweetness Level,1,{}
+ROOFTOP_BAR,Cranberry Lime Nojito,Drink Temperature,1,{}
+ROOFTOP_BAR,Cranberry Lime Nojito,Sweetness Level,1,{}
+ROOFTOP_BAR,Night Market Fries,Sauce Choice,1,{}
+ROOFTOP_BAR,Night Market Fries,Side Choice,1,{}
+GARDEN_CAFE,Crispy Plantain Cups,Sauce Choice,1,{}
+GARDEN_CAFE,Crispy Plantain Cups,Side Choice,1,{}
+GARDEN_CAFE,Tomato Bruschetta,Sauce Choice,1,{}
+GARDEN_CAFE,Tomato Bruschetta,Side Choice,1,{}
+GARDEN_CAFE,Sesame Chicken Skewers,Sauce Choice,1,{}
+GARDEN_CAFE,Sesame Chicken Skewers,Side Choice,1,{}
+GARDEN_CAFE,Halloumi Bites,Sauce Choice,1,{}
+GARDEN_CAFE,Halloumi Bites,Side Choice,1,{}
+GARDEN_CAFE,Grilled Chicken Bowl,Sauce Choice,1,{}
+GARDEN_CAFE,Grilled Chicken Bowl,Side Choice,1,{}
+GARDEN_CAFE,Garden Vegetable Pasta,Sauce Choice,1,{}
+GARDEN_CAFE,Garden Vegetable Pasta,Side Choice,1,{}
+GARDEN_CAFE,Beef Fillet Plate,Sauce Choice,1,{}
+GARDEN_CAFE,Beef Fillet Plate,Side Choice,1,{}
+GARDEN_CAFE,Tilapia Lemon Herb,Sauce Choice,1,{}
+GARDEN_CAFE,Tilapia Lemon Herb,Side Choice,1,{}
+GARDEN_CAFE,Mushroom Risotto,Sauce Choice,1,{}
+GARDEN_CAFE,Mushroom Risotto,Side Choice,1,{}
+GARDEN_CAFE,Herb Fries,Sauce Choice,1,{}
+GARDEN_CAFE,Herb Fries,Side Choice,1,{}
+GARDEN_CAFE,Seasonal Salad,Sauce Choice,1,{}
+GARDEN_CAFE,Seasonal Salad,Side Choice,1,{}
+GARDEN_CAFE,Garlic Flatbread,Sauce Choice,1,{}
+GARDEN_CAFE,Garlic Flatbread,Side Choice,1,{}
+GARDEN_CAFE,Passion Fruit Cheesecake,Sauce Choice,1,{}
+GARDEN_CAFE,Passion Fruit Cheesecake,Side Choice,1,{}
+GARDEN_CAFE,Chocolate Date Tart,Sauce Choice,1,{}
+GARDEN_CAFE,Chocolate Date Tart,Side Choice,1,{}
+GARDEN_CAFE,Americano,Drink Temperature,1,{}
+GARDEN_CAFE,Americano,Sweetness Level,1,{}
+GARDEN_CAFE,Cafe Latte,Drink Temperature,1,{}
+GARDEN_CAFE,Cafe Latte,Sweetness Level,1,{}
+GARDEN_CAFE,Spiced Chai,Drink Temperature,1,{}
+GARDEN_CAFE,Spiced Chai,Sweetness Level,1,{}
+GARDEN_CAFE,Mint Lime Spritz,Drink Temperature,1,{}
+GARDEN_CAFE,Mint Lime Spritz,Sweetness Level,1,{}
+GARDEN_CAFE,Ginger Hibiscus Cooler,Drink Temperature,1,{}
+GARDEN_CAFE,Ginger Hibiscus Cooler,Sweetness Level,1,{}
+GARDEN_CAFE,Mango Passion Juice,Drink Temperature,1,{}
+GARDEN_CAFE,Mango Passion Juice,Sweetness Level,1,{}
+GARDEN_CAFE,Avocado Toast Stack,Sauce Choice,1,{}
+GARDEN_CAFE,Avocado Toast Stack,Side Choice,1,{}
+GARDEN_CAFE,Banana Oat Pancakes,Sauce Choice,1,{}
+GARDEN_CAFE,Banana Oat Pancakes,Side Choice,1,{}
+GARDEN_CAFE,Garden Breakfast Plate,Sauce Choice,1,{}
+GARDEN_CAFE,Garden Breakfast Plate,Side Choice,1,{}
+GARDEN_CAFE,Iced Vanilla Coffee,Drink Temperature,1,{}
+GARDEN_CAFE,Iced Vanilla Coffee,Sweetness Level,1,{}
+GARDEN_CAFE,Berry Yoghurt Bowl,Sauce Choice,1,{}
+GARDEN_CAFE,Berry Yoghurt Bowl,Side Choice,1,{}
+EVENTS_KITCHEN,Crispy Plantain Cups,Sauce Choice,1,{}
+EVENTS_KITCHEN,Crispy Plantain Cups,Side Choice,1,{}
+EVENTS_KITCHEN,Tomato Bruschetta,Sauce Choice,1,{}
+EVENTS_KITCHEN,Tomato Bruschetta,Side Choice,1,{}
+EVENTS_KITCHEN,Sesame Chicken Skewers,Sauce Choice,1,{}
+EVENTS_KITCHEN,Sesame Chicken Skewers,Side Choice,1,{}
+EVENTS_KITCHEN,Halloumi Bites,Sauce Choice,1,{}
+EVENTS_KITCHEN,Halloumi Bites,Side Choice,1,{}
+EVENTS_KITCHEN,Grilled Chicken Bowl,Sauce Choice,1,{}
+EVENTS_KITCHEN,Grilled Chicken Bowl,Side Choice,1,{}
+EVENTS_KITCHEN,Garden Vegetable Pasta,Sauce Choice,1,{}
+EVENTS_KITCHEN,Garden Vegetable Pasta,Side Choice,1,{}
+EVENTS_KITCHEN,Beef Fillet Plate,Sauce Choice,1,{}
+EVENTS_KITCHEN,Beef Fillet Plate,Side Choice,1,{}
+EVENTS_KITCHEN,Tilapia Lemon Herb,Sauce Choice,1,{}
+EVENTS_KITCHEN,Tilapia Lemon Herb,Side Choice,1,{}
+EVENTS_KITCHEN,Mushroom Risotto,Sauce Choice,1,{}
+EVENTS_KITCHEN,Mushroom Risotto,Side Choice,1,{}
+EVENTS_KITCHEN,Herb Fries,Sauce Choice,1,{}
+EVENTS_KITCHEN,Herb Fries,Side Choice,1,{}
+EVENTS_KITCHEN,Seasonal Salad,Sauce Choice,1,{}
+EVENTS_KITCHEN,Seasonal Salad,Side Choice,1,{}
+EVENTS_KITCHEN,Garlic Flatbread,Sauce Choice,1,{}
+EVENTS_KITCHEN,Garlic Flatbread,Side Choice,1,{}
+EVENTS_KITCHEN,Passion Fruit Cheesecake,Sauce Choice,1,{}
+EVENTS_KITCHEN,Passion Fruit Cheesecake,Side Choice,1,{}
+EVENTS_KITCHEN,Chocolate Date Tart,Sauce Choice,1,{}
+EVENTS_KITCHEN,Chocolate Date Tart,Side Choice,1,{}
+EVENTS_KITCHEN,Americano,Drink Temperature,1,{}
+EVENTS_KITCHEN,Americano,Sweetness Level,1,{}
+EVENTS_KITCHEN,Cafe Latte,Drink Temperature,1,{}
+EVENTS_KITCHEN,Cafe Latte,Sweetness Level,1,{}
+EVENTS_KITCHEN,Spiced Chai,Drink Temperature,1,{}
+EVENTS_KITCHEN,Spiced Chai,Sweetness Level,1,{}
+EVENTS_KITCHEN,Mint Lime Spritz,Drink Temperature,1,{}
+EVENTS_KITCHEN,Mint Lime Spritz,Sweetness Level,1,{}
+EVENTS_KITCHEN,Ginger Hibiscus Cooler,Drink Temperature,1,{}
+EVENTS_KITCHEN,Ginger Hibiscus Cooler,Sweetness Level,1,{}
+EVENTS_KITCHEN,Mango Passion Juice,Drink Temperature,1,{}
+EVENTS_KITCHEN,Mango Passion Juice,Sweetness Level,1,{}
+EVENTS_KITCHEN,Banquet Mezze Platter,Sauce Choice,1,{}
+EVENTS_KITCHEN,Banquet Mezze Platter,Side Choice,1,{}
+EVENTS_KITCHEN,Corporate Snack Board,Sauce Choice,1,{}
+EVENTS_KITCHEN,Corporate Snack Board,Side Choice,1,{}
+EVENTS_KITCHEN,Banquet Chicken Tray,Sauce Choice,1,{}
+EVENTS_KITCHEN,Banquet Chicken Tray,Side Choice,1,{}
+EVENTS_KITCHEN,Executive Lunch Box,Sauce Choice,1,{}
+EVENTS_KITCHEN,Executive Lunch Box,Side Choice,1,{}
+EVENTS_KITCHEN,Vegetable Lasagna Pan,Sauce Choice,1,{}
+EVENTS_KITCHEN,Vegetable Lasagna Pan,Side Choice,1,{}
+EVENTS_KITCHEN,Mini Dessert Flight,Sauce Choice,1,{}
+EVENTS_KITCHEN,Mini Dessert Flight,Side Choice,1,{}
+EVENTS_KITCHEN,Conference Tea Service,Drink Temperature,1,{}
+EVENTS_KITCHEN,Conference Tea Service,Sweetness Level,1,{}

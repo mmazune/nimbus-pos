@@ -1,0 +1,5 @@
+organizationSlug,name,startsAt,endsAt,status,openedByEmail
+nimbus,FY2026-04,2026-03-31T21:00:00Z,2026-04-30T20:59:59Z,CLOSED,accountant@nimbus.demo
+nimbus,FY2026-05,2026-04-30T21:00:00Z,2026-05-31T20:59:59Z,CLOSED,accountant@nimbus.demo
+nimbus,FY2026-06,2026-05-31T21:00:00Z,2026-06-30T20:59:59Z,OPEN,accountant@nimbus.demo
+nimbus,FY2026-07,2026-06-30T21:00:00Z,2026-07-31T20:59:59Z,OPEN,accountant@nimbus.demo

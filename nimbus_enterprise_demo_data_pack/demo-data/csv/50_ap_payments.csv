@@ -1,0 +1,13 @@
+supplierName,paymentNumber,amount,method,status,paidAt,paidByEmail,reference,metadata
+Kampala Dry Goods,AP-PAY-0002,1849200.00,BANK_TRANSFER,POSTED,2026-06-13T09:00:00Z,accountant@nimbus.demo,BANK-AP-0002,{}
+CleanOps Services,AP-PAY-0003,326200.00,BANK_TRANSFER,POSTED,2026-06-11T09:00:00Z,accountant@nimbus.demo,BANK-AP-0003,{}
+Event Rentals Demo,AP-PAY-0006,1105400.00,BANK_TRANSFER,POSTED,2026-06-26T09:00:00Z,accountant@nimbus.demo,BANK-AP-0006,{}
+Skyline Beverage Supply,AP-PAY-0008,1285800.00,BANK_TRANSFER,POSTED,2026-06-20T09:00:00Z,accountant@nimbus.demo,BANK-AP-0008,{}
+Kampala Utilities Demo,AP-PAY-0010,443100.00,BANK_TRANSFER,POSTED,2026-06-29T09:00:00Z,accountant@nimbus.demo,BANK-AP-0010,{}
+CleanOps Services,AP-PAY-0011,1124200.00,BANK_TRANSFER,POSTED,2026-06-22T09:00:00Z,accountant@nimbus.demo,BANK-AP-0011,{}
+Skyline Beverage Supply,AP-PAY-0012,1068800.00,BANK_TRANSFER,POSTED,2026-06-21T09:00:00Z,accountant@nimbus.demo,BANK-AP-0012,{}
+Cloud Apps Demo,AP-PAY-0015,2137800.00,BANK_TRANSFER,POSTED,2026-06-23T09:00:00Z,accountant@nimbus.demo,BANK-AP-0015,{}
+Kampala Utilities Demo,AP-PAY-0017,747000.00,BANK_TRANSFER,POSTED,2026-06-14T09:00:00Z,accountant@nimbus.demo,BANK-AP-0017,{}
+Event Rentals Demo,AP-PAY-0018,2220200.00,BANK_TRANSFER,POSTED,2026-06-17T09:00:00Z,accountant@nimbus.demo,BANK-AP-0018,{}
+Lake Harvest Foods,AP-PAY-0019,180300.00,BANK_TRANSFER,POSTED,2026-06-11T09:00:00Z,accountant@nimbus.demo,BANK-AP-0019,{}
+Prime Poultry Demo,AP-PAY-0024,639600.00,BANK_TRANSFER,POSTED,2026-06-29T09:00:00Z,accountant@nimbus.demo,BANK-AP-0024,{}

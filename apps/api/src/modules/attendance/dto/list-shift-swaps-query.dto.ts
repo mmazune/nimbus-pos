@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsEnum, IsNumberString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumberString, IsBoolean } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ShiftSwapStatus } from '@prisma/client';
 
 export class ListShiftSwapsQueryDto {
@@ -17,4 +18,13 @@ export class ListShiftSwapsQueryDto {
   @IsOptional()
   @IsNumberString()
   take?: string;
+
+  /**
+   * Waiter MVP: when `true`, restrict results to swaps the authenticated user is
+   * party to (either requester or target). Overrides any `employeeId`.
+   */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  mine?: boolean;
 }

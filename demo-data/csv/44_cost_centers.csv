@@ -1,0 +1,21 @@
+organizationSlug,branchCode,code,name,active,description
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-FOH,Front of House,true,Tapas Downtown Front of House
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-BOH,Back of House,true,Tapas Downtown Back of House
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-BAR,Bar,true,Tapas Downtown Bar
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-EVENTS,Events,true,Tapas Downtown Events
+nimbus,TAPAS_DOWNTOWN,TAPAS_DOWNTOWN-ADMIN,Admin,true,Tapas Downtown Admin
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-FOH,Front of House,true,Rooftop Bar Front of House
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-BOH,Back of House,true,Rooftop Bar Back of House
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-BAR,Bar,true,Rooftop Bar Bar
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-EVENTS,Events,true,Rooftop Bar Events
+nimbus,ROOFTOP_BAR,ROOFTOP_BAR-ADMIN,Admin,true,Rooftop Bar Admin
+nimbus,GARDEN_CAFE,GARDEN_CAFE-FOH,Front of House,true,Garden Cafe Front of House
+nimbus,GARDEN_CAFE,GARDEN_CAFE-BOH,Back of House,true,Garden Cafe Back of House
+nimbus,GARDEN_CAFE,GARDEN_CAFE-BAR,Bar,true,Garden Cafe Bar
+nimbus,GARDEN_CAFE,GARDEN_CAFE-EVENTS,Events,true,Garden Cafe Events
+nimbus,GARDEN_CAFE,GARDEN_CAFE-ADMIN,Admin,true,Garden Cafe Admin
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-FOH,Front of House,true,Events Kitchen / Banquet Hall Front of House
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-BOH,Back of House,true,Events Kitchen / Banquet Hall Back of House
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-BAR,Bar,true,Events Kitchen / Banquet Hall Bar
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-EVENTS,Events,true,Events Kitchen / Banquet Hall Events
+nimbus,EVENTS_KITCHEN,EVENTS_KITCHEN-ADMIN,Admin,true,Events Kitchen / Banquet Hall Admin

@@ -1,0 +1,19 @@
+organizationSlug,branchCode,code,name,accountType,status,contactName,email,phone,creditLimit
+nimbus,ROOFTOP_BAR,CUST-001,Demo Corporate Account 1,CORPORATE,ACTIVE,Demo AR Contact 1,arcontact1@demo.invalid,+256705100000,1000000.00
+nimbus,TAPAS_DOWNTOWN,CUST-002,Demo Corporate Account 2,HOUSE,ACTIVE,Demo AR Contact 2,arcontact2@demo.invalid,+256705100001,2000000.00
+nimbus,TAPAS_DOWNTOWN,CUST-003,Demo Corporate Account 3,CORPORATE,ACTIVE,Demo AR Contact 3,arcontact3@demo.invalid,+256705100002,500000.00
+nimbus,GARDEN_CAFE,CUST-004,Demo Corporate Account 4,HOUSE,ACTIVE,Demo AR Contact 4,arcontact4@demo.invalid,+256705100003,500000.00
+nimbus,ROOFTOP_BAR,CUST-005,Demo Corporate Account 5,CORPORATE,ACTIVE,Demo AR Contact 5,arcontact5@demo.invalid,+256705100004,1000000.00
+nimbus,EVENTS_KITCHEN,CUST-006,Demo Corporate Account 6,HOUSE,ACTIVE,Demo AR Contact 6,arcontact6@demo.invalid,+256705100005,2000000.00
+nimbus,GARDEN_CAFE,CUST-007,Demo Corporate Account 7,CORPORATE,ACTIVE,Demo AR Contact 7,arcontact7@demo.invalid,+256705100006,1000000.00
+nimbus,EVENTS_KITCHEN,CUST-008,Demo Corporate Account 8,HOUSE,ACTIVE,Demo AR Contact 8,arcontact8@demo.invalid,+256705100007,500000.00
+nimbus,EVENTS_KITCHEN,CUST-009,Demo Corporate Account 9,CORPORATE,ACTIVE,Demo AR Contact 9,arcontact9@demo.invalid,+256705100008,1000000.00
+nimbus,TAPAS_DOWNTOWN,CUST-010,Demo Corporate Account 10,HOUSE,ACTIVE,Demo AR Contact 10,arcontact10@demo.invalid,+256705100009,1000000.00
+nimbus,TAPAS_DOWNTOWN,CUST-011,Demo Corporate Account 11,CORPORATE,ACTIVE,Demo AR Contact 11,arcontact11@demo.invalid,+256705100010,500000.00
+nimbus,TAPAS_DOWNTOWN,CUST-012,Demo Corporate Account 12,HOUSE,ACTIVE,Demo AR Contact 12,arcontact12@demo.invalid,+256705100011,1000000.00
+nimbus,ROOFTOP_BAR,CUST-013,Demo Corporate Account 13,CORPORATE,ACTIVE,Demo AR Contact 13,arcontact13@demo.invalid,+256705100012,2000000.00
+nimbus,EVENTS_KITCHEN,CUST-014,Demo Corporate Account 14,HOUSE,ACTIVE,Demo AR Contact 14,arcontact14@demo.invalid,+256705100013,1000000.00
+nimbus,ROOFTOP_BAR,CUST-015,Demo Corporate Account 15,CORPORATE,ACTIVE,Demo AR Contact 15,arcontact15@demo.invalid,+256705100014,1000000.00
+nimbus,TAPAS_DOWNTOWN,CUST-016,Demo Corporate Account 16,HOUSE,ACTIVE,Demo AR Contact 16,arcontact16@demo.invalid,+256705100015,1000000.00
+nimbus,TAPAS_DOWNTOWN,CUST-017,Demo Corporate Account 17,CORPORATE,ACTIVE,Demo AR Contact 17,arcontact17@demo.invalid,+256705100016,2000000.00
+nimbus,GARDEN_CAFE,CUST-018,Demo Corporate Account 18,HOUSE,ACTIVE,Demo AR Contact 18,arcontact18@demo.invalid,+256705100017,1000000.00

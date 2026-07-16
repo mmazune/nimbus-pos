@@ -1,0 +1,733 @@
+branchCode,orderNumber,lineNo,modifierGroupName,modifierOptionName,priceDelta,labelSnapshot
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00001,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00002,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00004,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00004,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00005,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00005,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00006,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00010,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00011,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00013,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00014,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00015,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00016,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00017,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00018,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00019,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00020,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00022,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00024,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00024,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00025,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00028,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00033,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00034,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00034,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00035,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00035,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00036,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00037,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00037,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00038,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00039,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00042,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00044,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00044,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00046,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00047,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00048,4,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00050,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00052,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00052,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00054,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00055,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00056,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00056,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00058,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00058,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00061,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00061,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00066,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00069,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00073,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00076,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00077,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00080,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00083,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00086,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00086,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00089,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00090,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00092,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00093,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00093,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00097,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00097,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00098,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00101,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00103,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00108,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00108,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00108,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00109,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00111,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00113,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00116,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00121,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00124,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00125,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00131,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00131,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00134,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00135,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00135,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00135,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00137,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00139,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00140,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00141,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00142,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00143,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00144,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00144,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00146,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00152,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00152,4,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00153,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00154,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00157,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00159,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00163,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00164,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00166,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00166,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00167,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00169,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00169,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00170,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00172,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00178,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00181,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00182,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00182,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00184,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00184,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00188,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00189,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00190,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00191,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00192,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00192,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00195,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00195,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00196,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00197,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00202,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00203,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00203,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00204,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00205,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00205,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00206,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00206,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00206,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00207,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00209,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00211,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00213,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00214,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00215,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00215,4,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00216,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00220,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00223,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00225,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00226,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00227,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00227,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00233,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00235,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00236,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00236,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00241,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00242,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00242,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00243,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00244,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00244,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00245,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00245,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00246,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00246,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00247,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00247,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00249,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00250,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00253,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00254,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00259,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00262,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00263,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00265,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00265,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00266,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00266,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00267,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00267,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00268,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00274,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00277,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00278,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00278,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00279,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00280,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00281,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00282,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00282,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00283,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00284,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00285,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00288,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00288,3,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00289,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00291,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00293,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00295,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00297,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00297,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00299,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00299,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00300,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00306,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00309,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00310,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00310,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00310,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00311,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00312,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00314,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00319,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00324,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00328,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00330,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00330,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00333,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00333,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00334,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00335,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00336,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00338,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00338,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00339,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00340,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00342,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00343,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00345,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00345,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00346,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00349,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00351,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00358,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00359,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00361,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00362,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00366,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00367,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00370,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00370,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00371,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00371,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00372,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00373,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00375,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00379,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00380,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00381,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00381,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00383,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00384,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00388,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00389,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00391,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00392,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00394,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00395,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00396,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00398,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00398,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00401,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00402,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00402,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00405,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00409,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00411,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00412,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00414,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00414,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00417,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00419,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00420,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00423,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00426,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00427,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00428,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00428,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00429,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00430,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00430,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00432,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00433,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00435,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00438,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00441,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00441,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00443,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00445,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00449,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00451,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00452,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00454,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00454,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00455,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00456,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00461,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00462,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00464,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00464,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00466,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00470,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00476,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00476,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00483,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00485,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00485,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00488,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00489,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00489,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00490,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00492,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00494,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00496,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00496,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00497,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00498,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00499,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00500,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00503,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00503,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00507,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00508,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00512,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00514,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00519,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00519,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00520,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00520,4,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00521,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00521,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00524,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00525,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00529,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00530,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00531,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00531,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00535,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00536,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00536,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00536,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00539,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00540,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00541,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00544,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00545,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00547,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00549,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00550,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00550,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00553,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00555,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00555,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00556,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00557,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00558,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00560,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00561,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00563,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00564,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00565,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00568,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00568,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00572,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00574,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00576,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00576,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00577,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00578,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00579,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00584,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00587,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00591,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00595,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00596,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00597,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00597,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00598,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00598,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00604,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00605,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00607,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00608,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00610,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00612,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00613,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00615,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00616,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00618,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00620,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00621,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00624,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00625,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00626,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00628,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00628,3,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00629,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00632,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00633,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00634,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00634,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00637,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00637,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00637,4,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00640,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00641,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00643,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00644,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00644,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00645,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00646,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00648,3,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00650,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00651,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00652,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00653,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00654,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00656,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00660,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00661,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00665,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00666,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00666,4,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00667,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00670,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00674,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00678,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00679,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00680,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00681,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00683,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00684,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00685,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00688,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00694,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00694,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00695,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00695,4,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00698,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00699,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00700,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00702,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00702,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00702,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00704,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00705,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00709,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00711,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00711,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00712,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00715,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00716,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00718,4,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00723,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00725,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00728,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00729,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00733,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00735,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00736,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00737,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00742,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00744,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00744,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00746,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00746,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00746,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00747,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00750,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00750,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00753,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00754,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00755,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00756,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00757,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00757,4,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00758,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00758,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00760,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00761,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00764,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00766,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00766,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00767,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00767,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00768,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00768,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00770,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00770,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00770,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00771,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00774,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00775,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00778,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00779,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00782,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00783,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00783,4,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00784,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00787,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00788,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00791,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00792,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00807,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00811,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00811,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00815,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00815,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00818,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00819,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00820,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00821,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00822,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00826,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00828,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00830,4,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00837,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00839,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00842,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00847,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00852,3,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00852,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00853,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00853,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00855,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00855,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00856,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00857,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00858,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00859,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00859,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00861,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00862,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00865,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00867,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00868,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00868,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00870,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00871,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00873,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00874,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00878,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00879,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00881,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00882,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00883,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00884,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00886,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00887,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00887,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00888,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00889,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00890,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00890,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00897,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00897,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00897,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00898,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00901,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00904,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00905,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00906,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00909,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00911,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00912,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00913,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00913,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00914,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00915,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00916,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00916,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00918,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00919,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00920,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00920,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00922,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00922,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00923,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00925,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00927,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00929,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00933,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00934,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00934,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00935,4,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00936,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00937,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00937,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00937,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00937,4,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00939,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00940,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00941,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00942,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00944,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00944,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00945,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00947,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00948,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00949,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00950,4,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00952,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00955,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00956,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00958,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00959,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00959,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00963,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00968,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00969,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00969,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00970,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-00971,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00972,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00972,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00972,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00972,4,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00975,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00976,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00976,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00978,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-00978,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00981,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00981,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00983,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00987,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00987,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00987,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00988,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00991,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-00992,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00999,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-00999,2,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01000,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01002,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01002,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01005,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01006,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01007,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01012,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01013,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01015,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01017,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01019,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01019,3,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01021,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01021,4,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01022,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01024,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01024,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01025,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01025,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01027,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01027,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01030,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01034,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01036,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01040,1,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01041,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01043,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01045,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01047,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01048,3,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01049,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01051,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01051,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01057,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01057,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01057,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01059,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01059,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01060,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01062,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01068,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01069,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01074,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01075,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01075,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01077,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01080,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01085,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01086,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01087,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01091,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01093,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01096,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01096,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01097,1,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01102,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01104,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01105,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01106,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01107,4,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01109,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01111,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01112,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01117,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01119,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01121,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01122,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01122,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01123,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01123,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01125,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01127,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01129,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01131,2,Drink Temperature,Iced,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01144,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+TAPAS_DOWNTOWN,ORD-TAPAS_DOWNTOWN-01144,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01150,2,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01152,3,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01153,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01154,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01155,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01156,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01156,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01158,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01159,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01161,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01162,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01162,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01164,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01173,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01173,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01173,4,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01175,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01177,1,Drink Temperature,Iced,0.00,Demo modifier
+ROOFTOP_BAR,ORD-ROOFTOP_BAR-01178,1,Drink Temperature,Iced,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01179,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+GARDEN_CAFE,ORD-GARDEN_CAFE-01180,1,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01186,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01187,2,Drink Temperature,Iced,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01188,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01190,2,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01190,3,Sauce Choice,Herb Sauce,0.00,Demo modifier
+EVENTS_KITCHEN,ORD-EVENTS_KITCHEN-01190,4,Sauce Choice,Herb Sauce,0.00,Demo modifier

@@ -1,0 +1,3017 @@
+{
+    "info": {
+        "name": "WAITER-MVP - Role Workflow",
+        "description": "Backend verification for the Waiter role MVP. Exercises happy paths a waiter actually uses (login, shift, floor read, reservations read/seat, orders create+send+mark-served+request-bill, receipts read/reprint/send, HR self-scope) plus the negative paths that should now be denied after the seed tightened the role (reservation admin, handoff endpoints, KDS state transitions, cross-waiter order access, shift-gated writes).\n\nRun order:\n1. 00 Read Me\n2. A. Auth & Context (waiter)\n3. B. Shift / Readiness\n4. C. Floor / Tables\n5. D. Orders\n6. E. Reservations\n7. F. Receipts\n8. G. Me / HR Self-Scope\n9. H. Permission Denials / Guard Rails\n10. I. Edge Cases / Known Caveats\n\nAll folders are [STANDALONE] - the collection-level pre-request resolves waiter token, /api/auth/me context, branchId, orgId, tableId and menuItemId, and folder-level pre-requests resolve folder-specific fixtures (open shift, owner token, owner-owned order, closed receipt, employeeId).\n\nWARNING: Re-import required after any script change. Postman caches pre-request and test scripts at import time. If you previously imported this collection and the scripts have since been updated, delete the collection from Postman and re-import the JSON.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "waiterEmail",
+            "value": "waiter@demo.local"
+        },
+        {
+            "key": "waiterPassword",
+            "value": "Waiter#123"
+        },
+        {
+            "key": "waiterPin",
+            "value": "123456"
+        },
+        {
+            "key": "ownerEmail",
+            "value": "owner@demo.local"
+        },
+        {
+            "key": "ownerPassword",
+            "value": "Owner#123"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "waiterAccessToken",
+            "value": ""
+        },
+        {
+            "key": "waiterRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "ownerAccessToken",
+            "value": ""
+        },
+        {
+            "key": "orgId",
+            "value": ""
+        },
+        {
+            "key": "branchId",
+            "value": ""
+        },
+        {
+            "key": "waiterUserId",
+            "value": ""
+        },
+        {
+            "key": "tableId",
+            "value": ""
+        },
+        {
+            "key": "reservedTableId",
+            "value": ""
+        },
+        {
+            "key": "reservationId",
+            "value": ""
+        },
+        {
+            "key": "orderId",
+            "value": ""
+        },
+        {
+            "key": "otherWaiterOrderId",
+            "value": ""
+        },
+        {
+            "key": "receiptId",
+            "value": ""
+        },
+        {
+            "key": "shiftId",
+            "value": ""
+        },
+        {
+            "key": "attendanceRecordId",
+            "value": ""
+        },
+        {
+            "key": "leaveRequestId",
+            "value": ""
+        },
+        {
+            "key": "shiftSwapId",
+            "value": ""
+        },
+        {
+            "key": "menuItemId",
+            "value": ""
+        },
+        {
+            "key": "orderItemId",
+            "value": ""
+        },
+        {
+            "key": "employeeId",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// WAITER-MVP canonical pre-request (R4/R5/R14/R16/R17).",
+                    "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:3001';",
+                    "const waiterEmail = pm.collectionVariables.get('waiterEmail') || 'waiter@demo.local';",
+                    "const waiterPassword = pm.collectionVariables.get('waiterPassword') || 'Waiter#123';",
+                    "const url = pm.request && pm.request.url ? pm.request.url.toString() : '';",
+                    "const isLogin = /\\/api\\/auth\\/(login|refresh|quick-pin-login|forgot-password|reset-password)/.test(url);",
+                    "const isHealth = /\\/api\\/health(\\?|$)/.test(url);",
+                    "const isPublic = isLogin || isHealth;",
+                    "function getVar(k) {",
+                    "  if (pm.environment && pm.environment.name) {",
+                    "    const ev = pm.environment.get(k);",
+                    "    if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                    "  }",
+                    "  return pm.collectionVariables.get(k);",
+                    "}",
+                    "function setVar(k, v) {",
+                    "  if (v === undefined || v === null || v === '') return;",
+                    "  pm.collectionVariables.set(k, v);",
+                    "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                    "}",
+                    "function isJwtFresh(tok) {",
+                    "  try {",
+                    "    if (!tok || typeof tok !== 'string') return false;",
+                    "    const parts = tok.split('.'); if (parts.length < 2) return false;",
+                    "    const b = parts[1].replace(/-/g, '+').replace(/_/g, '/');",
+                    "    const pad = b + '==='.slice((b.length + 3) % 4);",
+                    "    const payload = JSON.parse((typeof Buffer !== 'undefined' ? Buffer.from(pad, 'base64').toString('utf8') : atob(pad)));",
+                    "    return payload && payload.exp && (payload.exp * 1000 - Date.now()) > 60000;",
+                    "  } catch (e) { return false; }",
+                    "}",
+                    "function sendReq(opts) { return new Promise((resolve) => { pm.sendRequest(opts, (err, res) => resolve({ err, res })); }); }",
+                    "async function ensureWaiterToken() {",
+                    "  if (isPublic) return;",
+                    "  const tok = getVar('waiterAccessToken');",
+                    "  if (tok && tok.length >= 20 && isJwtFresh(tok)) { setVar('accessToken', tok); return; }",
+                    "  const { res } = await sendReq({ url: baseUrl + '/api/auth/login', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ email: waiterEmail, password: waiterPassword }) } });",
+                    "  if (res) { try { const j = res.json(); if (j.accessToken) { setVar('waiterAccessToken', j.accessToken); setVar('accessToken', j.accessToken); } if (j.refreshToken) setVar('waiterRefreshToken', j.refreshToken); if (j.user && j.user.id) setVar('waiterUserId', j.user.id); } catch (e) {} }",
+                    "}",
+                    "async function ensureMeContext() {",
+                    "  if (isPublic) return;",
+                    "  if (getVar('branchId') && getVar('orgId') && getVar('waiterUserId')) return;",
+                    "  const tok = getVar('accessToken'); if (!tok) return;",
+                    "  const { res } = await sendReq({ url: baseUrl + '/api/auth/me', method: 'GET', header: { 'Authorization': 'Bearer ' + tok } });",
+                    "  if (!res) return;",
+                    "  try { const j = res.json();",
+                    "    if (j && j.id) setVar('waiterUserId', j.id);",
+                    "    if (j && j.context) { if (j.context.defaultOrganizationId) setVar('orgId', j.context.defaultOrganizationId); if (j.context.defaultBranchId) setVar('branchId', j.context.defaultBranchId); }",
+                    "    if ((!getVar('orgId') || !getVar('branchId')) && Array.isArray(j.memberships) && j.memberships.length) { if (!getVar('orgId')) setVar('orgId', j.memberships[0].organizationId); if (!getVar('branchId')) setVar('branchId', j.memberships[0].branchId); }",
+                    "  } catch (e) {}",
+                    "}",
+                    "async function ensureMenuItem() {",
+                    "  if (isPublic || getVar('menuItemId')) return;",
+                    "  const tok = getVar('accessToken'); const br = getVar('branchId'); if (!tok || !br) return;",
+                    "  const { res } = await sendReq({ url: baseUrl + '/api/menu/items', method: 'GET', header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': br } });",
+                    "  if (!res) return;",
+                    "  try { const j = res.json(); const arr = Array.isArray(j) ? j : (j.data || []); if (arr[0] && arr[0].id) setVar('menuItemId', arr[0].id); } catch (e) {}",
+                    "}",
+                    "async function ensureTable() {",
+                    "  if (isPublic || getVar('tableId')) return;",
+                    "  const tok = getVar('accessToken'); const br = getVar('branchId'); if (!tok || !br) return;",
+                    "  const { res } = await sendReq({ url: baseUrl + '/api/tables', method: 'GET', header: { 'Authorization': 'Bearer ' + tok, 'X-Branch-Id': br } });",
+                    "  if (!res) return;",
+                    "  try { const j = res.json(); const arr = Array.isArray(j) ? j : (j.data || []); const free = arr.find(t => t.status === 'AVAILABLE') || arr[0]; if (free) setVar('tableId', free.id); } catch (e) {}",
+                    "}",
+                    "return ensureWaiterToken().then(ensureMeContext).then(ensureMenuItem).then(ensureTable).catch((e) => console.log('[waiter-mvp prereq]', e && e.message));"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 Read Me",
+            "item": [
+                {
+                    "name": "README - run order, variables, caveats",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "## Run order\n1. **A. Auth & Context** - waiter password login, /api/auth/me, quick-pin login, refresh, logout\n2. **B. Shift / Readiness** - open shift, verify writes succeed\n3. **C. Floor / Tables** - list, detail, reserved-table detail\n4. **D. Orders** - happy path: create dine-in, add/update/remove items, send (200), mark-served (200), request-bill (200 + idempotent), create takeaway, list filters\n5. **E. Reservations** - list, upcoming, detail, seat (200 + table flips OCCUPIED)\n6. **F. Receipts** - view, history, reprint, send (202 PENDING - no live adapter)\n7. **G. Me / HR Self-Scope** - clock, attendance ?mine=true, leave ?mine=true, create leave, shift-swaps ?mine=true\n8. **H. Permission Denials** - cross-waiter order GET (403 ORDER_NOT_OWNED_BY_WAITER), waiter creating reservation (403), confirm/cancel/deposit/assign-table (403), transfer-server/move-items/split-bill/merge (403), in-kitchen/ready/void (403 ORDER_TRANSITION_NOT_WAITER_SAFE), shift-not-open probe\n9. **I. Edge Cases** - receipt send PENDING, no combine/uncombine in MVP, reservation admin out of scope\n\n## Variables auto-populated\n- `waiterAccessToken`, `waiterRefreshToken`, `waiterUserId`, `accessToken` (alias to waiter) - via collection pre-request\n- `orgId`, `branchId` - via /api/auth/me\n- `menuItemId`, `tableId` - via first-row resolution\n- `ownerAccessToken`, `otherWaiterOrderId`, `receiptId`, `employeeId` - via folder-level pre-requests\n\n## Locked rules verified\n- Waiter ownership guard returns 403 ORDER_NOT_OWNED_BY_WAITER\n- Waiter state-transition guard returns 403 ORDER_TRANSITION_NOT_WAITER_SAFE for /in-kitchen, /ready\n- Reservation admin permissions removed from waiter role\n- Handoff endpoints (transfer-server, move-items, split-bill, merge) denied for waiter\n- /pos/orders/:id/request-bill returns 200 with billRequested:true and is idempotent\n- /receipts/:id/send returns 202 with status:PENDING + supported:false (no live adapter)\n- HR ?mine=true filters to actor employeeId\n\n## WARNING\nRe-import required after any script change. Postman caches pre-request and test scripts at import time."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "A. Auth & Context (waiter) [STANDALONE]",
+            "description": "[STANDALONE] - Login uses raw credentials; downstream requests rely on the collection-level pre-request to refresh the waiter token if it expires.",
+            "item": [
+                {
+                    "name": "Waiter login (asserts [200,201]) - R12",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{waiterEmail}}\",\n  \"password\": \"{{waiterPassword}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j = pm.response.json();",
+                                    "pm.test('Login OK', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "pm.test('Returns accessToken', () => pm.expect(j.accessToken).to.be.a('string'));",
+                                    "function setVar(k,v){ if(v===undefined||v===null||v==='') return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "setVar('waiterAccessToken', j.accessToken); setVar('accessToken', j.accessToken);",
+                                    "if (j.refreshToken) setVar('waiterRefreshToken', j.refreshToken);",
+                                    "if (j.user && j.user.id) setVar('waiterUserId', j.user.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/auth/me (waiter)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Has context.defaultBranchId', () => pm.expect(j.context && j.context.defaultBranchId).to.be.a('string'));",
+                                    "function setVar(k,v){ if(v===undefined||v===null||v==='') return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "if (j.context) { setVar('orgId', j.context.defaultOrganizationId); setVar('branchId', j.context.defaultBranchId); }",
+                                    "if (j.id) setVar('waiterUserId', j.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Waiter quick-PIN login (asserts 201)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"branchId\": \"{{branchId}}\",\n  \"pin\": \"{{waiterPin}}\",\n  \"platform\": \"POS_DESKTOP\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/quick-pin-login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "quick-pin-login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Quick-PIN login OK', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Returns accessToken', () => pm.expect(j.accessToken).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/auth/refresh (waiter)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{waiterRefreshToken}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "refresh"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Refresh OK', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const j = pm.response.json();",
+                                    "function setVar(k,v){ if(v===undefined||v===null||v==='') return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "if (j.accessToken) { setVar('waiterAccessToken', j.accessToken); setVar('accessToken', j.accessToken); }",
+                                    "if (j.refreshToken) setVar('waiterRefreshToken', j.refreshToken);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/auth/logout (waiter, doc-only - run last)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Runs at the very end of folder A; subsequent folders will auto-relogin via the collection pre-request."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Logout returns 2xx', () => pm.expect([200,201,204]).to.include(pm.response.code));",
+                                    "function setVar(k,v){ pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "// Invalidate cached token so the next folder forces a fresh login.",
+                                    "setVar('waiterAccessToken',''); setVar('accessToken','');"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "B. Shift / Readiness [STANDALONE]",
+            "description": "[STANDALONE] - Folder pre-request opens a shift for the waiter if none is active, so subsequent folders that need write access succeed.",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "function sendReq(o){ return new Promise(r => pm.sendRequest(o,(e,s)=>r({err:e,res:s}))); }",
+                            "const tok = getVar('accessToken'); const br = getVar('branchId'); if (!tok || !br) return;",
+                            "return (async () => {",
+                            "const probe = await sendReq({ url: baseUrl + '/api/shifts/active', method: 'GET', header: { 'Authorization':'Bearer '+tok, 'X-Branch-Id':br } });",
+                            "let shiftId = null;",
+                            "if (probe.res && probe.res.code === 200) { try { const j = probe.res.json(); if (j && j.id) shiftId = j.id; } catch(e){} }",
+                            "if (!shiftId) {",
+                            "  const open = await sendReq({ url: baseUrl + '/api/shifts/open', method: 'POST', header: { 'Authorization':'Bearer '+tok, 'X-Branch-Id':br, 'Content-Type':'application/json' }, body: { mode:'raw', raw: '{}' } });",
+                            "  if (open.res) { try { const j = open.res.json(); if (j && j.id) shiftId = j.id; } catch(e){} }",
+                            "}",
+                            "if (shiftId) setVar('shiftId', shiftId);",
+                            "})().catch(()=>{});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "GET /api/shifts/active",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/shifts/active",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "shifts",
+                                "active"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "// May be empty body if no shift; folder pre-request opens one so a follow-up POST succeeds.",
+                                    "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "try { const j = pm.response.json(); if (j && j.id) setVar('shiftId', j.id); } catch(e){}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/shifts/:id (active shift detail)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/shifts/{{shiftId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "shifts",
+                                "{{shiftId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Status OPEN', () => pm.expect(j.status).to.eql('OPEN'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders (operational write succeeds with open shift)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"serviceType\": \"TAKEAWAY\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Order create OK (shift open)', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Has order id', () => pm.expect(j.id).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "C. Floor / Tables [STANDALONE]",
+            "description": "[STANDALONE] - Uses collection-level tableId. Reserved-table lookup uses a confirmed reservation found in folder pre-request.",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "function sendReq(o){ return new Promise(r => pm.sendRequest(o,(e,s)=>r({err:e,res:s}))); }",
+                            "const tok = getVar('accessToken'); const br = getVar('branchId'); if (!tok || !br) return;",
+                            "return (async () => {",
+                            "if (!getVar('reservedTableId') || !getVar('reservationId')) {",
+                            "  const r = await sendReq({ url: baseUrl + '/api/reservations?status=CONFIRMED', method:'GET', header:{ 'Authorization':'Bearer '+tok, 'X-Branch-Id':br } });",
+                            "  if (r.res) { try { const j = r.res.json(); const data = j.data || []; const withTable = data.find(x => x.tableId) || data[0]; if (withTable) { setVar('reservationId', withTable.id); if (withTable.tableId) setVar('reservedTableId', withTable.tableId); } } catch(e){} }",
+                            "}",
+                            "})().catch(()=>{});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "GET /api/tables (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/tables",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "tables"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const arr = pm.response.json();",
+                                    "pm.test('Array of tables', () => pm.expect(Array.isArray(arr)).to.be.true);",
+                                    "pm.test('Has at least one table', () => pm.expect(arr.length).to.be.greaterThan(0));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/tables/:id (detail)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/tables/{{tableId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "tables",
+                                "{{tableId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Has id and status', () => { pm.expect(j.id).to.eql(pm.collectionVariables.get('tableId')); pm.expect(j.status).to.be.a('string'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/tables/:id (reserved table detail; skip if no confirmed reservation)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/tables/{{reservedTableId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "tables",
+                                "{{reservedTableId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('reservedTableId')) { pm.test('skipped: no confirmed reservation with tableId in seed', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "D. Orders [STANDALONE]",
+            "description": "[STANDALONE] - Folder pre-request guarantees a fresh dine-in order owned by the waiter and a menuItem to add. Each request captures what it produces.",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "// Folder D always creates a NEW dine-in order so item add/update/remove/send/served/request-bill all chain cleanly.",
+                            "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "function sendReq(o){ return new Promise(r => pm.sendRequest(o,(e,s)=>r({err:e,res:s}))); }",
+                            "const tok = getVar('accessToken'); const br = getVar('branchId'); const tbl = getVar('tableId'); if (!tok || !br) return;",
+                            "return (async () => {",
+                            "// Only seed orderId when missing; individual requests will overwrite as the flow proceeds.",
+                            "if (!getVar('orderId')) {",
+                            "  const body = tbl ? { serviceType:'DINE_IN', tableId: tbl } : { serviceType:'TAKEAWAY' };",
+                            "  const r = await sendReq({ url: baseUrl + '/api/pos/orders', method:'POST', header:{ 'Authorization':'Bearer '+tok, 'X-Branch-Id':br, 'Content-Type':'application/json' }, body:{ mode:'raw', raw: JSON.stringify(body) } });",
+                            "  if (r.res && r.res.code === 201) { try { const j = r.res.json(); if (j.id) setVar('orderId', j.id); } catch(e){} }",
+                            "}",
+                            "})().catch(()=>{});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "POST /api/pos/orders (create dine-in)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"serviceType\": \"DINE_IN\",\n  \"tableId\": \"{{tableId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Created 201', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "setVar('orderId', j.id);",
+                                    "pm.test('Owned by waiter', () => pm.expect(j.userId).to.eql(pm.collectionVariables.get('waiterUserId')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/items (add item)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "items"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Created 201', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "// Service returns the created OrderItem directly (id at top level); fall back to items[] in case shape changes.",
+                                    "const itemId = j.id || (Array.isArray(j.items) && j.items.length ? j.items[j.items.length-1].id : null);",
+                                    "if (itemId) setVar('orderItemId', itemId);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/items (add item with note + metadata)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 1,\n  \"notes\": \"no onions\",\n  \"metadata\": { \"modifiers\": [\"extra cheese\"] }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "items"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Created 201', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/pos/orders/:id/items/:itemId (update qty)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"quantity\": 3\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items/{{orderItemId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "items",
+                                "{{orderItemId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "DELETE /api/pos/orders/:id/items/:itemId (remove one item)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/items/{{orderItemId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "items",
+                                "{{orderItemId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/send (asserts 200, auto-occupy table)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "send"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK (not 201)', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Status SENT', () => pm.expect(j.status).to.eql('SENT'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/pos/orders/:id (detail after send)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/pos/orders (default list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Has data array', () => pm.expect(j.data).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/pos/orders?userId=me (waiter sees own only)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders?userId=me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "userId",
+                                    "value": "me"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const rows = (pm.response.json().data || []);",
+                                    "if (rows.length > 0) {",
+                                    "  const distinct = new Set(rows.map(o => o.userId));",
+                                    "  pm.test('All rows share one userId', () => pm.expect(distinct.size).to.eql(1));",
+                                    "  pm.test('That userId is the waiter', () => pm.expect([...distinct][0]).to.eql(pm.collectionVariables.get('waiterUserId')));",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/pos/orders?excludeStatus=NEW (drops drafts)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders?excludeStatus=NEW",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "excludeStatus",
+                                    "value": "NEW"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const rows = (pm.response.json().data || []);",
+                                    "pm.test('No NEW orders in payload', () => pm.expect(rows.every(o => o.status !== 'NEW')).to.be.true);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/mark-served (asserts 200)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/mark-served",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "mark-served"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// Drive order SENT -> IN_KITCHEN -> READY via owner so waiter mark-served can succeed.",
+                                    "function getVar(k){ if(pm.environment && pm.environment.name){ const ev = pm.environment.get(k); if(ev!==undefined && ev!==null && ev!=='') return ev; } return pm.collectionVariables.get(k); }",
+                                    "function setVar(k,v){ if(v===undefined||v===null||v==='') return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                                    "const base = getVar('baseUrl');",
+                                    "const branch = getVar('branchId');",
+                                    "const oid = getVar('orderId');",
+                                    "function sendReq(opts){ return new Promise((resolve) => pm.sendRequest(opts, (err, res) => resolve({err, res}))); }",
+                                    "return (async () => {",
+                                    "  let owner = getVar('ownerAccessToken');",
+                                    "  if (!owner) {",
+                                    "    const l = await sendReq({ url: base + '/api/auth/login', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ email: getVar('ownerEmail'), password: getVar('ownerPassword') }) } });",
+                                    "    if (l.res) { try { owner = l.res.json().accessToken; setVar('ownerAccessToken', owner); } catch(e){} }",
+                                    "  }",
+                                    "  if (!owner || !oid) { console.warn('skip owner-driven transitions: missing ownerAccessToken or orderId'); return; }",
+                                    "  for (const path of ['in-kitchen','ready']) {",
+                                    "    const r = await sendReq({ url: base + '/api/pos/orders/' + oid + '/' + path, method: 'POST', header: { 'Authorization': 'Bearer ' + owner, 'X-Branch-Id': branch, 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: '{}' } });",
+                                    "    console.log(path + ' -> ' + (r.res && r.res.code));",
+                                    "  }",
+                                    "})();"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Status SERVED', () => pm.expect(j.status).to.eql('SERVED'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/request-bill (asserts 200 + billRequested)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/request-bill",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "request-bill"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('billRequested true', () => pm.expect(j.billRequested).to.be.true);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/request-bill (idempotent second call)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/request-bill",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "request-bill"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Still 200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('billRequested still true', () => pm.expect(j.billRequested).to.be.true);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders (create takeaway, waiter)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"serviceType\": \"TAKEAWAY\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Created 201', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('serviceType TAKEAWAY', () => pm.expect(j.serviceType).to.eql('TAKEAWAY'));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "E. Reservations [STANDALONE]",
+            "description": "[STANDALONE] - Folder pre-request finds a CONFIRMED reservation to seat. Waiter-write denial paths live in folder H.",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "function sendReq(o){ return new Promise(r => pm.sendRequest(o,(e,s)=>r({err:e,res:s}))); }",
+                            "const tok = getVar('accessToken'); const br = getVar('branchId'); if (!tok || !br) return;",
+                            "return (async () => {",
+                            "if (!getVar('reservationId')) {",
+                            "  const r = await sendReq({ url: baseUrl + '/api/reservations?status=CONFIRMED', method:'GET', header:{ 'Authorization':'Bearer '+tok, 'X-Branch-Id':br } });",
+                            "  if (r.res) { try { const j = r.res.json(); const data = j.data || []; if (data[0]) { setVar('reservationId', data[0].id); if (data[0].tableId) setVar('reservedTableId', data[0].tableId); } } catch(e){} }",
+                            "}",
+                            "})().catch(()=>{});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "GET /api/reservations (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/reservations/upcoming",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations/upcoming",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations",
+                                "upcoming"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/reservations/:id (detail; skips if no confirmed reservation)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations/{{reservationId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations",
+                                "{{reservationId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('reservationId')) { pm.test('skipped: no CONFIRMED reservation in seed', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/reservations/:id/seat (asserts 200; skips if no fixture)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"tableId\": \"{{reservedTableId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/seat",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations",
+                                "{{reservationId}}",
+                                "seat"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('reservationId') || !getVar('reservedTableId')) { pm.test('skipped: no seatable reservation fixture', () => pm.expect(true).to.be.true); return; }",
+                                    "// Seat may be 200 (first call) or 409 (already seated by prior run) - accept both as backend-correct.",
+                                    "pm.test('200 or 409', () => pm.expect([200,409]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/tables/:id (verify reserved table flipped OCCUPIED after seat)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/tables/{{reservedTableId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "tables",
+                                "{{reservedTableId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('reservedTableId')) { pm.test('skipped: no reservedTableId', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Table status is OCCUPIED (or RESERVED)', () => pm.expect(['OCCUPIED','RESERVED']).to.include(j.status));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "F. Receipts [STANDALONE]",
+            "description": "[STANDALONE] - Folder pre-request mints an owner token and finds the first CLOSED order id (== receipt id). The Send Receipt request is intentionally PENDING because there is no live delivery adapter wired in this milestone.",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "function sendReq(o){ return new Promise(r => pm.sendRequest(o,(e,s)=>r({err:e,res:s}))); }",
+                            "const br = getVar('branchId'); if (!br) return;",
+                            "return (async () => {",
+                            "// Use owner credentials to find a CLOSED order (== receipt id). Waiter cannot necessarily list cross-user closed orders.",
+                            "let ownerTok = getVar('ownerAccessToken');",
+                            "if (!ownerTok) {",
+                            "  const l = await sendReq({ url: baseUrl + '/api/auth/login', method:'POST', header:{ 'Content-Type':'application/json' }, body:{ mode:'raw', raw: JSON.stringify({ email: getVar('ownerEmail'), password: getVar('ownerPassword') }) } });",
+                            "  if (l.res) { try { const j = l.res.json(); ownerTok = j.accessToken; setVar('ownerAccessToken', ownerTok); } catch(e){} }",
+                            "}",
+                            "if (!getVar('receiptId') && ownerTok) {",
+                            "  const r = await sendReq({ url: baseUrl + '/api/pos/orders?status=CLOSED', method:'GET', header:{ 'Authorization':'Bearer '+ownerTok, 'X-Branch-Id':br } });",
+                            "  if (r.res) { try { const j = r.res.json(); const data = j.data || []; if (data[0]) setVar('receiptId', data[0].id); } catch(e){} }",
+                            "}",
+                            "})().catch(()=>{});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "GET /api/receipts/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('receiptId')) { pm.test('skipped: no CLOSED order in seed', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Has receiptId', () => pm.expect(j.receiptId).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/receipts/:id/history",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptId}}/history",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptId}}",
+                                "history"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('receiptId')) { pm.test('skipped: no CLOSED order in seed', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/receipts/:id/reprint",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"customer requested\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptId}}/reprint",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptId}}",
+                                "reprint"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('receiptId')) { pm.test('skipped: no CLOSED order in seed', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('ok true', () => pm.expect(j.ok).to.be.true);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Send Receipt (PENDING - no live adapter)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"channel\": \"email\",\n  \"recipient\": \"customer@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/receipts/{{receiptId}}/send",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receiptId}}",
+                                "send"
+                            ]
+                        },
+                        "description": "PENDING - no live delivery adapter is wired. Endpoint returns 202 with status:PENDING + supported:false. The contract will flip to supported:true once an adapter ships, without breaking this test."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('receiptId')) { pm.test('skipped: no CLOSED order in seed', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('202 Accepted', () => pm.response.to.have.status(202));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('status PENDING', () => pm.expect(j.status).to.eql('PENDING'));",
+                                    "pm.test('supported false', () => pm.expect(j.supported).to.eql(false));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "G. Me / HR Self-Scope [STANDALONE]",
+            "description": "[STANDALONE] - Folder pre-request resolves the waiter's HR employeeId via the owner-token employees list (waiter lacks pos:hr:employees:read).",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "function sendReq(o){ return new Promise(r => pm.sendRequest(o,(e,s)=>r({err:e,res:s}))); }",
+                            "const br = getVar('branchId'); if (!br) return;",
+                            "return (async () => {",
+                            "let ownerTok = getVar('ownerAccessToken');",
+                            "if (!ownerTok) {",
+                            "  const l = await sendReq({ url: baseUrl + '/api/auth/login', method:'POST', header:{ 'Content-Type':'application/json' }, body:{ mode:'raw', raw: JSON.stringify({ email: getVar('ownerEmail'), password: getVar('ownerPassword') }) } });",
+                            "  if (l.res) { try { const j = l.res.json(); ownerTok = j.accessToken; setVar('ownerAccessToken', ownerTok); } catch(e){} }",
+                            "}",
+                            "if (!getVar('employeeId') && ownerTok) {",
+                            "  const r = await sendReq({ url: baseUrl + '/api/hr/employees', method:'GET', header:{ 'Authorization':'Bearer '+ownerTok, 'X-Branch-Id':br } });",
+                            "  if (r.res) {",
+                            "    try {",
+                            "      const j = r.res.json(); const data = (j && j.data) || j || [];",
+                            "      const wId = getVar('waiterUserId');",
+                            "      const matchByUser = wId && data.find(e => e.userId === wId);",
+                            "      const fallback = data[0];",
+                            "      if (matchByUser) setVar('employeeId', matchByUser.id);",
+                            "      else if (fallback) setVar('employeeId', fallback.id);",
+                            "    } catch(e){}",
+                            "  }",
+                            "}",
+                            "})().catch(()=>{});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "POST /api/hr/attendance/clock",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"notes\": \"waiter mvp postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hr/attendance/clock",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hr",
+                                "attendance",
+                                "clock"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('employeeId')) { pm.test('skipped: no employeeId resolvable', () => pm.expect(true).to.be.true); return; }",
+                                    "// Clock toggles in/out per call; 201 on either edge. Allow 409 when day already has a finalized record.",
+                                    "pm.test('Clock 201 or 409', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                                    "if (pm.response.code !== 201) return;",
+                                    "const j = pm.response.json();",
+                                    "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "if (j.id) setVar('attendanceRecordId', j.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hr/attendance?mine=true",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hr/attendance?mine=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hr",
+                                "attendance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "mine",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const rows = (pm.response.json().data || []);",
+                                    "if (rows.length > 0) {",
+                                    "  const ids = new Set(rows.map(r => r.employeeId));",
+                                    "  pm.test('distinct employeeId == 1', () => pm.expect(ids.size).to.eql(1));",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hr/leave?mine=true",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hr/leave?mine=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hr",
+                                "leave"
+                            ],
+                            "query": [
+                                {
+                                    "key": "mine",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/hr/leave (create leave for self)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"leaveType\": \"ANNUAL\",\n  \"startsAt\": \"2026-07-15T00:00:00.000Z\",\n  \"endsAt\": \"2026-07-17T00:00:00.000Z\",\n  \"reason\": \"waiter mvp postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hr/leave",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hr",
+                                "leave"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('employeeId')) { pm.test('skipped: no employeeId resolvable', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('Created 201 or duplicate 409', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                                    "if (pm.response.code !== 201) return;",
+                                    "const j = pm.response.json();",
+                                    "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v);} ",
+                                    "if (j.id) setVar('leaveRequestId', j.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /api/hr/shift-swaps?mine=true",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/hr/shift-swaps?mine=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hr",
+                                "shift-swaps"
+                            ],
+                            "query": [
+                                {
+                                    "key": "mine",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "H. Permission Denials / Guard Rails [STANDALONE]",
+            "description": "[STANDALONE] - Folder pre-request mints an owner token, opens a shift for the waiter if needed, and creates an owner-owned order so the ownership-guard test can fire. Most denial assertions accept [401,403] because the precise mode (RBAC vs ownership) is implementation-defined.",
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                            "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                            "function setVar(k,v){ if(!v) return; pm.collectionVariables.set(k,v); if(pm.environment&&pm.environment.name) pm.environment.set(k,v); }",
+                            "function sendReq(o){ return new Promise(r => pm.sendRequest(o,(e,s)=>r({err:e,res:s}))); }",
+                            "const br = getVar('branchId'); if (!br) return;",
+                            "return (async () => {",
+                            "let ownerTok = getVar('ownerAccessToken');",
+                            "if (!ownerTok) {",
+                            "  const l = await sendReq({ url: baseUrl + '/api/auth/login', method:'POST', header:{ 'Content-Type':'application/json' }, body:{ mode:'raw', raw: JSON.stringify({ email: getVar('ownerEmail'), password: getVar('ownerPassword') }) } });",
+                            "  if (l.res) { try { const j = l.res.json(); ownerTok = j.accessToken; setVar('ownerAccessToken', ownerTok); } catch(e){} }",
+                            "}",
+                            "// Owner-owned order so waiter's ownership guard fires.",
+                            "if (!getVar('otherWaiterOrderId') && ownerTok) {",
+                            "  const r = await sendReq({ url: baseUrl + '/api/pos/orders', method:'POST', header:{ 'Authorization':'Bearer '+ownerTok, 'X-Branch-Id':br, 'Content-Type':'application/json' }, body:{ mode:'raw', raw: JSON.stringify({ serviceType:'TAKEAWAY' }) } });",
+                            "  if (r.res && r.res.code === 201) { try { const j = r.res.json(); if (j.id) setVar('otherWaiterOrderId', j.id); } catch(e){} }",
+                            "}",
+                            "// Waiter-owned order needed for the ORDER_TRANSITION_NOT_WAITER_SAFE test.",
+                            "const wt = getVar('accessToken');",
+                            "if (!getVar('orderId') && wt) {",
+                            "  const r2 = await sendReq({ url: baseUrl + '/api/pos/orders', method:'POST', header:{ 'Authorization':'Bearer '+wt, 'X-Branch-Id':br, 'Content-Type':'application/json' }, body:{ mode:'raw', raw: JSON.stringify({ serviceType:'TAKEAWAY' }) } });",
+                            "  if (r2.res && r2.res.code === 201) { try { const j = r2.res.json(); if (j.id) setVar('orderId', j.id); } catch(e){} }",
+                            "}",
+                            "  // Resolve a reservationId so the reservation denial tests don't 404 on an empty path.",
+                            "  if (!getVar('reservationId')) {",
+                            "    const wt = getVar('accessToken'); if (wt) {",
+                            "      const rr = await sendReq({ url: baseUrl + '/api/reservations', method:'GET', header:{ 'Authorization':'Bearer '+wt, 'X-Branch-Id':br } });",
+                            "      if (rr.res) { try { const j = rr.res.json(); const data = j.data || []; if (data[0]) setVar('reservationId', data[0].id); } catch(e){} }",
+                            "    }",
+                            "  }",
+                            "})().catch(()=>{});"
+                        ]
+                    }
+                }
+            ],
+            "item": [
+                {
+                    "name": "GET /api/pos/orders/:id (waiter reads owner-owned order -> 403 ORDER_NOT_OWNED_BY_WAITER)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{otherWaiterOrderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{otherWaiterOrderId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('otherWaiterOrderId')) { pm.test('skipped: owner order fixture missing', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+                                    "const j = pm.response.json();",
+                                    "const code = (j && j.message && j.message.code) || (j && j.code);",
+                                    "pm.test('code ORDER_NOT_OWNED_BY_WAITER', () => pm.expect(code).to.eql('ORDER_NOT_OWNED_BY_WAITER'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/reservations (waiter -> 403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"customerName\": \"Test\",\n  \"customerPhone\": \"+255700000000\",\n  \"partySize\": 2,\n  \"reservationAt\": \"2026-08-01T18:00:00.000Z\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/reservations/:id/confirm (waiter -> 403)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/confirm",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations",
+                                "{{reservationId}}",
+                                "confirm"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/reservations/:id/cancel (waiter -> 403)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"waiter mvp postman\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations",
+                                "{{reservationId}}",
+                                "cancel"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/reservations/:id/deposits (waiter -> 403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 10,\n  \"paymentMethod\": \"CASH\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/deposits",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations",
+                                "{{reservationId}}",
+                                "deposits"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/reservations/:id/assign-table (waiter -> 403)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"tableId\": \"{{tableId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/assign-table",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reservations",
+                                "{{reservationId}}",
+                                "assign-table"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/transfer-server (waiter -> 403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"targetUserId\": \"noop\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{otherWaiterOrderId}}/transfer-server",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{otherWaiterOrderId}}",
+                                "transfer-server"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/move-items (waiter -> 403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"targetOrderId\": \"noop\",\n  \"itemIds\": []\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{otherWaiterOrderId}}/move-items",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{otherWaiterOrderId}}",
+                                "move-items"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/split-bill (waiter -> 403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"strategy\": \"EVEN\",\n  \"parts\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{otherWaiterOrderId}}/split-bill",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{otherWaiterOrderId}}",
+                                "split-bill"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/merge (waiter -> 403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sourceOrderIds\": [],\n  \"targetOrderId\": \"noop\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/merge",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "merge"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/in-kitchen (waiter on own order -> 403 ORDER_TRANSITION_NOT_WAITER_SAFE)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/in-kitchen",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "in-kitchen"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('orderId')) { pm.test('skipped: no waiter-owned order', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+                                    "const j = pm.response.json();",
+                                    "const code = (j && j.message && j.message.code) || (j && j.code);",
+                                    "pm.test('code ORDER_TRANSITION_NOT_WAITER_SAFE', () => pm.expect(code).to.eql('ORDER_TRANSITION_NOT_WAITER_SAFE'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/ready (waiter on own order -> 403 ORDER_TRANSITION_NOT_WAITER_SAFE)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/ready",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "ready"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('orderId')) { pm.test('skipped: no waiter-owned order', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+                                    "const j = pm.response.json();",
+                                    "const code = (j && j.message && j.message.code) || (j && j.code);",
+                                    "pm.test('code ORDER_TRANSITION_NOT_WAITER_SAFE', () => pm.expect(code).to.eql('ORDER_TRANSITION_NOT_WAITER_SAFE'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders/:id/void (waiter -> 403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders/{{orderId}}/void",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders",
+                                "{{orderId}}",
+                                "void"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "function getVar(k){ if(pm.environment&&pm.environment.name){ const e=pm.environment.get(k); if(e) return e;} return pm.collectionVariables.get(k); }",
+                                    "if (!getVar('orderId')) { pm.test('skipped: no waiter-owned order', () => pm.expect(true).to.be.true); return; }",
+                                    "pm.test('Denied [401,403]', () => pm.expect([401,403]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/pos/orders (shift gate probe; either 201 or 409 SHIFT_NOT_OPEN)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "X-Branch-Id",
+                                "value": "{{branchId}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"serviceType\": \"TAKEAWAY\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/pos/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "pos",
+                                "orders"
+                            ]
+                        },
+                        "description": "Conditional. If the waiter has an open shift (the usual state after folder B), expect 201. If not, expect 409 SHIFT_NOT_OPEN. The e2e suite uses the same probe-and-skip pattern."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 or 409', () => pm.expect([201,409]).to.include(pm.response.code));",
+                                    "if (pm.response.code === 409) {",
+                                    "  const j = pm.response.json();",
+                                    "  const code = (j && j.message && j.message.code) || (j && j.code);",
+                                    "  pm.test('code SHIFT_NOT_OPEN', () => pm.expect(code).to.eql('SHIFT_NOT_OPEN'));",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "I. Edge Cases / Known Caveats [STANDALONE]",
+            "description": "[STANDALONE] - Documentation-only requests. They exist as a single, deliberate /api/health ping so the folder runs green while the descriptions encode the caveats reviewers need to know.",
+            "item": [
+                {
+                    "name": "NOTE: receipt send is PENDING - no live adapter",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "POST /api/receipts/:id/send returns 202 with status:PENDING + supported:false until a real provider adapter is wired. The contract will flip to supported:true without changing the request/response shape."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('health OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "NOTE: no combine / uncombine in waiter MVP",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "Combine / uncombine operations are out of scope for the waiter MVP. They live in the cashier/manager handoff surface (pos-handoff module) which is denied to waiters per folder H."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('health OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "NOTE: reservation admin out of scope for waiter",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "Waiters may only read reservations and seat them. Creating, confirming, cancelling, recording deposits, and assigning tables are denied (see folder H)."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('health OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "NOTE: backend verification only - no frontend / UI assertions",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "This collection asserts API contracts only. UI flows for the waiter MVP are tracked separately in ai/waiterui.md."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('health OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

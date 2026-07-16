@@ -396,6 +396,36 @@ export class AuthService {
     const requiresContextSelection =
       orgIds.length > 1 || (orgIds.length === 1 && branchIds.length > 1);
 
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        orgId: true,
+        branchId: true,
+        position: { select: { code: true, title: true } },
+      },
+    });
+
+    const employeeDto =
+      employee && (!defaultMembership || employee.orgId === defaultMembership.organizationId)
+        ? {
+            id: employee.id,
+            employeeCode: employee.employeeCode,
+            displayName: [employee.firstName, employee.lastName].filter(Boolean).join(' '),
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            status: employee.status,
+            orgId: employee.orgId,
+            branchId: employee.branchId,
+            jobRole: employee.position?.title ?? null,
+            positionCode: employee.position?.code ?? null,
+          }
+        : null;
+
     return {
       id: user.id,
       email: user.email,
@@ -414,6 +444,7 @@ export class AuthService {
         defaultBranchId: defaultMembership?.branchId ?? null,
         defaultMembershipId: defaultMembership?.id ?? null,
       },
+      employee: employeeDto,
       session: session
         ? {
           id: session.id,

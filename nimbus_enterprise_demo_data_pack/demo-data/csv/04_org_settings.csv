@@ -1,0 +1,2 @@
+organizationSlug,vatPercent,currency,baseCurrencyCode,discountApprovalThreshold,reservationHoldMinutes,showCostToChef,taxMatrix,rounding,bookingPolicies,attendance,inventoryTolerance
+nimbus,18.00,UGX,UGX,150000.00,20,false,"{""VAT"": ""18.00"", ""ZERO"": ""0.00""}","{""mode"": ""nearest_100"", ""currency"": ""UGX""}","{""defaultDurationMinutes"": 120, ""depositRequiredAbovePartySize"": 8}","{""graceMinutes"": 10, ""overtimeAfterHours"": 9}","{""variancePctWarning"": 5, ""negativeStockBlocked"": true}"

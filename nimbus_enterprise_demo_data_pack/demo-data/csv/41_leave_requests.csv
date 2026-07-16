@@ -1,0 +1,13 @@
+branchCode,employeeCode,leaveType,startsAt,endsAt,status,requestedByEmail,reviewedByEmail,reason,reviewNote
+TAPAS_DOWNTOWN,EMP-001,SICK,2026-07-07T09:00:00Z,2026-07-10T09:00:00Z,APPROVED,owner@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+ROOFTOP_BAR,EMP-002,UNPAID,2026-07-08T09:00:00Z,2026-07-10T09:00:00Z,PENDING,manager@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+GARDEN_CAFE,EMP-003,ANNUAL,2026-07-09T09:00:00Z,2026-07-10T09:00:00Z,APPROVED,accountant@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+EVENTS_KITCHEN,EMP-004,UNPAID,2026-07-10T09:00:00Z,2026-07-13T09:00:00Z,PENDING,supervisor@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+TAPAS_DOWNTOWN,EMP-005,SICK,2026-07-11T09:00:00Z,2026-07-12T09:00:00Z,APPROVED,cashier@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+ROOFTOP_BAR,EMP-006,UNPAID,2026-07-12T09:00:00Z,2026-07-14T09:00:00Z,APPROVED,waiter@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+GARDEN_CAFE,EMP-007,ANNUAL,2026-07-13T09:00:00Z,2026-07-14T09:00:00Z,PENDING,chef@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+EVENTS_KITCHEN,EMP-008,UNPAID,2026-07-14T09:00:00Z,2026-07-15T09:00:00Z,APPROVED,bartender@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+TAPAS_DOWNTOWN,EMP-009,UNPAID,2026-07-15T09:00:00Z,2026-07-17T09:00:00Z,APPROVED,stockmanager@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+ROOFTOP_BAR,EMP-010,UNPAID,2026-07-16T09:00:00Z,2026-07-17T09:00:00Z,PENDING,procurement@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+GARDEN_CAFE,EMP-011,SICK,2026-07-17T09:00:00Z,2026-07-19T09:00:00Z,PENDING,eventmanager@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note
+EVENTS_KITCHEN,EMP-012,ANNUAL,2026-07-18T09:00:00Z,2026-07-21T09:00:00Z,PENDING,franchise.ops@nimbus.demo,manager@nimbus.demo,Demo self-service leave request,Demo review note

@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsEnum, IsNumberString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumberString, IsBoolean } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { LeaveRequestStatus, LeaveType } from '@prisma/client';
 
 export class ListLeaveQueryDto {
@@ -21,4 +22,13 @@ export class ListLeaveQueryDto {
   @IsOptional()
   @IsNumberString()
   take?: string;
+
+  /**
+   * Waiter MVP: when `true`, restrict results to the authenticated user's own
+   * employee record. Overrides any `employeeId` passed in.
+   */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  mine?: boolean;
 }

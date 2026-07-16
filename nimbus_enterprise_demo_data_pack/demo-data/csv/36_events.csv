@@ -1,0 +1,9 @@
+organizationSlug,branchCode,eventNumber,title,slug,startsAt,endsAt,status,capacity,description,venueTableLabel,createdByEmail,metadata
+nimbus,EVENTS_KITCHEN,EVT-0001,Demo Chef Table Series 1,demo-chef-table-1,2026-06-01T03:00:00Z,2026-06-01T07:00:00Z,COMPLETED,80,Premium enterprise demo event,EV-08,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"
+nimbus,TAPAS_DOWNTOWN,EVT-0002,Demo Chef Table Series 2,demo-chef-table-2,2026-06-11T03:00:00Z,2026-06-11T07:00:00Z,COMPLETED,90,Premium enterprise demo event,TD-12,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"
+nimbus,EVENTS_KITCHEN,EVT-0003,Demo Chef Table Series 3,demo-chef-table-3,2026-06-21T03:00:00Z,2026-06-21T07:00:00Z,COMPLETED,100,Premium enterprise demo event,EV-03,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"
+nimbus,GARDEN_CAFE,EVT-0004,Demo Chef Table Series 4,demo-chef-table-4,2026-07-01T03:00:00Z,2026-07-01T07:00:00Z,OPEN,110,Premium enterprise demo event,GC-01,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"
+nimbus,EVENTS_KITCHEN,EVT-0005,Demo Chef Table Series 5,demo-chef-table-5,2026-07-11T03:00:00Z,2026-07-11T07:00:00Z,OPEN,120,Premium enterprise demo event,EV-06,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"
+nimbus,ROOFTOP_BAR,EVT-0006,Demo Chef Table Series 6,demo-chef-table-6,2026-07-21T03:00:00Z,2026-07-21T07:00:00Z,OPEN,130,Premium enterprise demo event,RB-10,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"
+nimbus,EVENTS_KITCHEN,EVT-0007,Demo Chef Table Series 7,demo-chef-table-7,2026-07-31T03:00:00Z,2026-07-31T07:00:00Z,OPEN,140,Premium enterprise demo event,EV-08,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"
+nimbus,GARDEN_CAFE,EVT-0008,Demo Chef Table Series 8,demo-chef-table-8,2026-08-10T03:00:00Z,2026-08-10T07:00:00Z,OPEN,150,Premium enterprise demo event,GC-11,eventmanager@nimbus.demo,"{""publicPurchaseFlow"": false}"

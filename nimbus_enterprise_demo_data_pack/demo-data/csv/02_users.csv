@@ -1,0 +1,14 @@
+email,password,firstName,lastName,isActive,displayName,employeeCode,pinTier
+owner@nimbus.demo,Demo1234!,Amina,Kato,true,Amina Kato,EMP-001,HIGH_8
+manager@nimbus.demo,Demo1234!,Daniel,Okello,true,Daniel Okello,EMP-002,HIGH_8
+accountant@nimbus.demo,Demo1234!,Grace,Nabirye,true,Grace Nabirye,EMP-003,HIGH_8
+supervisor@nimbus.demo,Demo1234!,Peter,Mugisha,true,Peter Mugisha,EMP-004,LOW_6
+cashier@nimbus.demo,Demo1234!,Sarah,Namutebi,true,Sarah Namutebi,EMP-005,LOW_6
+waiter@nimbus.demo,Demo1234!,Brian,Kisekka,true,Brian Kisekka,EMP-006,LOW_6
+chef@nimbus.demo,Demo1234!,Moses,Kigozi,true,Moses Kigozi,EMP-007,LOW_6
+bartender@nimbus.demo,Demo1234!,Irene,Akello,true,Irene Akello,EMP-008,LOW_6
+stockmanager@nimbus.demo,Demo1234!,David,Muwanga,true,David Muwanga,EMP-009,HIGH_8
+procurement@nimbus.demo,Demo1234!,Linda,Atim,true,Linda Atim,EMP-010,HIGH_8
+eventmanager@nimbus.demo,Demo1234!,Rachel,Achieng,true,Rachel Achieng,EMP-011,HIGH_8
+franchise.ops@nimbus.demo,Demo1234!,Joseph,Ssenyonga,true,Joseph Ssenyonga,EMP-012,HIGH_8
+kds.demo@nimbus.demo,Demo1234!,KDS,Screen,true,KDS Screen,EMP-013,LOW_6

@@ -1,0 +1,51 @@
+branchCode,menuItemName,servingLabel,activeFrom,notes
+TAPAS_DOWNTOWN,Crispy Plantain Cups,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Tomato Bruschetta,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Sesame Chicken Skewers,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Halloumi Bites,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Grilled Chicken Bowl,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Garden Vegetable Pasta,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Beef Fillet Plate,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Tilapia Lemon Herb,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Mushroom Risotto,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Herb Fries,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Seasonal Salad,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Garlic Flatbread,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Passion Fruit Cheesecake,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Chocolate Date Tart,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Americano,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Cafe Latte,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Spiced Chai,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Mint Lime Spritz,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Ginger Hibiscus Cooler,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+TAPAS_DOWNTOWN,Mango Passion Juice,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Crispy Plantain Cups,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Tomato Bruschetta,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Sesame Chicken Skewers,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Halloumi Bites,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Garden Vegetable Pasta,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Tilapia Lemon Herb,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Herb Fries,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Seasonal Salad,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Garlic Flatbread,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Passion Fruit Cheesecake,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Chocolate Date Tart,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Americano,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Cafe Latte,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Spiced Chai,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Mint Lime Sky Spritz,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Ginger Hibiscus Rooftop Cooler,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+ROOFTOP_BAR,Mango Passion Juice,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Crispy Plantain Cups,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Tomato Bruschetta,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Sesame Chicken Skewers,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Halloumi Bites,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Grilled Chicken Bowl,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Garden Vegetable Pasta,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Beef Fillet Plate,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Tilapia Lemon Herb,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Mushroom Risotto,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Herb Fries,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Seasonal Salad,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Garlic Flatbread,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe
+GARDEN_CAFE,Passion Fruit Cheesecake,Standard,2026-04-01T05:00:00Z,Generated premium demo recipe

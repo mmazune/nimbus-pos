@@ -1,0 +1,21 @@
+organizationSlug,branchCode,name,minSelect,maxSelect,isRequired,sortOrder,isActive,description,metadata
+nimbus,TAPAS_DOWNTOWN,Cooking Preference,0,1,false,1,true,Cooking Preference demo options,{}
+nimbus,TAPAS_DOWNTOWN,Sauce Choice,0,2,false,2,true,Sauce Choice demo options,{}
+nimbus,TAPAS_DOWNTOWN,Side Choice,1,1,true,3,true,Side Choice demo options,{}
+nimbus,TAPAS_DOWNTOWN,Drink Temperature,0,1,false,4,true,Drink Temperature demo options,{}
+nimbus,TAPAS_DOWNTOWN,Sweetness Level,0,1,false,5,true,Sweetness Level demo options,{}
+nimbus,ROOFTOP_BAR,Cooking Preference,0,1,false,1,true,Cooking Preference demo options,{}
+nimbus,ROOFTOP_BAR,Sauce Choice,0,2,false,2,true,Sauce Choice demo options,{}
+nimbus,ROOFTOP_BAR,Side Choice,1,1,true,3,true,Side Choice demo options,{}
+nimbus,ROOFTOP_BAR,Drink Temperature,0,1,false,4,true,Drink Temperature demo options,{}
+nimbus,ROOFTOP_BAR,Sweetness Level,0,1,false,5,true,Sweetness Level demo options,{}
+nimbus,GARDEN_CAFE,Cooking Preference,0,1,false,1,true,Cooking Preference demo options,{}
+nimbus,GARDEN_CAFE,Sauce Choice,0,2,false,2,true,Sauce Choice demo options,{}
+nimbus,GARDEN_CAFE,Side Choice,1,1,true,3,true,Side Choice demo options,{}
+nimbus,GARDEN_CAFE,Drink Temperature,0,1,false,4,true,Drink Temperature demo options,{}
+nimbus,GARDEN_CAFE,Sweetness Level,0,1,false,5,true,Sweetness Level demo options,{}
+nimbus,EVENTS_KITCHEN,Cooking Preference,0,1,false,1,true,Cooking Preference demo options,{}
+nimbus,EVENTS_KITCHEN,Sauce Choice,0,2,false,2,true,Sauce Choice demo options,{}
+nimbus,EVENTS_KITCHEN,Side Choice,1,1,true,3,true,Side Choice demo options,{}
+nimbus,EVENTS_KITCHEN,Drink Temperature,0,1,false,4,true,Drink Temperature demo options,{}
+nimbus,EVENTS_KITCHEN,Sweetness Level,0,1,false,5,true,Sweetness Level demo options,{}

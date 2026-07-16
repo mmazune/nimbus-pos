@@ -1,0 +1,9 @@
+organizationSlug,branchCode,code,type/category/channel/status/severity,config,metadata
+nimbus,TAPAS_DOWNTOWN,low-stock-default,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"
+nimbus,ROOFTOP_BAR,cash-variance-small,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"
+nimbus,GARDEN_CAFE,booking-reminder-24h,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"
+nimbus,EVENTS_KITCHEN,ap-due-soon,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"
+nimbus,TAPAS_DOWNTOWN,event-demand-spike,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"
+nimbus,ROOFTOP_BAR,training-mode-active,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"
+nimbus,GARDEN_CAFE,branch-risk-watch,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"
+nimbus,EVENTS_KITCHEN,daily-owner-digest,THRESHOLD/OPERATIONAL_IMMEDIATE/EMAIL/ACTIVE/WARNING,"{""demo"": true}","{""noLiveCredentials"": true}"

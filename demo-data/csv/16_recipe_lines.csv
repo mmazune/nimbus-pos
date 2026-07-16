@@ -1,0 +1,139 @@
+branchCode,menuItemName,inventoryItemName,qtyPerUnit,wastePct,unit,servingLabel,modifierGroupName,modifierOptionName,notes
+TAPAS_DOWNTOWN,Crispy Plantain Cups,Coffee Beans,0.05,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Crispy Plantain Cups,Herbs Mix,0.2,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Crispy Plantain Cups,Tomatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Tomato Bruschetta,Flour,0.2,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Tomato Bruschetta,Lettuce,0.05,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Tomato Bruschetta,Plantain,0.12,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Sesame Chicken Skewers,Chicken Breast,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Sesame Chicken Skewers,Flatbread Dough,0.05,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Sesame Chicken Skewers,Yoghurt,0.2,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Halloumi Bites,Plantain,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Halloumi Bites,Herbs Mix,0.15,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Halloumi Bites,Mushrooms,0.12,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Grilled Chicken Bowl,Ginger Syrup,0.15,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Grilled Chicken Bowl,Chicken Breast,0.05,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Grilled Chicken Bowl,Garlic,0.15,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Garden Vegetable Pasta,Lettuce,0.05,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Garden Vegetable Pasta,Passion Fruit Pulp,0.08,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Garden Vegetable Pasta,Lime Juice,0.12,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Beef Fillet Plate,Flour,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Beef Fillet Plate,Garlic,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Beef Fillet Plate,Chocolate,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Tilapia Lemon Herb,Coffee Beans,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Tilapia Lemon Herb,Tomatoes,0.2,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Tilapia Lemon Herb,Ginger Syrup,0.2,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Mushroom Risotto,Flatbread Dough,0.08,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Mushroom Risotto,Yoghurt,0.2,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Mushroom Risotto,Chocolate,0.15,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Herb Fries,Tomatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Herb Fries,Flour,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Herb Fries,Cheese,0.2,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Seasonal Salad,Passion Fruit Pulp,0.2,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Seasonal Salad,Cooking Oil,0.05,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Seasonal Salad,Yoghurt,0.1,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Garlic Flatbread,Cooking Oil,0.1,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Garlic Flatbread,Flour,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Garlic Flatbread,Ginger Syrup,0.05,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Passion Fruit Cheesecake,Cheese,0.2,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Passion Fruit Cheesecake,Cooking Oil,0.1,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Passion Fruit Cheesecake,Onion,0.15,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Chocolate Date Tart,Plantain,0.08,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Chocolate Date Tart,Ginger Syrup,0.08,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Chocolate Date Tart,Cooking Oil,0.15,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Americano,Mango Pulp,0.1,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Americano,Onion,0.05,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Cafe Latte,Onion,0.15,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Cafe Latte,Garlic,0.15,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Spiced Chai,Ginger Syrup,0.1,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Spiced Chai,Tomatoes,0.2,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Mint Lime Spritz,Mushrooms,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Mint Lime Spritz,Chocolate,0.12,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Ginger Hibiscus Cooler,Mushrooms,0.2,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Ginger Hibiscus Cooler,Passion Fruit Pulp,0.1,3.00,ltr,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Mango Passion Juice,Cheese,0.1,3.00,kg,Standard,,,Demo BOM line
+TAPAS_DOWNTOWN,Mango Passion Juice,Herbs Mix,0.12,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Crispy Plantain Cups,Mango Pulp,0.05,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Crispy Plantain Cups,Garlic,0.05,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Crispy Plantain Cups,Yoghurt,0.15,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Tomato Bruschetta,Flour,0.12,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Tomato Bruschetta,Tomatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Tomato Bruschetta,Garlic,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Sesame Chicken Skewers,Mushrooms,0.1,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Sesame Chicken Skewers,Flour,0.2,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Sesame Chicken Skewers,Chicken Breast,0.12,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Halloumi Bites,Yoghurt,0.15,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Halloumi Bites,Flour,0.05,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Halloumi Bites,Cooking Oil,0.15,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Garden Vegetable Pasta,Cheese,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Garden Vegetable Pasta,Potatoes,0.12,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Garden Vegetable Pasta,Chicken Breast,0.05,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Tilapia Lemon Herb,Chocolate,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Tilapia Lemon Herb,Ginger Syrup,0.12,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Tilapia Lemon Herb,Coffee Beans,0.1,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Herb Fries,Cooking Oil,0.05,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Herb Fries,Onion,0.12,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Herb Fries,Garlic,0.05,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Seasonal Salad,Onion,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Seasonal Salad,Yoghurt,0.08,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Seasonal Salad,Flour,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Garlic Flatbread,Passion Fruit Pulp,0.08,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Garlic Flatbread,Flour,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Garlic Flatbread,Lime Juice,0.15,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Passion Fruit Cheesecake,Cooking Oil,0.2,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Passion Fruit Cheesecake,Mushrooms,0.05,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Passion Fruit Cheesecake,Onion,0.1,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Chocolate Date Tart,Coffee Beans,0.2,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Chocolate Date Tart,Chicken Breast,0.2,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Chocolate Date Tart,Onion,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Americano,Garlic,0.12,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Americano,Potatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Cafe Latte,Herbs Mix,0.2,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Cafe Latte,Chocolate,0.2,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Spiced Chai,Herbs Mix,0.15,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Spiced Chai,Lettuce,0.08,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Mint Lime Sky Spritz,Mango Pulp,0.15,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Mint Lime Sky Spritz,Onion,0.2,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Ginger Hibiscus Rooftop Cooler,Flour,0.2,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Ginger Hibiscus Rooftop Cooler,Lime Juice,0.05,3.00,ltr,Standard,,,Demo BOM line
+ROOFTOP_BAR,Mango Passion Juice,Chocolate,0.05,3.00,kg,Standard,,,Demo BOM line
+ROOFTOP_BAR,Mango Passion Juice,Passion Fruit Pulp,0.08,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Crispy Plantain Cups,Tomatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Crispy Plantain Cups,Garlic,0.12,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Crispy Plantain Cups,Mushrooms,0.08,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Tomato Bruschetta,Plantain,0.12,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Tomato Bruschetta,Coffee Beans,0.1,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Tomato Bruschetta,Ginger Syrup,0.2,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Sesame Chicken Skewers,Lettuce,0.15,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Sesame Chicken Skewers,Yoghurt,0.1,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Sesame Chicken Skewers,Chicken Breast,0.12,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Halloumi Bites,Coffee Beans,0.1,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Halloumi Bites,Cooking Oil,0.15,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Halloumi Bites,Potatoes,0.05,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Grilled Chicken Bowl,Mushrooms,0.05,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Grilled Chicken Bowl,Chocolate,0.08,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Grilled Chicken Bowl,Cooking Oil,0.15,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Garden Vegetable Pasta,Flatbread Dough,0.12,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Garden Vegetable Pasta,Coffee Beans,0.2,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Garden Vegetable Pasta,Plantain,0.08,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Beef Fillet Plate,Herbs Mix,0.05,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Beef Fillet Plate,Garlic,0.2,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Beef Fillet Plate,Plantain,0.12,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Tilapia Lemon Herb,Plantain,0.15,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Tilapia Lemon Herb,Cooking Oil,0.12,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Tilapia Lemon Herb,Mango Pulp,0.2,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Mushroom Risotto,Garlic,0.05,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Mushroom Risotto,Potatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Mushroom Risotto,Coffee Beans,0.2,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Herb Fries,Tomatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Herb Fries,Lime Juice,0.15,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Herb Fries,Onion,0.05,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Seasonal Salad,Flour,0.1,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Seasonal Salad,Ginger Syrup,0.15,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Seasonal Salad,Plantain,0.12,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Garlic Flatbread,Passion Fruit Pulp,0.12,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Garlic Flatbread,Lime Juice,0.2,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Garlic Flatbread,Mango Pulp,0.15,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Passion Fruit Cheesecake,Tomatoes,0.1,3.00,kg,Standard,,,Demo BOM line
+GARDEN_CAFE,Passion Fruit Cheesecake,Ginger Syrup,0.08,3.00,ltr,Standard,,,Demo BOM line
+GARDEN_CAFE,Passion Fruit Cheesecake,Cooking Oil,0.15,3.00,ltr,Standard,,,Demo BOM line

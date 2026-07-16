@@ -1,0 +1,33 @@
+organizationSlug,branchCode,name,sortOrder,isActive,color
+nimbus,TAPAS_DOWNTOWN,Small Plates,1,true,navy
+nimbus,TAPAS_DOWNTOWN,Mains,2,true,navy
+nimbus,TAPAS_DOWNTOWN,Sides,3,true,navy
+nimbus,TAPAS_DOWNTOWN,Desserts,4,true,navy
+nimbus,TAPAS_DOWNTOWN,Coffee & Tea,5,true,navy
+nimbus,TAPAS_DOWNTOWN,Zero-Proof Bar,6,true,navy
+nimbus,TAPAS_DOWNTOWN,Fresh Juice,7,true,navy
+nimbus,TAPAS_DOWNTOWN,Event Platters,8,true,navy
+nimbus,ROOFTOP_BAR,Small Plates,1,true,navy
+nimbus,ROOFTOP_BAR,Mains,2,true,navy
+nimbus,ROOFTOP_BAR,Sides,3,true,navy
+nimbus,ROOFTOP_BAR,Desserts,4,true,navy
+nimbus,ROOFTOP_BAR,Coffee & Tea,5,true,navy
+nimbus,ROOFTOP_BAR,Zero-Proof Bar,6,true,navy
+nimbus,ROOFTOP_BAR,Fresh Juice,7,true,navy
+nimbus,ROOFTOP_BAR,Event Platters,8,true,navy
+nimbus,GARDEN_CAFE,Small Plates,1,true,navy
+nimbus,GARDEN_CAFE,Mains,2,true,navy
+nimbus,GARDEN_CAFE,Sides,3,true,navy
+nimbus,GARDEN_CAFE,Desserts,4,true,navy
+nimbus,GARDEN_CAFE,Coffee & Tea,5,true,navy
+nimbus,GARDEN_CAFE,Zero-Proof Bar,6,true,navy
+nimbus,GARDEN_CAFE,Fresh Juice,7,true,navy
+nimbus,GARDEN_CAFE,Event Platters,8,true,navy
+nimbus,EVENTS_KITCHEN,Small Plates,1,true,navy
+nimbus,EVENTS_KITCHEN,Mains,2,true,navy
+nimbus,EVENTS_KITCHEN,Sides,3,true,navy
+nimbus,EVENTS_KITCHEN,Desserts,4,true,navy
+nimbus,EVENTS_KITCHEN,Coffee & Tea,5,true,navy
+nimbus,EVENTS_KITCHEN,Zero-Proof Bar,6,true,navy
+nimbus,EVENTS_KITCHEN,Fresh Juice,7,true,navy
+nimbus,EVENTS_KITCHEN,Event Platters,8,true,navy

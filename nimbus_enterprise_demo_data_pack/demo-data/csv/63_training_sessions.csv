@@ -1,0 +1,9 @@
+organizationSlug,branchCode,actorEmail,label,mode,status,startedAt,expiresAt,purpose
+nimbus,TAPAS_DOWNTOWN,manager@nimbus.demo,Demo training session 1,SIMULATION_ONLY,COMPLETED,2026-06-20T09:00:00Z,2026-07-01T09:00:00Z,Safe demo training; no real stock/accounting posting
+nimbus,ROOFTOP_BAR,waiter@nimbus.demo,Demo training session 2,SIMULATION_ONLY,COMPLETED,2026-06-21T09:00:00Z,2026-07-02T09:00:00Z,Safe demo training; no real stock/accounting posting
+nimbus,GARDEN_CAFE,manager@nimbus.demo,Demo training session 3,SIMULATION_ONLY,COMPLETED,2026-06-22T09:00:00Z,2026-07-03T09:00:00Z,Safe demo training; no real stock/accounting posting
+nimbus,EVENTS_KITCHEN,cashier@nimbus.demo,Demo training session 4,SIMULATION_ONLY,COMPLETED,2026-06-23T09:00:00Z,2026-07-04T09:00:00Z,Safe demo training; no real stock/accounting posting
+nimbus,TAPAS_DOWNTOWN,manager@nimbus.demo,Demo training session 5,SIMULATION_ONLY,COMPLETED,2026-06-24T09:00:00Z,2026-07-05T09:00:00Z,Safe demo training; no real stock/accounting posting
+nimbus,ROOFTOP_BAR,waiter@nimbus.demo,Demo training session 6,SIMULATION_ONLY,COMPLETED,2026-06-25T09:00:00Z,2026-07-06T09:00:00Z,Safe demo training; no real stock/accounting posting
+nimbus,GARDEN_CAFE,waiter@nimbus.demo,Demo training session 7,SIMULATION_ONLY,ACTIVE,2026-06-26T09:00:00Z,2026-07-07T09:00:00Z,Safe demo training; no real stock/accounting posting
+nimbus,EVENTS_KITCHEN,cashier@nimbus.demo,Demo training session 8,SIMULATION_ONLY,ACTIVE,2026-06-27T09:00:00Z,2026-07-08T09:00:00Z,Safe demo training; no real stock/accounting posting

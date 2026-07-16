@@ -1,0 +1,9 @@
+branchCode,requesterEmployeeCode,targetEmployeeCode,shiftDate,status,reason,approvedByEmail
+TAPAS_DOWNTOWN,EMP-009,EMP-017,2026-07-02,PENDING,Demo shift swap request,manager@nimbus.demo
+ROOFTOP_BAR,EMP-010,EMP-018,2026-07-03,PENDING,Demo shift swap request,manager@nimbus.demo
+GARDEN_CAFE,EMP-011,EMP-019,2026-07-04,REJECTED,Demo shift swap request,manager@nimbus.demo
+EVENTS_KITCHEN,EMP-012,EMP-020,2026-07-05,APPROVED,Demo shift swap request,manager@nimbus.demo
+TAPAS_DOWNTOWN,EMP-013,EMP-021,2026-07-06,PENDING,Demo shift swap request,manager@nimbus.demo
+ROOFTOP_BAR,EMP-014,EMP-022,2026-07-07,APPROVED,Demo shift swap request,manager@nimbus.demo
+GARDEN_CAFE,EMP-015,EMP-023,2026-07-08,PENDING,Demo shift swap request,manager@nimbus.demo
+EVENTS_KITCHEN,EMP-016,EMP-024,2026-07-09,REJECTED,Demo shift swap request,manager@nimbus.demo

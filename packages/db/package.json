@@ -13,6 +13,8 @@
         "db:migrate": "prisma migrate dev",
         "db:migrate:deploy": "prisma migrate deploy",
         "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
+        "db:demo:validate": "ts-node --project tsconfig.seed.json prisma/demo-import.ts --dry-run",
+        "db:demo:import": "ts-node --project tsconfig.seed.json prisma/demo-import.ts --write",
         "db:studio": "prisma studio"
     },
     "prisma": {

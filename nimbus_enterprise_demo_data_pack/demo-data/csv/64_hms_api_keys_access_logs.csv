@@ -1,0 +1,2 @@
+name,scope,branchCode,expiresAt,scopes,status,metadata
+HMS read-only demo key placeholder,ORGANIZATION,,2026-09-28T09:00:00Z,"[""hms:read:*""]",ACTIVE,"{""noPlaintextSecret"": true, ""createViaDevApiLater"": true}"

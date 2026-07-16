@@ -20,7 +20,7 @@ import { CurrentUser, Permissions, RequireBranchContext } from '../../common/dec
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(private readonly attendanceService: AttendanceService) { }
 
   // ── Attendance Clock ──
 
@@ -40,9 +40,13 @@ export class AttendanceController {
 
   @Get('attendance')
   @Permissions('pos:hr:attendance:read')
-  async listAttendance(@Query() query: ListAttendanceQueryDto, @Req() req: Request) {
+  async listAttendance(
+    @Query() query: ListAttendanceQueryDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
     const ctx = (req as any).branchContext;
-    return this.attendanceService.listAttendance(ctx, query);
+    return this.attendanceService.listAttendance(ctx, query, user.id);
   }
 
   // ── Leave Requests ──
@@ -63,9 +67,13 @@ export class AttendanceController {
 
   @Get('leave')
   @Permissions('pos:hr:leave:read')
-  async listLeaveRequests(@Query() query: ListLeaveQueryDto, @Req() req: Request) {
+  async listLeaveRequests(
+    @Query() query: ListLeaveQueryDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
     const ctx = (req as any).branchContext;
-    return this.attendanceService.listLeaveRequests(ctx, query);
+    return this.attendanceService.listLeaveRequests(ctx, query, user.id);
   }
 
   @Patch('leave/:id/review')
@@ -101,9 +109,13 @@ export class AttendanceController {
 
   @Get('shift-swaps')
   @Permissions('pos:hr:shift-swaps:read')
-  async listShiftSwaps(@Query() query: ListShiftSwapsQueryDto, @Req() req: Request) {
+  async listShiftSwaps(
+    @Query() query: ListShiftSwapsQueryDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
     const ctx = (req as any).branchContext;
-    return this.attendanceService.listShiftSwaps(ctx, query);
+    return this.attendanceService.listShiftSwaps(ctx, query, user.id);
   }
 
   @Patch('shift-swaps/:id/approve')

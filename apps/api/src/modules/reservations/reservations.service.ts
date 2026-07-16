@@ -53,7 +53,7 @@ export class ReservationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) {}
+  ) { }
 
   // ── Number Generation ──
 
@@ -241,6 +241,14 @@ export class ReservationsService {
         updatedById: userId,
       },
       include: { table: true, deposits: true, events: true, seatedOrder: true },
+    });
+
+    // Waiter MVP — auto-occupy the table once the party is seated, regardless of
+    // whether a linked DINE_IN order was created. updateMany avoids clobbering
+    // tables already flipped to OCCUPIED by another flow.
+    await this.prisma.table.updateMany({
+      where: { id: seatTableId, status: { not: 'OCCUPIED' } },
+      data: { status: 'OCCUPIED' },
     });
 
     await this.prisma.reservationEvent.create({

@@ -2,7 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceService } from './attendance.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 
 describe('AttendanceService', () => {
   let service: AttendanceService;
@@ -19,6 +24,7 @@ describe('AttendanceService', () => {
     employeeCode: 'EMP-00001',
     firstName: 'Alice',
     lastName: 'Nakamya',
+    userId: 'user-1',
     status: 'ACTIVE',
   };
 
@@ -29,6 +35,7 @@ describe('AttendanceService', () => {
     employeeCode: 'EMP-00002',
     firstName: 'Brian',
     lastName: 'Okello',
+    userId: 'user-2',
     status: 'ACTIVE',
   };
 
@@ -132,6 +139,9 @@ describe('AttendanceService', () => {
         count: jest.fn(),
         update: jest.fn(),
       },
+      scheduleAssignment: {
+        findFirst: jest.fn(),
+      },
     };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
 
@@ -206,6 +216,14 @@ describe('AttendanceService', () => {
       await expect(
         service.clockInOut('user-1', ctx, { employeeId: 'emp-1' }, meta),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject clocking an employee linked to another user', async () => {
+      prisma.employee.findUnique.mockResolvedValue({ ...mockEmployee, userId: 'user-2' });
+
+      await expect(
+        service.clockInOut('user-1', ctx, { employeeId: 'emp-1' }, meta),
+      ).rejects.toThrow('Current user can only clock their own linked employee profile');
     });
 
     it('should apply attendance policy for late detection on clock-in', async () => {
@@ -332,6 +350,24 @@ describe('AttendanceService', () => {
           meta,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject leave creation for an employee linked to another user', async () => {
+      prisma.employee.findUnique.mockResolvedValue({ ...mockEmployee, userId: 'user-2' });
+
+      await expect(
+        service.createLeaveRequest(
+          'user-1',
+          ctx,
+          {
+            employeeId: 'emp-1',
+            leaveType: 'ANNUAL' as any,
+            startsAt: '2025-04-01',
+            endsAt: '2025-04-03',
+          },
+          meta,
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException if endsAt before startsAt', async () => {
@@ -489,6 +525,7 @@ describe('AttendanceService', () => {
       prisma.employee.findUnique
         .mockResolvedValueOnce(mockEmployee)
         .mockResolvedValueOnce(mockEmployee2);
+      prisma.scheduleAssignment.findFirst.mockResolvedValue({ id: 'assignment-1' });
       prisma.shiftSwapRequest.findFirst.mockResolvedValue(null);
       prisma.shiftSwapRequest.create.mockResolvedValue(mockShiftSwap);
 
@@ -561,10 +598,109 @@ describe('AttendanceService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('should reject shift swap creation for a requester linked to another user', async () => {
+      prisma.employee.findUnique.mockResolvedValue({ ...mockEmployee, userId: 'user-2' });
+
+      await expect(
+        service.createShiftSwap(
+          'user-1',
+          ctx,
+          {
+            requesterEmployeeId: 'emp-1',
+            targetEmployeeId: 'emp-2',
+            shiftDate: '2025-04-05',
+          },
+          meta,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should reject shift swap creation when requester is outside the active branch', async () => {
+      prisma.employee.findUnique.mockResolvedValue({
+        ...mockEmployee,
+        branchId: 'branch-2',
+      });
+
+      await expect(
+        service.createShiftSwap(
+          'user-1',
+          ctx,
+          {
+            requesterEmployeeId: 'emp-1',
+            targetEmployeeId: 'emp-2',
+            shiftDate: '2025-04-05',
+          },
+          meta,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject shift swap creation when target is outside the active branch', async () => {
+      prisma.employee.findUnique
+        .mockResolvedValueOnce(mockEmployee)
+        .mockResolvedValueOnce({ ...mockEmployee2, branchId: 'branch-2' });
+
+      await expect(
+        service.createShiftSwap(
+          'user-1',
+          ctx,
+          {
+            requesterEmployeeId: 'emp-1',
+            targetEmployeeId: 'emp-2',
+            shiftDate: '2025-04-05',
+          },
+          meta,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject shift swap creation without a requester roster assignment', async () => {
+      prisma.employee.findUnique
+        .mockResolvedValueOnce(mockEmployee)
+        .mockResolvedValueOnce(mockEmployee2);
+      prisma.scheduleAssignment.findFirst.mockResolvedValueOnce(null);
+
+      await expect(
+        service.createShiftSwap(
+          'user-1',
+          ctx,
+          {
+            requesterEmployeeId: 'emp-1',
+            targetEmployeeId: 'emp-2',
+            shiftDate: '2025-04-05',
+          },
+          meta,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject shift swap creation without a target roster assignment', async () => {
+      prisma.employee.findUnique
+        .mockResolvedValueOnce(mockEmployee)
+        .mockResolvedValueOnce(mockEmployee2);
+      prisma.scheduleAssignment.findFirst
+        .mockResolvedValueOnce({ id: 'assignment-1' })
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        service.createShiftSwap(
+          'user-1',
+          ctx,
+          {
+            requesterEmployeeId: 'emp-1',
+            targetEmployeeId: 'emp-2',
+            shiftDate: '2025-04-05',
+          },
+          meta,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should throw ConflictException for duplicate pending swap', async () => {
       prisma.employee.findUnique
         .mockResolvedValueOnce(mockEmployee)
         .mockResolvedValueOnce(mockEmployee2);
+      prisma.scheduleAssignment.findFirst.mockResolvedValue({ id: 'assignment-1' });
       prisma.shiftSwapRequest.findFirst.mockResolvedValue(mockShiftSwap);
 
       await expect(

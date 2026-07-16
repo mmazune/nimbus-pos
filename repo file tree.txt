@@ -1,4 +1,4 @@
-﻿# Nimbus POS Rebuild — Repo File Tree
+# Nimbus POS Rebuild — Repo File Tree
 
 ```text
 nimbus-pos/
@@ -642,3 +642,706 @@ packages/db/prisma/migrations/20260429000000_m42_feature_flags_maintenance_train
 postman/collections/M42-Feature-Flags-Maintenance-Training.postman_collection.json
 ai/M42_COMPLETION_REPORT.md
 ```
+
+## Waiter frontend auth/session additions (2026-06-16)
+
+```text
+apps/web/src/lib/api/
+└── client.ts
+
+apps/web/src/lib/auth/
+├── AuthProvider.tsx
+├── auth-api.ts
+├── role.ts
+├── token-storage.ts
+└── types.ts
+
+apps/web/src/lib/waiter/
+├── floor-api.ts
+├── floor-model.ts
+├── idle.ts
+├── routes.ts
+└── useActiveShift.ts
+
+apps/web/src/components/waiter/floor/
+├── WaiterFloorScreen.tsx
+├── WaiterOwnershipBlockedPanel.tsx
+├── WaiterTableCard.tsx
+├── WaiterTableDetailPanel.tsx
+├── WaiterTableGrid.tsx
+├── WaiterTableStatusBadge.tsx
+├── WaiterTableToolbar.tsx
+└── index.ts
+
+apps/web/src/components/waiter/shell/
+├── WaiterIdleLogoutHandler.tsx
+├── WaiterSessionGuard.tsx
+└── WaiterShiftBanner.tsx
+```
+
+## Waiter frontend order-builder additions (2026-06-19)
+
+```text
+apps/web/src/lib/waiter/
+├── order-api.ts
+└── order-model.ts
+
+apps/web/src/components/waiter/orders/
+├── WaiterNewOrderScreen.tsx
+├── WaiterOrderBuilderScreen.tsx
+├── WaiterOrdersQueueScreen.tsx
+└── index.ts
+
+apps/web/src/pages/waiter/orders/
+├── index.tsx
+├── new.tsx
+└── [orderId].tsx
+
+apps/web/src/pages/waiter/orders.tsx was replaced by the orders/ route directory.
+```
+
+## Waiter frontend receipt/request-bill additions (2026-06-20)
+
+```text
+apps/web/src/lib/waiter/
+├── receipt-api.ts
+└── receipt-model.ts
+
+apps/web/src/components/waiter/receipts/
+├── WaiterBillActionPanel.tsx
+├── WaiterReceiptActionBar.tsx
+├── WaiterReceiptDrawer.tsx
+├── WaiterReceiptHistoryTimeline.tsx
+├── WaiterReceiptPreview.tsx
+├── WaiterReceiptStatusBadge.tsx
+├── WaiterReceiptTotals.tsx
+└── index.ts
+
+apps/web/src/components/waiter/orders/
+└── WaiterOrderBuilderScreen.tsx
+
+ai/
+└── WAITER_MVP_FRONTEND_RECEIPT_REQUEST_BILL_COMPLETION_REPORT.md
+```
+
+## Waiter frontend reservations/seat-guest additions (2026-06-20)
+
+```text
+apps/web/src/lib/waiter/
+├── reservation-api.ts
+└── reservation-model.ts
+
+apps/web/src/components/waiter/reservations/
+├── WaiterReservationsScreen.tsx
+└── index.ts
+
+apps/web/src/pages/waiter/
+└── reservations.tsx
+
+apps/web/src/components/waiter/floor/
+├── WaiterFloorScreen.tsx
+└── WaiterTableDetailPanel.tsx
+
+ai/
+└── WAITER_MVP_FRONTEND_RESERVATIONS_SEAT_GUEST_COMPLETION_REPORT.md
+```
+
+## Waiter frontend Me/self-service additions (2026-06-20)
+
+```text
+apps/web/src/lib/waiter/
+├── me-api.ts
+└── me-model.ts
+
+apps/web/src/components/waiter/me/
+├── WaiterMeScreen.tsx
+└── index.ts
+
+apps/web/src/pages/waiter/
+└── me.tsx
+
+ai/
+└── WAITER_MVP_FRONTEND_ME_TAB_HR_SELF_SERVICE_COMPLETION_REPORT.md
+```
+
+## Waiter MVP final QA/demo readiness additions (2026-07-01)
+
+```text
+ai/
+└── WAITER_MVP_FINAL_QA_POLISH_REGRESSION_REPORT.md
+
+demo-data/
+└── WAITER_UI_DEMO_SCRIPT.md
+
+apps/web/src/components/waiter/floor/
+└── WaiterTableCard.tsx
+```
+
+## Waiter MVP UI fix pass additions (2026-07-01)
+
+```text
+ai/
+├── WAITER_MVP_KNOWN_LIMITATIONS.md
+└── WAITER_MVP_UI_FIX_PASS_REPORT.md
+```
+
+## Cashier UI Prompt 1 shell foundation additions (2026-07-01)
+
+```text
+apps/web/src/lib/cashier/
+├── formatters.ts
+├── permissions.ts
+├── routes.ts
+└── state.ts
+
+apps/web/src/components/cashier/shell/
+├── CashierBottomNav.tsx
+├── CashierHeader.tsx
+├── CashierIdleLogoutHandler.tsx
+├── CashierReadinessStrip.tsx
+├── CashierSessionGuard.tsx
+├── CashierShell.tsx
+└── index.ts
+
+apps/web/src/components/cashier/states/
+├── CashierBlockedState.tsx
+├── CashierCaveatBanner.tsx
+├── CashierEmptyState.tsx
+└── index.ts
+
+apps/web/src/pages/cashier/
+├── queue.tsx
+├── receipts.tsx
+├── till.tsx
+└── me.tsx
+
+ai/
+└── CASHIER_UI_PROMPT1_SHELL_FOUNDATION_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 2 session/context additions (2026-07-01)
+
+```text
+apps/web/src/lib/cashier/
+├── api.ts
+├── context.ts
+└── readiness.ts
+
+apps/web/src/components/cashier/shell/
+├── CashierHeader.tsx
+├── CashierReadinessStrip.tsx
+├── CashierSessionGuard.tsx
+└── CashierShell.tsx
+
+apps/web/src/pages/cashier/
+├── queue.tsx
+├── receipts.tsx
+├── till.tsx
+└── me.tsx
+
+ai/
+└── CASHIER_UI_PROMPT2_SESSION_CONTEXT_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 3 queue additions (2026-07-02)
+
+```text
+apps/web/src/lib/cashier/
+├── formatters.ts
+├── order-state.ts
+├── order-types.ts
+├── orders.ts
+└── queue-filters.ts
+
+apps/web/src/components/cashier/queue/
+├── CashierCheckoutPreview.tsx
+├── CashierOrderCard.tsx
+├── CashierOrderList.tsx
+├── CashierOrderTotals.tsx
+├── CashierPaymentSummary.tsx
+├── CashierQueueFilterChips.tsx
+├── CashierQueueScreen.tsx
+├── CashierQueueSearch.tsx
+├── CashierQueueStatusBadge.tsx
+├── CashierQueueToolbar.tsx
+└── index.ts
+
+apps/web/src/pages/cashier/
+└── queue.tsx
+
+ai/
+└── CASHIER_UI_PROMPT3_QUEUE_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 4 payment entry additions (2026-07-02)
+
+```text
+apps/web/src/lib/cashier/
+├── idempotency.ts
+├── payment-types.ts
+├── payment-validation.ts
+└── payments.ts
+
+apps/web/src/components/cashier/checkout/
+├── CashierCloseOrderPanel.tsx
+├── CashierManualReferenceFields.tsx
+├── CashierPaymentAmountField.tsx
+├── CashierPaymentBlockedBanner.tsx
+├── CashierPaymentHistory.tsx
+├── CashierPaymentMethodSelector.tsx
+├── CashierPaymentPanel.tsx
+├── CashierPaymentResultNotice.tsx
+├── CashierSettlementSummary.tsx
+└── index.ts
+
+apps/web/src/components/cashier/queue/
+├── CashierCheckoutPreview.tsx
+└── CashierQueueScreen.tsx
+
+ai/
+└── CASHIER_UI_PROMPT4_PAYMENT_ENTRY_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 5 split/resolution additions (2026-07-02)
+
+```text
+apps/web/src/lib/cashier/
+├── resolution.ts
+├── resolution-types.ts
+└── resolution-validation.ts
+
+apps/web/src/components/cashier/resolution/
+├── CashierAdvancedResolutionPanel.tsx
+├── CashierMergeOrdersPanel.tsx
+├── CashierMoveItemsPanel.tsx
+├── CashierResolutionBlockedBanner.tsx
+├── CashierResolutionConfirmDialog.tsx
+├── CashierResolutionPanel.tsx
+├── CashierResolutionResultNotice.tsx
+├── CashierSplitBillCustomForm.tsx
+├── CashierSplitBillEqualForm.tsx
+├── CashierSplitBillPanel.tsx
+├── CashierSplitBillSummary.tsx
+├── CashierSplitItemSelector.tsx
+├── CashierSplitItemsPanel.tsx
+├── CashierTransferServerPanel.tsx
+├── CashierTransferTablePanel.tsx
+└── index.ts
+
+apps/web/src/components/cashier/queue/
+├── CashierCheckoutPreview.tsx
+└── CashierQueueScreen.tsx
+
+ai/
+└── CASHIER_UI_PROMPT5_SPLIT_RESOLUTION_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 6 receipts additions (2026-07-02)
+
+```text
+apps/web/src/lib/cashier/
+├── receipt-state.ts
+├── receipt-types.ts
+├── receipt-validation.ts
+└── receipts.ts
+
+apps/web/src/components/cashier/receipts/
+├── CashierReceiptCard.tsx
+├── CashierReceiptCaveatBanner.tsx
+├── CashierReceiptDetail.tsx
+├── CashierReceiptDrawer.tsx
+├── CashierReceiptHistory.tsx
+├── CashierReceiptLineItems.tsx
+├── CashierReceiptList.tsx
+├── CashierReceiptPaymentSummary.tsx
+├── CashierReceiptReprintDialog.tsx
+├── CashierReceiptSendDialog.tsx
+├── CashierReceiptStatusBadge.tsx
+├── CashierReceiptTotals.tsx
+├── CashierReceiptsScreen.tsx
+├── CashierReceiptsToolbar.tsx
+└── index.ts
+
+apps/web/src/components/cashier/queue/
+└── CashierCheckoutPreview.tsx
+
+apps/web/src/pages/cashier/
+└── receipts.tsx
+
+ai/
+└── CASHIER_UI_PROMPT6_RECEIPTS_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 7 till additions (2026-07-02)
+
+```text
+apps/web/src/lib/cashier/
+├── till-state.ts
+├── till-types.ts
+├── till-validation.ts
+└── tills.ts
+
+apps/web/src/components/cashier/till/
+├── CashierDeferredCashMovements.tsx
+├── CashierOpenTillPanel.tsx
+├── CashierReconcilePanel.tsx
+├── CashierSafeDropPanel.tsx
+├── CashierTillBlockedBanner.tsx
+├── CashierTillConfirmDialog.tsx
+├── CashierTillOverview.tsx
+├── CashierTillResultNotice.tsx
+├── CashierTillScreen.tsx
+├── CashierTillStatusBadge.tsx
+├── CashierTillSummaryCards.tsx
+├── CashierTillToolbar.tsx
+├── CashierVarianceBadge.tsx
+└── index.ts
+
+apps/web/src/pages/cashier/
+└── till.tsx
+
+ai/
+└── CASHIER_UI_PROMPT7_TILL_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 8 refunds additions (2026-07-02)
+
+```text
+apps/web/src/lib/cashier/
+├── refund-state.ts
+├── refund-types.ts
+├── refund-validation.ts
+└── refunds.ts
+
+apps/web/src/components/cashier/refunds/
+├── CashierRefundBlockedBanner.tsx
+├── CashierRefundBoundaryCard.tsx
+├── CashierRefundConfirmDialog.tsx
+├── CashierRefundForm.tsx
+├── CashierRefundHistory.tsx
+├── CashierRefundPanel.tsx
+├── CashierRefundPaymentSelector.tsx
+├── CashierRefundResultNotice.tsx
+├── CashierRefundStatusBadge.tsx
+├── CashierRefundSummary.tsx
+├── CashierRefundThresholdNotice.tsx
+└── index.ts
+
+apps/web/src/components/cashier/receipts/
+├── CashierReceiptDrawer.tsx
+└── CashierReceiptsScreen.tsx
+
+apps/web/src/components/cashier/queue/
+├── CashierCheckoutPreview.tsx
+└── CashierQueueScreen.tsx
+
+apps/web/src/lib/cashier/
+└── queue-filters.ts
+
+ai/
+└── CASHIER_UI_PROMPT8_REFUNDS_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 9 Me/profile additions (2026-07-02)
+
+```text
+apps/web/src/components/cashier/me/
+├── CashierDemoHelpCard.tsx
+├── CashierKnownLimitationsCard.tsx
+├── CashierLogoutPanel.tsx
+├── CashierMeScreen.tsx
+├── CashierProfileCard.tsx
+├── CashierReadinessSummaryCard.tsx
+├── CashierRestrictedSurfacesCard.tsx
+├── CashierScopeCard.tsx
+├── CashierSessionCard.tsx
+├── CashierWorkflowChecklist.tsx
+└── index.ts
+
+apps/web/src/lib/cashier/
+└── context.ts
+
+apps/web/src/pages/cashier/
+└── me.tsx
+
+ai/
+└── CASHIER_UI_PROMPT9_ME_COMPLETION_REPORT.md
+```
+
+## Cashier UI Prompt 10 final QA additions (2026-07-02)
+
+```text
+apps/web/src/pages/
+└── login.tsx
+
+apps/web/src/components/cashier/checkout/
+├── CashierCloseOrderPanel.tsx
+└── CashierPaymentPanel.tsx
+
+apps/web/src/components/cashier/receipts/
+└── CashierReceiptsScreen.tsx
+
+apps/web/src/lib/auth/
+└── AuthProvider.tsx
+
+ai/
+├── CASHIER_UI_API_STARTUP_DEBUG_REPORT.md
+├── CASHIER_UI_AUTHENTICATED_DEMO_QA_REPORT.md
+├── CASHIER_UI_FINAL_QA_REPORT.md
+├── CASHIER_UI_KNOWN_LIMITATIONS.md
+├── CASHIER_UI_DEMO_WALKTHROUGH.md
+└── CASHIER_UI_PROMPT10_FINAL_QA_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 1 shell foundation additions (2026-07-04)
+
+```text
+apps/web/src/lib/supervisor/
+├── context.ts
+├── formatters.ts
+├── permissions.ts
+├── routes.ts
+└── state.ts
+
+apps/web/src/components/supervisor/shell/
+├── SupervisorBottomNav.tsx
+├── SupervisorHeader.tsx
+├── SupervisorReadinessStrip.tsx
+├── SupervisorSessionGuard.tsx
+├── SupervisorShell.tsx
+└── index.ts
+
+apps/web/src/components/supervisor/states/
+├── SupervisorBlockedState.tsx
+├── SupervisorCaveatBanner.tsx
+├── SupervisorEmptyState.tsx
+└── index.ts
+
+apps/web/src/pages/supervisor/
+├── approvals.tsx
+├── floor.tsx
+├── me.tsx
+├── orders.tsx
+└── reservations.tsx
+
+apps/web/src/lib/auth/
+├── AuthProvider.tsx
+├── role.ts
+└── types.ts
+
+apps/web/src/pages/
+└── login.tsx
+
+ai/
+└── SUPERVISOR_UI_PROMPT1_SHELL_FOUNDATION_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 2 session/context additions (2026-07-04)
+
+```text
+ai/
+└── SUPERVISOR_UI_PROMPT2_SESSION_CONTEXT_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 3 floor additions (2026-07-04)
+
+```text
+apps/web/src/lib/supervisor/
+├── floor.ts
+└── floor-model.ts
+
+apps/web/src/components/supervisor/floor/
+├── SupervisorFloorStatusBadge.tsx
+├── SupervisorFloorSummary.tsx
+├── SupervisorFloorToolbar.tsx
+├── SupervisorTableCard.tsx
+├── SupervisorTableDetailPanel.tsx
+├── SupervisorTableGrid.tsx
+└── index.ts
+
+apps/web/src/pages/supervisor/
+└── floor.tsx
+
+ai/
+├── SUPERVISOR_UI_PROMPT3_FLOOR_COMPLETION_REPORT.md
+└── SUPERVISOR_UI_API_STARTUP_AND_FLOOR_QA_REPORT.md
+```
+
+## Supervisor UI Prompt 4 orders additions (2026-07-05)
+
+```text
+apps/web/src/lib/supervisor/
+└── orders.ts
+
+apps/web/src/components/supervisor/orders/
+├── SupervisorOrderCard.tsx
+├── SupervisorOrderDetailPanel.tsx
+├── SupervisorOrderList.tsx
+├── SupervisorOrderStatusBadge.tsx
+├── SupervisorOrdersSummary.tsx
+├── SupervisorOrdersToolbar.tsx
+└── index.ts
+
+apps/web/src/components/supervisor/floor/
+└── SupervisorTableDetailPanel.tsx
+
+apps/web/src/pages/supervisor/
+├── floor.tsx
+└── orders.tsx
+
+ai/
+└── SUPERVISOR_UI_PROMPT4_ORDERS_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 5 reservations additions (2026-07-05)
+
+```text
+apps/web/src/lib/supervisor/
+└── reservations.ts
+
+apps/web/src/components/supervisor/reservations/
+├── SupervisorReservationCard.tsx
+├── SupervisorReservationDetailPanel.tsx
+├── SupervisorReservationList.tsx
+├── SupervisorReservationStatusBadge.tsx
+├── SupervisorReservationsSummary.tsx
+├── SupervisorReservationsToolbar.tsx
+└── index.ts
+
+apps/web/src/components/supervisor/floor/
+└── SupervisorTableDetailPanel.tsx
+
+apps/web/src/pages/supervisor/
+├── floor.tsx
+└── reservations.tsx
+
+ai/
+└── SUPERVISOR_UI_PROMPT5_RESERVATIONS_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 6 approvals additions (2026-07-05)
+
+```text
+apps/web/src/lib/supervisor/
+└── approvals.ts
+
+apps/web/src/components/supervisor/approvals/
+├── SupervisorApprovalDetailPanel.tsx
+├── SupervisorApprovalDomainCards.tsx
+├── SupervisorApprovalQueue.tsx
+├── SupervisorApprovalsSummary.tsx
+├── SupervisorApprovalsToolbar.tsx
+└── index.ts
+
+apps/web/src/pages/supervisor/
+└── approvals.tsx
+
+ai/
+└── SUPERVISOR_UI_PROMPT6_APPROVALS_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 7 me/workforce additions (2026-07-05)
+
+```text
+apps/web/src/lib/supervisor/
+└── workforce.ts
+
+apps/web/src/components/supervisor/me/
+├── SupervisorMeScreen.tsx
+└── index.ts
+
+apps/web/src/pages/supervisor/
+└── me.tsx
+
+ai/
+└── SUPERVISOR_UI_PROMPT7_ME_WORKFORCE_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 8 employee identity / punch enablement additions (2026-07-05)
+
+```text
+apps/api/src/modules/auth/
+├── auth.service.ts
+└── me-membership-context.spec.ts
+
+apps/api/src/modules/attendance/
+├── attendance.service.ts
+└── attendance.service.spec.ts
+
+apps/web/src/lib/auth/
+└── types.ts
+
+apps/web/src/lib/supervisor/
+├── context.ts
+└── workforce.ts
+
+apps/web/src/lib/waiter/
+└── me-model.ts
+
+apps/web/src/components/supervisor/me/
+└── SupervisorMeScreen.tsx
+
+docs/supervisor-ui-docs/
+└── SUPERVISOR_GAP_REGISTER.md
+
+ai/
+└── SUPERVISOR_UI_PROMPT8_EMPLOYEE_IDENTITY_PUNCH_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 9 leave request additions (2026-07-06)
+
+```text
+apps/api/src/modules/attendance/
+├── attendance.service.ts
+└── attendance.service.spec.ts
+
+apps/web/src/components/supervisor/me/
+├── SupervisorLeaveRequestForm.tsx
+├── SupervisorMeScreen.tsx
+└── index.ts
+
+docs/supervisor-ui-docs/
+└── SUPERVISOR_GAP_REGISTER.md
+
+ai/
+└── SUPERVISOR_UI_PROMPT9_LEAVE_REQUEST_COMPLETION_REPORT.md
+```
+
+## Supervisor UI Prompt 10 shift swap safety additions (2026-07-06)
+
+```text
+apps/api/src/modules/attendance/
+├── attendance.service.ts
+└── attendance.service.spec.ts
+
+apps/web/src/components/supervisor/me/
+└── SupervisorMeScreen.tsx
+
+docs/supervisor-ui-docs/
+└── SUPERVISOR_GAP_REGISTER.md
+
+ai/
+└── SUPERVISOR_UI_PROMPT10_SHIFT_SWAP_COMPLETION_REPORT.md
+```
+
+## Supervisor UI final QA closeout additions (2026-07-06)
+
+```text
+ai/
+└── SUPERVISOR_UI_FINALIZATION_REPORT.md
+```
+
+## Manager UI Prompt 0 repo verification and scope mapping additions (2026-07-06)
+
+```text
+ai/
+├── MANAGER_UI_REPO_VERIFICATION_REPORT.md
+└── MANAGER_UI_SCOPE_AND_NAV_RECOMMENDATION.md
+
+docs/manager-ui-docs/
+├── README.md
+├── MANAGER_API_MATRIX.md
+├── MANAGER_GAP_REGISTER.md
+└── MANAGER_LIFECYCLE.md
+```
+
