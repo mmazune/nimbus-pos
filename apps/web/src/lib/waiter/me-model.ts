@@ -1,10 +1,15 @@
-import type { AuthMeResponse } from "@/lib/auth/types";
+import type { AuthMeResponse } from "../auth/types";
+import {
+  getProfileInitials,
+  resolveLinkedEmployeeId,
+  type OperationalTone,
+} from "../profile/profile-model";
 import type {
   WaiterAttendanceRecordApi,
   WaiterLeaveRequestApi,
   WaiterShiftApi,
   WaiterShiftSwapApi,
-} from "@/lib/waiter/me-api";
+} from "./me-api";
 
 export type WaiterMeProfileViewModel = {
   userId: string;
@@ -14,7 +19,7 @@ export type WaiterMeProfileViewModel = {
   branchId?: string;
   branchName: string;
   organizationName: string;
-  serviceArea: string;
+  serviceArea?: string;
   avatarInitials: string;
   employeeId?: string;
   employeeUnavailableReason?: string;
@@ -41,6 +46,12 @@ export type WaiterShiftViewModel = {
   openedLabel: string;
   closedLabel: string;
   elapsedLabel: string;
+  notes?: string;
+  branchId?: string;
+  statusLabel: string;
+  statusTone: OperationalTone;
+  isLongRunning: boolean;
+  operationalWarning?: string;
   canStart: boolean;
   canEnd: boolean;
   blockedReason?: string;
@@ -74,6 +85,7 @@ export type WaiterShiftSwapViewModel = {
   targetEmployeeId?: string;
   shiftDateLabel: string;
   targetLabel: string;
+  directionLabel: "Incoming" | "Outgoing" | "Request";
   statusLabel: string;
   statusTone: StatusTone;
   reasonSnippet: string;
@@ -152,27 +164,6 @@ function formatDuration(start: string | null | undefined, end: string | null | u
   return remaining ? `${hours}h ${remaining}m` : `${hours}h`;
 }
 
-function getInitials(displayName: string, email: string) {
-  const parts = displayName
-    .split(/\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  if (parts[0]) return parts[0].slice(0, 2).toUpperCase();
-  return email.slice(0, 2).toUpperCase();
-}
-
-function readProfileEmployeeId(user: AuthMeResponse | null) {
-  if (!user) return undefined;
-  const profile = user as AuthMeResponse & {
-    employeeId?: string | null;
-    staff?: { employeeId?: string | null };
-  };
-
-  return profile.employeeId || profile.staff?.employeeId || undefined;
-}
-
 function statusTone(status: string | null | undefined): StatusTone {
   const raw = String(status || "").toUpperCase();
   if (raw.includes("APPROVED") || raw.includes("OPEN") || raw.includes("CLOCKED_IN")) return "success";
@@ -204,7 +195,7 @@ export function normalizeWaiterMeProfile(
     user?.memberships[0];
   const displayName = user?.displayName || [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.email || "Waiter";
   const email = user?.email || "Email unavailable";
-  const employeeId = readProfileEmployeeId(user);
+  const employeeId = resolveLinkedEmployeeId(user);
 
   return {
     userId: user?.id || "unknown",
@@ -214,12 +205,11 @@ export function normalizeWaiterMeProfile(
     branchId: user?.context.defaultBranchId || membership?.branchId || undefined,
     branchName: branchName || membership?.branchName || "Branch context unavailable",
     organizationName: membership?.organizationName || "Organization unavailable",
-    serviceArea: "Service area pending",
-    avatarInitials: getInitials(displayName, email),
+    avatarInitials: getProfileInitials(displayName, email),
     employeeId,
     employeeUnavailableReason: employeeId
       ? undefined
-      : "Employee ID is not returned by auth/me. Actions that require an employee record are disabled.",
+      : "Attendance actions, leave requests, and employee-linked workforce actions are unavailable.",
     permissions: user?.permissions || [],
   };
 }
@@ -231,6 +221,10 @@ export function normalizeShift(
   const canStartByPermission = permissions.includes("pos:shift:open");
   const canEndByPermission = permissions.includes("pos:shift:close");
   const open = Boolean(shift?.id && String(shift.status || "OPEN").toUpperCase() === "OPEN");
+  const openedAt = parseDate(shift?.openedAt);
+  const elapsedHours = openedAt ? Math.max(0, (Date.now() - openedAt.getTime()) / 3_600_000) : 0;
+  const isLongRunning = open && elapsedHours >= 16;
+  const missingStart = open && !openedAt;
 
   if (!shift) {
     return {
@@ -239,6 +233,9 @@ export function normalizeShift(
       openedLabel: "Not started",
       closedLabel: "Not closed",
       elapsedLabel: "No active timer",
+      statusLabel: "Off shift",
+      statusTone: "neutral",
+      isLongRunning: false,
       canStart: canStartByPermission,
       canEnd: false,
       blockedReason: canStartByPermission ? undefined : "Shift self-service is not available from this workstation.",
@@ -254,6 +251,16 @@ export function normalizeShift(
     openedLabel: formatDateTime(shift.openedAt),
     closedLabel: shift.closedAt ? formatDateTime(shift.closedAt) : "Still open",
     elapsedLabel: open ? formatElapsedSince(shift.openedAt) : "Shift closed",
+    notes: shift.notes || undefined,
+    branchId: shift.branchId || undefined,
+    statusLabel: missingStart || isLongRunning ? "Shift issue" : open ? "On shift" : "Off shift",
+    statusTone: missingStart || isLongRunning ? "warning" : open ? "success" : "neutral",
+    isLongRunning,
+    operationalWarning: missingStart
+      ? "This open shift has no recorded start time. Ask a manager to review it before relying on elapsed time."
+      : isLongRunning
+        ? "This shift has been open for more than 16 hours. Confirm the shift is still valid with a manager."
+        : undefined,
     canStart: false,
     canEnd: open && canEndByPermission,
     blockedReason: open && !canEndByPermission ? "Shift close is not enabled for this account." : undefined,
@@ -321,13 +328,23 @@ export function normalizeLeaveRequest(record: WaiterLeaveRequestApi): WaiterLeav
   };
 }
 
-export function normalizeShiftSwap(record: WaiterShiftSwapApi): WaiterShiftSwapViewModel {
+export function normalizeShiftSwap(
+  record: WaiterShiftSwapApi,
+  currentEmployeeId?: string,
+): WaiterShiftSwapViewModel {
+  const directionLabel = currentEmployeeId && record.targetEmployeeId === currentEmployeeId
+    ? "Incoming"
+    : currentEmployeeId && record.requesterEmployeeId === currentEmployeeId
+      ? "Outgoing"
+      : "Request";
+
   return {
     id: record.id,
     requesterEmployeeId: record.requesterEmployeeId || undefined,
     targetEmployeeId: record.targetEmployeeId || undefined,
     shiftDateLabel: formatDate(record.shiftDate),
     targetLabel: employeeName(record.target) || "Target employee hidden",
+    directionLabel,
     statusLabel: titleCase(record.status, "Status unavailable"),
     statusTone: statusTone(record.status),
     reasonSnippet: snippet(record.reason, "No reason added."),

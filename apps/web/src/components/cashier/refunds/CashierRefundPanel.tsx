@@ -158,19 +158,17 @@ export function CashierRefundPanel({
   })();
 
   async function refreshAfterCreate() {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["cashier", "order-refunds", branchId, orderId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "order-detail", branchId, orderId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "order-payments", branchId, orderId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "receipt", branchId, orderId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-history", branchId, orderId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-candidate-orders", branchId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "orders", branchId] }),
-      orderQuery.refetch(),
-      paymentsQuery.refetch(),
-      refundsQuery.refetch(),
-      Promise.resolve(onRefresh?.()),
-    ]);
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "order-refunds", branchId, orderId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "order-detail", branchId, orderId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "order-payments", branchId, orderId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "receipt", branchId, orderId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-history", branchId, orderId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-candidate-orders", branchId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "orders", branchId] });
+    void orderQuery.refetch();
+    void paymentsQuery.refetch();
+    void refundsQuery.refetch();
+    void Promise.resolve(onRefresh?.());
   }
 
   async function handleSubmit(input: { paymentId: string; amount: number; reason: string }) {

@@ -65,7 +65,7 @@ export type PaginatedResponse<T> = {
 export type WaiterFloorData = {
   tables: WaiterTableApi[];
   activeOrders: WaiterOrderApi[];
-  upcomingReservations: WaiterReservationApi[];
+  reservations: WaiterReservationApi[];
 };
 
 export function listWaiterTables(token: string, branchId: string) {
@@ -78,28 +78,28 @@ export function getWaiterTable(token: string, branchId: string, tableId: string)
 
 export async function listWaiterActiveOrders(token: string, branchId: string) {
   const response = await apiRequest<PaginatedResponse<WaiterOrderApi>>(
-    "/api/pos/orders?excludeStatus=NEW,CLOSED,VOIDED&pageSize=100",
+    "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
     { token, branchId },
   );
 
   return response.data || [];
 }
 
-export async function listWaiterUpcomingReservations(token: string, branchId: string) {
-  const response = await apiRequest<WaiterReservationApi[] | PaginatedResponse<WaiterReservationApi>>(
-    "/api/reservations/upcoming",
+export async function listWaiterOperationalReservations(token: string, branchId: string) {
+  const response = await apiRequest<PaginatedResponse<WaiterReservationApi>>(
+    "/api/reservations?pageSize=200",
     { token, branchId },
   );
 
-  return Array.isArray(response) ? response : response.data || [];
+  return response.data || [];
 }
 
 export async function loadWaiterFloorData(token: string, branchId: string): Promise<WaiterFloorData> {
-  const [tables, activeOrders, upcomingReservations] = await Promise.all([
+  const [tables, activeOrders, reservations] = await Promise.all([
     listWaiterTables(token, branchId),
     listWaiterActiveOrders(token, branchId),
-    listWaiterUpcomingReservations(token, branchId),
+    listWaiterOperationalReservations(token, branchId),
   ]);
 
-  return { tables, activeOrders, upcomingReservations };
+  return { tables, activeOrders, reservations };
 }

@@ -1,4 +1,6 @@
-import { apiRequest } from "@/lib/api/client";
+import type { QueryClient } from "@tanstack/react-query";
+
+import { ApiError, apiRequest } from "@/lib/api/client";
 
 export type SupervisorReservationStatus =
   | "PENDING"
@@ -106,6 +108,10 @@ export type SupervisorReservation = {
   deposits?: SupervisorReservationDeposit[] | null;
   events?: SupervisorReservationEvent[] | null;
   seatedOrder?: SupervisorReservationOrder | null;
+  // Prompt 4A — server-derived Attention signal (never persisted). Terminal
+  // rows are always overdue:false. Present on `scope=active`/list responses.
+  overdue?: boolean;
+  overdueByMinutes?: number;
 };
 
 export type SupervisorPaginatedReservations = {
@@ -113,11 +119,22 @@ export type SupervisorPaginatedReservations = {
   total: number;
   page: number;
   pageSize: number;
+  // Prompt 4A — canonical pagination + scope metadata.
+  totalPages?: number;
+  scope?: "active" | "history" | null;
 };
 
+/**
+ * Prompt 4A canonical reservation query. `scope` groups active vs. history
+ * server-side so Prompt 4B renders Arriving/Seated/Attention/History without a
+ * browser-side triple-query merge. `from`/`to` bound history by date range.
+ */
 export type SupervisorReservationsQuery = {
   status?: SupervisorReservationStatus;
+  scope?: "active" | "history";
   date?: string;
+  from?: string;
+  to?: string;
   upcoming?: boolean;
   tableId?: string;
   page?: number;
@@ -226,7 +243,10 @@ function appendParam(params: URLSearchParams, key: string, value: string | numbe
 function buildReservationsPath(query: SupervisorReservationsQuery = {}) {
   const params = new URLSearchParams();
   appendParam(params, "status", query.status);
+  appendParam(params, "scope", query.scope);
   appendParam(params, "date", query.date);
+  appendParam(params, "from", query.from);
+  appendParam(params, "to", query.to);
   appendParam(params, "upcoming", query.upcoming);
   appendParam(params, "tableId", query.tableId);
   appendParam(params, "page", query.page);
@@ -246,6 +266,92 @@ export function fetchSupervisorReservations(
 
 export function fetchSupervisorUpcomingReservations(token: string, branchId: string) {
   return apiRequest<SupervisorReservation[]>("/api/reservations/upcoming", { token, branchId });
+}
+
+/**
+ * Prompt 4A canonical helpers. These replace the legacy all/today/upcoming
+ * triple-query + `mergeSupervisorReservationRows` browser merge: the server now
+ * separates active vs. history, so Prompt 4B fetches each scope directly and
+ * paginates history independently — no client-side dedupe of overlapping lists.
+ */
+export function fetchSupervisorActiveReservations(
+  token: string,
+  branchId: string,
+  query: Omit<SupervisorReservationsQuery, "scope"> = {},
+) {
+  return apiRequest<SupervisorPaginatedReservations>(
+    buildReservationsPath({ ...query, scope: "active" }),
+    { token, branchId },
+  );
+}
+
+export function fetchSupervisorReservationHistory(
+  token: string,
+  branchId: string,
+  query: Omit<SupervisorReservationsQuery, "scope"> = {},
+) {
+  return apiRequest<SupervisorPaginatedReservations>(
+    buildReservationsPath({ ...query, scope: "history" }),
+    { token, branchId },
+  );
+}
+
+/** Manual SEATED → COMPLETED completion (Supervisor, `pos:reservation:update`). */
+export function completeSupervisorReservation(
+  token: string,
+  branchId: string,
+  reservationId: string,
+  note?: string,
+) {
+  return apiRequest<SupervisorReservation>(`/api/reservations/${reservationId}/complete`, {
+    method: "POST",
+    body: note ? { note } : {},
+    token,
+    branchId,
+  });
+}
+
+/**
+ * React Query key factory for reservation data. A single source of truth so
+ * mutations invalidate exactly the reservation surfaces (active queue, history,
+ * detail, events) and never menu / profile / auth / shift / approvals caches.
+ */
+export const supervisorReservationKeys = {
+  all: ["supervisor", "reservations"] as const,
+  lists: () => [...supervisorReservationKeys.all, "list"] as const,
+  list: (query: SupervisorReservationsQuery = {}) =>
+    [...supervisorReservationKeys.lists(), query] as const,
+  active: (query: Omit<SupervisorReservationsQuery, "scope"> = {}) =>
+    [...supervisorReservationKeys.lists(), "active", query] as const,
+  history: (query: Omit<SupervisorReservationsQuery, "scope"> = {}) =>
+    [...supervisorReservationKeys.lists(), "history", query] as const,
+  upcoming: () => [...supervisorReservationKeys.all, "upcoming"] as const,
+  details: () => [...supervisorReservationKeys.all, "detail"] as const,
+  detail: (reservationId: string) =>
+    [...supervisorReservationKeys.details(), reservationId] as const,
+  events: (reservationId: string) =>
+    [...supervisorReservationKeys.all, "events", reservationId] as const,
+};
+
+/**
+ * The exact query-key roots to invalidate after any reservation mutation.
+ * Scoped so a reservation change never invalidates unrelated caches (menu,
+ * profile, auth, active shift, approvals, all orders, cashier queues).
+ */
+export function supervisorReservationInvalidationKeys(
+  reservationId?: string,
+): ReadonlyArray<readonly unknown[]> {
+  const keys: ReadonlyArray<readonly unknown[]> = [
+    supervisorReservationKeys.lists(),
+    supervisorReservationKeys.upcoming(),
+  ];
+  return reservationId
+    ? [
+        ...keys,
+        supervisorReservationKeys.detail(reservationId),
+        supervisorReservationKeys.events(reservationId),
+      ]
+    : keys;
 }
 
 export function fetchSupervisorReservationDetail(token: string, branchId: string, reservationId: string) {
@@ -621,4 +727,425 @@ export function countSupervisorReservations(reservations: SupervisorReservationV
         reservation.depositState === "required",
     ).length,
   };
+}
+
+// ============================================================================
+// Prompt 4B — Reservation lifecycle mutations (Supervisor).
+//
+// The Supervisor role already holds EVERY reservation permission
+// (`pos:reservation:` create / read / confirm / seat / cancel / no-show /
+// update[=complete] / table:assign / deposit:*) — verified in packages/db seed
+// (Supervisor block). These helpers therefore expose already-verified backend
+// endpoints; Prompt 4B adds NO permission and NO backend contract change.
+//
+// Canonical transition map (apps/api reservations.service VALID_TRANSITIONS):
+//   PENDING   → CONFIRMED | CANCELLED | NO_SHOW
+//   CONFIRMED → SEATED    | CANCELLED | NO_SHOW
+//   SEATED    → COMPLETED
+//   terminal  → (none)
+// Seat additionally requires an assigned table. Overdue grace = 15 min and is
+// server-derived for PENDING/CONFIRMED only (SEATED is never `overdue`).
+// ============================================================================
+
+export type CreateSupervisorReservationInput = {
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  partySize: number;
+  /** ISO 8601 instant (`@IsDateString`). */
+  reservationAt: string;
+  expectedDurationMinutes?: number;
+  source?: string;
+  tableId?: string;
+  depositRequired?: number;
+  notes?: string;
+  specialRequests?: string;
+};
+
+export type SeatSupervisorReservationInput = {
+  tableId?: string;
+  createOrder?: boolean;
+  orderNotes?: string;
+};
+
+export type SupervisorReservationCancelOutcome = "REFUND" | "FORFEIT" | "NO_DEPOSIT";
+export type SupervisorReservationNoShowOutcome = "FORFEIT" | "REFUND" | "NO_DEPOSIT";
+
+/** POST /api/reservations (`pos:reservation:create`). Returns the canonical row. */
+export function createSupervisorReservation(
+  token: string,
+  branchId: string,
+  input: CreateSupervisorReservationInput,
+) {
+  return apiRequest<SupervisorReservation>("/api/reservations", {
+    method: "POST",
+    body: input,
+    token,
+    branchId,
+  });
+}
+
+/** PATCH /api/reservations/:id/confirm (`pos:reservation:confirm`). PENDING → CONFIRMED. */
+export function confirmSupervisorReservation(
+  token: string,
+  branchId: string,
+  reservationId: string,
+  notes?: string,
+) {
+  return apiRequest<SupervisorReservation>(`/api/reservations/${reservationId}/confirm`, {
+    method: "PATCH",
+    body: notes ? { notes } : {},
+    token,
+    branchId,
+  });
+}
+
+/** PATCH /api/reservations/:id/assign-table (`pos:reservation:table:assign`). Assign / reassign. */
+export function assignSupervisorReservationTable(
+  token: string,
+  branchId: string,
+  reservationId: string,
+  tableId: string,
+) {
+  return apiRequest<SupervisorReservation>(`/api/reservations/${reservationId}/assign-table`, {
+    method: "PATCH",
+    body: { tableId },
+    token,
+    branchId,
+  });
+}
+
+/** PATCH /api/reservations/:id/seat (`pos:reservation:seat`). CONFIRMED → SEATED (table required). */
+export function seatSupervisorReservation(
+  token: string,
+  branchId: string,
+  reservationId: string,
+  input: SeatSupervisorReservationInput = {},
+) {
+  return apiRequest<SupervisorReservation>(`/api/reservations/${reservationId}/seat`, {
+    method: "PATCH",
+    body: input,
+    token,
+    branchId,
+  });
+}
+
+/** PATCH /api/reservations/:id/cancel (`pos:reservation:cancel`). Active → CANCELLED. Reason required. */
+export function cancelSupervisorReservation(
+  token: string,
+  branchId: string,
+  reservationId: string,
+  reason: string,
+  depositOutcome?: SupervisorReservationCancelOutcome,
+) {
+  return apiRequest<SupervisorReservation>(`/api/reservations/${reservationId}/cancel`, {
+    method: "PATCH",
+    body: depositOutcome ? { reason, depositOutcome } : { reason },
+    token,
+    branchId,
+  });
+}
+
+/** PATCH /api/reservations/:id/no-show (`pos:reservation:no-show`). PENDING/CONFIRMED → NO_SHOW. */
+export function markSupervisorReservationNoShow(
+  token: string,
+  branchId: string,
+  reservationId: string,
+  input: { reason?: string; depositOutcome?: SupervisorReservationNoShowOutcome } = {},
+) {
+  const body: Record<string, unknown> = {};
+  if (input.reason) body.reason = input.reason;
+  if (input.depositOutcome) body.depositOutcome = input.depositOutcome;
+  return apiRequest<SupervisorReservation>(`/api/reservations/${reservationId}/no-show`, {
+    method: "PATCH",
+    body,
+    token,
+    branchId,
+  });
+}
+
+// ── Cross-role (Waiter) invalidation ────────────────────────────────────────
+// A Supervisor reservation mutation persists canonically; Waiter's next fetch
+// sees it. Within a shared React Query cache we still invalidate the Waiter
+// reservation + floor surfaces NARROWLY (never menu / profile / auth / shift /
+// orders-queue broadly). Keys mirror WaiterReservationsScreen exactly.
+export function waiterReservationInvalidationKeys(
+  reservationId?: string,
+): ReadonlyArray<readonly unknown[]> {
+  const keys: Array<readonly unknown[]> = [
+    ["waiter", "reservations"],
+    ["waiter", "floor"],
+  ];
+  if (reservationId) keys.push(["waiter", "reservation"]);
+  return keys;
+}
+
+// ============================================================================
+// Prompt 4B — View grouping (Arriving / Seated / Attention / History).
+// These are UI groupings over the server-separated active/history scopes, never
+// persisted statuses. Arriving/Seated/Attention derive from ONE bounded
+// `scope=active` response (no browser triple-query merge); History is its own
+// server-paginated `scope=history` query.
+// ============================================================================
+
+export type SupervisorReservationView = "arriving" | "seated" | "attention" | "history";
+
+export const supervisorReservationViews: Array<{
+  value: SupervisorReservationView;
+  label: string;
+}> = [
+  { value: "arriving", label: "Arriving" },
+  { value: "seated", label: "Seated" },
+  { value: "attention", label: "Attention" },
+  { value: "history", label: "History" },
+];
+
+export function isSupervisorReservationView(value: unknown): value is SupervisorReservationView {
+  return value === "arriving" || value === "seated" || value === "attention" || value === "history";
+}
+
+export type SupervisorReservationAttentionReason = {
+  key: string;
+  label: string;
+  tone: SupervisorReservationTone;
+};
+
+/** Human overdue label from server-derived minutes (e.g. "42 minutes overdue"). */
+export function formatSupervisorReservationOverdue(minutes: number | null | undefined): string {
+  const value = typeof minutes === "number" && Number.isFinite(minutes) ? Math.max(0, minutes) : 0;
+  if (value < 60) return `${value} minute${value === 1 ? "" : "s"} overdue`;
+  const hours = Math.floor(value / 60);
+  const rest = value % 60;
+  if (rest === 0) return `${hours} hour${hours === 1 ? "" : "s"} overdue`;
+  return `${hours}h ${rest}m overdue`;
+}
+
+function reservationSeatedOrderStatus(reservation: SupervisorReservation): string {
+  return String(reservation.seatedOrder?.status || "").toUpperCase();
+}
+
+function reservationHasLinkedOrder(reservation: SupervisorReservation): boolean {
+  return Boolean(reservation.seatedOrderId || reservation.seatedOrder?.id);
+}
+
+function reservationHasTable(reservation: SupervisorReservation): boolean {
+  return Boolean(reservation.tableId || reservation.table?.id);
+}
+
+/**
+ * Derive the Attention signal for a single reservation. Terminal rows are never
+ * Attention. Overdue uses the server-derived `overdue`/`overdueByMinutes` (never
+ * inferred from the clock alone); the SEATED inconsistencies are structural and
+ * derived here because the backend only flags overdue for PENDING/CONFIRMED.
+ * Copy is operational, never implementation ("Seated without a linked order",
+ * not "backend mismatch").
+ */
+export function getSupervisorReservationAttention(reservation: SupervisorReservation): {
+  isAttention: boolean;
+  reasons: SupervisorReservationAttentionReason[];
+} {
+  const status = String(reservation.status || "").toUpperCase();
+  if (status === "COMPLETED" || status === "CANCELLED" || status === "NO_SHOW") {
+    return { isAttention: false, reasons: [] };
+  }
+
+  const reasons: SupervisorReservationAttentionReason[] = [];
+
+  if (reservation.overdue && (status === "PENDING" || status === "CONFIRMED")) {
+    reasons.push({
+      key: "overdue",
+      label: formatSupervisorReservationOverdue(reservation.overdueByMinutes),
+      tone: "danger",
+    });
+    if (!reservationHasTable(reservation)) {
+      reasons.push({ key: "overdue-no-table", label: "Table assignment needs review", tone: "warning" });
+    }
+  }
+
+  if (status === "SEATED") {
+    if (!reservationHasLinkedOrder(reservation)) {
+      reasons.push({ key: "seated-no-order", label: "Seated without a linked order", tone: "warning" });
+    } else {
+      const orderStatus = reservationSeatedOrderStatus(reservation);
+      if (orderStatus === "CLOSED" || orderStatus === "COMPLETED" || orderStatus === "PAID") {
+        reasons.push({ key: "seated-closed-order", label: "Linked order is closed", tone: "warning" });
+      }
+    }
+    if (!reservationHasTable(reservation)) {
+      reasons.push({ key: "seated-no-table", label: "Seated without a table", tone: "warning" });
+    }
+  }
+
+  return { isAttention: reasons.length > 0, reasons };
+}
+
+export type SupervisorReservationGroups = {
+  arriving: SupervisorReservationViewModel[];
+  seated: SupervisorReservationViewModel[];
+  attention: SupervisorReservationViewModel[];
+  counts: { arriving: number; seated: number; attention: number };
+};
+
+/**
+ * Split a bounded `scope=active` response into the three operational groupings.
+ * `arriving` = PENDING/CONFIRMED on the selected operational date (chronological);
+ * `seated` = SEATED (visit context); `attention` = any active row with an
+ * Attention signal (date-independent — overdue rows are in the past). One row
+ * may legitimately appear in both Seated and Attention (a seated visit whose
+ * linked order is inconsistent) — the views are lenses, not partitions.
+ */
+export function groupSupervisorActiveReservations(
+  reservations: SupervisorReservationViewModel[],
+  selectedDate: string,
+): SupervisorReservationGroups {
+  const arriving: SupervisorReservationViewModel[] = [];
+  const seated: SupervisorReservationViewModel[] = [];
+  const attention: SupervisorReservationViewModel[] = [];
+
+  for (const reservation of reservations) {
+    const status = reservation.statusRaw;
+    const attentionSignal = getSupervisorReservationAttention(reservation.raw);
+    if (attentionSignal.isAttention) attention.push(reservation);
+
+    if (status === "SEATED") {
+      seated.push(reservation);
+      continue;
+    }
+    if (
+      (status === "PENDING" || status === "CONFIRMED") &&
+      isSameLocalDay(reservation.reservationAt, new Date(`${selectedDate}T12:00:00`))
+    ) {
+      arriving.push(reservation);
+    }
+  }
+
+  return {
+    arriving,
+    seated,
+    attention,
+    counts: { arriving: arriving.length, seated: seated.length, attention: attention.length },
+  };
+}
+
+// ============================================================================
+// Prompt 4B — Action availability (mirrors backend VALID_TRANSITIONS exactly).
+// Never offer an action the service would 409. `changeTable`/`assignTable` are
+// the two faces of table assignment (reassign vs first assignment).
+// ============================================================================
+
+export type SupervisorReservationActions = {
+  confirm: boolean;
+  assignTable: boolean;
+  changeTable: boolean;
+  seat: boolean;
+  complete: boolean;
+  cancel: boolean;
+  noShow: boolean;
+  /** True for COMPLETED/CANCELLED/NO_SHOW — the detail workspace is read-only. */
+  terminal: boolean;
+};
+
+export function getSupervisorReservationActions(
+  reservation: SupervisorReservation,
+): SupervisorReservationActions {
+  const status = String(reservation.status || "").toUpperCase();
+  const hasTable = reservationHasTable(reservation);
+  const isPending = status === "PENDING";
+  const isConfirmed = status === "CONFIRMED";
+  const isSeated = status === "SEATED";
+  const isActivePreSeat = isPending || isConfirmed;
+  const terminal = status === "COMPLETED" || status === "CANCELLED" || status === "NO_SHOW";
+
+  return {
+    confirm: isPending,
+    // assign-table endpoint permits PENDING/CONFIRMED/SEATED (not terminal).
+    assignTable: (isActivePreSeat || isSeated) && !hasTable,
+    changeTable: (isActivePreSeat || isSeated) && hasTable,
+    seat: isConfirmed,
+    complete: isSeated,
+    cancel: isActivePreSeat,
+    noShow: isActivePreSeat,
+    terminal,
+  };
+}
+
+// ── Operational error mapping ────────────────────────────────────────────────
+// Map backend errors to clear operator copy. Never surface raw Prisma/SQL. A
+// 409 on a lifecycle action almost always means the row moved underneath us
+// (stale state) — the caller should refetch canonical detail.
+export function supervisorReservationActionErrorCopy(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.isAuthError) return "Your session expired. Please log in again.";
+    if (error.isForbidden) return "This account cannot perform this reservation action.";
+    if (error.status === 404) return "This reservation could not be found. It may have been removed.";
+    if (error.status === 409) {
+      const message = error.message || "";
+      if (/conflicting reservation/i.test(message)) {
+        return "That table already has a conflicting reservation in this time window.";
+      }
+      if (/transition/i.test(message)) {
+        return "This reservation already moved to a new state. Its details have been refreshed.";
+      }
+      return "This reservation changed since it was loaded. Its details have been refreshed.";
+    }
+    if (error.status === 400) {
+      const message = error.message || "";
+      if (/table must be assigned/i.test(message)) return "Assign a table before seating this reservation.";
+      if (/table not found/i.test(message)) return "That table is not available in this branch.";
+      if (message) return message;
+      return "The reservation request was rejected. Check the details and try again.";
+    }
+    return error.message || "The reservation action could not be completed.";
+  }
+  return error instanceof Error && error.message
+    ? error.message
+    : "The reservation action could not be completed.";
+}
+
+/** Whether a 409/state error should trigger a canonical detail refetch. */
+export function isSupervisorReservationStaleStateError(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 409 || error.status === 404);
+}
+
+// ── Date navigation (operational day toolbar) ────────────────────────────────
+export function shiftSupervisorReservationDate(isoDate: string, deltaDays: number): string {
+  const base = new Date(`${isoDate}T12:00:00`);
+  if (Number.isNaN(base.getTime())) return todayIsoDate();
+  base.setDate(base.getDate() + deltaDays);
+  const offset = base.getTimezoneOffset();
+  return new Date(base.getTime() - offset * 60_000).toISOString().slice(0, 10);
+}
+
+export function formatSupervisorReservationDayLabel(isoDate: string): string {
+  const date = new Date(`${isoDate}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  const label = new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+  if (isoDate === todayIsoDate()) return `Today · ${label}`;
+  return label;
+}
+
+// ── Post-mutation cache invalidation (single source of truth) ────────────────
+// Invalidate EXACTLY the reservation + floor surfaces (Supervisor active/history/
+// detail/events/upcoming, Supervisor Floor overlay, Waiter reservations/floor).
+// Never menu / profile / auth / shift / approvals / all-orders / cashier caches.
+// Secondary invalidations are fire-and-forget so mutation pending state clears
+// on the canonical response, not on downstream refetch settlement.
+export function invalidateSupervisorReservationCaches(
+  queryClient: QueryClient,
+  branchId: string,
+  reservationId?: string,
+) {
+  for (const key of supervisorReservationInvalidationKeys(reservationId)) {
+    void queryClient.invalidateQueries({ queryKey: key });
+  }
+  // Supervisor Floor reservation overlay.
+  void queryClient.invalidateQueries({ queryKey: ["supervisor", "floor", branchId] });
+  // Cross-role Waiter visibility (narrow).
+  for (const key of waiterReservationInvalidationKeys(reservationId)) {
+    void queryClient.invalidateQueries({ queryKey: key });
+  }
 }

@@ -49,3 +49,11 @@ packages/db/_*.cjs
 
 # File upload storage (local dev)
 uploads/
+
+# Playwright / Prompt 3D QA evidence (artifacts ignored; spec + config files are kept)
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+apps/web/e2e/.evidence/
+apps/web/.playwright/
+.env.p3dqa

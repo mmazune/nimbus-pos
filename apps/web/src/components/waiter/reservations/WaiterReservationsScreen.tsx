@@ -27,7 +27,7 @@ import {
   Skeleton,
   StatusMessage,
 } from "@/components/ui";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -481,7 +481,7 @@ export function WaiterReservationsScreen() {
     enabled: Boolean(accessToken && branchId),
     queryFn: () =>
       listUpcomingReservations(accessToken as string, branchId as string, filter.query || {}),
-    retry: 1,
+    retry: shouldRetryApiRequest,
     staleTime: 15_000,
   });
 
@@ -490,7 +490,7 @@ export function WaiterReservationsScreen() {
     enabled: Boolean(accessToken && branchId && selectedReservationId),
     queryFn: () =>
       getReservation(accessToken as string, branchId as string, selectedReservationId as string),
-    retry: 1,
+    retry: shouldRetryApiRequest,
   });
 
   useEffect(() => {
@@ -538,20 +538,18 @@ export function WaiterReservationsScreen() {
         reservation.id,
         buildSeatReservationPayload(reservation),
       ),
-    onSuccess: async (result) => {
+    onSuccess: (result) => {
       const normalized = normalizeSeatResult(result);
       setSeatResult(normalized);
       setSeatError(null);
       setSelectedReservationId(normalized.reservationId);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["waiter", "reservations"] }),
-        queryClient.invalidateQueries({ queryKey: ["waiter", "reservation", branchId, normalized.reservationId] }),
-        queryClient.invalidateQueries({ queryKey: ["waiter", "floor"] }),
-        queryClient.invalidateQueries({ queryKey: ["waiter", "orders-queue"] }),
-        normalized.tableId
-          ? queryClient.invalidateQueries({ queryKey: ["waiter", "table", branchId, normalized.tableId] })
-          : Promise.resolve(),
-      ]);
+      void queryClient.invalidateQueries({ queryKey: ["waiter", "reservations"] });
+      void queryClient.invalidateQueries({ queryKey: ["waiter", "reservation", branchId, normalized.reservationId] });
+      void queryClient.invalidateQueries({ queryKey: ["waiter", "floor"] });
+      void queryClient.invalidateQueries({ queryKey: ["waiter", "orders-queue"] });
+      if (normalized.tableId) {
+        void queryClient.invalidateQueries({ queryKey: ["waiter", "table", branchId, normalized.tableId] });
+      }
     },
     onError: (error) => setSeatError(getSeatErrorCopy(error)),
   });
@@ -590,18 +588,6 @@ export function WaiterReservationsScreen() {
         </div>
       }
     >
-      {shiftBlockedReason && !activeShift.isLoading ? (
-        <StatusMessage tone="warning" title="Seat guest blocked">
-          {shiftBlockedReason}
-        </StatusMessage>
-      ) : null}
-
-      {seatResult ? (
-        <StatusMessage tone="success" title="Guest seated">
-          Table and order state have been refreshed from the backend.
-        </StatusMessage>
-      ) : null}
-
       <Card className="grid grid-cols-[1fr_360px] items-center gap-5">
         <div className="min-w-0">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-secondary">
@@ -676,11 +662,19 @@ export function WaiterReservationsScreen() {
                 onSeat={(reservation) => seatMutation.mutate(reservation)}
                 onClose={clearSelection}
                 onOpenOrder={() => {
-                  if (seatResult?.orderId) void router.push(`/waiter/orders/${seatResult.orderId}`);
+                  if (seatResult?.orderId && seatResult.tableId) {
+                    void router.push({
+                      pathname: "/waiter/floor",
+                      query: { tableId: seatResult.tableId, orderId: seatResult.orderId },
+                    });
+                  }
                 }}
                 onStartOrder={() => {
                   if (seatResult?.tableId) {
-                    void router.push(`/waiter/orders/new?tableId=${encodeURIComponent(seatResult.tableId)}`);
+                    void router.push({
+                      pathname: "/waiter/floor",
+                      query: { tableId: seatResult.tableId },
+                    });
                   }
                 }}
                 onGoToFloor={() => void router.push("/waiter/floor")}

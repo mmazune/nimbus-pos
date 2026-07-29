@@ -25,6 +25,9 @@ const EXPECTED_FILES = [
   '07_tax_categories.csv',
   '08_menu_categories.csv',
   '09_menu_items.csv',
+  '09a_menu_browse_groups.csv',
+  '09b_menu_browse_subgroups.csv',
+  '09c_menu_item_browse_assignments.csv',
   '10_menu_servings.csv',
   '11_modifier_groups.csv',
   '12_modifier_options.csv',
@@ -347,6 +350,9 @@ function validatePack(tables: TableMap): { rowCounts: Record<string, number>; wa
   );
   assertUnique('06_tables.csv', rows(tables, '06_tables.csv'), (r) => key(r.branchCode, r.label));
   assertUnique('09_menu_items.csv', rows(tables, '09_menu_items.csv'), (r) => key(r.branchCode, r.categoryName, r.name));
+  assertUnique('09a_menu_browse_groups.csv', rows(tables, '09a_menu_browse_groups.csv'), (r) => key(r.branchCode, r.name));
+  assertUnique('09b_menu_browse_subgroups.csv', rows(tables, '09b_menu_browse_subgroups.csv'), (r) => key(r.branchCode, r.groupName, r.name));
+  assertUnique('09c_menu_item_browse_assignments.csv', rows(tables, '09c_menu_item_browse_assignments.csv'), (r) => key(r.branchCode, r.menuItemName));
   assertUnique('28_orders.csv', rows(tables, '28_orders.csv'), (r) => key(r.branchCode, r.orderNumber));
   assertUnique('31_payments.csv', rows(tables, '31_payments.csv'), paymentNaturalKey);
   assertUnique('46_journal_entries.csv', rows(tables, '46_journal_entries.csv'), (r) => key(r.organizationSlug, r.journalNumber));
@@ -360,6 +366,7 @@ function validatePack(tables: TableMap): { rowCounts: Record<string, number>; wa
     enumValue('PrepStation', record.station);
     money(record.price, 2);
   }
+  for (const record of rows(tables, '09a_menu_browse_groups.csv')) enumValue('MenuSection', record.section);
   for (const record of rows(tables, '10_menu_servings.csv')) {
     enumValue('ServingFormat', record.format);
     money(record.price, 2);
@@ -692,6 +699,8 @@ async function importDemoData(tables: TableMap): Promise<{ counters: Counters; s
   const tableByBranchLabel = new Map<string, any>();
   const taxByBranchName = new Map<string, any>();
   const categoryByBranchName = new Map<string, any>();
+  const browseGroupByBranchName = new Map<string, any>();
+  const browseSubgroupByBranchName = new Map<string, any>();
   const menuByBranchName = new Map<string, any>();
   const servingByItemLabel = new Map<string, any>();
   const modGroupByBranchName = new Map<string, any>();
@@ -959,6 +968,63 @@ async function importDemoData(tables: TableMap): Promise<{ counters: Counters; s
     );
     addCounter(counters, 'menuItems', result);
     menuByBranchName.set(key(row.branchCode, row.name), await prisma.menuItem.findUniqueOrThrow({ where: { categoryId_name: { categoryId: category.id, name: row.name } } }));
+  }
+
+  for (const row of rows(tables, '09a_menu_browse_groups.csv')) {
+    const branch = branchByCode.get(row.branchCode);
+    const org = orgBySlug.get(row.organizationSlug);
+    const data = {
+      orgId: org.id,
+      branchId: branch.id,
+      section: enumValue('MenuSection', row.section),
+      name: row.name,
+      internalKey: optional(row, 'internalKey'),
+      sortOrder: int(row.sortOrder),
+      isActive: bool(row.isActive, true),
+    };
+    const result = await upsertWithWhere(
+      prisma.menuBrowseGroup,
+      { branchId_name: { branchId: branch.id, name: row.name } },
+      { id: stableId(`browse-group:${row.branchCode}:${row.name}`), ...data },
+      data,
+    );
+    addCounter(counters, 'menuBrowseGroups', result);
+    browseGroupByBranchName.set(key(row.branchCode, row.name), await prisma.menuBrowseGroup.findUniqueOrThrow({ where: { branchId_name: { branchId: branch.id, name: row.name } } }));
+  }
+
+  for (const row of rows(tables, '09b_menu_browse_subgroups.csv')) {
+    const group = browseGroupByBranchName.get(key(row.branchCode, row.groupName));
+    if (!group) throw new Error(`Missing browse group for subgroup ${JSON.stringify(row)}`);
+    const data = {
+      groupId: group.id,
+      name: row.name,
+      internalKey: optional(row, 'internalKey'),
+      sortOrder: int(row.sortOrder),
+      isActive: bool(row.isActive, true),
+    };
+    const result = await upsertWithWhere(
+      prisma.menuBrowseSubgroup,
+      { groupId_name: { groupId: group.id, name: row.name } },
+      { id: stableId(`browse-subgroup:${row.branchCode}:${row.groupName}:${row.name}`), ...data },
+      data,
+    );
+    addCounter(counters, 'menuBrowseSubgroups', result);
+    browseSubgroupByBranchName.set(key(row.branchCode, row.groupName, row.name), await prisma.menuBrowseSubgroup.findUniqueOrThrow({ where: { groupId_name: { groupId: group.id, name: row.name } } }));
+  }
+
+  for (const row of rows(tables, '09c_menu_item_browse_assignments.csv')) {
+    const item = menuByBranchName.get(key(row.branchCode, row.menuItemName));
+    const group = browseGroupByBranchName.get(key(row.branchCode, row.groupName));
+    const subgroupName = optional(row, 'subgroupName');
+    const subgroup = subgroupName ? browseSubgroupByBranchName.get(key(row.branchCode, row.groupName, subgroupName)) : null;
+    if (!item || !group) throw new Error(`Missing item/group browse assignment ${JSON.stringify(row)}`);
+    if (subgroupName && !subgroup) throw new Error(`Missing browse subgroup for assignment ${JSON.stringify(row)}`);
+    const result = await upsertById(prisma.menuItem, item.id, {
+      browseGroupId: group.id,
+      browseSubgroupId: subgroup?.id ?? null,
+    });
+    addCounter(counters, 'menuBrowseAssignments', result);
+    menuByBranchName.set(key(row.branchCode, row.menuItemName), await prisma.menuItem.findUniqueOrThrow({ where: { id: item.id } }));
   }
 
   for (const row of rows(tables, '10_menu_servings.csv')) {

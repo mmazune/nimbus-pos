@@ -1,3 +1,10 @@
+> ⚠️ **SUPERSEDED (2026-07-18).** Describes the original **5-tab** Supervisor
+> (Floor · **Orders** · Reservations · Approvals · Me) with a dedicated Orders
+> screen and role-specific Floor. Shipped Supervisor is **4-tab** (**Floor ·
+> Reservations · Approvals · Me**), **no visible Orders tab**, **shared** Floor.
+> Current canonical: `docs/supervisor-ui-docs/*`, `ai/SUPERVISOR_RECONSTRUCTION_*`,
+> root `CLAUDE.md`, `docs/DECISIONS.md`. Kept for history.
+
 # supervisorui.md — Nimbus POS Supervisor UI Blueprint
 
 Status: Draft v1  
@@ -95,9 +102,11 @@ Do not use global approvals inbox until live source proves Supervisor permission
 
 ## 8. Me screen blueprint
 
-Title: `Supervisor profile`
+Title: `Me`
 
-Sections: Profile/session, branch/workstation, shift readiness, punch/attendance if verified, leave/swap self-service if verified, Supervisor scope, restricted surfaces, known limitations, logout.
+Sections: role-aware profile hero, one employee-link capability notice when required, punch/attendance if verified, leave self-service if verified, incoming/outgoing shift-swap history, branch/account context, and session/logout.
+
+Shared profile components provide only visual structure. `SupervisorMeScreen` retains its own auth, permission, attendance, leave, and shift-swap queries and mutations. Missing employee linkage suppresses dependent requests and replaces unusable forms with compact unavailable states. Readiness chips remain hidden below the largest desktop header tier so identity and navigation stay readable.
 
 Restricted surfaces copy:
 

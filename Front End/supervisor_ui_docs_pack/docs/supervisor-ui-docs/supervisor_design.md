@@ -1,3 +1,10 @@
+> ⚠️ **SUPERSEDED (2026-07-18).** Describes the original **5-tab** Supervisor
+> (Floor · **Orders** · Reservations · Approvals · Me) with a dedicated Orders
+> screen and role-specific Floor. Shipped Supervisor is **4-tab** (**Floor ·
+> Reservations · Approvals · Me**), **no visible Orders tab**, **shared** Floor.
+> Current canonical: `docs/supervisor-ui-docs/*`, `ai/SUPERVISOR_RECONSTRUCTION_*`,
+> root `CLAUDE.md`, `docs/DECISIONS.md`. Kept for history.
+
 # supervisor_design.md — Nimbus POS Supervisor Workspace Product Design
 
 Status: Draft v1  

@@ -2,7 +2,7 @@ import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 
 import { PageShell, Skeleton } from "@/components/ui";
-import { WaiterOrderBuilderScreen } from "@/components/waiter/orders";
+import { WaiterLegacyOrderRedirect } from "@/components/waiter/orders";
 import { WaiterShell } from "@/components/waiter/shell";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
@@ -16,7 +16,7 @@ export default function WaiterOrderDetailPage() {
   return (
     <WaiterShell>
       {orderId ? (
-        <WaiterOrderBuilderScreen orderId={orderId} />
+        <WaiterLegacyOrderRedirect orderId={orderId} />
       ) : (
         <PageShell title="Order" subtitle="Preparing order builder">
           <Skeleton className="h-[520px] w-full" />

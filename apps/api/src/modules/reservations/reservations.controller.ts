@@ -22,6 +22,7 @@ import {
   RecordDepositDto,
   ListReservationsQueryDto,
   AssignTableDto,
+  CompleteReservationDto,
 } from './dto';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
@@ -94,6 +95,22 @@ export class ReservationsController {
   ) {
     const ctx = (req as any).branchContext;
     return this.reservationsService.seat(id, user.id, ctx, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  @Post(':id/complete')
+  @Permissions('pos:reservation:update')
+  @HttpCode(HttpStatus.OK)
+  async complete(
+    @Param('id') id: string,
+    @Body() dto: CompleteReservationDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.reservationsService.complete(id, user.id, ctx, dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });

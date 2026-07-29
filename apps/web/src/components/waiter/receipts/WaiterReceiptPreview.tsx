@@ -1,5 +1,3 @@
-import { Receipt } from "@phosphor-icons/react";
-
 import { Badge } from "@/components/ui";
 import { WaiterReceiptTotals } from "@/components/waiter/receipts/WaiterReceiptTotals";
 import { formatReceiptMoney } from "@/lib/waiter/receipt-model";
@@ -24,10 +22,7 @@ export function WaiterReceiptPreview({ receipt }: WaiterReceiptPreviewProps) {
   return (
     <article className="rounded-lg bg-surface p-5 shadow-subtle">
       <header className="text-center">
-        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-md bg-brand-navy-900 text-text-inverse">
-          <Receipt size={22} weight="duotone" aria-hidden />
-        </div>
-        <p className="mt-3 text-lg font-bold tracking-normal text-text-primary">
+        <p className="text-lg font-bold tracking-normal text-text-primary">
           {receipt.organizationName}
         </p>
         <p className="text-sm font-medium text-text-secondary">{receipt.branchName}</p>

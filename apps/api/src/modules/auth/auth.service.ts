@@ -13,6 +13,31 @@ interface RequestMeta {
   userAgent?: string;
 }
 
+export interface AuthRoleClaim {
+  id: string;
+  name: string;
+  level: string;
+  jobRole: string | null;
+}
+
+export interface AuthMeCurrentUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  displayName?: string | null;
+  isActive?: boolean;
+  roles?: AuthRoleClaim[];
+  permissions?: string[];
+  session?: {
+    id: string;
+    platform: string;
+    source: string;
+    lastActivityAt: Date;
+    createdAt: Date;
+  } | null;
+}
+
 @Injectable()
 export class AuthService {
   private readonly accessSecret: string;
@@ -166,7 +191,23 @@ export class AuthService {
 
     const storedToken = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
-      include: { user: true },
+      include: {
+        user: {
+          include: {
+            userRoles: {
+              include: {
+                role: {
+                  include: {
+                    rolePermissions: {
+                      include: { permission: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!storedToken) {
@@ -207,7 +248,14 @@ export class AuthService {
 
     // Generate new tokens
     const jti = session.jti;
-    const accessToken = this.signAccessToken(storedToken.user.id, storedToken.user.email, jti);
+    const authClaims = this.extractAuthClaims(storedToken.user as any);
+    const accessToken = this.signAccessToken(
+      storedToken.user.id,
+      storedToken.user.email,
+      jti,
+      authClaims.roles,
+      authClaims.permissions,
+    );
     const newRefreshTokenRaw = this.generateRefreshToken();
     const newRefreshTokenHash = this.hashToken(newRefreshTokenRaw);
 
@@ -315,59 +363,122 @@ export class AuthService {
 
   // ── Me ──
 
-  async me(userId: string, sessionId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        userRoles: {
-          include: {
-            role: {
-              include: {
-                rolePermissions: {
-                  include: { permission: true },
+  async me(userId: string, sessionId: string, currentUser?: AuthMeCurrentUser) {
+    let user: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      displayName?: string | null;
+      isActive?: boolean;
+      userRoles?: {
+        role: {
+          id: string;
+          name: string;
+          level: string;
+          jobRole: string | null;
+          rolePermissions: { permission: { action: string } }[];
+        };
+      }[];
+    } | null = null;
+
+    let session:
+      | {
+        id: string;
+        platform: string;
+        source: string;
+        lastActivityAt: Date;
+        createdAt: Date;
+      }
+      | null
+      | undefined = currentUser?.session;
+
+    if (currentUser?.roles?.length && currentUser.permissions) {
+      user = {
+        id: currentUser.id,
+        email: currentUser.email,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+        displayName: currentUser.displayName ?? null,
+        isActive: currentUser.isActive ?? true,
+      };
+    } else {
+      user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          userRoles: {
+            include: {
+              role: {
+                include: {
+                  rolePermissions: {
+                    include: { permission: true },
+                  },
                 },
               },
             },
           },
         },
-      },
-    });
+      });
+    }
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    const session = await this.prisma.session.findUnique({
-      where: { id: sessionId },
-    });
+    if (session === undefined) {
+      session = await this.prisma.session.findUnique({
+        where: { id: sessionId },
+      });
+    }
 
-    const roles = user.userRoles.map((ur) => ({
-      id: ur.role.id,
-      name: ur.role.name,
-      level: ur.role.level,
-      jobRole: ur.role.jobRole,
-    }));
+    const roles = currentUser?.roles?.length
+      ? currentUser.roles
+      : (user.userRoles ?? []).map((ur) => ({
+        id: ur.role.id,
+        name: ur.role.name,
+        level: ur.role.level,
+        jobRole: ur.role.jobRole,
+      }));
 
-    const permissions = [
-      ...new Set(
-        user.userRoles.flatMap((ur) => ur.role.rolePermissions.map((rp) => rp.permission.action)),
-      ),
-    ];
+    const permissions = currentUser?.permissions
+      ? currentUser.permissions
+      : [
+        ...new Set(
+          (user.userRoles ?? []).flatMap((ur) =>
+            ur.role.rolePermissions.map((rp) => rp.permission.action),
+          ),
+        ),
+      ];
 
     // ── M39.2 — Membership Context Resolution ──
     // After a global Nimbus login, the frontend does NOT show an "org login"
     // screen. It calls GET /auth/me and uses the returned `memberships` +
     // `context` block to either auto-select (one org / one branch) or prompt
     // the user to pick an org / branch.
-    const memberships = await this.prisma.membership.findMany({
-      where: { userId, status: 'ACTIVE' },
-      include: {
-        organization: { select: { id: true, name: true, slug: true, status: true } },
-        branch: { select: { id: true, name: true, slug: true, status: true } },
-        role: { select: { id: true, name: true, level: true, jobRole: true } },
-      },
-      orderBy: [{ isDefaultBranch: 'desc' }, { createdAt: 'asc' }],
-    });
+    const [memberships, employee] = await Promise.all([
+      this.prisma.membership.findMany({
+        where: { userId, status: 'ACTIVE' },
+        include: {
+          organization: { select: { id: true, name: true, slug: true, status: true } },
+          branch: { select: { id: true, name: true, slug: true, status: true, currencyCode: true } },
+          role: { select: { id: true, name: true, level: true, jobRole: true } },
+        },
+        orderBy: [{ isDefaultBranch: 'desc' }, { createdAt: 'asc' }],
+      }),
+      this.prisma.employee.findUnique({
+        where: { userId },
+        select: {
+          id: true,
+          employeeCode: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+          orgId: true,
+          branchId: true,
+          position: { select: { code: true, title: true } },
+        },
+      }),
+    ]);
 
     const membershipDtos = memberships.map((m) => ({
       id: m.id,
@@ -379,6 +490,7 @@ export class AuthService {
       branchName: m.branch.name,
       branchSlug: m.branch.slug,
       branchStatus: m.branch.status,
+      branchCurrencyCode: m.branch.currencyCode,
       roleId: m.roleId,
       roleName: m.role.name,
       roleLevel: m.role.level,
@@ -395,20 +507,6 @@ export class AuthService {
 
     const requiresContextSelection =
       orgIds.length > 1 || (orgIds.length === 1 && branchIds.length > 1);
-
-    const employee = await this.prisma.employee.findUnique({
-      where: { userId },
-      select: {
-        id: true,
-        employeeCode: true,
-        firstName: true,
-        lastName: true,
-        status: true,
-        orgId: true,
-        branchId: true,
-        position: { select: { code: true, title: true } },
-      },
-    });
 
     const employeeDto =
       employee && (!defaultMembership || employee.orgId === defaultMembership.organizationId)
@@ -517,7 +615,11 @@ export class AuthService {
     });
 
     // Create access token
-    const accessToken = this.signAccessToken(user.id, user.email, jti);
+    // Derive role info for response
+    const { roles, permissions } = this.extractAuthClaims(user);
+
+    // Create access token
+    const accessToken = this.signAccessToken(user.id, user.email, jti, roles, permissions);
 
     // Create refresh token
     const refreshTokenRaw = this.generateRefreshToken();
@@ -532,20 +634,6 @@ export class AuthService {
         expiresAt: new Date(Date.now() + this.refreshTtlMs),
       },
     });
-
-    // Derive role info for response
-    const roles = user.userRoles.map((ur) => ({
-      id: ur.role.id,
-      name: ur.role.name,
-      level: ur.role.level,
-      jobRole: ur.role.jobRole,
-    }));
-
-    const permissions = [
-      ...new Set(
-        user.userRoles.flatMap((ur) => ur.role.rolePermissions.map((rp) => rp.permission.action)),
-      ),
-    ];
 
     return {
       accessToken,
@@ -566,11 +654,46 @@ export class AuthService {
     };
   }
 
-  private signAccessToken(userId: string, email: string, jti: string): string {
-    return this.jwt.sign({ sub: userId, email, jti }, {
+  private signAccessToken(
+    userId: string,
+    email: string,
+    jti: string,
+    roles: AuthRoleClaim[] = [],
+    permissions: string[] = [],
+  ): string {
+    return this.jwt.sign({ sub: userId, email, jti, roles, permissions }, {
       secret: this.accessSecret,
       expiresIn: this.accessTtl,
     } as any);
+  }
+
+  private extractAuthClaims(user: {
+    userRoles?: {
+      role: {
+        id: string;
+        name: string;
+        level: string;
+        jobRole: string | null;
+        rolePermissions?: { permission: { action: string } }[];
+      };
+    }[];
+  }) {
+    const roles = (user.userRoles ?? []).map((ur) => ({
+      id: ur.role.id,
+      name: ur.role.name,
+      level: ur.role.level,
+      jobRole: ur.role.jobRole,
+    }));
+
+    const permissions = [
+      ...new Set(
+        (user.userRoles ?? []).flatMap((ur) =>
+          (ur.role.rolePermissions ?? []).map((rp) => rp.permission.action),
+        ),
+      ),
+    ];
+
+    return { roles, permissions };
   }
 
   private generateRefreshToken(): string {

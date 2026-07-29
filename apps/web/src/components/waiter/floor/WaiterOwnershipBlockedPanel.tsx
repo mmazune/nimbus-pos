@@ -26,14 +26,14 @@ export function WaiterOwnershipBlockedPanel({ table, onClose }: WaiterOwnershipB
           <div className="mt-5 grid gap-3 text-sm font-semibold text-text-secondary">
             <div className="flex items-center gap-2">
               <Users size={18} weight="bold" aria-hidden />
-              <span>{table.assignedWaiterName || "Assigned waiter unavailable"}</span>
+              <span>{table.assignedStaffName || "Assigned waiter unavailable"}</span>
             </div>
             <div className="flex items-center gap-2">
               <Receipt size={18} weight="bold" aria-hidden />
               <span>{table.orderNumber || "Order link unavailable"}</span>
             </div>
             <div className="rounded-md bg-surface px-3 py-2 text-text-primary shadow-subtle">
-              {table.orderStatus || "Occupied"}
+              {table.activeOrderStatus || "Occupied"}
               {table.billState ? ` / ${table.billState}` : ""}
             </div>
           </div>

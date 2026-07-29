@@ -37,7 +37,7 @@ type AuthContextValue = WaiterSessionState & {
   displayName: string;
   loginWithPassword: (email: string, password: string) => Promise<AuthMeResponse>;
   loginWithPin: (branchId: string, pin: string) => Promise<AuthMeResponse>;
-  loadMe: (tokenOverride?: string) => Promise<AuthMeResponse>;
+  loadMe: (tokenOverride?: string, options?: { keepAuthenticated?: boolean }) => Promise<AuthMeResponse>;
   logout: () => Promise<void>;
   clearSession: () => void;
 };
@@ -52,6 +52,30 @@ function tokenPairFromLogin(response: LoginResponse): StoredTokens {
   return {
     accessToken: response.accessToken,
     refreshToken: response.refreshToken,
+  };
+}
+
+function authMeFromBranchLogin(response: LoginResponse): AuthMeResponse | null {
+  if (!response.session?.orgId || !response.session.branchId) return null;
+
+  return {
+    ...response.user,
+    isActive: true,
+    memberships: [],
+    context: {
+      organizationCount: 1,
+      branchCount: 1,
+      requiresContextSelection: false,
+      defaultOrganizationId: response.session.orgId,
+      defaultBranchId: response.session.branchId,
+      defaultMembershipId: null,
+    },
+    employee: null,
+    session: {
+      id: response.session.id,
+      platform: response.session.platform,
+      source: response.session.source,
+    },
   };
 }
 
@@ -72,7 +96,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [queryClient]);
 
   const loadMe = useCallback(
-    async (tokenOverride?: string) => {
+    async (tokenOverride?: string, options?: { keepAuthenticated?: boolean }) => {
       const token = tokenOverride || tokens?.accessToken;
       if (!token) {
         clearSession();
@@ -83,7 +107,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
       }
 
-      setStatus("loading");
+      if (!options?.keepAuthenticated) {
+        setStatus("loading");
+      }
       setAuthError(null);
 
       try {
@@ -106,10 +132,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const applyLogin = useCallback(
-    async (response: LoginResponse) => {
+    async (response: LoginResponse, options?: { useBranchSession?: boolean }) => {
       const nextTokens = tokenPairFromLogin(response);
       storeTokens(nextTokens);
       setTokens(nextTokens);
+      if (options?.useBranchSession) {
+        const immediateSession = authMeFromBranchLogin(response);
+        if (immediateSession) {
+          setUser(immediateSession);
+          setStatus("authenticated");
+          setAuthError(null);
+          void loadMe(nextTokens.accessToken, { keepAuthenticated: true }).catch(() => {
+            // The immediate branch session remains usable; auth errors still clear through loadMe.
+          });
+          return immediateSession;
+        }
+      }
       const me = await loadMe(nextTokens.accessToken);
       return me;
     },
@@ -136,7 +174,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setStatus("loading");
       setAuthError(null);
       try {
-        return await applyLogin(await loginWithPinRequest(branchId, pin));
+        return await applyLogin(await loginWithPinRequest(branchId, pin), {
+          useBranchSession: true,
+        });
       } catch (error) {
         clearSession();
         setAuthError(error instanceof Error ? error.message : "Quick PIN login failed.");
@@ -190,6 +230,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isSupervisor: isSupervisorCompatible(user),
       branchId: user?.context.defaultBranchId || membership?.branchId || null,
       branchName: membership?.branchName || null,
+      currencyCode: membership?.branchCurrencyCode || null,
       organizationId: user?.context.defaultOrganizationId || membership?.organizationId || null,
       displayName: getDisplayName(user),
       loginWithPassword,

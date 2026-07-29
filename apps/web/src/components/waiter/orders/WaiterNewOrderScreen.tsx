@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useMemo } from "react";
 
 import { BlockedState, Button, Card, ErrorState, LoadingState, PageShell, StatusMessage } from "@/components/ui";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { getWaiterTable } from "@/lib/waiter/floor-api";
 import { createDineInOrder } from "@/lib/waiter/order-api";
@@ -41,14 +41,17 @@ export function WaiterNewOrderScreen() {
     queryKey: ["waiter", "table", branchId, tableId],
     enabled: Boolean(accessToken && branchId && tableId),
     queryFn: () => getWaiterTable(accessToken as string, branchId as string, tableId as string),
-    retry: 1,
+    retry: shouldRetryApiRequest,
   });
 
   const createMutation = useMutation({
     mutationFn: () =>
       createDineInOrder(accessToken as string, branchId as string, tableId as string),
     onSuccess: (order) => {
-      void router.replace(`/waiter/orders/${order.id}`);
+      void router.replace({
+        pathname: "/waiter/floor",
+        query: { tableId: tableId as string, orderId: order.id },
+      });
     },
   });
 

@@ -1,0 +1,50 @@
+import {
+  ArrowClockwise,
+  ArrowLeft,
+  CalendarCheck,
+  CashRegister,
+  CheckCircle,
+  Clock,
+  DesktopTower,
+  ListChecks,
+  MagnifyingGlass,
+  MapPin,
+  Receipt,
+  ShieldCheck,
+  SignOut,
+  SquaresFour,
+  Storefront,
+  Table,
+  UserCircle,
+  WarningCircle,
+  X,
+} from "@phosphor-icons/react";
+
+export {
+  operationalIconNames,
+  operationalIconSizes,
+  operationalIconWeights,
+} from "./role-icon-config";
+export type { OperationalIconName } from "./role-icon-config";
+
+export const operationalIcons = {
+  approvals: ShieldCheck,
+  back: ArrowLeft,
+  branch: Storefront,
+  cashierQueue: ListChecks,
+  cashierReceipts: Receipt,
+  cashierTill: CashRegister,
+  close: X,
+  floor: SquaresFour,
+  logout: SignOut,
+  me: UserCircle,
+  refresh: ArrowClockwise,
+  reservations: CalendarCheck,
+  search: MagnifyingGlass,
+  serviceArea: MapPin,
+  success: CheckCircle,
+  table: Table,
+  time: Clock,
+  warning: WarningCircle,
+  workstation: DesktopTower,
+} as const;

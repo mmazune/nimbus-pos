@@ -23,6 +23,7 @@ describe('ReservationsService', () => {
         findMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         count: jest.fn(),
       },
       reservationDeposit: {
@@ -31,11 +32,12 @@ describe('ReservationsService', () => {
         updateMany: jest.fn(),
       },
       reservationEvent: {
-        create: jest.fn(),
+        create: jest.fn().mockResolvedValue({}),
         findMany: jest.fn(),
       },
       table: {
         findFirst: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       order: {
         findFirst: jest.fn(),
@@ -71,7 +73,6 @@ describe('ReservationsService', () => {
       deposits: [],
       events: [],
     });
-    prisma.reservationEvent.create.mockResolvedValue({});
 
     const result = await service.create(
       'user-1',
@@ -101,7 +102,6 @@ describe('ReservationsService', () => {
       deposits: [],
       events: [],
     });
-    prisma.reservationEvent.create.mockResolvedValue({});
 
     await service.create(
       'user-1',
@@ -148,8 +148,7 @@ describe('ReservationsService', () => {
         expectedDurationMinutes: 120,
       },
     ]);
-    // number gen
-    prisma.reservation.findFirst.mockResolvedValueOnce(null);
+    prisma.reservation.findFirst.mockResolvedValueOnce(null); // number gen
 
     await expect(
       service.create(
@@ -166,28 +165,34 @@ describe('ReservationsService', () => {
     ).rejects.toThrow(ConflictException);
   });
 
-  // ── Confirm ──
+  // ── Confirm (guarded transition) ──
 
   it('should confirm a PENDING reservation', async () => {
-    prisma.reservation.findFirst.mockResolvedValue({
-      id: 'res-1',
-      status: 'PENDING',
-      reservationNumber: 'RES-000001',
-      notes: null,
-    });
-    prisma.reservation.update.mockResolvedValue({
-      id: 'res-1',
-      status: 'CONFIRMED',
-      confirmedAt: new Date(),
-      table: null,
-      deposits: [],
-      events: [],
-    });
-    prisma.reservationEvent.create.mockResolvedValue({});
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'PENDING',
+        reservationNumber: 'RES-000001',
+        notes: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'CONFIRMED',
+        confirmedAt: new Date(),
+        table: null,
+        deposits: [],
+        events: [],
+      });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.confirm('res-1', 'user-1', ctx, {}, meta);
 
     expect(result.status).toBe('CONFIRMED');
+    expect(prisma.reservation.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'res-1', status: { in: ['PENDING'] } }),
+      }),
+    );
     expect(audit.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'RESERVATION_CONFIRMED' }),
     );
@@ -205,27 +210,43 @@ describe('ReservationsService', () => {
     );
   });
 
+  it('should raise ConflictException when confirm loses the concurrency race', async () => {
+    prisma.reservation.findFirst.mockResolvedValueOnce({
+      id: 'res-1',
+      status: 'PENDING',
+      reservationNumber: 'RES-000001',
+      notes: null,
+    });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 0 }); // another request won
+
+    await expect(service.confirm('res-1', 'user-1', ctx, {}, meta)).rejects.toThrow(
+      ConflictException,
+    );
+    expect(prisma.reservationEvent.create).not.toHaveBeenCalled();
+  });
+
   // ── Seat ──
 
   it('should seat a CONFIRMED reservation', async () => {
-    prisma.reservation.findFirst.mockResolvedValue({
-      id: 'res-1',
-      status: 'CONFIRMED',
-      reservationNumber: 'RES-000001',
-      tableId: 'table-1',
-    });
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'CONFIRMED',
+        reservationNumber: 'RES-000001',
+        tableId: 'table-1',
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'SEATED',
+        seatedAt: new Date(),
+        tableId: 'table-1',
+        table: { id: 'table-1', label: 'T1' },
+        deposits: [],
+        events: [],
+        seatedOrder: null,
+      });
     prisma.table.findFirst.mockResolvedValue({ id: 'table-1', label: 'T1' });
-    prisma.reservation.update.mockResolvedValue({
-      id: 'res-1',
-      status: 'SEATED',
-      seatedAt: new Date(),
-      tableId: 'table-1',
-      table: { id: 'table-1', label: 'T1' },
-      deposits: [],
-      events: [],
-      seatedOrder: null,
-    });
-    prisma.reservationEvent.create.mockResolvedValue({});
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.seat('res-1', 'user-1', ctx, {}, meta);
 
@@ -249,49 +270,204 @@ describe('ReservationsService', () => {
   });
 
   it('should create order when seating with createOrder=true', async () => {
-    prisma.reservation.findFirst.mockResolvedValue({
-      id: 'res-1',
-      status: 'CONFIRMED',
-      reservationNumber: 'RES-000001',
-      tableId: 'table-1',
-    });
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'CONFIRMED',
+        reservationNumber: 'RES-000001',
+        tableId: 'table-1',
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'SEATED',
+        seatedOrderId: 'order-1',
+        table: { id: 'table-1', label: 'T1' },
+        deposits: [],
+        events: [],
+        seatedOrder: { id: 'order-1' },
+      });
     prisma.table.findFirst.mockResolvedValue({ id: 'table-1', label: 'T1' });
     prisma.order.findFirst.mockResolvedValue(null); // no last order
     prisma.order.create.mockResolvedValue({ id: 'order-1', orderNumber: 'ORD-000001' });
-    prisma.reservation.update.mockResolvedValue({
-      id: 'res-1',
-      status: 'SEATED',
-      seatedOrderId: 'order-1',
-      table: { id: 'table-1', label: 'T1' },
-      deposits: [],
-      events: [],
-      seatedOrder: { id: 'order-1' },
-    });
-    prisma.reservationEvent.create.mockResolvedValue({});
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.seat('res-1', 'user-1', ctx, { createOrder: true }, meta);
 
     expect(result.seatedOrderId).toBe('order-1');
     expect(prisma.order.create).toHaveBeenCalled();
+    expect(prisma.reservation.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: { in: ['CONFIRMED'] } }),
+        data: expect.objectContaining({ status: 'SEATED', seatedOrderId: 'order-1' }),
+      }),
+    );
   });
 
-  // ── Cancel ──
+  // ── Complete (manual) ──
 
-  it('should cancel a PENDING reservation', async () => {
+  it('should complete a SEATED reservation', async () => {
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'SEATED',
+        reservationNumber: 'RES-000001',
+        seatedOrderId: 'order-1',
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'COMPLETED',
+        completedAt: new Date(),
+        table: null,
+        deposits: [],
+        events: [],
+      });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.complete('res-1', 'user-1', ctx, {}, meta);
+
+    expect(result.status).toBe('COMPLETED');
+    expect(prisma.reservation.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: { in: ['SEATED'] } }),
+        data: expect.objectContaining({ status: 'COMPLETED' }),
+      }),
+    );
+    expect(prisma.reservationEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ type: 'COMPLETED', metadata: { source: 'manual' } }),
+      }),
+    );
+    expect(audit.log).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'RESERVATION_COMPLETED' }),
+    );
+  });
+
+  it('should reject complete on a PENDING reservation', async () => {
     prisma.reservation.findFirst.mockResolvedValue({
       id: 'res-1',
       status: 'PENDING',
       reservationNumber: 'RES-000001',
     });
-    prisma.reservation.update.mockResolvedValue({
+
+    await expect(service.complete('res-1', 'user-1', ctx, {}, meta)).rejects.toThrow(
+      ConflictException,
+    );
+    expect(prisma.reservation.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('should reject complete on a CONFIRMED reservation', async () => {
+    prisma.reservation.findFirst.mockResolvedValue({
       id: 'res-1',
-      status: 'CANCELLED',
-      cancelledAt: new Date(),
-      table: null,
-      deposits: [],
-      events: [],
+      status: 'CONFIRMED',
+      reservationNumber: 'RES-000001',
     });
-    prisma.reservationEvent.create.mockResolvedValue({});
+
+    await expect(service.complete('res-1', 'user-1', ctx, {}, meta)).rejects.toThrow(
+      ConflictException,
+    );
+  });
+
+  it('should be idempotent: completing an already COMPLETED reservation returns it without a new event', async () => {
+    prisma.reservation.findFirst.mockResolvedValue({
+      id: 'res-1',
+      status: 'COMPLETED',
+      reservationNumber: 'RES-000001',
+    });
+
+    const result = await service.complete('res-1', 'user-1', ctx, {}, meta);
+
+    expect(result.status).toBe('COMPLETED');
+    expect(prisma.reservation.updateMany).not.toHaveBeenCalled();
+    expect(prisma.reservationEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('should resolve a manual/auto complete race in favour of the winner (no duplicate event)', async () => {
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'SEATED',
+        reservationNumber: 'RES-000001',
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'COMPLETED', // order-close auto-completion already won
+      });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await service.complete('res-1', 'user-1', ctx, {}, meta);
+
+    expect(result.status).toBe('COMPLETED');
+    expect(prisma.reservationEvent.create).not.toHaveBeenCalled();
+  });
+
+  // ── Auto-completion on order close ──
+
+  it('should auto-complete a linked SEATED reservation when its order closes', async () => {
+    prisma.reservation.findFirst.mockResolvedValue({
+      id: 'res-1',
+      reservationNumber: 'RES-000001',
+    });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.completeForClosedOrder('order-1', ctx, 'cashier-1', meta);
+
+    expect(result).toBe('res-1');
+    expect(prisma.reservation.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ seatedOrderId: 'order-1', status: 'SEATED' }),
+      }),
+    );
+    expect(prisma.reservationEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: 'COMPLETED',
+          metadata: { source: 'order-close', orderId: 'order-1' },
+        }),
+      }),
+    );
+  });
+
+  it('should do nothing when a closed order has no linked SEATED reservation', async () => {
+    prisma.reservation.findFirst.mockResolvedValue(null);
+
+    const result = await service.completeForClosedOrder('order-1', ctx, 'cashier-1', meta);
+
+    expect(result).toBeNull();
+    expect(prisma.reservation.updateMany).not.toHaveBeenCalled();
+    expect(prisma.reservationEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('should not double-complete when order-close loses the race with manual complete', async () => {
+    prisma.reservation.findFirst.mockResolvedValue({
+      id: 'res-1',
+      reservationNumber: 'RES-000001',
+    });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 0 }); // manual complete already won
+
+    const result = await service.completeForClosedOrder('order-1', ctx, 'cashier-1', meta);
+
+    expect(result).toBeNull();
+    expect(prisma.reservationEvent.create).not.toHaveBeenCalled();
+  });
+
+  // ── Cancel ──
+
+  it('should cancel a PENDING reservation', async () => {
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'PENDING',
+        reservationNumber: 'RES-000001',
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+        table: null,
+        deposits: [],
+        events: [],
+      });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.cancel(
       'res-1',
@@ -320,20 +496,21 @@ describe('ReservationsService', () => {
   });
 
   it('should handle deposit forfeit on cancel', async () => {
-    prisma.reservation.findFirst.mockResolvedValue({
-      id: 'res-1',
-      status: 'CONFIRMED',
-      reservationNumber: 'RES-000001',
-    });
-    prisma.reservation.update.mockResolvedValue({
-      id: 'res-1',
-      status: 'CANCELLED',
-      table: null,
-      deposits: [],
-      events: [],
-    });
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'CONFIRMED',
+        reservationNumber: 'RES-000001',
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'CANCELLED',
+        table: null,
+        deposits: [],
+        events: [],
+      });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
     prisma.reservationDeposit.updateMany.mockResolvedValue({ count: 1 });
-    prisma.reservationEvent.create.mockResolvedValue({});
 
     await service.cancel(
       'res-1',
@@ -356,20 +533,21 @@ describe('ReservationsService', () => {
   // ── No-Show ──
 
   it('should mark reservation as no-show', async () => {
-    prisma.reservation.findFirst.mockResolvedValue({
-      id: 'res-1',
-      status: 'CONFIRMED',
-      reservationNumber: 'RES-000001',
-    });
-    prisma.reservation.update.mockResolvedValue({
-      id: 'res-1',
-      status: 'NO_SHOW',
-      noShowAt: new Date(),
-      table: null,
-      deposits: [],
-      events: [],
-    });
-    prisma.reservationEvent.create.mockResolvedValue({});
+    prisma.reservation.findFirst
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'CONFIRMED',
+        reservationNumber: 'RES-000001',
+      })
+      .mockResolvedValueOnce({
+        id: 'res-1',
+        status: 'NO_SHOW',
+        noShowAt: new Date(),
+        table: null,
+        deposits: [],
+        events: [],
+      });
+    prisma.reservation.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.markNoShow('res-1', 'user-1', ctx, {}, meta);
 
@@ -393,7 +571,6 @@ describe('ReservationsService', () => {
       amount: new Decimal(50),
       status: 'RECEIVED',
     });
-    prisma.reservationEvent.create.mockResolvedValue({});
 
     const result = await service.recordDeposit(
       'res-1',
@@ -443,7 +620,6 @@ describe('ReservationsService', () => {
       deposits: [],
       events: [],
     });
-    prisma.reservationEvent.create.mockResolvedValue({});
 
     const result = await service.assignTable('res-1', 'user-1', ctx, { tableId: 'table-2' }, meta);
 
@@ -484,11 +660,16 @@ describe('ReservationsService', () => {
     await expect(service.findById('nonexistent', ctx)).rejects.toThrow(NotFoundException);
   });
 
-  // ── List ──
+  // ── List (active/history + pagination) ──
 
-  it('should list reservations with pagination', async () => {
+  it('should list reservations with pagination metadata', async () => {
     prisma.reservation.findMany.mockResolvedValue([
-      { id: 'res-1', reservationNumber: 'RES-000001', status: 'PENDING' },
+      {
+        id: 'res-1',
+        reservationNumber: 'RES-000001',
+        status: 'PENDING',
+        reservationAt: new Date('2999-01-01T19:00:00Z'),
+      },
     ]);
     prisma.reservation.count.mockResolvedValue(1);
 
@@ -497,13 +678,83 @@ describe('ReservationsService', () => {
     expect(result.data).toHaveLength(1);
     expect(result.total).toBe(1);
     expect(result.page).toBe(1);
+    expect(result.pageSize).toBe(20);
+    expect(result.totalPages).toBe(1);
+    expect(result.data[0]).toHaveProperty('overdue');
+  });
+
+  it('should restrict scope=active to active statuses', async () => {
+    prisma.reservation.findMany.mockResolvedValue([]);
+    prisma.reservation.count.mockResolvedValue(0);
+
+    await service.list(ctx, { scope: 'active' });
+
+    expect(prisma.reservation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { in: ['PENDING', 'CONFIRMED', 'SEATED'] },
+        }),
+      }),
+    );
+  });
+
+  it('should restrict scope=history to terminal statuses and sort newest-first', async () => {
+    prisma.reservation.findMany.mockResolvedValue([]);
+    prisma.reservation.count.mockResolvedValue(0);
+
+    await service.list(ctx, { scope: 'history' });
+
+    expect(prisma.reservation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { in: ['COMPLETED', 'CANCELLED', 'NO_SHOW'] },
+        }),
+        orderBy: [{ reservationAt: 'desc' }, { id: 'desc' }],
+      }),
+    );
+  });
+
+  it('should clamp pageSize to the safe maximum', async () => {
+    prisma.reservation.findMany.mockResolvedValue([]);
+    prisma.reservation.count.mockResolvedValue(0);
+
+    const result = await service.list(ctx, { pageSize: 5000 });
+
+    expect(result.pageSize).toBe(100);
+    expect(prisma.reservation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100 }),
+    );
+  });
+
+  it('should default pageSize when unspecified', async () => {
+    prisma.reservation.findMany.mockResolvedValue([]);
+    prisma.reservation.count.mockResolvedValue(0);
+
+    const result = await service.list(ctx, {});
+
+    expect(result.pageSize).toBe(25);
+  });
+
+  it('should flag an overdue active reservation', async () => {
+    prisma.reservation.findMany.mockResolvedValue([
+      {
+        id: 'res-late',
+        status: 'CONFIRMED',
+        reservationAt: new Date('2000-01-01T10:00:00Z'), // far in the past
+      },
+    ]);
+    prisma.reservation.count.mockResolvedValue(1);
+
+    const result = await service.list(ctx, { scope: 'active' });
+
+    expect(result.data[0].overdue).toBe(true);
   });
 
   // ── List Upcoming ──
 
   it('should list upcoming reservations', async () => {
     prisma.reservation.findMany.mockResolvedValue([
-      { id: 'res-1', status: 'CONFIRMED', reservationAt: new Date('2026-04-01T19:00:00Z') },
+      { id: 'res-1', status: 'CONFIRMED', reservationAt: new Date('2999-04-01T19:00:00Z') },
     ]);
 
     const result = await service.listUpcoming(ctx);

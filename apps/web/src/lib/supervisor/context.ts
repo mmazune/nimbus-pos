@@ -129,7 +129,7 @@ export function useSupervisorContext() {
         resolvedOrganizationName,
       ),
       roleNames: user?.roles.map((role) => role.jobRole || role.name).filter(Boolean) || [],
-      workstationLabel: "Supervisor terminal",
+      workstationLabel: "Workstation unavailable",
       sessionPlatform: user?.session?.platform || "Session check pending",
       sessionSource: user?.session?.source || "Session check pending",
       sessionId: user?.session?.id || null,

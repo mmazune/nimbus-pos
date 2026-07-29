@@ -257,7 +257,7 @@ Submit:
 ## 13. Me tab
 
 Show:
-- cashier name/avatar/role;
+- verified cashier name, initials, account identifier, and role-aware profile status;
 - branch;
 - terminal;
 - current time;
@@ -265,6 +265,8 @@ Show:
 - till state;
 - attendance/self-service if supported and self-scoped;
 - logout.
+
+Use the shared profile hero, metadata, status-badge, section, and session visual primitives without moving query or mutation ownership out of `CashierMeScreen`. If a till is active while the shift is not active, present `Shift required` as the operational warning rather than treating the account as ready. The shell and bottom navigation must remain usable without horizontal overflow at the supported narrower terminal width.
 
 Do not show payroll, staff list, reports, accounting, owner dashboard, franchise dashboard, manager settings.
 

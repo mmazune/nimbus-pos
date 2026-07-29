@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 
+import { OperationalShell } from "@/components/pos-shell/OperationalShell";
 import { CashierBottomNav } from "@/components/cashier/shell/CashierBottomNav";
 import { CashierHeader } from "@/components/cashier/shell/CashierHeader";
 import { CashierIdleLogoutHandler } from "@/components/cashier/shell/CashierIdleLogoutHandler";
@@ -16,15 +17,14 @@ export function CashierShell({ children }: CashierShellProps) {
 
   return (
     <CashierSessionGuard>
-      <div className="min-h-screen bg-page">
-        <CashierIdleLogoutHandler />
-        <CashierHeader readinessItems={readiness.items} />
-        <CashierReadinessStrip items={readiness.items} />
-        <main className="mx-auto min-h-screen min-w-[1280px] max-w-[1600px] px-8 pb-28 pt-40">
-          {children}
-        </main>
-        <CashierBottomNav />
-      </div>
+      <OperationalShell
+        header={<CashierHeader />}
+        readiness={<CashierReadinessStrip items={readiness.items} />}
+        bottomNavigation={<CashierBottomNav />}
+        idleHandler={<CashierIdleLogoutHandler />}
+      >
+        {children}
+      </OperationalShell>
     </CashierSessionGuard>
   );
 }

@@ -29,7 +29,11 @@ export function StatusMessage({ tone = "info", title, children }: StatusMessageP
   const Icon = toneIcon[tone];
 
   return (
-    <div className={cn("rounded-lg p-4", toneClasses[tone])} role="status" aria-live="polite">
+    <div
+      className={cn("rounded-lg p-4", toneClasses[tone])}
+      role={tone === "danger" ? "alert" : "status"}
+      aria-live={tone === "danger" ? "assertive" : "polite"}
+    >
       <div className="flex items-start gap-3">
         <Icon size={22} aria-hidden />
         <div>

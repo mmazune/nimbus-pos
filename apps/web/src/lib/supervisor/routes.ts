@@ -1,36 +1,29 @@
-import {
-  CalendarCheck,
-  GridFour,
-  ListChecks,
-  ShieldCheck,
-  UserCircle,
-} from "@phosphor-icons/react";
+import { operationalIconNames } from "../../components/pos-shell/role-icon-config";
+import type { OperationalNavItem } from "../../components/pos-shell/types";
 
 export const supervisorRoutes = [
   {
     href: "/supervisor/floor",
     label: "Floor",
-    icon: GridFour,
-  },
-  {
-    href: "/supervisor/orders",
-    label: "Orders",
-    icon: ListChecks,
+    icon: operationalIconNames.floor,
+    match: (pathname: string) => pathname === "/supervisor/floor",
   },
   {
     href: "/supervisor/reservations",
     label: "Reservations",
-    icon: CalendarCheck,
+    icon: operationalIconNames.reservations,
+    match: (pathname: string) => pathname === "/supervisor/reservations",
   },
   {
     href: "/supervisor/approvals",
     label: "Approvals",
-    icon: ShieldCheck,
+    icon: operationalIconNames.approvals,
+    match: (pathname: string) => pathname === "/supervisor/approvals",
   },
   {
     href: "/supervisor/me",
     label: "Me",
-    icon: UserCircle,
+    icon: operationalIconNames.me,
+    match: (pathname: string) => pathname === "/supervisor/me",
   },
-] as const;
-
+] as const satisfies readonly OperationalNavItem[];

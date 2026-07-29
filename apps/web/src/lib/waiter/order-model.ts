@@ -3,6 +3,7 @@ import type {
   UpdateOrderItemPayload,
   WaiterMenuCatalogApi,
   WaiterMenuItemApi,
+  WaiterMenuNavigationSectionApi,
   WaiterMenuServingApi,
   WaiterModifierGroupApi,
   WaiterModifierOptionApi,
@@ -10,6 +11,7 @@ import type {
   WaiterOrderItemApi,
   WaiterOrderItemMetadata,
 } from "./order-api";
+import { formatWaiterDisplayName, formatWaiterMoney } from "./formatters";
 
 export type WaiterOrderLineViewModel = {
   id: string;
@@ -37,10 +39,13 @@ export type WaiterOrderViewModel = {
   createdAt?: string;
   elapsedLabel?: string;
   subtotal?: number;
+  tax?: number;
+  discount?: number;
   total?: number;
   billState?: string;
   waiterId?: string;
   waiterName?: string;
+  guestName?: string;
   items: WaiterOrderLineViewModel[];
   canEditItems: boolean;
   canSend: boolean;
@@ -84,6 +89,10 @@ export type WaiterMenuItemViewModel = {
   description?: string;
   categoryId?: string;
   categoryName?: string;
+  browseGroupId?: string;
+  browseSubgroupId?: string;
+  section?: string;
+  sortOrder: number;
   price?: number;
   station?: string;
   available: boolean;
@@ -96,6 +105,7 @@ export type WaiterMenuServingViewModel = {
   label: string;
   price?: number;
   isDefault: boolean;
+  sortOrder: number;
 };
 
 export type WaiterModifierGroupViewModel = {
@@ -104,6 +114,7 @@ export type WaiterModifierGroupViewModel = {
   min: number;
   max: number;
   required: boolean;
+  sortOrder: number;
   options: WaiterModifierOptionViewModel[];
 };
 
@@ -111,6 +122,26 @@ export type WaiterModifierOptionViewModel = {
   id: string;
   name: string;
   priceDelta: number;
+  sortOrder: number;
+};
+
+export type WaiterMenuSubgroupViewModel = {
+  id: string;
+  name: string;
+  sortOrder: number;
+};
+
+export type WaiterMenuGroupViewModel = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  subgroups: WaiterMenuSubgroupViewModel[];
+};
+
+export type WaiterMenuSectionViewModel = {
+  id: string;
+  name: string;
+  groups: WaiterMenuGroupViewModel[];
 };
 
 export type WaiterMenuItemConfigurationViewModel = WaiterMenuItemViewModel & {
@@ -137,9 +168,9 @@ function titleFromStatus(status: string | null | undefined) {
 
 function formatPerson(user: WaiterOrderApi["user"]) {
   if (!user) return undefined;
-  if (user.displayName) return user.displayName;
+  if (user.displayName) return formatWaiterDisplayName(user.displayName);
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-  return fullName || user.email || undefined;
+  return formatWaiterDisplayName(fullName) || user.email || undefined;
 }
 
 function readMetadataString(metadata: Record<string, unknown> | null | undefined, keys: string[]) {
@@ -153,14 +184,8 @@ function readMetadataString(metadata: Record<string, unknown> | null | undefined
   return undefined;
 }
 
-export function formatMoney(value: number | undefined, currency = "UGX") {
-  if (value === undefined) return "Pending";
-
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
-  }).format(value);
+export function formatMoney(value: number | null | undefined, currency = "UGX") {
+  return formatWaiterMoney(value, currency, "Pending");
 }
 
 export function formatOrderStatus(status: string | null | undefined) {
@@ -240,10 +265,18 @@ export function normalizeWaiterOrder(order: WaiterOrderApi): WaiterOrderViewMode
     createdAt: order.createdAt || undefined,
     elapsedLabel: formatElapsed(order.createdAt),
     subtotal: asNumber(order.subtotal),
+    tax: asNumber(order.tax),
+    discount: asNumber(order.discount),
     total: asNumber(order.total),
     billState,
     waiterId: order.userId || order.user?.id || undefined,
     waiterName: formatPerson(order.user),
+    guestName: readMetadataString(order.metadata, [
+      "guestName",
+      "customerName",
+      "guest_name",
+      "customer_name",
+    ]),
     items: (order.items || []).map((item) => normalizeOrderLine(item, status)),
     canEditItems: !TERMINAL_ORDER_STATUSES.has(status) && status === "NEW",
     canSend: status === "NEW",
@@ -351,6 +384,7 @@ function normalizeServing(serving: WaiterMenuServingApi): WaiterMenuServingViewM
     label: serving.label || serving.format || "Serving",
     price: asNumber(serving.price),
     isDefault: Boolean(serving.isDefault),
+    sortOrder: serving.sortOrder || 0,
   };
 }
 
@@ -359,6 +393,12 @@ function normalizeMenuItem(
   category?: { id?: string; name?: string | null },
 ): WaiterMenuItemViewModel {
   const servings = (item.servings || []).map(normalizeServing);
+  const activeServings = servings
+    .filter((serving) => {
+      const source = (item.servings || []).find((entry) => entry.id === serving.id);
+      return source?.isActive !== false;
+    })
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label));
 
   return {
     id: item.id,
@@ -366,11 +406,15 @@ function normalizeMenuItem(
     description: item.description || undefined,
     categoryId: item.categoryId || item.category?.id || category?.id,
     categoryName: item.category?.name || category?.name || undefined,
+    browseGroupId: item.browseGroup?.id || undefined,
+    browseSubgroupId: item.browseSubgroup?.id || undefined,
+    section: item.browseGroup?.section || undefined,
+    sortOrder: item.sortOrder || 0,
     price: asNumber(item.price),
     station: item.station || undefined,
     available: item.isActive !== false,
-    servings,
-    hasServingOptions: servings.length > 1,
+    servings: activeServings,
+    hasServingOptions: activeServings.length > 1,
   };
 }
 
@@ -380,12 +424,49 @@ export function normalizeMenuCatalog(catalog: WaiterMenuCatalogApi): WaiterMenuC
       id: category.id,
       name: category.name || "Menu",
       sortOrder: category.sortOrder || 0,
-      items: (category.items || []).map((item) =>
-        normalizeMenuItem(item, { id: category.id, name: category.name }),
-      ),
+      items: (category.items || [])
+        .filter((item) => item.isActive !== false)
+        .map((item) => normalizeMenuItem(item, { id: category.id, name: category.name })),
     }))
     .filter((category) => category.items.length > 0)
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+}
+
+export function flattenMenuCatalog(catalog: WaiterMenuCatalogApi): WaiterMenuItemViewModel[] {
+  return normalizeMenuCatalog(catalog)
+    .flatMap((category) => category.items)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+}
+
+function formatSectionName(section: string) {
+  return section.replace(/_/g, " ");
+}
+
+export function normalizeMenuNavigation(
+  navigation: WaiterMenuNavigationSectionApi[],
+): WaiterMenuSectionViewModel[] {
+  return navigation
+    .map((section) => ({
+      id: section.section,
+      name: formatSectionName(section.section),
+      groups: (section.groups || [])
+        .filter((group) => group.isActive !== false)
+        .map((group) => ({
+          id: group.id,
+          name: group.name || "Menu group",
+          sortOrder: group.sortOrder || 0,
+          subgroups: (group.subgroups || [])
+            .filter((subgroup) => subgroup.isActive !== false)
+            .map((subgroup) => ({
+              id: subgroup.id,
+              name: subgroup.name || "Menu subgroup",
+              sortOrder: subgroup.sortOrder || 0,
+            }))
+            .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
+        }))
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
+    }))
+    .filter((section) => section.groups.length > 0);
 }
 
 function normalizeModifierOption(option: WaiterModifierOptionApi): WaiterModifierOptionViewModel {
@@ -393,6 +474,7 @@ function normalizeModifierOption(option: WaiterModifierOptionApi): WaiterModifie
     id: option.id,
     name: option.name || "Option",
     priceDelta: asNumber(option.priceDelta) || 0,
+    sortOrder: option.sortOrder || 0,
   };
 }
 
@@ -403,7 +485,11 @@ function normalizeModifierGroup(group: WaiterModifierGroupApi): WaiterModifierGr
     min: group.min || 0,
     max: group.max || 0,
     required: Boolean(group.required || (group.min || 0) > 0),
-    options: (group.options || []).map(normalizeModifierOption),
+    sortOrder: group.sortOrder || 0,
+    options: (group.options || [])
+      .filter((option) => option.isActive !== false)
+      .map(normalizeModifierOption)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
   };
 }
 
@@ -412,7 +498,10 @@ export function normalizeMenuItemConfiguration(
 ): WaiterMenuItemConfigurationViewModel {
   return {
     ...normalizeMenuItem(item),
-    modifierGroups: (item.modifierGroups || []).map(normalizeModifierGroup),
+    modifierGroups: (item.modifierGroups || [])
+      .filter((group) => group.isActive !== false)
+      .map(normalizeModifierGroup)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
   };
 }
 
@@ -470,19 +559,33 @@ export function buildAddItemPayload({
 }
 
 export function buildUpdateItemPayload({
+  item,
+  serving,
   quantity,
   note,
-  existingMetadata,
+  selectedOptionIds,
 }: {
+  item: WaiterMenuItemConfigurationViewModel;
+  serving?: WaiterMenuServingViewModel;
   quantity: number;
   note: string;
-  existingMetadata?: WaiterOrderItemMetadata;
+  selectedOptionIds: string[];
 }): UpdateOrderItemPayload {
   return {
     quantity,
     notes: note.trim(),
-    ...(existingMetadata ? { metadata: existingMetadata } : {}),
+    metadata: buildOrderItemMetadata({
+      serving,
+      groups: item.modifierGroups,
+      selectedOptionIds,
+    }),
   };
+}
+
+export function selectedOptionIdsFromMetadata(metadata?: WaiterOrderItemMetadata) {
+  return (metadata?.selectedModifiers || [])
+    .map((modifier) => modifier.modifierOptionId)
+    .filter(Boolean);
 }
 
 export function modifierSelectionIsValid(

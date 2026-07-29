@@ -25,7 +25,7 @@ import {
   Skeleton,
   StatusMessage,
 } from "@/components/ui";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 import { listWaiterOrders, type WaiterOrdersListQuery } from "@/lib/waiter/order-api";
@@ -274,7 +274,7 @@ export function WaiterOrdersQueueScreen() {
     queryKey: ["waiter", "orders-queue", branchId, activeFilter],
     enabled: Boolean(accessToken && branchId),
     queryFn: () => listWaiterOrders(accessToken as string, branchId as string, filter.query),
-    retry: 1,
+    retry: shouldRetryApiRequest,
   });
 
   useEffect(() => {
@@ -299,7 +299,19 @@ export function WaiterOrdersQueueScreen() {
       return;
     }
 
-    void router.push(`/waiter/orders/${order.id}`);
+    if (order.tableId) {
+      void router.push({
+        pathname: "/waiter/floor",
+        query: { tableId: order.tableId, orderId: order.id },
+      });
+      return;
+    }
+
+    setBlockedOrder({
+      ...order,
+      canOpen: false,
+      blockedReason: "This order has no accessible table context for the waiter Floor workflow.",
+    });
   }
 
   if (ordersQuery.isError) {

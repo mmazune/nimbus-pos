@@ -64,9 +64,9 @@ These are non-negotiable for MVP unless product updates this file.
 8. No waiter dashboard.
 9. Fixed header.
 10. Fixed bottom nav.
-11. Bottom nav items: **Floor**, **Orders**, **Reservations**, **Me**.
-12. No Menu item in bottom nav.
-13. Menu opens only from the order lifecycle.
+11. Bottom nav items: **Floor**, **Reservations**, **Me**.
+12. Orders is not a visible waiter navigation destination or standalone workspace.
+13. Menu, order entry, active service, bill, and receipt work open contextually from the selected table on Floor.
 14. Waiter table statuses shown in UI: **Available**, **Occupied**, **Reserved** only.
 15. Do not show Cleaning or Blocked as waiter MVP table statuses.
 16. No table notes.
@@ -289,7 +289,7 @@ The waiter MVP frontend is acceptable only when:
 9. Waiter can send order to kitchen/bar.
 10. Waiter can request bill.
 11. Waiter can view receipt, history, reprint, and send-pending contract.
-12. Waiter can see own orders through `userId=me`.
+12. Waiter can resume waiter-owned orders from their linked table on Floor; `userId=me` remains an internal data-scope contract.
 13. Waiter can use Me for shift/session/self-service utilities.
 14. Idle timeout returns to login.
 15. No unsupported action is silently visible as if it works.
@@ -302,6 +302,7 @@ The waiter MVP frontend is acceptable only when:
 Never build:
 
 - a waiter dashboard;
+- a separate visible waiter Orders workspace;
 - menu as a bottom-nav tab;
 - table notes;
 - combine/uncombine table UI;

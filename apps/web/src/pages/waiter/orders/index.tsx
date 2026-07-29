@@ -1,16 +1,12 @@
 import type { GetServerSideProps } from "next";
 
-import { WaiterOrdersQueueScreen } from "@/components/waiter/orders";
-import { WaiterShell } from "@/components/waiter/shell";
-
 export const getServerSideProps: GetServerSideProps = async () => ({
-  props: {},
+  redirect: {
+    destination: "/waiter/floor",
+    permanent: false,
+  },
 });
 
 export default function WaiterOrdersPage() {
-  return (
-    <WaiterShell>
-      <WaiterOrdersQueueScreen />
-    </WaiterShell>
-  );
+  return null;
 }

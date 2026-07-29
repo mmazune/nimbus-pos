@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
 
+import { ToastProvider } from "@/components/providers/ToastProvider";
+import { shouldRetryApiRequest } from "@/lib/api/client";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 
 type AppProvidersProps = {
@@ -15,7 +17,7 @@ export function AppProviders({ children }: AppProvidersProps) {
           queries: {
             gcTime: typeof window === "undefined" ? Infinity : 5 * 60_000,
             refetchOnWindowFocus: false,
-            retry: 1,
+            retry: shouldRetryApiRequest,
             staleTime: 30_000,
           },
         },
@@ -24,7 +26,9 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

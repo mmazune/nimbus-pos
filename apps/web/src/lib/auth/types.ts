@@ -46,6 +46,7 @@ export type AuthMembership = {
   branchName?: string;
   branchSlug?: string;
   branchStatus?: string;
+  branchCurrencyCode?: string | null;
   roleId?: string;
   roleName?: string;
   roleLevel?: string;
@@ -121,5 +122,6 @@ export type WaiterSessionState = {
   isSupervisor: boolean;
   branchId: string | null;
   branchName: string | null;
+  currencyCode: string | null;
   organizationId: string | null;
 };

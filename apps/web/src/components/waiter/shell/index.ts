@@ -1,4 +1,3 @@
-export { CurrentTime } from "./CurrentTime";
 export { WaiterBottomNav } from "./WaiterBottomNav";
 export { WaiterHeader } from "./WaiterHeader";
 export { WaiterIdleLogoutHandler } from "./WaiterIdleLogoutHandler";

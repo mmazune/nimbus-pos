@@ -3,6 +3,7 @@ import { OrdersService } from './orders.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { KdsService } from '../kds/kds.service';
+import { ReservationsService } from '../reservations/reservations.service';
 import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -11,6 +12,7 @@ describe('OrdersService', () => {
   let prisma: Record<string, any>;
   let audit: { log: jest.Mock };
   let kdsService: { createTicketsForOrder: jest.Mock };
+  let reservationsService: { completeForClosedOrder: jest.Mock };
 
   const mockCtx = {
     branchId: 'branch-1',
@@ -54,6 +56,7 @@ describe('OrdersService', () => {
 
     audit = { log: jest.fn().mockResolvedValue(undefined) };
     kdsService = { createTicketsForOrder: jest.fn().mockResolvedValue({ tickets: [] }) };
+    reservationsService = { completeForClosedOrder: jest.fn().mockResolvedValue(null) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -61,6 +64,7 @@ describe('OrdersService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: KdsService, useValue: kdsService },
+        { provide: ReservationsService, useValue: reservationsService },
       ],
     }).compile();
 
@@ -206,6 +210,7 @@ describe('OrdersService', () => {
       prisma.menuItem.findFirst.mockResolvedValue({
         id: 'mi-1',
         price: new Decimal('10.00'),
+        isActive: true,
         servings: [],
       });
       prisma.recipeIngredient.findMany.mockResolvedValue([]);
@@ -366,6 +371,30 @@ describe('OrdersService', () => {
     it('should transition SERVED → CLOSED', async () => {
       prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
       prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+
+      const result = await service.closeOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
+      expect(result.status).toBe('CLOSED');
+    });
+
+    it('should reconcile a linked reservation on close (Prompt 4A auto-completion)', async () => {
+      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
+      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+      reservationsService.completeForClosedOrder.mockResolvedValue('res-1');
+
+      await service.closeOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
+
+      expect(reservationsService.completeForClosedOrder).toHaveBeenCalledWith(
+        'order-1',
+        mockCtx,
+        'user-1',
+        mockMeta,
+      );
+    });
+
+    it('should not fail the order close when reservation auto-completion throws', async () => {
+      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
+      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+      reservationsService.completeForClosedOrder.mockRejectedValue(new Error('db blip'));
 
       const result = await service.closeOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
       expect(result.status).toBe('CLOSED');

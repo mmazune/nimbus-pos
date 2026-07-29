@@ -1,4 +1,12 @@
 import { apiRequest } from "@/lib/api/client";
+import {
+  fetchSupervisorOrders,
+  type SupervisorOrderListItem,
+} from "@/lib/supervisor/orders";
+import {
+  fetchSupervisorReservations,
+  type SupervisorReservation,
+} from "@/lib/supervisor/reservations";
 
 export type SupervisorTableStatus = "AVAILABLE" | "OCCUPIED" | "RESERVED" | "CLEANING";
 
@@ -53,6 +61,13 @@ export type SupervisorFloorAvailability = {
   tables?: SupervisorAvailabilityTable[];
 };
 
+export type SupervisorFloorData = {
+  floorPlans: SupervisorFloorPlan[];
+  tables: SupervisorTable[];
+  activeOrders: SupervisorOrderListItem[];
+  reservations: SupervisorReservation[];
+};
+
 export function fetchSupervisorFloorPlans(token: string, branchId: string) {
   return apiRequest<SupervisorFloorPlan[]>("/api/floor-plans", { token, branchId });
 }
@@ -92,3 +107,18 @@ export function updateSupervisorTableStatus({
   });
 }
 
+export async function loadSupervisorFloorData(token: string, branchId: string): Promise<SupervisorFloorData> {
+  const [floorPlans, tables, ordersResponse, reservationsResponse] = await Promise.all([
+    fetchSupervisorFloorPlans(token, branchId),
+    fetchSupervisorTables(token, branchId),
+    fetchSupervisorOrders(token, branchId, { excludeStatus: ["CLOSED", "VOIDED"], pageSize: 100 }),
+    fetchSupervisorReservations(token, branchId, { pageSize: 200 }),
+  ]);
+
+  return {
+    floorPlans,
+    tables,
+    activeOrders: ordersResponse.data || [],
+    reservations: reservationsResponse.data || [],
+  };
+}

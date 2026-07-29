@@ -1,13 +1,14 @@
-import { ClockClockwise, WarningCircle } from "@phosphor-icons/react";
+import { WarningCircle } from "@phosphor-icons/react";
 import { useEffect } from "react";
 
-import { Badge, Skeleton, StatusMessage } from "@/components/ui";
+import { Badge, Skeleton } from "@/components/ui";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { normalizeShift } from "@/lib/waiter/me-model";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
 
 export function WaiterShiftBanner() {
-  const { clearSession } = useAuth();
+  const { clearSession, user } = useAuth();
   const { data, error, isError, isLoading } = useActiveShift();
 
   useEffect(() => {
@@ -18,8 +19,8 @@ export function WaiterShiftBanner() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-x-0 top-20 z-30 border-b border-border-subtle bg-surface">
-        <div className="mx-auto flex h-10 min-w-[1280px] max-w-[1600px] items-center px-8">
+      <div className="h-11 border-b border-border-subtle bg-surface">
+        <div className="mx-auto flex h-full w-full max-w-[1600px] items-center px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-4 w-72" />
         </div>
       </div>
@@ -33,8 +34,8 @@ export function WaiterShiftBanner() {
         : "Could not read active shift state.";
 
     return (
-      <div className="fixed inset-x-0 top-20 z-30 border-b border-status-danger bg-status-danger-surface">
-        <div className="mx-auto flex h-10 min-w-[1280px] max-w-[1600px] items-center gap-2 px-8 text-sm font-semibold text-status-danger">
+      <div className="h-11 border-b border-status-danger bg-status-danger-surface">
+        <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-2 px-4 text-sm font-semibold text-status-danger sm:px-6 lg:px-8">
           <WarningCircle size={18} weight="bold" />
           <span>{message}</span>
         </div>
@@ -44,28 +45,43 @@ export function WaiterShiftBanner() {
 
   if (!data) {
     return (
-      <div className="fixed inset-x-0 top-20 z-30 border-b border-status-warning bg-status-warning-surface">
-        <div className="mx-auto flex h-10 min-w-[1280px] max-w-[1600px] items-center justify-between px-8 text-sm font-semibold text-status-warning">
+      <div className="h-11 border-b border-status-warning bg-status-warning-surface">
+        <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between px-4 text-sm font-semibold text-status-warning sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
             <WarningCircle size={18} weight="bold" />
-            <span>Shift not started: service actions disabled.</span>
+            <span>Off shift. Service actions are unavailable.</span>
           </div>
-          <Badge variant="warning">Read-only foundation</Badge>
+          <Badge variant="warning">Off shift</Badge>
+        </div>
+      </div>
+    );
+  }
+
+  const shift = normalizeShift(data, user?.permissions || []);
+
+  if (shift.statusLabel === "Shift issue") {
+    return (
+      <div className="h-11 border-b border-status-warning bg-status-warning-surface">
+        <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between px-4 text-sm font-semibold text-status-warning sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2">
+            <WarningCircle className="shrink-0" size={18} weight="bold" />
+            <span className="truncate">Shift review needed. Open Me for details.</span>
+          </div>
+          <Badge variant="warning">Shift issue</Badge>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-x-0 top-20 z-30 border-b border-status-success bg-status-success-surface">
-      <div className="mx-auto flex h-10 min-w-[1280px] max-w-[1600px] items-center justify-between px-8 text-sm font-semibold text-status-success">
+    <div className="h-11 border-b border-status-success bg-status-success-surface">
+      <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between px-4 text-sm font-semibold text-status-success sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
-          <ClockClockwise size={18} weight="bold" />
           <span>
-            Active shift{data.shiftNumber ? ` ${data.shiftNumber}` : ""}: service reads ready.
+            On shift{data.shiftNumber ? ` · ${data.shiftNumber}` : ""}
           </span>
         </div>
-        <Badge variant="success">Open</Badge>
+        <Badge variant="success">On shift</Badge>
       </div>
     </div>
   );

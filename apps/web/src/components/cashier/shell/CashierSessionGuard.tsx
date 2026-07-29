@@ -22,7 +22,7 @@ export function CashierSessionGuard({ children }: CashierSessionGuardProps) {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-page p-8">
+      <main className="flex min-h-screen items-center justify-center bg-page p-4 sm:p-8">
         <LoadingState title="Restoring cashier session" />
       </main>
     );
@@ -30,7 +30,7 @@ export function CashierSessionGuard({ children }: CashierSessionGuardProps) {
 
   if (!accessToken || !isAuthenticated) {
     return (
-      <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-page p-8">
+      <main className="flex min-h-screen items-center justify-center bg-page p-4 sm:p-8">
         <LoadingState title="Returning to login" />
       </main>
     );
@@ -38,7 +38,7 @@ export function CashierSessionGuard({ children }: CashierSessionGuardProps) {
 
   if (!isCashier) {
     return (
-      <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-page p-8">
+      <main className="flex min-h-screen items-center justify-center bg-page p-4 sm:p-8">
         <BlockedState
           title="Cashier access required."
           description="This route requires a cashier role from the authenticated session context."
@@ -61,7 +61,7 @@ export function CashierSessionGuard({ children }: CashierSessionGuardProps) {
 
   if (!branchId) {
     return (
-      <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-page p-8">
+      <main className="flex min-h-screen items-center justify-center bg-page p-4 sm:p-8">
         <BlockedState
           title="Branch context unavailable."
           description="The cashier workspace needs a default branch from /api/auth/me before shift and till reads can run."

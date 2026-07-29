@@ -1,4 +1,3 @@
-import { PaperPlaneTilt, Printer } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import { Button, Input, StatusMessage } from "@/components/ui";
@@ -91,14 +90,12 @@ export function WaiterReceiptActionBar({
         <Button
           variant="secondary"
           disabled={!receipt.actionState.canReprint || isReprinting}
-          leadingIcon={<Printer size={18} weight="bold" aria-hidden />}
           onClick={onReprint}
         >
-          {isReprinting ? "Recording" : "Reprint"}
+          {isReprinting ? "Recording" : "Reprint receipt"}
         </Button>
         <Button
           disabled={Boolean(sendDisabledReason) || isSending}
-          leadingIcon={<PaperPlaneTilt size={18} weight="bold" aria-hidden />}
           onClick={() => onSend({ channel, recipient: recipient.trim() })}
         >
           {isSending ? "Recording" : "Send receipt"}

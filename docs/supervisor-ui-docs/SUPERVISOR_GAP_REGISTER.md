@@ -3,6 +3,10 @@
 Status: final Supervisor QA closeout  
 Date: 2026-07-06
 
+## 2026-07-18 Reconstruction Supersession
+
+This historical register is retained for the original Supervisor UI closeout. Current reconstruction scope is governed by `ai/SUPERVISOR_RECONSTRUCTION_REPO_VERIFICATION_REPORT.md`, `ai/SUPERVISOR_RECONSTRUCTION_GAP_REGISTER.md`, and the updated docs in this folder. The visible Supervisor nav is now Floor, Reservations, Approvals, Me. Orders is no longer a visible Supervisor nav tab; order work must enter from Floor after table selection, with a Floor-contained exception lookup path for tableless, takeaway, closed, direct-reference, and post-close review cases.
+
 | ID | Area | Gap/Decision | Current Evidence | Status |
 |---|---|---|---|---|
 | SUP-GAP-001 | Role | Exact Supervisor role verified. | `JobRole.SUPERVISOR`, seed role `Supervisor` L3 | Closed |

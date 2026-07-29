@@ -21,28 +21,30 @@ const icons = {
 
 export function CashierReadinessStrip({ items = defaultCashierReadiness }: { items?: CashierReadinessItem[] }) {
   return (
-    <div className="fixed inset-x-0 top-20 z-30 border-b border-border-subtle bg-surface">
-      <div className="mx-auto flex h-11 min-w-[1280px] max-w-[1600px] items-center justify-between gap-4 px-8">
-        <div className="flex min-w-0 items-center gap-3">
+    <div className="h-11 border-b border-border-subtle bg-surface">
+      <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between gap-3 overflow-hidden px-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {items.map((item) => {
             const Icon = icons[item.key as keyof typeof icons] || Plugs;
             return (
               <div
                 key={item.key}
                 className={cn(
-                  "flex min-h-8 items-center gap-2 rounded-full px-3 text-xs font-semibold",
+                  "flex min-h-8 min-w-0 items-center gap-2 rounded-full px-3 text-xs font-semibold",
                   toneClasses[item.tone],
                 )}
               >
                 <Icon size={16} weight="bold" aria-hidden />
-                <span>
+                <span className="truncate">
                   {item.label}: {item.value}
                 </span>
               </div>
             );
           })}
         </div>
-        <Badge variant="neutral">Read-only readiness</Badge>
+        <span className="hidden shrink-0 xl:inline-flex">
+          <Badge variant="neutral">Read-only readiness</Badge>
+        </span>
       </div>
     </div>
   );

@@ -203,16 +203,14 @@ export function CashierTillScreen() {
   ].filter(Boolean);
 
   async function refreshTillState() {
-    await queryClient.invalidateQueries({ queryKey: ["cashier", "active-shift", branchId] });
-    await queryClient.invalidateQueries({ queryKey: ["cashier", "active-till", branchId] });
-    await queryClient.invalidateQueries({ queryKey: ["cashier", "till-detail", branchId] });
-    await queryClient.invalidateQueries({ queryKey: ["cashier", "till-summary", branchId] });
-    await Promise.all([
-      readiness.shiftQuery.refetch(),
-      readiness.tillQuery.refetch(),
-      activeTillId ? tillDetailQuery.refetch() : Promise.resolve(),
-      activeTillId ? tillSummaryQuery.refetch() : Promise.resolve(),
-    ]);
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "active-shift", branchId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "active-till", branchId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "till-detail", branchId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "till-summary", branchId] });
+    void readiness.shiftQuery.refetch();
+    void readiness.tillQuery.refetch();
+    if (activeTillId) void tillDetailQuery.refetch();
+    if (activeTillId) void tillSummaryQuery.refetch();
   }
 
   async function runPendingAction() {

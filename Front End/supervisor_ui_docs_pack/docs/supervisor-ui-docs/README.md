@@ -1,3 +1,11 @@
+> ⚠️ **SUPERSEDED (2026-07-18).** This pack describes the original **5-tab**
+> Supervisor UI (Floor · **Orders** · Reservations · Approvals · Me) with a
+> dedicated Orders screen and role-specific Floor components. The shipped
+> Supervisor is a **4-tab** app (**Floor · Reservations · Approvals · Me**) with
+> **no visible Orders tab** and a **shared** Floor. Current canonical docs:
+> `docs/supervisor-ui-docs/*`, `ai/SUPERVISOR_RECONSTRUCTION_*`, root `CLAUDE.md`
+> and `docs/DECISIONS.md`. Kept for history — do not treat as current spec.
+
 # Nimbus POS Supervisor UI Docs
 
 Status: Draft v1  

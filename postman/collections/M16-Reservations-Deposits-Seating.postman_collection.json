@@ -194,6 +194,143 @@
       ]
     },
     {
+      "name": "List Reservations - Active Scope",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Branch-Id",
+            "value": "{{branchId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/reservations?scope=active&page=1&pageSize=25",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "reservations"
+          ],
+          "query": [
+            {
+              "key": "scope",
+              "value": "active"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "pageSize",
+              "value": "25"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('Has data array', () => pm.expect(b.data).to.be.an('array'));",
+              "pm.test('Only active statuses', () => b.data.every(r => ['PENDING','CONFIRMED','SEATED'].includes(r.status)) );",
+              "pm.test('Has pagination metadata', () => pm.expect(b).to.have.property('totalPages'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Reservations - History Scope (Paginated)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Branch-Id",
+            "value": "{{branchId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/reservations?scope=history&page=1&pageSize=25",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "reservations"
+          ],
+          "query": [
+            {
+              "key": "scope",
+              "value": "history"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "pageSize",
+              "value": "25"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('Only terminal statuses', () => b.data.every(r => ['COMPLETED','CANCELLED','NO_SHOW'].includes(r.status)) );"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Reservations - Max PageSize Clamp",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Branch-Id",
+            "value": "{{branchId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/reservations?pageSize=500",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "reservations"
+          ],
+          "query": [
+            {
+              "key": "pageSize",
+              "value": "500"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('pageSize clamped to <= 100', () => pm.expect(pm.response.json().pageSize).to.be.at.most(100));"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "List Upcoming Reservations",
       "request": {
         "method": "GET",
@@ -497,6 +634,53 @@
             "exec": [
               "pm.test('200 OK', () => pm.response.to.have.status(200));",
               "pm.test('Status SEATED', () => pm.expect(pm.response.json().status).to.equal('SEATED'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Complete Reservation (SEATED -> COMPLETED)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Branch-Id",
+            "value": "{{branchId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"note\": \"Completed via Postman test\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/complete",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "reservations",
+            "{{reservationId}}",
+            "complete"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Prompt 4A manual completion. 200 when SEATED (or already COMPLETED, idempotent);",
+              "// 409 when the source status is not SEATED. Both are valid depending on fixture state.",
+              "pm.test('Status 200 or 409', () => pm.expect([200, 409]).to.include(pm.response.code));",
+              "if (pm.response.code === 200) {",
+              "  pm.test('Status COMPLETED', () => pm.expect(pm.response.json().status).to.equal('COMPLETED'));",
+              "}"
             ]
           }
         }

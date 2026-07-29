@@ -1,25 +1,24 @@
 import type { WaiterOrderApi, WaiterReservationApi, WaiterTableApi } from "./floor-api";
+import {
+  filterOperationalTables,
+  formatOperationalStaffIdentity,
+  sortOperationalTables,
+} from "@/components/floor/formatters";
+import type {
+  OperationalTableFilter,
+  OperationalTableViewModel,
+} from "@/components/floor/types";
 
 export type WaiterTableStatus = "available" | "occupied" | "reserved";
-export type WaiterTableFilter = "all" | WaiterTableStatus | "mine";
+export type WaiterTableFilter = OperationalTableFilter;
 
-export type WaiterTableViewModel = {
-  id: string;
-  name: string;
+export type WaiterTableViewModel = OperationalTableViewModel & {
   status: WaiterTableStatus;
-  capacity: number;
   guestName?: string;
-  reservationTime?: string;
-  reservationId?: string;
-  reservationStatus?: string;
-  orderId?: string;
   orderNumber?: string;
-  orderStatus?: string;
   billState?: string;
-  assignedWaiterId?: string;
-  assignedWaiterName?: string;
+  activeOrder?: WaiterOrderApi;
   isMine: boolean;
-  disabledReason?: string;
 };
 
 export type WaiterTableIntent =
@@ -37,20 +36,8 @@ export type WaiterTableAction = {
 };
 
 const HIDDEN_TABLE_STATUSES = new Set(["CLEANING", "BLOCKED", "UNAVAILABLE", "OUT_OF_SERVICE"]);
-const ACTIVE_ORDER_STATUSES = new Set(["SENT", "IN_KITCHEN", "READY", "SERVED"]);
+const ACTIVE_ORDER_STATUSES = new Set(["NEW", "SENT", "IN_KITCHEN", "READY", "SERVED"]);
 const RESERVABLE_STATUSES = new Set(["PENDING", "CONFIRMED"]);
-
-function normalizeText(value: unknown) {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
-
-function formatPersonName(user: WaiterOrderApi["user"]) {
-  if (!user) return undefined;
-  if (user.displayName) return user.displayName;
-
-  const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-  return fullName || user.email || undefined;
-}
 
 function readMetadataString(metadata: Record<string, unknown> | null | undefined, keys: string[]) {
   if (!metadata) return undefined;
@@ -88,26 +75,15 @@ function normalizeReservationTime(value: string | null | undefined) {
   }).format(date);
 }
 
-function sortByOperationalPriority(a: WaiterTableViewModel, b: WaiterTableViewModel) {
-  const rank: Record<WaiterTableStatus, number> = {
-    occupied: 0,
-    reserved: 1,
-    available: 2,
-  };
-
-  if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
-  return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
-}
-
 export function normalizeWaiterTables({
   tables,
   activeOrders,
-  upcomingReservations,
+  reservations,
   currentUserId,
 }: {
   tables: WaiterTableApi[];
   activeOrders: WaiterOrderApi[];
-  upcomingReservations: WaiterReservationApi[];
+  reservations: WaiterReservationApi[];
   currentUserId?: string | null;
 }): WaiterTableViewModel[] {
   const orderByTable = new Map<string, WaiterOrderApi>();
@@ -122,7 +98,7 @@ export function normalizeWaiterTables({
   }
 
   const reservationByTable = new Map<string, WaiterReservationApi>();
-  for (const reservation of upcomingReservations) {
+  for (const reservation of reservations) {
     const tableId = reservation.tableId || reservation.table?.id;
     if (!tableId || !RESERVABLE_STATUSES.has(String(reservation.status || "").toUpperCase())) {
       continue;
@@ -133,7 +109,7 @@ export function normalizeWaiterTables({
     }
   }
 
-  return tables
+  return sortOperationalTables(tables
     .filter((table) => {
       const backendStatus = String(table.status || "").toUpperCase();
       return table.isActive !== false && !HIDDEN_TABLE_STATUSES.has(backendStatus);
@@ -144,7 +120,10 @@ export function normalizeWaiterTables({
       const backendStatus = String(table.status || "").toUpperCase();
 
       let status: WaiterTableStatus = "available";
-      if (order || backendStatus === "OCCUPIED") {
+      if (
+        (order && String(order.status || "").toUpperCase() !== "NEW") ||
+        backendStatus === "OCCUPIED"
+      ) {
         status = "occupied";
       } else if (reservation || backendStatus === "RESERVED") {
         status = "reserved";
@@ -155,23 +134,25 @@ export function normalizeWaiterTables({
 
       return {
         id: table.id,
-        name: table.label || "Table",
+        label: table.label || "Table",
+        floorPlanId: table.floorPlanId || table.floorPlan?.id || null,
+        floorPlanName: table.floorPlan?.name || null,
         status,
-        capacity: table.capacity || reservation?.partySize || 0,
+        capacity: table.capacity || reservation?.partySize || null,
         guestName: normalizeGuestName(order, reservation),
         reservationTime: normalizeReservationTime(reservation?.reservationAt),
         reservationId: reservation?.id,
         reservationStatus: reservation?.status || undefined,
-        orderId: order?.id,
+        activeOrderId: order?.id,
         orderNumber: order?.orderNumber || undefined,
-        orderStatus: order?.status || undefined,
+        activeOrderStatus: order?.status || undefined,
         billState: normalizeBillState(order),
-        assignedWaiterId,
-        assignedWaiterName: formatPersonName(order?.user),
+        assignedStaffId: assignedWaiterId,
+        assignedStaffName: order?.user ? formatOperationalStaffIdentity(order.user) : null,
+        activeOrder: order,
         isMine,
       };
-    })
-    .sort(sortByOperationalPriority);
+    }));
 }
 
 export function filterWaiterTables(
@@ -179,20 +160,7 @@ export function filterWaiterTables(
   filter: WaiterTableFilter,
   query: string,
 ) {
-  const q = normalizeText(query);
-
-  return tables.filter((table) => {
-    const matchesFilter =
-      filter === "all" ||
-      (filter === "mine" ? table.isMine : table.status === filter);
-
-    if (!matchesFilter) return false;
-    if (!q) return true;
-
-    return [table.name, table.guestName, table.orderNumber]
-      .map(normalizeText)
-      .some((value) => value.includes(q));
-  });
+  return filterOperationalTables({ tables, filter, query, floorPlanId: null });
 }
 
 export function getWaiterTableAction(
@@ -204,6 +172,24 @@ export function getWaiterTableAction(
       intent: "disabled",
       title: "Table unavailable",
       message: table.disabledReason,
+      table,
+    };
+  }
+
+  if (table.activeOrderId) {
+    if (table.isMine) {
+      return {
+        intent: "own-order",
+        title: table.orderNumber ? `Order ${table.orderNumber}` : `${table.label} order`,
+        message: "Open this waiter-owned order.",
+        table,
+      };
+    }
+
+    return {
+      intent: "ownership-blocked",
+      title: "This table belongs to another waiter",
+      message: "You can view the service state, but editable order actions are blocked.",
       table,
     };
   }
@@ -220,7 +206,7 @@ export function getWaiterTableAction(
 
     return {
       intent: "start-order",
-      title: `Start order for ${table.name}`,
+      title: `Start order for ${table.label}`,
       message: "Create a dine-in order for this available table.",
       table,
     };
@@ -229,7 +215,7 @@ export function getWaiterTableAction(
   if (table.status === "reserved") {
     return {
       intent: "reservation-detail",
-      title: `Reservation for ${table.name}`,
+      title: `Reservation for ${table.label}`,
       message: shiftIsOpen
         ? "Open the reservation detail and seat the guest from Reservations."
         : "Shift not started. You can view this reservation, but seating is disabled.",
@@ -240,8 +226,8 @@ export function getWaiterTableAction(
   if (table.isMine) {
     return {
       intent: "own-order",
-      title: table.orderNumber ? `Order ${table.orderNumber}` : `${table.name} order`,
-      message: table.orderId
+      title: table.orderNumber ? `Order ${table.orderNumber}` : `${table.label} order`,
+      message: table.activeOrderId
         ? "Open this waiter-owned order."
         : "This table is occupied, but the active order link was not available in the list response.",
       table,

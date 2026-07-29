@@ -107,7 +107,10 @@ Every business domain gets:
 
 - A `Session` row is created on every login, storing `jti`, platform, source, IP, user-agent, and expiry.
 - The JWT `validate()` callback checks that the session is still active (not revoked, not expired) on every request.
-- `lastActivityAt` is bumped on each validated request for session-activity tracking.
+- Access tokens carry short-lived role and permission claims. The JWT strategy uses those claims for
+  normal protected requests so it does not reload the full role-permission graph on every API call.
+- `lastActivityAt` is rate-limited and updated outside the critical request path when the previous
+  activity timestamp is stale enough to warrant a write.
 - Logout revokes the session and all its child refresh tokens.
 
 ### RBAC Model
@@ -161,6 +164,11 @@ For branch-scoped modules (M4+), requests must include `X-Branch-Id` header:
 - Branch not found or inactive → `400 Bad Request`
 - User not a member of the branch → `403 Forbidden`
 - Valid → `branchContext` object attached to the request with `branchId`, `organizationId`, `roleId`, `membershipId`
+
+`BranchContextGuard` resolves membership and branch context in one Prisma read where possible, keeps a
+short in-memory per-process cache for repeated user/branch checks, and dedupes in-flight lookups. This
+cache is an operational latency optimization only; tenancy, active membership, active branch checks,
+and audit logging for denied access remain authoritative in the backend.
 
 ### Session/Auth Integration
 

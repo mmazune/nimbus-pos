@@ -7,6 +7,14 @@ Scope: backend-verified waiter MVP, desktop-first shared POS terminal
 
 ---
 
+## Shared operational shell status (2026-07-18)
+
+Waiter consumes the shared `OperationalShell`, `OperationalHeader`, `OperationalBottomNav`, `CurrentTime`, navigation presentation, and canonical operational icon registry also used by Cashier and Supervisor. Waiter navigation remains exactly Floor, Reservations, Me. Waiter guards, shift/readiness data, table/order behavior, permissions, queries, and mutations remain role-owned; shared-shell changes do not grant new capabilities.
+
+## Shared operational Floor status (2026-07-18)
+
+Waiter and Supervisor consume the same `OperationalFloor`, toolbar, grid, table card, status badge, staff-name formatter, and state treatments. Waiter still owns table/order/reservation normalization, menu prefetch, immediate workspace mounting, background draft creation, early-item queuing, reserved seating handoff, and other-waiter blocking. Shared Floor extraction does not change those lifecycle rules.
+
 ## 1. Why this document exists
 
 This document describes the complete waiter lifecycle in Nimbus POS:
@@ -39,7 +47,7 @@ Use this file as the product checklist before implementing waiter screens.
 - add item-level notes;
 - update or remove allowed item lines;
 - send order to kitchen/bar;
-- view own order list;
+- resume own active service from its linked table on Floor;
 - request bill;
 - view receipt if available;
 - reprint receipt if permitted;
@@ -254,7 +262,9 @@ Additional data depends on status:
 |---|---|
 | Available | simple ready state. |
 | Reserved | guest name, reservation time. |
-| Occupied | guest name if known, order number, order status, bill state. |
+| Occupied | assigned waiter as `FirstName L.`, separate `Mine` badge when owned, guest name if useful. |
+
+Order numbers and order-status details belong in the selected-table workspace, never on table cards.
 
 ---
 
@@ -568,17 +578,21 @@ If backend denies Ready/In Kitchen, hide those actions.
 
 ---
 
-## 13. Orders tab lifecycle
+## 13. Floor-centered order lookup and legacy route lifecycle
 
-### 13.1 Load orders
+### 13.1 Internal order data
 
-Use waiter self filter:
+The UI may use waiter self filters internally:
 
 ```txt
 GET /api/pos/orders?userId=me&excludeStatus=NEW
 ```
 
-### 13.2 Filters
+### 13.2 No visible order queue
+
+There is no visible Orders tab or standalone queue workspace. The waiter selects the linked table on Floor.
+
+Retained queue-component filters are not navigation:
 
 - Active;
 - Sent;
@@ -598,16 +612,13 @@ Show:
 - total;
 - bill state.
 
-### 13.4 Tap order
+### 13.4 Legacy URL handling
 
-If own order:
-
-- open order detail.
-
-If somehow not own:
-
-- backend returns ownership error;
-- show blocked panel.
+- order list URLs redirect to Floor;
+- new-order URLs preserve `tableId`;
+- order-detail URLs resolve the linked table and preserve `orderId`;
+- other-waiter orders remain blocked by `ORDER_NOT_OWNED_BY_WAITER`;
+- orders without an accessible table show a truthful fallback.
 
 ---
 
@@ -785,11 +796,15 @@ Show:
 
 - name;
 - role;
+- email or username when available;
 - branch;
-- service area;
-- time;
+- assigned service area only when verified;
 - shift state;
 - attendance status.
+
+If no profile photo exists, use concise identity initials. Do not fabricate an avatar or expose raw IDs.
+
+When the employee relationship is missing, show one primary `Employee profile required` notice. It explains that attendance, leave, and employee-linked shift swaps are unavailable, that an administrator must link the account to an employee, and that shift/session controls may still work. Dependent sections show only compact unavailable states. The notice disappears as soon as verified employee linkage exists.
 
 ### 18.2 Attendance
 
@@ -800,6 +815,8 @@ Allowed self-service:
 
 Do not show other staff attendance.
 
+Do not issue the attendance request when the session has no linked employee.
+
 ### 18.3 Leave request
 
 Allowed if backend permits.
@@ -808,6 +825,8 @@ Show:
 
 - create leave request;
 - list own leave with `?mine=true`.
+
+The request form is disclosed only when employee linkage and permission support submission. Do not render a large disabled form.
 
 ### 18.4 Shift swap
 
@@ -818,7 +837,13 @@ Show:
 - create shift swap;
 - list own shift swaps with `?mine=true`.
 
-### 18.5 Logout
+Distinguish incoming and outgoing requests when returned. Creation remains unavailable until a safe target selector exists.
+
+### 18.5 Shift status
+
+The shift card is the only shift-control surface on Me. It shows the current state, start time, elapsed duration, branch, note, and one primary action. An open shift older than 16 hours or one without a valid start time is a `Shift issue`; show a review warning and never close or repair it automatically.
+
+### 18.6 Logout
 
 Waiter taps Logout.
 
@@ -991,6 +1016,23 @@ Mobile-money payment execution is pending MTN/Airtel provider confirmation.
 
 ---
 
+## 22A. Canonical full-screen order entry
+
+All table-order entry paths converge on the same workspace and URL context:
+
+1. Available table: list waiter-owned active orders for the table, resume `NEW` when present, otherwise create one dine-in order.
+2. Waiter-owned Occupied table: load its existing order.
+3. Seated reservation: use the linked `seatedOrderId` returned by the seat endpoint.
+4. Browser refresh/Back: preserve `tableId` and `orderId`; never create merely because the page refreshed.
+
+The mounted workspace count must remain one. Responsive CSS must not mount hidden duplicate lifecycle components because both instances could race list-first/create behavior.
+
+Menu browsing uses `/api/menu/navigation` as the manager taxonomy and `/api/menu/catalog` as the item source. Sections, groups, subgroups, active flags, assignments, and sort order are respected. Internal categories, tax categories, stations, and browse IDs are not waiter-facing labels.
+
+Draft lines can be added, updated, or deleted through the verified POS item endpoints. A simple item adds immediately. A configurable item uses the full-height configurator for quantity, serving, ordered modifier groups, min/max validation, charged options, and item notes. Existing-line serving remains read-only because PATCH does not accept `menuItemServingId`.
+
+After send, item mutation remains blocked. The current backend has no per-line sent/unsent dispatch state, so Nimbus must not resend historical lines to dispatch an addition.
+
 ## 23. Final implementation checklist
 
 Before building waiter UI, confirm:
@@ -1005,4 +1047,8 @@ Before building waiter UI, confirm:
 - reservation seat path works;
 - request-bill path works;
 - receipt caveats are visible;
-- no denied waiter action appears as live.
+- no denied waiter action appears as live;
+- navigation is exactly Floor, Reservations, Me;
+- bill and receipt access begin from the selected table on Floor;
+- payment collection and close remain outside waiter scope;
+- sent-order additions remain blocked until the backend can distinguish and dispatch unsent lines safely.

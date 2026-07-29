@@ -1,5 +1,5 @@
 import { Info, Receipt } from "@phosphor-icons/react";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -55,37 +55,6 @@ function selectedReceiptIdFromQuery(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value || null;
 }
 
-function mapOrderPaymentQueries(
-  orderIds: string[],
-  queries: Array<{ data?: unknown; error?: unknown }>,
-) {
-  const data = new Map<string, CashierOrderPaymentsApi>();
-  const errors = new Map<string, string>();
-
-  orderIds.forEach((orderId, index) => {
-    const query = queries[index];
-    if (!query) return;
-    if (query.data) data.set(orderId, query.data as CashierOrderPaymentsApi);
-    if (query.error) errors.set(orderId, errorMessage(query.error, "Payment summary unavailable."));
-  });
-
-  return { data, errors };
-}
-
-function mapReceiptQueries(orderIds: string[], queries: Array<{ data?: unknown; error?: unknown }>) {
-  const data = new Map<string, CashierReceiptApi>();
-  const errors = new Map<string, string>();
-
-  orderIds.forEach((orderId, index) => {
-    const query = queries[index];
-    if (!query) return;
-    if (query.data) data.set(orderId, query.data as CashierReceiptApi);
-    if (query.error) errors.set(orderId, errorMessage(query.error, "Receipt detail unavailable."));
-  });
-
-  return { data, errors };
-}
-
 export function CashierReceiptsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -124,35 +93,14 @@ export function CashierReceiptsScreen() {
   }, [clearSession, ordersQuery.error]);
 
   const candidateOrders = useMemo(() => ordersQuery.data?.data || [], [ordersQuery.data?.data]);
-  const candidateIds = useMemo(() => candidateOrders.map((order) => order.id), [candidateOrders]);
-
-  const paymentQueries = useQueries({
-    queries: candidateOrders.map((order) => ({
-      queryKey: ["cashier", "order-payments", branchId, order.id, "receipt-list"],
-      enabled: Boolean(accessToken && branchId && order.id),
-      queryFn: () => getCashierOrderPayments(accessToken as string, branchId as string, order.id),
-      retry: 0,
-      staleTime: 30_000,
-    })),
-  });
-
-  const receiptQueries = useQueries({
-    queries: candidateOrders.map((order) => ({
-      queryKey: ["cashier", "receipt", branchId, order.id, "candidate"],
-      enabled: Boolean(accessToken && branchId && order.id),
-      queryFn: () => getCashierReceipt(accessToken as string, branchId as string, order.id),
-      retry: 0,
-      staleTime: 30_000,
-    })),
-  });
 
   const paymentsByOrder = useMemo(
-    () => mapOrderPaymentQueries(candidateIds, paymentQueries),
-    [candidateIds, paymentQueries],
+    () => ({ data: new Map<string, CashierOrderPaymentsApi>(), errors: new Map<string, string>() }),
+    [],
   );
   const receiptsByOrder = useMemo(
-    () => mapReceiptQueries(candidateIds, receiptQueries),
-    [candidateIds, receiptQueries],
+    () => ({ data: new Map<string, CashierReceiptApi>(), errors: new Map<string, string>() }),
+    [],
   );
 
   const candidateReceipts = useMemo<CashierReceiptViewModel[]>(
@@ -217,15 +165,13 @@ export function CashierReceiptsScreen() {
   );
 
   async function refreshReceiptState(receiptId: string) {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["cashier", "receipt", branchId, receiptId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-history", branchId, receiptId] }),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-candidate-orders", branchId] }),
-      selectedReceiptQuery.refetch(),
-      historyQuery.refetch(),
-      ordersQuery.refetch(),
-      queryClient.invalidateQueries({ queryKey: ["cashier", "order-payments", branchId, receiptId] }),
-    ]);
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "receipt", branchId, receiptId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-history", branchId, receiptId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "receipt-candidate-orders", branchId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "order-payments", branchId, receiptId] });
+    void selectedReceiptQuery.refetch();
+    void historyQuery.refetch();
+    void ordersQuery.refetch();
   }
 
   async function handleReprint(input: CashierReceiptReprintInput) {

@@ -1111,6 +1111,19 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:orders:write',
     'pos:orders:close',
     'pos:orders:void',
+    // Supervisor order-handoff exceptions (split / move / merge) performed inside
+    // the Floor table workspace (Supervisor Reconstruction Prompt 3B1).
+    'pos:order:split',
+    'pos:order:merge',
+    'pos:order:move-items',
+    // Supervisor Reconstruction Prompt 3B2 — safe table transfer inside the Floor
+    // workspace. NOTE: `pos:order:transfer` is a single backend gate covering BOTH
+    // POST /pos/orders/:id/transfer-table AND .../transfer-server. Only the
+    // transfer-table UI is exposed to Supervisor; transfer-server stays deferred
+    // (no safe branch-scoped server selector yet — see docs/DECISIONS.md). The
+    // transfer-server endpoint therefore becomes API-reachable for Supervisor but
+    // has no UI; it is audit-logged and requires an active same-branch membership.
+    'pos:order:transfer',
     'pos:kds:read',
     'pos:kds:write',
     'pos:kds:sla:write',
@@ -2247,7 +2260,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Bruschetta',
     categoryName: 'Starters',
     taxCategoryName: 'VAT Standard',
-    price: 8.5,
+    price: 22000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.COLD_KITCHEN,
     sortOrder: 0,
@@ -2257,7 +2270,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Chicken Wings',
     categoryName: 'Starters',
     taxCategoryName: 'VAT Standard',
-    price: 12.0,
+    price: 28000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 1,
@@ -2267,7 +2280,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Caesar Salad',
     categoryName: 'Starters',
     taxCategoryName: 'VAT Standard',
-    price: 10.0,
+    price: 26000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.COLD_KITCHEN,
     sortOrder: 2,
@@ -2277,7 +2290,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Garlic Bread',
     categoryName: 'Starters',
     taxCategoryName: 'VAT Standard',
-    price: 6.0,
+    price: 10000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 3,
@@ -2287,7 +2300,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Grilled Chicken',
     categoryName: 'Mains',
     taxCategoryName: 'VAT Standard',
-    price: 22.0,
+    price: 42000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 0,
@@ -2297,7 +2310,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Beef Burger',
     categoryName: 'Mains',
     taxCategoryName: 'VAT Standard',
-    price: 18.5,
+    price: 40000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 1,
@@ -2307,7 +2320,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Pasta Alfredo',
     categoryName: 'Mains',
     taxCategoryName: 'VAT Standard',
-    price: 16.0,
+    price: 36000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 2,
@@ -2317,7 +2330,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Grilled Salmon',
     categoryName: 'Mains',
     taxCategoryName: 'VAT Standard',
-    price: 26.0,
+    price: 48000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 3,
@@ -2327,7 +2340,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Margherita Pizza',
     categoryName: 'Mains',
     taxCategoryName: 'VAT Standard',
-    price: 14.0,
+    price: 38000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 4,
@@ -2338,7 +2351,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Cheesecake',
     categoryName: 'Desserts',
     taxCategoryName: 'VAT Standard',
-    price: 9.0,
+    price: 21000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.DESSERT,
     sortOrder: 0,
@@ -2348,7 +2361,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Chocolate Brownie',
     categoryName: 'Desserts',
     taxCategoryName: 'VAT Standard',
-    price: 8.0,
+    price: 24000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.DESSERT,
     sortOrder: 1,
@@ -2358,7 +2371,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Tiramisu',
     categoryName: 'Desserts',
     taxCategoryName: 'VAT Standard',
-    price: 10.0,
+    price: 22000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.DESSERT,
     sortOrder: 2,
@@ -2369,7 +2382,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Cola',
     categoryName: 'Drinks',
     taxCategoryName: 'VAT Zero',
-    price: 3.5,
+    price: 6000,
     itemType: MenuItemType.DRINK,
     station: PrepStation.BAR,
     sortOrder: 0,
@@ -2378,7 +2391,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Orange Juice',
     categoryName: 'Drinks',
     taxCategoryName: 'VAT Zero',
-    price: 4.0,
+    price: 14000,
     itemType: MenuItemType.DRINK,
     station: PrepStation.BAR,
     sortOrder: 1,
@@ -2388,7 +2401,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'House Cocktail',
     categoryName: 'Drinks',
     taxCategoryName: 'VAT Standard',
-    price: 12.0,
+    price: 18000,
     itemType: MenuItemType.DRINK,
     station: PrepStation.BAR,
     sortOrder: 2,
@@ -2398,7 +2411,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Sparkling Water',
     categoryName: 'Drinks',
     taxCategoryName: 'VAT Zero',
-    price: 2.5,
+    price: 5000,
     itemType: MenuItemType.DRINK,
     station: PrepStation.BAR,
     sortOrder: 3,
@@ -2407,7 +2420,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Espresso',
     categoryName: 'Drinks',
     taxCategoryName: 'VAT Zero',
-    price: 3.0,
+    price: 9000,
     itemType: MenuItemType.DRINK,
     station: PrepStation.BAR,
     sortOrder: 4,
@@ -2416,7 +2429,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Craft Beer',
     categoryName: 'Drinks',
     taxCategoryName: 'VAT Standard',
-    price: 7.0,
+    price: 15000,
     itemType: MenuItemType.DRINK,
     station: PrepStation.BAR,
     sortOrder: 5,
@@ -2427,7 +2440,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'French Fries',
     categoryName: 'Sides',
     taxCategoryName: 'VAT Standard',
-    price: 5.0,
+    price: 12000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.KITCHEN,
     sortOrder: 0,
@@ -2436,7 +2449,7 @@ const MENU_ITEMS_SEED: MenuItemSeed[] = [
     name: 'Side Salad',
     categoryName: 'Sides',
     taxCategoryName: 'VAT Standard',
-    price: 4.5,
+    price: 15000,
     itemType: MenuItemType.FOOD,
     station: PrepStation.COLD_KITCHEN,
     sortOrder: 1,
@@ -2558,7 +2571,20 @@ async function seedMenuItems(
       where: { categoryId_name: { categoryId: catId, name: item.name } },
     });
     if (existing) {
-      console.log(`  ⏭  MenuItem "${item.name}" already exists — skipped`);
+      await prisma.menuItem.update({
+        where: { id: existing.id },
+        data: {
+          taxCategoryId: taxCategoryIds[item.taxCategoryName] ?? null,
+          sku: item.sku ?? existing.sku,
+          description: item.description ?? existing.description,
+          price: item.price,
+          itemType: item.itemType,
+          station: item.station,
+          sortOrder: item.sortOrder,
+          isActive: true,
+        },
+      });
+      console.log(`  ✅ MenuItem "${item.name}" price/config updated to UGX ${item.price}`);
       skipped++;
       continue;
     }
@@ -2580,7 +2606,7 @@ async function seedMenuItems(
         sortOrder: item.sortOrder,
       },
     });
-    console.log(`  ✅ MenuItem "${item.name}" (${item.categoryName}, $${item.price}) created`);
+    console.log(`  ✅ MenuItem "${item.name}" (${item.categoryName}, UGX ${item.price}) created`);
     created++;
   }
 
@@ -2666,7 +2692,7 @@ const SERVINGS_SEED: ServingSeed[] = [
   {
     itemName: 'House Cocktail',
     format: ServingFormat.GLASS,
-    price: 12.0,
+    price: 18000,
     isDefault: true,
     sortOrder: 0,
   },
@@ -2674,24 +2700,24 @@ const SERVINGS_SEED: ServingSeed[] = [
     itemName: 'House Cocktail',
     format: ServingFormat.JUG,
     label: 'Large Jug',
-    price: 35.0,
+    price: 54000,
     isDefault: false,
     sortOrder: 1,
   },
-  { itemName: 'Craft Beer', format: ServingFormat.PINT, price: 7.0, isDefault: true, sortOrder: 0 },
+  { itemName: 'Craft Beer', format: ServingFormat.PINT, price: 15000, isDefault: true, sortOrder: 0 },
   {
     itemName: 'Craft Beer',
     format: ServingFormat.HALF_PINT,
-    price: 4.0,
+    price: 8500,
     isDefault: false,
     sortOrder: 1,
   },
-  { itemName: 'Cola', format: ServingFormat.GLASS, price: 3.5, isDefault: true, sortOrder: 0 },
+  { itemName: 'Cola', format: ServingFormat.GLASS, price: 6000, isDefault: true, sortOrder: 0 },
   {
     itemName: 'Cola',
     format: ServingFormat.BOTTLE,
     label: '500ml',
-    price: 5.0,
+    price: 8500,
     volumeText: '500ml',
     isDefault: false,
     sortOrder: 1,
@@ -2699,7 +2725,7 @@ const SERVINGS_SEED: ServingSeed[] = [
   {
     itemName: 'Orange Juice',
     format: ServingFormat.GLASS,
-    price: 4.0,
+    price: 14000,
     isDefault: true,
     sortOrder: 0,
   },
@@ -2707,16 +2733,16 @@ const SERVINGS_SEED: ServingSeed[] = [
     itemName: 'Orange Juice',
     format: ServingFormat.JUG,
     label: '1L Jug',
-    price: 12.0,
+    price: 40000,
     volumeText: '1L',
     isDefault: false,
     sortOrder: 1,
   },
-  { itemName: 'Espresso', format: ServingFormat.SINGLE, price: 3.0, isDefault: true, sortOrder: 0 },
+  { itemName: 'Espresso', format: ServingFormat.SINGLE, price: 9000, isDefault: true, sortOrder: 0 },
   {
     itemName: 'Espresso',
     format: ServingFormat.DOUBLE,
-    price: 4.5,
+    price: 12000,
     isDefault: false,
     sortOrder: 1,
   },
@@ -2724,7 +2750,7 @@ const SERVINGS_SEED: ServingSeed[] = [
     itemName: 'Sparkling Water',
     format: ServingFormat.BOTTLE,
     label: '330ml',
-    price: 2.5,
+    price: 5000,
     volumeText: '330ml',
     isDefault: true,
     sortOrder: 0,
@@ -2733,7 +2759,7 @@ const SERVINGS_SEED: ServingSeed[] = [
     itemName: 'Sparkling Water',
     format: ServingFormat.BOTTLE,
     label: '750ml',
-    price: 4.5,
+    price: 9000,
     volumeText: '750ml',
     isDefault: false,
     sortOrder: 1,
@@ -2902,8 +2928,19 @@ async function seedMenuItemServings(
       where: { menuItemId: item.id, format: s.format, label: s.label ?? null },
     });
     if (existing) {
+      await prisma.menuItemServing.update({
+        where: { id: existing.id },
+        data: {
+          price: s.price,
+          label: s.label ?? null,
+          volumeText: s.volumeText ?? null,
+          isDefault: s.isDefault,
+          sortOrder: s.sortOrder,
+          isActive: true,
+        },
+      });
       console.log(
-        `  ⏭  Serving "${s.itemName}" ${s.format}${s.label ? ` (${s.label})` : ''} already exists — skipped`,
+        `  ✅ Serving "${s.itemName}" ${s.format}${s.label ? ` (${s.label})` : ''} price/config updated to UGX ${s.price}`,
       );
       skipped++;
       continue;
@@ -2921,7 +2958,7 @@ async function seedMenuItemServings(
       },
     });
     console.log(
-      `  ✅ Serving "${s.itemName}" ${s.format}${s.label ? ` (${s.label})` : ''} at $${s.price}`,
+      `  ✅ Serving "${s.itemName}" ${s.format}${s.label ? ` (${s.label})` : ''} at UGX ${s.price}`,
     );
     created++;
   }
@@ -2956,22 +2993,22 @@ interface ModifierOptionSeed {
 const MODIFIER_OPTIONS_SEED: ModifierOptionSeed[] = [
   // Size
   { groupName: 'Size', name: 'Small', priceDelta: '0.00', sortOrder: 0 },
-  { groupName: 'Size', name: 'Medium', priceDelta: '2.00', sortOrder: 1 },
-  { groupName: 'Size', name: 'Large', priceDelta: '4.00', sortOrder: 2 },
+  { groupName: 'Size', name: 'Medium', priceDelta: '2500.00', sortOrder: 1 },
+  { groupName: 'Size', name: 'Large', priceDelta: '5000.00', sortOrder: 2 },
   // Cooking Temp
   { groupName: 'Cooking Temp', name: 'Rare', priceDelta: '0.00', sortOrder: 0 },
   { groupName: 'Cooking Temp', name: 'Medium Rare', priceDelta: '0.00', sortOrder: 1 },
   { groupName: 'Cooking Temp', name: 'Medium', priceDelta: '0.00', sortOrder: 2 },
   { groupName: 'Cooking Temp', name: 'Well Done', priceDelta: '0.00', sortOrder: 3 },
   // Extra Toppings
-  { groupName: 'Extra Toppings', name: 'Extra Cheese', priceDelta: '1.50', sortOrder: 0 },
-  { groupName: 'Extra Toppings', name: 'Mushrooms', priceDelta: '1.00', sortOrder: 1 },
-  { groupName: 'Extra Toppings', name: 'Pepperoni', priceDelta: '2.00', sortOrder: 2 },
-  { groupName: 'Extra Toppings', name: 'Olives', priceDelta: '1.00', sortOrder: 3 },
+  { groupName: 'Extra Toppings', name: 'Extra Cheese', priceDelta: '3000.00', sortOrder: 0 },
+  { groupName: 'Extra Toppings', name: 'Mushrooms', priceDelta: '2500.00', sortOrder: 1 },
+  { groupName: 'Extra Toppings', name: 'Pepperoni', priceDelta: '4000.00', sortOrder: 2 },
+  { groupName: 'Extra Toppings', name: 'Olives', priceDelta: '2000.00', sortOrder: 3 },
   // Drink Extras
-  { groupName: 'Drink Extras', name: 'Extra Shot', priceDelta: '1.50', sortOrder: 0 },
-  { groupName: 'Drink Extras', name: 'Whipped Cream', priceDelta: '0.50', sortOrder: 1 },
-  { groupName: 'Drink Extras', name: 'Oat Milk', priceDelta: '1.00', sortOrder: 2 },
+  { groupName: 'Drink Extras', name: 'Extra Shot', priceDelta: '2500.00', sortOrder: 0 },
+  { groupName: 'Drink Extras', name: 'Whipped Cream', priceDelta: '1500.00', sortOrder: 1 },
+  { groupName: 'Drink Extras', name: 'Oat Milk', priceDelta: '2000.00', sortOrder: 2 },
 ];
 
 // Map: itemName → array of modifier group names
@@ -3048,7 +3085,15 @@ async function seedModifierOptions(
       where: { groupId_name: { groupId, name: o.name } },
     });
     if (existing) {
-      console.log(`  ⏭  ModifierOption "${o.groupName} → ${o.name}" already exists — skipped`);
+      await prisma.modifierOption.update({
+        where: { id: existing.id },
+        data: {
+          priceDelta: o.priceDelta,
+          sortOrder: o.sortOrder,
+          isActive: true,
+        },
+      });
+      console.log(`  ✅ ModifierOption "${o.groupName} → ${o.name}" delta updated to UGX ${o.priceDelta}`);
       skipped++;
       continue;
     }
@@ -3061,7 +3106,7 @@ async function seedModifierOptions(
         sortOrder: o.sortOrder,
       },
     });
-    console.log(`  ✅ ModifierOption "${o.groupName} → ${o.name}" ($${o.priceDelta}) created`);
+    console.log(`  ✅ ModifierOption "${o.groupName} → ${o.name}" (UGX ${o.priceDelta}) created`);
     created++;
   }
 
@@ -4005,8 +4050,8 @@ const ORDERS_SEED: OrderSeed[] = [
     tableLabel: 'T1',
     userEmail: 'waiter@demo.local',
     items: [
-      { menuItemName: 'Caesar Salad', quantity: 1, unitPrice: 8.5 },
-      { menuItemName: 'Grilled Chicken Breast', quantity: 2, unitPrice: 14.0 },
+      { menuItemName: 'Caesar Salad', quantity: 1, unitPrice: 26000 },
+      { menuItemName: 'Grilled Chicken Breast', quantity: 2, unitPrice: 42000 },
     ],
   },
   {
@@ -4015,8 +4060,8 @@ const ORDERS_SEED: OrderSeed[] = [
     status: OrderStatus.SENT,
     userEmail: 'cashier@demo.local',
     items: [
-      { menuItemName: 'Margherita Pizza', quantity: 1, unitPrice: 12.0 },
-      { menuItemName: 'Lemonade', quantity: 2, unitPrice: 4.0 },
+      { menuItemName: 'Margherita Pizza', quantity: 1, unitPrice: 38000 },
+      { menuItemName: 'Lemonade', quantity: 2, unitPrice: 14000 },
     ],
   },
   {
@@ -4026,9 +4071,9 @@ const ORDERS_SEED: OrderSeed[] = [
     tableLabel: 'T3',
     userEmail: 'waiter@demo.local',
     items: [
-      { menuItemName: 'Beef Burger', quantity: 1, unitPrice: 11.0 },
-      { menuItemName: 'French Fries', quantity: 1, unitPrice: 4.5 },
-      { menuItemName: 'Iced Tea', quantity: 1, unitPrice: 3.5 },
+      { menuItemName: 'Beef Burger', quantity: 1, unitPrice: 40000 },
+      { menuItemName: 'French Fries', quantity: 1, unitPrice: 12000 },
+      { menuItemName: 'Iced Tea', quantity: 1, unitPrice: 12000 },
     ],
   },
   {
@@ -4037,7 +4082,7 @@ const ORDERS_SEED: OrderSeed[] = [
     status: OrderStatus.SERVED,
     tableLabel: 'T2',
     userEmail: 'waiter@demo.local',
-    items: [{ menuItemName: 'Tomato Soup', quantity: 2, unitPrice: 6.0 }],
+    items: [{ menuItemName: 'Tomato Soup', quantity: 2, unitPrice: 16000 }],
   },
   {
     orderNumber: 'ORD-000005',
@@ -4045,8 +4090,8 @@ const ORDERS_SEED: OrderSeed[] = [
     status: OrderStatus.CLOSED,
     userEmail: 'cashier@demo.local',
     items: [
-      { menuItemName: 'Pasta Carbonara', quantity: 1, unitPrice: 13.0 },
-      { menuItemName: 'Espresso', quantity: 1, unitPrice: 3.0 },
+      { menuItemName: 'Pasta Carbonara', quantity: 1, unitPrice: 36000 },
+      { menuItemName: 'Espresso', quantity: 1, unitPrice: 9000 },
     ],
     notes: 'Customer picked up',
   },
@@ -4056,7 +4101,7 @@ const ORDERS_SEED: OrderSeed[] = [
     status: OrderStatus.VOIDED,
     tableLabel: 'T5',
     userEmail: 'manager@demo.local',
-    items: [{ menuItemName: 'Chocolate Lava Cake', quantity: 1, unitPrice: 7.5 }],
+    items: [{ menuItemName: 'Chocolate Lava Cake', quantity: 1, unitPrice: 24000 }],
     notes: 'Customer cancelled before preparation',
   },
 ];

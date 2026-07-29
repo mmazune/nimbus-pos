@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "floor-assertions.ts",
+    "../src/components/floor/formatters.ts",
+    "../src/components/floor/types.ts",
+    "../src/lib/supervisor/legacy-orders-route.ts"
+  ]
+}

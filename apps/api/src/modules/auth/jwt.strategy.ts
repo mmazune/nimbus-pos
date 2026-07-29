@@ -8,6 +8,13 @@ export interface JwtPayload {
   sub: string;
   email: string;
   jti: string;
+  roles?: {
+    id: string;
+    name: string;
+    level: string;
+    jobRole: string | null;
+  }[];
+  permissions?: string[];
   iat?: number;
   exp?: number;
 }
@@ -26,31 +33,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    // Verify user exists and is active
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
+    const session = await this.prisma.session.findUnique({
+      where: { jti: payload.jti },
       include: {
-        userRoles: {
-          include: {
-            role: {
-              include: {
-                rolePermissions: {
-                  include: { permission: true },
-                },
-              },
-            },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            displayName: true,
+            isActive: true,
           },
         },
       },
-    });
-
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
-    }
-
-    // Verify session is still active
-    const session = await this.prisma.session.findUnique({
-      where: { jti: payload.jti },
     });
 
     if (!session || session.revokedAt) {
@@ -61,14 +57,61 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Session expired');
     }
 
-    // Update last activity
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: { lastActivityAt: new Date() },
-    });
+    if (!session.user?.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
 
-    // Derive effective role level (highest) and permissions
-    const roles = user.userRoles.map((ur) => ur.role);
+    const now = new Date();
+    if (now.getTime() - session.lastActivityAt.getTime() > 60_000) {
+      void this.prisma.session
+        .update({
+          where: { id: session.id },
+          data: { lastActivityAt: now },
+        })
+        .catch(() => undefined);
+    }
+
+    let roles = payload.roles ?? [];
+    let permissions = payload.permissions ?? [];
+
+    if (roles.length === 0 || permissions.length === 0) {
+      const authzUser = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        include: {
+          userRoles: {
+            include: {
+              role: {
+                include: {
+                  rolePermissions: {
+                    include: { permission: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!authzUser || !authzUser.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+
+      roles = authzUser.userRoles.map((ur) => ({
+        id: ur.role.id,
+        name: ur.role.name,
+        level: ur.role.level,
+        jobRole: ur.role.jobRole,
+      }));
+      permissions = [
+        ...new Set(
+          authzUser.userRoles.flatMap((ur) =>
+            ur.role.rolePermissions.map((rp) => rp.permission.action),
+          ),
+        ),
+      ];
+    }
+
+    // Derive effective role level (highest)
     const roleLevelOrder = ['L1', 'L2', 'L3', 'L4', 'L5'];
     const highestRole = roles.reduce(
       (highest, role) => {
@@ -79,25 +122,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       roles[0] || { level: 'L1' as const },
     );
 
-    const permissions = [
-      ...new Set(roles.flatMap((r) => r.rolePermissions.map((rp) => rp.permission.action))),
-    ];
-
     return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      id: session.user.id,
+      email: session.user.email,
+      firstName: session.user.firstName,
+      lastName: session.user.lastName,
+      displayName: session.user.displayName,
+      isActive: session.user.isActive,
       roleLevel: highestRole.level,
-      roles: roles.map((r) => ({
-        id: r.id,
-        name: r.name,
-        level: r.level,
-        jobRole: r.jobRole,
-      })),
+      roles,
       permissions,
       sessionId: session.id,
       jti: payload.jti,
+      sessionOrgId: session.orgId,
+      sessionBranchId: session.branchId,
+      session: {
+        id: session.id,
+        platform: session.platform,
+        source: session.source,
+        lastActivityAt: session.lastActivityAt,
+        createdAt: session.createdAt,
+      },
     };
   }
 }

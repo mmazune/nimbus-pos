@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "prompt3b1-assertions.ts",
+    "../src/lib/pos-shell/idempotency.ts",
+    "../src/lib/supervisor/order-actions.ts",
+    "../src/lib/supervisor/order-action-forms.ts",
+    "../src/lib/supervisor/orders.ts"
+  ]
+}

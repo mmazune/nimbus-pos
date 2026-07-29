@@ -64,26 +64,16 @@ export class QuickPinService {
       throw new ForbiddenException('Quick PIN login is only available on POS_DESKTOP');
     }
 
-    // 2. Branch must exist and be ACTIVE
-    const branch = await this.prisma.branch.findUnique({
-      where: { id: branchId },
-    });
-    if (!branch || branch.status !== 'ACTIVE') {
-      await this.audit.log({
-        action: 'QUICK_PIN_BRANCH_DENIED',
-        entityType: 'auth',
-        metadata: { branchId, reason: 'branch_not_found_or_inactive' },
-        ipAddress: meta.ipAddress,
-        userAgent: meta.userAgent,
-      });
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // 3. Derive lookup hash and find candidate user
+    // 2. Derive lookup hash and find candidate user. The membership include
+    // carries branch/org context for the successful login path.
     const lookupHash = this.derivePinLookupHash(branchId, pin);
     const user = await this.prisma.user.findUnique({
       where: { pinLookupHash: lookupHash },
       include: {
+        memberships: {
+          where: { branchId },
+          include: { role: true, branch: { select: { id: true, organizationId: true, status: true } } },
+        },
         userRoles: {
           include: {
             role: {
@@ -200,24 +190,41 @@ export class QuickPinService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // 9. Check membership in branch
-    const membership = await this.prisma.membership.findUnique({
-      where: { userId_branchId: { userId: user.id, branchId } },
-      include: { role: true },
-    });
+    // 9. Check membership in branch. Real Prisma calls include this with the
+    // user lookup; the fallback keeps unit-test mocks compatible.
+    const membership =
+      (Array.isArray((user as any).memberships) ? (user as any).memberships[0] : null) ??
+      (await this.prisma.membership.findUnique({
+        where: { userId_branchId: { userId: user.id, branchId } },
+        include: {
+          role: true,
+          branch: { select: { id: true, organizationId: true, status: true } },
+        },
+      }));
 
-    if (!membership || membership.status !== 'ACTIVE') {
+    let membershipBranch = (membership as any)?.branch as
+      | { id: string; organizationId: string; status: string }
+      | undefined;
+    if (membership && !membershipBranch) {
+      membershipBranch =
+        (await this.prisma.branch.findUnique({
+          where: { id: branchId },
+          select: { id: true, organizationId: true, status: true },
+        })) ?? undefined;
+    }
+    if (!membership || membership.status !== 'ACTIVE' || (membershipBranch && membershipBranch.status !== 'ACTIVE')) {
       await this.audit.log({
         actorUserId: user.id,
         action: 'QUICK_PIN_BRANCH_DENIED',
         entityType: 'auth',
         entityId: user.id,
-        metadata: { branchId, reason: 'no_active_membership' },
+        metadata: { branchId, reason: 'no_active_membership_or_branch' },
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
       });
       throw new ForbiddenException('Not a member of this branch');
     }
+    const organizationId = membershipBranch?.organizationId ?? (membership as any).organizationId;
 
     // 10. Check role is allowed on POS_DESKTOP
     const userJobRoles = user.userRoles.map((ur) => ur.role.jobRole).filter(Boolean) as JobRole[];
@@ -236,19 +243,20 @@ export class QuickPinService {
     }
 
     // 11. Success — reset failed attempts and create session
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { failedPinAttempts: 0, pinLockedUntil: null },
-    });
-
-    const result = await this.createSessionAndTokens(
-      user,
-      platform,
-      SessionSource.PIN,
-      branch.organizationId,
-      branchId,
-      meta,
-    );
+    const [result] = await Promise.all([
+      this.createSessionAndTokens(
+        user,
+        platform,
+        SessionSource.PIN,
+        organizationId,
+        branchId,
+        meta,
+      ),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedPinAttempts: 0, pinLockedUntil: null },
+      }),
+    ]);
 
     await this.audit.log({
       actorUserId: user.id,
@@ -652,8 +660,22 @@ export class QuickPinService {
       },
     });
 
-    // Create access token
-    const accessToken = this.jwt.sign({ sub: user.id, email: user.email, jti }, {
+    const roles = user.userRoles.map((ur) => ({
+      id: ur.role.id,
+      name: ur.role.name,
+      level: ur.role.level,
+      jobRole: ur.role.jobRole,
+    }));
+
+    const permissions = [
+      ...new Set(
+        user.userRoles.flatMap((ur) => ur.role.rolePermissions.map((rp) => rp.permission.action)),
+      ),
+    ];
+
+    // Create access token with short-lived auth claims so every protected
+    // request does not reload the full role-permission graph.
+    const accessToken = this.jwt.sign({ sub: user.id, email: user.email, jti, roles, permissions }, {
       secret: this.accessSecret,
       expiresIn: this.accessTtl,
     } as any);
@@ -671,19 +693,6 @@ export class QuickPinService {
         expiresAt: new Date(Date.now() + this.refreshTtlMs),
       },
     });
-
-    const roles = user.userRoles.map((ur) => ({
-      id: ur.role.id,
-      name: ur.role.name,
-      level: ur.role.level,
-      jobRole: ur.role.jobRole,
-    }));
-
-    const permissions = [
-      ...new Set(
-        user.userRoles.flatMap((ur) => ur.role.rolePermissions.map((rp) => rp.permission.action)),
-      ),
-    ];
 
     return {
       accessToken,

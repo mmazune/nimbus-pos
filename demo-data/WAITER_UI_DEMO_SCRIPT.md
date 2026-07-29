@@ -14,6 +14,13 @@ Demo waiter:
 - Quick PIN: `246810`
 - Branch: Tapas Downtown
 
+Premium menu taxonomy QA:
+
+- Use the documented Tapas Downtown waiter above.
+- `GET /api/menu/navigation?activeOnly=true` should return FOOD and DRINKS with imported browse groups/subgroups.
+- Menu item, serving, and charged modifier prices come from the demo CSV/importer source and should display as whole UGX amounts such as `UGX 18,000`, `UGX 22,000`, and `UGX 40,000`.
+- If Tapas Downtown shows "Menu navigation unavailable", treat it as a regression unless the API request is still loading or has failed.
+
 ## Script
 
 1. Open `http://localhost:3000/login`.
@@ -21,17 +28,18 @@ Demo waiter:
 3. Confirm branch context shows Tapas Downtown. If the branch field is empty, use `cb27be401a2c35dfc0d4e610`.
 4. Enter PIN `246810`.
 5. Click `Enter`.
-6. Confirm the app routes to `/waiter/floor`, shows Brian Kisekka, Tapas Downtown, bottom nav, and active shift `DEMO-WAITER-OPEN`.
+6. Confirm the app routes to `/waiter/floor`, shows Brian Kisekka, Tapas Downtown, the exact bottom nav `Floor`, `Reservations`, `Me`, and active shift `DEMO-WAITER-OPEN`.
 7. On Floor, show filters: All, Available, Occupied, Reserved, Mine.
-8. Open an available table. Use `QA-OPEN-04` if present, otherwise use any Available table.
-9. Start/create the dine-in order and confirm the menu opens inside the table/order flow, not as a bottom-nav tab.
-10. Add one menu item.
-11. Add an item/kitchen note.
-12. Show that Request bill is blocked before send with: `Send order before requesting bill.`
-13. Send the order to kitchen/bar.
-14. Confirm the table/order refreshes to sent/occupied state.
-15. Request bill on the sent order.
-16. Open a closed demo order from Orders, such as `ORD-TAPAS_DOWNTOWN-01171`, and click `View receipt`.
+8. Confirm Floor cards contain no guest names; Reserved cards show Reservation/time only.
+9. For premium menu QA, stay signed in as `waiter@nimbus.demo` on Tapas Downtown and choose a safe Available row.
+10. Confirm one tap resumes an existing waiter-owned `NEW` draft or creates one order and immediately opens the full-screen workspace. Leave and reopen the same table; confirm the URL keeps the same `orderId`.
+11. Confirm FOOD/DRINKS, group order, and subgroup order match `GET /api/menu/navigation`; search the full menu and clear search to restore the prior browse position.
+12. Tap a simple item such as Bruschetta and confirm it adds immediately.
+13. Open Cola and verify alternate serving selection. Open Beef Burger and verify required Size/Cooking Temp groups, optional charged Extra Toppings, quantity, and the item comment field.
+14. Add the configured item, select the line to edit quantity/comment, then remove it from the focused editor.
+15. Show that Request bill is blocked before send with: `Send the draft before requesting its bill.` Then use the text action `Send to kitchen/bar` and confirm sent state plus the safe post-send edit block.
+16. Request bill on the sent order from Floor and confirm receipt access opens from the selected table.
+16. For closed-order reprint QA, open the known legacy order URL for `ORD-TAPAS_DOWNTOWN-01171` and confirm it safely redirects into `/waiter/floor?tableId=...&orderId=...` before clicking `View receipt`.
 17. Show the receipt drawer: branch, table, server, line items, totals, paid/outstanding.
 18. Show receipt history.
 19. Click Reprint and call out that it records metadata only; no physical printer driver fires.
@@ -47,11 +55,22 @@ Demo waiter:
 29. Confirm HR/admin manager actions are not exposed; unsafe self-service writes are disabled when employee/target context is missing.
 30. Click Logout and confirm the terminal returns to `/login`.
 
+## Visual Checks
+
+- Table cards show full table identifiers, status, and seats without a Users icon.
+- Occupied cards show `FirstName L.` and a separate `Mine` badge where applicable.
+- Table cards do not show order numbers, `ORDER`, order status, or nested order panels.
+- At 1366x768, 1440x900, and 1920x1080, order entry covers the normal Floor content with a full-screen context bar, taxonomy rail, item grid, and persistent right order panel.
+- Menu tiles show only name and price/starting price. Primary send, bill, receipt, and reprint actions are text-first.
+
 ## Demo Safety Callouts
 
+- Prompt 4 browser QA created normal demo records with labels prefixed `QA-P4-*`. They are not importer-authored canonical fixtures; use the `metadata.source = browser-qa` marker and table label prefix to distinguish them from CSV/import records.
+- Earlier browser QA also left normal waiter draft/sent orders such as `ORD-000008` on `QA-OPEN-04` and later Prompt 4 QA orders on `QA-P4-*` tables. Do not silently delete them; use a documented cleanup query only when a later QA pass intentionally needs disposable tables.
 - Public diner mobile-money remains excluded and pending provider confirmation.
 - PesaPal is owner SaaS billing only.
 - Receipt send is pending because no live email/SMS/WhatsApp adapter is connected.
 - Reprint is metadata only; no printer driver is invoked.
 - Card terminal/acquirer traffic is not part of this waiter demo.
+- Sent-order additions cannot be safely dispatched to KDS until the backend exposes per-line sent state or a dedicated additions-send contract. Do not claim that flow is complete.
 - Do not use real guest PII or provider credentials.

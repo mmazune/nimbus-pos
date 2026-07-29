@@ -23,6 +23,7 @@ import {
   RecordDepositDto,
   ListReservationsQueryDto,
   AssignTableDto,
+  CompleteReservationDto,
 } from './dto';
 
 interface BranchContext {
@@ -45,6 +46,34 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   CANCELLED: [],
   NO_SHOW: [],
 };
+
+// ── Query grouping (Prompt 4A) ──
+// ACTIVE / HISTORY are *query* groupings, never persisted statuses.
+const ACTIVE_STATUSES: ReservationStatus[] = [
+  ReservationStatus.PENDING,
+  ReservationStatus.CONFIRMED,
+  ReservationStatus.SEATED,
+];
+const HISTORY_STATUSES: ReservationStatus[] = [
+  ReservationStatus.COMPLETED,
+  ReservationStatus.CANCELLED,
+  ReservationStatus.NO_SHOW,
+];
+
+// ── Pagination (Prompt 4A) ──
+// Bounded server-side pagination so operational/history lists can never
+// accumulate unbounded arrays in the browser (the root pile-up cause).
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 100;
+
+// ── Overdue / Attention policy (Prompt 4A) ──
+// MVP default grace window: a PENDING/CONFIRMED reservation is "overdue"
+// (and therefore surfaces in the Attention grouping) once its scheduled
+// time + this grace has passed and it is neither SEATED nor terminal.
+// Overdue NEVER auto-transitions the guest outcome — a Supervisor decides
+// Seat / Cancel / No-show. This is the single canonical source for the
+// value; future per-org/per-branch configurability is an explicit follow-up.
+const OVERDUE_GRACE_MINUTES = 15;
 
 @Injectable()
 export class ReservationsService {
@@ -153,16 +182,17 @@ export class ReservationsService {
     const reservation = await this.findOneOrFail(id, ctx);
     this.assertTransition(reservation.status, ReservationStatus.CONFIRMED);
 
-    const updated = await this.prisma.reservation.update({
-      where: { id },
-      data: {
-        status: ReservationStatus.CONFIRMED,
-        confirmedAt: new Date(),
-        updatedById: userId,
-        notes: dto.notes ?? reservation.notes,
-      },
-      include: { table: true, deposits: true, events: true },
+    const applied = await this.applyGuardedTransition(id, ctx, ReservationStatus.PENDING, {
+      status: ReservationStatus.CONFIRMED,
+      confirmedAt: new Date(),
+      updatedById: userId,
+      notes: dto.notes ?? reservation.notes,
     });
+    if (!applied) {
+      throw new ConflictException(
+        'Reservation was modified concurrently; refresh and retry',
+      );
+    }
 
     await this.prisma.reservationEvent.create({
       data: {
@@ -185,7 +215,7 @@ export class ReservationsService {
       userAgent: meta.userAgent,
     });
 
-    return updated;
+    return this.findOneOrFail(id, ctx);
   }
 
   // ── Seat ──
@@ -231,17 +261,18 @@ export class ReservationsService {
       seatedOrderId = order.id;
     }
 
-    const updated = await this.prisma.reservation.update({
-      where: { id },
-      data: {
-        status: ReservationStatus.SEATED,
-        seatedAt: new Date(),
-        tableId: seatTableId,
-        seatedOrderId,
-        updatedById: userId,
-      },
-      include: { table: true, deposits: true, events: true, seatedOrder: true },
+    const applied = await this.applyGuardedTransition(id, ctx, ReservationStatus.CONFIRMED, {
+      status: ReservationStatus.SEATED,
+      seatedAt: new Date(),
+      tableId: seatTableId,
+      seatedOrderId,
+      updatedById: userId,
     });
+    if (!applied) {
+      throw new ConflictException(
+        'Reservation was modified concurrently; refresh and retry',
+      );
+    }
 
     // Waiter MVP — auto-occupy the table once the party is seated, regardless of
     // whether a linked DINE_IN order was created. updateMany avoids clobbering
@@ -277,7 +308,7 @@ export class ReservationsService {
       userAgent: meta.userAgent,
     });
 
-    return updated;
+    return this.findOneOrFail(id, ctx);
   }
 
   // ── Cancel ──
@@ -292,15 +323,21 @@ export class ReservationsService {
     const reservation = await this.findOneOrFail(id, ctx);
     this.assertTransition(reservation.status, ReservationStatus.CANCELLED);
 
-    const updated = await this.prisma.reservation.update({
-      where: { id },
-      data: {
+    const applied = await this.applyGuardedTransition(
+      id,
+      ctx,
+      [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+      {
         status: ReservationStatus.CANCELLED,
         cancelledAt: new Date(),
         updatedById: userId,
       },
-      include: { table: true, deposits: true, events: true },
-    });
+    );
+    if (!applied) {
+      throw new ConflictException(
+        'Reservation was modified concurrently; refresh and retry',
+      );
+    }
 
     // Handle deposit outcome
     if (dto.depositOutcome && dto.depositOutcome !== 'NO_DEPOSIT') {
@@ -333,7 +370,7 @@ export class ReservationsService {
       userAgent: meta.userAgent,
     });
 
-    return updated;
+    return this.findOneOrFail(id, ctx);
   }
 
   // ── No-Show ──
@@ -348,15 +385,21 @@ export class ReservationsService {
     const reservation = await this.findOneOrFail(id, ctx);
     this.assertTransition(reservation.status, ReservationStatus.NO_SHOW);
 
-    const updated = await this.prisma.reservation.update({
-      where: { id },
-      data: {
+    const applied = await this.applyGuardedTransition(
+      id,
+      ctx,
+      [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+      {
         status: ReservationStatus.NO_SHOW,
         noShowAt: new Date(),
         updatedById: userId,
       },
-      include: { table: true, deposits: true, events: true },
-    });
+    );
+    if (!applied) {
+      throw new ConflictException(
+        'Reservation was modified concurrently; refresh and retry',
+      );
+    }
 
     // Handle deposit outcome
     if (dto.depositOutcome && dto.depositOutcome !== 'NO_DEPOSIT') {
@@ -388,7 +431,137 @@ export class ReservationsService {
       userAgent: meta.userAgent,
     });
 
-    return updated;
+    return this.findOneOrFail(id, ctx);
+  }
+
+  // ── Complete (manual, SEATED → COMPLETED) ──
+
+  async complete(
+    id: string,
+    userId: string,
+    ctx: BranchContext,
+    dto: CompleteReservationDto,
+    meta: RequestMeta,
+  ) {
+    const reservation = await this.findOneOrFail(id, ctx);
+
+    // Naturally duplicate-safe: an already-COMPLETED reservation returns its
+    // canonical state without emitting a second event (idempotent retry).
+    if (reservation.status === ReservationStatus.COMPLETED) {
+      return reservation;
+    }
+
+    // Only SEATED → COMPLETED is permitted; every other source is a conflict.
+    this.assertTransition(reservation.status, ReservationStatus.COMPLETED);
+
+    const applied = await this.applyGuardedTransition(id, ctx, ReservationStatus.SEATED, {
+      status: ReservationStatus.COMPLETED,
+      completedAt: new Date(),
+      updatedById: userId,
+    });
+    if (!applied) {
+      // Lost the race — re-read to resolve manual/auto-complete concurrency.
+      const fresh = await this.findOneOrFail(id, ctx);
+      if (fresh.status === ReservationStatus.COMPLETED) return fresh;
+      throw new ConflictException(`Cannot complete reservation in status ${fresh.status}`);
+    }
+
+    await this.prisma.reservationEvent.create({
+      data: {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        reservationId: id,
+        type: ReservationEventType.COMPLETED,
+        actorUserId: userId,
+        message: dto.note ? `Completed: ${dto.note}` : 'Reservation completed',
+        metadata: { source: 'manual' },
+      },
+    });
+
+    await this.audit.log({
+      actorUserId: userId,
+      action: 'RESERVATION_COMPLETED',
+      entityType: 'Reservation',
+      entityId: id,
+      metadata: {
+        reservationNumber: reservation.reservationNumber,
+        source: 'manual',
+        seatedOrderId: reservation.seatedOrderId ?? null,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return this.findOneOrFail(id, ctx);
+  }
+
+  /**
+   * Automatic completion driven by the canonical order-close lifecycle.
+   * Invoked by OrdersService when an order reaches CLOSED. Idempotent and
+   * retry-safe: it only completes a reservation that is explicitly linked
+   * via seatedOrderId AND still SEATED, so a duplicate order-close callback
+   * or a race with manual completion produces no duplicate event.
+   *
+   * Returns the completed reservation id, or null when there is nothing to do
+   * (no linked SEATED reservation / already terminal / lost the race). Linkage
+   * is never inferred from table/guest/date — only the explicit seatedOrderId.
+   */
+  async completeForClosedOrder(
+    orderId: string,
+    ctx: BranchContext,
+    actorUserId: string,
+    meta: RequestMeta = {},
+  ): Promise<string | null> {
+    const reservation = await this.prisma.reservation.findFirst({
+      where: {
+        seatedOrderId: orderId,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        status: ReservationStatus.SEATED,
+      },
+      select: { id: true, reservationNumber: true },
+    });
+    if (!reservation) return null;
+
+    const applied = await this.applyGuardedTransition(
+      reservation.id,
+      ctx,
+      ReservationStatus.SEATED,
+      {
+        status: ReservationStatus.COMPLETED,
+        completedAt: new Date(),
+        updatedById: actorUserId,
+      },
+    );
+    if (!applied) return null; // raced with manual completion — no duplicate
+
+    await this.prisma.reservationEvent.create({
+      data: {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        reservationId: reservation.id,
+        type: ReservationEventType.COMPLETED,
+        actorUserId,
+        message: 'Reservation auto-completed on order close',
+        metadata: { source: 'order-close', orderId },
+      },
+    });
+
+    await this.audit.log({
+      actorUserId,
+      action: 'RESERVATION_COMPLETED',
+      entityType: 'Reservation',
+      entityId: reservation.id,
+      metadata: {
+        reservationNumber: reservation.reservationNumber,
+        source: 'order-close',
+        orderId,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return reservation.id;
   }
 
   // ── Record Deposit ──
@@ -520,8 +693,11 @@ export class ReservationsService {
   }
 
   async list(ctx: BranchContext, query: ListReservationsQueryDto) {
-    const page = query.page || 1;
-    const pageSize = query.pageSize || 20;
+    const page = query.page && query.page > 0 ? query.page : 1;
+    const pageSize = Math.min(
+      query.pageSize && query.pageSize > 0 ? query.pageSize : DEFAULT_PAGE_SIZE,
+      MAX_PAGE_SIZE,
+    );
     const skip = (page - 1) * pageSize;
 
     const where: any = {
@@ -529,34 +705,77 @@ export class ReservationsService {
       orgId: ctx.organizationId,
     };
 
-    if (query.status) where.status = query.status;
+    // Scope groups terminal vs. active statuses server-side so history can
+    // never leak into the operational queue (and vice versa). An explicit
+    // `status` filter always takes precedence and narrows within a scope.
+    const scope = query.scope;
+    if (query.status) {
+      where.status = query.status;
+    } else if (scope === 'active') {
+      where.status = { in: ACTIVE_STATUSES };
+    } else if (scope === 'history') {
+      where.status = { in: HISTORY_STATUSES };
+    }
+
     if (query.tableId) where.tableId = query.tableId;
 
+    // Date filtering. `date` = single branch operational day; `from`/`to` = an
+    // explicit range. Boundaries are computed server-side (UTC day edges —
+    // see the timezone note in the query DTO / lifecycle docs), never in the
+    // browser and never against an unbounded default window.
     if (query.date) {
       const dayStart = new Date(query.date);
       dayStart.setUTCHours(0, 0, 0, 0);
       const dayEnd = new Date(query.date);
       dayEnd.setUTCHours(23, 59, 59, 999);
       where.reservationAt = { gte: dayStart, lte: dayEnd };
+    } else if (query.from || query.to) {
+      where.reservationAt = {};
+      if (query.from) where.reservationAt.gte = new Date(query.from);
+      if (query.to) where.reservationAt.lte = new Date(query.to);
     }
 
+    // Legacy convenience: `upcoming` forces the future PENDING/CONFIRMED window.
     if (query.upcoming) {
       where.reservationAt = { gte: new Date() };
       where.status = { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] };
     }
 
-    const [data, total] = await Promise.all([
+    // Deterministic ordering: history newest-first, everything else by
+    // schedule ascending, with id as a stable tiebreaker for pagination.
+    const orderBy =
+      scope === 'history'
+        ? [{ reservationAt: 'desc' as const }, { id: 'desc' as const }]
+        : [{ reservationAt: 'asc' as const }, { id: 'asc' as const }];
+
+    const [rows, total] = await Promise.all([
       this.prisma.reservation.findMany({
         where,
-        include: { table: true, deposits: true },
-        orderBy: { reservationAt: 'asc' },
+        include: {
+          table: true,
+          deposits: true,
+          seatedOrder: { select: { id: true, orderNumber: true, status: true } },
+        },
+        orderBy,
         skip,
         take: pageSize,
       }),
       this.prisma.reservation.count({ where }),
     ]);
 
-    return { data, total, page, pageSize };
+    // Non-breaking derived Attention signal. `overdue` is derived at read
+    // time, never persisted; terminal rows are always overdue:false. Prompt 4B
+    // renders the Attention grouping from this without a client-side merge.
+    const data = rows.map((r) => ({ ...r, ...this.computeOverdue(r) }));
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      scope: scope ?? null,
+    };
   }
 
   async listUpcoming(ctx: BranchContext) {
@@ -606,6 +825,47 @@ export class ReservationsService {
     if (!allowed.includes(target)) {
       throw new ConflictException(`Cannot transition from ${current} to ${target}`);
     }
+  }
+
+  /**
+   * Atomic, branch-scoped status flip. The `status: from` predicate makes the
+   * write a compare-and-set: a concurrent request that already moved the row
+   * off `from` updates zero rows, so a stale request can never overwrite a
+   * valid later transition and no duplicate lifecycle event is emitted.
+   * Returns true when this call is the one that applied the transition.
+   */
+  private async applyGuardedTransition(
+    id: string,
+    ctx: BranchContext,
+    from: ReservationStatus | ReservationStatus[],
+    data: Record<string, unknown>,
+  ): Promise<boolean> {
+    const fromStatuses = Array.isArray(from) ? from : [from];
+    const res = await this.prisma.reservation.updateMany({
+      where: {
+        id,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        status: { in: fromStatuses },
+      },
+      data,
+    });
+    return res.count > 0;
+  }
+
+  /** Whether a scheduled active reservation has passed its grace window. */
+  private computeOverdue(row: {
+    status: string;
+    reservationAt: Date | string;
+  }): { overdue: boolean; overdueByMinutes: number } {
+    if (row.status !== ReservationStatus.PENDING && row.status !== ReservationStatus.CONFIRMED) {
+      return { overdue: false, overdueByMinutes: 0 };
+    }
+    const scheduled = new Date(row.reservationAt).getTime();
+    const threshold = scheduled + OVERDUE_GRACE_MINUTES * 60 * 1000;
+    const now = Date.now();
+    if (now <= threshold) return { overdue: false, overdueByMinutes: 0 };
+    return { overdue: true, overdueByMinutes: Math.floor((now - scheduled) / 60000) };
   }
 
   private async checkTableConflict(

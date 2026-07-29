@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
@@ -9,6 +10,7 @@ import { Prisma, OrderStatus, ShiftStatus, TableStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { KdsService } from '../kds/kds.service';
+import { ReservationsService } from '../reservations/reservations.service';
 import {
   ActorLike,
   assertWaiterOrderOwnership,
@@ -50,10 +52,13 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly kdsService: KdsService,
+    private readonly reservationsService: ReservationsService,
   ) { }
 
   // ── Order Number Generation ──
@@ -280,10 +285,16 @@ export class OrdersService {
     marginPct: Decimal | null;
   }> {
     const menuItem = await this.prisma.menuItem.findFirst({
-      where: { id: menuItemId, branchId: ctx.branchId },
+      where: { id: menuItemId, branchId: ctx.branchId, orgId: ctx.organizationId },
       include: { servings: true },
     });
     if (!menuItem) throw new NotFoundException('Menu item not found in this branch');
+    if (!menuItem.isActive) {
+      throw new ConflictException({
+        code: 'MENU_ITEM_UNAVAILABLE',
+        message: 'This menu item is not currently available.',
+      });
+    }
 
     // Determine base price from serving or item
     let unitPrice = menuItem.price;
@@ -292,6 +303,12 @@ export class OrdersService {
       const serving = menuItem.servings.find((s) => s.id === menuItemServingId);
       if (!serving) {
         throw new BadRequestException('Serving not found for this menu item');
+      }
+      if (!serving.isActive) {
+        throw new ConflictException({
+          code: 'MENU_SERVING_INACTIVE',
+          message: 'This serving is not currently available.',
+        });
       }
       unitPrice = serving.price;
     }
@@ -302,11 +319,37 @@ export class OrdersService {
       const selectedModifiers = (modifierMeta as any).selectedModifiers as {
         modifierOptionId: string;
       }[];
-      const optionIds = selectedModifiers.map((m) => m.modifierOptionId);
+      const optionIds = [...new Set(selectedModifiers.map((m) => m.modifierOptionId).filter(Boolean))];
       if (optionIds.length > 0) {
-        const options = await this.prisma.modifierOption.findMany({
-          where: { id: { in: optionIds }, isActive: true },
+        const assignedGroups = await this.prisma.menuItemOnGroup.findMany({
+          where: { itemId: menuItem.id },
+          select: { groupId: true },
         });
+        const assignedGroupIds = new Set(assignedGroups.map((assignment) => assignment.groupId));
+        const options = await this.prisma.modifierOption.findMany({
+          where: { id: { in: optionIds }, group: { branchId: ctx.branchId, orgId: ctx.organizationId } },
+          include: { group: { select: { id: true, isActive: true } } },
+        });
+        if (options.length !== optionIds.length) {
+          throw new BadRequestException({
+            code: 'MODIFIER_OPTION_NOT_FOUND',
+            message: 'One or more selected modifier options were not found for this branch.',
+          });
+        }
+        const inactiveOption = options.find((opt) => !opt.isActive || !opt.group.isActive);
+        if (inactiveOption) {
+          throw new ConflictException({
+            code: 'MODIFIER_OPTION_INACTIVE',
+            message: 'One or more selected modifier options are not currently available.',
+          });
+        }
+        const unassignedOption = options.find((opt) => !assignedGroupIds.has(opt.group.id));
+        if (unassignedOption) {
+          throw new BadRequestException({
+            code: 'MODIFIER_NOT_ASSIGNED_TO_ITEM',
+            message: 'One or more selected modifiers are not assigned to this menu item.',
+          });
+        }
         for (const opt of options) {
           modifierDelta = modifierDelta.add(opt.priceDelta);
         }
@@ -652,6 +695,33 @@ export class OrdersService {
     }
     if (targetStatus === OrderStatus.CLOSED) {
       await this.autoReleaseTableIfIdle(order.tableId, orderId);
+
+      // Prompt 4A — canonical order-close reservation reconciliation. A SEATED
+      // reservation explicitly linked via seatedOrderId is auto-completed here,
+      // at the single order-close choke point (never in Cashier frontend code).
+      // The order close remains canonical: completion runs after the committed
+      // status change and is retry-safe/idempotent (conditional update, no
+      // duplicate event). Failure is logged for visibility, never swallowed
+      // silently, and never rolls back the order close.
+      try {
+        const completedReservationId = await this.reservationsService.completeForClosedOrder(
+          orderId,
+          ctx,
+          userId,
+          meta,
+        );
+        if (completedReservationId) {
+          this.logger.log(
+            `Order ${orderId} close auto-completed reservation ${completedReservationId}`,
+          );
+        }
+      } catch (err) {
+        this.logger.error(
+          `Order ${orderId} closed but linked reservation auto-completion failed: ${
+            (err as Error)?.message ?? err
+          }. Reservation may remain SEATED and can be completed manually.`,
+        );
+      }
     }
 
     await this.audit.log({
@@ -690,12 +760,9 @@ export class OrdersService {
       dto.reason,
     );
 
-    // M11: Create KDS tickets grouped by station
-    try {
-      await this.kdsService.createTicketsForOrder(userId, ctx, orderId, meta);
-    } catch {
-      // KDS ticket creation failure should not block order send
-    }
+    // M11: Create KDS tickets grouped by station. Ticket creation is intentionally
+    // best-effort here so a slow KDS write never traps the waiter in "Sending".
+    void this.kdsService.createTicketsForOrder(userId, ctx, orderId, meta).catch(() => undefined);
 
     return order;
   }

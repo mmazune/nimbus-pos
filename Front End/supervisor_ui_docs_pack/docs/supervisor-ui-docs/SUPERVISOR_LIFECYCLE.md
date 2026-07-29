@@ -1,3 +1,10 @@
+> ⚠️ **SUPERSEDED (2026-07-18).** Describes the original **5-tab** Supervisor
+> lifecycle including a dedicated **Orders** screen. Shipped Supervisor is
+> **4-tab** (**Floor · Reservations · Approvals · Me**), **no visible Orders tab**;
+> order work is Floor-contained (Prompt 3+). Current canonical:
+> `docs/supervisor-ui-docs/SUPERVISOR_LIFECYCLE.md`,
+> `ai/SUPERVISOR_RECONSTRUCTION_*`, root `CLAUDE.md`. Kept for history.
+
 # SUPERVISOR_LIFECYCLE.md — Nimbus POS Supervisor Lifecycle
 
 Status: Draft v1  
@@ -111,6 +118,8 @@ open Me
 ```
 
 No payroll, staff list, accounting, reports, franchise, or manager settings.
+
+The Me page uses verified profile data only. If employee linkage is absent, it shows one capability notice, suppresses employee-dependent requests, and uses compact unavailable states for attendance, leave, and shift swaps. When linkage exists, the notice is absent. Shared presentation primitives do not own requests or permissions.
 
 ## 9. Receipt/audit lifecycle
 

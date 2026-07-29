@@ -1,0 +1,10 @@
+branchCode,groupName,name,internalKey,sortOrder,isActive
+TAPAS_DOWNTOWN,Small Plates,Cold Small Plates,cold-small-plates,1,true
+TAPAS_DOWNTOWN,Small Plates,Hot Small Plates,hot-small-plates,2,true
+TAPAS_DOWNTOWN,Mains,Bowls & Pasta,bowls-pasta,1,true
+TAPAS_DOWNTOWN,Mains,Grills & Plates,grills-plates,2,true
+TAPAS_DOWNTOWN,Coffee & Tea,Coffee,coffee,1,true
+TAPAS_DOWNTOWN,Coffee & Tea,Tea,tea,2,true
+TAPAS_DOWNTOWN,Zero-Proof Bar,Spritzes,spritzes,1,true
+TAPAS_DOWNTOWN,Zero-Proof Bar,Coolers,coolers,2,true
+TAPAS_DOWNTOWN,Fresh Juice,Juices,juices,1,true

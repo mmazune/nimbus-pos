@@ -1,23 +1,20 @@
-import { WarningCircle } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Badge, ErrorState, PageShell, StatusMessage } from "@/components/ui";
-import { WaiterTableDetailPanel } from "@/components/waiter/floor/WaiterTableDetailPanel";
-import { WaiterTableGrid } from "@/components/waiter/floor/WaiterTableGrid";
-import { WaiterTableToolbar } from "@/components/waiter/floor/WaiterTableToolbar";
-import { ApiError } from "@/lib/api/client";
+import { OperationalFloor } from "@/components/floor/OperationalFloor";
+import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
+import { ErrorState } from "@/components/ui";
+import { WaiterTableWorkspace } from "@/components/waiter/floor/WaiterTableWorkspace";
+import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
-  filterWaiterTables,
   getWaiterTableAction,
   normalizeWaiterTables,
-  type WaiterTableAction,
-  type WaiterTableFilter,
   type WaiterTableViewModel,
 } from "@/lib/waiter/floor-model";
-import { loadWaiterFloorData } from "@/lib/waiter/floor-api";
+import { loadWaiterFloorData, type WaiterFloorData } from "@/lib/waiter/floor-api";
+import { loadWaiterMenuWorkspace, type WaiterOrderApi } from "@/lib/waiter/order-api";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
 
 function getErrorCopy(error: unknown) {
@@ -62,31 +59,19 @@ function getErrorCopy(error: unknown) {
   };
 }
 
-function countTables(tables: WaiterTableViewModel[]) {
-  return tables.reduce<Record<WaiterTableFilter, number>>(
-    (counts, table) => {
-      counts.all += 1;
-      counts[table.status] += 1;
-      if (table.isMine) counts.mine += 1;
-      return counts;
-    },
-    { all: 0, available: 0, occupied: 0, reserved: 0, mine: 0 },
-  );
-}
-
 export function WaiterFloorScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { accessToken, branchId, branchName, clearSession, user } = useAuth();
   const activeShift = useActiveShift();
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<WaiterTableFilter>("all");
-  const [selectedAction, setSelectedAction] = useState<WaiterTableAction | null>(null);
+  const [selectionOverride, setSelectionOverride] = useState<string | null>();
+  const selectionPushedRef = useRef(false);
 
   const floorQuery = useQuery({
     queryKey: ["waiter", "floor", branchId],
     enabled: Boolean(accessToken && branchId),
     queryFn: () => loadWaiterFloorData(accessToken as string, branchId as string),
-    retry: 1,
+    retry: shouldRetryApiRequest,
     staleTime: 15_000,
   });
 
@@ -96,99 +81,152 @@ export function WaiterFloorScreen() {
     }
   }, [clearSession, floorQuery.error]);
 
+  useEffect(() => {
+    if (!accessToken || !branchId) return;
+
+    void queryClient.prefetchQuery({
+      queryKey: ["waiter", "menu-workspace", branchId],
+      queryFn: () => loadWaiterMenuWorkspace(accessToken, branchId),
+      staleTime: 5 * 60_000,
+    });
+  }, [accessToken, branchId, queryClient]);
+
   const tables = useMemo(
     () =>
       normalizeWaiterTables({
         tables: floorQuery.data?.tables || [],
         activeOrders: floorQuery.data?.activeOrders || [],
-        upcomingReservations: floorQuery.data?.upcomingReservations || [],
+        reservations: floorQuery.data?.reservations || [],
         currentUserId: user?.id,
       }),
     [floorQuery.data, user?.id],
   );
 
-  const counts = useMemo(() => countTables(tables), [tables]);
-  const filteredTables = useMemo(
-    () => filterWaiterTables(tables, filter, query),
-    [filter, query, tables],
-  );
   const shiftIsOpen = Boolean(activeShift.data);
-  const hasNoTables = !floorQuery.isLoading && tables.length === 0;
+  const routeTableId = typeof router.query.tableId === "string" ? router.query.tableId : undefined;
+  const selectedTableId = selectionOverride === undefined ? routeTableId : selectionOverride || undefined;
+  useEffect(() => {
+    setSelectionOverride(undefined);
+  }, [routeTableId]);
+  const requestedOrderId = typeof router.query.orderId === "string" ? router.query.orderId : undefined;
+  const selectedTable = useMemo(
+    () => tables.find((table) => table.id === selectedTableId),
+    [selectedTableId, tables],
+  );
+  const selectedAction = selectedTable
+    ? getWaiterTableAction(selectedTable, shiftIsOpen)
+    : null;
+  const opensOrderWorkspace = Boolean(
+    requestedOrderId ||
+      selectedAction?.intent === "start-order" ||
+      selectedAction?.intent === "own-order",
+  );
 
   function handleSelectTable(table: WaiterTableViewModel) {
-    setSelectedAction(getWaiterTableAction(table, shiftIsOpen));
+    if (typeof performance !== "undefined") {
+      performance.clearMarks("waiter-table-click");
+      performance.clearMarks("waiter-menu-shell-visible");
+      performance.clearMarks("waiter-menu-content-visible");
+      performance.clearMarks("waiter-cached-order-visible");
+      performance.clearMarks("waiter-order-pending-visible");
+      performance.clearMeasures("waiter-table-click-to-shell");
+      performance.clearMeasures("waiter-table-click-to-menu-content");
+      performance.clearMeasures("waiter-table-click-to-cached-order");
+      performance.clearMeasures("waiter-table-click-to-order-pending");
+      performance.mark("waiter-table-click");
+    }
+    const hasSelection = Boolean(selectedTableId);
+    selectionPushedRef.current = !hasSelection;
+    setSelectionOverride(table.id);
+    const target = { pathname: "/waiter/floor", query: { tableId: table.id } };
+    if (hasSelection) {
+      void router.replace(target, undefined, { shallow: true, scroll: false });
+    } else {
+      void router.push(target, undefined, { shallow: true, scroll: false });
+    }
+  }
+
+  function handleCloseWorkspace() {
+    const tableIdToFocus = selectedTableId;
+    setSelectionOverride(null);
+    window.setTimeout(() => {
+      const target = [...document.querySelectorAll<HTMLElement>("[data-operational-table-id]")]
+        .find((element) => element.dataset.operationalTableId === tableIdToFocus);
+      target?.focus();
+    }, 0);
+    if (selectionPushedRef.current) {
+      selectionPushedRef.current = false;
+      router.back();
+      return;
+    }
+
+    void router.replace("/waiter/floor", undefined, { shallow: true, scroll: false });
+  }
+
+  function handleOpenOrder(tableId: string, orderId: string, order?: WaiterOrderApi) {
+    setSelectionOverride(tableId);
+    if (order && branchId) {
+      queryClient.setQueryData<WaiterFloorData>(["waiter", "floor", branchId], (current) => {
+        if (!current) return current;
+        const activeOrder: WaiterOrderApi = {
+          ...order,
+          id: orderId,
+          tableId,
+          userId: order.userId || user?.id,
+          table: order.table || { id: tableId },
+        };
+        return {
+          ...current,
+          activeOrders: [
+            activeOrder,
+            ...current.activeOrders.filter((entry) => entry.id !== orderId && entry.tableId !== tableId),
+          ],
+        };
+      });
+    }
+    void router.replace(
+      { pathname: "/waiter/floor", query: { tableId, orderId } },
+      undefined,
+      { shallow: true, scroll: false },
+    );
   }
 
   const errorCopy = floorQuery.isError ? getErrorCopy(floorQuery.error) : null;
 
   return (
-    <PageShell
-      title="Floor"
-      subtitle={branchName ? `${branchName} table service` : "Table service"}
-      actions={
-        <div className="flex items-center gap-2">
-          <Badge variant={shiftIsOpen ? "success" : "warning"}>
-            {shiftIsOpen ? "Shift open" : "Shift not started"}
-          </Badge>
-          <Badge variant="neutral">
-            <span className="tabular-nums">{counts.all}</span>
-            <span className="ml-1">tables</span>
-          </Badge>
-        </div>
-      }
-    >
-      {!shiftIsOpen && !activeShift.isLoading ? (
-        <StatusMessage tone="warning" title="Shift not started">
-          Available-table start actions and reservation seating are blocked until a shift is open.
-        </StatusMessage>
-      ) : null}
-
-      <WaiterTableToolbar
-        query={query}
-        filter={filter}
-        counts={counts}
-        onQueryChange={setQuery}
-        onFilterChange={setFilter}
+    <>
+      <OperationalFloor
+        branchName={branchName}
+        readinessLabel={shiftIsOpen ? "Shift open" : "Shift not started"}
+        readinessTone={shiftIsOpen ? "success" : "warning"}
+        tables={tables}
+        isLoading={floorQuery.isLoading}
+        error={errorCopy}
+        selectedTableId={selectedTableId}
+        onSelectTable={handleSelectTable}
+        onRetry={() => void floorQuery.refetch()}
       />
 
-      {errorCopy ? (
-        <ErrorState title={errorCopy.title} description={errorCopy.description} />
-      ) : (
-        <div className="grid grid-cols-[1fr_360px] items-start gap-6">
-          <WaiterTableGrid
-            tables={filteredTables}
-            isLoading={floorQuery.isLoading}
-            onSelectTable={handleSelectTable}
+      {selectedAction ? (
+        <OperationalTableWorkspaceFrame immersive={opensOrderWorkspace} onClose={handleCloseWorkspace}>
+          <WaiterTableWorkspace
+            action={selectedAction}
+            requestedOrderId={requestedOrderId}
+            shiftIsOpen={shiftIsOpen}
+            onClose={handleCloseWorkspace}
+            onOpenOrder={handleOpenOrder}
           />
-          <div className="sticky top-36">
-            <WaiterTableDetailPanel
-              action={selectedAction}
-              shiftIsOpen={shiftIsOpen}
-              onStartOrder={(table) =>
-                void router.push(`/waiter/orders/new?tableId=${encodeURIComponent(table.id)}`)
-              }
-              onOpenOrder={(table) => {
-                if (table.orderId) void router.push(`/waiter/orders/${table.orderId}`);
-              }}
-              onOpenReservation={(table) => {
-                if (table.reservationId) {
-                  void router.push(
-                    `/waiter/reservations?reservationId=${encodeURIComponent(table.reservationId)}`,
-                  );
-                }
-              }}
-              onClose={() => setSelectedAction(null)}
-            />
-          </div>
-        </div>
-      )}
-
-      {hasNoTables ? (
-        <div className="flex items-center gap-2 text-sm font-medium text-text-muted">
-          <WarningCircle size={18} weight="bold" aria-hidden />
-          <span>Cleaning, blocked, inactive, and unavailable backend tables are hidden from this MVP view.</span>
-        </div>
+        </OperationalTableWorkspaceFrame>
       ) : null}
-    </PageShell>
+
+      {selectedTableId && !floorQuery.isLoading && !selectedTable && !floorQuery.isError ? (
+        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
+          <ErrorState
+            title="Table unavailable"
+            description="The selected table is not accessible on this Floor. Close this context and choose another table."
+          />
+        </OperationalTableWorkspaceFrame>
+      ) : null}
+    </>
   );
 }

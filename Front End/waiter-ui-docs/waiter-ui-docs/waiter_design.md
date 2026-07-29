@@ -37,12 +37,15 @@ This file does not replace `DESIGN.md`. It extends it.
 6. No waiter dashboard.
 7. Fixed header.
 8. Fixed bottom nav.
-9. Bottom nav: Floor, Orders, Reservations, Me.
-10. No Menu bottom-nav item.
-11. Menu opens only inside order flow.
+9. Bottom nav: Floor, Reservations, Me.
+10. Orders is not a visible navigation destination. Order work is contextual from Floor.
+11. No Menu bottom-nav item. Menu opens only inside order flow.
 12. Header: logo area, branch, service area, current time, waiter avatar/name, logout.
 13. Idle timeout logs waiter out.
 14. No switch user.
+
+15. The default Floor presentation is shared with Supervisor. Role-specific behavior begins after table selection; Waiter opens its existing menu/order-entry workspace.
+16. Shared Floor cards show only full table identifier, textual operational status, formatted assigned staff, optional Mine, and capacity. Guest names and order numbers never appear on Floor cards.
 15. No separate lock screen.
 16. Table statuses shown: Available, Occupied, Reserved.
 17. Do not show Cleaning or Blocked as table statuses in waiter MVP.
@@ -181,9 +184,8 @@ Persistent across all waiter screens.
 Final items:
 
 1. Floor.
-2. Orders.
-3. Reservations.
-4. Me.
+2. Reservations.
+3. Me.
 
 Rules:
 
@@ -191,7 +193,7 @@ Rules:
 - large touch targets;
 - Phosphor icon + label;
 - active item uses navy fill/pill or inverse state;
-- no Menu;
+- no Orders, Menu, Dashboard, Payments, or More destination;
 - no More;
 - no hidden nested menu.
 
@@ -251,9 +253,9 @@ Use responsive table-card grid.
 
 | Viewport | Columns |
 |---|---:|
-| 1280px | 5–6 |
-| 1440px | 6–7 |
-| 1920px | 8–10 |
+| 1280px | Responsive cards, minimum 220px width |
+| 1440px | Responsive cards, minimum 220px width |
+| 1920px | Responsive cards, minimum 220px width |
 
 Gap: 16px.
 
@@ -297,10 +299,11 @@ Filters:
 
 #### Occupied
 
-- guest name if available;
-- order number;
-- order status;
-- bill state.
+- assigned waiter formatted as `FirstName L.`;
+- separate `Mine` badge when owned by the current waiter;
+- guest name when available and operationally useful.
+
+Table cards do not show order numbers, order labels, order-status text, bill state, or nested order panels.
 
 ### 9.4 Table card status treatment
 
@@ -396,13 +399,15 @@ Show:
 
 ---
 
-## 11. Orders tab
+## 11. Legacy Orders route compatibility
 
 ### 11.1 Purpose
 
-Shows the waiter's operational queue.
+There is no visible Orders tab or standalone waiter Orders workspace. Reusable queue and builder components may remain in code, but waiter service is entered through Floor.
 
-### 11.2 Filters
+Legacy `/waiter/orders`, `/waiter/orders/new?tableId=...`, and `/waiter/orders/[orderId]` URLs redirect into Floor while preserving safe table and order context.
+
+### 11.2 Retained queue-component filters (not navigation)
 
 - Active.
 - Sent.
@@ -412,7 +417,7 @@ Shows the waiter's operational queue.
 
 No Draft filter.
 
-### 11.3 Order card fields
+### 11.3 Retained queue-component fields
 
 - table name;
 - guest name;
@@ -422,7 +427,7 @@ No Draft filter.
 - total;
 - bill state.
 
-### 11.4 Tapping an order
+### 11.4 Legacy order selection
 
 Opens order detail/edit for allowed own order.
 
@@ -515,25 +520,20 @@ Not allowed:
 
 Identity:
 
-- waiter name;
-- avatar;
-- role;
-- branch;
-- service area;
-- current time.
+- verified waiter name and initials when no avatar exists;
+- role-aware accent and explicit operational status;
+- email or username when available;
+- branch and assigned service area only when returned by the session contract.
 
-Session:
+Operational sections, in order:
 
-- shift state;
-- start shift;
-- end shift;
-- attendance status.
-
-Secondary:
-
-- request leave;
-- request shift swap;
-- logout.
+1. profile and current status;
+2. one focused shift card with start time, elapsed duration, branch, note, and one primary action;
+3. recent self-scoped attendance;
+4. current/recent leave with a focused request form when supported;
+5. incoming/outgoing self-scoped shift swaps;
+6. branch/account context;
+7. session and sign out.
 
 ### 14.2 Rules
 
@@ -542,6 +542,12 @@ Secondary:
 - no staff list;
 - no accounting/reporting;
 - no unrelated settings.
+- do not show raw user, employee, organization, branch, or shift IDs;
+- an open shift older than 16 hours, or one without a start time, is a `Shift issue` and requires review;
+- never auto-close an abnormal shift;
+- when employee linkage is missing, show one capability notice near the hero and compact unavailable states in dependent sections;
+- do not render unusable disabled HR forms or repeat the full employee-link explanation;
+- shared profile components provide visual structure only; each role page keeps its own requests and permissions.
 
 ---
 
@@ -594,6 +600,9 @@ No reservations for this service window.
 - `Could not send order.`
 - `Could not seat guest.`
 - `Could not request bill.`
+
+Sent-order additions remain blocked until the backend exposes per-line sent state or a dedicated,
+idempotent additions-dispatch contract. Do not reuse the initial `SENT` transition or imply KDS dispatch.
 
 ### Blocked copy
 
@@ -778,9 +787,23 @@ The waiter workspace design is acceptable when:
 7. Occupied other-waiter table blocks edit.
 8. Menu exists only inside ordering.
 9. Item notes are item-level only.
-10. Orders tab uses waiter-safe filters and excludes Draft/NEW.
+10. No separate Orders tab is visible; legacy Orders routes redirect safely into Floor.
 11. Receipt send is visibly pending.
 12. Me tab contains session/self-service only.
 13. No unsupported waiter action is shown as live.
 14. All screens have loading/empty/failure/blocked states.
 15. All colors/icons/spacing follow `DESIGN.md`.
+
+---
+
+## 19. Premium full-screen menu workspace
+
+- The order workspace covers the normal Floor canvas and keeps one unmistakable `Back to Floor` action.
+- Wide desktop layout is context bar plus taxonomy rail, menu canvas, and persistent order panel.
+- FOOD/DRINKS and all manager-created labels come from `/api/menu/navigation`; item assignment comes from the catalog contract.
+- Normal item tiles contain only name, price/starting price, and a serving cue when needed. The tile is the selection target.
+- Configurable items open a spacious side sheet with 48px-class controls, quantity, serving, sorted modifier groups, selection guidance, price deltas, and item comment.
+- Order lines are single edit targets. Removal lives in the focused editor.
+- `Send to kitchen/bar`, `Request bill`, `View bill or receipt`, and `Reprint receipt` are text-first controls without decorative action icons.
+- No emoji appears in waiter order entry.
+- Returned discount is shown when nonzero so subtotal reconciles truthfully to total.

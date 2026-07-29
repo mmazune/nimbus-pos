@@ -42,6 +42,14 @@ const config: Config = {
           neutral: "var(--color-status-neutral)",
           "neutral-surface": "var(--color-status-neutral-surface)",
         },
+        role: {
+          waiter: "var(--color-role-waiter)",
+          "waiter-soft": "var(--color-role-waiter-soft)",
+          cashier: "var(--color-role-cashier)",
+          "cashier-soft": "var(--color-role-cashier-soft)",
+          supervisor: "var(--color-role-supervisor)",
+          "supervisor-soft": "var(--color-role-supervisor-soft)",
+        },
         focus: "var(--color-focus-ring)",
         skeleton: {
           base: "var(--color-skeleton-base)",

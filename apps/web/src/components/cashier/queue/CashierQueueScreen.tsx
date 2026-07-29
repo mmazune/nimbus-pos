@@ -1,5 +1,5 @@
 import { Info } from "@phosphor-icons/react";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CashierRefundPanel } from "@/components/cashier/refunds";
@@ -25,30 +25,6 @@ function errorMessage(error: unknown, fallback: string) {
 function paymentErrorMessage(error: unknown) {
   if (!error) return undefined;
   return errorMessage(error, "Payment summary unavailable.");
-}
-
-function mapByOrderId(
-  orderIds: string[],
-  queries: Array<{
-    data?: unknown;
-    error?: unknown;
-    isLoading?: boolean;
-    isFetching?: boolean;
-  }>,
-) {
-  const data = new Map<string, CashierOrderPaymentsApi>();
-  const errors = new Map<string, string>();
-  const loading = new Set<string>();
-
-  orderIds.forEach((orderId, index) => {
-    const query = queries[index];
-    if (!query) return;
-    if (query.data) data.set(orderId, query.data as CashierOrderPaymentsApi);
-    if (query.error) errors.set(orderId, paymentErrorMessage(query.error) || "Payment summary unavailable.");
-    if (query.isLoading || query.isFetching) loading.add(orderId);
-  });
-
-  return { data, errors, loading };
 }
 
 export function CashierQueueScreen() {
@@ -87,21 +63,9 @@ export function CashierQueueScreen() {
   }, [clearSession, ordersQuery.error]);
 
   const listOrders = useMemo(() => ordersQuery.data?.data || [], [ordersQuery.data?.data]);
-  const orderIds = useMemo(() => listOrders.map((order) => order.id), [listOrders]);
-
-  const paymentQueries = useQueries({
-    queries: listOrders.map((order) => ({
-      queryKey: ["cashier", "order-payments", branchId, order.id],
-      enabled: Boolean(accessToken && branchId && order.id),
-      queryFn: () => getCashierOrderPayments(accessToken as string, branchId as string, order.id),
-      retry: 1,
-      staleTime: 20_000,
-    })),
-  });
-
   const paymentState = useMemo(
-    () => mapByOrderId(orderIds, paymentQueries),
-    [orderIds, paymentQueries],
+    () => ({ data: new Map<string, CashierOrderPaymentsApi>(), errors: new Map<string, string>(), loading: new Set<string>() }),
+    [],
   );
 
   const queue = useMemo<CashierOrderViewModel[]>(
@@ -192,15 +156,13 @@ export function CashierQueueScreen() {
       : undefined;
 
   const refreshCheckoutState = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ["cashier", "order-payments", branchId] });
-    await queryClient.invalidateQueries({ queryKey: ["cashier", "orders", branchId] });
-    await Promise.all([
-      ordersQuery.refetch(),
-      selectedOrderId ? detailQuery.refetch() : Promise.resolve(),
-      selectedOrderId ? selectedPaymentsQuery.refetch() : Promise.resolve(),
-      readiness.shiftQuery.refetch(),
-      readiness.tillQuery.refetch(),
-    ]);
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "order-payments", branchId] });
+    void queryClient.invalidateQueries({ queryKey: ["cashier", "orders", branchId] });
+    void ordersQuery.refetch();
+    if (selectedOrderId) void detailQuery.refetch();
+    if (selectedOrderId) void selectedPaymentsQuery.refetch();
+    void readiness.shiftQuery.refetch();
+    void readiness.tillQuery.refetch();
   }, [
     branchId,
     detailQuery,

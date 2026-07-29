@@ -1,3 +1,11 @@
+> ⚠️ **SUPERSEDED (2026-07-18).** This contract targets the original **5-tab**
+> Supervisor (Floor · **Orders** · Reservations · Approvals · Me) with a dedicated
+> Orders screen and role-specific Floor. The shipped Supervisor is **4-tab**
+> (**Floor · Reservations · Approvals · Me**), **no visible Orders tab**, **shared**
+> Floor. Follow the current canonical docs instead: `docs/supervisor-ui-docs/*`,
+> `ai/SUPERVISOR_RECONSTRUCTION_*`, root `CLAUDE.md`, `docs/DECISIONS.md`. Kept for
+> history — do not treat as current spec.
+
 # AGENTS.md — Nimbus POS Supervisor Frontend Agent Contract
 
 Status: Draft v1  

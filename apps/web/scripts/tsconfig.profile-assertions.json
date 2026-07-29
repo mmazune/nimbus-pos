@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "profile-assertions.ts",
+    "../src/lib/auth/types.ts",
+    "../src/lib/profile/profile-model.ts",
+    "../src/lib/waiter/me-api.ts",
+    "../src/lib/waiter/me-model.ts"
+  ]
+}

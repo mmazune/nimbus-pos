@@ -1,5 +1,3 @@
-import { ClockClockwise } from "@phosphor-icons/react";
-
 import { Skeleton } from "@/components/ui";
 import { WaiterReceiptStatusBadge } from "@/components/waiter/receipts/WaiterReceiptStatusBadge";
 
@@ -30,10 +28,7 @@ export function WaiterReceiptHistoryTimeline({
 
   return (
     <section className="rounded-lg bg-surface p-4 shadow-subtle">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-bold text-text-primary">History</p>
-        <ClockClockwise size={18} weight="bold" className="text-text-muted" aria-hidden />
-      </div>
+      <p className="text-sm font-bold text-text-primary">Receipt history</p>
 
       {error ? (
         <div className="mt-4 rounded-md bg-status-warning-surface p-3 text-sm font-medium text-status-warning">

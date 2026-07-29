@@ -45,7 +45,7 @@ export function useCashierContext() {
       organizationCount: user?.context.organizationCount || 0,
       branchCount: user?.context.branchCount || 0,
       requiresContextSelection: user?.context.requiresContextSelection || false,
-      workstationLabel: "Cashier terminal",
+      workstationLabel: "Workstation unavailable",
       sessionPlatform: user?.session?.platform || "Session check pending",
       sessionSource: user?.session?.source || "Session check pending",
       sessionId: user?.session?.id || null,

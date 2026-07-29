@@ -10,7 +10,7 @@ import { useRouter } from "next/router";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { Button, Input, StatusMessage } from "@/components/ui";
-import { CurrentTime } from "@/components/waiter/shell/CurrentTime";
+import { CurrentTime } from "@/components/pos-shell/CurrentTime";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
@@ -208,8 +208,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-brand-navy-950 px-10 py-12 text-text-inverse">
-      <section className="grid w-full max-w-[1240px] grid-cols-[1fr_500px] gap-12">
+    <main className="flex min-h-screen items-center justify-center bg-brand-navy-950 px-4 py-6 text-text-inverse sm:px-6 lg:px-10 lg:py-12">
+      <section className="grid w-full max-w-[1240px] gap-8 lg:grid-cols-[minmax(0,1fr)_500px] lg:gap-12">
         <div className="flex flex-col justify-between py-4">
           <div>
             <div className="flex h-14 w-14 items-center justify-center rounded-md bg-brand-white text-brand-navy-900 shadow-panel">
@@ -226,7 +226,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="grid max-w-xl grid-cols-3 gap-3 text-sm font-semibold">
+          <div className="mt-8 hidden max-w-xl grid-cols-3 gap-3 text-sm font-semibold lg:grid">
             <div className="rounded-lg bg-brand-navy-800 p-4 shadow-subtle">
               <div className="flex items-center gap-2 text-brand-silver">
                 <DesktopTower size={18} weight="bold" />

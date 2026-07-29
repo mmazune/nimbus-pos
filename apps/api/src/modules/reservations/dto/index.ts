@@ -6,3 +6,4 @@ export { MarkNoShowDto } from './mark-no-show.dto';
 export { RecordDepositDto } from './record-deposit.dto';
 export { ListReservationsQueryDto } from './list-reservations-query.dto';
 export { AssignTableDto } from './assign-table.dto';
+export { CompleteReservationDto } from './complete-reservation.dto';

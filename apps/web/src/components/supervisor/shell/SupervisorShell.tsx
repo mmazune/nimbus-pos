@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 
+import { OperationalIdleLogoutHandler } from "@/components/pos-shell/OperationalIdleLogoutHandler";
+import { OperationalShell } from "@/components/pos-shell/OperationalShell";
 import { SupervisorBottomNav } from "@/components/supervisor/shell/SupervisorBottomNav";
 import { SupervisorHeader } from "@/components/supervisor/shell/SupervisorHeader";
 import { SupervisorReadinessStrip } from "@/components/supervisor/shell/SupervisorReadinessStrip";
@@ -15,14 +17,14 @@ export function SupervisorShell({ children }: SupervisorShellProps) {
 
   return (
     <SupervisorSessionGuard>
-      <div className="min-h-screen bg-page">
-        <SupervisorHeader readinessItems={readiness.items} />
-        <SupervisorReadinessStrip items={readiness.items} />
-        <main className="mx-auto min-h-screen w-full max-w-[1600px] px-4 pb-28 pt-40 sm:px-6 xl:px-8">
-          {children}
-        </main>
-        <SupervisorBottomNav />
-      </div>
+      <OperationalShell
+        header={<SupervisorHeader />}
+        readiness={<SupervisorReadinessStrip items={readiness.items} />}
+        bottomNavigation={<SupervisorBottomNav />}
+        idleHandler={<OperationalIdleLogoutHandler />}
+      >
+        {children}
+      </OperationalShell>
     </SupervisorSessionGuard>
   );
 }

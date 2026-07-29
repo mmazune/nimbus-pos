@@ -26,6 +26,7 @@ nimbus-pos/
 │   ├── AI_ERROR_PROTOCOL.md
 │   ├── AI_GOVERNANCE_PROMPT_UPDATED.md
 │   ├── AI_STATUS.md
+│   ├── APPLICATION_PERFORMANCE_HARDENING_COMPLETION_REPORT.md
 │   ├── M0_FIRST_PROMPT.md
 │   ├── M0_COMPLETION_REPORT.md
 │   ├── M1_COMPLETION_REPORT.md
@@ -700,6 +701,25 @@ apps/web/src/pages/waiter/orders/
 apps/web/src/pages/waiter/orders.tsx was replaced by the orders/ route directory.
 ```
 
+## Waiter premium Floor and table-centric workflow additions (2026-07-16)
+
+```text
+apps/web/src/components/providers/
+└── ToastProvider.tsx
+
+apps/web/src/lib/waiter/
+└── formatters.ts
+
+apps/web/src/components/waiter/floor/
+└── WaiterTableWorkspace.tsx
+
+apps/web/src/components/waiter/orders/
+└── WaiterLegacyOrderRedirect.tsx
+
+ai/
+└── WAITER_PREMIUM_FLOOR_TABLE_CENTRIC_COMPLETION_REPORT.md
+```
+
 ## Waiter frontend receipt/request-bill additions (2026-06-20)
 
 ```text
@@ -1331,6 +1351,68 @@ ai/
 └── SUPERVISOR_UI_FINALIZATION_REPORT.md
 ```
 
+## Waiter premium menu/order-entry additions (2026-07-16)
+
+```text
+PRODUCT.md
+
+ai/
+  WAITER_PREMIUM_MENU_ORDER_ENTRY_COMPLETION_REPORT.md
+
+apps/web/src/components/waiter/orders/
+  WaiterOrderBuilderScreen.tsx
+
+apps/web/src/components/waiter/floor/
+  WaiterFloorScreen.tsx
+  WaiterTableCard.tsx
+  WaiterTableWorkspace.tsx
+```
+
+## Waiter instant table-to-menu additions (2026-07-17)
+
+```text
+ai/
+  WAITER_INSTANT_TABLE_MENU_FLOW_COMPLETION_REPORT.md
+
+apps/web/src/components/waiter/floor/
+  WaiterFloorScreen.tsx
+  WaiterTableWorkspace.tsx
+
+apps/web/src/components/waiter/orders/
+  WaiterOrderBuilderScreen.tsx
+
+apps/web/src/lib/waiter/
+  floor-model.ts
+  order-api.ts
+```
+
+## Waiter menu visibility, UGX, and totals Prompt 4 additions (2026-07-18)
+
+```text
+ai/
+  WAITER_MENU_VISIBILITY_UGX_AND_TOTALS_COMPLETION_REPORT.md
+
+demo-data/csv/
+  09a_menu_browse_groups.csv
+  09b_menu_browse_subgroups.csv
+  09c_menu_item_browse_assignments.csv
+
+packages/db/prisma/
+  demo-import.ts
+  seed.ts
+
+apps/api/src/modules/auth/
+  auth.service.ts
+
+apps/api/src/modules/orders/
+  orders.service.ts
+  orders.service.spec.ts
+
+apps/web/src/lib/waiter/
+  formatters.ts
+  order-model.ts
+```
+
 ## Manager UI Prompt 0 repo verification and scope mapping additions (2026-07-06)
 
 ```text
@@ -1345,3 +1427,161 @@ docs/manager-ui-docs/
 └── MANAGER_LIFECYCLE.md
 ```
 
+## Waiter premium Me and shared profile additions (2026-07-18)
+
+```text
+ai/
+  WAITER_PREMIUM_ME_SHARED_PROFILE_COMPLETION_REPORT.md
+
+apps/web/scripts/
+  profile-assertions.ts
+  tsconfig.profile-assertions.json
+
+apps/web/src/components/profile/
+  CapabilityNotice.tsx
+  CompactUnavailableState.tsx
+  OperationalStatusBadge.tsx
+  ProfileMetaGrid.tsx
+  ProfileSection.tsx
+  RoleProfileHero.tsx
+  SessionCard.tsx
+  ShiftStatusCard.tsx
+  index.ts
+
+apps/web/src/lib/profile/
+  profile-model.ts
+```
+
+## Supervisor reconstruction Prompt 0 documentation additions (2026-07-18)
+
+```text
+ai/
+  SUPERVISOR_RECONSTRUCTION_REPO_VERIFICATION_REPORT.md
+  SUPERVISOR_RECONSTRUCTION_ROADMAP.md
+  SUPERVISOR_RECONSTRUCTION_GAP_REGISTER.md
+  SUPERVISOR_MVP_INCLUSION_DEFER_MATRIX.md
+
+docs/supervisor-ui-docs/
+  README.md
+  SUPERVISOR_API_MATRIX.md
+  SUPERVISOR_LIFECYCLE.md
+  SUPERVISOR_SHARED_COMPONENT_ARCHITECTURE.md
+  SUPERVISOR_RESERVATION_LIFECYCLE.md
+  SUPERVISOR_APPROVAL_LIFECYCLE.md
+  SUPERVISOR_ICON_AND_NAVIGATION_STANDARD.md
+```
+
+## Supervisor reconstruction Prompt 1 shared shell additions (2026-07-18)
+
+```text
+ai/
+  SUPERVISOR_RECONSTRUCTION_PROMPT1_SHARED_SHELL_COMPLETION_REPORT.md
+
+apps/web/scripts/
+  shell-assertions.ts
+  tsconfig.shell-assertions.json
+
+apps/web/src/components/pos-shell/
+  BranchContextLabel.tsx
+  CurrentTime.tsx
+  OperationalBottomNav.tsx
+  OperationalHeader.tsx
+  OperationalIdleLogoutHandler.tsx
+  OperationalShell.tsx
+  RoleIdentity.tsx
+  index.ts
+  layout.ts
+  role-icon-config.ts
+  role-icons.ts
+  role-navigation.ts
+  types.ts
+
+apps/web/src/components/supervisor/orders/
+  SupervisorLegacyOrdersRedirect.tsx
+
+apps/web/src/lib/supervisor/
+  legacy-orders-route.ts
+
+apps/web/public/
+  favicon.svg
+```
+
+## Supervisor reconstruction Prompt 2 shared Floor additions (2026-07-18)
+
+```text
+ai/
+  SUPERVISOR_RECONSTRUCTION_PROMPT2_SHARED_FLOOR_COMPLETION_REPORT.md
+
+apps/web/scripts/
+  floor-assertions.ts
+  tsconfig.floor-assertions.json
+
+apps/web/src/components/floor/
+  OperationalFloor.tsx
+  OperationalFloorErrorState.tsx
+  OperationalFloorToolbar.tsx
+  OperationalTableCard.tsx
+  OperationalTableGrid.tsx
+  OperationalTableStatusBadge.tsx
+  OperationalTableWorkspaceFrame.tsx
+  formatters.ts
+  index.ts
+  types.ts
+
+apps/web/src/components/supervisor/floor/
+  SupervisorFloorScreen.tsx
+  SupervisorTableControlWorkspace.tsx
+```
+
+## Supervisor reconstruction Prompt 3B2 transfer-table + Find order additions (2026-07-28)
+
+```text
+apps/web/src/lib/supervisor/
+  transfer-table.ts
+
+apps/web/src/components/supervisor/floor/
+  SupervisorTableTargetSelector.tsx
+  SupervisorTransferTableDialog.tsx
+  SupervisorFindOrderDialog.tsx
+
+apps/web/scripts/
+  prompt3b2-assertions.ts
+  tsconfig.prompt3b2-assertions.json
+
+ai/
+  SUPERVISOR_RECONSTRUCTION_PROMPT3B2_TRANSFER_AND_LOOKUP_COMPLETION_REPORT.md
+```
+
+## Supervisor reconstruction Prompt 3B3A void + discount request additions (2026-07-28)
+
+```text
+apps/web/src/lib/supervisor/
+  order-financials.ts
+
+apps/web/src/components/supervisor/floor/
+  SupervisorVoidOrderDialog.tsx
+  SupervisorDiscountRequestDialog.tsx
+
+apps/web/scripts/
+  prompt3b3a-assertions.ts
+  tsconfig.prompt3b3a-assertions.json
+
+ai/
+  SUPERVISOR_RECONSTRUCTION_PROMPT3B3A_VOID_AND_DISCOUNT_REQUEST_COMPLETION_REPORT.md
+```
+
+## Supervisor reconstruction Prompt 3B3B discount decisions + complimentary additions (2026-07-28)
+
+```text
+apps/web/src/components/supervisor/floor/
+  SupervisorApproveDiscountDialog.tsx
+  SupervisorRejectDiscountDialog.tsx
+  SupervisorComplimentaryDialog.tsx
+
+apps/web/scripts/
+  prompt3b3b-assertions.ts
+  tsconfig.prompt3b3b-assertions.json
+
+ai/
+  SUPERVISOR_RECONSTRUCTION_PROMPT3B3B_DISCOUNT_DECISIONS_AND_COMPLIMENTARY_COMPLETION_REPORT.md
+```

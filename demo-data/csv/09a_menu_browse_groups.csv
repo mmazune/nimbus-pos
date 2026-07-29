@@ -1,0 +1,33 @@
+organizationSlug,branchCode,section,name,internalKey,sortOrder,isActive
+nimbus,TAPAS_DOWNTOWN,FOOD,Small Plates,small-plates,1,true
+nimbus,TAPAS_DOWNTOWN,FOOD,Mains,mains,2,true
+nimbus,TAPAS_DOWNTOWN,FOOD,Sides,sides,3,true
+nimbus,TAPAS_DOWNTOWN,FOOD,Desserts,desserts,4,true
+nimbus,TAPAS_DOWNTOWN,FOOD,Event Platters,event-platters,5,false
+nimbus,TAPAS_DOWNTOWN,DRINKS,Coffee & Tea,coffee-tea,1,true
+nimbus,TAPAS_DOWNTOWN,DRINKS,Zero-Proof Bar,zero-proof-bar,2,true
+nimbus,TAPAS_DOWNTOWN,DRINKS,Fresh Juice,fresh-juice,3,true
+nimbus,ROOFTOP_BAR,FOOD,Small Plates,small-plates,1,true
+nimbus,ROOFTOP_BAR,FOOD,Mains,mains,2,true
+nimbus,ROOFTOP_BAR,FOOD,Sides,sides,3,true
+nimbus,ROOFTOP_BAR,FOOD,Desserts,desserts,4,true
+nimbus,ROOFTOP_BAR,FOOD,Event Platters,event-platters,5,false
+nimbus,ROOFTOP_BAR,DRINKS,Coffee & Tea,coffee-tea,1,true
+nimbus,ROOFTOP_BAR,DRINKS,Zero-Proof Bar,zero-proof-bar,2,true
+nimbus,ROOFTOP_BAR,DRINKS,Fresh Juice,fresh-juice,3,true
+nimbus,GARDEN_CAFE,FOOD,Small Plates,small-plates,1,true
+nimbus,GARDEN_CAFE,FOOD,Mains,mains,2,true
+nimbus,GARDEN_CAFE,FOOD,Sides,sides,3,true
+nimbus,GARDEN_CAFE,FOOD,Desserts,desserts,4,true
+nimbus,GARDEN_CAFE,FOOD,Event Platters,event-platters,5,false
+nimbus,GARDEN_CAFE,DRINKS,Coffee & Tea,coffee-tea,1,true
+nimbus,GARDEN_CAFE,DRINKS,Zero-Proof Bar,zero-proof-bar,2,true
+nimbus,GARDEN_CAFE,DRINKS,Fresh Juice,fresh-juice,3,true
+nimbus,EVENTS_KITCHEN,FOOD,Small Plates,small-plates,1,true
+nimbus,EVENTS_KITCHEN,FOOD,Mains,mains,2,true
+nimbus,EVENTS_KITCHEN,FOOD,Sides,sides,3,true
+nimbus,EVENTS_KITCHEN,FOOD,Desserts,desserts,4,true
+nimbus,EVENTS_KITCHEN,FOOD,Event Platters,event-platters,5,false
+nimbus,EVENTS_KITCHEN,DRINKS,Coffee & Tea,coffee-tea,1,true
+nimbus,EVENTS_KITCHEN,DRINKS,Zero-Proof Bar,zero-proof-bar,2,true
+nimbus,EVENTS_KITCHEN,DRINKS,Fresh Juice,fresh-juice,3,true

@@ -81,6 +81,7 @@ export type WaiterMenuServingApi = {
   price?: string | number | null;
   volumeText?: string | null;
   isDefault?: boolean | null;
+  isActive?: boolean | null;
   sortOrder?: number | null;
 };
 
@@ -137,6 +138,28 @@ export type WaiterMenuItemApi = {
   modifierGroups?: WaiterModifierGroupApi[] | null;
 };
 
+export type WaiterMenuNavigationSubgroupApi = {
+  id: string;
+  name?: string | null;
+  internalKey?: string | null;
+  sortOrder?: number | null;
+  isActive?: boolean | null;
+};
+
+export type WaiterMenuNavigationGroupApi = {
+  id: string;
+  name?: string | null;
+  internalKey?: string | null;
+  sortOrder?: number | null;
+  isActive?: boolean | null;
+  subgroups?: WaiterMenuNavigationSubgroupApi[] | null;
+};
+
+export type WaiterMenuNavigationSectionApi = {
+  section: string;
+  groups?: WaiterMenuNavigationGroupApi[] | null;
+};
+
 export type WaiterMenuCategoryApi = {
   id: string;
   name?: string | null;
@@ -147,6 +170,11 @@ export type WaiterMenuCategoryApi = {
 export type WaiterMenuCatalogApi = {
   categories?: WaiterMenuCategoryApi[] | null;
   taxCategories?: Array<{ id: string; name?: string | null; rate?: string | number | null }> | null;
+};
+
+export type WaiterMenuWorkspaceApi = {
+  navigation: WaiterMenuNavigationSectionApi[];
+  catalog: WaiterMenuCatalogApi;
 };
 
 export type WaiterSelectedModifierPayload = {
@@ -278,6 +306,25 @@ export function sendOrder(
 
 export function getMenuCatalog(token: string, branchId: string) {
   return apiRequest<WaiterMenuCatalogApi>("/api/menu/catalog", { token, branchId });
+}
+
+export function getMenuNavigation(token: string, branchId: string) {
+  return apiRequest<WaiterMenuNavigationSectionApi[]>("/api/menu/navigation?activeOnly=true", {
+    token,
+    branchId,
+  });
+}
+
+export async function loadWaiterMenuWorkspace(
+  token: string,
+  branchId: string,
+): Promise<WaiterMenuWorkspaceApi> {
+  const [navigation, catalog] = await Promise.all([
+    getMenuNavigation(token, branchId),
+    getMenuCatalog(token, branchId),
+  ]);
+
+  return { navigation, catalog };
 }
 
 export function getMenuItem(token: string, branchId: string, itemId: string) {

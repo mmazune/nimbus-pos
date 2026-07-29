@@ -22,7 +22,7 @@ export function WaiterSessionGuard({ children }: WaiterSessionGuardProps) {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-page p-8">
+      <main className="flex min-h-screen items-center justify-center bg-page p-8">
         <LoadingState title="Restoring waiter session" />
       </main>
     );
@@ -30,7 +30,7 @@ export function WaiterSessionGuard({ children }: WaiterSessionGuardProps) {
 
   if (!accessToken || !isAuthenticated) {
     return (
-      <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-page p-8">
+      <main className="flex min-h-screen items-center justify-center bg-page p-8">
         <LoadingState title="Returning to login" />
       </main>
     );
@@ -38,7 +38,7 @@ export function WaiterSessionGuard({ children }: WaiterSessionGuardProps) {
 
   if (!isWaiter) {
     return (
-      <main className="flex min-h-screen min-w-[1280px] items-center justify-center bg-page p-8">
+      <main className="flex min-h-screen items-center justify-center bg-page p-8">
         <BlockedState
           title="Waiter workspace only"
           description="This frontend MVP currently supports waiter workspace only."

@@ -1,117 +1,198 @@
 # Supervisor API Matrix
 
-Status: repo-verified research update  
-Date: 2026-07-04  
-Source note: root `docs/supervisor-ui-docs/*` did not exist before this pass. Draft source files were under `Front End/supervisor_ui_docs_pack/docs/supervisor-ui-docs/*`.
+Status: Prompt 0 reconstruction verification
+Date: 2026-07-18
 
 ## Rules
 
-- Use existing endpoints only.
-- All protected branch-operational endpoints require auth and `X-Branch-Id`.
-- Use `Idempotency-Key` for BG3-wrapped/high-risk writes where supported.
-- Do not expose routes whose permissions are not present in Supervisor seed.
-- Keep approved nav only: `Floor`, `Orders`, `Reservations`, `Approvals`, `Me`.
+- Effective base URL is `{{baseUrl}}/api/...`, with `baseUrl = http://localhost:3001`.
+- Protected branch-operational endpoints require auth and `X-Branch-Id`.
+- Supervisor visible nav is Floor, Reservations, Approvals, Me.
+- Orders APIs are available for Floor-contained order work and exception lookup, but not as a visible primary tab.
+- Do not call global `/api/approvals` from Supervisor.
 
-## Permitted Supervisor Endpoints
+## Core
 
-| Area | Method | Path | Permission | DTO/query fields | Response shape | Idempotency/caveats |
-|---|---|---|---|---|---|---|
-| Auth | POST | `/api/auth/login` | public | `email`, `password`, `platform?` | tokens, user roles/permissions, session | returns 201 |
-| Auth | POST | `/api/auth/quick-pin/login` | public | `branchId`, `pin`, `platform` | tokens, user roles/permissions, session | POS desktop only |
-| Auth | GET | `/api/auth/me` | auth | none | user, roles, permissions, memberships, context, session | canonical context |
-| Auth | POST | `/api/auth/logout` | auth | none | message | safe |
-| Floor | GET | `/api/floor-plans` | `pos:floor:read` | none | floor plan list | branch-scoped |
-| Floor | GET | `/api/floor-plans/:id` | `pos:floor:read` | `id` | floor plan detail | branch-scoped |
-| Floor | GET | `/api/floor/availability` | `pos:floor:read` | none | availability/table state | branch-scoped |
-| Tables | GET | `/api/tables` | `pos:table:read` | none | table list | branch-scoped |
-| Tables | GET | `/api/tables/:id` | `pos:table:read` | `id` | table detail | branch-scoped |
-| Tables | PATCH | `/api/tables/:id/status` | `pos:table:write` | `status` enum | updated table | high-impact UI confirmation |
-| Orders | GET | `/api/pos/orders` | `pos:orders:read` | `status?`, `serviceType?`, `tableId?`, `userId?`, `excludeStatus?`, `page?`, `pageSize?` | paginated/list orders | branch-scoped |
-| Orders | GET | `/api/pos/orders/:id` | `pos:orders:read` | `id` | order detail | branch-scoped |
-| Orders | POST | `/api/pos/orders` | `pos:orders:write` | `serviceType`, `tableId?`, `notes?`, `metadata?` | created order | permitted but avoid waiter-clone UX |
-| Orders | POST | `/api/pos/orders/:id/items` | `pos:orders:write` | `menuItemId`, `menuItemServingId?`, `quantity?`, `notes?`, `metadata?` | updated order | product-gate |
-| Orders | PATCH | `/api/pos/orders/:id/items/:itemId` | `pos:orders:write` | `quantity?`, `notes?`, `metadata?` | updated item/order | product-gate |
-| Orders | DELETE | `/api/pos/orders/:id/items/:itemId` | `pos:orders:write` | ids | updated order | product-gate |
-| Orders | POST | `/api/pos/orders/:id/send` | `pos:orders:write` | `reason?` | order transition | KDS send; product-gate |
-| Orders | POST | `/api/pos/orders/:id/mark-served` | `pos:orders:write` | `reason?` | order transition | service exception only |
-| Orders | POST | `/api/pos/orders/:id/request-bill` | `pos:orders:write` | `reason?` | order transition/audit | useful for Orders |
-| Orders | POST | `/api/pos/orders/:id/void` | `pos:orders:void` | `reason?` | voided order | high impact |
-| Handoff | POST | `/api/pos/orders/merge` | `pos:order:merge` | `sourceOrderId`, `targetOrderId`, `reason?` | merged/voided source | BG3-wrapped |
-| Handoff | POST | `/api/pos/orders/:id/split-bill` | `pos:order:split` | `mode`, `count?`, `groups?`, `reason?` | allocation metadata | BG3-wrapped; not physical split |
-| Handoff | POST | `/api/pos/orders/:id/split-items` | `pos:order:split` | `items[]`, `targetTableId?`, `reason?`, `notes?` | child order | BG3-wrapped; child starts NEW |
-| Handoff | POST | `/api/pos/orders/:id/transfer-table` | `pos:order:transfer` | `targetTableId`, `reason?` | transferred order | BG3-wrapped |
-| Handoff | POST | `/api/pos/orders/:id/transfer-server` | `pos:order:transfer` | `targetUserId`, `reason?` | transferred order | needs staff selector |
-| Handoff | POST | `/api/pos/orders/:id/move-items` | `pos:order:move-items` | `targetOrderId`, `items[]`, `reason?` | updated orders | BG3-wrapped |
-| Payments | GET | `/api/pos/orders/:id/payments` | `pos:payment:read` | order id | payments summary | read in Orders |
-| Payments | POST | `/api/pos/orders/:id/close` | `pos:orders:close` | `payments[]`, `reason?` | closed order | BG3-wrapped; avoid Payments tab |
-| Payments | POST | `/api/payments/intents` | `pos:payment:intent` | `orderId`, `provider`, `amount`, `currency?`, `phoneNumber`, `idempotencyKey?`, `metadata?` | payment intent | provider-gated |
-| Payments | GET | `/api/payments/intents/:intentId` | `pos:payment:read` | id | payment intent | read |
-| Payments | GET | `/api/payments/intents/:intentId/status` | `pos:payment:read` | id | status | read |
-| Payments | POST | `/api/payments/intents/:intentId/cancel` | `pos:payment:cancel` | `reason?` | cancelled intent | exception-only |
-| Payments | POST | `/api/payments/manual-reference` | `pos:payment:manual-reference` | `orderId`, `method`, `provider?`, `amount`, `externalTransactionId`, `payerPhone?`, `postedAt?`, `note?` | payment | avoid Cashier clone |
-| Discounts | POST | `/api/pos/orders/:id/discounts` | `pos:discount:request` | `type`, `value`, `reason`, `metadata?` | discount | threshold may auto-approve |
-| Discounts | GET | `/api/pos/orders/:id/discounts` | `pos:discount:read` | `status?`, `page?`, `pageSize?` | discounts | read |
-| Discounts | GET | `/api/pos/discounts/pending` | `pos:discount:approve` | none | pending discounts | Approvals tab |
-| Discounts | GET | `/api/pos/discounts/:id` | `pos:discount:read` | id | discount detail | read |
-| Discounts | POST | `/api/pos/discounts/:id/approve` | `pos:discount:approve` | `managerPin?` | approved discount/order totals | high impact |
-| Discounts | POST | `/api/pos/discounts/:id/reject` | `pos:discount:approve` | `rejectionReason` | rejected discount | high impact |
-| Refunds | POST | `/api/pos/orders/:id/refunds` | `pos:refund:create` | `paymentId`, `amount`, `reason`, `provider?`, `metadata?` | refund | BG3-wrapped |
-| Refunds | GET | `/api/pos/orders/:id/refunds` | `pos:refund:read` | order id | refunds | read |
-| Refunds | GET | `/api/pos/refunds/:id` | `pos:refund:read` | id | refund detail | read |
-| Refunds | POST | `/api/pos/refunds/:id/approve` | `pos:refund:approve` | `managerPin?` | approved refund | high impact |
-| Void | POST | `/api/pos/orders/:id/post-close-void` | `pos:void:postclose` | `reason`, `managerPin` | void result | high impact, PIN required |
-| Reservations | GET | `/api/reservations` | `pos:reservation:read` | `status?`, `date?`, `upcoming?`, `tableId?`, `page?`, `pageSize?` | reservations | branch-scoped |
-| Reservations | GET | `/api/reservations/upcoming` | `pos:reservation:read` | none/query | upcoming reservations | Floor/Reservations |
-| Reservations | POST | `/api/reservations` | `pos:reservation:create` | customer, party, time, table/deposit/notes fields | reservation | use confirmation |
-| Reservations | GET | `/api/reservations/:id` | `pos:reservation:read` | id | reservation detail | read |
-| Reservations | PATCH | `/api/reservations/:id/confirm` | `pos:reservation:confirm` | `notes?` | confirmed reservation | high impact |
-| Reservations | PATCH | `/api/reservations/:id/seat` | `pos:reservation:seat` | `tableId?`, `createOrder?`, `orderNotes?` | seated reservation/order? | high impact |
-| Reservations | PATCH | `/api/reservations/:id/cancel` | `pos:reservation:cancel` | `reason`, `depositOutcome?` | cancelled reservation | high impact |
-| Reservations | PATCH | `/api/reservations/:id/no-show` | `pos:reservation:no-show` | `depositOutcome?`, `reason?` | no-show | high impact |
-| Reservations | PATCH | `/api/reservations/:id/assign-table` | `pos:reservation:table:assign` | `tableId` | assigned reservation | high impact |
-| Reservations | POST | `/api/reservations/:id/deposits` | `pos:reservation:deposit:record` | `amount`, `method?`, `reference?`, `paymentId?`, `notes?` | deposit | money-adjacent |
-| Reservations | GET | `/api/reservations/:id/deposits` | `pos:reservation:deposit:read` | id | deposits | read |
-| Reservations | GET | `/api/reservations/:id/events` | `pos:reservation:read` | id | event timeline | read |
-| Shifts | GET | `/api/shifts/active` | `pos:shift:read` | none | active shift | Header/Me |
-| Shifts | POST | `/api/shifts/open` | `pos:shift:open` | `notes?` | opened shift | BG3-wrapped |
-| Shifts | POST | `/api/shifts/:id/close` | `pos:shift:close` | `notes?` | closed shift | BG3-wrapped |
-| Shifts | GET | `/api/shifts/:id` | `pos:shift:read` | id | shift detail | read |
-| Shifts | GET | `/api/shifts/:id/summary` | `pos:shift:read` | id | summary | read |
-| Tills | GET | `/api/tills/active` | `pos:till:read` | none | active till | readiness only |
-| Tills | POST | `/api/tills/open` | `pos:till:open` | `tillCode`, `openingFloat`, `notes?` | opened till | BG3-wrapped; avoid Cashier clone |
-| Tills | POST | `/api/tills/:id/safe-drop` | `pos:till:safe-drop` | `amount`, `reason` | safe drop | high impact |
-| Tills | POST | `/api/tills/:id/reconcile` | `pos:till:reconcile` | `countedCash`, `varianceReason?`, `notes?` | reconciled till | high impact |
-| Tills | GET | `/api/tills/:id` | `pos:till:read` | id | till detail | read |
-| Tills | GET | `/api/tills/:id/summary` | `pos:till:read` | id | till summary | read |
-| Attendance | POST | `/api/hr/attendance/clock` | `pos:hr:attendance:clock` | `employeeId`, `notes?` | clock result | Me tab |
-| Attendance | GET | `/api/hr/attendance` | `pos:hr:attendance:read` | `employeeId?`, `status?`, `dateFrom?`, `dateTo?`, `mine?`, `skip?`, `take?` | attendance list | prefer `mine=true` for Me |
-| Leave | POST | `/api/hr/leave` | `pos:hr:leave:create` | `employeeId`, `leaveType`, `startsAt`, `endsAt`, `reason?` | request | Me |
-| Leave | GET | `/api/hr/leave` | `pos:hr:leave:read` | `employeeId?`, `status?`, `leaveType?`, `mine?`, `skip?`, `take?` | leave list | Me/Approvals |
-| Leave | PATCH | `/api/hr/leave/:id/review` | `pos:hr:leave:review` | `status`, `reviewNotes?` | reviewed leave | Approvals |
-| Swaps | POST | `/api/hr/shift-swaps` | `pos:hr:shift-swaps:create` | `requesterEmployeeId`, `targetEmployeeId`, `shiftDate`, `reason?` | swap request | needs safe target selector |
-| Swaps | GET | `/api/hr/shift-swaps` | `pos:hr:shift-swaps:read` | `employeeId?`, `status?`, `mine?`, `skip?`, `take?` | swaps | Me/Approvals |
-| Swaps | PATCH | `/api/hr/shift-swaps/:id/approve` | `pos:hr:shift-swaps:approve` | `status`, `reviewNotes?` | approved/rejected swap | Approvals |
-| Swaps | GET | `/api/hr/shift-swaps/eligible-options` | not implemented | would need current-user eligible source shifts and same-branch eligible targets | not available | final QA Outcome B: selector contract deferred; broad staff selector forbidden |
-| KDS | GET | `/api/kds/queue` | `pos:kds:read` | `station?`, `status?`, `page?`, `pageSize?` | queue | service health |
-| KDS | POST | `/api/kds/tickets/:id/mark-ready` | `pos:kds:write` | id | ticket | product-gate |
-| KDS | POST | `/api/kds/tickets/:id/recall` | `pos:kds:write` | id | ticket | product-gate |
-| Analytics | GET | `/api/analytics/anomalies` | `pos:analytics:anomalies:read` | `status?`, `type?`, `severity?`, `actorUserId?`, `limit?`, `offset?` | anomalies | Approvals/risk |
-| Analytics | GET | `/api/analytics/anomalies/:id` | `pos:analytics:anomalies:read` | id | anomaly detail | read |
-| Analytics | PATCH | `/api/analytics/anomalies/:id/acknowledge` | `pos:analytics:anomalies:acknowledge` | `resolutionNotes?` | acknowledged | Approvals |
-| Analytics | PATCH | `/api/analytics/anomalies/:id/resolve` | `pos:analytics:anomalies:acknowledge` | `resolutionNotes` | resolved | Approvals |
-| Analytics | GET | `/api/analytics/risk-dashboard` | `pos:analytics:risk-dashboard:read` | `userId?` | risk dashboard | avoid manager dashboard creep |
-| Analytics | GET | `/api/analytics/thresholds` | `pos:analytics:thresholds:read` | none | thresholds | read-only |
-| Reports | GET | `/api/reports/catalog` | `pos:reports:catalog:read` | none | catalog | no Supervisor nav tab |
+| Area | Method | Path | Permission | Supervisor use |
+|---|---|---|---|---|
+| Auth | POST | `/api/auth/login` | public | Email/password login; returns 201. |
+| Auth | POST | `/api/auth/quick-pin/login` | public | POS quick PIN login where supported. |
+| Auth | POST | `/api/auth/refresh` | auth | Session refresh. |
+| Auth | POST | `/api/auth/logout` | auth | Sign out. |
+| Auth | GET | `/api/auth/me` | auth | Canonical user, role, permission, branch, org, employee context. |
 
-## Explicitly Blocked For Supervisor
+## Floor And Tables
 
-| Area | Endpoint | Reason |
+| Method | Path | Permission | Use |
+|---|---|---|---|
+| GET | `/api/floor-plans` | `pos:floor:read` | Floor-plan context. |
+| GET | `/api/floor-plans/:id` | `pos:floor:read` | Selected plan detail. |
+| GET | `/api/floor/availability` | `pos:floor:read` | Operational table availability summary. |
+| GET | `/api/tables` | `pos:table:read` | Shared operational table grid. |
+| GET | `/api/tables/:id` | `pos:table:read` | Selected table detail. |
+| PATCH | `/api/tables/:id/status` | `pos:table:write` | Supervisor table status action, confirmation required. |
+
+## Orders And Exception Workspace
+
+| Method | Path | Permission | Use |
+|---|---|---|---|
+| GET | `/api/pos/orders` | `pos:orders:read` | Active table orders and exception lookup. Query supports `status`, `serviceType`, `tableId`, `userId`, `excludeStatus`, `page`, `pageSize`. **Prompt 3B2: used by Find order** (one bounded branch page, pageSize 25; Active = `excludeStatus=CLOSED,VOIDED`). No order-number/date-range/free-text search — backend has none. |
+| GET | `/api/pos/orders/:id` | `pos:orders:read` | Selected order detail. **Prompt 3B2: also the exact-order-ID fallback for Find order** (id-only). |
+| POST | `/api/pos/orders` | `pos:orders:write` | Supervisor exception creation only, not Waiter clone. |
+| POST | `/api/pos/orders/:id/items` | `pos:orders:write` | Exception item adjustment, product-gated. |
+| PATCH | `/api/pos/orders/:id/items/:itemId` | `pos:orders:write` | Exception item adjustment, product-gated. |
+| DELETE | `/api/pos/orders/:id/items/:itemId` | `pos:orders:write` | Exception item removal, product-gated. |
+| POST | `/api/pos/orders/:id/send` | `pos:orders:write` | KDS send exception, product-gated. |
+| POST | `/api/pos/orders/:id/mark-served` | `pos:orders:write` | Service-state exception. **Prompt 3A: LIVE** (READY→SERVED, explicit confirmation, optional reason; no Idempotency-Key — not BG3-wrapped). |
+| POST | `/api/pos/orders/:id/request-bill` | `pos:orders:write` | Bill-request exception. **Prompt 3A: LIVE** (no body; audit-only, duplicate-safe; no Idempotency-Key — not BG3-wrapped). |
+| POST | `/api/pos/orders/:id/void` | `pos:orders:void` | Active order void. **Prompt 3B3A: LIVE** (Adjustments group; HTTP 200, **not** BG3; shared danger confirm, `{ reason?: string (<=500) }` required in UI; valid NEW/SENT/IN_KITCHEN/READY, SERVED→409, CLOSED/VOIDED rejected; backend sets `status=VOIDED` only + auto-releases idle DINE_IN table; UI-only payment gate. Distinct from post-close-void/refund/complimentary). |
+
+## Handoff
+
+| Method | Path | Permission | Use |
+|---|---|---|---|
+| POST | `/api/pos/orders/merge` | `pos:order:merge` | Merge source into target. BG3 idempotency. **Prompt 3B1: LIVE** (source→VOIDED, blocked if source has payments). |
+| POST | `/api/pos/orders/:id/split-bill` | `pos:order:split` | Non-physical bill allocation (metadata only; no new orders, no payment). BG3 idempotency. **Prompt 3B1: LIVE**. |
+| POST | `/api/pos/orders/:id/split-items` | `pos:order:split` | Physical child order split (child NEW; re-send to KDS). BG3 idempotency. **Prompt 3B1: LIVE**. |
+| POST | `/api/pos/orders/:id/transfer-table` | `pos:order:transfer` | Move order to another table. BG3 optional idempotency (Idempotency-Key attached). **Prompt 3B2: LIVE** (bounded branch-scoped target selector excluding current table with non-blocking occupied/reserved warnings, source+target Floor cache reassignment, URL re-anchor). Body `{ targetTableId, reason? (<=200) }`; backend only sets `order.tableId` — no occupancy/reservation/capacity validation, no table-status change. |
+| POST | `/api/pos/orders/:id/transfer-server` | `pos:order:transfer` | Move order to another server; **available but not used — deferred (Outcome B)**. No safe branch-scoped server selector. ⚠️ The single `pos:order:transfer` permission gates both transfer-table and transfer-server, so granting it makes this endpoint API-reachable (audit-logged, active-same-branch membership required) even though no UI exposes it. |
+| POST | `/api/pos/orders/:id/move-items` | `pos:order:move-items` | Move selected items to an existing open target order. BG3 idempotency. **Prompt 3B1: LIVE**. |
+
+> **RBAC (Prompt 3B1, 2026-07-27):** the Supervisor role was granted `pos:order:split`,
+> `pos:order:merge`, `pos:order:move-items` (seed mapping to existing permission
+> rows; re-seeded).
+>
+> **RBAC (Prompt 3B2, 2026-07-28):** the Supervisor role was additionally granted
+> `pos:order:transfer` (user-authorized seed mapping to the existing permission row;
+> no schema/migration; requires re-seed to apply). This enables **transfer-table** in
+> the UI. ⚠️ Because `pos:order:transfer` is a single backend permission covering both
+> transfer-table and transfer-server, the **transfer-server** endpoint is now
+> API-reachable even though it stays UI-hidden (Outcome B).
+
+## Payments, Refunds, Voids
+
+| Method | Path | Permission | Supervisor use |
+|---|---|---|---|
+| GET | `/api/pos/orders/:id/payments` | `pos:payment:read` | Read-only payment context. |
+| GET | `/api/pos/orders/:id/refunds` | `pos:refund:read` | Read-only refund context. |
+| GET | `/api/pos/refunds/:id` | `pos:refund:read` | Refund detail when an id is known. |
+| POST | `/api/pos/orders/:id/refunds` | `pos:refund:create` | Defer from MVP; Cashier/manager workflow risk. |
+| POST | `/api/pos/refunds/:id/approve` | `pos:refund:approve` | Defer until pending-refund queue exists. |
+| POST | `/api/pos/orders/:id/post-close-void` | `pos:void:postclose` | Defer until candidate queue and PIN UX exist. |
+| POST | `/api/pos/orders/:id/close` | `pos:orders:close` | Cashier-owned; do not expose as Supervisor MVP checkout. |
+
+## Discounts
+
+| Method | Path | Permission | Use |
+|---|---|---|---|
+| POST | `/api/pos/orders/:id/discounts` | `pos:discount:request` | Request discount from selected order. **Prompt 3B3A: LIVE** (Adjustments group; HTTP 201, **not** BG3; `{ type: PERCENTAGE\|FIXED, value, reason (required, <=500), metadata? }`; basis = order **subtotal**; backend amount-based auto-approval within `OrgSettings.discountApprovalThreshold` (default 5000) → APPROVED (totals mutate) else PENDING; response is the bare Discount; UI shows a labelled estimate, re-fetches order detail, blocks a 2nd request while one is PENDING; SERVED not discountable; UI-only payment gate). **Prompt 3B3B:** also backs **Complimentary** (Outcome B) — a whole-order `PERCENTAGE value=100` + `metadata { complimentary:true, category }` + required reason; whole-order only (no line targeting); threshold decides PENDING/APPROVED; payment-gated; not a void/refund. |
+| GET | `/api/pos/orders/:id/discounts` | `pos:discount:read` | Order discount history. **Prompt 3B3A: LIVE** (feeds the read-only Discounts panel — type/value/status/reason/requester/created/reviewer. **Prompt 3B3B:** PENDING rows now carry inline Approve/Reject controls (with `pos:discount:approve`); APPROVED/REJECTED rows stay terminal read-only). |
+| GET | `/api/pos/discounts/pending` | `pos:discount:approve` | Approvals queue. **Prompt 3B3A:** feeds the Supervisor Approvals discount **count** (Supervisor already holds `pos:discount:approve`); a PENDING request from `/discounts` surfaces here. **Prompt 3B3B:** approve/reject are now live as inline decisions on PENDING rows in the order-workspace Discounts panel (the Approvals **page** stays read-only). |
+| GET | `/api/pos/discounts/:id` | `pos:discount:read` | Approval detail. |
+| POST | `/api/pos/discounts/:id/approve` | `pos:discount:approve` | Approve a PENDING discount. **Prompt 3B3B: LIVE** (inline Approve on PENDING Discounts-panel rows from the **order workspace**, not the Approvals page; HTTP 200, **not** BG3; PENDING-only else 409 and the order must stay discountable; **recalcs order totals** (latest approved wins) so **payment-gated** in the UI; optional `{ managerPin? (<=8) }` re-auths the approver's **own** quick-PIN (sets `managerPinVerified`) — UI does not collect it; bare response, so re-fetch order+discounts. Backend **permits self-approval** — UI matches and flags it). |
+| POST | `/api/pos/discounts/:id/reject` | `pos:discount:approve` | Reject a PENDING discount. **Prompt 3B3B: LIVE** (inline Reject on PENDING rows; HTTP 200, **not** BG3; PENDING-only; `{ rejectionReason: string (required, <=500) }`; does **not** change order totals, so **not** payment-gated; bare response, status REJECTED). |
+
+## Reservations
+
+| Method | Path | Permission | Use |
+|---|---|---|---|
+| GET | `/api/reservations` | `pos:reservation:read` | Active/history reservation views. **Prompt 4A:** query supports `scope=active\|history` (server-side terminal/active split), `status`, `date`, `from`, `to`, `upcoming`, `tableId`, `page`, `pageSize` (default 25, **clamped max 100**). Response `{data,total,page,pageSize,totalPages,scope}`; rows carry derived `overdue`/`overdueByMinutes`. |
+| GET | `/api/reservations/upcoming` | `pos:reservation:read` | Upcoming active reservations. |
+| POST | `/api/reservations` | `pos:reservation:create` | Create reservation, product-approved. |
+| GET | `/api/reservations/:id` | `pos:reservation:read` | Detail. |
+| PATCH | `/api/reservations/:id/confirm` | `pos:reservation:confirm` | Prompt 5 action. |
+| PATCH | `/api/reservations/:id/seat` | `pos:reservation:seat` | Prompt 5 action; can create linked order. |
+| PATCH | `/api/reservations/:id/cancel` | `pos:reservation:cancel` | Prompt 5 action; deposit outcome required by DTO. |
+| PATCH | `/api/reservations/:id/no-show` | `pos:reservation:no-show` | Prompt 5 action. |
+| POST | `/api/reservations/:id/complete` | `pos:reservation:update` | **Prompt 4A: LIVE.** Manual SEATED → COMPLETED (200). Idempotent, optional `note`; valid with or without a linked order. Also driven automatically by order close (linked via `seatedOrderId`). Permission pre-existed on Supervisor/Owner/Manager — no seed change. |
+| PATCH | `/api/reservations/:id/assign-table` | `pos:reservation:table:assign` | Prompt 5 action. |
+| POST | `/api/reservations/:id/deposits` | `pos:reservation:deposit:record` | Money-adjacent action; confirmation required. |
+| GET | `/api/reservations/:id/deposits` | `pos:reservation:deposit:read` | Deposit detail. |
+| GET | `/api/reservations/:id/events` | `pos:reservation:read` | Reservation timeline. |
+
+> **Prompt 4B (2026-07-28) — reservations UI now consumes these contracts.** The
+> Supervisor Reservations page is a master-detail workspace with four UI **views**
+> (Arriving/Seated/Attention from **one** `GET /api/reservations?scope=active` query,
+> page size 50; **History** from a lazy `GET /api/reservations?scope=history`, backend
+> default 25 / max 100). Endpoints consumed and their permissions:
+>
+> | Method | Path | Permission | Prompt 4B use |
+> |---|---|---|---|
+> | GET | `/api/reservations?scope=active` | `pos:reservation:read` | Arriving/Seated/Attention (one bounded query; no browser merge). |
+> | GET | `/api/reservations?scope=history` | `pos:reservation:read` | History view (lazy, server-paginated). |
+> | GET | `/api/reservations/:id` | `pos:reservation:read` | Workspace detail (contact shown here only). |
+> | GET | `/api/reservations/:id/events` | `pos:reservation:read` | Workspace timeline. |
+> | GET | `/api/reservations/:id/deposits` | `pos:reservation:deposit:read` | Deposits **read-only** in workspace. |
+> | POST | `/api/reservations` | `pos:reservation:create` | Create (optional `depositRequired` amount only; **no** capture). |
+> | PATCH | `/api/reservations/:id/confirm` | `pos:reservation:confirm` | PENDING→CONFIRMED. |
+> | PATCH | `/api/reservations/:id/assign-table` | `pos:reservation:table:assign` | PENDING/CONFIRMED/SEATED. |
+> | PATCH | `/api/reservations/:id/seat` | `pos:reservation:seat` | CONFIRMED→SEATED (table required). |
+> | PATCH | `/api/reservations/:id/cancel` | `pos:reservation:cancel` | active→CANCELLED (reason required). |
+> | PATCH | `/api/reservations/:id/no-show` | `pos:reservation:no-show` | PENDING/CONFIRMED→NO_SHOW (**never** SEATED, never automatic). |
+> | POST | `/api/reservations/:id/complete` | `pos:reservation:update` | SEATED→COMPLETED (manual). |
+>
+> Action availability mirrors backend `VALID_TRANSITIONS` exactly; terminal rows are
+> read-only. **No permission and no backend change** — the Supervisor role already
+> holds every one of these grants (seed Supervisor block). `POST /api/reservations/:id/deposits`
+> (`pos:reservation:deposit:record`) stays **unused** — deposit capture / payment is
+> deferred. ⚠️ **Shared-Neon gate:** `POST /.../complete` (and auto-completion on order
+> close) **errors on shared Neon** until migration `20260518000000_prompt4a_reservation_completed_event`
+> is deployed (the `production` branch enum still lacks `COMPLETED`); all other actions
+> work on shared today. **→ Deployed in Prompt 4C (below) — gate cleared.**
+
+> **Prompt 4C (2026-07-29) — shared-Neon migration cutover + seed (gate cleared).**
+> Under explicit user authorization, migration
+> `20260518000000_prompt4a_reservation_completed_event` was deployed to the shared Neon
+> `production` branch with `prisma migrate deploy` (repo script `db:migrate:deploy` —
+> **not** `db:migrate`, which is `migrate dev` and unsafe on shared/production). SQL:
+> `ALTER TYPE "ReservationEventType" ADD VALUE IF NOT EXISTS 'COMPLETED' AFTER 'SEATED'`.
+> Post-deploy verification (Neon MCP): migration recorded in `_prisma_migrations`
+> (finished, not rolled back), checksum matches the repo file, enum now contains
+> `COMPLETED` (10 values, all 9 prior retained), 58 migrations / 0 rolled back / 0
+> unfinished, reservation row counts unchanged (126). **Effect:** `POST /api/reservations/:id/complete`
+> and auto-completion-on-order-close now **work on shared Neon** — every reservation
+> lifecycle endpoint is fully operable there. A user-authorized idempotent `db:seed`
+> also granted Supervisor the `pos:order:transfer` mapping (role_permissions 835→836,
+> +1), so `POST /api/pos/orders/:id/transfer-table` is now **functional on shared Neon**
+> (previously 403 there — long-standing seed residual). Net shared-Neon change: +1
+> migration, +1 role_permission; reservation data unchanged; pre-migration recovery
+> branch retained (Postgres enum values cannot be dropped). **Outstanding:** the live
+> authenticated browser + disposable-branch API matrix was **not** completed (isolation
+> slip caught and reverted) — the contracts remain proven by 67/67 reservation+order
+> Jest tests and the compiled Prompt 4B Playwright suite; no code/contract/Postman change.
+
+## Workforce And Me
+
+| Method | Path | Permission | Use |
+|---|---|---|---|
+| GET | `/api/shifts/active` | `pos:shift:read` | Readiness and Me. |
+| POST | `/api/shifts/open` | `pos:shift:open` | Me action where role allows. |
+| POST | `/api/shifts/:id/close` | `pos:shift:close` | Me action where role allows. |
+| GET | `/api/hr/attendance` | `pos:hr:attendance:read` | Me history with `mine=true`; ops read if product-approved. |
+| POST | `/api/hr/attendance/clock` | `pos:hr:attendance:clock` | Self punch; backend enforces linked employee. |
+| GET | `/api/hr/leave` | `pos:hr:leave:read` | Me and Approvals. |
+| POST | `/api/hr/leave` | `pos:hr:leave:create` | Self leave request. |
+| PATCH | `/api/hr/leave/:id/review` | `pos:hr:leave:review` | Prompt 6 approval action. |
+| GET | `/api/hr/shift-swaps` | `pos:hr:shift-swaps:read` | Me and Approvals. |
+| POST | `/api/hr/shift-swaps` | `pos:hr:shift-swaps:create` | Deferred until safe selector exists. |
+| PATCH | `/api/hr/shift-swaps/:id/approve` | `pos:hr:shift-swaps:approve` | Prompt 6 approval action. |
+
+## Analytics Approvals
+
+| Method | Path | Permission | Use |
+|---|---|---|---|
+| GET | `/api/analytics/anomalies` | `pos:analytics:anomalies:read` | Open anomaly queue. |
+| GET | `/api/analytics/anomalies/:id` | `pos:analytics:anomalies:read` | Detail. |
+| PATCH | `/api/analytics/anomalies/:id/acknowledge` | `pos:analytics:anomalies:acknowledge` | Prompt 6 action. |
+| PATCH | `/api/analytics/anomalies/:id/resolve` | `pos:analytics:anomalies:acknowledge` | Prompt 6 action. |
+
+## Explicit Exclusions
+
+| Area | Endpoint family | Reason |
 |---|---|---|
-| Global approvals | `/api/approvals*` | Supervisor lacks `approvals:read` / `approvals:decide` |
-| Audit timeline | `/api/audit/timeline` | Supervisor lacks `audit:read` |
-| Receipts | `/api/receipts*` | Supervisor lacks `pos:receipt:*` |
-| Devices | `/api/devices*` | Supervisor lacks `devices:*` |
-| Accounting/AP/AR/GL | `/api/accounting*` and related modules | no Supervisor accounting permissions |
-| Franchise | `/api/franchise*` | no Supervisor franchise permissions |
-| Billing/PesaPal | `/api/billing*`, `/api/billing/pesapal*` | owner SaaS billing only |
-| Public payments | `/api/public/payments*` | pending MTN/Airtel provider confirmation |
+| Visible Orders nav | `/supervisor/orders` as nav | Product decision: order work enters from Floor. |
+| Global approvals | `/api/approvals*` | Supervisor lacks global approval permissions; use domain APIs. |
+| Audit timeline | `/api/audit/timeline` | Not a Supervisor MVP surface. |
+| Receipts/devices/printers | `/api/receipts*`, `/api/devices*` | Cashier/admin/hardware boundary. |
+| Accounting/franchise/billing | `/api/accounting*`, `/api/franchise*`, `/api/billing*` | Outside Supervisor MVP. |
+| Reports primary tab | `/api/reports*` | Not in four-tab nav. |

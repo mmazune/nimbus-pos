@@ -44,6 +44,10 @@ Known caveats:
 - waiter does not perform reservation admin actions;
 - waiter does not perform manager/cashier-only handoff/order surgery.
 
+## Shared Floor implementation note (2026-07-18)
+
+The Waiter Floor blueprint is now implemented through shared operational components also consumed by Supervisor. Search covers table/assigned staff presentation, filters are All/Available/Occupied/Reserved/Mine, and floor-plan selection appears when multiple plans exist. The card keeps complete identifiers visible and omits guest/order-number detail. Waiter selection still opens the existing instant menu/order workspace with its cached handoff and ownership behavior.
+
 ---
 
 ## 3. Waiter shell
@@ -73,11 +77,10 @@ Right:
 Fixed bottom navigation with exactly:
 
 1. Floor.
-2. Orders.
-3. Reservations.
-4. Me.
+2. Reservations.
+3. Me.
 
-No Menu tab.
+No Orders, Menu, Dashboard, Payments, or More tab.
 
 ### 3.3 Main area
 
@@ -211,10 +214,11 @@ Show:
 
 - `Occupied`;
 - guest name if available;
-- order number;
-- short order status;
-- bill state;
+- assigned waiter formatted as `FirstName L.`;
+- separate `Mine` badge for the logged-in waiter;
 - capacity.
+
+Do not show order number, `ORDER`, order status, bill state, or a nested order panel on table cards.
 
 Action:
 
@@ -381,11 +385,17 @@ After send:
 
 ---
 
-## 8. Orders tab
+## 8. Legacy Orders routes
 
 ### 8.1 Purpose
 
-Show waiter’s own order queue.
+Orders is no longer a visible waiter tab. Waiter-owned active service is selected from its linked table on Floor.
+
+Compatibility behavior:
+
+- `/waiter/orders` redirects to Floor;
+- `/waiter/orders/new?tableId=...` redirects to the selected table on Floor;
+- `/waiter/orders/[orderId]` resolves its linked table before redirecting, blocks other-waiter ownership, and shows a truthful fallback if no accessible table exists.
 
 Backend list should use:
 
@@ -393,7 +403,7 @@ Backend list should use:
 GET /api/pos/orders?userId=me&excludeStatus=NEW
 ```
 
-### 8.2 Filters
+### 8.2 Retained queue-component filters (not navigation)
 
 - Active;
 - Sent;
@@ -403,7 +413,7 @@ GET /api/pos/orders?userId=me&excludeStatus=NEW
 
 No Draft filter.
 
-### 8.3 Order card fields
+### 8.3 Retained queue-component fields
 
 Show only MVP fields:
 
@@ -415,7 +425,7 @@ Show only MVP fields:
 - total;
 - bill state.
 
-### 8.4 Tapping order
+### 8.4 Legacy order selection
 
 Opens order detail/edit for waiter-owned order.
 
@@ -520,27 +530,15 @@ Keep identity/session utilities out of service screens.
 
 ### 11.2 Show
 
-Identity:
+The page uses a premium operational profile hierarchy:
 
-- waiter name;
-- avatar;
-- role;
-- branch;
-- service area;
-- current time.
-
-Session:
-
-- shift state;
-- start shift;
-- end shift;
-- attendance status.
-
-Secondary:
-
-- request leave;
-- request shift swap;
-- logout.
+1. role-aware profile hero with verified name, initials, account identifier, branch, optional assigned service area, and shift state;
+2. one shift section with start time, elapsed duration, branch, shift note, operational warning, and exactly one Start shift or End shift action;
+3. concise attendance history;
+4. current/recent leave plus a focused request form when supported;
+5. incoming and outgoing shift-swap history;
+6. branch/account context;
+7. session context and Sign out.
 
 ### 11.3 Rules
 
@@ -549,6 +547,12 @@ Secondary:
 - no reports;
 - no accounting;
 - no manager settings.
+- no fabricated avatar or service area;
+- no raw internal IDs;
+- one employee-link capability notice at most;
+- dependent sections use compact unavailable states and do not repeat the primary notice;
+- abnormal long-running or missing-start shifts are labeled `Shift issue` and are never changed automatically;
+- status always includes text and is not color-only.
 
 ---
 
@@ -629,6 +633,12 @@ Waiter handoff/admin order surgery is not in waiter MVP.
 
 Waiter requests bill. Cashier/payment role completes payment/close unless backend explicitly allows waiter close later.
 
+### Sent-order additions
+
+The current backend does not expose per-line sent state or a dedicated additions-dispatch endpoint.
+The UI must not call the initial send transition again from `SENT` or imply that later lines reached
+KDS. Keep sent-order item mutations blocked until a safe backend contract exists.
+
 ---
 
 ## 14. Acceptance criteria
@@ -646,9 +656,23 @@ Waiter UI is acceptable when:
 9. Occupied other-waiter table blocks edit.
 10. Menu is not a nav tab.
 11. Item notes are item-level only.
-12. Orders tab shows own orders only.
+12. No Orders tab is visible; table-linked order work opens from Floor.
 13. Request bill is present.
 14. Receipt send is caveated.
 15. Me tab handles shift/session utilities.
 16. Idle timeout logs out.
 17. Unsupported actions are hidden or blocked.
+
+---
+
+## 15. Full-screen order-entry screen
+
+The selected order replaces normal Floor content. The top bar contains Back to Floor, complete table identifier, order state, Mine/ownership, item count, and running total. The fixed desktop body is:
+
+- left: API section switcher and browse-group rail;
+- centre: API subgroup row, whole-menu search, and minimal item grid;
+- right: persistent active-order lines, returned totals, Send to kitchen/bar, bill, and receipt access.
+
+Clearing search restores the previously active group/subgroup. The UI never displays internal backend categories, tax categories, stations, or IDs. Unavailable items are not selectable.
+
+The item configurator is a full-height side sheet. Required/optional state, min/max guidance, Included/price-delta copy, quantity, serving, and item comment are visible together. Required and maximum selection constraints are enforced before Add/Update. Existing-line serving is read-only under the current PATCH contract.

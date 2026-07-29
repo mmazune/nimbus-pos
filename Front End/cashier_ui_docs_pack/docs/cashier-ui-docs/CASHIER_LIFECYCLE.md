@@ -4,6 +4,10 @@ Status: Draft v1
 Date: 2026-07-01  
 Purpose: exhaustive cashier MVP lifecycle and action contract
 
+## Shared operational shell status (2026-07-18)
+
+Cashier consumes the shared `OperationalShell`, `OperationalHeader`, `OperationalBottomNav`, `CurrentTime`, navigation presentation, and canonical operational icon registry also used by Waiter and Supervisor. Cashier navigation remains Queue, Receipts, Till, Me. Cashier guards, shift/till readiness, payment behavior, permissions, queries, and mutations remain role-owned; the shared-shell migration does not change settlement scope.
+
 ## 1. Main lifecycle
 
 ```txt

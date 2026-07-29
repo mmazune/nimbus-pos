@@ -173,7 +173,7 @@ export function SupervisorApprovalDetailPanel({
         <div className="mt-4 grid gap-2">
           {item.orderId ? (
             <Link
-              href={`/supervisor/orders?orderId=${encodeURIComponent(item.orderId)}`}
+              href={`/supervisor/floor?orderId=${encodeURIComponent(item.orderId)}`}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-surface px-4 text-base font-semibold text-text-primary shadow-subtle transition-[background-color,box-shadow,transform] duration-150 ease-out hover:bg-brand-white focus-visible:shadow-focus active:scale-[0.96]"
             >
               <ArrowSquareOut size={22} weight="bold" aria-hidden />

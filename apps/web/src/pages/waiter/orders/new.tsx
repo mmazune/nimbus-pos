@@ -1,16 +1,17 @@
 import type { GetServerSideProps } from "next";
 
-import { WaiterNewOrderScreen } from "@/components/waiter/orders";
-import { WaiterShell } from "@/components/waiter/shell";
-
-export const getServerSideProps: GetServerSideProps = async () => ({
-  props: {},
-});
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+  const tableId = typeof query.tableId === "string" ? query.tableId : "";
+  return {
+    redirect: {
+      destination: tableId
+        ? `/waiter/floor?tableId=${encodeURIComponent(tableId)}`
+        : "/waiter/floor",
+      permanent: false,
+    },
+  };
+};
 
 export default function WaiterNewOrderPage() {
-  return (
-    <WaiterShell>
-      <WaiterNewOrderScreen />
-    </WaiterShell>
-  );
+  return null;
 }

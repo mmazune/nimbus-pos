@@ -137,6 +137,11 @@ export type SupervisorDiscount = {
   value?: string | number | null;
   reason?: string | null;
   status?: "PENDING" | "APPROVED" | "REJECTED" | string | null;
+  rejectionReason?: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  managerPinVerified?: boolean | null;
+  metadata?: Record<string, unknown> | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   createdBy?: SupervisorOrderUser | null;
@@ -260,6 +265,342 @@ export function fetchSupervisorOrderDiscounts(token: string, branchId: string, o
   return apiRequest<SupervisorPaginatedDiscounts>(`/api/pos/orders/${orderId}/discounts?pageSize=50`, {
     token,
     branchId,
+  });
+}
+
+// ── Prompt 3A service actions (Supervisor, pos:orders:write) ──
+// Both are safe, non-financial order-service exceptions. Neither backend endpoint
+// is wrapped in the BG3 reliability guard, so neither honors an Idempotency-Key —
+// we intentionally do NOT attach one. Duplicate submissions are prevented in the
+// UI via mutation-pending state, not via idempotency keys.
+
+export type SupervisorRequestBillResult = {
+  orderId: string;
+  orderNumber?: string | null;
+  status: SupervisorOrderStatus | string;
+  billRequested: boolean;
+  requestedAt: string;
+};
+
+// POST /api/pos/orders/:id/request-bill — no request body; audit-only on the
+// backend (does not mutate order/payment state). Returns the bill-request receipt.
+export function requestSupervisorOrderBill(token: string, branchId: string, orderId: string) {
+  return apiRequest<SupervisorRequestBillResult>(`/api/pos/orders/${orderId}/request-bill`, {
+    method: "POST",
+    token,
+    branchId,
+  });
+}
+
+// POST /api/pos/orders/:id/mark-served — order-level READY → SERVED transition.
+// TransitionOrderDto accepts an optional reason (recorded in the audit metadata).
+export function markSupervisorOrderServed(
+  token: string,
+  branchId: string,
+  orderId: string,
+  reason?: string,
+) {
+  const trimmed = reason?.trim();
+  return apiRequest<SupervisorOrderDetail>(`/api/pos/orders/${orderId}/mark-served`, {
+    method: "POST",
+    token,
+    branchId,
+    body: trimmed ? { reason: trimmed } : {},
+  });
+}
+
+// ── Prompt 3B1 handoff actions (Supervisor: pos:order:split / merge / move-items) ──
+// All four are BG3-wrapped with idempotencyMode "optional" — they honor an
+// Idempotency-Key header when present. We attach one (from the idempotency-intent
+// utility) so duplicate submits/retries are de-duplicated server-side.
+
+function idempotencyHeaders(key?: string): Record<string, string> | undefined {
+  return key ? { "Idempotency-Key": key } : undefined;
+}
+
+export type SupervisorSplitBillMode = "EQUAL" | "CUSTOM";
+
+export type SupervisorSplitBillGroupInput = { label?: string; amount?: string };
+
+export type SupervisorSplitBillInput = {
+  mode: SupervisorSplitBillMode;
+  count?: number;
+  groups?: SupervisorSplitBillGroupInput[];
+  reason?: string;
+};
+
+export type SupervisorSplitBillGroup = { groupId: string; label: string; amount: string };
+
+export type SupervisorSplitBillResult = {
+  ok: boolean;
+  action: string;
+  orderId: string;
+  splitMode: SupervisorSplitBillMode;
+  splitGroups: SupervisorSplitBillGroup[];
+  totals: { subtotal: string; tax: string; discount: string; total: string };
+  amountAllocated: string;
+  amountRemaining: string;
+  outstandingBalance: string;
+  note?: string;
+};
+
+// POST /api/pos/orders/:id/split-bill — non-physical payable allocation groups
+// stored on order metadata. Order/items/taxes/KDS are unchanged.
+export function splitSupervisorBill(
+  token: string,
+  branchId: string,
+  orderId: string,
+  input: SupervisorSplitBillInput,
+  idempotencyKey?: string,
+) {
+  return apiRequest<SupervisorSplitBillResult>(`/api/pos/orders/${orderId}/split-bill`, {
+    method: "POST",
+    token,
+    branchId,
+    headers: idempotencyHeaders(idempotencyKey),
+    body: input,
+  });
+}
+
+export type SupervisorItemSelectionInput = { orderItemId: string; quantity: number };
+
+export type SupervisorSplitItemsInput = {
+  items: SupervisorItemSelectionInput[];
+  targetTableId?: string;
+  reason?: string;
+  notes?: string;
+};
+
+export type SupervisorMovedSummary = {
+  sourceItemId?: string;
+  targetItemId?: string;
+  quantity: number;
+};
+
+export type SupervisorSplitItemsResult = {
+  ok: boolean;
+  action: string;
+  sourceOrder: Partial<SupervisorOrderDetail> | null;
+  childOrder: SupervisorOrderDetail | null;
+  movedItems: SupervisorMovedSummary[];
+  kds?: { strategy?: string; note?: string };
+};
+
+// POST /api/pos/orders/:id/split-items — physical split into a NEW child order.
+export function splitSupervisorItems(
+  token: string,
+  branchId: string,
+  orderId: string,
+  input: SupervisorSplitItemsInput,
+  idempotencyKey?: string,
+) {
+  return apiRequest<SupervisorSplitItemsResult>(`/api/pos/orders/${orderId}/split-items`, {
+    method: "POST",
+    token,
+    branchId,
+    headers: idempotencyHeaders(idempotencyKey),
+    body: input,
+  });
+}
+
+export type SupervisorMoveItemsInput = {
+  targetOrderId: string;
+  items: SupervisorItemSelectionInput[];
+  reason?: string;
+};
+
+export type SupervisorMoveItemsResult = {
+  ok: boolean;
+  action: string;
+  sourceOrder: SupervisorOrderDetail | null;
+  targetOrder: SupervisorOrderDetail | null;
+  movedItems: SupervisorMovedSummary[];
+  kds?: { strategy?: string; note?: string };
+};
+
+// POST /api/pos/orders/:id/move-items — move items to an existing open target order.
+export function moveSupervisorItems(
+  token: string,
+  branchId: string,
+  orderId: string,
+  input: SupervisorMoveItemsInput,
+  idempotencyKey?: string,
+) {
+  return apiRequest<SupervisorMoveItemsResult>(`/api/pos/orders/${orderId}/move-items`, {
+    method: "POST",
+    token,
+    branchId,
+    headers: idempotencyHeaders(idempotencyKey),
+    body: input,
+  });
+}
+
+export type SupervisorMergeInput = {
+  sourceOrderId: string;
+  targetOrderId: string;
+  reason?: string;
+};
+
+export type SupervisorMergeResult = {
+  ok: boolean;
+  action: string;
+  sourceOrder: (Partial<SupervisorOrderDetail> & { mergedIntoOrderId?: string | null }) | null;
+  targetOrder: SupervisorOrderDetail | null;
+  moved?: { itemRowsMoved: number; totalQuantityMoved: number };
+  kds?: { strategy?: string; note?: string };
+};
+
+// POST /api/pos/orders/merge — source becomes VOIDED (mergedIntoOrderId → target).
+export function mergeSupervisorOrders(
+  token: string,
+  branchId: string,
+  input: SupervisorMergeInput,
+  idempotencyKey?: string,
+) {
+  return apiRequest<SupervisorMergeResult>(`/api/pos/orders/merge`, {
+    method: "POST",
+    token,
+    branchId,
+    headers: idempotencyHeaders(idempotencyKey),
+    body: input,
+  });
+}
+
+export type SupervisorTransferTableInput = {
+  targetTableId: string;
+  reason?: string;
+};
+
+export type SupervisorTransferTableResult = {
+  ok: boolean;
+  action: string;
+  orderId: string;
+  previousTableId: string | null;
+  newTableId: string;
+  newTableLabel: string | null;
+  reason: string | null;
+};
+
+// POST /api/pos/orders/:id/transfer-table — reassigns the order's table
+// (order.tableId only). Backend returns HTTP 200 and honors an optional
+// Idempotency-Key (BG3, idempotencyMode "optional"). The backend does NOT
+// validate target occupancy / reservation / capacity and does NOT change table
+// status — it only moves the order. Target must be an active table in the same
+// branch (else 404); the same table is rejected (400); a closed/voided source is
+// rejected (409).
+export function transferSupervisorOrderTable(
+  token: string,
+  branchId: string,
+  orderId: string,
+  input: SupervisorTransferTableInput,
+  idempotencyKey?: string,
+) {
+  const trimmedReason = input.reason?.trim();
+  return apiRequest<SupervisorTransferTableResult>(`/api/pos/orders/${orderId}/transfer-table`, {
+    method: "POST",
+    token,
+    branchId,
+    headers: idempotencyHeaders(idempotencyKey),
+    body: {
+      targetTableId: input.targetTableId,
+      ...(trimmedReason ? { reason: trimmedReason } : {}),
+    },
+  });
+}
+
+// ── Prompt 3B3A financial adjustments (Supervisor) ──
+// Neither endpoint is BG3-wrapped, so neither honors an Idempotency-Key — duplicate
+// submission is prevented in the UI via mutation-pending state, not idempotency keys.
+
+export type SupervisorVoidOrderResult = Partial<SupervisorOrderDetail> & {
+  id: string;
+  status: SupervisorOrderStatus | string;
+};
+
+// POST /api/pos/orders/:id/void — active-order void (NOT a refund, NOT complimentary,
+// NOT post-close void). TransitionOrderDto: reason optional overall but backend-
+// required for IN_KITCHEN/READY. HTTP 200. Returns the bare updated order (status
+// VOIDED); items/totals unchanged; a DINE_IN table is auto-released if it becomes idle.
+export function voidSupervisorOrder(token: string, branchId: string, orderId: string, reason?: string) {
+  const trimmed = reason?.trim();
+  return apiRequest<SupervisorVoidOrderResult>(`/api/pos/orders/${orderId}/void`, {
+    method: "POST",
+    token,
+    branchId,
+    body: trimmed ? { reason: trimmed } : {},
+  });
+}
+
+export type SupervisorDiscountType = "PERCENTAGE" | "FIXED";
+
+export type SupervisorDiscountRequestInput = {
+  type: SupervisorDiscountType;
+  value: number;
+  reason: string;
+  metadata?: Record<string, unknown>;
+};
+
+// POST /api/pos/orders/:id/discounts — order-level discount REQUEST (basis = subtotal).
+// HTTP 201. The backend decides the status: it AUTO-APPROVES when the amount is within
+// the org discount-approval threshold (default 5000), else returns PENDING. The response
+// is the bare Discount row and does NOT include updated order totals — re-fetch the order.
+export function requestSupervisorOrderDiscount(
+  token: string,
+  branchId: string,
+  orderId: string,
+  input: SupervisorDiscountRequestInput,
+) {
+  return apiRequest<SupervisorDiscount>(`/api/pos/orders/${orderId}/discounts`, {
+    method: "POST",
+    token,
+    branchId,
+    body: {
+      type: input.type,
+      value: input.value,
+      reason: input.reason.trim(),
+      ...(input.metadata ? { metadata: input.metadata } : {}),
+    },
+  });
+}
+
+// ── Prompt 3B3B discount decisions (Supervisor: pos:discount:approve) ──
+// Neither endpoint is BG3-wrapped, so neither honors an Idempotency-Key — duplicate
+// submission is prevented via mutation-pending state (a double-click 409s on the 2nd
+// call because the discount is no longer PENDING). Both return HTTP 200 and the bare
+// updated Discount (no nested relations) — re-fetch the order + its discounts for
+// canonical totals and reviewer identity.
+
+// POST /api/pos/discounts/:id/approve — managerPin is OPTIONAL (re-auths the approver
+// against their own quick PIN; wrong PIN → 401). PENDING-only (else 409). Recalcs order
+// totals (latest approved wins). NOTE: the backend does NOT block self-approval.
+export function approveSupervisorDiscount(
+  token: string,
+  branchId: string,
+  discountId: string,
+  managerPin?: string,
+) {
+  const trimmed = managerPin?.trim();
+  return apiRequest<SupervisorDiscount>(`/api/pos/discounts/${discountId}/approve`, {
+    method: "POST",
+    token,
+    branchId,
+    body: trimmed ? { managerPin: trimmed } : {},
+  });
+}
+
+// POST /api/pos/discounts/:id/reject — rejectionReason REQUIRED (≤500). PENDING-only.
+// Does NOT change order totals. Response is the bare updated Discount (status REJECTED).
+export function rejectSupervisorDiscount(
+  token: string,
+  branchId: string,
+  discountId: string,
+  rejectionReason: string,
+) {
+  return apiRequest<SupervisorDiscount>(`/api/pos/discounts/${discountId}/reject`, {
+    method: "POST",
+    token,
+    branchId,
+    body: { rejectionReason: rejectionReason.trim() },
   });
 }
 

@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "prompt3b3a-assertions.ts",
+    "../src/lib/supervisor/order-actions.ts",
+    "../src/lib/supervisor/order-financials.ts",
+    "../src/lib/supervisor/orders.ts"
+  ]
+}

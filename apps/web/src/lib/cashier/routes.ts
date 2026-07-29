@@ -1,30 +1,29 @@
-import {
-  CashRegister,
-  Receipt,
-  UserCircle,
-  ListChecks,
-} from "@phosphor-icons/react";
+import { operationalIconNames } from "../../components/pos-shell/role-icon-config";
+import type { OperationalNavItem } from "../../components/pos-shell/types";
 
 export const cashierRoutes = [
   {
     href: "/cashier/queue",
     label: "Queue",
-    icon: ListChecks,
+    icon: operationalIconNames.cashierQueue,
+    match: (pathname: string) => pathname === "/cashier/queue",
   },
   {
     href: "/cashier/receipts",
     label: "Receipts",
-    icon: Receipt,
+    icon: operationalIconNames.cashierReceipts,
+    match: (pathname: string) => pathname === "/cashier/receipts",
   },
   {
     href: "/cashier/till",
     label: "Till",
-    icon: CashRegister,
+    icon: operationalIconNames.cashierTill,
+    match: (pathname: string) => pathname === "/cashier/till",
   },
   {
     href: "/cashier/me",
     label: "Me",
-    icon: UserCircle,
+    icon: operationalIconNames.me,
+    match: (pathname: string) => pathname === "/cashier/me",
   },
-] as const;
-
+] as const satisfies readonly OperationalNavItem[];
