@@ -83,6 +83,20 @@ Date: 2026-07-18
 > properly-isolated stack remains the outstanding QA gate (lifecycle otherwise proven by
 > 67/67 Jest tests + the compiled Prompt 4B Playwright suite). No code change; no commit.
 
+> **Prompt 4D addendum (2026-07-29) — isolated live QA (DEMO-READY, B).** The reservation
+> lifecycle is now **live-QA-verified**: a live mutation matrix passed **53/53** (local,
+> authoritative — create/confirm/assign/reassign/seat/cancel/no-show/manual-complete/
+> queries/pagination/overdue/branch-isolation/concurrency) and the Playwright reservations
+> suite (9 specs × 4 viewports = 72 tests) was genuinely executed against an isolated stack.
+> QA ran on a disposable Neon branch + local Docker Postgres behind new fail-closed
+> `tools/qa/` DB-isolation tooling; shared Neon `production` verified untouched. **QA/
+> test-infra/isolation-tooling only — NO scope, capability, permission, contract, schema,
+> seed, or backend change.** Classification **B (DEMO-READY)**. Residual: order-close
+> automatic completion proven by Jest 67/67 + the 4C cutover but not re-driven end-to-end
+> through the live Cashier close flow. Reports:
+> `ai/SUPERVISOR_RECONSTRUCTION_PROMPT4D_ISOLATED_LIVE_QA_COMPLETION_REPORT.md`,
+> `ai/PROMPT4D_DATABASE_ISOLATION_EVIDENCE.md`.
+
 | Capability | MVP decision | Entry point | Backend contract | Reason |
 |---|---|---|---|---|
 | Floor | Include | Visible nav | `/api/tables`, `/api/floor-plans`, `/api/floor/availability` | Primary Supervisor operational surface. |

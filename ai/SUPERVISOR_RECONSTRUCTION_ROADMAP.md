@@ -129,6 +129,43 @@ Rule: each implementation prompt must preserve Waiter and Cashier behavior unles
 > Playwright suite (72 tests × 4 viewports). Live browser/API execution against a
 > properly-isolated stack remains the outstanding gate.
 
+> **Prompt 4D (2026-07-29) — isolated live QA + fail-closed DB isolation. COMPLETE WITH
+> KNOWN LIMITATIONS / DEMO-READY.** Closes the Prompt 4C outstanding QA gate. **QA +
+> test-infrastructure + isolation-tooling ONLY — no backend/DTO/schema/migration/seed/
+> demo-import/permission/API-contract/Postman change; no reservation capability, status,
+> or permission added.** Built durable fail-closed isolation tooling under `tools/qa/`
+> (isolation lib, DB-identity preflight using the same Prisma client the API uses, and a
+> launcher: denylist → preflight → spawn API; plus `tools/qa/reservation-live-matrix.mjs`)
+> that fixes the 4C incident root cause — an inherited shell `DATABASE_URL` overrode a
+> swapped `.env` (dotenv never overrides an already-set env var), so the tooling now
+> constructs the child env explicitly and strips inherited DB vars. Denylist proven: the
+> shared endpoint `ep-empty-paper-a4sogjap` was rejected (exit 1, no connection), while the
+> disposable endpoint `ep-frosty-firefly-a4rfugz9` passed all identity checks (sentinel +
+> migration + `COMPLETED` enum + demo branch row). QA ran on a disposable Neon branch
+> `br-shiny-dust-a4ns7urs` (forked from production `br-holy-darkness-a4fg93r2`) for the live
+> mutation matrix and a local Docker Postgres stack for the browser suite (disposable-Neon
+> EAT↔us-east-1 latency exceeded the app's 30s client abort under the reservations page's
+> concurrent query fan-out — environmental, not a UI defect). **Live reservation mutation
+> matrix: 53/53 pass** (local, authoritative — create/confirm/assign/reassign/seat/cancel/
+> no-show/manual-complete/queries/pagination/overdue/branch-isolation/concurrency); on the
+> disposable Neon branch 51/53 with both anomalies diagnosed (one is intentional documented
+> idempotency = product-correct; one is a pre-existing reservation-number create-race,
+> tracked **SUP-RG-034**, non-blocking). **Playwright reservations suite (9 specs × 4
+> viewports = 72 tests) was genuinely executed** (not compile-only) against the isolated
+> local stack; core specs pass across all four viewports; several first-execution spec
+> fragilities were found and fixed (loose selectors → strict-mode violations, hardcoded past
+> times, a read-only assertion). Product correctness independently proven (create-dialog
+> validation renders correctly; Jest reservations+orders 67/67; API matrix 53/53). Shared
+> Neon `production` verified **UNTOUCHED** read-only (126 reservations / 12 events / 0
+> QA-marker rows / 58 migrations / enum has `COMPLETED` / role_permissions 836 — identical to
+> baseline); recovery branch `br-dawn-truth-a4zjs1p7` retained. **Residual:** order-close
+> AUTOMATIC completion is proven by unit tests (67/67) + the 4C shared-Neon cutover but was
+> NOT re-driven end-to-end through the full live Cashier payment/close flow in 4D
+> (Cashier-owned `pos:orders:close`). **Approvals-page reconstruction (Prompt 6) still NOT
+> started.** No commit/no push. Reports:
+> `ai/SUPERVISOR_RECONSTRUCTION_PROMPT4D_ISOLATED_LIVE_QA_COMPLETION_REPORT.md`,
+> `ai/PROMPT4D_DATABASE_ISOLATION_EVIDENCE.md`.
+
 ## Phase Order
 
 | Prompt | Title | Recommended model | Scope | Acceptance |

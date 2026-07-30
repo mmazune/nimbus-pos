@@ -217,6 +217,34 @@ tests and the compiled Prompt 4B Playwright suite (72 tests × 4 viewports). Web
 typecheck + lint + build pass; Postman 56/56 parse; `git diff --check` clean; no code
 change; no commit/push.
 
+## Prompt 4D — Isolated live QA verification (2026-07-29, DEMO-READY, B)
+
+The reservation lifecycle is now **live-QA-verified** end to end. A live mutation matrix
+passed **53/53** (local Docker Postgres, authoritative) covering create / confirm / assign
+/ reassign / seat / cancel / no-show / manual-complete plus queries, pagination, overdue
+derivation, branch isolation, and concurrency. **Action availability was confirmed to
+mirror backend `VALID_TRANSITIONS` exactly** (no action offered that the service would
+409). **Manual-complete idempotency confirmed** — an already-COMPLETED reservation returns
+its canonical state with no second event (this is the intentional documented idempotency
+that produced one of the two disposable-Neon 51/53 near-misses; product-correct). The
+other disposable-Neon anomaly is a pre-existing reservation-number create-race, tracked
+**SUP-RG-034**, non-blocking. The Playwright reservations suite (9 specs × 4 viewports = 72
+tests) was **genuinely executed** (not compile-only) against an isolated local stack; core
+specs pass across all four viewports. Product correctness independently proven (Jest
+reservations+orders 67/67; API matrix 53/53).
+
+**Residual:** order-close AUTOMATIC completion is proven by unit tests (67/67) + the Prompt
+4C shared-Neon cutover, but was NOT re-driven end-to-end through the full live Cashier
+payment/close flow in 4D (that path is Cashier-owned `pos:orders:close`).
+
+**No backend/DTO/schema/migration/seed/permission/contract change in 4D** — QA + test
+infrastructure + fail-closed `tools/qa/` DB-isolation tooling only. Shared Neon
+`production` verified untouched read-only (126 reservations / 12 events / 0 QA markers / 58
+migrations / enum has `COMPLETED` / role_permissions 836); recovery branch
+`br-dawn-truth-a4zjs1p7` retained. Reports:
+`ai/SUPERVISOR_RECONSTRUCTION_PROMPT4D_ISOLATED_LIVE_QA_COMPLETION_REPORT.md`,
+`ai/PROMPT4D_DATABASE_ISOLATION_EVIDENCE.md`.
+
 ## Completion Blocker
 
 Before adding a Complete action, verify or add:

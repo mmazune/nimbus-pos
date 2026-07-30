@@ -292,4 +292,58 @@ on shared today.
   hit production because of this; one QA row was created and then removed.)
 - **Status:** the Prompt 4A `COMPLETED` enum migration + `pos:order:transfer` seed are
   now deployed on `production`; the live authenticated browser + 4-viewport reservations
-  run against a properly-isolated stack remains the outstanding execution gate.
+  run against a properly-isolated stack was **executed in Prompt 4D** (below).
+
+## Prompt 4D — fail-closed isolated QA harness (`tools/qa/`, 2026-07-29)
+
+The durable answer to the 4C isolation incident. **Swapping `.env` cannot isolate a Node
+process** — `dotenv`/`ConfigModule.forRoot` never override an already-set `process.env` var,
+so an inherited shell/profile `DATABASE_URL` wins. The harness therefore **constructs the
+child-process environment explicitly** (deletes every inherited DB/service key, then sets the
+disposable values) and refuses to start the API unless a fail-closed identity check passes.
+
+Components (all in `tools/qa/`, no secrets committed):
+
+- `lib/isolation.mjs` — explicit child-env construction, pg-URL parsing, host redaction, and
+  the production/shared-target **denylist** (`assertDisposableTarget`).
+- `db-identity-preflight.mjs` — executable identity check using the **same generated Prisma
+  client the API uses**: denylist → connect → disposable **sentinel** row → required migration
+  → `ReservationEventType.COMPLETED` → demo branch row. Exits non-zero on any mismatch.
+  **Health alone cannot prove branch identity — this can.**
+- `run-isolated-api.mjs` — launcher: build explicit child env → denylist → preflight → **only
+  then** spawn `apps/api/dist/main.js`.
+- `reservation-live-matrix.mjs` — env-driven live reservation lifecycle mutation matrix
+  (marker-tagged synthetic data).
+
+Rules this enforces (also the durable isolation policy):
+
+1. Changing `.env` does **not** override an inherited process environment.
+2. Isolated child processes must receive an **explicit** environment map with inherited
+   `DATABASE_URL` / `DIRECT_URL` / `DIRECT_DATABASE_URL` / `SHADOW_DATABASE_URL` **removed**.
+3. The expected disposable endpoint must be checked (denylist) **before** startup.
+4. A disposable-branch **sentinel** must be verified through the API's own DB client.
+5. Destructive tests **fail closed** on any identity mismatch; shared Neon stays read-only
+   unless a fresh explicit write gate is granted.
+
+**Maintained command — run isolated Reservations QA** (full recipe in `tools/qa/README.md`):
+
+```bash
+# 1) create a disposable branch + sentinel, put its URL in a git-ignored secret file, then:
+export QA_SECRET_ENV_FILE=/path/to/qa.env.secret
+export QA_EXPECTED_HOST_SUBSTR=ep-<disposable> QA_FORBIDDEN_HOST_SUBSTRS=ep-<shared>
+export QA_EXPECTED_BRANCH=br-<disposable> QA_SENTINEL_MARKER=<UNIQUE> \
+       QA_EXPECTED_BRANCH_ROW=cb27be401a2c35dfc0d4e610 QA_API_PORT=4002 QA_WEB_ORIGIN=http://localhost:4101
+node tools/qa/run-isolated-api.mjs                 # fail-closed API on :4002
+curl http://localhost:4002/api/health              # -> {"status":"ok","db":"ok"}
+PW_API_URL=http://localhost:4002 PW_BRANCH_ID=cb27be401a2c35dfc0d4e610 \
+  P4D_MARKER=<UNIQUE> node tools/qa/reservation-live-matrix.mjs   # live mutation matrix
+```
+
+**Browser suite:** the disposable Neon branch's latency (EAT ↔ us-east-1, 0.25 CU) exceeds the
+app's 30s client abort under the reservations page's concurrent query fan-out, so run the
+Playwright suite against a **local Docker Postgres** stack (near-zero latency — the documented
+canonical browser-QA path above), built with `NEXT_PUBLIC_API_BASE_URL` pointed at the isolated
+API. Playwright timeouts are env-overridable (`PW_TEST_TIMEOUT` / `PW_EXPECT_TIMEOUT` /
+`PW_ACTION_TIMEOUT` / `PW_NAV_TIMEOUT`) to give a dev-mode server first-hit-compile headroom.
+Use non-reserved ports — Windows reserves ranges (e.g. `3015–3114` covers `3100/3101`); check
+`netsh interface ipv4 show excludedportrange protocol=tcp`.

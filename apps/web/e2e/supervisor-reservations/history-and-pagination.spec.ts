@@ -15,15 +15,17 @@ test.describe("Supervisor Reservations — history & pagination", () => {
     await expect(page.getByRole("combobox").first()).toBeVisible();
 
     // Date range controls exist for history.
-    await expect(page.getByLabel(/from/i)).toBeVisible();
-    await expect(page.getByLabel(/to/i)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "From" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "To" })).toBeVisible();
 
     // Selecting the first history row (if any) shows a read-only workspace.
     const firstRow = page.getByRole("region", { name: /reservation views|/ }).locator("button");
     const rows = page.locator("#supervisor-reservation-list-region li button");
     if (await rows.count()) {
       await rows.first().click();
-      await expect(page.getByRole("button", { name: /confirm|seat guest|mark visit complete/i })).toHaveCount(0);
+      // A terminal (history) reservation opens a read-only workspace — assert that
+      // directly rather than counting action buttons across the whole page.
+      await expect(page.getByText(/it is read-only/i)).toBeVisible();
     }
     void firstRow;
   });

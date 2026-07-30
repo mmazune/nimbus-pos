@@ -39,7 +39,7 @@ test.describe.serial("Supervisor Reservations — seated & manual completion", (
     await expect(dialog.getByText(/does not/i)).toBeVisible();
     await dialog.getByRole("button", { name: /mark complete/i }).click();
 
-    await expect(page.getByText(/visit completed/i)).toBeVisible();
+    await expect(page.getByText(/visit completed/i).first()).toBeVisible();
 
     // It leaves Seated and appears in History as COMPLETED.
     await page.getByRole("tab", { name: /seated/i }).click();
@@ -47,7 +47,9 @@ test.describe.serial("Supervisor Reservations — seated & manual completion", (
 
     await page.getByRole("tab", { name: /history/i }).click();
     await openReservationByName(page, res.customerName);
-    await expect(page.getByText(/completed/i).first()).toBeVisible();
+    // Assert the terminal read-only state in the detail workspace (unambiguous — avoids the
+    // hidden <option>Completed</option> in the terminal-status filter dropdown).
+    await expect(page.getByText(/this reservation is completed/i)).toBeVisible();
     // Terminal record → no active lifecycle actions.
     await expect(page.getByRole("button", { name: /mark visit complete/i })).toHaveCount(0);
   });

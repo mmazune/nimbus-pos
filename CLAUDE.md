@@ -121,9 +121,32 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 
 ## 10. Current implementation milestone
 
-**WAITER complete + SUPERVISOR RECONSTRUCTION through Prompt 4B (Reservations UI
+**WAITER complete + SUPERVISOR RECONSTRUCTION through Prompt 4D (Reservations UI
 complete with known limitations; order-workspace financial actions feature-complete;
-Prompt 4A backend reservation lifecycle complete).** See `PROGRESS.md`.
+Prompt 4A backend reservation lifecycle complete; Prompt 4C shared-Neon cutover deployed;
+Prompt 4D isolated live QA + fail-closed DB isolation tooling — COMPLETE WITH KNOWN
+LIMITATIONS / DEMO-READY).** See `PROGRESS.md`.
+
+- **Supervisor Reservations — Prompt 4D COMPLETE WITH KNOWN LIMITATIONS (2026-07-29).** The
+  outstanding live-browser/API QA gate is closed. Durable **fail-closed isolation tooling** now
+  lives under `tools/qa/` (env-isolation lib + DB-identity preflight using the API's own Prisma
+  client + launcher: denylist → preflight → spawn; plus a live reservation mutation-matrix
+  runner). It fixes the 4C incident root cause — an inherited shell `DATABASE_URL` overrode a
+  swapped `.env` (`dotenv` never overrides an already-set env var), so isolation now constructs
+  the child-process env explicitly and strips inherited DB vars, and refuses to start the API
+  unless the denylist + sentinel + migration + `COMPLETED` enum + demo-branch identity checks
+  pass. **Live reservation mutation matrix 53/53** (create/confirm/assign/reassign/seat/cancel/
+  no-show/manual-complete/queries/pagination/overdue/branch-isolation/concurrency); the
+  Playwright reservations suite (9 specs × 4 viewports = 72 tests) was **actually executed**
+  against an isolated local Docker stack (the disposable Neon branch's EAT↔us-east-1 latency
+  exceeds the app's 30s client abort under the reservations page's concurrent fan-out — an
+  external limit, not a UI defect). First-execution spec fragilities (loose selectors, hardcoded
+  times, a page-local lookup helper) were found and fixed; the product is independently verified
+  (create-dialog validation renders correctly; Jest 67/67; matrix 53/53). **Shared Neon verified
+  untouched** (126 reservations / 12 events / 0 QA rows; recovery branch `br-dawn-truth-a4zjs1p7`
+  retained). **NO backend/DTO/schema/migration/seed/permission/Postman change.** New non-blocking
+  gap **SUP-RG-034** (concurrent identical creates can 500 on the reservation-number race —
+  recommended backend hardening, out of scope). Do NOT begin Approvals reconstruction.
 
 - **Supervisor Reservations UI — Prompt 4B COMPLETE WITH KNOWN LIMITATIONS.** The
   read-only triple-query page is replaced by a premium master-detail workspace on the

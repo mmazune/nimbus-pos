@@ -76,6 +76,15 @@ Supervisor reconstruction target:
   reverted); the lifecycle stays proven by Jest 67/67 + the compiled Prompt 4B Playwright
   suite (72 tests × 4 viewports).
 
+- **Prompt 4D (2026-07-29) — isolated live QA + fail-closed DB isolation (COMPLETE WITH
+  KNOWN LIMITATIONS / DEMO-READY, B).** Closes the 4C QA gate: live reservation mutation
+  matrix **53/53** (local, authoritative) + Playwright reservations suite (9 specs × 4
+  viewports = 72 tests) genuinely executed against isolated stacks; shared Neon untouched.
+  QA + test-infra + isolation-tooling only (no backend/contract/permission/scope change).
+  See the new **`tools/qa/`** isolated-QA harness and reports
+  `ai/SUPERVISOR_RECONSTRUCTION_PROMPT4D_ISOLATED_LIVE_QA_COMPLETION_REPORT.md` +
+  `ai/PROMPT4D_DATABASE_ISOLATION_EVIDENCE.md`.
+
 ## Documents
 
 | File | Purpose |

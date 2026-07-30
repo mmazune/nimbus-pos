@@ -232,3 +232,40 @@ drivers, terminal/acquirer traffic, MSR/badge login, smart spouts / pour telemet
   isolation with a READ before any write.
 - **Recovery branch** `br-dawn-truth-a4zjs1p7` (pre-migration snapshot) is retained until
   the user authorizes its removal.
+
+---
+
+## Supervisor Reservations — Prompt 4D isolated live QA (2026-07-29)
+
+**RESOLVED (was the outstanding 4B/4C gate):** the live-API reservation mutation matrix and
+the four-viewport Playwright suite were actually executed on a properly-isolated stack (a
+disposable Neon branch for the API matrix; a local Docker Postgres for the browser suite).
+Live matrix **53/53** (local, authoritative); shared Neon verified untouched. Fail-closed
+isolation tooling now lives under `tools/qa/` (see `docs/TESTING_AND_QA.md`).
+
+Remaining non-blocking limitations:
+
+- **SUP-RG-034 (new):** concurrent *identical* reservation creates can return **500** (not a
+  graceful 409) because `generateReservationNumber` is a read-increment against the
+  `@@unique([branchId, reservationNumber])` constraint — under a true race the loser hits the
+  unique violation. Non-blocking: the Create UI single-submit-guards; no normal path fires two
+  identical concurrent creates. Backend hardening (retry / catch P2002 → 409) is recommended
+  but out of scope (backend contract change). Surfaced by live QA.
+- **Order-close AUTOMATIC completion** is proven by unit tests (67/67) and the 4C shared-Neon
+  cutover; it was **not** re-driven end-to-end through the full live Cashier payment/close flow
+  in 4D (order close is Cashier-owned `pos:orders:close`; Supervisor is 403 by design).
+- **Playwright reservations suite** (first-ever execution in 4D) had first-run spec fragilities
+  — loose selectors (strict-mode violations vs. a11y labels / hidden `<option>`s / toasts),
+  hardcoded past times, and a page-local `openReservationByName` helper — several were fixed;
+  residual dev-mode/single-worker timing + pagination assumptions can still flake individual
+  specs. These are **test-harness** issues; the reservation UI itself is verified (create-dialog
+  validation renders correctly; API matrix 53/53; Jest 67/67).
+- **Disposable Neon branch latency** (EAT ↔ us-east-1, 0.25 CU) exceeds the app's 30s client
+  abort under the reservations page's concurrent query fan-out, so the browser suite runs against
+  a local Docker stack (documented canonical path), not the Neon branch. External latency, not a
+  UI deadlock.
+- **`next build`** (production) intermittently hits a Windows build-worker fault
+  (`3221226505` during "Collecting page data"); `next dev` is used for browser QA. Not a code
+  error ("Compiled successfully" passes).
+- Existing **stale shared reservations** (order-less SEATED + overdue) still require individual
+  Supervisor decisions — **no bulk resolution** (unchanged).

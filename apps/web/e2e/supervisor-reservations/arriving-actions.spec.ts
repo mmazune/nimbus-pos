@@ -30,7 +30,7 @@ test.describe.serial("Supervisor Reservations — arriving actions", () => {
     await dialog.getByRole("button", { name: /confirm reservation/i }).click();
 
     await expect(dialog).toBeHidden();
-    await expect(page.getByText(/reservation confirmed/i)).toBeVisible();
+    await expect(page.getByText(/reservation confirmed/i).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: new RegExp(res.customerName, "i") })).toBeVisible();
   });
 
@@ -43,14 +43,14 @@ test.describe.serial("Supervisor Reservations — arriving actions", () => {
     // Confirm first (PENDING → CONFIRMED enables Seat).
     await page.getByRole("button", { name: /^confirm$/i }).click();
     await page.getByRole("dialog").getByRole("button", { name: /confirm reservation/i }).click();
-    await expect(page.getByText(/reservation confirmed/i)).toBeVisible();
+    await expect(page.getByText(/reservation confirmed/i).first()).toBeVisible();
 
     // Seat via the seat dialog's table selector.
     await page.getByRole("button", { name: /seat guest/i }).click();
     const seatDialog = page.getByRole("dialog", { name: /seat this guest/i });
     await seatDialog.getByRole("radio").nth(1).click();
     await seatDialog.getByRole("button", { name: /seat guest/i }).click();
-    await expect(page.getByText(/guest seated/i)).toBeVisible();
+    await expect(page.getByText(/guest seated/i).first()).toBeVisible();
 
     // Once SEATED, no-show is not offered; complete is.
     await expect(page.getByRole("button", { name: /mark no-show/i })).toHaveCount(0);
@@ -68,6 +68,6 @@ test.describe.serial("Supervisor Reservations — arriving actions", () => {
     await expect(confirm).toBeDisabled();
     await dialog.getByLabel(/cancellation reason/i).fill("QA cancel");
     await confirm.click();
-    await expect(page.getByText(/reservation cancelled/i)).toBeVisible();
+    await expect(page.getByText(/reservation cancelled/i).first()).toBeVisible();
   });
 });

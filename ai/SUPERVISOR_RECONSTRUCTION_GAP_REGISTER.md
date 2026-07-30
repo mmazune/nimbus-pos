@@ -94,3 +94,18 @@ the lifecycle stays proven by 67/67 reservation+order Jest tests + the compiled 
 Playwright suite (72 tests × 4 viewports). Live browser/API execution against a
 properly-isolated stack remains the outstanding QA gate. Web typecheck + lint + build pass;
 Postman 56/56 parse; `git diff --check` clean; no code change; no commit/push.
+
+## Prompt 4D closure — isolated live QA + fail-closed isolation (2026-07-29)
+
+Prompt 4D **closes the carried-forward live-browser-QA gate** and adds durable isolation
+tooling. Classification **B. COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY**; no commit/push.
+
+| ID | Status after Prompt 4D | Residual |
+| --- | --- | --- |
+| Live-browser-QA gate | **Closed.** Fail-closed isolation tooling (`tools/qa/`: env-isolation lib, DB-identity preflight using the API's own Prisma client, launcher = denylist→preflight→spawn) built and executed. Denylist proven (shared endpoint `ep-empty-paper-a4sogjap` rejected exit 1 no-connect; disposable `ep-frosty-firefly-a4rfugz9` passed). Live reservation mutation matrix **53/53** (local) / 51/53 (disposable Neon, both anomalies diagnosed). Playwright 9 specs × 4 viewports **actually executed** against the isolated local stack; core specs pass; first-run spec fragilities found & fixed. Shared Neon verified untouched (126/12/0-QA). | Residual dev-mode/single-worker Playwright timing + page-local `openReservationByName` can flake individual specs (test-harness, not product). |
+| SUP-RG-034 (new) | **Open (recommended, non-blocking):** concurrent *identical* reservation creates can 500 (reservation-number read-increment race vs. `@@unique([branchId, reservationNumber])`) instead of a graceful 409. Surfaced by live QA. The Create UI single-submit-guards; no normal path fires two identical concurrent creates. | Backend hardening (retry / catch P2002 → 409) recommended; out of Prompt 4D scope (backend contract change). |
+| Auto-completion live end-to-end | **Partially closed.** Proven by Jest 67/67 + the 4C shared-Neon cutover; not re-driven through the full live Cashier payment/close flow in 4D (Cashier-owned `pos:orders:close`; Supervisor 403 by design). | Optional: drive an end-to-end Cashier close → SEATED-reservation auto-complete in a future live pass. |
+
+**No backend/DTO/schema/migration/seed/permission/Postman change in 4D.** Changes: `tools/qa/*`
+(new), env-overridable `apps/web/playwright.config.ts`, reservations E2E spec selector fixes, and
+docs. Recovery branch `br-dawn-truth-a4zjs1p7` retained; disposable Neon QA branch deleted.

@@ -19,6 +19,13 @@ import { defineConfig, devices } from "@playwright/test";
  */
 const BASE_URL = process.env.PW_BASE_URL || "http://localhost:3100";
 
+// Timeouts are env-overridable so an isolated stack running Next.js in dev mode (first-hit route
+// compilation) or a higher-latency database can be given headroom without editing this file.
+const TEST_TIMEOUT = Number(process.env.PW_TEST_TIMEOUT) || 60_000;
+const EXPECT_TIMEOUT = Number(process.env.PW_EXPECT_TIMEOUT) || 15_000;
+const ACTION_TIMEOUT = Number(process.env.PW_ACTION_TIMEOUT) || 15_000;
+const NAV_TIMEOUT = Number(process.env.PW_NAV_TIMEOUT) || 30_000;
+
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e/.evidence/test-output",
@@ -26,16 +33,16 @@ export default defineConfig({
   workers: 1,
   forbidOnly: false,
   retries: 0,
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
+  timeout: TEST_TIMEOUT,
+  expect: { timeout: EXPECT_TIMEOUT },
   reporter: [
     ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }],
   ],
   use: {
     baseURL: BASE_URL,
-    actionTimeout: 15_000,
-    navigationTimeout: 30_000,
+    actionTimeout: ACTION_TIMEOUT,
+    navigationTimeout: NAV_TIMEOUT,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "off",

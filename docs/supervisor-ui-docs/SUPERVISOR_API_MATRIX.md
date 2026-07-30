@@ -161,6 +161,24 @@ Date: 2026-07-18
 > slip caught and reverted) — the contracts remain proven by 67/67 reservation+order
 > Jest tests and the compiled Prompt 4B Playwright suite; no code/contract/Postman change.
 
+> **Prompt 4D (2026-07-29) — reservation endpoints live-exercised (gate cleared, B).** The
+> reservation endpoints in this section were **live-exercised** against isolated stacks (a
+> disposable Neon branch + a local Docker Postgres, behind new fail-closed `tools/qa/`
+> DB-isolation tooling): `POST /api/reservations` (create), `PATCH .../confirm`, `PATCH
+> .../assign-table` (assign + reassign), `PATCH .../seat`, `PATCH .../cancel`, `PATCH
+> .../no-show`, `POST .../complete` (manual, SEATED→COMPLETED, idempotent), and `GET
+> /api/reservations?scope=active|history` (pagination + derived `overdue`). **Live mutation
+> matrix 53/53 pass** (local, authoritative — incl. branch-isolation + concurrency); 51/53
+> on the disposable Neon branch with both near-misses diagnosed (one intentional documented
+> idempotency = product-correct; one pre-existing reservation-number create-race, tracked
+> SUP-RG-034, non-blocking). Availability mirrored backend `VALID_TRANSITIONS` exactly. **No
+> contract/permission/Postman/backend change** — QA + isolation tooling only; shared Neon
+> `production` verified untouched (836 role_permissions, 58 migrations, 126 reservations).
+> Residual: order-close auto-completion proven by Jest 67/67 + the 4C cutover, not re-driven
+> through the live Cashier `pos:orders:close` flow. Reports:
+> `ai/SUPERVISOR_RECONSTRUCTION_PROMPT4D_ISOLATED_LIVE_QA_COMPLETION_REPORT.md`,
+> `ai/PROMPT4D_DATABASE_ISOLATION_EVIDENCE.md`.
+
 ## Workforce And Me
 
 | Method | Path | Permission | Use |

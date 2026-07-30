@@ -8,15 +8,16 @@ test.describe.serial("Supervisor → Waiter visibility", () => {
   test("a Supervisor-created reservation appears in Waiter Reservations", async ({ page }) => {
     const label = `${P4B_MARKER} Waiter ${Date.now()}`;
 
-    // Supervisor creates the reservation.
+    // Supervisor creates the reservation. Keep it on TODAY (default date) so it appears in the
+    // Waiter's today view, with a late-evening time that is still in the future at run time.
     await uiLogin(page, "supervisor");
     await gotoReservations(page);
     await page.getByRole("button", { name: /create reservation/i }).click();
     const dialog = page.getByRole("dialog", { name: /create reservation/i });
     await dialog.getByLabel(/guest name/i).fill(label);
     await dialog.getByLabel(/party size/i).fill("2");
-    await dialog.getByLabel(/^time/i).fill("20:15");
-    await dialog.getByRole("button", { name: /create reservation/i }).click();
+    await dialog.getByLabel(/^time/i).fill("23:59");
+    await dialog.getByRole("button", { name: "Create reservation", exact: true }).click();
     await expect(dialog).toBeHidden();
 
     // Waiter logs in and sees the same reservation.

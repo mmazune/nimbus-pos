@@ -95,6 +95,14 @@ export async function gotoReservations(page: Page) {
 
 /** Open a reservation's detail workspace by its (marked) guest name. */
 export async function openReservationByName(page: Page, name: string) {
-  await page.getByRole("button", { name: new RegExp(name, "i") }).first().click();
+  // Narrow the current view to the target first — the list can be long, so a page-local
+  // search keeps the freshly-created reservation reliably on-screen before we click it.
+  const search = page.getByRole("searchbox").first();
+  if (await search.isVisible().catch(() => false)) {
+    await search.fill(name);
+  }
+  const row = page.getByRole("button", { name: new RegExp(name, "i") }).first();
+  await expect(row).toBeVisible();
+  await row.click();
   await expect(page.getByRole("heading", { name: new RegExp(name, "i") })).toBeVisible();
 }
