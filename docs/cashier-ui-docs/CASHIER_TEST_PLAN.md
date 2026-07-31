@@ -1,5 +1,20 @@
 # Cashier Floor-First Reconstruction Test Plan
 
+> **C2 executed (2026-07-31):** `apps/web/e2e/cashier-floor/` extended to 20 specs (C1 + 12 new C2
+> specs covering zero/one/multiple resolution, orderId URL state, read-only settlement workspace,
+> split/multi-bill, payment-state read-only, till/readiness, Find bill, tableless/takeaway, legacy
+> compatibility, request budget, responsive, and cross-role regression) plus static
+> `scripts/cashier-c2-assertions.ts`. Executed across the four viewport projects on an isolated
+> local Docker Postgres stack (API :4001 / web :3100 / Postgres :55432); shared Neon untouched.
+> Full counts + request budgets: `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_QA_EVIDENCE_INDEX.md`.
+>
+> **C1 executed (2026-07-31):** `apps/web/e2e/cashier-floor/` (8 specs, 88 tests = 22 × 4
+> viewports) + cross-role regression (40) ran and passed on an isolated local Docker Postgres
+> stack (Postgres :55432, API :4001, web :3100 built with
+> `NEXT_PUBLIC_API_BASE_URL=http://localhost:4001`); static gates typecheck/lint/build + `npx tsx
+> apps/web/scripts/{shell,floor,cashier-c1}-assertions.ts`. Evidence:
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md`.
+
 ## Test principles
 
 - Execute tests; compilation or discovery is not a pass.

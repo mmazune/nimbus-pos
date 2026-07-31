@@ -1,8 +1,34 @@
 # Supervisor MVP Inclusion And Deferral Matrix
 
-Status: Prompt 0 decision matrix (Prompt 3A addendum 2026-07-27)  
-Date: 2026-07-18
+Status: **FINAL CLOSURE (2026-07-31) — every "Included / live" row below was re-verified live in
+the integrated final QA pass (four viewports, isolated stack); no inclusion/deferral decision
+changed.** See `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md`. Prior: Prompt 0 decision
+matrix (Prompt 3A addendum 2026-07-27)
+Date: 2026-07-18 (updated 2026-07-31)
 
+> **Prompt 5B2 addendum (2026-07-31) — Approvals CLOSED.** **Anomaly** Acknowledge + Resolve are now
+> **included / live**. **Shift-swap** is **Outcome C (user-authorized): Reject INCLUDED, Approve
+> DEFERRED** — a roster-changing approval is unsupported (no roster-mutation service; request references
+> only a date; approve permission has never mutated roster, SUP-RG-036/042), so the UI is truthful and
+> exposes Reject only. **Branch-wide discount Resolved/History remains DEFERRED** (SUP-RG-035). Prompt 5
+> closed at **B — demo-ready with known limitations**; no UI falsely claims a roster/financial effect.
+>
+> **Prompt 5B1 addendum (2026-07-30).** The Approvals **premium UI** is now **included / live** for
+> two domains: **Discount** approve/reject and **Leave** approve/reject are actionable in the master-
+> detail workspace (Needs action / Resolved / History, identity-safe rows, URL state, browser QA
+> 80/80 × 4 viewports). **Shift-swap + Anomaly UI decisions are DEFERRED to Prompt 5B2** (rows/details
+> render read-only now). **Branch-wide discount Resolved/History is DEFERRED** (no backend endpoint,
+> SUP-RG-035) — discounts appear in Needs action only, with a truthful order-scoped notice.
+>
+> **Prompt 5A addendum (2026-07-30).** Approvals **backend/contract/QA foundation** is now
+> **included / complete** (Prompt 5B builds the UI on it). Verified + hardened decision lifecycles
+> for all four domains (discount/leave/shift-swap/anomaly) — bounded pagination, branch isolation
+> (swap/anomaly; leave org-scoped), concurrency-safe claims, History date filters, minimal identity.
+> Domain-specific architecture (no generic `/api/approvals/:id/decide`). **Deferred (unchanged):**
+> shift-swap **create** UI (no eligible-target selector, SUP-RG-021), branch-wide discount
+> **history** (no endpoint, SUP-RG-035), shift-swap roster reassignment on approve (SUP-RG-036),
+> refund/post-close-void queues. No permission/schema/migration/seed/Postman change.
+>
 > **Prompt 3A addendum (2026-07-27).** Now **included / live** behind Floor table
 > selection: **Request bill** (`POST /api/pos/orders/:id/request-bill`) and
 > **Mark served** (`POST /api/pos/orders/:id/mark-served`), both `pos:orders:write`.

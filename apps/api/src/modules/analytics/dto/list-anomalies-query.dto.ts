@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsEnum, IsString, IsInt, Min, Max, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ListAnomaliesQueryDto {
@@ -28,6 +28,15 @@ export class ListAnomaliesQueryDto {
   @IsOptional()
   @IsString()
   actorUserId?: string;
+
+  // Bounded History window: inclusive createdAt range (ISO date/datetime).
+  @IsOptional()
+  @IsDateString()
+  dateFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dateTo?: string;
 
   @IsOptional()
   @Type(() => Number)

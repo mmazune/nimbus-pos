@@ -176,15 +176,35 @@ export class DiscountsService {
       managerPinVerified = true;
     }
 
-    const updated = await this.prisma.discount.update({
-      where: { id: discountId },
+    // Concurrency-safe claim: the transition only applies while the row is
+    // still PENDING, scoped to this branch+org. Two racing approves both pass
+    // the precheck above but exactly one conditional update matches — the loser
+    // gets a deterministic 409 instead of a duplicate approval/recalc.
+    const approvedAt = new Date();
+    const claim = await this.prisma.discount.updateMany({
+      where: {
+        id: discountId,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        status: DiscountStatus.PENDING,
+      },
       data: {
         status: DiscountStatus.APPROVED,
         approvedById: userId,
-        approvedAt: new Date(),
+        approvedAt,
         managerPinVerified,
       },
     });
+    if (claim.count === 0) {
+      throw new ConflictException('Discount was concurrently modified and is no longer pending');
+    }
+    const updated = {
+      ...discount,
+      status: DiscountStatus.APPROVED,
+      approvedById: userId,
+      approvedAt,
+      managerPinVerified,
+    };
 
     // Recalculate order totals with the approved discount
     await this.recalcOrderDiscount(discount.orderId);
@@ -226,15 +246,32 @@ export class DiscountsService {
       throw new ConflictException(`Cannot reject a discount in ${discount.status} status`);
     }
 
-    const updated = await this.prisma.discount.update({
-      where: { id: discountId },
+    // Concurrency-safe claim (see approveDiscount).
+    const rejectedAt = new Date();
+    const claim = await this.prisma.discount.updateMany({
+      where: {
+        id: discountId,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        status: DiscountStatus.PENDING,
+      },
       data: {
         status: DiscountStatus.REJECTED,
         rejectedById: userId,
-        rejectedAt: new Date(),
+        rejectedAt,
         rejectionReason: dto.rejectionReason,
       },
     });
+    if (claim.count === 0) {
+      throw new ConflictException('Discount was concurrently modified and is no longer pending');
+    }
+    const updated = {
+      ...discount,
+      status: DiscountStatus.REJECTED,
+      rejectedById: userId,
+      rejectedAt,
+      rejectionReason: dto.rejectionReason,
+    };
 
     // Order totals remain unchanged — rejected discounts have no effect
 

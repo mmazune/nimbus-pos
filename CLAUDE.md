@@ -87,6 +87,7 @@ for the full document catalog with provenance.
 | Process / governance | `AGENTS.md`, `ai/AI_GOVERNANCE_PROMPT_UPDATED.md`, `ai/AI_ERROR_PROTOCOL.md` |
 | API/Postman contract | `docs/API_CONVENTIONS.md`, `docs/POSTMAN_ENDPOINT_GUIDE.md` |
 | Supervisor reconstruction | `ai/SUPERVISOR_RECONSTRUCTION_ROADMAP.md`, `docs/supervisor-ui-docs/*` |
+| Cashier reconstruction | `docs/cashier-ui-docs/*`, `ai/CASHIER_FLOOR_RECONSTRUCTION_*.md` (C0 complete; C1 not started) |
 
 ## 7. Local dirty-worktree safety rules
 
@@ -109,8 +110,25 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 | Role | Visible nav (LOCKED) | Owns |
 | --- | --- | --- |
 | **Waiter** | **Floor · Reservations · Me** | Table-centric order entry (order builder behind Floor table selection) |
-| **Cashier** | **Queue · Receipts · Till · Me** | Payment collection, receipts, till/close |
+| **Cashier** | **Floor · Till · Me** (Prompt C1+C2, default `/cashier/floor`; Queue/Receipts are hidden compatibility routes reachable by direct URL only, retire C4/C5) | Payment collection, receipts, till/close (C2 delivered read-only table→bill resolution + a read-only settlement workspace behind Floor selection + Find bill; payment/close **execution** arrives C3) |
 | **Supervisor** | **Floor · Reservations · Approvals · Me** | Read-first oversight; table-control workspace behind Floor selection |
+
+⚠️ **Cashier Floor-First reconstruction (locked target, C0 complete / C1 not started, 2026-07-31):**
+Cashier's Queue-first navigation above is **historically complete and demo-ready but superseded** as
+the target architecture. The locked target nav is **Floor · Till · Me** (default route
+`/cashier/floor`), landing on the same shared `OperationalFloor` as Waiter/Supervisor; a physical
+table selection opens a settlement/payment/close/receipt workspace; a compact **Find bill** sibling
+control (same architectural placement as Supervisor's Find order) handles tableless/takeaway/direct-
+lookup/receipt-reference/closed-order cases. Queue and Receipts are removed as standalone
+navigation/pages **only after** their capabilities are migrated (a 7-prompt C0–C6 reconstruction).
+Canonical docs: `docs/cashier-ui-docs/*`, `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`,
+`ai/CASHIER_FLOOR_RECONSTRUCTION_GAP_REGISTER.md`, `ai/CASHIER_FLOOR_RECONSTRUCTION_ROADMAP.md`
+(roadmap), plus the C0 audit set under `ai/CASHIER_FLOOR_RECONSTRUCTION_C0_*`/`ai/CASHIER_FLOOR_
+RECONSTRUCTION_{COMPONENT,ROUTE_AND_NAV,CAPABILITY_MIGRATION,PERMISSION_AND_API,TEST_INVENTORY}*.md`.
+**Do not begin C1 implementation, remove Queue/Receipts, or fork the shared Floor for Cashier without
+explicit authorization to proceed past C0.** The previously completed Cashier payment, split,
+receipt, Till, refund, session, profile, and performance logic is **preserved and reused**, not
+rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 - Payment collection / order close / till are **Cashier-owned**. Supervisor may
   only **read** payment/order state. Waiter cannot collect payment or close.
@@ -121,11 +139,148 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 
 ## 10. Current implementation milestone
 
-**WAITER complete + SUPERVISOR RECONSTRUCTION through Prompt 4D (Reservations UI
-complete with known limitations; order-workspace financial actions feature-complete;
-Prompt 4A backend reservation lifecycle complete; Prompt 4C shared-Neon cutover deployed;
-Prompt 4D isolated live QA + fail-closed DB isolation tooling — COMPLETE WITH KNOWN
-LIMITATIONS / DEMO-READY).** See `PROGRESS.md`.
+**SUPERVISOR RECONSTRUCTION FINAL CLOSURE COMPLETE (2026-07-31) — B: COMPLETE WITH KNOWN
+LIMITATIONS / DEMO-READY.** An integrated final QA pass executed the full Supervisor experience
+live (Floor/order-workspace, Reservations, Approvals, Me), cross-role Waiter/Cashier regression,
+and role/privacy boundaries across all four viewports on an isolated stack (disposable Neon branch
+for API matrices, local Docker Postgres for the four-viewport Playwright browser suite — 262/264
+executed passed, 0 unresolved failures). Two test-harness defects were found and fixed (a
+multi-role-login race in the shared `uiLogin` fixture; a reservation-create test asserting
+nonexistent validation copy / conflating native-date-constraint blocking with app-level
+validation); zero product-code defects were found. Shared Neon `production` verified
+byte-for-byte unchanged before/after. See `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md`
+(canonical closure record), `ai/SUPERVISOR_FINAL_QA_EVIDENCE_INDEX.md`,
+`ai/SUPERVISOR_FINAL_KNOWN_LIMITATIONS.md`, `ai/SUPERVISOR_FINAL_DEMO_SCRIPT.md`, and
+`ai/SUPERVISOR_FINAL_DEMO_DATA_REGISTER.md`. **Manager reconstruction NOT started — it remains
+blocked until Cashier reconstruction (below) closes at C6.** See `PROGRESS.md`.
+
+**Cashier Floor-First reconstruction — Prompt C2 COMPLETE (2026-07-31) — A: C2 COMPLETE / READY FOR
+C3.** C2 replaces C1's neutral selected-table boundary with the **table→bill resolution + canonical
+read-only settlement-workspace foundation** (frontend-only; **no backend/schema/migration/seed/
+permission/Postman change**). Selecting a table runs ONE bounded, branch-scoped
+`GET /pos/orders?tableId=` query and classifies results through a central fail-closed helper
+(`lib/cashier/bill-resolution.ts`): **zero** payable → truthful "No bill is available for this table."
+(+ read-only closed-bill list when present); **one** → auto-resolve into the workspace (URL gains
+`orderId`, no visible selector); **multiple** → an explicit bounded selector (**never** a silent
+first-pick). Canonical URL state is `?tableId=&orderId=` (or `?orderId=` for tableless/takeaway/Find
+bill) — refresh/Back/Forward safe; invalid/cross-branch orderId fails safe. The one canonical
+`CashierSettlementWorkspace` is **read-only** (Bill / Totals / Payment state / Settlement readiness /
+History) and **reuses** the existing checkout primitives (`CashierOrderTotals`,
+`CashierPaymentSummary`, `normalizeCashierOrder`) — it exposes **no** payment/split/close/receipt/
+refund control (those are C3/C4). Payment state **fails closed** (unavailable is never shown as
+unpaid). A compact Cashier-only **Find bill** dialog (sibling above the shared Floor, never a fork;
+bounded/branch-scoped; tableless+takeaway; exact-id fallback) routes results into the same workspace;
+receipt-reference search is deferred to C4. Queue/Receipts remain hidden compatibility routes (not
+deleted, not redirected, not mounted on Floor). New: `lib/cashier/bill-resolution.ts`,
+`lib/cashier/bill-query-keys.ts`, `components/cashier/floor/{CashierBillResolutionPanel,
+CashierBillSelector,CashierSettlementWorkspace,CashierFindBillDialog}.tsx`,
+`scripts/cashier-c2-assertions.ts`, and the `e2e/cashier-floor/` C2 specs. Validated: web
+typecheck/lint/build; C1+C2+shell+floor assertions; Playwright `e2e/cashier-floor/` executed on an
+**isolated local Docker Postgres** stack (never shared Neon); no commit/push. **C3 (payment/close
+execution) NOT started** — do not implement payment/split/close/receipt/refund, retire
+Queue/Receipts, fork the shared Floor, or change any Cashier permission without explicit
+authorization to proceed past C2. See `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md`,
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C2_QA_EVIDENCE_INDEX.md`, and
+`ai/CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C3.md`.
+
+**Prior milestone record (superseded by C2 above, kept for history) — Cashier Floor-First
+reconstruction Prompt C1 COMPLETE (2026-07-31).** The locked Floor-first
+target (nav **Floor · Till · Me**, default route `/cashier/floor`, Cashier as the third
+`OperationalFloor` consumer alongside Waiter/Supervisor, a settlement workspace behind table
+selection, and a compact **Find bill** sibling control) is now **implemented for C1**, on top of
+the C0 audit. C1 delivered (frontend-only; **no backend/schema/migration/seed/permission/Postman
+change**): Cashier nav changed to Floor/Till/Me; `/cashier/floor` page + `/cashier` → `/cashier/floor`
+redirect; `getCashierLandingPath()` → `/cashier/floor`; the new `CashierFloorScreen` renders the
+shared `OperationalFloor` (no forked card/grid/toolbar) with a Cashier data layer
+(`lib/cashier/floor-{api,model,route}.ts`) over `pos:table:read`/`pos:orders:read`/`pos:reservation:read`
+(already held); canonical `?tableId=` selection URL state (refresh/Back/Forward safe; invalid table
+fails safe); and a **read-only, truthful settlement boundary** (`CashierSelectedTablePanel`, "Select a
+bill to continue.") that exposes **no** payment/close/split/refund/receipt action — the mount point
+C2 replaces. **Queue and Receipts are NOT deleted and NOT redirected** — they remain hidden
+compatibility routes reachable only by direct URL (retire Receipts→C4, Queue→C5). Till/Me unchanged.
+Validated: web typecheck/lint/build; shell/floor/cashier-c1 assertion scripts; Playwright
+`e2e/cashier-floor/` **88/88** (22 × 4 viewports) + cross-role regression **40/40**, executed on an
+**isolated local Docker Postgres** stack (never shared Neon); `git diff --check` clean; no commit/push.
+See `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md` (canonical C1 record),
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md`, and `ai/CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C2.md`
+(next-prompt spec). **C2 (table→order resolution + settlement workspace foundation + Find bill
+foundation) has NOT started.** Do not implement payment/split/close, remove or redirect
+Queue/Receipts, fork the shared Floor for Cashier, or change any Cashier permission without explicit
+authorization to proceed past C1. Manager reconstruction remains paused until Cashier C6 closes.
+
+**Prior milestone record (superseded by the final closure above, kept for history):**
+WAITER complete + SUPERVISOR RECONSTRUCTION through Prompt 5B2 — SUPERVISOR APPROVALS CLOSED
+(Reservations UI complete with known limitations; order-workspace financial actions feature-complete;
+Prompt 4A–4D reservation lifecycle + isolated live QA + fail-closed DB isolation tooling; Prompt 5A
+Approvals backend/contract/QA foundation; Prompt 5B1 Discount + Leave decisions; Prompt 5B2 Anomaly
+acknowledge/resolve + Shift-swap Outcome C reject-only — PROMPT 5 CLOSED AT B / DEMO-READY WITH KNOWN
+LIMITATIONS).
+
+- **Supervisor Approvals — Prompt 5B2 PROMPT 5 CLOSED (2026-07-31).** Completes the four-domain
+  Approvals workspace. **Anomaly** Acknowledge (OPEN→ACKNOWLEDGED, note optional; the row **stays** in
+  Needs action until resolved) + Resolve (ACKNOWLEDGED→RESOLVED, note **required**) are live via the
+  `pos:analytics:anomalies:acknowledge`-gated endpoints; evidence is preserved and the underlying
+  order/till/payment/attendance/shift record is **not** mutated. **Shift-swap = Outcome C
+  (user-authorized): Reject only, NO Approve control.** A truthful atomic roster swap is unsupported —
+  `ScheduleAssignment` is **read-only across the entire API** (no roster-mutation service; assignments
+  are only seeded), the request references only a `shiftDate` (no specific-shift FK), and
+  `pos:hr:shift-swaps:approve` has never mutated the roster (SUP-RG-036/042). The UI says so honestly
+  ("schedule reassignment is not supported"); Reject writes status + audit and changes **0** roster
+  rows (verified). **Do NOT add a shift-swap Approve/roster-mutation control, a roster-write service,
+  or a schedule permission without explicit authorization.** Frontend-only: **no backend / schema /
+  migration / seed / permission / Postman change; no commit/push.** Validated: web typecheck/lint/build;
+  API 126/126 + reservations 39/39; isolated live QA on disposable branch `br-hidden-king-a4rbwvj0`
+  (API matrix — shift-swap reject/dup/bound + anomaly ack/resolve/dup/stale = **11/11**; roster
+  integrity 0 assignments touched; full Playwright Approvals suite × 4 viewports executed); shared
+  `production` untouched; branch deleted. **Prompt 5 (Supervisor Approvals) is CLOSED at B — COMPLETE
+  WITH KNOWN LIMITATIONS / DEMO-READY.** Next major track: **Manager reconstruction (not started)**.
+
+- **Supervisor Approvals — Prompt 5B1 (2026-07-30).** The read-only Approvals
+  page is replaced by a premium `SupervisorApprovalsWorkspace` on the 5A `approvals-contract.ts`:
+  **Needs action / Resolved / History** scope tabs, All + per-domain filters, server-`total` counts,
+  one identity-safe queue row shell, responsive master-detail (desktop split / mobile stack — one
+  detail workspace), URL-persisted `scope`/`domain`/`page`/`from`/`to`/`selDomain`/`selId` (default
+  Needs action / All / page 1; **never** History; filter changes use `router.replace`). **Discount +
+  Leave are fully actionable** — Discount reuses the Prompt 3 `/pos/discounts/:id/approve|reject` +
+  financials with the **UI-only payment-safety gate** + truthful **self-approval notice**; Leave uses
+  `PATCH /hr/leave/:id/review` with **no payroll/roster claim**; terminal records are read-only.
+  **Shift-swap + Anomaly render READ-ONLY** (their decisions land in Prompt 5B2 — do NOT add
+  Acknowledge/Resolve/Approve controls). **Discounts are omitted from Resolved/History** (no
+  branch-wide endpoint, SUP-RG-035; a truthful "available from the related order" notice shows if
+  forced). New files: `apps/web/src/lib/supervisor/approvals-workspace.ts`,
+  `apps/web/src/components/supervisor/approvals/workspace/*`, `apps/web/e2e/supervisor-approvals/*`
+  (the old read-only `components/supervisor/approvals/*` remain but are unused). **No permission,
+  schema, migration, seed, backend, or Postman change; no commit/push.** Validated: web
+  typecheck/lint/build; API 126/126 + reservations 39/39; isolated live browser QA on disposable Neon
+  branch (Playwright Approvals suite × 4 viewports executed); shared `production` untouched. Do NOT
+  begin Prompt 5B2, add a generic approvals decide endpoint, or add a permission without approval.
+
+- **Supervisor Approvals — Prompt 5A COMPLETE / READY FOR PROMPT 5B (2026-07-30).** Backend +
+  contract + isolated-live-QA foundation for the premium Approvals UI (Prompt 5B). **No new
+  permission, schema, migration, seed, or Postman change; no commit/push.** The four approval
+  domains (Discount, Leave, Shift-swap, Anomaly) already had working decision lifecycles (pass
+  Jest); 5A **audited** them against real code + live Neon and applied **backward-compatible
+  hardening** — bounded leave/shift-swap list pagination (coerced `@Type`+`@Max(100)`+service
+  clamp), **branch isolation** on shift-swap approve + anomaly acknowledge/resolve (leave stays
+  **org-scoped** by design — nullable branch), **concurrency-safe** status-guarded conditional
+  `updateMany` claims on all four decisions (duplicate/raced → 409 discount / 400–409 others, no
+  double mutation or audit), optional `dateFrom`/`dateTo` History filters on leave/swap/anomaly
+  lists, and a minimal `actorUser` identity projection on the anomaly **list**. **Architecture is
+  domain-specific (Option B):** Supervisor does **not** hold `approvals:read`/`approvals:decide`,
+  so the generic `unified-approvals` inbox (`POST /api/approvals/:id/decide`) is NOT the Supervisor
+  path — every decision uses its canonical domain endpoint (`/pos/discounts/:id/approve|reject`,
+  `/hr/leave/:id/review`, `/hr/shift-swaps/:id/approve`, `/analytics/anomalies/:id/acknowledge|resolve`).
+  Leave + shift-swap live in the **attendance** module; anomalies in **analytics**. Added the
+  additive `apps/web/src/lib/supervisor/approvals-contract.ts` (Needs-action/Resolved/History
+  scopes over real statuses, canonical endpoints, bounded per-domain query builder, minimal
+  identity resolvers, query-key factory, counts-from-`total`, narrow decision invalidation, error
+  mapping); the read-only Approvals **page is visually unchanged**. **Isolated live QA executed** on
+  a disposable Neon branch (Prompt 4D fail-closed launcher): API decision matrix **29/29** (incl.
+  branch-isolation 404, duplicate 409/400, required-reason, identity names) + Playwright Approvals
+  smoke **8/8** (4 viewports); shared `production` verified untouched (58/0/836/126). **Documented
+  gap (SUP-RG-035):** discounts have no branch-wide list endpoint (only `/pending` + per-order) →
+  no branch-wide discount Resolved/History without a new endpoint. Do NOT begin the Prompt 5B UI,
+  add a generic approval decide endpoint, or add a permission without approval.
 
 - **Supervisor Reservations — Prompt 4D COMPLETE WITH KNOWN LIMITATIONS (2026-07-29).** The
   outstanding live-browser/API QA gate is closed. Durable **fail-closed isolation tooling** now
@@ -320,6 +475,16 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   permissions, auth semantics, or branch isolation.
 - Do not edit Postman collections unless an actual contract change requires it.
 - Do not build the Manager UI (planning only exists).
+- Cashier reconstruction Prompt **C2 is COMPLETE** (nav Floor/Till/Me, `/cashier/floor` default,
+  shared-Floor consumer, table→bill resolution with zero/one/multiple handling, canonical
+  `?tableId=&orderId=` URL state, ONE read-only `CashierSettlementWorkspace` reusing the checkout
+  primitives, and a bounded Cashier-only **Find bill** sibling). **Do not begin Prompt C3 (or any
+  prompt past C2)** — do not implement Cashier payment collection/partial/split **execution**, order
+  **close**, receipt print/reprint/deliver, or refund execution; do not delete or redirect Cashier's
+  Queue/Receipts pages (hidden compatibility routes until C4/C5); do not fork the shared Floor for
+  Cashier; do not change any Cashier permission — without explicit authorization to proceed past C2.
+  See §10, `ai/CASHIER_FLOOR_RECONSTRUCTION_ROADMAP.md`, and
+  `ai/CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C3.md`.
 - Do not broadly refactor React Query or the performance architecture.
 - Do not hide known limitations or fabricate QA results.
 

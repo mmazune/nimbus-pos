@@ -30,6 +30,8 @@ describe('AnalyticsService', () => {
         findMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        // Default: the concurrency-safe conditional claim matches one row.
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         count: jest.fn(),
         groupBy: jest.fn(),
       },
@@ -252,6 +254,35 @@ describe('AnalyticsService', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
+  it('throws ConflictException when the anomaly was concurrently claimed (ack updateMany count 0)', async () => {
+    prisma.anomalyEvent.findFirst.mockResolvedValueOnce({
+      id: 'a1',
+      orgId: 'org-1',
+      branchId: 'branch-1',
+      status: 'OPEN',
+    });
+    prisma.anomalyEvent.updateMany.mockResolvedValueOnce({ count: 0 });
+    await expect(service.acknowledgeAnomaly('a1', 'user-1', ctx, {}, meta)).rejects.toThrow(
+      ConflictException,
+    );
+  });
+
+  it('scopes the acknowledge lookup + conditional claim to the caller branch (branch isolation)', async () => {
+    prisma.anomalyEvent.findFirst.mockResolvedValueOnce({
+      id: 'a1',
+      orgId: 'org-1',
+      branchId: 'branch-1',
+      status: 'OPEN',
+    });
+    await service.acknowledgeAnomaly('a1', 'user-1', ctx, {}, meta);
+    expect(prisma.anomalyEvent.findFirst.mock.calls[0][0].where).toEqual(
+      expect.objectContaining({ id: 'a1', orgId: 'org-1', branchId: 'branch-1' }),
+    );
+    expect(prisma.anomalyEvent.updateMany.mock.calls[0][0].where).toEqual(
+      expect.objectContaining({ id: 'a1', branchId: 'branch-1', status: 'OPEN' }),
+    );
+  });
+
   // ── Resolve Anomaly ──
 
   it('should resolve an ACKNOWLEDGED anomaly', async () => {
@@ -291,6 +322,19 @@ describe('AnalyticsService', () => {
     await expect(
       service.resolveAnomaly('a1', 'user-1', ctx, { resolutionNotes: 'No' }, meta),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('throws ConflictException when the anomaly was concurrently claimed (resolve updateMany count 0)', async () => {
+    prisma.anomalyEvent.findFirst.mockResolvedValueOnce({
+      id: 'a1',
+      orgId: 'org-1',
+      branchId: 'branch-1',
+      status: 'ACKNOWLEDGED',
+    });
+    prisma.anomalyEvent.updateMany.mockResolvedValueOnce({ count: 0 });
+    await expect(
+      service.resolveAnomaly('a1', 'user-1', ctx, { resolutionNotes: 'Done' }, meta),
+    ).rejects.toThrow(ConflictException);
   });
 
   // ── Risk Dashboard ──

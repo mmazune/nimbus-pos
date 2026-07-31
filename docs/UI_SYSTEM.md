@@ -4,6 +4,26 @@
 > Supervisor). Companion to `PRODUCT.md` (product/design principles) and
 > `ARCHITECTURE.md` (system shape). Code lives in `apps/web/src/components/`.
 
+> **Supervisor final closure (2026-07-31):** the shared-first architecture below (one Floor, one
+> shell, one idle handler, one icon registry across all three roles) was verified intact by
+> cross-role regression specs at all four viewports in the final integrated QA pass — no shared
+> component was forked or diverged. See
+> `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md`.
+
+> **Prompt 5B2 (2026-07-31):** The Approvals workspace's shift-swap + anomaly detail panels gained
+> decision controls (reject; acknowledge/resolve) reusing the same shared `ActionConfirmDialog` +
+> `ToastProvider` — no new component families. Shift-swap deliberately exposes no Approve control
+> (Outcome C), demonstrating the system's honest-affordance principle: the UI never renders an action
+> it can't truthfully perform.
+>
+> **Prompt 5B1 (2026-07-30):** The Supervisor **Approvals** page adopts the premium master-detail
+> pattern (mirroring Reservations): a queue column + a sticky detail panel that stacks on narrow
+> viewports (`xl:grid-cols-[minmax(0,1fr)_460px]`, one detail workspace). It reuses shared primitives
+> — `ActionConfirmDialog`, `ToastProvider`, `Badge`/`Button`/`Card`/`Skeleton`/`StatusMessage` — and
+> a single identity-safe queue-row shell for all four approval domains. Scope tabs + domain filter
+> use accessible `role=tablist`/`aria-pressed`; status/severity convey via labelled badges (not
+> colour alone). Components: `components/supervisor/approvals/workspace/*`.
+
 ## 1. Principle: shared-first
 
 Equivalent UI concepts across roles are implemented **once** as shared primitives
@@ -44,11 +64,23 @@ role's `lib/<role>/routes.ts`:
 | Role | Tabs |
 | --- | --- |
 | Waiter | **Floor · Reservations · Me** (Floor stays active on `/waiter/orders*`) |
-| Cashier | **Queue · Receipts · Till · Me** |
+| Cashier | **Floor · Till · Me** (Prompt C1+C2, 2026-07-31; default `/cashier/floor`) |
 | Supervisor | **Floor · Reservations · Approvals · Me** |
 
 There is **no Orders tab** for Waiter or Supervisor. Legacy Orders routes are
 redirect-only.
+
+✅ **Cashier is Floor-first (Prompt C1+C2 implemented 2026-07-31):** the visible nav is
+**Floor · Till · Me** (Queue/Receipts removed from the nav), default route `/cashier/floor`
+(with `/cashier` redirecting there), and Cashier is the **third shared-`OperationalFloor`
+consumer** alongside Waiter/Supervisor. The Floor tab uses the same canonical `floor` icon.
+**C2** added, behind a table selection, table→bill resolution (zero/one/multiple, fail-closed, no
+silent first-pick), ONE **read-only** `CashierSettlementWorkspace` reusing the checkout primitives,
+canonical `?tableId=&orderId=` URL state, and a Cashier-only **Find bill** sibling above the shared
+Floor (payment/close execution is C3). Queue/Receipts survive only as **hidden compatibility
+routes** (direct URL, retire C4/C5). See `docs/cashier-ui-docs/CASHIER_ARCHITECTURE.md`,
+`ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`, and
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md`.
 
 ## 4. Canonical icon registry
 
@@ -67,9 +99,16 @@ routes/screens; always apply the registry size/weight tokens.
 
 `OperationalFloor` composes `OperationalFloorToolbar` + `OperationalTableGrid`;
 the grid renders `OperationalTableCard`, which renders `OperationalTableStatusBadge`.
-Waiter and Supervisor render the **same** `OperationalFloor` (generic over
-`OperationalTableViewModel`; each role passes a role-specific view model that
-extends it).
+Waiter, Supervisor, **and Cashier (Prompt C1, 2026-07-31)** render the **same**
+`OperationalFloor` (generic over `OperationalTableViewModel`; each role passes a
+role-specific view model that extends it). **Role behaviour diverges only AFTER
+table selection:** Waiter → menu/order workspace; Supervisor → read-first
+table-control workspace; Cashier → a **read-only, truthful settlement boundary**
+(`CashierSelectedTablePanel`, copy "Select a bill to continue.", exposing no
+payment/close/split/refund/receipt action) that C2 replaces with the real
+settlement workspace. Cashier's Floor reads only shared-safe data (tables + active
+orders + reservations) and shows no guest name/contact/payment/receipt reference on
+cards.
 
 - **Cards** are a fixed `min-h-[176px]`, show table label, status badge, a status-
   specific middle (ready / reservation time / assigned staff + "Mine" / temporarily

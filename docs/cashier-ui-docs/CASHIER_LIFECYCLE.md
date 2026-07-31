@@ -1,5 +1,16 @@
 # Cashier Lifecycle — Floor to Settlement
 
+> **Status (2026-07-31): Prompt C2 IMPLEMENTED.** A table selection now resolves to zero/one/multiple
+> payable bills and opens the read-only `CashierSettlementWorkspace` (bill detail + totals + payment
+> state + readiness + history); a Find bill sibling handles tableless/takeaway/exact-id. Canonical
+> URL state `?tableId=&orderId=`. Payment collection and order close **execution** arrive in C3.
+>
+> **(Superseded) Status (2026-07-31): Prompt C1 IMPLEMENTED.** Session entry now lands on `/cashier/floor`
+> (shared Floor), and a table selection opens a **read-only** settlement boundary ("Select a bill
+> to continue."). Table→order resolution and every settlement/payment/close/receipt step below is
+> the locked **target**, delivered in C2–C6 — not yet built. See
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`.
+
 ## 1. Session entry
 
 1. Cashier authenticates.

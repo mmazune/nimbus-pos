@@ -1,5 +1,15 @@
 # Operational Role Behaviour Matrix
 
+> **Status (2026-07-31): Prompt C2 IMPLEMENTED.** Cashier's post-selection behaviour is now
+> table→bill resolution + a **read-only** settlement workspace (no payment/split/close/receipt/
+> refund/transfer/void control — those stay Supervisor-owned or arrive in C3/C4). Find bill is a
+> Cashier-only sibling; Waiter/Supervisor behaviour is unchanged.
+>
+> **(Superseded) Status (2026-07-31): Prompt C1 IMPLEMENTED.** All three roles (Waiter, Supervisor, Cashier)
+> now consume one shared `OperationalFloor`. Cashier's post-selection behaviour in C1 is a
+> read-only settlement **boundary**; its full settlement/payment/close/receipt behaviour below is
+> the target for C2–C6.
+
 ## Shared default surface
 
 | Capability | Waiter | Supervisor | Cashier |

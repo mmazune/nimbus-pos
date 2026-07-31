@@ -4,6 +4,130 @@
 > Do not change a locked decision without explicit approval. History is preserved
 > (superseded entries are struck, not deleted).
 
+> **LOCKED (Prompt 5A, 2026-07-30) — Supervisor Approvals architecture = domain-specific
+> (Option B).** The Supervisor role does **not** hold `approvals:read`/`approvals:decide`, so the
+> generic `unified-approvals` inbox (`POST /api/approvals/:id/decide`) is **not** used — every
+> approval decision uses its canonical domain endpoint (`/pos/discounts/:id/approve|reject`,
+> `/hr/leave/:id/review`, `/hr/shift-swaps/:id/approve`, `/analytics/anomalies/:id/acknowledge|resolve`).
+> `Needs action` / `Resolved` / `History` are **UI groupings over each domain's real statuses**,
+> never persisted statuses. Each domain's single decision permission gates BOTH approve+reject (or
+> ack+resolve). Prompt 5A hardened these paths (bounded pagination `Max 100`, branch isolation on
+> shift-swap approve + anomaly ack/resolve with **leave intentionally org-scoped**, concurrency-safe
+> conditional-claim writes, History date filters) with **no permission/schema/migration/seed/Postman
+> change**. Rationale: smallest architecture that avoids duplicated lifecycle logic and preserves
+> per-domain permissions/DTOs; verified live (matrix 29/29). Source: 5A completion report + gap
+> register SUP-RG-011/012/035–039.
+
+> **LOCKED (Prompt 5B1, 2026-07-30) — Supervisor Approvals UI = premium master-detail workspace,
+> Discount + Leave actionable.** The former read-only Approvals page is replaced by a
+> `SupervisorApprovalsWorkspace` on the 5A `approvals-contract.ts`: **Needs action / Resolved /
+> History** scope tabs, All + per-domain filters, server-`total` counts, one shared identity-safe
+> queue row shell, and a responsive master-detail layout (desktop split / mobile stack — one detail
+> workspace). URL-persisted `scope`/`domain`/`page`/`from`/`to`/`selDomain`/`selId` (default = Needs
+> action / All / page 1; **never** History; filter changes use `router.replace`, so Back returns to
+> the prior page, not a filter state). **Discounts + Leave are fully actionable** (reusing the
+> Prompt 3 `/pos/discounts/:id/approve|reject` + financials with the UI-only payment-safety gate and
+> truthful self-approval notice; and `PATCH /hr/leave/:id/review` with no payroll/roster claim).
+> **Shift-swap + Anomaly render read-only in 5B1** (no decision controls — Prompt 5B2 activates them).
+> **Discounts are omitted from Resolved/History** (no branch-wide endpoint, SUP-RG-035) — a truthful
+> "available from the related order" notice shows if forced. **No permission / schema / migration /
+> seed / backend / Postman change.** Source: 5B1 completion report + QA evidence index.
+
+> **LOCKED (Supervisor final closure, 2026-07-31) — Supervisor reconstruction is COMPLETE WITH
+> KNOWN LIMITATIONS / DEMO-READY; Manager reconstruction is the next major track.** An integrated
+> final QA pass re-verified every locked decision below live, across all four viewports, on an
+> isolated stack (disposable Neon branch for API matrices, local Docker Postgres for the browser
+> suite — see `docs/TESTING_AND_QA.md`). 262/264 executed browser tests passed (0 unresolved
+> failures); two test-harness defects were found and fixed (zero product-code changes); shared
+> Neon verified unchanged. **Do not reopen or re-litigate any decision below without explicit
+> approval** — this closure pass exists to verify, not to change, Supervisor scope. See
+> `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md`.
+
+> **LOCKED (Cashier Floor-First Reconstruction Decision, 2026-07-31) — Cashier nav target changes
+> from Queue-first to Floor-first; reconstruction not yet implemented.** The currently-implemented
+> Cashier nav (Queue · Receipts · Till · Me, see D-NAV below) is historically complete and
+> demo-ready but is **superseded as the target architecture**. The locked target nav is **Floor ·
+> Till · Me** (default route `/cashier/floor`), landing on the same shared `OperationalFloor` as
+> Waiter/Supervisor; a physical table selection opens a settlement/payment/close/receipt workspace
+> (Cashier becomes the sole payment/close/receipt-owning role, unchanged); a compact **Find bill**
+> sibling control (never a fourth tab, never forking the shared Floor) reaches tableless/takeaway/
+> direct-lookup/receipt-reference/closed-order/partially-paid/failed-pending-payment cases. Queue
+> and Receipts are removed as standalone navigation/pages only **after** every capability is
+> migrated. Reconstruction is seven prompts **C0–C6**; **C0 (documentation + current-worktree audit
+> only) is complete (2026-07-31)** — no runtime/backend/schema/permission/Postman change occurred.
+> Previously-built payment, split, receipt, Till, refund, session, profile, and performance logic
+> is reused, not rewritten. Manager reconstruction remains blocked until Cashier C6 closes. **Do
+> not begin C1 or any later prompt without explicit authorization.** Source:
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`, `ai/CASHIER_FLOOR_RECONSTRUCTION_ROADMAP.md`,
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C0_REPO_VERIFICATION_REPORT.md`.
+
+> **LOCKED (Cashier Floor-First Prompt C1 — IMPLEMENTED, 2026-07-31) — Cashier is now Floor-first.**
+> The locked target above is now **implemented for C1** (frontend-only; no backend/schema/migration/
+> seed/permission/Postman change). Cashier visible nav is exactly **Floor · Till · Me** (Queue +
+> Receipts removed from the nav); the Floor tab uses the same canonical `floor` icon as Waiter/
+> Supervisor. Default route is **`/cashier/floor`** and `/cashier` redirects there
+> (`getCashierLandingPath()` → `/cashier/floor`, so login/landing goes to Floor). Cashier is the
+> **third `OperationalFloor` consumer** (via `CashierFloorScreen`) — no Cashier-specific Floor card/
+> grid/toolbar; the shared toolbar/search/status-filters/floor-selector/grid/cards/loading/empty/
+> error/responsive behaviour is reused byte-for-byte, and **role behaviour differs only AFTER table
+> selection**. Table selection uses canonical URL state `/cashier/floor?tableId=<id>` (push then
+> replace, `shallow:true`; refresh/Back/Forward restore context; invalid/cross-branch id fails safe
+> with a "Table unavailable" state). After selecting a table Cashier opens a **read-only, truthful
+> settlement BOUNDARY** (`CashierSelectedTablePanel`, copy "Select a bill to continue.") that exposes
+> **no** payment/close/split/refund/receipt/void/discount/transfer action — the architectural mount
+> point C2 replaces with the real settlement workspace (**no premature payment UI**). The Floor reads
+> only shared-safe data (tables + active orders + reservations via one bounded query domain); **no**
+> per-table payment fetch and **no** guest name/contact/payment-reference/receipt-reference on cards.
+> Cashier already holds `pos:table:read`/`pos:orders:read`/`pos:reservation:read` — **no new grant**.
+> **Queue and Receipts are NOT deleted and NOT redirected in C1** — they remain **hidden compatibility
+> routes** reachable only by direct URL (`/cashier/queue`, `/cashier/receipts`), removed from visible
+> nav (planned retirement: Receipts C4, Queue C5). Till + Me are unchanged and unregressed. The
+> previously-built payment/split/receipt/Till/refund/session/profile logic is preserved and reused.
+> **Do not begin C2 or remove Queue/Receipts without explicit authorization.** Classification: **A.
+> C1 COMPLETE / READY FOR C2.** Source: `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_
+> REPORT.md`, `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md`,
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C2.md`.
+
+> **LOCKED (Cashier Floor-First Prompt C2 — IMPLEMENTED, 2026-07-31) — table→bill resolution + a
+> read-only settlement workspace.** C2 replaces C1's neutral selected-table boundary
+> (`CashierSelectedTablePanel`, now unused/retained) with the resolution + settlement foundation
+> (frontend-only; no backend/schema/migration/seed/permission/Postman change). Selecting a table
+> runs ONE bounded, branch-scoped `GET /pos/orders?tableId=&pageSize=50` and classifies results
+> through the central FAIL-CLOSED helper `lib/cashier/bill-resolution.ts`
+> (PAYABLE / PAYMENT_IN_PROGRESS / PARTIALLY_PAID / SETTLED / TERMINAL_READ_ONLY /
+> NOT_CASHIER_SETTLEABLE / UNKNOWN_UNSAFE): **zero** payable → "No bill is available for this table."
+> (+ read-only closed-bill list when present); **one** → auto-resolve into the workspace (URL gains
+> `orderId`, no visible selector); **multiple** → an explicit bounded selector (`CashierBillSelector`)
+> — the first is **never** auto-selected. Canonical URL state is `?tableId=&orderId=` (or `?orderId=`
+> for tableless/takeaway/Find bill), refresh/Back/Forward safe, invalid/cross-branch orderId fails
+> safe (bill detail is always fetched by orderId, never the wrong order). There is exactly **one**
+> canonical `CashierSettlementWorkspace` (read-only: Bill / Totals / Payment state / Settlement
+> readiness / History) that **reuses** the existing checkout primitives (`CashierOrderTotals`,
+> `CashierPaymentSummary`, `normalizeCashierOrder`) — it exposes **no** payment/split/close/receipt/
+> refund/transfer/void control, and payment state **fails closed** (unavailable is never shown as
+> unpaid/zero-due). A compact Cashier-only **Find bill** dialog (`CashierFindBillDialog`) is a sibling
+> ABOVE the shared `OperationalFloor` (never a fork), bounded + branch-scoped, supports tableless +
+> takeaway + exact-id lookup, routes results into the same workspace via `orderId`; receipt-reference
+> search is deferred to C4. Queue and Receipts remain hidden compatibility routes (not deleted, not
+> redirected, not mounted on Floor). **Do not begin C3 (payment/close execution) or remove
+> Queue/Receipts without explicit authorization.** Classification: **A. C2 COMPLETE / READY FOR C3.**
+> Source: `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md`,
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_QA_EVIDENCE_INDEX.md`,
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C3.md`.
+
+> **LOCKED (Prompt 5B2, 2026-07-31) — Approvals closure: Anomaly actionable, Shift-swap Outcome C.**
+> **Anomaly** Acknowledge (OPEN→ACKNOWLEDGED, note optional; row stays in Needs action) + Resolve
+> (ACKNOWLEDGED→RESOLVED, note required) are live via `pos:analytics:anomalies:acknowledge`; evidence
+> is preserved and the underlying order/till/payment/attendance/shift record is not mutated.
+> **Shift-swap = Outcome C (user-authorized):** the workspace exposes **Reject only** (truthful —
+> status + audit, no roster change) and **never an Approve control**, because a truthful atomic roster
+> swap is unsupported (`ScheduleAssignment` is read-only across the whole API — no roster-mutation
+> service; the request references only a date, not a specific shift; and `pos:hr:shift-swaps:approve`
+> has never mutated the roster). The UI states this honestly. A real roster swap stays a deferred
+> backend feature (SUP-RG-036/042). **No permission / schema / migration / seed / backend / Postman
+> change.** Prompt 5 Approvals closed at **B — COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY** (no UI
+> falsely claims an unsupported roster/financial effect). Source: 5B2 + Prompt 5 final reports.
+
 ## Locked technical decisions (from AI_CONTEXT / ROADMAP)
 
 | Decision | Value | Source |
@@ -23,9 +147,13 @@
 
 ### D-NAV — Per-role navigation (locked)
 - Waiter: **Floor · Reservations · Me**
-- Cashier: **Queue · Receipts · Till · Me**
+- Cashier: **Floor · Till · Me** — **implemented in Prompt C1 (2026-07-31)**, default route
+  `/cashier/floor`, Cashier as the third shared-`OperationalFloor` consumer. The former
+  ~~Queue · Receipts · Till · Me~~ nav is superseded; Queue/Receipts survive only as **hidden
+  compatibility routes** (direct URL, off the visible nav — retire Receipts C4 / Queue C5).
 - Supervisor: **Floor · Reservations · Approvals · Me**
-- Source: `lib/<role>/routes.ts`; `ai/SUPERVISOR_RECONSTRUCTION_*`; date 2026-07-18.
+- Source: `lib/<role>/routes.ts`; `ai/SUPERVISOR_RECONSTRUCTION_*`; date 2026-07-18; Cashier target
+  superseded 2026-07-31, see `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`.
 
 ### D-NOORDERS — No visible Orders tab (Waiter & Supervisor) (locked)
 Order work is reached from **Floor after a table is selected**, never as a primary
@@ -34,11 +162,14 @@ tab. Legacy `/waiter/orders*` and `/supervisor/orders` are **redirects** into Fl
 a parallel order-list surface. Source: Supervisor Reconstruction Repo Verification.
 
 ### D-FLOOR — Shared Floor parity (locked)
-Waiter and Supervisor render **one** `OperationalFloor` presentation (toolbar, grid,
-cards, status labels, staff formatting, breakpoints, 176px cards). **Role behaviour
-diverges only after table selection.** Presentation is shared; data access
-(queries/permissions/mutations) is role-owned. Changes to shared Floor propagate to
-all consuming roles. Source: Prompt 2 completion report; `components/floor/*`.
+Waiter, Supervisor, **and Cashier (Prompt C1, 2026-07-31)** render **one**
+`OperationalFloor` presentation (toolbar, grid, cards, status labels, staff formatting,
+breakpoints, 176px cards). **Role behaviour diverges only after table selection**
+(Cashier → C1 read-only boundary, superseded in **C2** by table→bill resolution + a
+read-only settlement workspace; payment/close execution arrives C3).
+Presentation is shared; data access (queries/permissions/mutations) is role-owned.
+Changes to shared Floor propagate to all consuming roles. Source: Prompt 2 completion
+report; Cashier C1 completion report; `components/floor/*`.
 
 ### D-SHELL — Shared operational shell (locked)
 One `OperationalShell`/`OperationalHeader`/`CurrentTime`/logout/`OperationalBottomNav`

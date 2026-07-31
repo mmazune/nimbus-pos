@@ -1,8 +1,27 @@
 # Cashier Floor-First Architecture
 
+> **Status (2026-07-31): Prompt C2 IMPLEMENTED.** Behind a Floor table selection, one bounded
+> `GET /pos/orders?tableId=` query is classified by `lib/cashier/bill-resolution.ts` (fail-closed)
+> into zero/one/multiple payable bills: one auto-resolves, multiple opens `CashierBillSelector`
+> (no silent first-pick), zero shows a truthful empty state. A selected bill opens the single
+> read-only `CashierSettlementWorkspace` (Bill/Totals/Payment state/Settlement readiness/History)
+> reusing the checkout primitives; a Cashier-only `CashierFindBillDialog` sibling handles
+> tableless/takeaway/exact-id lookup. Canonical URL state is `?tableId=&orderId=`. Payment/close
+> **execution** is C3.
+
 ## Decision status
 
-**Locked target architecture. Not yet implemented.**
+**Locked target architecture. Prompt C1 IMPLEMENTED (2026-07-31); C2+ pending.**
+
+C1 delivered the shared parts of this document: Cashier nav Floor/Till/Me, `/cashier/floor`
+default (bare `/cashier` redirects there), Cashier as the third shared `OperationalFloor` consumer,
+the `?tableId=` selection URL model, and a **read-only** truthful selected-table boundary
+(`CashierSelectedTablePanel`, copy "Select a bill to continue.") that C2 replaces with the real
+settlement workspace. Everything below about **table-to-order resolution, the settlement
+workspace, payment, close, receipt context, and Find bill remains the TARGET, not yet built**
+(C2–C6). The **legacy route policy** below (redirecting `/cashier/queue` and `/cashier/receipts`)
+is also a later-phase target — in C1 those routes are hidden compatibility routes that are **not**
+redirected. See `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`.
 
 The Cashier rebuild is a workflow recomposition around the shared operational Floor. It
 preserves the already-built payment, split, receipt, Till, refund, profile, session, and

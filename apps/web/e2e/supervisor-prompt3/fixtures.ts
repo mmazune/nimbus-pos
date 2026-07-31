@@ -35,6 +35,19 @@ type Role = "supervisor" | "waiter" | "cashier";
 // ── UI login: drives the real login form (password mode). ──
 export async function uiLogin(page: Page, role: Role) {
   const creds = CFG[role];
+  // A prior uiLogin() call on this same page (specs that switch roles mid-test, e.g.
+  // cross-role visibility) can leave an authenticated session in localStorage. Navigating to
+  // /login while still authenticated triggers an auto-redirect away from /login, which races
+  // the form interaction below and detaches the "Email" toggle mid-click. Clear the session
+  // first so /login renders the actual login form.
+  await page.goto("/login").catch(() => {});
+  await page.evaluate(() => {
+    try {
+      window.localStorage.clear();
+    } catch {
+      // ignore — storage access can be restricted in some contexts
+    }
+  }).catch(() => {});
   await page.goto("/login");
   // switch to email/password mode (the toggle is labelled "Email"; default is "Quick PIN")
   await page.getByRole("button", { name: /^email$/i }).click();

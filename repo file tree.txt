@@ -1260,6 +1260,83 @@ ai/
 └── SUPERVISOR_UI_PROMPT6_APPROVALS_COMPLETION_REPORT.md
 ```
 
+## Supervisor Approvals premium UI — Prompt 5B1 additions (2026-07-30)
+
+```text
+apps/web/src/lib/supervisor/
+├── approvals-contract.ts        # (Prompt 5A) verified contract layer
+└── approvals-workspace.ts       # (5B1) normalisers, bounded fetchers, decision fns, sort/scope helpers
+
+apps/web/src/components/supervisor/approvals/workspace/
+├── SupervisorApprovalsWorkspace.tsx   # orchestrator (URL state, queries, mutations, master-detail)
+├── ApprovalScopeTabs.tsx
+├── ApprovalDomainFilter.tsx
+├── ApprovalFilterToolbar.tsx
+├── ApprovalQueueList.tsx
+├── ApprovalDiscountDetail.tsx         # approve/reject + payment gate + self-approval notice
+├── ApprovalLeaveDetail.tsx            # approve/reject (org-scoped, no payroll/roster claim)
+├── ApprovalShiftSwapDetail.tsx        # read-only in 5B1 (5B2 activates)
+├── ApprovalAnomalyDetail.tsx          # read-only in 5B1 (5B2 activates)
+├── detail-primitives.tsx
+└── index.ts
+# NOTE: apps/web/src/pages/supervisor/approvals.tsx now renders SupervisorApprovalsWorkspace.
+#       The former read-only components/supervisor/approvals/* remain but are unused.
+
+apps/web/e2e/supervisor-approvals/
+├── approvals-fixtures.ts
+├── navigation-and-default-queue.spec.ts
+├── filters-pagination-routing.spec.ts
+├── discount-approve-reject.spec.ts
+├── discount-self-approval.spec.ts
+├── leave-approve-reject.spec.ts
+├── resolved-history.spec.ts
+├── identity-and-privacy.spec.ts
+├── responsive.spec.ts
+├── prompt3-prompt4-regression.spec.ts
+└── smoke.spec.ts                      # (Prompt 5A) route smoke
+
+ai/
+├── SUPERVISOR_RECONSTRUCTION_PROMPT5B1_APPROVALS_DISCOUNT_LEAVE_UI_COMPLETION_REPORT.md
+└── SUPERVISOR_APPROVALS_UI_QA_EVIDENCE_INDEX.md
+```
+
+## Supervisor Approvals closure — Prompt 5B2 additions (2026-07-31)
+
+```text
+# lib/supervisor/approvals-workspace.ts gains rejectShiftSwap + acknowledgeAnomaly + resolveAnomaly.
+# components/supervisor/approvals/workspace/ApprovalShiftSwapDetail.tsx  → Reject-only (Outcome C).
+# components/supervisor/approvals/workspace/ApprovalAnomalyDetail.tsx    → Acknowledge + Resolve.
+# components/supervisor/approvals/workspace/SupervisorApprovalsWorkspace.tsx → wires the 3 mutations.
+
+apps/web/e2e/supervisor-approvals/
+├── shift-swap-reject.spec.ts
+├── anomaly-acknowledge-resolve.spec.ts
+├── all-domains-consolidated.spec.ts
+├── cross-role-visibility.spec.ts
+└── responsive-closure.spec.ts
+# approvals-fixtures.ts gains selectRowWithAction + apiFirstAnomalyId + openApprovalDetail.
+
+ai/
+├── SUPERVISOR_RECONSTRUCTION_PROMPT5B2_SHIFT_SWAP_ANOMALY_UI_COMPLETION_REPORT.md
+└── SUPERVISOR_RECONSTRUCTION_PROMPT5_APPROVALS_FINAL_COMPLETION_REPORT.md
+```
+
+## Supervisor Reconstruction FINAL CLOSURE (2026-07-31)
+
+```text
+# Test-harness-only fixes (zero product-code changes):
+apps/web/e2e/supervisor-prompt3/fixtures.ts        # uiLogin session-clear (multi-role race fix)
+apps/web/e2e/supervisor-reservations/create-reservation.spec.ts  # corrected assertions
+apps/web/playwright.config.ts                      # Chromium stability launch flags
+
+ai/
+├── SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md   # canonical closure record
+├── SUPERVISOR_FINAL_QA_EVIDENCE_INDEX.md
+├── SUPERVISOR_FINAL_DEMO_SCRIPT.md
+├── SUPERVISOR_FINAL_KNOWN_LIMITATIONS.md
+└── SUPERVISOR_FINAL_DEMO_DATA_REGISTER.md
+```
+
 ## Supervisor UI Prompt 7 me/workforce additions (2026-07-05)
 
 ```text
@@ -1584,4 +1661,49 @@ apps/web/scripts/
 
 ai/
   SUPERVISOR_RECONSTRUCTION_PROMPT3B3B_DISCOUNT_DECISIONS_AND_COMPLIMENTARY_COMPLETION_REPORT.md
+```
+
+## Cashier Floor-First reconstruction Prompt C1 additions (2026-07-31)
+
+```text
+apps/web/src/pages/cashier/
+  floor.tsx            (new — shared OperationalFloor consumer page)
+  index.tsx            (new — redirect /cashier -> /cashier/floor)
+  queue.tsx            (unchanged — hidden compatibility route, retire C5)
+  receipts.tsx         (unchanged — hidden compatibility route, retire C4)
+
+apps/web/src/components/cashier/floor/
+  CashierFloorScreen.tsx
+  CashierSelectedTablePanel.tsx    (read-only C1 settlement boundary; C2 mount point)
+  index.ts
+
+apps/web/src/lib/cashier/
+  floor-api.ts         (loadCashierFloorData — tables + active orders + reservations)
+  floor-model.ts       (normalizeCashierFloorTables -> shared OperationalTableViewModel)
+  floor-route.ts       (default/compat route constants + tableId URL helpers)
+  routes.ts            (modified — nav Floor/Till/Me)
+
+apps/web/src/lib/auth/
+  role.ts              (modified — getCashierLandingPath() -> /cashier/floor)
+
+apps/web/scripts/
+  cashier-c1-assertions.ts
+  tsconfig.cashier-c1-assertions.json
+  shell-assertions.ts  (modified — Cashier nav Floor/Till/Me)
+  floor-assertions.ts  (modified — Cashier added to shared-Floor consumer loop)
+
+apps/web/e2e/cashier-floor/
+  navigation-and-default-route.spec.ts
+  shared-floor-parity.spec.ts
+  table-selection-routing.spec.ts
+  hidden-legacy-routes.spec.ts
+  till-and-me-regression.spec.ts
+  role-boundaries.spec.ts
+  responsive.spec.ts
+  performance-request-count.spec.ts
+
+ai/
+  CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md
+  CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md
+  CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C2.md
 ```

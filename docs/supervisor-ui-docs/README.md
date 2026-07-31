@@ -1,7 +1,32 @@
 # Supervisor UI Docs
 
-Status: Prompt 3B3B complete (2026-07-28); order-workspace financial actions feature-complete (consolidated 3B1–3B3B live/browser QA PENDING)
-Date: 2026-07-18 (updated 2026-07-28)
+Status: **SUPERVISOR RECONSTRUCTION FINAL CLOSURE — B / COMPLETE WITH KNOWN LIMITATIONS /
+DEMO-READY (2026-07-31).** See `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md` for the
+canonical closure record (integrated final QA across Floor/Reservations/Approvals/Me + cross-role
+regression, four viewports, isolated stack, shared Neon verified unchanged). Manager
+reconstruction is the next major track (not started). Prior milestone status, kept for history:
+Prompt 5B2 — SUPERVISOR APPROVALS CLOSED (Discount + Leave + Anomaly actionable; Shift-swap reject-only, Outcome C) — B / DEMO-READY WITH KNOWN LIMITATIONS (2026-07-31)
+
+> **Prompt 5B2 (2026-07-31):** Approvals closed. **Anomaly** Acknowledge + Resolve live via
+> `pos:analytics:anomalies:acknowledge` (evidence preserved, underlying entity untouched). **Shift-swap
+> = Outcome C:** Reject only, no Approve (no roster-mutation service exists; SUP-RG-042). All four
+> domains integrated in one master-detail workspace. Frontend-only; no backend/permission change.
+>
+> **Prompt 5B1 (2026-07-30):** The read-only Approvals page is replaced by
+> `SupervisorApprovalsWorkspace` (`components/supervisor/approvals/workspace/*`) on the 5A
+> `approvals-contract.ts` + a new `lib/supervisor/approvals-workspace.ts`. Needs action / Resolved /
+> History scope tabs, All + per-domain filters, server-`total` counts, identity-safe queue rows,
+> responsive master-detail, URL state. **Discount + Leave actionable; Shift-swap + Anomaly read-only
+> (5B2).** Discounts omitted from Resolved/History (SUP-RG-035). No permission/schema/backend change.
+Date: 2026-07-18 (updated 2026-07-30)
+
+> **Prompt 5A (2026-07-30).** Approvals backend/contract/QA foundation for the 5B UI. Domain-specific
+> architecture (Supervisor lacks `approvals:*` → no generic `/api/approvals/:id/decide`); the four
+> decision lifecycles (discount/leave/shift-swap/anomaly) verified live and hardened (bounded
+> pagination, branch isolation on swap/anomaly, concurrency-safe conditional claims, History date
+> filters, anomaly `actorUser` identity include). Additive `lib/supervisor/approvals-contract.ts`;
+> read-only Approvals page unchanged. Live QA: API matrix 29/29 + Playwright smoke 8/8; shared Neon
+> untouched. See `SUPERVISOR_APPROVAL_LIFECYCLE.md` and the 5A completion report.
 
 ## Current Decision
 

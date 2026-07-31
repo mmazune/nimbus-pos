@@ -1,5 +1,29 @@
 # ROLE_CAPABILITY_MATRIX.md — Nimbus POS
 
+> **Supervisor final closure (2026-07-31):** every capability row for Supervisor below was
+> exercised live in the final integrated QA pass (four viewports, isolated stack) and confirmed
+> accurate — see `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md`. No capability state
+> changed; this is a verification pass, not a scope change.
+
+> **Prompt 5B2 (2026-07-31) — Approvals CLOSED:** **Anomaly** Acknowledge + Resolve are now
+> **actionable** in the UI (evidence preserved, underlying entity untouched). **Shift-swap = Outcome C**:
+> **Reject actionable, Approve NOT exposed** — a roster-changing approval is unsupported (no
+> roster-mutation service; SUP-RG-042), and the UI says so truthfully. All four domains integrated; no
+> new permission/endpoint. Prompt 5 closed at B / demo-ready.
+>
+> **Prompt 5B1 (2026-07-30):** The Supervisor Approvals **UI** is now a premium master-detail
+> decision workspace. **Discount** approve/reject and **Leave** approve/reject are **actionable** in
+> the UI (via their canonical domain endpoints; discount is payment-gated + self-approval-flagged;
+> leave makes no payroll/roster claim). **Shift-swap + Anomaly are read-only** in the UI until Prompt
+> 5B2. No new permission/endpoint. Discounts have no branch-wide Resolved/History (SUP-RG-035).
+>
+> **Prompt 5A (2026-07-30):** Supervisor Approvals **decisions** (approve/reject discount, review
+> leave, approve/reject shift-swap, acknowledge/resolve anomaly) are **Implemented at the backend
+> and verified live** (matrix 29/29) on their canonical domain endpoints; the Approvals **page**
+> stays **Read-only** until Prompt 5B wires the UI. Supervisor holds each domain's decision
+> permission; it does NOT hold `approvals:*` (no generic inbox). Branch-scoped for swap/anomaly;
+> leave org-scoped. Discount **history** is Deferred (no branch-wide endpoint, SUP-RG-035).
+
 > Role × page × capability, with the backing endpoint and its **implementation
 > state** as of 2026-07-26. State legend:
 > **Implemented** = live & usable · **Read-only** = displayed, no mutation ·
@@ -26,16 +50,36 @@
 
 ## Cashier
 
+> **Cashier Floor-First reconstruction — Prompt C1+C2 IMPLEMENTED (2026-07-31); C3 not started.**
+> Cashier nav is now **Floor · Till · Me**, default route **`/cashier/floor`** (`/cashier`
+> redirects there), and Cashier is the **third shared-`OperationalFloor` consumer** alongside
+> Waiter/Supervisor. **C2 Floor is read-only:** selecting a physical table resolves to zero/one/
+> multiple payable bills (fail-closed, no silent first-pick) and opens ONE **read-only**
+> `CashierSettlementWorkspace` (Bill/Totals/Payment state/Settlement readiness/History, reusing the
+> checkout primitives) exposing **no payment/close/split/refund/receipt action**; a Cashier-only
+> **Find bill** sibling handles tableless/takeaway/exact-id. Payment/close **execution** arrives in
+> C3. **No permission change** — Cashier already holds `pos:table:read`, `pos:orders:read`,
+> `pos:reservation:read` (the reads the resolution + settlement + Find-bill queries use); no
+> backend/schema/migration/seed/Postman change. The payment/split/
+> receipt/Till capabilities in the table below are **preserved and still reachable** via the
+> **hidden compatibility routes** `/cashier/queue` + `/cashier/receipts` (direct URL only, off the
+> visible nav; retire Receipts C4 / Queue C5) — no capability below has been removed or migrated
+> yet. See `docs/cashier-ui-docs/*`,
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_CAPABILITY_MIGRATION_MATRIX.md`, and
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`.
+
 | Page | Capability | Endpoint(s) | State |
 | --- | --- | --- | --- |
-| Queue | View payable orders | orders/payments reads | Implemented |
+| Floor (C1) | View tables (shared `OperationalFloor`, shared-safe reads) | `GET /tables`, `GET /pos/orders?excludeStatus=CLOSED,VOIDED`, `GET /reservations` (`pos:table:read`/`pos:orders:read`/`pos:reservation:read`) | **Implemented** (Prompt C1; no guest/payment/receipt data on cards) |
+| Floor→Selected table (C1) | Read-only settlement **boundary** ("Select a bill to continue.") | (client, `?tableId=` URL state) | **Read-only** (Prompt C1; no payment/close/split/refund/receipt action — settlement workspace = C2) |
+| Queue (hidden compat route) | View payable orders | orders/payments reads | Implemented (direct-URL only; retire C5) |
 | Payment | Cash tender | `POST /payments` | Implemented |
 | Payment | Mobile money / card | provider adapters | **Deferred** (manual/reference only — LIM-001/003) |
 | Payment | Partial cash tender | — | **Deferred** (LIM-011) |
 | Payment | Split bill (allocation) | payments split | Implemented (metadata only — LIM-008) |
 | Payment | Split items | creates `NEW` child | Read-only/partial (no KDS dispatch — LIM-009) |
-| Receipts | Issue / preview | receipts | Implemented (delivery adapters Deferred) |
-| Till | Open / close / safe-drop | tills | Implemented (safe-drop idempotency incomplete; paid-in/out Deferred) |
+| Receipts (hidden compat route) | Issue / preview | receipts | Implemented (delivery adapters Deferred; direct-URL only post-C1, retire C4) |
+| Till | Open / close / safe-drop | tills | Implemented (safe-drop idempotency incomplete; paid-in/out Deferred; unchanged by C1) |
 | Me | Profile | `GET /auth/me` | Implemented |
 | — | Manager approval / post-close void | — | Read-only (boundary cards — LIM-012) |
 

@@ -131,6 +131,8 @@ describe('AttendanceService', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+        // Default: the concurrency-safe conditional claim matches one row.
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       shiftSwapRequest: {
         create: jest.fn(),
@@ -138,6 +140,7 @@ describe('AttendanceService', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       scheduleAssignment: {
         findFirst: jest.fn(),
@@ -516,6 +519,37 @@ describe('AttendanceService', () => {
         ),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('throws ConflictException when the row was concurrently claimed (updateMany count 0)', async () => {
+      prisma.leaveRequest.findFirst.mockResolvedValue(mockLeaveRequest); // passes precheck
+      prisma.leaveRequest.updateMany.mockResolvedValue({ count: 0 }); // lost the race
+      await expect(
+        service.reviewLeaveRequest(
+          'user-1',
+          ctx,
+          'leave-1',
+          { status: 'APPROVED' as any },
+          meta,
+        ),
+      ).rejects.toThrow(ConflictException);
+      expect(audit.log).not.toHaveBeenCalled();
+    });
+
+    it('claims the transition with a status-guarded, org-scoped conditional update', async () => {
+      prisma.leaveRequest.findFirst.mockResolvedValue(mockLeaveRequest);
+      await service.reviewLeaveRequest(
+        'user-1',
+        ctx,
+        'leave-1',
+        { status: 'APPROVED' as any },
+        meta,
+      );
+      const call = prisma.leaveRequest.updateMany.mock.calls[0][0];
+      // Leave is intentionally org-scoped (nullable branchId) — no branchId filter.
+      expect(call.where).toMatchObject({ id: 'leave-1', orgId: 'org-1', status: 'PENDING' });
+      expect(call.where.branchId).toBeUndefined();
+      expect(call.data.reviewedById).toBe('user-1');
+    });
   });
 
   // ── Shift Swaps ──
@@ -820,6 +854,41 @@ describe('AttendanceService', () => {
           meta,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException when the swap was concurrently claimed (updateMany count 0)', async () => {
+      prisma.shiftSwapRequest.findFirst.mockResolvedValue(mockShiftSwap);
+      prisma.shiftSwapRequest.updateMany.mockResolvedValue({ count: 0 });
+      await expect(
+        service.approveShiftSwap(
+          'user-1',
+          ctx,
+          'swap-1',
+          { status: 'APPROVED' as any },
+          meta,
+        ),
+      ).rejects.toThrow(ConflictException);
+      expect(audit.log).not.toHaveBeenCalled();
+    });
+
+    it('scopes both the lookup and the conditional claim to the caller branch (branch isolation)', async () => {
+      prisma.shiftSwapRequest.findFirst.mockResolvedValue(mockShiftSwap);
+      await service.approveShiftSwap(
+        'user-1',
+        ctx,
+        'swap-1',
+        { status: 'APPROVED' as any },
+        meta,
+      );
+      const lookup = prisma.shiftSwapRequest.findFirst.mock.calls[0][0];
+      expect(lookup.where).toMatchObject({ id: 'swap-1', orgId: 'org-1', branchId: 'branch-1' });
+      const claim = prisma.shiftSwapRequest.updateMany.mock.calls[0][0];
+      expect(claim.where).toMatchObject({
+        id: 'swap-1',
+        orgId: 'org-1',
+        branchId: 'branch-1',
+        status: 'PENDING',
+      });
     });
   });
 

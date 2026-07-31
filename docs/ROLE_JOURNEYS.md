@@ -1,5 +1,28 @@
 # ROLE_JOURNEYS.md — Nimbus POS operational role journeys
 
+> **Supervisor final closure (2026-07-31):** the full Supervisor journey below (Floor →
+> Reservations → Approvals → Me) was walked end-to-end live in the final integrated QA pass,
+> across all four viewports, plus Waiter/Cashier cross-role regression. See
+> `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md` and
+> `ai/SUPERVISOR_FINAL_DEMO_SCRIPT.md` for the canonical walkthrough.
+
+> **Prompt 5B2 (2026-07-31) — Approvals closed:** the journey now decides all four domains — plus
+> Discount + Leave, the Supervisor **acknowledges/resolves Anomalies** in place (acknowledge keeps the
+> row actionable; resolve requires a note). **Shift-swap** offers **Reject only** with an honest notice
+> that schedule reassignment isn't available here (Outcome C, SUP-RG-042).
+>
+> **Prompt 5B1 (2026-07-30):** the Supervisor **Approvals** journey is now a premium decision
+> workspace: land on **Needs action** (All), scan identity-safe queue rows with live counts, open a
+> request in the master-detail panel, and **decide Discounts + Leave** in place (Shift-swap + Anomaly
+> are read-only until Prompt 5B2). Resolved + History review terminal decisions (leave/swap/anomaly;
+> discounts stay order-scoped, SUP-RG-035). All queue state is URL-persisted.
+>
+> **Prompt 5A (2026-07-30):** the Supervisor **Approvals** journey now has a verified backend
+> foundation — the four decision lifecycles (discount/leave/shift-swap/anomaly) are hardened
+> (branch isolation, concurrency-safe, bounded queues) and exposed via canonical domain endpoints;
+> `Needs action`/`Resolved`/`History` are UI groupings over real statuses. The premium Approvals
+> workspace UI is Prompt 5B. See `supervisor-ui-docs/SUPERVISOR_APPROVAL_LIFECYCLE.md`.
+
 > Index of the operational role lifecycles and cross-role handoffs. Detailed
 > state machines live in the per-role lifecycle docs (linked below); this file is
 > the current, consolidated summary that matches the shipped code.
@@ -32,18 +55,40 @@ Blocked: **post-send item additions** (backend lacks per-line sent state — WKL
 
 ## Cashier
 
-**Nav: Queue · Receipts · Till · Me.** Payment-owning role.
+**Nav: Floor · Till · Me.** Payment-owning role. **Floor-first (Prompt C1+C2 implemented
+2026-07-31):** default route `/cashier/floor`, Cashier is the third shared-`OperationalFloor`
+consumer (as Waiter/Supervisor below), and `/cashier` redirects to `/cashier/floor`.
 
-1. **Login** → Cashier shell (session/workstation context).
-2. **Queue** — payable orders; select to see detail (rows enrich on selection).
-3. **Payment** — cash tender; mobile-money/card are manual/reference only (no live
-   provider). Split bill = allocation metadata; split items creates a `NEW` child
-   (no KDS dispatch yet).
-4. **Receipts** — issue/preview; delivery adapters pending.
-5. **Till** — open/close, safe-drop (idempotency backend-incomplete); paid-in/out
-   deferred.
-6. **Me** — shared profile.
-7. **Logout** — shared logout; idle-logout handler active.
+1. **Login / landing** → `/cashier/floor` (`getCashierLandingPath()` returns `/cashier/floor`).
+2. **Floor** — the **same** shared `OperationalFloor` as Waiter/Supervisor (same toolbar/search/
+   status filters/floor selector/grid/cards). It reads only shared-safe data (tables + active
+   orders + reservations via one bounded query domain); cards show **no** guest name/contact/
+   payment/receipt reference. Selecting a physical table sets canonical URL state
+   `/cashier/floor?tableId=<id>` (refresh/Back/Forward restore it; invalid/cross-branch ids fail
+   safe with a "Table unavailable" state).
+3. **Selected table (C2 resolution + read-only settlement)** — one bounded
+   `GET /pos/orders?tableId=` query is classified (fail-closed) into **zero** (truthful "No bill is
+   available for this table." + read-only closed-bill list), **one** (auto-resolve, URL gains
+   `orderId`, no selector), or **multiple** (explicit `CashierBillSelector`, never a silent
+   first-pick). A selected bill opens ONE **read-only** `CashierSettlementWorkspace`
+   (Bill/Totals/Payment state/Settlement readiness/History, reusing the checkout primitives) with
+   **no** payment/close/split/refund/receipt/void/discount/transfer action (payment/close
+   **execution** arrives C3). A Cashier-only **Find bill** sibling above the shared Floor opens
+   tableless/takeaway/exact-id bills into the same workspace via `?orderId=` (receipt-reference
+   search deferred to C4). Canonical URL state is `?tableId=&orderId=` (or `?orderId=` tableless),
+   refresh/Back/Forward safe.
+4. **Till** — open/close, safe-drop (idempotency backend-incomplete); paid-in/out deferred.
+   **Unchanged and unregressed by C1.**
+5. **Me** — shared profile. **Unchanged by C1.**
+6. **Logout** — shared logout; idle-logout handler active.
+
+**Legacy compatibility routes:** `/cashier/queue` and `/cashier/receipts` are **not deleted and
+not redirected** in C1/C2 — they remain reachable only by direct URL (removed from visible nav),
+preserving the historically-complete Queue-first payment/split/receipt logic (reused, not
+rewritten) until retirement (Receipts C4, Queue C5). The pre-reconstruction Queue-first journey
+is documented in `ai/CASHIER_UI_*`; the canonical target journey is
+`docs/cashier-ui-docs/CASHIER_LIFECYCLE.md`. See
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`.
 
 ## Supervisor
 
@@ -201,5 +246,5 @@ lifecycle is otherwise proven by 67/67 Jest tests + the compiled Playwright suit
 - **Supervisor** oversees Floor/reservations/approvals and may **read** order and
   payment state; it never collects payment, enters the menu, drives KDS, or issues
   receipts.
-- **Floor parity:** Waiter and Supervisor share one Floor presentation; behaviour
-  diverges only **after** table selection.
+- **Floor parity:** Waiter, Supervisor, and Cashier (Prompt C1) share one Floor
+  presentation; behaviour diverges only **after** table selection.

@@ -1,7 +1,27 @@
 # Supervisor Shared Component Architecture
 
-Status: Prompt 2 shared shell and Floor implemented
-Date: 2026-07-18
+Status: Prompt 2 shared shell and Floor implemented (Prompt 5B2 Approvals closed 2026-07-31)
+
+> **Prompt 5B2 (2026-07-31):** The `Approval{ShiftSwap,Anomaly}Detail` workspace components gained
+> decision controls (shift-swap Reject; anomaly Acknowledge/Resolve) reusing the shared
+> `ActionConfirmDialog` + `ToastProvider` — no new shell or component families; the four-domain
+> master-detail workspace is unchanged structurally.
+>
+> **Prompt 5B1 (2026-07-30):** New Approvals workspace components under
+> `components/supervisor/approvals/workspace/` (`SupervisorApprovalsWorkspace`, `ApprovalScopeTabs`,
+> `ApprovalDomainFilter`, `ApprovalFilterToolbar`, `ApprovalQueueList`, `Approval{Discount,Leave,
+> ShiftSwap,Anomaly}Detail`, `detail-primitives`). They reuse the shared `ActionConfirmDialog`
+> (pos-shell), the shared `ToastProvider`, and the 5A `approvals-contract.ts`; one shared queue-row
+> shell serves all four domains. The old `components/supervisor/approvals/*` (read-only page) remain
+> in the tree but are no longer imported.
+Date: 2026-07-18 (updated 2026-07-30)
+
+> **Prompt 5A (2026-07-30).** New shared, additive Approvals contract layer
+> `apps/web/src/lib/supervisor/approvals-contract.ts` — the typed foundation the Prompt 5B workspace
+> consumes (domain enums, Needs-action/Resolved/History scopes over real statuses, canonical
+> endpoints, bounded per-domain query builder, `ApprovalMinimalIdentity` + resolvers reusing the
+> existing name helpers, query-key factory, counts, narrow decision invalidation, error mapping). It
+> does NOT modify the existing read-only Approvals page/components; 5B builds on it.
 
 ## Goal
 

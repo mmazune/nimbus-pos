@@ -30,6 +30,14 @@ C1 is unblocked.
 
 ## C1 — Shared Cashier Floor, shell, navigation, and routing
 
+**Status: COMPLETE (2026-07-31) — A. C1 COMPLETE / READY FOR C2.** Delivered nav Floor/Till/Me,
+`/cashier/floor` default (+ `/cashier`→`/cashier/floor` redirect), Cashier as the third shared
+`OperationalFloor` consumer, `?tableId=` selection state, and a read-only settlement boundary.
+One deviation from the objective list below, per the authorized C1 spec: Queue/Receipts are kept
+as hidden compatibility routes **without** legacy redirects (redirects are deferred to C4/C5 with
+their capability migration). Browser QA executed (88/88 cashier + 40/40 cross-role × 4 viewports).
+See `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`.
+
 Objectives:
 
 - make Cashier the third consumer of the shared operational shell and `OperationalFloor`;
@@ -48,7 +56,13 @@ No payment-workspace rewrite in C1.
 placeholder/canonical workspace boundary while Queue/Receipts capabilities remain
 temporarily reachable for migration safety.
 
-## C2 — Table-to-order resolution and settlement workspace foundation
+## C2 — Table-to-order resolution and settlement workspace foundation — ✅ COMPLETE (2026-07-31)
+
+**Result:** A — C2 COMPLETE / READY FOR C3. Delivered `lib/cashier/bill-resolution.ts` (fail-closed
+classifier), `bill-query-keys.ts`, `CashierBillResolutionPanel`, `CashierBillSelector`,
+`CashierSettlementWorkspace` (read-only, reuses checkout primitives), and `CashierFindBillDialog`;
+canonical `?tableId=&orderId=` URL state; zero/one/multiple handling with no silent first-pick.
+See `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md`.
 
 Objectives:
 

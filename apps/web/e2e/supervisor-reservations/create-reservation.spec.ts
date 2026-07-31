@@ -8,18 +8,35 @@ test.describe.serial("Supervisor Reservations — create", () => {
     await gotoReservations(page);
   });
 
-  test("rejects a past time and a missing guest name", async ({ page }) => {
+  test("rejects a missing guest name", async ({ page }) => {
     await page.getByRole("button", { name: /create reservation/i }).click();
     const dialog = page.getByRole("dialog", { name: /create reservation/i });
     await expect(dialog).toBeVisible();
 
-    // Empty name + past time → cannot submit. Fill time too so the past datetime commits and
-    // the form re-validates before the submit click.
-    await dialog.getByLabel(/date/i).fill("2000-01-01");
+    // The date input has a native `min={today}` constraint, so a past date is blocked by the
+    // browser itself before the app's own onSubmit validation ever runs. Use a valid future
+    // date/time here so the empty-guest-name case exercises the app's own field validation.
+    const futureDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    await dialog.getByLabel(/date/i).fill(futureDate);
     await dialog.getByLabel(/^time/i).fill("12:00");
     await dialog.getByRole("button", { name: "Create reservation", exact: true }).click();
-    await expect(dialog.getByText(/fix the highlighted fields/i)).toBeVisible();
+    // The dialog renders per-field inline errors (role="alert"), not a summary banner.
+    await expect(dialog.getByText(/guest name is required/i)).toBeVisible();
     await expect(dialog).toBeVisible(); // not dismissed
+  });
+
+  test("rejects a past time via the native date-input constraint", async ({ page }) => {
+    await page.getByRole("button", { name: /create reservation/i }).click();
+    const dialog = page.getByRole("dialog", { name: /create reservation/i });
+    await expect(dialog).toBeVisible();
+
+    const dateInput = dialog.getByLabel(/date/i);
+    await dateInput.fill("2000-01-01");
+    await dialog.getByRole("button", { name: "Create reservation", exact: true }).click();
+    // Native HTML5 constraint validation (min={today}) blocks submission — the browser reports
+    // the field invalid and the dialog is never dismissed.
+    await expect(dateInput).toHaveJSProperty("validity.valid", false);
+    await expect(dialog).toBeVisible();
   });
 
   test("creates a valid reservation and opens its detail", async ({ page }) => {

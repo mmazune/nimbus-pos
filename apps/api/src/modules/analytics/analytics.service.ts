@@ -165,6 +165,11 @@ export class AnalyticsService {
     if (query.type) where.type = query.type;
     if (query.severity) where.severity = query.severity;
     if (query.actorUserId) where.actorUserId = query.actorUserId;
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {};
+      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
+      if (query.dateTo) where.createdAt.lte = new Date(query.dateTo);
+    }
 
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
@@ -175,7 +180,12 @@ export class AnalyticsService {
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset,
-        include: { rule: { select: { code: true, name: true } } },
+        // Include a minimal actor projection so queue rows render a name, not a
+        // raw actorUserId (identity resolution — no per-row N+1 lookup).
+        include: {
+          rule: { select: { code: true, name: true } },
+          actorUser: { select: { id: true, firstName: true, lastName: true } },
+        },
       }),
       this.prisma.anomalyEvent.count({ where }),
     ]);
@@ -203,23 +213,43 @@ export class AnalyticsService {
     dto: AcknowledgeAnomalyDto,
     meta: RequestMeta,
   ) {
+    // Branch-scoped lookup — an anomaly belongs to a branch; a Supervisor cannot
+    // acknowledge another branch's anomaly (was org-only, a cross-branch surface).
     const anomaly = await this.prisma.anomalyEvent.findFirst({
-      where: { id: anomalyId, orgId: ctx.organizationId },
+      where: { id: anomalyId, orgId: ctx.organizationId, branchId: ctx.branchId },
     });
     if (!anomaly) throw new NotFoundException('Anomaly event not found');
     if (anomaly.status !== 'OPEN') {
       throw new BadRequestException(`Cannot acknowledge anomaly in ${anomaly.status} status`);
     }
 
-    const updated = await this.prisma.anomalyEvent.update({
-      where: { id: anomalyId },
+    // Concurrency-safe claim: only an OPEN row transitions; racing callers get
+    // a deterministic 409 rather than a duplicate acknowledge.
+    const acknowledgedAt = new Date();
+    const claim = await this.prisma.anomalyEvent.updateMany({
+      where: {
+        id: anomalyId,
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        status: AnomalyEventStatus.OPEN,
+      },
       data: {
         status: AnomalyEventStatus.ACKNOWLEDGED,
         acknowledgedById: userId,
-        acknowledgedAt: new Date(),
+        acknowledgedAt,
         resolutionNotes: dto.resolutionNotes,
       },
     });
+    if (claim.count === 0) {
+      throw new ConflictException('Anomaly event was concurrently modified and is no longer OPEN');
+    }
+    const updated = {
+      ...anomaly,
+      status: AnomalyEventStatus.ACKNOWLEDGED,
+      acknowledgedById: userId,
+      acknowledgedAt,
+      resolutionNotes: dto.resolutionNotes ?? anomaly.resolutionNotes ?? null,
+    };
 
     await this.audit.log({
       actorUserId: userId,
@@ -241,21 +271,38 @@ export class AnalyticsService {
     dto: ResolveAnomalyDto,
     meta: RequestMeta,
   ) {
+    // Branch-scoped lookup (see acknowledgeAnomaly).
     const anomaly = await this.prisma.anomalyEvent.findFirst({
-      where: { id: anomalyId, orgId: ctx.organizationId },
+      where: { id: anomalyId, orgId: ctx.organizationId, branchId: ctx.branchId },
     });
     if (!anomaly) throw new NotFoundException('Anomaly event not found');
     if (anomaly.status !== 'ACKNOWLEDGED') {
       throw new BadRequestException(`Cannot resolve anomaly in ${anomaly.status} status`);
     }
 
-    const updated = await this.prisma.anomalyEvent.update({
-      where: { id: anomalyId },
+    // Concurrency-safe claim: only an ACKNOWLEDGED row transitions to RESOLVED.
+    const claim = await this.prisma.anomalyEvent.updateMany({
+      where: {
+        id: anomalyId,
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        status: AnomalyEventStatus.ACKNOWLEDGED,
+      },
       data: {
         status: AnomalyEventStatus.RESOLVED,
         resolutionNotes: dto.resolutionNotes,
       },
     });
+    if (claim.count === 0) {
+      throw new ConflictException(
+        'Anomaly event was concurrently modified and is no longer ACKNOWLEDGED',
+      );
+    }
+    const updated = {
+      ...anomaly,
+      status: AnomalyEventStatus.RESOLVED,
+      resolutionNotes: dto.resolutionNotes,
+    };
 
     await this.audit.log({
       actorUserId: userId,

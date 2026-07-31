@@ -1,6 +1,16 @@
 # Cashier UI — Canonical Floor-First Documentation
 
-**Status:** Product decision locked; reconstruction not yet implemented.
+**Status:** Product decision locked. **Prompt C2 COMPLETE (2026-07-31)** — on top of C1 (shared
+Cashier Floor, Floor/Till/Me nav, `/cashier/floor` default), C2 adds **table→bill resolution**
+(zero/one/multiple, fail-closed, no silent first-pick), the **canonical read-only settlement
+workspace foundation** (Bill/Totals/Payment state/Settlement readiness/History — reusing the
+existing checkout primitives), canonical `?tableId=&orderId=` URL state, and a **bounded Cashier-only
+Find bill** sibling (tableless/takeaway + exact-id; receipt-ref deferred to C4). See
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md`. **C3 not started** —
+payment/partial/split **execution**, order **close**, receipts, and refunds remain future prompts
+(C3–C6); Queue and Receipts remain hidden compatibility routes (retire C4/C5). Sections below
+describe the full locked target; treat payment/close/receipt behaviour as **target, not yet built**
+until the relevant prompt closes.
 
 This directory is the canonical specification for the next Cashier reconstruction wave.
 It supersedes the earlier Queue-first Cashier design documents under

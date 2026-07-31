@@ -1,5 +1,14 @@
-import { IsOptional, IsString, IsEnum, IsNumberString, IsBoolean } from 'class-validator';
-import { Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsBoolean,
+  IsInt,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { ShiftSwapStatus } from '@prisma/client';
 
 export class ListShiftSwapsQueryDto {
@@ -11,13 +20,29 @@ export class ListShiftSwapsQueryDto {
   @IsEnum(ShiftSwapStatus)
   status?: ShiftSwapStatus;
 
+  // Bounded History window: inclusive createdAt range (ISO date/datetime).
   @IsOptional()
-  @IsNumberString()
-  skip?: string;
+  @IsDateString()
+  dateFrom?: string;
 
   @IsOptional()
-  @IsNumberString()
-  take?: string;
+  @IsDateString()
+  dateTo?: string;
+
+  // Coerced + bounded (Max 100) — mirrors the Prompt 3D discounts DTO fix
+  // (SUP-RG-032); prevents unbounded history reads.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  skip?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  take?: number;
 
   /**
    * Waiter MVP: when `true`, restrict results to swaps the authenticated user is

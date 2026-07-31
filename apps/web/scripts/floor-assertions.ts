@@ -20,6 +20,7 @@ function source(path: string) {
 
 const waiterScreen = source("apps/web/src/components/waiter/floor/WaiterFloorScreen.tsx");
 const supervisorScreen = source("apps/web/src/components/supervisor/floor/SupervisorFloorScreen.tsx");
+const cashierScreen = source("apps/web/src/components/cashier/floor/CashierFloorScreen.tsx");
 const supervisorPage = source("apps/web/src/pages/supervisor/floor.tsx");
 const operationalFloor = source("apps/web/src/components/floor/OperationalFloor.tsx");
 const operationalToolbar = source("apps/web/src/components/floor/OperationalFloorToolbar.tsx");
@@ -29,7 +30,7 @@ const workspaceFrame = source("apps/web/src/components/floor/OperationalTableWor
 const supervisorRoutes = source("apps/web/src/lib/supervisor/routes.ts");
 const legacyRedirect = source("apps/web/src/components/supervisor/orders/SupervisorLegacyOrdersRedirect.tsx");
 
-for (const [role, roleSource] of [["Waiter", waiterScreen], ["Supervisor", supervisorScreen]] as const) {
+for (const [role, roleSource] of [["Waiter", waiterScreen], ["Supervisor", supervisorScreen], ["Cashier", cashierScreen]] as const) {
   assert(roleSource.includes("@/components/floor/OperationalFloor"), `${role} imports the shared OperationalFloor`);
   assert(roleSource.includes("@/components/floor/OperationalTableWorkspaceFrame"), `${role} imports the shared workspace frame`);
   assert(roleSource.includes("selectedTableId"), `${role} preserves URL-backed table selection`);

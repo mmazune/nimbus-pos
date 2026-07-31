@@ -35,6 +35,8 @@ describe('DiscountsService', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+        // Default: the concurrency-safe conditional claim matches one row.
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       orgSettings: {
         findUnique: jest.fn(),
@@ -365,6 +367,25 @@ describe('DiscountsService', () => {
     );
   });
 
+  // ── Approve Concurrency (raced) ──
+
+  it('throws ConflictException when the discount was concurrently approved (updateMany count 0)', async () => {
+    prisma.discount.findFirst.mockResolvedValue({
+      id: 'disc-2',
+      status: 'PENDING',
+      orderId: 'order-1',
+      branchId: 'branch-1',
+      orgId: 'org-1',
+    });
+    prisma.order.findUnique.mockResolvedValue({ id: 'order-1', status: 'NEW' });
+    prisma.discount.updateMany.mockResolvedValue({ count: 0 }); // lost the race
+    await expect(service.approveDiscount('manager-1', ctx, 'disc-2', {}, meta)).rejects.toThrow(
+      ConflictException,
+    );
+    // No recalc / order mutation when the claim did not land.
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
   // ── Reject Discount ──
 
   it('should reject a pending discount and leave order totals unchanged', async () => {
@@ -417,6 +438,22 @@ describe('DiscountsService', () => {
         },
         meta,
       ),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  // ── Reject Concurrency (raced) ──
+
+  it('throws ConflictException when the discount was concurrently rejected (updateMany count 0)', async () => {
+    prisma.discount.findFirst.mockResolvedValue({
+      id: 'disc-2',
+      status: 'PENDING',
+      orderId: 'order-1',
+      branchId: 'branch-1',
+      orgId: 'org-1',
+    });
+    prisma.discount.updateMany.mockResolvedValue({ count: 0 });
+    await expect(
+      service.rejectDiscount('manager-1', ctx, 'disc-2', { rejectionReason: 'X' }, meta),
     ).rejects.toThrow(ConflictException);
   });
 

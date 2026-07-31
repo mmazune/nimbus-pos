@@ -46,6 +46,12 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "off",
+    // Windows-only stability flags: this host's headless Chromium intermittently exits with
+    // STATUS_STACK_BUFFER_OVERRUN (3221225794) in the GPU process during long single-worker runs.
+    // These are standard constrained-environment flags, not a product/test behavior change.
+    launchOptions: {
+      args: ["--disable-gpu", "--disable-software-rasterizer", "--disable-dev-shm-usage"],
+    },
   },
   projects: [
     { name: "vp-1024x768", use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 768 } } },

@@ -2,11 +2,90 @@
 
 > Cross-role limitation index. Detailed registers:
 > - Waiter: `ai/WAITER_MVP_KNOWN_LIMITATIONS.md`
-> - Cashier: `ai/CASHIER_UI_KNOWN_LIMITATIONS.md`
-> - Supervisor: `ai/SUPERVISOR_RECONSTRUCTION_GAP_REGISTER.md`
+> - Cashier: `ai/CASHIER_UI_KNOWN_LIMITATIONS.md` (current Queue-first build) +
+>   `ai/CASHIER_FLOOR_RECONSTRUCTION_GAP_REGISTER.md` (locked Floor-First target, C0 complete)
+> - Supervisor: `ai/SUPERVISOR_RECONSTRUCTION_GAP_REGISTER.md` (+ the reconciled final register,
+>   `ai/SUPERVISOR_FINAL_KNOWN_LIMITATIONS.md`)
+
+> **Cashier Floor-First reconstruction (2026-07-31):** Cashier's nav changed from
+> Queue/Receipts/Till/Me to **Floor/Till/Me** — **Prompt C1 is implemented** (default
+> `/cashier/floor`, Cashier as the third shared-`OperationalFloor` consumer). The limitations below
+> (LIM-001 through LIM-011) all describe the **current, still-accurate** Queue-first payment/split/
+> receipt/Till logic, which is **preserved and reused, not rewritten** — it is now reached via the
+> **hidden compatibility routes** `/cashier/queue` + `/cashier/receipts` (direct URL only, retire
+> C4/C5) until its capabilities migrate into the settlement workspace (C2+). The reconstruction is
+> C0–C6; **C0 + C1 + C2 are complete.**
+>
+> **Cashier Floor C2 — known limitations (non-blocking, 2026-07-31):**
+> (1) **The settlement workspace is READ-ONLY.** C2 delivers table→bill resolution + a canonical
+> read-only `CashierSettlementWorkspace` (Bill/Totals/Payment state/Settlement readiness/History).
+> Payment collection, partial/split payment **execution**, and order **close** arrive in **C3**
+> (intended scope, not a defect). (2) **Find bill receipt-reference search is deferred to C4** —
+> the C2 Find bill supports order-number/exact-id/tableless/takeaway lookup; receipt-reference is
+> shown as an explicit later-step capability. (3) **Receipt/refund indicators are read-only** —
+> receipt print/reprint/deliver (C4) and refund creation (C4) are not exposed. (4) **Queue + Receipts
+> remain reachable by direct URL** until retired (Receipts C4, Queue C5). (5) **Test-data note:** the
+> table→single-bill auto-resolve QA reuses an existing single-payable table on the demo branch (the
+> branch naturally carries several); behaviour is data-independent. See
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md` and
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_QA_EVIDENCE_INDEX.md`.
+>
+> **Cashier Floor C1 — known limitations (non-blocking, 2026-07-31, superseded by C2 above):**
+> (1) **The Cashier selected-table state is a read-only BOUNDARY only** —
+> `CashierSelectedTablePanel` shows verified table identity/status + "Select a bill to continue."
+> and exposes **no bill/settlement/payment/close/receipt** action. Table-to-order resolution,
+> settlement, payment, and receipts arrive in **C2/C3** (this is the intended C1 scope, not a
+> defect). (2) **Find bill is not yet implemented** — tableless/takeaway/direct-lookup/receipt-
+> reference/closed-order lookup arrives with the settlement workspace (C2+). (3) **Queue + Receipts
+> remain reachable by direct URL** (`/cashier/queue`, `/cashier/receipts`) even though they are off
+> the visible nav, until retired (Receipts C4, Queue C5). See
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_GAP_REGISTER.md` and
+> `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`.
+
+> **Supervisor final closure (2026-07-31):** every Supervisor limitation below was reconfirmed
+> live during the final integrated QA pass; none were found stale. One wording correction: the
+> "leave stays org-scoped" note two paragraphs down describes the backend data model correctly
+> (`branchId` is nullable on `LeaveRequest`), but live QA observed that the Approvals **UI/API
+> list a Supervisor sees is filtered to their current branch context** in practice — seeding
+> PENDING leave for a different branch produced an empty Needs-action queue until branch-scoped
+> rows existed. Reasonable behavior, previously imprecise wording. See
+> `ai/SUPERVISOR_FINAL_KNOWN_LIMITATIONS.md` for the full reconciled list and classification.
+
+> **Supervisor Approvals — Prompt 5A (2026-07-30) known limitations (non-blocking):**
+> (1) **No branch-wide discount history** — discounts expose only `/pos/discounts/pending`
+> + per-order lists, so a branch-wide discount Resolved/History queue is unavailable without a
+> new backend endpoint (SUP-RG-035). (2) **Shift-swap approve does not reassign the roster** — it
+> writes status + audit only (SUP-RG-036). (3) **Anomaly resolve reuses `acknowledgedBy`** (no
+> separate resolver column). (4) **Discount self-approval** stays backend-permitted (SUP-RG-030).
+> (5) Seeded terminal records carry no audit events and 6 RESOLVED anomalies have null resolution
+> notes (demo provenance — the 5B UI tolerates, does not repair). Shift-swap **create** UI remains
+> deferred (no eligible-target selector, SUP-RG-021).
 >
 > These are honest, current constraints — do not hide them. Most are **backend
 > contract gaps** or **deferred features**, not UI bugs.
+
+> **Supervisor Approvals UI — Prompt 5B1 (2026-07-30) known limitations (non-blocking):**
+> (1) **Discount Resolved/History** is unavailable as a branch-wide queue (SUP-RG-035) — discounts
+> appear only in Needs action; the workspace omits them from Resolved/History and shows a truthful
+> "available from the related order" notice. Order-scoped discount history remains in the order
+> workspace. (2) **Shift-swap + Anomaly decisions are read-only in 5B1** — rows/details render, but
+> Acknowledge/Resolve/Approve controls arrive in Prompt 5B2. (3) **Resolved** uses a recent-window
+> client-terminal filter and **History** is server-paginated with a client terminal filter over the
+> page, so a page may render fewer than the page size when its window includes non-terminal rows.
+> (4) **Isolated QA note:** `POST /pos/orders` returns 500 on a heavily-populated branch — a
+> **pre-existing** order-number generation collision (`unique(branch_id, order_number)`), independent
+> of Prompt 5B1 (recommended backend hardening, same class as SUP-RG-034); QA discounts were seeded
+> via SQL rather than the order API because of it.
+
+> **Supervisor Approvals — Prompt 5B2 (2026-07-31) known limitations (non-blocking):**
+> (1) **Shift-swap approval with a roster effect is not available from Approvals (Outcome C, SUP-RG-042).**
+> The runtime has **no roster-mutation service** (`ScheduleAssignment` is read-only across the API), the
+> request references only a date (not a specific shift), and `pos:hr:shift-swaps:approve` has never
+> mutated the roster. So the workspace exposes **Reject only** (truthful — no schedule change; verified
+> 0 assignment rows touched) with honest copy that reassignment isn't supported. A real atomic roster
+> swap is a deferred backend feature. (2) **Anomaly resolve reuses `acknowledgedBy`** (no separate
+> resolver column). Anomaly acknowledge/resolve are otherwise fully live + branch-scoped. (3) The
+> discount-history (SUP-RG-035), self-approval (SUP-RG-030), and order-number (SUP-RG-040) items stand.
 
 ## Waiter
 

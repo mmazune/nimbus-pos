@@ -1,5 +1,18 @@
 # Cashier Component Reuse Map
 
+> **Status (2026-07-31): Prompt C2 IMPLEMENTED.** C2 added `CashierBillResolutionPanel`,
+> `CashierBillSelector`, `CashierSettlementWorkspace`, and `CashierFindBillDialog`. The settlement
+> workspace **reuses** existing checkout primitives (`queue/CashierOrderTotals`,
+> `queue/CashierPaymentSummary`, `queue/CashierQueueStatusBadge`, `lib/cashier/order-state`)
+> rather than forking them — no duplicated financial logic, one selected-order model.
+>
+> **(Superseded) Status (2026-07-31): Prompt C1 IMPLEMENTED.** C1 added the Cashier shared-Floor consumer
+> (`components/cashier/floor/CashierFloorScreen.tsx` + `CashierSelectedTablePanel.tsx`) and its
+> data layer (`lib/cashier/floor-api.ts`, `floor-model.ts`, `floor-route.ts`), all reusing the
+> shared `OperationalFloor`/`OperationalTableWorkspaceFrame`/floor formatters — no forked Floor
+> primitives. `CashierCheckoutPreview` reuse for the settlement workspace is a C2/C3 step (not yet
+> wired). `CashierTransferTablePanel` stays out of the new Floor/settlement architecture.
+
 ## Objective
 
 Recompose the existing Cashier capability set into a shared Floor-first workflow without

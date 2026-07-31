@@ -52,7 +52,7 @@ export function isSupervisorCompatible(user: AuthMeResponse | null) {
 }
 
 export function getCashierLandingPath() {
-  return "/cashier/queue";
+  return "/cashier/floor";
 }
 
 export function getSupervisorLandingPath() {

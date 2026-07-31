@@ -1,7 +1,36 @@
 # Supervisor API Matrix
 
-Status: Prompt 0 reconstruction verification
-Date: 2026-07-18
+Status: Prompt 5B2 — Approvals UI consumes all four domains' verified decision endpoints (2026-07-31)
+
+> **Prompt 5B2 (2026-07-31):** Adds the anomaly + shift-swap decision endpoints to the consumed set —
+> Anomaly `PATCH /analytics/anomalies/:id/acknowledge` + `/resolve` (both `pos:analytics:anomalies:acknowledge`),
+> and Shift-swap **reject** via `PATCH /hr/shift-swaps/:id/approve {status:'REJECTED'}` (Outcome C —
+> approve/roster is not called). **No new endpoint/permission/contract change.**
+>
+> **Prompt 5B1 (2026-07-30):** The Approvals workspace consumes the already-verified domain endpoints
+> — Discount `GET /pos/discounts/pending`, `GET /pos/discounts/:id`, `POST …/:id/approve|reject`
+> (+ order `GET /pos/orders/:id/payments` for the payment-safety gate); Leave `GET /hr/leave`,
+> `PATCH /hr/leave/:id/review`; Shift-swap `GET /hr/shift-swaps` (read-only in 5B1); Anomaly
+> `GET /analytics/anomalies(/:id)` (read-only in 5B1). **No new endpoint, permission, or contract
+> change.** Discounts have no branch-wide list endpoint → no discount Resolved/History (SUP-RG-035).
+Date: 2026-07-18 (updated 2026-07-30)
+
+> **Prompt 5A (2026-07-30) — verified Approvals decision endpoints (domain-specific; Supervisor
+> holds each permission; verified live on a disposable Neon branch, matrix 29/29):**
+>
+> | Domain | List (Needs action) | Decision endpoint(s) | Permission |
+> | --- | --- | --- | --- |
+> | Discount | `GET /api/pos/discounts/pending` | `POST /api/pos/discounts/:id/approve` · `/reject` | `pos:discount:approve` |
+> | Leave | `GET /api/hr/leave?status=PENDING` | `PATCH /api/hr/leave/:id/review` `{status:APPROVED\|REJECTED}` | `pos:hr:leave:review` |
+> | Shift swap | `GET /api/hr/shift-swaps?status=PENDING` | `PATCH /api/hr/shift-swaps/:id/approve` `{status:APPROVED\|REJECTED}` | `pos:hr:shift-swaps:approve` |
+> | Anomaly | `GET /api/analytics/anomalies?status=OPEN` | `PATCH /api/analytics/anomalies/:id/acknowledge` · `/resolve` | `pos:analytics:anomalies:acknowledge` |
+>
+> Lists accept bounded pagination (leave/swap `skip`/`take` ≤100; anomaly `offset`/`limit` ≤100) +
+> `dateFrom`/`dateTo` (leave/swap/anomaly) for History. Shift-swap approve + anomaly ack/resolve are
+> **branch-scoped**; leave review is **org-scoped** (nullable branch). All decisions are
+> concurrency-safe (raced/duplicate → 409/400). Supervisor does **NOT** hold `approvals:read`/
+> `approvals:decide` → the generic `unified-approvals` inbox is not used. Discounts have **no
+> branch-wide list endpoint** (only `/pending` + `GET /api/pos/orders/:id/discounts`).
 
 ## Rules
 

@@ -57,7 +57,13 @@ assert(operationalIconSizes.bottomNavigation === 24, "bottom navigation icon siz
 
 const { waiter, cashier, supervisor } = operationalRoleNavigation;
 assert(labels(waiter) === "Floor,Reservations,Me", "Waiter labels remain Floor, Reservations, Me");
-assert(labels(cashier) === "Queue,Receipts,Till,Me", "Cashier approved labels remain intact");
+assert(labels(cashier) === "Floor,Till,Me", "Cashier labels are Floor, Till, Me (Prompt C1 Floor-first)");
+assert(cashier.length === 3, "Cashier route count is three");
+assert(!cashier.some((item) => item.label === "Queue" || item.href === "/cashier/queue"), "Queue is absent from Cashier navigation");
+assert(!cashier.some((item) => item.label === "Receipts" || item.href === "/cashier/receipts"), "Receipts is absent from Cashier navigation");
+assert(cashier[0].href === "/cashier/floor", "Cashier default nav item is Floor at /cashier/floor");
+assert(cashier[0].icon === operationalIconNames.floor, "Cashier Floor consumes the shared Floor icon name");
+assert(cashier[0].icon === waiter[0].icon && cashier[0].icon === supervisor[0].icon, "All three roles' Floor tab share one icon definition");
 assert(labels(supervisor) === "Floor,Reservations,Approvals,Me", "Supervisor has exactly four approved labels");
 assert(supervisor.length === 4, "Supervisor route count is four");
 assert(!supervisor.some((item) => item.href === "/supervisor/orders" || item.label === "Orders"), "Orders is absent from Supervisor navigation");

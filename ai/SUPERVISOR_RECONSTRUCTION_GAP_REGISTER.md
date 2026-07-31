@@ -109,3 +109,46 @@ tooling. Classification **B. COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY**; no 
 **No backend/DTO/schema/migration/seed/permission/Postman change in 4D.** Changes: `tools/qa/*`
 (new), env-overridable `apps/web/playwright.config.ts`, reservations E2E spec selector fixes, and
 docs. Recovery branch `br-dawn-truth-a4zjs1p7` retained; disposable Neon QA branch deleted.
+
+## Prompt 5A closure — Approvals backend/contract/QA foundation (2026-07-30)
+
+Prompt 5A (Approvals domain audit + lifecycle hardening + queue/identity contracts + isolated
+live QA) **closes the Approvals-lifecycle gaps** below. Classification **A — COMPLETE / READY FOR
+PROMPT 5B**. No permission/schema/migration/seed/Postman change; no commit/push. Live-verified on a
+disposable Neon branch (API matrix 29/29 + Playwright smoke 8/8); shared `production` untouched.
+
+| ID | Status after Prompt 5A | Residual |
+| --- | --- | --- |
+| SUP-RG-011 | **Closed (foundation).** The four domains keep their **own canonical lifecycle statuses**; Prompt 5A adds the domain-specific Needs-action/Resolved/History **groupings** (UI-only, over real statuses) in `lib/supervisor/approvals-contract.ts` + `APPROVAL_LIFECYCLE`. No generic status model imposed. | 5B renders the workspace on these contracts. |
+| SUP-RG-012 | **Verified wired (backend).** All four decision actions work live (approve/reject discount, review leave, approve/reject swap, acknowledge/resolve anomaly) — matrix 29/29. Prompt 5A hardened them (branch isolation + concurrency); the Approvals **page** stays read-only until 5B wires the UI. | 5B adds the decision UI on the verified endpoints. |
+| SUP-RG-016 | **Mitigated (API + contract).** Identity relations are included server-side (no N+1); anomaly **list** now includes `actorUser`; `ApprovalMinimalIdentity` + resolvers guarantee names, never a raw UUID title; `approvalSupportReference()` truncates ids for support-only display. | 5B must render the reference/title via the identity helpers (the current read-only page's UUID-as-title is a 5B render fix). |
+| SUP-RG-021 | **Unchanged (out of 5A scope).** Shift-swap **create** still needs an eligible-target selector endpoint; 5A covers decisions only, not create. | Deferred — create UI remains a future item. |
+| SUP-RG-030 | **Unchanged.** Discount self-approval remains backend-permitted; UI flags it. A maker-checker guard is still a recommended future control. | Deferred. |
+| SUP-RG-035 (new) | **Open (non-blocking, documented).** **Discounts have no branch-wide list endpoint** (only `/pos/discounts/pending` + per-order), so a discount **Resolved/History** queue cannot be shown branch-wide without a new backend endpoint. | Add a branch-scoped discount list endpoint if 5B needs discount history; otherwise discount shows Needs-action only. |
+| SUP-RG-036 (new) | **Documented (by design).** **Shift-swap approve performs no roster reassignment** — it writes status + audit only (the existing domain contract). A real "swap executes the schedule change" is a future backend feature. | Deferred backend feature. |
+| SUP-RG-037 (resolved in 5A) | **Fixed.** Leave/shift-swap list DTOs were **unbounded** (`@IsNumberString` skip/take, no max) — an unbounded-history read. Now coerced + `@Max(100)` + service clamp; anomaly already bounded. Verified live (take/limit=101 → 400). | None. |
+| SUP-RG-038 (resolved in 5A) | **Fixed.** Shift-swap approve + anomaly ack/resolve looked up by `orgId` only → a **same-org cross-branch** decision surface. Now `branchId`-scoped; verified live (other-branch decision → 404). Leave stays intentionally org-scoped. | None. |
+| SUP-RG-039 (resolved in 5A) | **Fixed.** All four decision writes were check-then-act (race window). Now status-guarded conditional `updateMany` claims; duplicate/concurrent decisions → 409/400, no duplicate mutation or audit. Verified live. | None. |
+| SUP-RG-035 (addressed in 5B1 UI) | **Handled in UI.** The premium Approvals workspace omits Discounts from Resolved/History and shows a truthful "Historical discount decisions are available from the related order" notice if the scope is forced via URL. The underlying backend gap (no branch-wide discount list) remains open. | Add a branch-scoped discount list endpoint in a future prompt to enable branch-wide discount history. |
+| SUP-RG-040 (new, 5B1 live QA) | **Open (pre-existing backend, non-blocking).** `POST /pos/orders` returns **500** on a heavily-populated branch — `generateOrderNumber` collides on `unique(branch_id, order_number)` (same class as SUP-RG-034's reservation-number race). Surfaced when the 5B1 discount fixture tried to create orders on the production fork; QA discounts were instead seeded via SQL on existing unpaid orders. Not a Prompt 5B1 defect. | Harden order-number generation (retry/transaction/sequence) in a backend prompt. |
+| SUP-RG-041 (resolved in 5B2) | **Anomaly actioned.** Anomaly **Acknowledge** (OPEN→ACK, note optional; row stays actionable) + **Resolve** (ACK→RESOLVED, note required) are now live in the Approvals workspace via the canonical `pos:analytics:anomalies:acknowledge`-gated endpoints; verified live (ack 200, resolve 200, dup/stale 400, resolve-from-OPEN 400) + browser QA. Evidence is preserved; the underlying entity is not mutated. | None. |
+| **SUP-RG-042** (new, 5B2 — Shift-swap **Outcome C**) | **Open (by design, user-authorized).** Shift-swap **approval with a truthful roster effect is not available from Approvals**: `ScheduleAssignment` is **read-only across the entire API** (no create/update/delete/reassign path — assignments are only seeded), the request references only a `shiftDate` (no specific-shift FK → `findFirst` ambiguity), there is no role-compat/conflict/lock infrastructure, and `pos:hr:shift-swaps:approve` has never mutated the roster (SUP-RG-036 deferred it). The UI therefore exposes **Reject only** (truthful — status + audit, **0 roster rows touched**, verified) with honest copy "schedule reassignment is not supported"; **no Approve control**. | A real atomic roster swap is a future backend feature (new roster-mutation service + a specific-shift reference on the request + role/conflict checks + an explicit permission decision). Until then, keep Reject-only. |
+
+## Final closure — integrated final QA (2026-07-31)
+
+Classification **B — COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY.** Every open item above was
+re-verified live in one integrated pass (four viewports, isolated stack — disposable Neon branch
+for API matrices, local Docker Postgres for the browser suite). See
+`ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md` and
+`ai/SUPERVISOR_FINAL_KNOWN_LIMITATIONS.md` for the full reconciled register.
+
+| ID | Status after final closure | Residual |
+| --- | --- | --- |
+| SUP-RG-034 | **Reconfirmed live, unchanged.** The reservation-number race still returns 500 instead of 409 under concurrent identical creates. Non-blocking (Create UI single-submit-guards). | Backend hardening still recommended, still out of scope for a frontend-only pass. |
+| SUP-RG-035 / SUP-RG-030 / SUP-RG-025 (transfer-server) / SUP-RG-036 / SUP-RG-042 | **All reconfirmed live, unchanged.** No new backend contract was added or needed to close these — they remain honest, documented, non-blocking limitations or intentionally deferred backend features. | See `ai/SUPERVISOR_FINAL_KNOWN_LIMITATIONS.md` for the full classification of each. |
+| (new) Leave-scoping documentation wording | **Closed (documentation-only fix).** `docs/KNOWN_LIMITATIONS.md`'s "leave stays org-scoped" note was imprecise about what a Supervisor actually sees — the Approvals list is branch-filtered in practice even though `LeaveRequest.branchId` is nullable at the schema level. Corrected wording, no code change. | None. |
+| (new) Two test-harness defects | **Fixed, verified across all 4 viewports.** A multi-role `uiLogin` session race (fixed in `supervisor-prompt3/fixtures.ts`) and a reservation-create test asserting nonexistent validation copy while conflating native date-input blocking with app-level validation (fixed in `supervisor-reservations/create-reservation.spec.ts`, split into two correctly-scoped tests). Both are test-infrastructure only — zero product-code changes. | None. |
+| (new) Windows Chromium worker-crash pattern under Neon-branch-latency browser automation | **Mitigated.** Root-caused further than Prompt 4D's finding: sustained 20–27s/test round-trips against a scale-to-zero disposable Neon branch triggered a `STATUS_STACK_BUFFER_OVERRUN` Chromium worker-crash cascade after ~10–30 tests on this Windows host. Added Chromium stability launch flags to `playwright.config.ts`; primary fix is using the already-documented local-Docker-Postgres path for any future sustained browser run. | None blocking; keep using the local Docker path for browser QA on Windows hosts. |
+
+**No new gap was introduced by the final closure pass.** Manager reconstruction remains the next
+major track (not started).

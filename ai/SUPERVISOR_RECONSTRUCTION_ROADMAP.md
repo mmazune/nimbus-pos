@@ -1,7 +1,11 @@
 # Supervisor Reconstruction Roadmap
 
-Status: Prompts 1-2, 3A, 3B1, 3B2, 3B3A, 3B3B complete (2026-07-28); Supervisor order-workspace financial actions feature-complete
-Date: 2026-07-18 (updated 2026-07-28)
+Status: **FINAL CLOSURE COMPLETE (2026-07-31) — B: COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY.**
+All prompts (0 through 5B2) verified live in one integrated final QA pass across four viewports on
+an isolated stack; shared Neon confirmed unchanged. See
+`ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md` for the canonical closure record. Manager
+reconstruction is the next major track (not started); this roadmap's Supervisor scope is closed.
+Date: 2026-07-18 (updated 2026-07-31)
 Rule: each implementation prompt must preserve Waiter and Cashier behavior unless explicitly scoped.
 
 > **Prompt 3 split (2026-07-27).** The original Prompt 3/4 were re-scoped into:
@@ -165,6 +169,60 @@ Rule: each implementation prompt must preserve Waiter and Cashier behavior unles
 > started.** No commit/no push. Reports:
 > `ai/SUPERVISOR_RECONSTRUCTION_PROMPT4D_ISOLATED_LIVE_QA_COMPLETION_REPORT.md`,
 > `ai/PROMPT4D_DATABASE_ISOLATION_EVIDENCE.md`.
+
+> **Prompt 5A (2026-07-30) — Approval lifecycle reconstruction, backend/contract/QA half.
+> A. COMPLETE / READY FOR PROMPT 5B.** (This is the backend foundation for the Phase-Order
+> Prompt 6 "Approval lifecycle reconstruction"; Prompt 5B is the premium Approvals UI.)
+> Audited the four approval domains (discount/leave/shift-swap/anomaly) against real
+> controllers/services/schema/permissions + live Neon — all decision lifecycles already existed
+> and pass Jest. **Locked domain-specific architecture (Option B)**: Supervisor lacks
+> `approvals:*`, so no generic `POST /api/approvals/:id/decide`; each decision uses its canonical
+> domain endpoint. **Backward-compatible hardening (no permission/schema/migration/seed/Postman
+> change):** bounded leave/shift-swap pagination (`Max 100` + coercion), **branch isolation** on
+> shift-swap approve + anomaly ack/resolve (leave stays org-scoped by design), **concurrency-safe**
+> conditional-claim on all four decisions (duplicate/raced → 409/400), History `dateFrom`/`dateTo`,
+> anomaly-list `actorUser` identity include. Added the additive `lib/supervisor/approvals-contract.ts`
+> (Needs-action/Resolved/History scopes, minimal identity, query keys, counts, narrow invalidation,
+> error mapping); the read-only Approvals **page** is visually unchanged. **Isolated live QA
+> (executed):** disposable Neon branch via the 4D fail-closed launcher — API decision matrix
+> **29/29** (incl. branch-isolation 404, duplicate 409/400, required-reason, identity names) +
+> Playwright Approvals smoke **8/8** (4 viewports); shared `production` verified untouched
+> (58/0/836/126). **Documented gap:** discounts have no branch-wide list endpoint (SUP-RG-035) →
+> no branch-wide discount Resolved/History without a new endpoint. Prompt 5B UI **not started**.
+> Reports: `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5A_APPROVALS_LIFECYCLE_COMPLETION_REPORT.md`,
+> `ai/SUPERVISOR_APPROVALS_SHARED_NEON_DATA_AUDIT.md`, `ai/SUPERVISOR_APPROVALS_QA_RECORD_REGISTER.md`.
+
+> **Prompt 5B1 (2026-07-30) — Approvals premium UI, Discount + Leave decisions. READY FOR
+> PROMPT 5B2.** Replaced the read-only Approvals page with `SupervisorApprovalsWorkspace` on the 5A
+> contract: Needs action / Resolved / History scope tabs, All + per-domain filters, server-`total`
+> counts, one identity-safe queue row shell, responsive master-detail (desktop split / mobile stack),
+> URL-persisted state, bounded pagination. **Discount** approve/reject (Prompt 3 endpoints + financials,
+> payment-gate, self-approval notice) and **Leave** approve/reject (`/hr/leave/:id/review`, no
+> payroll/roster claim) are **fully actionable**; **Shift-swap + Anomaly are read-only** (5B2 activates
+> their decisions). Discounts omitted from Resolved/History (SUP-RG-035, truthful notice). **No
+> permission/schema/migration/seed/backend/Postman change.** Validation: web typecheck/lint/build pass;
+> API attendance+discounts+analytics+DTO 126/126 + reservations 39/39; **isolated live browser QA on
+> disposable branch `br-aged-resonance-a47lmtt5`** (fail-closed launcher, `/api/health` ok) — Playwright
+> Approvals suite (10 files × 4 viewports = 80 tests) **executed**; shared `production` verified
+> untouched. **Prompt 5B2 not started.** Report:
+> `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5B1_APPROVALS_DISCOUNT_LEAVE_UI_COMPLETION_REPORT.md`,
+> `ai/SUPERVISOR_APPROVALS_UI_QA_EVIDENCE_INDEX.md`.
+
+> **Prompt 5B2 (2026-07-31) — Approvals closure. PROMPT 5 CLOSED AT B / DEMO-READY WITH KNOWN
+> LIMITATIONS.** Completes the four-domain workspace. **Anomaly** Acknowledge (OPEN→ACK, note optional,
+> row stays actionable) + Resolve (ACK→RESOLVED, note required) live via
+> `pos:analytics:anomalies:acknowledge`; evidence preserved, underlying entity untouched. **Shift-swap =
+> Outcome C (user-authorized): Reject only, NO Approve** — a truthful roster swap is unsupported
+> (`ScheduleAssignment` is read-only across the API; no roster-mutation service; request references only
+> a date; the approve permission has never mutated roster — SUP-RG-036/042), so the UI honestly says
+> reassignment isn't supported and Reject changes 0 roster rows (verified). **Frontend-only: no backend/
+> schema/migration/seed/permission/Postman change.** Validated: web typecheck/lint/build; API 126/126 +
+> reservations 39/39; **isolated live QA** on disposable branch `br-hidden-king-a4rbwvj0` — API matrix
+> 11/11 (shift-swap reject/dup/bound + anomaly ack/resolve/dup/stale) + roster-integrity 0-touched +
+> full Playwright Approvals suite × 4 viewports executed; shared `production` untouched; branch deleted.
+> **Supervisor Approvals is CLOSED.** Next: **Manager reconstruction (not started).** Reports:
+> `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5B2_SHIFT_SWAP_ANOMALY_UI_COMPLETION_REPORT.md`,
+> `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5_APPROVALS_FINAL_COMPLETION_REPORT.md`.
 
 ## Phase Order
 

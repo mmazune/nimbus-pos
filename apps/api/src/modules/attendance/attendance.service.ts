@@ -21,6 +21,14 @@ import {
 } from './dto';
 import { Prisma } from '@prisma/client';
 
+/**
+ * Hard upper bound on leave / shift-swap list page size. The DTO already rejects
+ * take > 100, but the service clamps defensively so no caller (or a future
+ * non-validated path) can request an unbounded history read. Aligns with the
+ * bounded-history contract (Prompt 5A) and the discounts/reservations max=100.
+ */
+const MAX_LEAVE_PAGE_SIZE = 100;
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -288,6 +296,11 @@ export class AttendanceService {
     }
     if (query.status) where.status = query.status;
     if (query.leaveType) where.leaveType = query.leaveType;
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {};
+      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
+      if (query.dateTo) where.createdAt.lte = new Date(query.dateTo);
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.leaveRequest.findMany({
@@ -295,7 +308,7 @@ export class AttendanceService {
         include: { employee: true, requestedBy: true, reviewedBy: true },
         orderBy: { createdAt: 'desc' },
         skip: Number(query.skip) || 0,
-        take: Number(query.take) || 50,
+        take: Math.min(Number(query.take) || 50, MAX_LEAVE_PAGE_SIZE),
       }),
       this.prisma.leaveRequest.count({ where }),
     ]);
@@ -312,6 +325,8 @@ export class AttendanceService {
   ) {
     const { organizationId: orgId, branchId } = ctx;
 
+    // Leave requests are intentionally org-scoped (not branch-scoped) — an
+    // employee's leave has a nullable branchId and is reviewed at org level.
     const existing = await this.prisma.leaveRequest.findFirst({
       where: { id, orgId },
     });
@@ -327,15 +342,33 @@ export class AttendanceService {
       throw new BadRequestException('Review status must be APPROVED or REJECTED');
     }
 
-    const record = await this.prisma.leaveRequest.update({
-      where: { id },
+    // Concurrency-safe transition: only a row that is STILL PENDING can be
+    // claimed. Two racing reviewers (e.g. approve vs reject) both pass the
+    // precheck above, but exactly one conditional update matches — the loser
+    // gets count 0 and a deterministic 409 instead of silently overwriting the
+    // winner's terminal decision.
+    const reviewedAt = new Date();
+    const claim = await this.prisma.leaveRequest.updateMany({
+      where: { id, orgId, status: 'PENDING' },
       data: {
         status: dto.status,
         reviewedById: userId,
-        reviewedAt: new Date(),
+        reviewedAt,
         reviewNotes: dto.reviewNotes,
       },
     });
+    if (claim.count === 0) {
+      throw new ConflictException(
+        'Leave request was concurrently modified and is no longer pending',
+      );
+    }
+    const record = {
+      ...existing,
+      status: dto.status,
+      reviewedById: userId,
+      reviewedAt,
+      reviewNotes: dto.reviewNotes ?? null,
+    };
 
     await this.audit.log({
       action: `LEAVE_REQUEST_${dto.status}`,
@@ -499,6 +532,11 @@ export class AttendanceService {
       ];
     }
     if (query.status) where.status = query.status;
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {};
+      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
+      if (query.dateTo) where.createdAt.lte = new Date(query.dateTo);
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.shiftSwapRequest.findMany({
@@ -506,7 +544,7 @@ export class AttendanceService {
         include: { requester: true, target: true, approvedBy: true },
         orderBy: { createdAt: 'desc' },
         skip: Number(query.skip) || 0,
-        take: Number(query.take) || 50,
+        take: Math.min(Number(query.take) || 50, MAX_LEAVE_PAGE_SIZE),
       }),
       this.prisma.shiftSwapRequest.count({ where }),
     ]);
@@ -523,8 +561,11 @@ export class AttendanceService {
   ) {
     const { organizationId: orgId, branchId } = ctx;
 
+    // Shift swaps are branch-scoped — the lookup is constrained to the caller's
+    // branch so a Supervisor in one branch cannot decide another branch's swap
+    // (same org). Previously this filtered by orgId only (cross-branch surface).
     const existing = await this.prisma.shiftSwapRequest.findFirst({
-      where: { id, orgId },
+      where: { id, orgId, branchId },
     });
     if (!existing) {
       throw new NotFoundException(`Shift swap request "${id}" not found`);
@@ -538,15 +579,29 @@ export class AttendanceService {
       throw new BadRequestException('Review status must be APPROVED or REJECTED');
     }
 
-    const record = await this.prisma.shiftSwapRequest.update({
-      where: { id },
+    // Concurrency-safe, branch-scoped claim (see reviewLeaveRequest for rationale).
+    const approvedAt = new Date();
+    const claim = await this.prisma.shiftSwapRequest.updateMany({
+      where: { id, orgId, branchId, status: 'PENDING' },
       data: {
         status: dto.status,
         approvedById: userId,
-        approvedAt: new Date(),
+        approvedAt,
         reviewNotes: dto.reviewNotes,
       },
     });
+    if (claim.count === 0) {
+      throw new ConflictException(
+        'Shift swap request was concurrently modified and is no longer pending',
+      );
+    }
+    const record = {
+      ...existing,
+      status: dto.status,
+      approvedById: userId,
+      approvedAt,
+      reviewNotes: dto.reviewNotes ?? null,
+    };
 
     await this.audit.log({
       action: `SHIFT_SWAP_${dto.status}`,

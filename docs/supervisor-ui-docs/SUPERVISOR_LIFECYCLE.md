@@ -1,7 +1,22 @@
 # Supervisor Lifecycle
 
-Status: Prompt 3B3B discount approve/reject + complimentary implemented (on the 3A/3B1/3B2/3B3A foundation); order-workspace financial actions feature-complete
-Date: 2026-07-18 (updated 2026-07-28)
+Status: Prompt 5B2 — Approvals CLOSED (Discount + Leave + Anomaly actionable; Shift-swap reject-only Outcome C); Prompt 3B3B order-workspace financial actions feature-complete
+
+> **Prompt 5B2 (2026-07-31):** Anomaly Acknowledge/Resolve are live; Shift-swap is Reject-only
+> (Outcome C — no roster-mutation service exists, so no truthful Approve; SUP-RG-042). All four
+> approval domains are integrated. Supervisor Approvals is closed at B / demo-ready.
+>
+> **Prompt 5B1 (2026-07-30):** Approvals is now a premium master-detail decision workspace. Discount
+> approve/reject (payment-gated, self-approval-flagged) and Leave approve/reject (org-scoped, no
+> payroll/roster claim) are live via their canonical domain endpoints; terminal records are read-only.
+> Shift-swap + Anomaly render read-only until Prompt 5B2.
+Date: 2026-07-18 (updated 2026-07-30)
+
+> **Prompt 5A (2026-07-30).** The four Approvals decision lifecycles are verified live and hardened
+> (branch isolation on shift-swap approve + anomaly ack/resolve; leave org-scoped; concurrency-safe
+> conditional claims → duplicate/raced = 409/400; bounded pagination; History date filters; anomaly
+> `actorUser` identity include). Domain-specific endpoints only (no generic `/api/approvals/:id/decide`).
+> The Approvals page stays read-only until the Prompt 5B UI. Details in `SUPERVISOR_APPROVAL_LIFECYCLE.md`.
 
 > **Prompt 3A (2026-07-27).** The Floor table-control workspace offers two live
 > service actions behind table selection — **Request bill** (audit-only,

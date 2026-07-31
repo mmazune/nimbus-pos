@@ -1,7 +1,42 @@
 # Supervisor Approval Lifecycle
 
-Status: reconstruction standard (Prompt 3B3B note 2026-07-28)  
-Date: 2026-07-18 (updated 2026-07-28)
+Status: reconstruction CLOSED (Prompt 5B2 — Discount + Leave + Anomaly actionable; Shift-swap reject-only Outcome C — B / demo-ready) — 2026-07-31
+Date: 2026-07-18 (updated 2026-07-31)
+
+> **Prompt 5B2 (2026-07-31) — Approvals closed.** **Anomaly** Acknowledge (OPEN→ACKNOWLEDGED, note
+> optional; stays in Needs action) + Resolve (ACKNOWLEDGED→RESOLVED, note required; evidence preserved,
+> underlying entity untouched) are live. **Shift-swap = Outcome C**: Reject only (status + audit, no
+> roster change — verified 0 assignments touched), no Approve, honest "reassignment not supported" copy,
+> because `ScheduleAssignment` is read-only across the API (no roster-mutation service; SUP-RG-036/042).
+> No backend/permission change. Prompt 5 closed at B / demo-ready with known limitations.
+>
+> **Prompt 5B1 (2026-07-30) — premium Approvals workspace shipped.** The read-only Approvals page is
+> replaced by `SupervisorApprovalsWorkspace` on the 5A contract: Needs action / Resolved / History
+> scope tabs, All + per-domain filters, server-`total` counts, identity-safe queue rows, responsive
+> master-detail, URL state. **Discount + Leave are fully actionable** (canonical domain endpoints +
+> payment-gate + truthful self-approval notice; no payroll/roster claim on leave). **Shift-swap +
+> Anomaly render read-only** (decisions land in Prompt 5B2). Discounts omitted from Resolved/History
+> (SUP-RG-035). No permission/schema/backend change. See the 5B1 completion report.
+>
+> **Prompt 5A (2026-07-30) — Approvals backend/contract/QA foundation for the 5B UI.**
+> **Architecture is domain-specific (Option B):** Supervisor does **not** hold `approvals:read`/
+> `approvals:decide`, so the generic `unified-approvals` inbox (`POST /api/approvals/:id/decide`)
+> is **not** the Supervisor path — every decision uses its canonical domain endpoint (below).
+> **Queue groupings** (`Needs action` / `Resolved` / `History`) are UI-only views over each
+> domain's real statuses — see `apps/web/src/lib/supervisor/approvals-contract.ts`
+> (`APPROVAL_LIFECYCLE`, `buildApprovalQueueQuery`, `approvalKeys`, `identityFrom*`,
+> `approvalDecisionInvalidationKeys`, `mapApprovalErrorToMessage`). **Backend hardening (no
+> permission/schema/migration/seed/Postman change):** leave/shift-swap list pagination is now
+> coerced + bounded (`Max 100`); shift-swap approve and anomaly acknowledge/resolve are now
+> **branch-scoped** (leave stays org-scoped by design); **all four decisions are concurrency-safe**
+> (status-guarded conditional claim → duplicate/raced decision returns 409/400, never a double
+> mutation or audit); leave/swap/anomaly lists accept `dateFrom`/`dateTo` for History; the anomaly
+> **list** now includes a minimal `actorUser` identity projection. **Names are the primary
+> identity; a raw UUID is never a row title.** Verified on a disposable Neon branch: API decision
+> matrix **29/29** (incl. branch-isolation 404 + duplicate 409/400) + Playwright smoke **8/8**;
+> shared `production` untouched. The Approvals **page** stays read-only until Prompt 5B.
+> **Documented gap:** discounts have no branch-wide list endpoint (only `/pending` + per-order) →
+> no branch-wide discount Resolved/History without a new endpoint (SUP-RG-035).
 
 > **Prompt 3B3B (2026-07-28).** Supervisor can now **approve/reject PENDING discounts**
 > from the **order workspace** — inline Approve/Reject controls on PENDING rows in the

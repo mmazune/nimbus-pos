@@ -9,12 +9,15 @@ test.describe("Cross-role boundaries", () => {
     await expect(page.getByRole("button", { name: /transfer table|split bill|approve discount/i })).toHaveCount(0);
   });
 
-  test("Cashier lands on Cashier Queue with the Cashier nav (Queue/Receipts/Till/Me)", async ({ page }) => {
+  // Prompt C1: Cashier is Floor-first (nav Floor/Till/Me, default /cashier/floor).
+  test("Cashier lands on Cashier Floor with the Cashier nav (Floor/Till/Me)", async ({ page }) => {
     await uiLogin(page, "cashier");
-    await page.waitForURL(/\/cashier\/queue/, { timeout: 30_000 });
-    for (const label of ["Queue", "Receipts", "Till", "Me"]) {
+    await page.waitForURL(/\/cashier\/floor/, { timeout: 30_000 });
+    for (const label of ["Floor", "Till", "Me"]) {
       await expect(page.getByRole("link", { name: new RegExp(`^${label}$`, "i") }).first()).toBeVisible();
     }
+    await expect(page.getByRole("link", { name: /^queue$/i })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /^receipts$/i })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /find order/i })).toHaveCount(0);
   });
 

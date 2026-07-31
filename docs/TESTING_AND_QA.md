@@ -3,6 +3,60 @@
 > How to validate the app and run authenticated QA. Demo accounts are sourced from
 > the seed/demo-import (`packages/db/prisma/demo-import.ts`, `demo-data/csv/*`).
 
+> **Supervisor final closure QA (2026-07-31).** Confirms the local-Docker-Postgres path is the
+> correct default for **any** sustained browser-automation run, not just Prompt 4D's reservations
+> suite: a disposable Neon branch was tried first for the full 4-viewport Prompt 3+4+5 Playwright
+> suite and produced 20–27s/test round-trips plus a Windows Chromium
+> `STATUS_STACK_BUFFER_OVERRUN` worker-crash cascade after roughly 10–30 tests. Switching to a
+> local Docker Postgres (`postgres:16`, a fresh port, migrated + seeded + demo-imported) dropped
+> round-trips to 2–5s/test and all four viewports completed cleanly (262/264 executed passed, 0
+> unresolved failures — see `ai/SUPERVISOR_FINAL_QA_EVIDENCE_INDEX.md`). Two Chromium stability
+> flags (`--disable-gpu --disable-software-rasterizer --disable-dev-shm-usage`) were also added to
+> `playwright.config.ts`'s `use.launchOptions.args` as a durable, low-risk mitigation for this
+> class of host. **Prisma-CLI isolation note:** unlike the NestJS API (where an inherited shell
+> env var overrides a swapped `.env`, per the Prompt 4C/4D lesson below), the **Prisma CLI**
+> resolves `DATABASE_URL` from the `.env` file next to `schema.prisma` regardless of an inline
+> shell override — the opposite failure direction. To target a disposable database with
+> `prisma migrate`/`db:seed`/`db:demo:import` without editing the committed `.env`, use
+> `npx dotenv-cli -e <git-ignored-scratch-file> -o -- <command>` (the `-o` override flag is
+> required). Verify with `prisma migrate status` before any write — it prints the resolved
+> datasource host/db name, so a wrong target is caught before it can mutate anything.
+
+> **Approvals isolated live QA (Prompt 5A, 2026-07-30).** Reuse the Prompt 4D fail-closed launcher
+> (`tools/qa/run-isolated-api.mjs` → denylist → DB-identity preflight → spawn `apps/api/dist/main.js`)
+> against a **disposable Neon branch** (fork production, add a `_p4d_qa_sentinel` marker row, put the
+> connection string in a git-ignored scratchpad secret). Then run `tools/qa/approvals-live-matrix.mjs`
+> (env: `PW_API_URL`, `PW_BRANCH_ID`, `QA_SUP_EMAIL/PASSWORD`, `QA_XBRANCH_SWAP_ID`,
+> `QA_XBRANCH_ANOMALY_ID`, `QA_DISCOUNTABLE_ORDER_ID`) — covers all four decision lifecycles,
+> pagination-400, History windows, required-reason, **branch-isolation 404** (same-org other-branch),
+> and duplicate/concurrency 409/400. Browser smoke: `apps/web/e2e/supervisor-approvals/smoke.spec.ts`
+> against `next dev` built with `NEXT_PUBLIC_API_BASE_URL=http://localhost:4002` on the CORS-allowed
+> `:3101`. Prompt 5A result: **matrix 29/29 + Playwright 8/8 (4 viewports)**; shared `production`
+> verified untouched. Never run mutation QA against shared Neon.
+>
+> **Approvals UI browser QA (Prompt 5B1, 2026-07-30).** Same isolated stack. The full Approvals
+> suite is `apps/web/e2e/supervisor-approvals/` (10 spec files + `approvals-fixtures.ts`); run all
+> four viewport projects with `PW_BASE_URL=http://localhost:3101 PW_API_URL=http://localhost:4002
+> PW_BRANCH_ID=<demo> PW_SUPERVISOR_EMAIL/PASSWORD ... npx playwright test e2e/supervisor-approvals`.
+> Notes: the scale-to-zero disposable compute cold-starts on idle — use the **pooled** endpoint
+> (`-pooler`, `pgbouncer=true`, `connect_timeout`), a health **keep-warm pinger**, and `--retries=2`
+> to absorb transient first-hit login latency (external, not a UI defect). Seed decision data via
+> **SQL on the disposable branch** (leave/discount PENDING rows on existing unpaid discountable
+> orders) — do **not** rely on `POST /pos/orders` (pre-existing order-number collision on a populated
+> branch, SUP-RG-040). Prompt 5B1 result: **80/80 (10 files × 4 viewports)**; shared `production`
+> verified untouched (0 QA rows, sentinel absent); disposable branch deleted.
+>
+> **Approvals closure QA (Prompt 5B2, 2026-07-31).** Same isolated stack; full suite now 15 files
+> (5B1 + shift-swap-reject / anomaly-acknowledge-resolve / all-domains-consolidated /
+> cross-role-visibility / responsive-closure). Seed shift-swap PENDING + anomaly OPEN & ACKNOWLEDGED
+> (+ discount/leave PENDING for regression) via SQL. **Anomaly specs deep-link to a seeded id by status
+> (`apiFirstAnomalyId` + `openApprovalDetail`)** rather than depending on queue order — the severity
+> sort otherwise pushes OPEN rows past a fixed scan window. Run the live API matrix by curl (shift-swap
+> reject/dup/bound + anomaly ack/resolve/dup/stale) and **prove roster integrity** by confirming
+> `schedule_assignments` rows touched = 0 after a reject (there is no roster-write path). Prompt 5B2
+> result: API matrix **11/11**, roster 0-touched, full Playwright suite × 4 viewports executed; shared
+> `production` untouched; branch deleted.
+
 ## Required commands (web app)
 
 ```bash
@@ -13,9 +67,10 @@ corepack pnpm@8.15.0 --filter @nimbus-pos/web build
 corepack pnpm@8.15.0 --filter @nimbus-pos/web dev      # dev server on :3000
 ```
 
-There are **no Jest/browser tests** in the web app yet (`test` is a stub). Static
-and behavioral guards live in `apps/web/scripts/*-assertions.ts` (floor/shell/
-profile/prompt3a). Run them from the repo root with tsx:
+The web app has a Playwright browser suite (Supervisor Prompt 3/4/5 + **Cashier Floor
+C1**; see the harness sections below) but no Jest unit tests yet (`test` is a stub).
+Static and behavioral guards live in `apps/web/scripts/*-assertions.ts` (floor/shell/
+profile/prompt3a/**cashier-c1**). Run them from the repo root with tsx:
 
 ```bash
 npx tsx apps/web/scripts/floor-assertions.ts
@@ -177,7 +232,13 @@ returns **HTTP 201** (a Session is created).
 Run each role's screens at: **1024×768, 1366×768, 1440×900, 1920×1080.**
 
 - **Waiter:** Floor · selected Available table · selected owned table · Reservations · Me.
-- **Cashier:** Queue · Receipts · Till · Me.
+- **Cashier:** Floor · selected-table settlement boundary · Till · Me (Prompt C1 implemented
+  2026-07-31; default `/cashier/floor`). Queue/Receipts are hidden compatibility routes (direct
+  URL only). The full target test plan (Find bill, table-to-order resolution, payment/split/close/
+  receipt/refund matrices) is `docs/cashier-ui-docs/CASHIER_TEST_PLAN.md` — those cover the
+  not-yet-built C2–C6 settlement workspace; the executed C1 browser suite is
+  `apps/web/e2e/cashier-floor/` (see the Cashier Floor C1 harness section above). See
+  `ai/CASHIER_FLOOR_RECONSTRUCTION_TEST_INVENTORY.md` for the current-vs-target test gap.
 - **Supervisor:** Floor · selected table workspace · Reservations · Approvals · Me ·
   legacy Orders redirect state.
 
@@ -244,6 +305,50 @@ role-boundaries, responsive, regression). `@playwright/test` is a **web devDepen
 Destructive API mutation checks can also be scripted directly against the isolated
 API (Node `fetch`) — every Prompt 3 action + rejection case + idempotency replay.
 **Never point these at shared Neon.**
+
+## Playwright E2E harness (Cashier Floor — Prompt C1, 2026-07-31)
+
+Prompt C1 (Cashier Floor-first: nav Floor/Till/Me, `/cashier/floor` default, Cashier as the third
+shared-`OperationalFloor` consumer) and **Prompt C2** (table→bill resolution + read-only settlement
+workspace + Find bill) add/extend a browser suite at `apps/web/e2e/cashier-floor/` — **now 20 spec
+files, 41 tests × the same four viewport projects** (1024×768, 1366×768, 1440×900, 1920×1080) =
+**164 tests** (C2 definitive run: **164 passed / 0 failed / 0 skipped**), run under the same
+`apps/web/playwright.config.ts` and the same env-driven credentials (no hard-coded secrets;
+artifacts git-ignored). The 12 C2 specs (`zero-one-multiple-bill-resolution`, `selected-bill-url-state`,
+`settlement-workspace-readonly`, `split-child-selection`, `payment-state-readonly`, `till-readiness`,
+`find-bill-foundation`, `tableless-takeaway-selection`, `legacy-compatibility-regression`,
+`request-count-c2`, `responsive-c2`, `cross-role-c2-regression`) create their own synthetic bills via
+`e2e/cashier-floor/c2-fixtures.ts` against the isolated API. Reuse/extend it — do **not** fork a new one.
+
+Coverage focus: Floor/Till/Me nav (Queue/Receipts absent from visible nav but reachable by direct
+URL), `/cashier` → `/cashier/floor` redirect + Floor landing, shared-`OperationalFloor` parity,
+canonical `?tableId=` URL state (push→replace, refresh/Back/Forward restore, invalid/cross-branch
+→ "Table unavailable"), the read-only `CashierSelectedTablePanel` boundary ("Select a bill to
+continue." — no payment/close/split/refund/receipt action), and shared-safe Floor reads (no guest/
+payment/receipt data on cards).
+
+**Executed and passed** on an isolated local Docker Postgres stack (Postgres on **:55432**, API on
+**:4001** with `API_CORS_ORIGINS=http://localhost:3100`, web on **:3100**, web built with
+`NEXT_PUBLIC_API_BASE_URL=http://localhost:4001`) — **C2 definitive run 164/164 (41 × 4 viewports),
+0 failed / 0 skipped**; canonical Supervisor/Waiter cross-role regression 5/5. Shared Neon never
+written; no commit/push. Static assertions:
+
+```bash
+npx tsx apps/web/scripts/cashier-c1-assertions.ts   # Cashier C1: Floor/Till/Me nav, /cashier/floor
+   # default + redirect, shared-OperationalFloor consumption, ?tableId= URL state, read-only
+   # boundary, shared-safe Floor reads, Queue/Receipts hidden-compat routes
+npx tsx apps/web/scripts/cashier-c2-assertions.ts   # Cashier C2: bounded table→bill resolution
+   # (zero/one/multiple, fail-closed, no first-pick), ?tableId=&orderId= URL model, ONE read-only
+   # settlement workspace reusing checkout primitives, Find bill sibling, no payment/close/receipt/
+   # refund mutation, Queue/Receipts not mounted + still routable
+npx tsx apps/web/scripts/shell-assertions.ts        # (also updated for the Cashier Floor-first nav)
+npx tsx apps/web/scripts/floor-assertions.ts        # (also updated for the third Floor consumer)
+```
+
+**Frontend-only — no backend/schema/migration/seed/permission/Postman change** (Cashier already
+holds `pos:table:read`/`pos:orders:read`/`pos:reservation:read`). See
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md` +
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md`.
 
 ## Playwright E2E harness (Supervisor Prompt 4B — Reservations)
 
