@@ -317,4 +317,139 @@ describe('BG1.1 Frontline PIN-first + Quick PIN admin (e2e)', () => {
                 .expect(404);
         });
     });
+
+    // ── B3-F1 (permissions cutover, 2026-08-20): branch guard on Quick PIN admin ──
+    //
+    // Before the fix these four routes resolved the target employee by `{ id, orgId }`
+    // only. BranchContextGuard proved the CALLER belongs to the X-Branch-Id they sent,
+    // but nothing tied the TARGET to it, so an administrator of branch A could read and
+    // rotate the Quick PIN of a frontline employee in branch B. Verified live before the
+    // fix: 200 on status, disable and enable from a second branch.
+    //
+    // These tests are written against a purpose-created employee in a SECOND branch, so
+    // they hold regardless of what the demo dataset contains.
+
+    describe('B3-F1 Quick PIN admin branch guard', () => {
+        let otherBranchId: string;
+        let sameBranchEmployeeId: string;
+        let otherBranchEmployeeId: string;
+
+        // The fixture is CREATED, not discovered. An earlier version of this block looked
+        // for pre-existing employees and silently self-skipped when the seeded dataset
+        // happened not to have one in a second branch — a hollow pass that proved nothing.
+        // Both targets are now onboarded through the public API, so the guard is always
+        // exercised on any seeded database.
+        beforeAll(async () => {
+            // A second ACTIVE branch the OWNER actually holds a membership in — the
+            // branch guard would otherwise reject the onboarding call with 403.
+            const membership = await prisma.membership.findFirst({
+                where: {
+                    user: { email: 'owner@demo.local' },
+                    status: 'ACTIVE',
+                    branchId: { not: ownerBranchId },
+                    branch: { organizationId: ownerOrgId, status: 'ACTIVE' },
+                },
+                select: { branchId: true },
+            });
+            otherBranchId = membership?.branchId ?? '';
+
+            const onboard = async (branch: string, tag: string) => {
+                const res = await request(app.getHttpServer())
+                    .post('/api/hr/frontline-staff/onboard')
+                    .set('Authorization', `Bearer ${ownerAccessToken}`)
+                    .set('x-branch-id', branch)
+                    .send({
+                        firstName: 'Guard',
+                        lastName: `${tag}-${uniq}`,
+                        phone: `+25078811${Math.floor(1000 + Math.random() * 8999)}`,
+                        roleName: 'Cashier',
+                        employee: {
+                            hireDate: new Date().toISOString().slice(0, 10),
+                            employmentType: 'PERMANENT',
+                        },
+                    });
+                expect(res.status).toBe(201);
+                return res.body.employee.id as string;
+            };
+
+            sameBranchEmployeeId = await onboard(ownerBranchId, 'SameBranch');
+            expect(otherBranchId).toBeTruthy();
+            otherBranchEmployeeId = await onboard(otherBranchId, 'OtherBranch');
+
+            // Sanity: the two targets really do live in different branches.
+            const rows = await prisma.employee.findMany({
+                where: { id: { in: [sameBranchEmployeeId, otherBranchEmployeeId] } },
+                select: { id: true, branchId: true },
+            });
+            const byId = Object.fromEntries(rows.map((r) => [r.id, r.branchId]));
+            expect(byId[sameBranchEmployeeId]).toBe(ownerBranchId);
+            expect(byId[otherBranchEmployeeId]).toBe(otherBranchId);
+        }, 90000);
+
+        it('same-branch employee is still reachable (the guard did not over-tighten)', async () => {
+            const res = await request(app.getHttpServer())
+                .get(`/api/hr/frontline-staff/${sameBranchEmployeeId}/quick-pin-status`)
+                .set('Authorization', `Bearer ${ownerAccessToken}`)
+                .set('x-branch-id', ownerBranchId)
+                .expect(200);
+
+            expect(res.body.employeeId).toBe(sameBranchEmployeeId);
+            expect(res.body.branchId).toBe(ownerBranchId);
+        });
+
+        it('cross-branch employee is 404 on quick-pin-status', async () => {
+            await request(app.getHttpServer())
+                .get(`/api/hr/frontline-staff/${otherBranchEmployeeId}/quick-pin-status`)
+                .set('Authorization', `Bearer ${ownerAccessToken}`)
+                .set('x-branch-id', ownerBranchId)
+                .expect(404);
+        });
+
+        it('cross-branch employee is 404 on quick-pin/reset, /disable and /enable', async () => {
+            await request(app.getHttpServer())
+                .post(`/api/hr/frontline-staff/${otherBranchEmployeeId}/quick-pin/reset`)
+                .set('Authorization', `Bearer ${ownerAccessToken}`)
+                .set('x-branch-id', ownerBranchId)
+                .send({})
+                .expect(404);
+
+            await request(app.getHttpServer())
+                .patch(`/api/hr/frontline-staff/${otherBranchEmployeeId}/quick-pin/disable`)
+                .set('Authorization', `Bearer ${ownerAccessToken}`)
+                .set('x-branch-id', ownerBranchId)
+                .expect(404);
+
+            await request(app.getHttpServer())
+                .patch(`/api/hr/frontline-staff/${otherBranchEmployeeId}/quick-pin/enable`)
+                .set('Authorization', `Bearer ${ownerAccessToken}`)
+                .set('x-branch-id', ownerBranchId)
+                .expect(404);
+        });
+
+        it('the SAME employee is reachable when the caller switches to that branch', async () => {
+            // Proves the 404 above is a branch-scope decision, not a broken lookup: the
+            // identical id resolves fine once X-Branch-Id names the employee's own branch.
+            const res = await request(app.getHttpServer())
+                .get(`/api/hr/frontline-staff/${otherBranchEmployeeId}/quick-pin-status`)
+                .set('Authorization', `Bearer ${ownerAccessToken}`)
+                .set('x-branch-id', otherBranchId)
+                .expect(200);
+
+            expect(res.body.employeeId).toBe(otherBranchEmployeeId);
+            expect(res.body.branchId).toBe(otherBranchId);
+        });
+
+        it('reset refuses a body.branchId that is not the active branch context', async () => {
+            // The value feeds the Quick PIN lookup hash — honouring a foreign branch
+            // would mint a PIN scoped to a branch the caller is not acting in.
+            const res = await request(app.getHttpServer())
+                .post(`/api/hr/frontline-staff/${sameBranchEmployeeId}/quick-pin/reset`)
+                .set('Authorization', `Bearer ${ownerAccessToken}`)
+                .set('x-branch-id', ownerBranchId)
+                .send({ branchId: otherBranchId })
+                .expect(400);
+
+            expect(res.body.message).toContain('branchId must match the active X-Branch-Id');
+        });
+    });
 });

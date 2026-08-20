@@ -4,7 +4,93 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**ENTERPRISE UI TRACK B4 COMPLETE — Manager REPORTS (2026-08-20) — A: B4 COMPLETE / B5 · B6 · B0 ·
+**PERMISSIONS CUTOVER COMPLETE — C-21 · FU-1 · B3-F1 + Track B0 (2026-08-20) — A: COMPLETE / B5
+CONDITIONAL GO / SHARED-NEON DEPLOY GATED.** Backend + **seed data** only; **no Prisma schema
+change, no migration, no `demo-import.ts` change, no frontend file touched**. Validated on an
+isolated local Docker Postgres stack (`:55432`, API `:4011`, web `:3111`) — **shared Neon was never
+connected to or written**, and **neither `.env` was modified** (SHA-256 identical before and after;
+isolation achieved by constructing the child-process environment explicitly).
+**C-21 — the gap was 36 permission strings over 56 routes, not the 23 previously recorded.** The
+earlier count was a **prefix** check, not a string check: `bank-rec` references **11**
+`pos:accounting:*` strings that share the prefix with the seeded M28/M29 rows but are themselves
+absent, and `budget` references two strings outside the `finance:` prefix. Measured live before the
+change, **all 6 bank-rec GET routes returned 403 to Owner** — the prior claim that "`accounting`,
+`ledger` and `bank-rec` are fine" was wrong. All 36 are now seeded with route-accurate descriptions.
+**OD-9 is resolved with the owner's stated default, and the reasoning is recorded in the seed:**
+OD-9 conditioned Manager's writes on "B0 proving the permission is held", which is unsatisfiable —
+B0 can only observe what the seed grants. Grants are therefore **Owner FULL (36) · Accountant FULL
+(36) · Manager READ-ONLY (15) · nobody else**. Verified live: Manager 200 on 25 of 26 accounting
+GETs, **403 on all 16 write attempts**; Supervisor 403 on all 36. ⚠️ **`procurement:advisory:read`
+is deliberately withheld from Manager** — that one string gates both a read **and** the mutation
+`PATCH /finance/procurement-suggestions/:id/review` (**PC-02**), so granting the read would have
+granted a write.
+**Seed idempotence proven three ways:** run twice (36/87/1 → **0/0/0**, identical content hashes);
+a **greenfield** seed converging on the identical `c2b602ce…` hash at **273 permissions / 922
+grants**; and a repair run recreating exactly 56 deliberately-deleted rows.
+**FU-1 — `pos:hr:compensation:read` REVOKED from Manager** (Owner + Accountant keep it), enforcing
+the locked "compensation excluded from the Manager MVP" decision **at the wire** instead of relying
+on the frontend not to ask. Live before → after: Manager `?view=full` **200 → 403** (list *and*
+detail), `/hr/compensation-profiles` **200 → 403**; the default safe read is unchanged. Because
+`seedRolePermissions` only inserts, `revokeStaleWaiterPermissions` was generalised into a
+declarative `REVOKED_ROLE_PERMISSIONS` table + `revokeStaleRolePermissions()`.
+**B3-F1 — Quick-PIN admin routes are now branch-guarded.** `loadEmployeeForOrg` →
+`loadEmployeeForBranch` (org **and** branch, mirroring shift-swap approve), failing **closed** twice
+over: a cross-branch target returns **404** (never a 403 that would confirm the id exists
+elsewhere), and a **NULL-branch** employee is refused too. Live before → after: cross-branch
+status/disable/enable **200 → 404**. ⚠️ **A second escape not in the original write-up was found and
+closed:** `reset()` accepted `body.branchId` and fed it straight into the Quick PIN lookup hash, so
+a caller could mint a PIN scoped to a branch they are not acting in — now **400**. **Onboarding does
+NOT share the gap** (checked: it takes the branch from `ctx.branchId` only).
+⚠️ **A hollow test was found and fixed:** the first B3-F1 e2e *looked for* a second-branch employee
+and self-skipped when the dataset had none — the suite went green while proving nothing. The fixture
+is now **created** through the public onboarding API, and the re-run is **19/19 with 0 skips**,
+including a control proving the same id resolves 200 once `X-Branch-Id` names its own branch.
+**B0 folded in and COMPLETE → `ai/ACCOUNTING_API_VERIFICATION_REPORT.md`.** 112 routes extracted and
+**reconciled against the API's own `RouterExplorer` boot log** (0 unmapped, 0 missed — which is how
+a parser defect was caught: `budget.controller.ts` declares **three** `@Controller` classes and the
+forecast route is **`/api/franchise/forecast`**). The 75-route accounting block was verified live
+across four roles with **25 live writes**, including a bank reconciliation taken to `COMPLETED` and
+a fiscal period taken `DRAFT → OPEN → CLOSED → LOCKED` (**PC-07** — four states, no unlock route).
+The clearest measure of what C-21 unblocked: the AP+AR e2e suites went from **69 failed / 20 passed**
+in the pre-cutover permission state to **1 failed / 88 passed** after.
+🔴 **B5 is 🟡 CONDITIONAL GO**, blocking on **PC-03** — `ap/suppliers`, `ap/credit-notes`,
+`ar/credit-notes` and `bank-statements` return **another branch's rows** regardless of
+`X-Branch-Id` (9 of 34 list/get methods filter on `orgId` only; `bank-statements` and
+`posting-errors` are list/detail-inconsistent) — and **PC-04** — AP recurring-bill duplicate
+prevention is **dead code** (the guard compares `lastBill.dueDate === profile.nextDueDate` but the
+same transaction advances `nextDueDate`), so a second call issues a **second bill for the same
+supplier**. Its e2e test is **deliberately left red** to document the correct contract; do not
+"fix" it to expect 200. Also **PC-06** (ten list routes return a bare array with no server `total`,
+which the C4 pager contract cannot bind to) and **PC-01** (Manager holds no accounting write).
+🔴 **New finding C-22: 37 further guard permissions still have no seeded row** — `franchise:*` (12),
+`ops:*` (8), `dev:*` (5), `merchant:*` (4), `billing:*` (3), `onboarding:*` (2), `support:*` (2) —
+so franchise, ops-portal, developer-portal and owner-SaaS-billing are 403 for every role exactly as
+accounting was. **Deliberately not seeded** (all deferred modules); **B7 must budget the same
+cutover.**
+**Postman:** three stale collections were repaired — M34 sent `paymentTermsDays` (the DTO field is
+`paymentTermDays`; the whitelist 400'd and cascaded into 10 downstream 404s), M35 asserted the
+renamed `totals.grand*` instead of `summary.*` (**PC-05**), and M37's two procurement-review requests
+now carry **R11 honest-skip guards** so an empty dataset can never read as a verified route. On a
+from-scratch database: **85 requests, 0 request failures; 166/168 assertions pass**, the 2 being
+those deliberate skip markers. **56/56 collections parse** (3 carry a pre-existing BOM).
+**Validation:** API unit **1057 passed / 4 failed** — the 4 **proven pre-existing** by re-running the
+same two suites at `30c67aa` in a throwaway worktree (identical failures, identical test names);
+API e2e **272/273** (the 1 is PC-04); web typecheck + lint + build pass; **16/16** assertion scripts;
+Playwright `manager-shell` **125/11 skipped** and `manager-dashboard` **84/84** — both matching their
+B1/B2 baselines exactly — plus `manager-staff` **106 passed / 26 skipped**, `manager-reports` **151 passed / 1
+skipped** and `manager-operations` **160/160**; `/api/health` → ok; `git diff --check` clean.
+⚠️ **Disclosed:** three Playwright runs were invalidated by the isolated web server being OOM-killed
+(reported, not discarded, and re-run at `--workers=2`); a too-broad `pkill` killed the pre-existing
+shared-Neon dev API on `:3001`; and the pre-existing web dev server on `:3003` was lost to
+background-task process-group cleanup. **Both dev servers were restarted and verified** (`:3001`
+`/api/health` ok on the external Neon host, `:3003` `/login` 200) — **no shared-Neon write
+occurred.**
+**Shared-Neon deploy is STILL GATED** and is behaviour-visible: 56 routes change from 403 to
+reachable, a Manager token **loses** compensation access, and cross-branch Quick-PIN administration
+stops working. **B5, B6 and B7 are NOT started — do not begin any of them without explicit owner
+authorisation.** See `ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md`.
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B4 COMPLETE — Manager REPORTS (2026-08-20) — A: B4 COMPLETE / B5 · B6 · B0 ·
 PERMISSIONS-CUTOVER GATED.** Frontend + docs only; **no backend / schema / migration / seed /
 permission / Postman change**. `/manager/reports` becomes a **module** (the root now redirects)
 carrying two live surfaces — **`/reports/catalog`** and **`/reports/runs`** — built on the B1/B3

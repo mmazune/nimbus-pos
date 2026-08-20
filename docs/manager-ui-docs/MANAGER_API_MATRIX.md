@@ -4,6 +4,75 @@ This matrix documents the backend API endpoints exposed to the Manager role (`ro
 
 ---
 
+## 2026-08-20 — PERMISSIONS CUTOVER + Track B0 verification (annotation; matrix not rewritten)
+
+Two things changed for the Manager role on this date. Canonical records:
+[`ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md`](../../ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md)
+and [`ai/ACCOUNTING_API_VERIFICATION_REPORT.md`](../../ai/ACCOUNTING_API_VERIFICATION_REPORT.md)
+(the **B0** route verification, which supersedes the "not yet live-verified" caveat below **for the
+accounting/finance block only**).
+
+### 1. 🔴 Manager LOST `pos:hr:compensation:read` (FU-1)
+
+Any row in this matrix that assumes Manager can read compensation is now **wrong**. Verified live:
+
+| Endpoint | Manager, before | Manager, after |
+| --- | --- | --- |
+| `GET /api/hr/employees?view=full` | 200 (full compensation + `dateOfBirth` + address) | **403** |
+| `GET /api/hr/employees/:id?view=full` | 200 | **403** |
+| `GET /api/hr/compensation-profiles` | 200 | **403** |
+| `GET /api/hr/employees` (default, safe view) | 200 | **200 — unchanged** |
+
+This enforces the locked "compensation excluded from the Manager MVP" decision at the wire. Owner
+and Accountant keep the grant. The B3 Staff surface never called `?view=full` (asserted), so no UI
+row changes.
+
+### 2. Manager gained 15 accounting/finance READS, and no writes (C-21 + OD-9)
+
+56 accounting routes previously returned **403 to every role including Owner** because 36
+permission strings had no seeded row. They are now seeded. Manager's slice is **read-only**:
+
+`accounting:ap:{bill,credit-note,recurring,reminder}:read` ·
+`accounting:ar:{account,invoice,credit-note,aging}:read` ·
+`pos:accounting:{bank-accounts,bank-statements,reconciliation,period-close-runs}:read` ·
+`finance:budget:read` · `finance:demand-calendar:read` · `franchise:forecast:read`
+
+Verified live: Manager gets **200** on 25 of 26 accounting GET routes and **403** on all 16 write
+attempts (AP create/approve/pay, AR invoice/receipt, bank account/import/manual entry,
+reconciliation match, period close, period lock, budget create/update-actuals, demand-calendar
+create, procurement review). The one Manager read 403 is
+`GET /api/finance/procurement-suggestions` — **withheld deliberately**, because
+`procurement:advisory:read` also gates the mutation
+`PATCH /api/finance/procurement-suggestions/:id/review` (finding **PC-02**).
+
+**Manager still does NOT hold** `journals:create`, `journals:reverse`, `posting:replay`,
+`periods:open`, `posting-source-maps:update` or `tax-config:update` — the accounting/GL guides were
+correct and are now live-verified. It **does** hold the pre-existing `accounts:create`,
+`cost-centers:create` and `periods:create`.
+
+### 3. Rows B5 must not take at face value
+
+- ⚠️ **`GET /api/franchise/forecast`, not `/api/finance/forecast`** — the route sits on a third
+  `@Controller('franchise')` class inside `budget.controller.ts`.
+- 🔴 **Four accounting reads leak across branches** regardless of `X-Branch-Id`
+  (`ap/suppliers`, `ap/credit-notes`, `ar/credit-notes`, `bank-statements`) — finding **PC-03**.
+- 🔴 **Ten accounting list routes return a bare array** with no `total` and no pagination bound —
+  finding **PC-06**. The C4 pager contract cannot bind to them.
+- ⚠️ `GET /api/accounting/ar/aging` returns its totals under **`summary`**
+  (`totalOutstanding` / `current` / `bucket_*`), **not** `totals.grand*` — finding **PC-05**.
+- ⚠️ **All 7 `/api/settings*` reads are org-scoped** and readable by Supervisor too
+  (`tenancy:org:read`). B6 must label them organisation settings, not branch settings.
+- ⚠️ **Manager can read `GET /api/audit/timeline`; Accountant cannot** (403).
+- 🔴 **`GET /api/owner/live` is Owner-only** — 403 for Manager and Accountant. B7, not B6.
+
+### 4. Quick-PIN admin rows are now branch-guarded (B3-F1)
+
+`GET /api/hr/frontline-staff/:id/quick-pin-status` and `/quick-pin/{reset,disable,enable}` resolve
+the target by org **and** branch. A target in another branch now returns **404** (was **200**), and
+`/reset` returns **400** if `body.branchId` is not the active `X-Branch-Id`.
+
+---
+
 ## 2026-08-20 — Header note: owner decisions are LOCKED (matrix not rewritten)
 
 The product owner approved the Manager core + MVP scope on **2026-08-20**. The decision register

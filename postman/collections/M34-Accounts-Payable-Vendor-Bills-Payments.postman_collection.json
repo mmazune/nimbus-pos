@@ -125,7 +125,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"name\": \"Postman Produce Ltd\",\n    \"code\": \"PM-SUP-001\",\n    \"currencyCode\": \"UGX\",\n    \"paymentTermsDays\": 30,\n    \"email\": \"pm@producelimited.local\",\n    \"phone\": \"+256700000099\"\n}"
+                            "raw": "{\n    \"name\": \"Postman Produce Ltd\",\n    \"code\": \"PM-SUP-001\",\n    \"currencyCode\": \"UGX\",\n    \"paymentTermDays\": 30,\n    \"email\": \"pm@producelimited.local\",\n    \"phone\": \"+256700000099\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/accounting/ap/suppliers",

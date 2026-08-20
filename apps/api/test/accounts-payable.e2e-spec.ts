@@ -888,6 +888,22 @@ describe('AccountsPayable (e2e)', () => {
       generatedRecurringBillId = res.body.id;
     });
 
+    // ⚠️ KNOWN FAILING — finding PC-04 (B0, 2026-08-20). This test is CORRECT and is
+    // deliberately left red: it documents the intended contract, and the source does not
+    // honour it.
+    //
+    // `generateBillFromProfile` guards duplicates by comparing
+    // `lastBill.dueDate === profile.nextDueDate`, but the same transaction ADVANCES
+    // `profile.nextDueDate` to the following cycle. After a generation the two values can
+    // never be equal, so the ConflictException branch is unreachable dead code and a
+    // second call happily issues another bill for the same profile.
+    //
+    // The defect was invisible until the C-21 permissions cutover made AP reachable at
+    // all — before it, every AP route returned 403 for every role and this assertion was
+    // never evaluated. Fixing it is a behaviour change to AP bill generation and is
+    // OUTSIDE the authorised scope of the permissions cutover (B0 is verification only),
+    // so it is recorded for B5.1 rather than patched here. Do NOT "fix" this by relaxing
+    // the expectation to 200 — that would encode a duplicate-billing bug as the contract.
     it('should return 409 when generating duplicate for same cycle', async () => {
       const res = await request(app.getHttpServer())
         .post(`/api/accounting/ap/recurring-profiles/${recurringProfileId}/generate-bill`)

@@ -964,9 +964,18 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
-                                    "const body = pm.response.json();",
-                                    "pm.test('status REVIEWED', () => pm.expect(body.status).to.eql('REVIEWED'));"
+                                    "// R11 / B0 2026-08-20: this request needs a procurement suggestion to exist.",
+                                    "// Suggestions are GENERATED from consumption data, never seeded, so a fresh",
+                                    "// stack can legitimately have none. Fail with a stated reason instead of a",
+                                    "// bare status mismatch, so an empty dataset never reads as a verified route.",
+                                    "const suggestionId = pm.environment.get('procurementSuggestionId');",
+                                    "if (!suggestionId) {",
+                                    "    pm.test('skipped: no procurement suggestion available to review', () => { pm.expect.fail('procurementSuggestionId is empty — run a consumption/advisory generation first'); });",
+                                    "} else {",
+                                    "    pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "    const body = pm.response.json();",
+                                    "    pm.test('status REVIEWED', () => pm.expect(body.status).to.eql('REVIEWED'));",
+                                    "}"
                                 ],
                                 "type": "text/javascript"
                             }
@@ -1014,7 +1023,13 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                    "// R11 / B0 2026-08-20 — see the note on the request above.",
+                                    "const suggestionId = pm.environment.get('procurementSuggestionId');",
+                                    "if (!suggestionId) {",
+                                    "    pm.test('skipped: no procurement suggestion available to review', () => { pm.expect.fail('procurementSuggestionId is empty — run a consumption/advisory generation first'); });",
+                                    "} else {",
+                                    "    pm.test('status 400', () => pm.response.to.have.status(400));",
+                                    "}"
                                 ],
                                 "type": "text/javascript"
                             }

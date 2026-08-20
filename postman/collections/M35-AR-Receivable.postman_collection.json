@@ -470,9 +470,14 @@
                                     "pm.test('status 200', () => pm.response.to.have.status(200));",
                                     "const body = pm.response.json();",
                                     "pm.test('has accounts array', () => pm.expect(body.accounts).to.be.an('array'));",
-                                    "pm.test('has totals', () => pm.expect(body.totals).to.be.an('object'));",
-                                    "pm.test('totals has grandTotal', () => pm.expect(body.totals.grandTotal).to.be.a('string'));",
-                                    "pm.test('totals has grand_1_30', () => pm.expect(body.totals.grand_1_30).to.be.a('string'));"
+                                    "// B0 2026-08-20: the aging response carries its totals under `summary`",
+                                    "// (totalOutstanding / current / bucket_*), not a `totals` block with",
+                                    "// grandTotal / grand_*. The old assertions were stale and could never run:",
+                                    "// before the C-21 permissions cutover every AR route returned 403.",
+                                    "pm.test('has summary', () => pm.expect(body.summary).to.be.an('object'));",
+                                    "pm.test('summary has totalOutstanding', () => pm.expect(body.summary.totalOutstanding).to.be.a('string'));",
+                                    "pm.test('summary has bucket_1_30', () => pm.expect(body.summary.bucket_1_30).to.be.a('string'));",
+                                    "pm.test('server-side total is a number', () => pm.expect(body.total).to.be.a('number'));"
                                 ],
                                 "type": "text/javascript"
                             }

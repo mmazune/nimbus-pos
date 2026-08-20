@@ -466,6 +466,75 @@ const PERMISSIONS_DATA = [
   // permission is implicitly granted by the API key itself; no human role
   // needs to hold it. Listed here so the permission catalog stays complete.
   { action: 'hms:read:*', description: 'Read everything via the HMS integration façade — /api/hms/* — granted automatically to any active API key' },
+
+  // ── Track C · C-21 — permissions cutover (2026-08-20) ──
+  //
+  // These 36 strings were referenced by real `@Permissions(...)` guards on 56 registered
+  // routes but had ZERO rows in this catalog, so the PermissionGuard could never match
+  // them: every one of those routes returned 403 for EVERY role, including Owner.
+  // Verified live before the cutover on an isolated stack — e.g.
+  // `POST /api/accounting/ap/suppliers` as Owner → 403 "Insufficient permissions".
+  //
+  // ⚠️ The Track C entry (and the backend-gap-batch-1 report that raised it) counted
+  // 23 strings across AP / AR / finance and asserted "pos:accounting:* is seeded, so
+  // accounting, ledger and bank-rec are fine". That was a PREFIX check, not a string
+  // check: bank-rec references 11 `pos:accounting:*` strings that share the prefix with
+  // the 18 seeded ones but are themselves absent. Budget likewise references two strings
+  // outside the `finance:` prefix. The real gap is 36, not 23 — see
+  // ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md §PART 1.
+  //
+  // No schema change: permissions and role_permissions are seed DATA.
+
+  // C-21 · Accounts Payable (19 routes) — /api/accounting/ap/*
+  { action: 'accounting:ap:bill:read', description: 'Read AP suppliers, vendor bills, AP payments and the AP aging report — GET /api/accounting/ap/{suppliers,suppliers/:id,bills,bills/:id,payments,aging}' },
+  { action: 'accounting:ap:bill:write', description: 'Create AP suppliers and vendor bills — POST /api/accounting/ap/{suppliers,bills}' },
+  { action: 'accounting:ap:bill:approve', description: 'Approve a vendor bill for payment — POST /api/accounting/ap/bills/:id/approve' },
+  { action: 'accounting:ap:payment:write', description: 'Record a payment against a vendor bill — POST /api/accounting/ap/payments' },
+  { action: 'accounting:ap:credit-note:read', description: 'Read AP (supplier) credit notes — GET /api/accounting/ap/credit-notes' },
+  { action: 'accounting:ap:credit-note:write', description: 'Raise an AP (supplier) credit note — POST /api/accounting/ap/credit-notes' },
+  { action: 'accounting:ap:recurring:read', description: 'Read recurring vendor-bill profiles — GET /api/accounting/ap/recurring-profiles' },
+  { action: 'accounting:ap:recurring:write', description: 'Create/update a recurring vendor-bill profile and generate a bill from it — POST/PATCH /api/accounting/ap/recurring-profiles*' },
+  { action: 'accounting:ap:reminder:read', description: 'Read AP payment reminders — GET /api/accounting/ap/reminders' },
+  { action: 'accounting:ap:reminder:write', description: 'Generate or dismiss AP payment reminders — POST /api/accounting/ap/reminders/generate, POST /api/accounting/ap/reminders/:id/dismiss' },
+
+  // C-21 · Accounts Receivable (10 routes) — /api/accounting/ar/*
+  { action: 'accounting:ar:account:read', description: 'Read AR customer accounts — GET /api/accounting/ar/accounts, /api/accounting/ar/accounts/:id' },
+  { action: 'accounting:ar:account:write', description: 'Create an AR customer account — POST /api/accounting/ar/accounts' },
+  { action: 'accounting:ar:invoice:read', description: 'Read AR invoices — GET /api/accounting/ar/invoices, /api/accounting/ar/invoices/:id' },
+  { action: 'accounting:ar:invoice:write', description: 'Raise an AR invoice — POST /api/accounting/ar/invoices' },
+  { action: 'accounting:ar:receipt:write', description: 'Record a customer receipt against an AR invoice — POST /api/accounting/ar/receipts' },
+  { action: 'accounting:ar:credit-note:read', description: 'Read AR (customer) credit notes — GET /api/accounting/ar/credit-notes' },
+  { action: 'accounting:ar:credit-note:write', description: 'Raise an AR (customer) credit note — POST /api/accounting/ar/credit-notes' },
+  { action: 'accounting:ar:aging:read', description: 'Read the AR aging report — GET /api/accounting/ar/aging' },
+
+  // C-21 · Bank reconciliation + period close (15 routes) — /api/accounting/{bank-*,reconciliation,periods,period-close-runs}
+  // These share the `pos:accounting:` prefix with the 18 rows seeded for M28/M29, which is
+  // exactly why the gap was missed. They are distinct strings and were never seeded.
+  { action: 'pos:accounting:bank-accounts:read', description: 'Read registered bank accounts — GET /api/accounting/bank-accounts' },
+  { action: 'pos:accounting:bank-accounts:create', description: 'Register a bank account — POST /api/accounting/bank-accounts' },
+  { action: 'pos:accounting:bank-statements:read', description: 'Read imported bank statements and their lines — GET /api/accounting/bank-statements, /api/accounting/bank-statements/:id' },
+  { action: 'pos:accounting:bank-statements:import', description: 'Import a bank statement — POST /api/accounting/bank-statements/import' },
+  { action: 'pos:accounting:bank-entry:create', description: 'Record a manual bank entry — POST /api/accounting/manual-bank-entries' },
+  { action: 'pos:accounting:reconciliation:read', description: 'Read bank reconciliations — GET /api/accounting/reconciliation, /api/accounting/reconciliation/:id' },
+  { action: 'pos:accounting:reconciliation:create', description: 'Open a bank reconciliation and complete it — POST /api/accounting/reconciliation, POST /api/accounting/reconciliation/:id/complete' },
+  { action: 'pos:accounting:reconciliation:match', description: 'Match or skip a bank statement line inside a reconciliation — PATCH /api/accounting/reconciliation/:id/{match,skip}' },
+  { action: 'pos:accounting:period-close-runs:read', description: 'Read period-close runs — GET /api/accounting/period-close-runs' },
+  { action: 'pos:accounting:periods:close', description: 'Close a fiscal period — PATCH /api/accounting/periods/:id/close' },
+  { action: 'pos:accounting:periods:lock', description: 'Lock a closed fiscal period against further posting — PATCH /api/accounting/periods/:id/lock' },
+
+  // C-21 · Budgets / forecasting / demand calendar (12 routes) — /api/finance/*
+  { action: 'finance:budget:read', description: 'Read budgets and budget-vs-actual lines — GET /api/finance/budgets, /api/finance/budgets/:id' },
+  { action: 'finance:budget:write', description: 'Create a budget — POST /api/finance/budgets' },
+  { action: 'finance:budget:update-actuals', description: 'Recompute a budget\'s actuals from posted data — POST /api/finance/budgets/:id/update-actuals' },
+  { action: 'finance:demand-calendar:read', description: 'Read demand-calendar entries — GET /api/finance/demand-calendar, /api/finance/demand-calendar/:id' },
+  { action: 'finance:demand-calendar:write', description: 'Create/update/delete a demand-calendar entry — POST/PATCH/DELETE /api/finance/demand-calendar*' },
+  { action: 'franchise:forecast:read', description: 'Read the finance forecast — GET /api/finance/forecast. Named for the franchise family but referenced ONLY by the budget controller' },
+  // ⚠️ `procurement:advisory:read` gates BOTH `GET /api/finance/procurement-suggestions`
+  // AND the mutation `PATCH /api/finance/procurement-suggestions/:id/review`. A single
+  // string spanning a read and a write is why it is NOT granted to Manager under the
+  // read-only policy below — granting the read would silently grant the review write.
+  // Recorded as finding PC-02; splitting it is a backend change, not a seed change.
+  { action: 'procurement:advisory:read', description: 'Read procurement suggestions AND review (accept/reject) them — GET /api/finance/procurement-suggestions, PATCH /api/finance/procurement-suggestions/:id/review. NOTE: one string gates both a read and a write (finding PC-02)' },
 ];
 
 async function seedPermissions(): Promise<{ created: number; skipped: number }> {
@@ -486,6 +555,94 @@ async function seedPermissions(): Promise<{ created: number; skipped: number }> 
 
   return { created, skipped };
 }
+
+// ── Track C · C-21 — accounting/finance grant lists (2026-08-20) ──
+//
+// Resolution of open owner decision OD-9 ("how much accounting WRITE does Manager get?").
+// OD-9's recommendation is "read-first … ship the operationally-necessary writes only
+// where B0 proves the permission is held". That condition could not be satisfied as
+// written: B0 can only observe what this file grants, so "does Manager hold it?" is
+// decided here, not discovered by B0. Applying the owner's stated default instead:
+//
+//   Owner       → FULL (all 36 strings)
+//   Accountant  → FULL (all 36 strings) — accounting is its primary domain
+//   Manager     → READ-ONLY (15 strings); every write deferred to a later, explicit grant
+//   everyone else (Supervisor, Cashier, Waiter, Chef, Bartender, Procurement, …) → NONE
+//
+// The operationally-necessary writes OD-9 names (AP bill approve, reconciliation
+// match/skip/complete, period close/lock, budget update-actuals) are deliberately NOT
+// granted to Manager here. B5 must request them explicitly — see finding PC-01.
+
+/** Every C-21 string, in route order. Owner and Accountant hold all of these. */
+const C21_ACCOUNTING_FINANCE_ALL: string[] = [
+  // Accounts Payable
+  'accounting:ap:bill:read',
+  'accounting:ap:bill:write',
+  'accounting:ap:bill:approve',
+  'accounting:ap:payment:write',
+  'accounting:ap:credit-note:read',
+  'accounting:ap:credit-note:write',
+  'accounting:ap:recurring:read',
+  'accounting:ap:recurring:write',
+  'accounting:ap:reminder:read',
+  'accounting:ap:reminder:write',
+  // Accounts Receivable
+  'accounting:ar:account:read',
+  'accounting:ar:account:write',
+  'accounting:ar:invoice:read',
+  'accounting:ar:invoice:write',
+  'accounting:ar:receipt:write',
+  'accounting:ar:credit-note:read',
+  'accounting:ar:credit-note:write',
+  'accounting:ar:aging:read',
+  // Bank reconciliation + period close
+  'pos:accounting:bank-accounts:read',
+  'pos:accounting:bank-accounts:create',
+  'pos:accounting:bank-statements:read',
+  'pos:accounting:bank-statements:import',
+  'pos:accounting:bank-entry:create',
+  'pos:accounting:reconciliation:read',
+  'pos:accounting:reconciliation:create',
+  'pos:accounting:reconciliation:match',
+  'pos:accounting:period-close-runs:read',
+  'pos:accounting:periods:close',
+  'pos:accounting:periods:lock',
+  // Budgets / demand calendar / forecast / procurement advisory
+  'finance:budget:read',
+  'finance:budget:write',
+  'finance:budget:update-actuals',
+  'finance:demand-calendar:read',
+  'finance:demand-calendar:write',
+  'franchise:forecast:read',
+  'procurement:advisory:read',
+];
+
+/**
+ * Manager's C-21 slice: reads only.
+ *
+ * `procurement:advisory:read` is deliberately EXCLUDED even though its name reads like a
+ * read: the same string also gates the mutation
+ * `PATCH /api/finance/procurement-suggestions/:id/review`, so granting it to Manager
+ * would silently hand Manager a write and break this list's only promise (finding PC-02).
+ * Every string below gates GET routes exclusively — verified against the controllers.
+ */
+const C21_ACCOUNTING_FINANCE_MANAGER_READ: string[] = [
+  'accounting:ap:bill:read',
+  'accounting:ap:credit-note:read',
+  'accounting:ap:recurring:read',
+  'accounting:ap:reminder:read',
+  'accounting:ar:account:read',
+  'accounting:ar:invoice:read',
+  'accounting:ar:credit-note:read',
+  'accounting:ar:aging:read',
+  'pos:accounting:bank-accounts:read',
+  'pos:accounting:bank-statements:read',
+  'pos:accounting:reconciliation:read',
+  'pos:accounting:period-close-runs:read',
+  'finance:budget:read',
+  'finance:demand-calendar:read',
+  'franchise:forecast:read',
+];
 
 // ── M2: Role-Permission Mappings ──
 // L5 (Owner) gets all permissions.
@@ -754,6 +911,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'exports:read',
     'exports:write',
     'exports:download',
+    // C-21 permissions cutover (2026-08-20) — Owner: FULL on the whole
+    // accounting/finance surface (AP, AR, bank-rec/period-close, budgets).
+    // Owner is L5 and already holds every other accounting string; these 36
+    // routes were unreachable for Owner too until this cutover.
+    ...C21_ACCOUNTING_FINANCE_ALL,
   ],
   Manager: [
     'identity:user:read',
@@ -887,7 +1049,18 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:documents:link',
     'pos:documents:metadata:update',
     'pos:documents:storage-config:read',
-    // M23: Employees + Contracts + HR Core (Manager: full access except compensation:create)
+    // M23: Employees + Contracts + HR Core (Manager: no compensation of any kind)
+    //
+    // FU-1 (2026-08-20 permissions cutover): 'pos:hr:compensation:read' was REMOVED from
+    // this list. It gated `GET /api/hr/compensation-profiles` and — since C-02 — the
+    // `?view=full` opt-in on `GET /api/hr/employees(/:id)`, so a Manager token could
+    // still pull salary, date of birth, address and emergency contacts on demand
+    // (confirmed live as B3-F2). The owner's locked decision is that compensation is
+    // excluded from the Manager MVP; this enforces it at the wire instead of relying on
+    // the frontend never asking. Owner and Accountant keep the grant.
+    //
+    // Removing it from this list is not enough on its own — seedRolePermissions only
+    // INSERTS. The row is deleted by revokeStaleRolePermissions() below.
     'pos:hr:employees:read',
     'pos:hr:employees:create',
     'pos:hr:employees:update',
@@ -895,7 +1068,6 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:hr:contracts:create',
     'pos:hr:positions:read',
     'pos:hr:positions:create',
-    'pos:hr:compensation:read',
     // M24: Attendance + Leave + Shift Swaps (Manager: full access except policy:create/update)
     'pos:hr:attendance:clock',
     'pos:hr:attendance:read',
@@ -993,6 +1165,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'exports:read',
     'exports:write',
     'exports:download',
+    // C-21 permissions cutover (2026-08-20) — Manager: READ-ONLY on the accounting/
+    // finance surface, per the OD-9 resolution recorded above. No AP/AR write, no bill
+    // approve, no reconciliation match, no period close/lock, no budget write.
+    ...C21_ACCOUNTING_FINANCE_MANAGER_READ,
   ],
   Accountant: [
     'identity:user:read',
@@ -1086,6 +1262,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'exports:read',
     'exports:write',
     'exports:download',
+    // C-21 permissions cutover (2026-08-20) — Accountant: FULL on the accounting/finance
+    // surface. AP, AR, bank reconciliation, period close and budgets are this role's
+    // primary domain; it already held M28/M29 in full.
+    ...C21_ACCOUNTING_FINANCE_ALL,
   ],
   Supervisor: [
     'identity:user:read',
@@ -1510,46 +1690,72 @@ async function seedRolePermissions(): Promise<{ created: number; skipped: number
 }
 
 /**
- * Waiter MVP — explicit revoke of the 7 RolePermissions intentionally
- * removed from the Waiter role. `seedRolePermissions` only inserts; it
- * never deletes, so previously seeded waiter grants persist forever
- * unless we revoke them here. Targeted and idempotent.
+ * Explicit revoke table. `seedRolePermissions` only INSERTS — it never deletes — so a
+ * grant that was seeded once persists forever unless it is revoked here. Every entry is
+ * targeted (one role, an explicit action list) and idempotent (deleteMany of rows that
+ * may already be gone).
+ *
+ * - **Waiter MVP** — the 7 RolePermissions intentionally removed from the Waiter role.
+ * - **Manager / FU-1** (2026-08-20 permissions cutover) — `pos:hr:compensation:read`.
+ *   Enforces the owner's locked "compensation is excluded from the Manager MVP"
+ *   decision at the wire: after this revoke, `GET /api/hr/employees?view=full` returns
+ *   403 for a Manager token instead of salary + date of birth + address. Owner and
+ *   Accountant keep the grant, so `GET /api/hr/compensation-profiles` and the full
+ *   employee view stay reachable for the roles that are supposed to have them.
  */
-async function revokeStaleWaiterPermissions(): Promise<{ revoked: number }> {
-  const WAITER_REVOKED_ACTIONS = [
-    'pos:reservation:create',
-    'pos:reservation:confirm',
-    'pos:reservation:deposit:record',
-    'pos:reservation:deposit:read',
-    'pos:reservation:table:assign',
-    'pos:order:transfer',
-    'pos:order:move-items',
-  ];
+const REVOKED_ROLE_PERMISSIONS: { role: string; reason: string; actions: string[] }[] = [
+  {
+    role: 'Waiter',
+    reason: 'Waiter MVP scope tightening',
+    actions: [
+      'pos:reservation:create',
+      'pos:reservation:confirm',
+      'pos:reservation:deposit:record',
+      'pos:reservation:deposit:read',
+      'pos:reservation:table:assign',
+      'pos:order:transfer',
+      'pos:order:move-items',
+    ],
+  },
+  {
+    role: 'Manager',
+    reason: 'FU-1 — compensation excluded from the Manager MVP (permissions cutover)',
+    actions: ['pos:hr:compensation:read'],
+  },
+];
 
-  const waiterRole = await prisma.role.findUnique({ where: { name: 'Waiter' } });
-  if (!waiterRole) {
-    console.log('  ⚠️  Waiter role not found — skipping revoke');
-    return { revoked: 0 };
+async function revokeStaleRolePermissions(): Promise<{ revoked: number }> {
+  let revoked = 0;
+
+  for (const entry of REVOKED_ROLE_PERMISSIONS) {
+    const role = await prisma.role.findUnique({ where: { name: entry.role } });
+    if (!role) {
+      console.log(`  ⚠️  Role "${entry.role}" not found — skipping revoke`);
+      continue;
+    }
+
+    const perms = await prisma.permission.findMany({
+      where: { action: { in: entry.actions } },
+      select: { id: true, action: true },
+    });
+    if (perms.length === 0) continue;
+
+    const result = await prisma.rolePermission.deleteMany({
+      where: {
+        roleId: role.id,
+        permissionId: { in: perms.map((p) => p.id) },
+      },
+    });
+    revoked += result.count;
+
+    for (const p of perms) {
+      console.log(
+        `  ⛔ RolePermission "${entry.role}" → "${p.action}" (revoked if present — ${entry.reason})`,
+      );
+    }
   }
 
-  const perms = await prisma.permission.findMany({
-    where: { action: { in: WAITER_REVOKED_ACTIONS } },
-    select: { id: true, action: true },
-  });
-
-  if (perms.length === 0) return { revoked: 0 };
-
-  const result = await prisma.rolePermission.deleteMany({
-    where: {
-      roleId: waiterRole.id,
-      permissionId: { in: perms.map((p) => p.id) },
-    },
-  });
-
-  for (const p of perms) {
-    console.log(`  ⛔ RolePermission "Waiter" → "${p.action}" (revoked if present)`);
-  }
-  return { revoked: result.count };
+  return { revoked };
 }
 // PINs for testing (before hashing): Owner=1234, Manager=2345, Cashier=3456, Chef=4567, Waiter=5678, Accountant=6789
 
@@ -7770,13 +7976,13 @@ async function main(): Promise<void> {
   const rpResult = await seedRolePermissions();
   console.log(`   Created: ${rpResult.created}, Skipped: ${rpResult.skipped}\n`);
 
-  // 4b) Waiter MVP — revoke RolePermissions that were intentionally
-  //     removed from the Waiter scope. The seedRolePermissions function
-  //     is additive-only, so previously granted but now-removed perms
-  //     persist unless explicitly revoked here.
-  console.log('── Waiter MVP tightening (revoke stale perms) ──');
-  const waiterRevoke = await revokeStaleWaiterPermissions();
-  console.log(`   Revoked: ${waiterRevoke.revoked}\n`);
+  // 4b) Revoke RolePermissions that were intentionally removed from a role's
+  //     scope. seedRolePermissions is additive-only, so previously granted but
+  //     now-removed perms persist unless explicitly revoked here.
+  //     Covers the Waiter MVP tightening and FU-1 (Manager compensation read).
+  console.log('── Role scope tightening (revoke stale perms) ──');
+  const staleRevoke = await revokeStaleRolePermissions();
+  console.log(`   Revoked: ${staleRevoke.revoked}\n`);
 
   // 5) Seed Demo Users
   console.log('── Users ──');

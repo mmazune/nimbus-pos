@@ -475,13 +475,24 @@ describe('Accounts Receivable (e2e)', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .set('x-branch-id', branchId);
 
+      // B0 (2026-08-20): this assertion was stale. It expected a `totals` block with
+      // `grandTotal` / `grand_current` / `grand_1_30`, but the service returns the same
+      // figures under `summary` as `totalOutstanding` / `current` / `bucket_1_30`. The
+      // drift was invisible until the C-21 permissions cutover made the route reachable
+      // — before it, every AR request 403'd and the assertion was never evaluated.
+      // Verified live: no data was lost, only renamed. The unit spec carries the
+      // identical stale name (finding PC-05).
       expect(res.status).toBe(200);
       expect(res.body.accounts).toBeDefined();
       expect(Array.isArray(res.body.accounts)).toBe(true);
-      expect(res.body.totals).toBeDefined();
-      expect(res.body.totals.grandTotal).toBeDefined();
-      expect(res.body.totals.grand_current).toBeDefined();
-      expect(res.body.totals.grand_1_30).toBeDefined();
+      expect(res.body.summary).toBeDefined();
+      expect(res.body.summary.totalOutstanding).toBeDefined();
+      expect(res.body.summary.current).toBeDefined();
+      expect(res.body.summary.bucket_1_30).toBeDefined();
+      expect(res.body.summary.bucket_31_60).toBeDefined();
+      expect(res.body.summary.bucket_61_90).toBeDefined();
+      expect(res.body.summary.bucket_90_plus).toBeDefined();
+      expect(typeof res.body.total).toBe('number');
     });
 
     it('should support asOf query param', async () => {

@@ -326,6 +326,67 @@ describe('Employees + Contracts + HR Core (e2e)', () => {
     });
   });
 
+  // ── FU-1 (permissions cutover, 2026-08-20): Manager may not opt into compensation ──
+  //
+  // C-02 made the DEFAULT payload safe for everybody but left `?view=full` reachable by
+  // any token holding `pos:hr:compensation:read` — and the seeded matrix granted that to
+  // Manager, so a Manager could still pull salary + PII on demand (B3-F2, confirmed live).
+  // The cutover revokes the Manager grant. These tests pin the resulting wire behaviour:
+  // Manager is refused the opt-in, Owner is not, and Manager's ordinary read is untouched.
+
+  describe('FU-1 Manager compensation revoke (live)', () => {
+    it('manager is refused view=full with a message naming the permission', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/hr/employees?view=full&take=5')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(403);
+
+      expect(res.body.message).toContain('pos:hr:compensation:read');
+    });
+
+    it('manager is refused the employee DETAIL view=full too', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/hr/employees/${employeeId}?view=full`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(403);
+    });
+
+    it('manager is refused GET /hr/compensation-profiles', async () => {
+      await request(app.getHttpServer())
+        .get('/api/hr/compensation-profiles')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(403);
+    });
+
+    it('owner keeps both the view=full opt-in and the compensation-profiles read', async () => {
+      await request(app.getHttpServer())
+        .get('/api/hr/employees?view=full&take=5')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .get('/api/hr/compensation-profiles')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(200);
+    });
+
+    it("manager's ordinary (safe) employee read is unaffected", async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/hr/employees?take=5')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(200);
+
+      expect(res.body.view).toBe('safe');
+      expect(res.body.data.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('GET /hr/employees/:id', () => {
     it('should get employee with contracts', async () => {
       const res = await request(app.getHttpServer())

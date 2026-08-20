@@ -1,5 +1,35 @@
 # ROLE_CAPABILITY_MATRIX.md — Nimbus POS
 
+> **PERMISSIONS CUTOVER (2026-08-20) — role grants changed. Backend + seed only; no UI change.**
+> See `ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md`.
+>
+> **C-21 — 36 accounting/finance permission strings were seeded for the first time**, unblocking
+> **56 routes** that previously returned **403 to every role, including Owner** (AP 19, AR 10,
+> bank-rec 15, budget 12). Grants, per the OD-9 resolution:
+>
+> | Role | Accounting/finance grant |
+> | --- | --- |
+> | **Owner** | **FULL** — all 36 strings |
+> | **Accountant** | **FULL** — all 36 strings |
+> | **Manager** | **READ-ONLY — 15 strings.** No AP/AR write, no bill approve, no reconciliation match, no period close/lock, no budget write. Verified live: 16 Manager write attempts → 403 |
+> | **Supervisor · Cashier · Waiter · Chef · Bartender · Procurement** | **NONE** — verified live, 403 on every accounting route |
+>
+> ⚠️ **`procurement:advisory:read` is deliberately withheld from Manager** — that one string gates
+> both `GET /finance/procurement-suggestions` **and the mutation**
+> `PATCH /finance/procurement-suggestions/:id/review`, so granting the read would have granted a
+> write (finding **PC-02**). It is Manager's only 403 among the accounting reads.
+>
+> 🔴 **FU-1 — Manager LOST `pos:hr:compensation:read`.** This enforces the owner's locked
+> "compensation is excluded from the Manager MVP" decision **at the wire** rather than relying on
+> the frontend not to ask. A Manager token now gets **403** on `GET /hr/compensation-profiles` and
+> on `?view=full` for `GET /hr/employees(/:id)`; the default (safe) employee read is unchanged.
+> **Owner and Accountant keep the grant.**
+>
+> 🔴 **B3-F1 — Quick-PIN administration is now branch-guarded.** `quick-pin-status`, `/reset`,
+> `/disable` and `/enable` resolve the target employee by org **and** branch. Administering a
+> Quick PIN for an employee in another branch now returns **404** (was 200), and `/reset` returns
+> **400** if `body.branchId` is not the active `X-Branch-Id`.
+
 > **Supervisor final closure (2026-07-31):** every capability row for Supervisor below was
 > exercised live in the final integrated QA pass (four viewports, isolated stack) and confirmed
 > accurate — see `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md`. No capability state

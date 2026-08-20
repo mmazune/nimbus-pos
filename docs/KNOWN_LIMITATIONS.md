@@ -35,20 +35,69 @@
 >   **404 "Export file not found on disk"** for them, verified live. They still advertise
 >   `status: READY`, so the row and the file disagree; B4 discloses them in words and never offers
 >   a download control (**B4-F5**).
-> - **BGB1-L2 — a Manager token can still opt into compensation.** The gate is the pre-existing
->   `pos:hr:compensation:read`, which the seeded matrix grants to Owner, **Manager** and Accountant.
->   Only the *default* payload is guaranteed compensation-free (for every role, including Owner).
->   Narrowing the Manager grant is a seed change and was not authorised (follow-up **FU-1**).
+> - ~~**BGB1-L2 — a Manager token can still opt into compensation.**~~ ✅ **RESOLVED by the
+>   permissions cutover (2026-08-20, FU-1).** `pos:hr:compensation:read` was **revoked from the
+>   Manager role**; Owner and Accountant keep it. Verified live: a Manager token now gets **403** on
+>   `GET /hr/employees?view=full`, on `GET /hr/employees/:id?view=full` and on
+>   `GET /hr/compensation-profiles`, with a message naming the permission. The default (safe)
+>   payload is unchanged for every role. See `ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md` §3.
+>   ⚠️ Not yet deployed to shared Neon — see the deploy gate below.
 > - **BGB1-L3 — `KpiSnapshot` rows written before 2026-08-20 carry the OLD gross/net semantics**
 >   (`grossSales = SUM(subtotal)`, `netSales = SUM(total)`). No backfill was performed. Any trend
 >   built over historical snapshots mixes two definitions.
-> - **BGB1-L4 — 38 accounting routes are unreachable by every role, including Owner**
->   (new Track C entry **C-21**). `accounts-payable` (19), `accounts-receivable` (10) and `budget`
->   (9) are guarded by 23 permission strings (`accounting:ap:*`, `accounting:ar:*`, `finance:*`)
->   that have **zero rows** in the `permissions` table. Live: owner
->   `POST /api/accounting/ap/suppliers` → **403**. `pos:accounting:*` (17 rows) is seeded, so
->   `accounting`, `ledger` and `bank-rec` are fine. **Track B5 must budget a permission/seed
->   cutover before any AP/AR/Budget UI.**
+> - ~~**BGB1-L4 — 38 accounting routes are unreachable by every role, including Owner**~~
+>   ✅ **RESOLVED by the permissions cutover (2026-08-20, C-21)** — and the original entry
+>   **undercounted**. It said 38 routes / 23 strings and claimed *"`pos:accounting:*` (17 rows) is
+>   seeded, so `accounting`, `ledger` and `bank-rec` are fine."* That was a **prefix** check, not a
+>   string check: `bank-rec` references **11** `pos:accounting:*` strings that share the prefix with
+>   the seeded M28/M29 rows but are themselves absent, and `budget` references two strings outside
+>   the `finance:` prefix. **The real gap was 36 strings over 56 routes**, and `bank-rec` was *not*
+>   fine — all 6 of its GET routes returned 403 to Owner, measured live. All 36 are now seeded
+>   (Owner FULL · Accountant FULL · **Manager READ-ONLY, 15 strings** · nobody else). See
+>   `ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md` §2 and the B0 verification in
+>   `ai/ACCOUNTING_API_VERIFICATION_REPORT.md`.
+>   ⚠️ Not yet deployed to shared Neon — see the deploy gate below.
+
+> **Permissions cutover — limitations introduced or newly exposed (2026-08-20).** These were found
+> by the Track B0 verification, which could only run once the routes became reachable. Full detail
+> in `ai/ACCOUNTING_API_VERIFICATION_REPORT.md` §7.
+>
+> - 🔴 **PC-03 — four accounting reads leak across branches.** `GET /api/accounting/ap/suppliers`,
+>   `/ap/credit-notes`, `/ar/credit-notes` and `/bank-statements` return **another branch's rows**
+>   regardless of `X-Branch-Id` (proven live). 9 of 34 list/get service methods filter on `orgId`
+>   only. Two pairs are internally inconsistent: `listBankStatements` is org-scoped while
+>   `getBankStatement` is branch-scoped, and `getPostingError` is org-scoped while
+>   `listPostingErrors` is branch-scoped. **B5 must not present these as branch-scoped.**
+> - 🔴 **PC-04 — AP recurring-bill duplicate prevention does not work.** The guard compares
+>   `lastBill.dueDate === profile.nextDueDate`, but the same transaction advances `nextDueDate`, so
+>   the `ConflictException` is unreachable dead code and a second
+>   `POST /accounting/ap/recurring-profiles/:id/generate-bill` issues a **second bill for the same
+>   profile**. The e2e test is deliberately left **red** to document the correct contract.
+> - **PC-06 — ten accounting list routes return a bare JSON array** with no `total` and no
+>   pagination bound (`bank-accounts`, `bank-statements`, `reconciliation`, `period-close-runs`,
+>   `cost-centers`, `periods`, `posting-source-maps`, `finance/budgets`, `finance/demand-calendar`,
+>   `finance/procurement-suggestions`). The C4 list pager binds to a server `total`; there is none.
+> - **PC-02 — `procurement:advisory:read` gates a read AND a write**
+>   (`PATCH /finance/procurement-suggestions/:id/review`), so Manager was granted neither. It is
+>   Manager's only 403 among the accounting reads.
+> - **PC-01 — Manager holds no accounting write at all.** The five writes OD-9 called
+>   "operationally necessary" (AP bill approve, reconciliation match/skip/complete, period
+>   close/lock, budget update-actuals) were not granted. B5 must request them explicitly.
+> - **PC-07 — fiscal periods are created `DRAFT`, not `OPEN`**, and there is **no unlock route**.
+>   The lifecycle is `DRAFT → OPEN → CLOSED → LOCKED` with `LOCKED` terminal.
+> - **`GET /api/franchise/forecast`, not `/api/finance/forecast`** — the route lives on a third
+>   `@Controller('franchise')` class inside `budget.controller.ts`.
+> - **`GET /api/accounting/ar/aging` returns its totals under `summary`**, not `totals.grand*`
+>   (**PC-05**). The unit spec `accounts-receivable.service.spec.ts` still uses the stale name and
+>   **fails to compile** — pre-existing, reproduced at `30c67aa`.
+> - **C-22 — 37 further permission strings still have no seeded row**: `franchise:*` (12),
+>   `ops:*` (8), `dev:*` (5), `merchant:*` (4), `billing:*` (3), `onboarding:*` (2),
+>   `support:*` (2). The franchise, ops-portal, developer-portal and owner-SaaS-billing surfaces are
+>   **403 for every role**, exactly as accounting was. They were **deliberately not seeded** — those
+>   modules are deferred. **B7 and any developer-portal work must budget the same cutover.**
+> - **Deploy gate:** none of the above — the 36 new permissions, the Manager compensation revoke, or
+>   the Quick-PIN branch guard — **has been deployed to shared Neon.** It is applied on the local
+>   isolated stack only and remains gated on an explicit per-cutover authorisation.
 > - **BGB1-L5 — `/hr/employees` is still org-scoped** (`?branchId=` → 400, MP0-06 / C-09) and its
 >   `take` is still unbounded (C-12). Neither was in this batch's scope.
 
