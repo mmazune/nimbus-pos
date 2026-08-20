@@ -623,6 +623,61 @@ shell/Floor/profile primitives and the locked nav (Floor · Reservations · Appr
 (mutations, view grouping, attention derivation, action availability, cache
 invalidation, date nav).
 
+## 8c. Manager list / kanban / control-panel pattern (Track B3, 2026-08-20)
+
+Track B1 shipped the Manager chrome primitives; **B3 is the first phase to mount
+them**, and adds four more. All live in
+`apps/web/src/components/manager/chrome/` and are **module-agnostic** — Operations
+and Staff both consume them, and B4–B7 are expected to as well rather than
+building their own.
+
+### The primitives
+
+| Component | Odoo reference | Rule it enforces |
+| --- | --- | --- |
+| `ManagerControlPanel` | C1 (`05`, `12`, `17`) | The pager takes an explicit `{from, to, total}`, **never an array** — a page length can never be presented as a record count. |
+| `ManagerFilterChip` | C1 facet (`05`) | An applied filter is visible and removable, so a filtered list can never look like a complete one. |
+| `ManagerSearchFilterMenu` | C15 (`15`) | Columns are **omitted** where the endpoint cannot back them: no Group By where the API cannot group; Favorites is labelled terminal-only (NG-11 / OD-7). |
+| `ManagerListTable` | C4 (`05`) | Right-aligned numerics, status pill, optional-column gear, totals row. **No leading checkbox** — Nimbus has no bulk action, and the roadmap says omit rather than decorate. |
+| `ManagerStatusPipeline` | C14 (`06`, `09`) | Stages are the **real backend lifecycle**, never a borrowed one. A record off the pipeline (voided order, terminated employee) renders an **exit chip**, not a forced stage. Presentation only — unlike Odoo's, no stage is clickable. |
+| `ManagerViewSwitcher` | C1 view group (`05`, `12`) | Advertises **only renderable views**. Graph and pivot are absent, not disabled — they are impossible until `GET /api/reports/:id` returns rows (C-03 / NG-06). |
+| `ManagerRecordActionsMenu` | C13 (`11`) | Renders **nothing at all** when there is no action. Disabled entries must state *why*. |
+| `ManagerBreadcrumbs` | C1 record pager (`06`) | Parent link + record identity + a pager that walks the **current list page**. |
+
+### Rules for any future Manager list surface
+
+1. **Bound every request explicitly.** `/pos/orders`, `/hr/employees` and `/reports`
+   have no server-side `@Max` (MP0-11 / C-12); the client always names its own bound.
+2. **Feed the pager the endpoint's own `total`.** If the endpoint returns no total,
+   the surface may not show a pager.
+3. **A totals row is a PAGE total unless the endpoint returns an aggregate**, and
+   the copy must say which. `sumManagerPageMoney` returns `null` when any row is
+   unreadable — a partial sum shown as a total is worse than an honest gap.
+4. **The chip-search box renders an input only where the endpoint has a text
+   search.** Where it does not (`/pos/orders`, `/api/reservations`, `/hr/leave`,
+   `/hr/shift-swaps`), the box hosts the chips and the filter menu and the input is
+   **omitted, never greyed out** — a disabled search field advertises a capability
+   the backend does not have.
+5. **Validate every URL-borne filter against the endpoint's own enum** before
+   sending it, so a hand-edited query string fails safe instead of 400-ing the page.
+6. **Read-only is a property of a SURFACE, not of the workspace.** B3 removed the
+   M-P1 global "Read-only oversight" badge from the readiness strip: it became false
+   the moment Staff shipped a **New** button. Each read-only surface states its own
+   contract in its control panel.
+7. **Project list payloads at the API-client boundary**, not at render. See
+   `lib/manager/staff-projection.ts` — an **allow-list**, because `/hr/leave` and
+   `/hr/shift-swaps` embed full employee PII that a render-time whitelist cannot
+   keep out of the React Query cache.
+
+### Kanban (C7, screenshot `12`)
+
+`ManagerEmployeeKanban` is a Staff-specific consumer, not a shared primitive
+(nothing else has cards yet). Its rules: a deterministic avatar colour derived from
+the employee code using the **four B2 chart tokens** — no new palette, no random
+colour; **no photo placeholder** (Nimbus stores no employee image); and the last row
+is the **hire date**, not Odoo's contract window, because contracts are excluded from
+the Manager workspace.
+
 ## 9. Known UI inconsistencies (recorded, not yet fixed)
 
 These are functional/architectural inconsistencies out of scope for a UI-polish

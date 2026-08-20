@@ -467,6 +467,14 @@ why — including the revenue trend, which could not be proven: Nimbus exposes n
 
 ## B3 — Operations + Staff (list / kanban / form patterns)
 
+> ✅ **COMPLETE — 2026-08-20.** Canonical record:
+> [`ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md`](./ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md)
+> · evidence: [`ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md`](./ENTERPRISE_B3_QA_EVIDENCE_INDEX.md).
+> The scope below is the ORIGINAL brief and is deliberately not rewritten; the report records
+> item-by-item what shipped, what was deliberately not cloned, and what was deferred with a reason
+> (Operations **Exceptions**, Staff **Attendance**, the **chatter rail** — still gated on B0 — and
+> every escalation write).
+
 **Type:** frontend implementation. **Sizing: L.**
 
 **Odoo patterns cloned:** **C4** list view (`05`), **C5** form view (`06`), **C7** kanban cards +
@@ -835,21 +843,21 @@ under the standing rule.
 | **C-02** ✅ | **NG-02 / MP0-01** — compensation leak | ~~`GET /hr/employees` returns full `compensationProfile` on **all 40 rows**; `/:id` adds `contracts[].salaryAmount`, `dateOfBirth`, `address`, HR `notes`.~~ **DONE 2026-08-20 (backend gap batch 1).** The default payload is a safe projection whose sensitive columns are **not selected from Postgres** (list, detail, write echoes, and the employee embedded in `/hr/contracts`); the historical payload survives behind `?view=full`, gated by the existing `pos:hr:compensation:read`. ⚠️ **Caveat:** the seeded matrix grants that permission to Owner **and Manager** and Accountant, so a Manager token can still opt in explicitly — narrowing the grant is a seed change and was NOT authorised (follow-up FU-1). The default wire payload is safe for every role, which is what B3 needed. | Mixed | 🟢 **B3** Staff directory — **unblocked** | S (client projection) / M (backend projection) | **2** |
 | **C-03** | **NG-06 / MP0-08** — no report rows | `GET /reports/:id` returns `summary` + `rowCount` only. **A pivot/graph clone is a backend gap, not a UI gap.** | Backend | **B4** graph + pivot | S (accept summary) / L (row payload) | 5 |
 | **C-04** | **NG-14 / MP0-07** — SSE unusable from the browser | `/api/stream/metrics` requires `Authorization` **and** `X-Branch-Id`; `EventSource` supports neither; `apps/web` has **no SSE client at all**. 15s interval verified. | UI infra | **B2** live mode (degrades to polling) | M | 6 |
-| **C-05** | **NG-09 / MP0-14 + MP0-15** — plaintext credential | `POST /hr/frontline-staff/onboard` returns a plaintext `quickPin.pin`; `issueQuickPin` defaults **true**; the DTO accepts `contractId` + `compensationProfileId`. | Discipline (+ backend hardening) | **B3** onboarding | S | 3 |
+| **C-05** ✅ | **NG-09 / MP0-14 + MP0-15** — plaintext credential | `POST /hr/frontline-staff/onboard` returns a plaintext `quickPin.pin`; `issueQuickPin` defaults **true**; the DTO accepts `contractId` + `compensationProfileId`. | Discipline (+ backend hardening) | **HANDLED IN B3 (2026-08-20)** as discipline: the PIN is masked, copy-once, never cached/logged/persisted/URL-encoded; `issueQuickPin: true` is sent EXPLICITLY rather than inherited; the form structurally cannot carry `contractId`/`compensationProfileId`. ⚠️ The BACKEND still returns the plaintext PIN — that hardening is untouched and still open | S | 3 |
 | **C-06** | **NG-04** — stale module docs | `docs/MODULES.md` marks Accounting (COA/GL/AP/AR) and Budgets **"⬜ Planned"** though the controllers exist and are wired. Causes systematic under-scoping. | Docs | **B0 / B5** planning | S | **4 — cheapest fix here** |
 | **C-07** | **F-C3-2 / M7** — closed-order payment hole | `POST /api/payments/manual-reference` accepts a payment on an **already-CLOSED** order (only `VOIDED` refused) → overpayment with no close event. Verified: closed 122,700 bill accepted a further `CARD:1,000` (201) → `totalPaid 123,700`. | Backend | Cashier C4/C6 correctness; Manager Operations order truth | S | 7 |
 | **C-08** | **F-C3-4** — reservation auto-complete misses the cashier path | Auto-completion lives in `OrdersService.transitionOrder`, but `PaymentsService.closeOrderWithPayment` sets `status: CLOSED` directly, so it never fires on a cashier close. | Backend | Cashier C4/C6; Manager reservations snapshot accuracy | S | 8 |
-| **C-09** | **NG-18 / MP0-06** — `/hr/employees` has no branch filter | Org-scoped; `?branchId=` → **400**. The Manager branch switcher looks broken on Staff without a client-side filter + an explicit note. | Backend (small) | **B3** Staff | S | 9 |
+| **C-09** | **NG-18 / MP0-06** — `/hr/employees` has no branch filter | Org-scoped; `?branchId=` → **400** (re-confirmed live in B3; the payload spans **5 branches**). | Backend (small) | **MITIGATED IN B3, not fixed**: the directory reads the org with an explicit bound, narrows to the branch in the browser, **says so on screen**, and offers an explicit whole-organization view. A server-side filter is still the real fix | S | 9 |
 | **C-10** | **NG-13 / MP0-04** — no branch update route | `PATCH /api/branches/:id` **does not exist** (404) — no update route of any method. | Backend | **B6** branch profile (ships read-only meanwhile) | S | 10 |
 | **C-11** | **NG-07** — no financial statements | Balance Sheet / P&L / Cash Flow / Trial Balance / General Ledger / Partner Ledger are **not** among the 24 generators; only AP/AR `aging` exists. | Backend | **B5.5** reporting depth | L | Defer |
 | **C-12** | **NG-20 / MP0-11** — unbounded pagination | No `@Max`, no clamp on `/pos/orders`, `/reports`, `/hr/employees`. Client must always send an explicit bound. | Backend (small) | B3, B4, B5 hygiene | S | 11 |
 | **C-13** | Seed/demo-data truth | Rebrand QA found the advertised waiter Quick PIN **246810** unusable for `waiter@nimbus.demo`, **although the mapping exists** (`packages/db/prisma/demo-import.ts:158`) and the docs advertise it (`demo-data/DEMO_LOGIN_CREDENTIALS.md`, `WAITER_UI_DEMO_SCRIPT.md`). Root cause undiagnosed — the PIN lookup hash is **branch-derived** (`derivePinLookupHash(pepper, branchId, pin)`), which is the first place to look. Manager PIN `11223344` **is** real and verified. Note `seed.ts`'s own `DEMO_QUICK_PINS` covers only `*@demo.local` accounts, not the `*@nimbus.demo` demo-import set. | Seed/docs | QA reliability across every track | S | 12 |
 | **C-14** | **MP0-13** — read permission on a write route | `POST /reports/export` is gated by `pos:reports:exports:read` (`reports.controller.ts:609`). Guard defect; no Manager impact today. | Backend | — | S | 13 |
 | **C-15** | **NG-11** — no saved views/filters | No saved-view/filter concept anywhere in the API. Odoo's `Favorites → Save current search` has no counterpart. | Backend | **B1** Favorites column (else localStorage-only) | M | Defer / **OD-7** |
-| **C-16** | **NG-08** — credential admin absent | No password concept for frontline staff, no `Send Password Reset Instructions`, no 2FA admin, no API keys/passkeys, **no per-user session revocation** (`/api/devices` is a hardware registry). No invite-by-email, no `Invited ▸ Confirmed` lifecycle. | Backend | **B3** would gain the full C12 table | L | Defer |
+| **C-16** | **NG-08** — credential admin absent | No password concept for frontline staff, no `Send Password Reset Instructions`, no 2FA admin, no API keys/passkeys, **no per-user session revocation** (`/api/devices` is a hardware registry). No invite-by-email, no `Invited ▸ Confirmed` lifecycle. | Backend | **B3 shipped the honest subset**: the C12 table carries only Quick-PIN status/reset/disable/enable, and the absent capabilities are **omitted, not greyed out**; the employee statusbar uses the REAL `EmployeeStatus` lifecycle instead of Odoo's borrowed `Invited ▸ Confirmed`. The full table still needs the backend | L | Defer |
 | **C-17** | **NG-17** — no tax-return document | Nimbus has `tax-config` + `periods/:id/close\|lock` + `period-close-runs` but **no return object**. | Backend | **B5.4** ships the honest period-close analogue instead | M | Defer |
 | **C-18** | **NG-19** — assets / loans / deferrals | Assets, Loans, Deferred Revenue/Expense, Unrealized Currencies — none exist. | Backend | — | L | **Defer — out of scope for a hospitality POS** |
-| **C-19** | `hr` module surface | `POST/GET /api/hr/positions` and `/api/hr/compensation-profiles` exist and are **compensation-adjacent** — they fall under the locked exclusion. Recorded so nobody re-discovers them as "missing features". | Docs/discipline | **B3** exclusion card | S | Record only |
+| **C-19** ✅ | `hr` module surface | `POST/GET /api/hr/positions` and `/api/hr/compensation-profiles` exist and are **compensation-adjacent** — they fall under the locked exclusion. Recorded so nobody re-discovers them as "missing features". | Docs/discipline | **DONE in B3**: neither is called. The directory's position facets are derived from the `position` object already embedded in the safe employee payload (verified salary-free against the Prisma model), so no extra request and no excluded endpoint | S | Record only |
 | **C-21** 🔴 | **Accounting/AP/AR/Budget permissions were never seeded** | **Found live 2026-08-20 (backend gap batch 1).** `accounts-payable` (19 routes), `accounts-receivable` (10) and `budget` (9) are guarded by **23 permission strings** — `accounting:ap:*`, `accounting:ar:*`, `finance:*` — that have **zero rows** in the `permissions` table (237 seeded; `accounting:%` → 0, `finance:%` → 0). Live: owner `POST /api/accounting/ap/suppliers` → **403 Insufficient permissions**. `pos:accounting:*` (17 rows) IS seeded, so `accounting`, `ledger` and `bank-rec` are reachable. **This qualifies the "~90 accounting endpoints exist with zero UI" headline: 38 of them cannot be called by anyone today.** Also the standing cause of the 3 pre-existing `bg6` e2e / 7 newman failures. | Seed + permissions | **B5** accounting suite — must budget a permission/seed cutover FIRST | S (seed) but needs a shared-Neon cutover gate | **3** |
 | **C-20** | **F-C3-1** — order-number collision 500 | `OrdersService.generateOrderNumber` (`orders.service.ts:67`) parses `/ORD-(\d+)/`; a branch-prefixed demo number (`ORD-TAPAS_DOWNTOWN-00374`) does not match, the sequence resets to `ORD-000001`, and the unique constraint fires. Breaks QA fixtures. | Backend | QA fixtures for every track | S | 14 |
 
@@ -887,7 +895,7 @@ zero-bill copy) and **F-C3-6** (readiness badge copy) belong to C4 and C5/C6 res
                         │  control panel · search/filters · breadcrumb · pager
        ┌────────────────┼───────────────┬───────────────┬────────┴────────┐
        ▼                ▼               ▼               ▼                 ▼
-   B2 Overview (M)  B3 Ops+Staff (L)  B4 Reports (M)  B6 Settings (M)  [B5 waits on B0]
+   B2 Overview ✅   B3 Ops+Staff ✅   B4 Reports (M)  B6 Settings (M)  [B5 waits on B0]
        │                │               │               │
        │ live mode      │ directory     │ graph/pivot   │ settings routes
        │ ◀── C-04       │ ✅◀── C-02    │ 🔴◀── C-03    │ ◀── B0
@@ -903,16 +911,16 @@ zero-bill copy) and **F-C3-6** (readiness badge copy) belong to C4 and C5/C6 res
                                 ├─▶ B5.3 Core+Review ─┴─▶ B5.4 Closing
                                 └─▶ B5.5 Reporting+Config ──▶ B5.6 Dashboard
 
-   TRACK C (gaps)    C-01 ✅DONE   C-02 ✅DONE   C-03 ▶B4   C-04 ▶B2   C-05 ▶B3
-                     C-06 ▶B0/B5   C-09 ▶B3   C-10 ▶B6   C-15 ▶B1   C-21 🔴▶B5
+   TRACK C (gaps)    C-01 ✅DONE   C-02 ✅DONE   C-03 ▶B4   C-04 ▶B2   C-05 ✅B3(discipline)
+                     C-06 ▶B0/B5   C-09 ~B3(mitigated)   C-10 ▶B6   C-15 ▶B1   C-21 🔴▶B5
                      C-07/C-08/C-20 ▶ Cashier C4/C6 · C-11/16/17/18 deferred
 
    TRACK C-P         Cashier C4 ──▶ C5 ──▶ C6   (independent, unchanged, parallel)
                         ▲ shares pos-shell/* with B1 — coordinate
 ```
 
-**Critical path to an Odoo-grade suite:** `B1 → B3 → B5.1` (with `B0` running alongside `B1`).
-`C-02` **landed 2026-08-20**, so B3's directory is no longer blocked.
+**Critical path to an Odoo-grade suite:** ~~`B1 → B3`~~ **both complete 2026-08-20** → `B5.1`
+(with `B0` running alongside). B3 also delivered the list/form/statusbar/cog primitives B5 was to reuse.
 **Hard blocks:** ~~`C-02` → B3 Staff directory~~ **cleared** · `B0 go` → B5 · `C-03` → B4
 graph/pivot · **`C-21` (unseeded `accounting:*` / `finance:*` permissions) → B5, which must budget a
 permission/seed cutover before any AP/AR/Budget UI**.
@@ -931,7 +939,7 @@ permission/seed cutover before any AP/AR/Budget UI**.
 | B | **B0** | M-P0-style live verification of the ~90 accounting/finance routes + settings/alerts/sync/audit/analytics | **M** | None. Docs only. **Gates B5**; informs B6/B7 |
 | B | **B1** | Manager **top-nav shell**: module bar, click dropdowns, control panel, chip search, pager, view switcher, breadcrumb | **L** | ✅ **COMPLETE (2026-08-20).** Blocks B2–B7 (still gated on their own owner go). Shared-shell variant, frontline unchanged |
 | B | **B2** | Manager Overview — Odoo C10 KPI card grid over `/dash/*`, truthful checklists, degraded stream | **M** | ✅ **COMPLETE (2026-08-20).** 8 cards, 9 bounded reads, polled (C-04 still open). Blocks nothing; B3–B7 stay gated |
-| B | **B3** | Operations (read-only lists/forms/floor/chatter) + Staff (kanban directory, onboarding, Quick-PIN table) | **L** | B1. ✅ Directory **unblocked — C-02 landed 2026-08-20** (default `/hr/employees` payload is compensation- and PII-free). Chatter gated on B0. Shift-swap = Outcome C. Carries doc follow-up FU-3 |
+| B | **B3** | Operations (read-only lists/forms/floor) + Staff (kanban directory, onboarding, Quick-PIN table, leave & swap review) | **L** | ✅ **COMPLETE (2026-08-20).** 8 surfaces, 7 allow-listed mutations, 0 `view=full`, 0 roster writes. Shift-swap = **Outcome C** (reject only, roster integrity proven live). Chatter **still gated on B0** and NOT built; exceptions + attendance **deferred with reasons**. FU-3 carried — **and a defect it understated (B3-D1) found and fixed**. Blocks nothing; B4–B7 stay gated |
 | B | **B4** | Reports — catalog, one generic generate form, history, summary detail, **CSV-only** export | **M** | B1. **No PDF — enforced by the backend since 2026-08-20 (C-01: `format: PDF` → 501, catalog advertises CSV only)**. 🔴 Graph/pivot gated on **C-03** |
 | B | **B5** | Accounting suite over ~90 endpoints — 7-menu tree, sub-phased B5.1…B5.6 | **L** | 🔴 **B0 go** + B1 (+ B3 primitives). No financial statements. 🔴 **C-21: 38 AP/AR/Budget routes are 403 for every role — their permissions were never seeded** |
 | B | **B6** | Settings — C11 two-pane: branch (read-only), devices, printers (metadata), terminals (stub), alerts (rules read-only), sync (no diff), org settings | **M** | B1 + B0. Branch read-only per **C-10** |
@@ -985,7 +993,30 @@ Manager does not hold) so the money cards ship chartless, and the payment-mix ri
 open-order aging bars are both derived from rows the endpoints actually return. See
 `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`.*
 
-### 4. **B3 — Operations + Staff** *(NOT started — needs its own owner go)*
+### 4. **B3 — Operations + Staff** ✅ COMPLETE (2026-08-20)
+
+Delivered as `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` (+
+`ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md`). Eight surfaces across two modules, built on the B1 chrome
+primitives — which B3 is the first phase to actually MOUNT (`ManagerSearchFilterMenu`,
+`ManagerBreadcrumbs`), alongside four new ones (C4 list, C14 statusbar, view switcher, C13 record
+cog).
+
+The report resolves the two things the roadmap required it to state explicitly:
+
+- **"Read-only Operations" vs "escalations live in Operations"** — Operations ships strictly
+  read-only and **no escalation write was built**, because the roadmap's own precondition (a verified
+  domain DTO) was unmet, and because a read-only escalation *list* has no honest source
+  (`/api/approvals` is only partly branch-scoped, MP0-05; discounts have no branch-wide list,
+  SUP-RG-035).
+- **Shift-swap outcome** — **Outcome C, reject only.** Proven live, not asserted: a real rejection
+  changed **0** of 3 `schedule_assignment` rows.
+
+⚠️ **This phase also found and fixed a live defect FU-3 understated (B3-D1):** backend gap batch 1
+*inverted* the meaning of `grossSales`/`netSales`, so B2's Overview was rendering the ex-tax figure
+under the label "Sales today (tax-inclusive)". The KPI bindings are re-pointed and pinned by an
+assertion. See the report §3.
+
+### 5. **B4 — Reporting** *(NOT started — needs its own owner go)*
 
 The next runtime phase per the sequencing above. Nothing in it is begun.
 

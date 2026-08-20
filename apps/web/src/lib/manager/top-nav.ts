@@ -1,6 +1,8 @@
 import type { OperationalTopNavGroup, OperationalTopNavMenu } from "@/components/pos-shell/OperationalTopNav";
 
+import { MANAGER_OPERATIONS_ROUTES } from "./operations-route";
 import { managerRoutes } from "./routes";
+import { MANAGER_STAFF_ROUTES } from "./staff-route";
 
 type ManagerMenuGroupsByKey = Record<string, readonly OperationalTopNavGroup[] | undefined>;
 
@@ -17,49 +19,85 @@ type ManagerMenuGroupsByKey = Record<string, readonly OperationalTopNavGroup[] |
 const MANAGER_MENU_GROUPS: ManagerMenuGroupsByKey = {
   operations: [
     {
-      items: [
-        { key: "operations-dashboard", label: "Operations dashboard", href: "/manager/operations", available: true },
-      ],
-    },
-    {
       heading: "Oversight",
       items: [
-        { key: "operations-orders", label: "Orders", href: "/manager/operations", available: false, notYetNote: "B3" },
-        { key: "operations-tables", label: "Tables", href: "/manager/operations", available: false, notYetNote: "B3" },
+        {
+          key: "operations-orders",
+          label: "Orders",
+          href: MANAGER_OPERATIONS_ROUTES.orders,
+          available: true,
+        },
+        {
+          key: "operations-tables",
+          label: "Tables",
+          href: MANAGER_OPERATIONS_ROUTES.tables,
+          available: true,
+        },
         {
           key: "operations-reservations",
           label: "Reservations",
-          href: "/manager/operations",
-          available: false,
-          notYetNote: "B3",
+          href: MANAGER_OPERATIONS_ROUTES.reservations,
+          available: true,
         },
         {
+          // Deferred by B3 with a written reason rather than silently dropped:
+          // the owner's B3 scope enumerated Orders, Tables and Reservations only,
+          // and the anomaly/exception feed has no assigned phase yet. The tag says
+          // "Deferred", not a phase number, because inventing one would be a
+          // roadmap claim this phase has no authority to make.
           key: "operations-exceptions",
           label: "Exceptions",
-          href: "/manager/operations",
+          href: MANAGER_OPERATIONS_ROUTES.orders,
           available: false,
-          notYetNote: "B3",
+          notYetNote: "Deferred",
         },
       ],
     },
   ],
   staff: [
     {
-      items: [{ key: "staff-dashboard", label: "Staff dashboard", href: "/manager/staff", available: true }],
+      heading: "Directory",
+      items: [
+        {
+          key: "staff-directory",
+          label: "Directory",
+          href: MANAGER_STAFF_ROUTES.directory,
+          available: true,
+        },
+        {
+          key: "staff-onboarding",
+          label: "Onboard frontline staff",
+          href: MANAGER_STAFF_ROUTES.onboarding,
+          available: true,
+        },
+        {
+          key: "staff-quick-pin",
+          label: "Quick PIN administration",
+          href: MANAGER_STAFF_ROUTES.quickPin,
+          available: true,
+        },
+      ],
     },
     {
-      heading: "Administration",
+      heading: "Review",
       items: [
-        { key: "staff-directory", label: "Directory", href: "/manager/staff", available: false, notYetNote: "B3" },
-        { key: "staff-onboarding", label: "Onboarding", href: "/manager/staff", available: false, notYetNote: "B3" },
-        { key: "staff-attendance", label: "Attendance", href: "/manager/staff", available: false, notYetNote: "B3" },
-        { key: "staff-leave", label: "Leave", href: "/manager/staff", available: false, notYetNote: "B3" },
+        { key: "staff-leave", label: "Leave requests", href: MANAGER_STAFF_ROUTES.leave, available: true },
         {
           key: "staff-shift-swaps",
           label: "Shift swaps",
-          href: "/manager/staff",
+          href: MANAGER_STAFF_ROUTES.shiftSwaps,
+          available: true,
+        },
+        {
+          // Same reasoning as Exceptions above: `GET /api/hr/attendance` is
+          // verified, but it embeds a full PII employee object and it is outside
+          // the owner's enumerated B3 scope, so it is deferred with a reason
+          // rather than half-built.
+          key: "staff-attendance",
+          label: "Attendance",
+          href: MANAGER_STAFF_ROUTES.directory,
           available: false,
-          notYetNote: "B3",
+          notYetNote: "Deferred",
         },
       ],
     },
@@ -122,5 +160,10 @@ export const managerTopNavMenus: readonly OperationalTopNavMenu[] = managerRoute
     return { key, label: route.label, href: route.href, match: route.match };
   }
 
-  return { key, label: route.label, groups };
+  // Track B3: grouped menus now carry the route's own `match` too. Without it,
+  // `isMenuActive` falls back to exact-href comparison against the menu items,
+  // which de-highlights the module the moment a sub-route adds URL state (an
+  // order record, a selected employee). `managerRoutes` stays the single source
+  // of what "inside this module" means.
+  return { key, label: route.label, match: route.match, groups };
 });

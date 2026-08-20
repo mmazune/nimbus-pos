@@ -92,6 +92,7 @@ for the full document catalog with provenance.
 | Role journeys | `docs/ROLE_JOURNEYS.md` + per-role lifecycle docs |
 | Capability matrix | `docs/ROLE_CAPABILITY_MATRIX.md` |
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C — **supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward**) |
+| Manager Operations + Staff (Track B3) | `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` (canonical B3 record, 2026-08-20) + `ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md` |
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) — shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | Track C backend gap batch 1 (C-02/MP0-10/MP0-09/C-01) | `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md` (canonical record, 2026-08-20) |
@@ -126,7 +127,7 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 | **Waiter** | **Floor · Reservations · Me** | Table-centric order entry (order builder behind Floor table selection) |
 | **Cashier** | **Floor · Till · Me** (Prompt C1–C3, default `/cashier/floor`; Queue/Receipts are hidden compatibility routes reachable by direct URL only, retire C4/C5) | Payment collection, receipts, till/close (C2 delivered table→bill resolution + the canonical settlement workspace + Find bill; **C3 delivered payment / partial / split / close execution inside that workspace**; receipts + refunds arrive C4) |
 | **Supervisor** | **Floor · Reservations · Approvals · Me** | Read-first oversight; table-control workspace behind Floor selection |
-| **Manager** | **Overview · Operations · Staff · Reports · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV, **now implemented** — supersedes the M-P1 bottom-nav presentation). Overview/Me are direct links; Operations/Staff/Reports/Settings host click-to-open dropdowns with one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + honest foundation pages + a real Me; B1 shipped the top-nav shell + Manager chrome primitives; **B2 shipped the live Overview dashboard (8 cards over the verified `/dash/*` reads)**; Operations/Staff/Reports/Settings data is **B3+ and NOT started** |
+| **Manager** | **Overview · Operations · Staff · Reports · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). Overview/Me are direct links; **Operations and Staff are now MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`); Reports/Settings still host one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**. Reports (B4) and Settings (B6) data is **NOT started** |
 
 ⚠️ **Cashier Floor-First reconstruction (locked target, C3 complete / C4 not started, 2026-08-20):**
 Cashier's Queue-first navigation above is **historically complete and demo-ready but superseded** as
@@ -156,7 +157,58 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**BACKEND GAP BATCH 1 COMPLETE — Track C: C-02 · MP0-10 · MP0-09 · C-01 (2026-08-20) — A: BATCH
+**ENTERPRISE UI TRACK B3 COMPLETE — Manager OPERATIONS + STAFF (2026-08-20) — A: B3 COMPLETE / B4
+GATED.** Frontend + docs only; **no backend / schema / migration / seed / permission / Postman
+change**. Operations and Staff become **modules** (`/manager/operations` and `/manager/staff` now
+redirect) carrying **eight live surfaces**, built on the B1 chrome primitives — B3 is the first phase
+to MOUNT `ManagerSearchFilterMenu` and `ManagerBreadcrumbs` — plus four new shared ones:
+`ManagerListTable` (Odoo **C4**), `ManagerStatusPipeline` (**C14**), `ManagerViewSwitcher`,
+`ManagerRecordActionsMenu` (**C13**).
+**OPERATIONS IS STRICTLY READ-ONLY** (zero mutations, zero `useMutation` hooks — asserted):
+`/operations/orders` is the C4 list (server pagination fed by the endpoint's own `total` = **298**,
+status/service filters as removable chips, optional-column gear, a totals row labelled *This page*
+because `/pos/orders` returns no aggregate) opening a read-only **C5** record (breadcrumb + record
+pager, statusbar pipeline, notebook tabs, totals block, **no action control of any kind**);
+`/operations/tables` renders the **shared `OperationalFloor` unforked** (proven in e2e via its own
+`data-operational-*` attributes) with a read-only selection panel; `/operations/reservations` is
+read-only over the same bounded `scope=active|history` contract Supervisor 4A/4B established.
+**STAFF WRITES EXACTLY FOUR THINGS** — frontline onboarding (3-step, `ActionConfirmDialog`, PIN
+**masked → revealed once → copy-once**, never cached/logged/stored/URL-encoded); Quick-PIN
+reset/disable/enable (Odoo **C12** with only the rows Nimbus can back; password/2FA/API-keys/
+passkeys/session-revocation **omitted, not greyed out** — NG-08); leave review (**no payroll or
+roster claim**; the org-scoped decision is disclosed); and shift-swap **rejection only**.
+🔴 **Shift swaps are Outcome C, proven not asserted:** a real rejection changed **0 of 3**
+`schedule_assignment` rows and left `/workforce/roster` byte-identical. **There is no Approve
+control and must not be one.**
+**Privacy:** `lib/manager/staff-projection.ts` is an **ALLOW-LIST** (14 safe fields) applied at the
+**API-client boundary** — necessary because `/hr/leave` and `/hr/shift-swaps` still embed full
+employee `dateOfBirth`/`address`/`emergencyContact*`/`notes` (re-verified live). `?view=full` is
+never sent (⚠️ confirmed live it *would* return compensation to a Manager token — **FU-1 is real**);
+`GET /hr/employees/:id` is never called; the directory narrows to the branch **in the browser** and
+says so, because `/hr/employees` is org-scoped and 400s on `?branchId=` (MP0-06/C-09 — the payload
+spans 5 branches).
+⚠️ **Defect found and fixed (B3-D1):** backend gap batch 1 **inverted** `grossSales`/`netSales`, so
+the B2 Overview rendered the **ex-tax** figure under the label *"Sales today (tax-inclusive)"*. FU-3
+called this merely stale notes; it was a live mislabel of the dashboard's headline money. Bindings
+re-pointed and pinned by assertion. A second B3-caused untruth was removed too: the M-P1 global
+*"Read-only oversight"* badge in the readiness strip, false the moment Staff shipped a **New**
+button — read-only is now a per-surface claim.
+**Deferred with written reasons:** Operations **Exceptions** and Staff **Attendance** (outside the
+owner's enumerated scope; tagged `Deferred`, never an invented phase number); the **chatter rail**
+(gated on **B0**); and **every escalation write and the escalation list** — the roadmap's own
+precondition (a verified domain DTO) was unmet and `/api/approvals` is only partly branch-scoped
+(MP0-05). **New findings recorded, none implemented: B3-F1** Quick-PIN admin routes are org-scoped,
+not branch-guarded; **B3-F2** FU-1 confirmed live; **B3-F3** leave/shift-swap creation is
+self-service only (403 for a manager acting on behalf).
+Validated on an isolated local Docker Postgres stack (**never shared Neon**; both `.env` files
+restored byte-for-byte, SHA-256 verified): web typecheck / lint / build pass; **15/15** assertion
+scripts; a live API matrix of **39/39**; Playwright `e2e/manager-operations/` + `e2e/manager-staff/`
+across four viewports; 9 screenshots per viewport; per-surface request budgets measured;
+`/api/health` → ok. See `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` and
+`ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md`. **B4 (Reporting) NOT started — do not begin it, or any
+later Track B phase, without explicit authorization.**
+
+**Prior milestone record (superseded above) — BACKEND GAP BATCH 1 COMPLETE — Track C: C-02 · MP0-10 · MP0-09 · C-01 (2026-08-20) — A: BATCH
 COMPLETE / B3 UNBLOCKED ON C-02 / SHARED-NEON DEPLOY STILL GATED.** The first owner-authorized Track
 C batch fixes four backend defects. **No schema / migration / seed / permission change, no frontend
 file touched, local dev DB only.**
@@ -698,26 +750,43 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
 - Do not alter API contracts, DTOs, Prisma schema, migrations, seed/demo import,
   permissions, auth semantics, or branch isolation.
 - Do not edit Postman collections unless an actual contract change requires it.
-- Manager reconstruction **M-P1, Track B1 (top-nav shell conversion) and Track B2 (Overview
-  dashboard) are COMPLETE** (shell, nav, session guard, branch switcher, foundation pages, Manager
-  Me, the Odoo-style top module bar + Manager chrome primitives, and the live eight-card Overview
-  dashboard). Do not add an approval **decision** control to Overview, render a KPI that is not in
+- Manager reconstruction **M-P1, Track B1 (top-nav shell), Track B2 (Overview dashboard) and Track
+  B3 (Operations + Staff) are COMPLETE** (shell, nav, session guard, branch switcher, Manager Me, the
+  Odoo-style top module bar + chrome primitives, the live eight-card Overview dashboard, and the
+  eight Operations/Staff surfaces). **Reports and Settings still render the honest foundation
+  screen.** Do not add an approval **decision** control to Overview, render a KPI that is not in
   `MANAGER_KPI_BINDINGS`, add an SSE/`EventSource` client (gated on C-04), add a charting dependency,
   fabricate a revenue trend (no bucketed series exists and `/dash/snapshots` needs
   `pos:dash:owner:read`, which Manager does not hold), take the open-order count from
   `/dash/open-orders.count`, or read approval counts from the generic `/api/approvals` inbox.
-  **B3…B7 (and B0, B5's sub-phases) are NOT started and plan from
-  `ai/ENTERPRISE_UI_ROADMAP.md` Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. Do not
-  begin B3 (Operations + Staff) or any later Track B phase without explicit authorization.**
+  ⚠️ **B3-D1:** backend gap batch 1 *inverted* `grossSales`/`netSales` (`grossSales` is now
+  tax-INCLUSIVE, `netSales = gross − tax`); B3 re-pointed the two sales KPI bindings and pinned them
+  by assertion — **do not "fix" them back**.
+  **B4…B7 (and B0, B5's sub-phases) are NOT started and plan from `ai/ENTERPRISE_UI_ROADMAP.md`
+  Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. Do not begin B4 (Reporting) or any later
+  Track B phase without explicit authorization.**
   Do not add a Manager More/Approvals tab, change the `/manager/overview` landing, turn
   `lib/manager/permissions.ts` into a
-  `hasPermission()` check, add tills/shifts chips or lists (those routes do not exist), fetch
-  `/hr/employees` into Manager state without the agreed allow-list projection, offer a PDF report
-  export (the backend's PDF is a plain-text file), build a branch-profile edit form
+  `hasPermission()` check, add tills/shifts chips or lists (those routes do not exist), offer a PDF
+  report export (the backend 501s on `format: PDF`), build a branch-profile edit form
   (`PATCH /branches/:id` does not exist), fork any shared shell/floor/profile component for Manager,
-  add Accounting as a seventh top-nav menu (OD-3 stays open, gated on B5), or mount
-  `ManagerSearchFilterMenu`/`ManagerBreadcrumbs` on any surface without real filterable/record data
-  to back them.
+  or add Accounting as a seventh top-nav menu (OD-3 stays open, gated on B5).
+- **Track B3 boundaries — do not cross without explicit authorization.** **Operations is strictly
+  read-only**: do not add any mutation, `useMutation` hook, checkout/tender/order-builder control,
+  order close/void/discount, or table-status write to `components/manager/operations`. **Staff writes
+  exactly four things** — frontline onboarding, Quick-PIN reset/disable/enable, leave review, and
+  shift-swap **rejection**; the assertion script counts **7** allow-listed Manager mutations
+  repo-wide and fails on an eighth. **Shift swaps are Outcome C — there is NO Approve control** and
+  must not be one: `scheduleAssignment` has no write path anywhere in the API, so approving would
+  mutate zero roster rows (proven live: 3 rows before a real rejection, 3 after). Never send
+  `?view=full`, never call `GET /hr/employees/:id`, never widen `lib/manager/staff-projection.ts`
+  (an ALLOW-LIST — `/hr/leave` and `/hr/shift-swaps` still embed full employee PII on the wire, so
+  projection must stay at the API-client boundary, not at render). Never persist, log, cache or
+  URL-encode a one-time PIN. Do not claim a leave decision affects payroll or the roster. Do not
+  build an escalation write without first verifying the domain DTO, or an escalation list from the
+  partly org-scoped `/api/approvals` (MP0-05). Do not build the chatter rail (gated on **B0**) or a
+  graph/pivot view (gated on **C-03**). Do not reinstate a workspace-wide "Read-only oversight"
+  badge in the readiness strip — it is false over Staff; read-only is a per-surface claim.
 - Cashier reconstruction Prompt **C3 is COMPLETE** (nav Floor/Till/Me, `/cashier/floor` default,
   shared-Floor consumer, table→bill resolution with zero/one/multiple handling, canonical
   `?tableId=&orderId=` URL state, ONE `CashierSettlementWorkspace` reusing the checkout primitives,

@@ -66,6 +66,37 @@ permission change and requires its own explicit authorization.
 
 ---
 
+## 2026-08-20 — TRACK B3 RE-VERIFICATION (Operations + Staff, live)
+
+Every endpoint the B3 Operations and Staff surfaces read or write was re-probed live against an
+isolated disposable stack (`b3-api-matrix.mjs`, **39/39 checks passed** — 27 reads, 12 mutations).
+Where B3's result differs from or sharpens an M-P0 row, **this section is newer**.
+
+| Route | B3 live result |
+| --- | --- |
+| `GET /pos/orders?page=1&pageSize=25` | 200 · 25 rows · **`total: 298`** — the value the control-panel pager is fed |
+| `GET /pos/orders/:id` | 200 · `total = subtotal + tax − discount` verified (`32,000 + 5,800 − 0 = 37,800`) → **`total` is tax-inclusive**, which is what the record's totals block states |
+| `GET /pos/orders/:id` with another branch's `X-Branch-Id` | **404** — branch isolation holds on the detail route |
+| `GET /tables` | 200 · 22 rows (Tapas) |
+| `GET /reservations?scope=active` / `?scope=history` | 200 / 200 · totals 15 / 8 |
+| `GET /api/tills` · `GET /api/shifts` | **404 · 404** — MP0-02 re-confirmed, not assumed |
+| `GET /hr/employees` (default) | 200 · 40 rows · **`view: "safe"`** · **zero forbidden keys on the wire** — C-02 holds |
+| — org scoping | rows span **5 distinct `branchId`s**; `?branchId=` → **400**. MP0-06 / C-09 unchanged |
+| — ⚠️ `?view=full` **as Manager** | **200, returning `compensationProfile`, `baseAmount`, `salaryBasis`, `allowances`, `deductions`, `dateOfBirth`, `emergencyContact*`, `address`, `notes`.** **FU-1 is real.** The frontend is the only barrier; B3 asserts `view=full` appears nowhere in `components/manager`, `lib/manager` or `pages/manager` |
+| `GET /hr/leave` | 200 · embeds a full nested `employee` carrying `dateOfBirth` / `address` / `emergencyContact*` / `notes`. **This is why B3 projects at the API-client boundary rather than at render** |
+| `GET /hr/shift-swaps` | 200 · same nested PII on `requester` and `target` |
+| `GET /hr/frontline-staff/:id/quick-pin-status` | 200 · 22 keys · **never returns the PIN**. ⚠️ **New finding B3-F1: resolved by `{id, orgId}` only — org-scoped, NOT branch-guarded** (200 from a second branch). Recommend adding `branchId`, matching the shift-swap approve fix. **Not implemented — backend change** |
+| `POST /hr/frontline-staff/onboard` | **201** · returns a plaintext 6-digit PIN once (`shownOnce: true`, MP0-14) · the employee echo is compensation- and PII-free (C-02) |
+| `POST /:id/quick-pin/reset` | 200 · a **different** PIN than the one issued at onboarding |
+| `PATCH /:id/quick-pin/disable` / `enable` | 200 / 200 · a duplicate disable returns 200 `alreadyDisabled: true` — **idempotent, not an error** |
+| `PATCH /hr/leave/:id/review` | 200 · a **second** review → **400**, which is why the UI renders terminal rows read-only |
+| `PATCH /hr/shift-swaps/:id/approve {status: REJECTED}` | 200 · **`schedule_assignments`: 3 rows before → 3 rows after.** `GET /workforce/roster` byte-identical. **SUP-RG-036/042 re-confirmed: approving would mutate zero roster rows, so B3 ships reject-only (Outcome C)** |
+| `POST /hr/leave` · `POST /hr/shift-swaps` | **403 self-service only** — *"can only create leave for their own linked employee profile"*. **New finding B3-F3**: a manager cannot file leave or a swap on an employee's behalf. Correct as designed; recorded so it is not re-discovered as a missing feature. B3 offers no create control for either |
+| `GET /dash/open-orders` | `count: 50` · `limit: 50` · **`total: 107`** · `truncated: true` — the MP0-09 fields are live; `/dash/manager.openOrders` **== 107** |
+| `GET /dash/manager` | **`grossSales` 33,014,100 ≥ `netSales` 27,978,300**, and `gross = net + tax`. ⚠️ **This inverts the pre-batch meaning** and is what exposed defect **B3-D1** — the B2 Overview was labelling the ex-tax figure "tax-inclusive". Fixed in B3 |
+
+---
+
 ## 2026-08-20 — M-P0 LIVE VERIFICATION (the `Verified` column is authoritative)
 
 **Every one of the 62 rows below was verified on 2026-08-20** by

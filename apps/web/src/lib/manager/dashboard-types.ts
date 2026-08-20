@@ -17,11 +17,31 @@
 /** A Prisma Decimal over the wire. */
 export type ManagerDecimal = string | number | null | undefined;
 
-/** `GET /api/dash/manager` — `pos:dash:manager:read`, branch-scoped. */
+/**
+ * `GET /api/dash/manager` — `pos:dash:manager:read`, branch-scoped.
+ *
+ * ⚠️ SALES VOCABULARY — re-verified against `dashboards.service.ts` after backend
+ * gap batch 1 (2026-08-20, MP0-10). `Order.total = subtotal + tax − discount`, so:
+ *
+ *     grossSales    = SUM(order.total)              TAX-INCLUSIVE
+ *     netSales      = grossSales − taxTotal         EX-tax
+ *     subtotalSales = SUM(order.subtotal)           ex-tax, BEFORE discount
+ *
+ * and the invariant is `grossSales >= netSales`. This is the OPPOSITE of the
+ * pre-batch meaning B2 was written against, where `grossSales` was `SUM(subtotal)`
+ * and `netSales` was `SUM(total)`. B3 re-pointed the two sales KPI bindings
+ * accordingly — see `MANAGER_KPI_BINDINGS` in `dashboard-model.ts`.
+ */
 export type ManagerDashboardResponse = {
   today: {
+    /** TAX-INCLUSIVE (`SUM(order.total)`). Never label this a bare "gross". */
     grossSales: ManagerDecimal;
+    /** EX-tax (`grossSales − taxTotal`). Never label this a bare "net". */
     netSales: ManagerDecimal;
+    /** Added by backend gap batch 1 — optional so a pre-batch API degrades honestly. */
+    taxTotal?: ManagerDecimal;
+    /** Ex-tax, pre-discount. The figure this endpoint published as `grossSales` before the batch. */
+    subtotalSales?: ManagerDecimal;
     orderCount: number;
     avgOrderValue: ManagerDecimal;
   };
@@ -42,8 +62,12 @@ export type ManagerDashboardResponse = {
 /** `GET /api/dash/today-summary` — `pos:dash:today-summary:read`, branch-scoped. */
 export type ManagerTodaySummaryResponse = {
   date: string;
+  /** TAX-INCLUSIVE — same vocabulary as `ManagerDashboardResponse.today`. */
   grossSales: ManagerDecimal;
+  /** EX-tax. */
   netSales: ManagerDecimal;
+  /** Ex-tax, pre-discount (added by backend gap batch 1). */
+  subtotalSales?: ManagerDecimal;
   taxTotal: ManagerDecimal;
   discountTotal: ManagerDecimal;
   refundsTotal: ManagerDecimal;
@@ -79,13 +103,30 @@ export type ManagerOpenOrderRow = {
 /**
  * `GET /api/dash/open-orders` — `pos:dash:today-summary:read`, branch-scoped.
  *
- * ⚠️ MP0-09: the service hard-caps `take: 50` and returns `count = page length`,
- * so `count` is the PREVIEW length, not the branch total. The authoritative open
- * count is `ManagerDashboardResponse.openOrders`. Rows are ordered `createdAt asc`,
- * so the preview holds the OLDEST 50 — which is what makes an aging read honest.
+ * ✅ MP0-09 FIXED 2026-08-20 (backend gap batch 1) — the response now carries
+ * `total` (the real open-order count, from the same shared `where` the dashboards
+ * count with), `limit` (the page bound, 50) and `truncated`.
+ *
+ * ⚠️ `count` deliberately KEPT its old meaning — rows in THIS response, i.e. the
+ * page length — so B2 kept working across the change. Never show `count` to a
+ * user: `total` is the honest number, and this dashboard's headline still comes
+ * from `/dash/manager.openOrders` (the card contract CLAUDE.md §12 locks).
+ *
+ * Rows are ordered `createdAt asc`, so the page holds the OLDEST orders — which is
+ * what makes the aging read honest.
+ *
+ * `total`/`limit`/`truncated` are optional here because a pre-batch API would not
+ * send them; the model falls back to the old count comparison rather than assuming.
  */
 export type ManagerOpenOrdersResponse = {
+  /** Page length of THIS response (≤ `limit`) — never a branch total. */
   count: number;
+  /** MP0-09: the real branch-wide open-order count. */
+  total?: number;
+  /** MP0-09: the server-side page bound applied to `orders` (50). */
+  limit?: number;
+  /** MP0-09: true when the branch has more open orders than this page returned. */
+  truncated?: boolean;
   orders: ManagerOpenOrderRow[];
 };
 

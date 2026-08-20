@@ -1900,3 +1900,87 @@ ai/
   ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md      (new — canonical B1 record)
   ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md   (new — canonical B2 record)
 ```
+
+## Track B3 — Manager Operations + Staff (2026-08-20)
+
+```
+apps/web/src/lib/manager/                        (new — B3 Operations data layer)
+  operations-types.ts   (wire shapes + the SAFE row shapes the app is allowed to hold)
+  operations-model.ts   (pure: money/dates, order + reservation status vocabularies mirroring the
+                         backend enums, the pager model, the SHARED-floor view model)
+  operations-api.ts     (bounded branch-scoped reads, projected at the boundary — NO mutation)
+  operations-route.ts   (URL state; every value validated against the endpoint's own enum)
+  operations-context.ts (one query per surface; no polling; narrow ["manager", …] keys)
+
+apps/web/src/lib/manager/                        (new — B3 Staff data layer)
+  staff-projection.ts   (THE ALLOW-LIST — 14 safe employee fields, applied at the API-client
+                         boundary because /hr/leave + /hr/shift-swaps embed full employee PII)
+  staff-types.ts        (projected shapes only — no type in the repo says Manager may hold PII)
+  staff-model.ts        (pure: pipelines, facets, avatar tokens, onboarding draft + validation,
+                         buildManagerOnboardPayload — structurally cannot carry contractId)
+  staff-api.ts          (reads + the FOUR allowed mutations; never sends ?view=full)
+  staff-route.ts        (URL state)
+  staff-context.ts      (React Query; one-time secrets live in MUTATIONS only, never the cache)
+
+apps/web/src/components/manager/operations/      (new — B3, all READ-ONLY)
+  ManagerOrdersScreen.tsx        (Odoo C4 list: chips, gear, server pager, page-total row)
+  ManagerOrderDetailPanel.tsx    (Odoo C5 record: breadcrumb + record pager, C14 statusbar,
+                                  notebook tabs, totals — NO action control)
+  ManagerTablesScreen.tsx        (the SHARED OperationalFloor, unforked, read-only panel)
+  ManagerReservationsScreen.tsx  (scope=active|history, read-only)
+  index.ts
+
+apps/web/src/components/manager/staff/           (new — B3)
+  ManagerStaffDirectoryScreen.tsx  (C7 kanban + C4 list + facet sidebar + org-scope disclosure)
+  ManagerEmployeeKanban.tsx        (C7 cards; deterministic avatar from the B2 chart tokens)
+  ManagerEmployeeDetailPanel.tsx   (C5 record, read-only; never calls /hr/employees/:id)
+  ManagerOnboardingScreen.tsx      (3-step form; MP0-15 exclusion is structural)
+  ManagerOneTimeSecretPanel.tsx    (masked → reveal → copy-once; never persisted or logged)
+  ManagerQuickPinScreen.tsx        (Odoo C12 with only the rows Nimbus can back)
+  ManagerLeaveReviewScreen.tsx     (approve/reject; no payroll or roster claim)
+  ManagerShiftSwapReviewScreen.tsx (Outcome C — REJECT ONLY, no Approve control)
+  ManagerSensitiveFieldsCard.tsx   (the exclusion card)
+  index.ts
+
+apps/web/src/components/manager/chrome/          (new — B3 primitives, module-agnostic)
+  ManagerListTable.tsx          (Odoo C4 — no checkbox column; Nimbus has no bulk action)
+  ManagerStatusPipeline.tsx     (Odoo C14 — real lifecycles only; off-pipeline = exit chip)
+  ManagerViewSwitcher.tsx       (advertises only renderable views — no graph/pivot, C-03)
+  ManagerRecordActionsMenu.tsx  (Odoo C13 — renders nothing when there is no action)
+
+apps/web/src/pages/manager/operations/           (new — replaces operations.tsx)
+  index.tsx (→ /manager/operations/orders)  orders.tsx  tables.tsx  reservations.tsx
+apps/web/src/pages/manager/staff/                (new — replaces staff.tsx)
+  index.tsx (→ /manager/staff/directory)  directory.tsx  onboarding.tsx
+  quick-pin.tsx  leave.tsx  shift-swaps.tsx
+
+apps/web/scripts/                                (new — B3)
+  manager-b3-assertions.ts  tsconfig.manager-b3-assertions.json
+
+apps/web/e2e/manager-operations/                 (new — B3)
+  fixtures.ts  orders-list.spec.ts  order-detail.spec.ts
+  tables-and-reservations.spec.ts  request-counts-and-evidence.spec.ts
+apps/web/e2e/manager-staff/                      (new — B3)
+  fixtures.ts  directory-and-privacy.spec.ts  onboarding-and-quick-pin.spec.ts
+  leave-and-shift-swaps.spec.ts
+
+apps/web/src/components/manager/chrome/ManagerControlPanel.tsx  (modified — search value/onChange
+                                    optional so the input is OMITTED where the endpoint has no text
+                                    search; adds ManagerFilterChip)
+apps/web/src/components/manager/shell/ManagerReadinessStrip.tsx (modified — the workspace-wide
+                                    "Read-only oversight" badge REMOVED; false over Staff)
+apps/web/src/lib/manager/routes.ts               (modified — Operations/Staff match by startsWith)
+apps/web/src/lib/manager/top-nav.ts              (modified — real sub-routes; Deferred rows)
+apps/web/src/lib/manager/permissions.ts          (modified — operations/staff liveFrom → "live")
+apps/web/src/lib/manager/state.ts                (modified — employees caveat refreshed post-C-02)
+apps/web/src/lib/manager/dashboard-{model,types}.ts             (modified — FU-3 + B3-D1)
+apps/web/src/components/manager/dashboard/cards/ManagerSalesTodayCard.tsx   (modified — B3-D1)
+apps/web/src/components/manager/dashboard/cards/ManagerOpenOrdersCard.tsx   (modified — FU-3)
+apps/web/scripts/manager-{p1,b1}-assertions.ts   (modified — module-directory route shape)
+apps/web/src/pages/manager/operations.tsx        (DELETED — replaced by the module directory)
+apps/web/src/pages/manager/staff.tsx             (DELETED — replaced by the module directory)
+
+ai/
+  ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md   (new — canonical B3 record)
+  ENTERPRISE_B3_QA_EVIDENCE_INDEX.md             (new — B3 evidence)
+```

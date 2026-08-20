@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui";
 import { operationalIcons } from "@/components/pos-shell/role-icons";
 import type { ManagerReadinessItem, ManagerReadinessTone } from "@/lib/manager/state";
 import { defaultManagerReadiness } from "@/lib/manager/state";
@@ -23,6 +22,17 @@ const icons = {
  * branch (memberships), report generators (`/reports/catalog`), device registry
  * (`/devices`). Tills / shifts / approvals chips are intentionally absent — see
  * `useManagerReadiness`.
+ *
+ * ⚠️ **Track B3 removed a global "Read-only oversight" badge from this strip.**
+ * It was truthful in M-P1/B1, when every Manager surface was an honest foundation
+ * screen that could not write anything. B3 makes it false: Staff onboarding
+ * creates real accounts, resets Quick PINs and decides leave requests, so a strip
+ * asserting the whole workspace is read-only would sit directly above a **New**
+ * button.
+ *
+ * Read-only is a property of a SURFACE, not of the workspace, so the badge now
+ * lives in each read-only surface's own `ManagerControlPanel` (the three
+ * Operations screens carry it) and is simply absent where it would be untrue.
  */
 export function ManagerReadinessStrip({
   items = defaultManagerReadiness,
@@ -31,7 +41,7 @@ export function ManagerReadinessStrip({
 }) {
   return (
     <div className="h-11 border-b border-border-subtle bg-surface" data-manager-readiness>
-      <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between gap-3 overflow-hidden px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-3 overflow-hidden px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {items.map((item) => {
             const Icon = icons[item.key as keyof typeof icons] || operationalIcons.branch;
@@ -51,9 +61,6 @@ export function ManagerReadinessStrip({
             );
           })}
         </div>
-        <span className="hidden shrink-0 xl:inline-flex">
-          <Badge variant="neutral">Read-only oversight</Badge>
-        </span>
       </div>
     </div>
   );

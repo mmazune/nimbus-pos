@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 import { operationalIconNames } from "../src/components/pos-shell/role-icon-config";
@@ -107,23 +107,64 @@ assert(overviewMenu?.href === "/manager/overview" && !overviewMenu?.groups, "Ove
 assert(meMenu?.href === "/manager/me" && !meMenu?.groups, "Me is a direct-action menu with no dropdown (roadmap B1(c))");
 
 const dropdownMenuKeys = ["operations", "staff", "reports", "settings"] as const;
-const expectedItemCounts: Record<(typeof dropdownMenuKeys)[number], number> = {
-  operations: 4,
-  staff: 5,
+
+/**
+ * The B1 shape was: ONE real link to the module's foundation page, plus an
+ * honest not-yet tree naming the phase that would ship each surface.
+ *
+ * **Track B3 (2026-08-20) superseded that for `operations` and `staff`** — those
+ * surfaces are now built, so their trees are real links and the module root is a
+ * redirect rather than a foundation page. `reports` and `settings` are untouched
+ * and still carry the original B1 shape; they are still checked against it.
+ *
+ * What this gate protects is unchanged for BOTH shapes and is asserted for every
+ * menu below: no dropdown row may be a fake navigation target, and every row that
+ * is not yet available must say so.
+ */
+const B1_FOUNDATION_MENUS = ["reports", "settings"] as const;
+const expectedItemCounts: Record<(typeof B1_FOUNDATION_MENUS)[number], number> = {
   reports: 2,
   settings: 6,
 };
+
 for (const key of dropdownMenuKeys) {
   const menu = managerTopNavMenus.find((entry) => entry.key === key);
   assert(menu && !menu.href && menu.groups, `${key} is a dropdown menu (roadmap B1(c))`);
   const groups = menu!.groups!;
+  const items = groups.flatMap((group) => group.items);
+
+  // Invariant for every menu, in both shapes.
+  assert(items.length > 0, `${key} has menu items`);
+  assert(
+    items.filter((item) => !item.available).every((item) => item.notYetNote),
+    `every unavailable ${key} row states that it is not yet available`,
+  );
+  assert(
+    items.filter((item) => item.available).every((item) => item.href.startsWith(`/manager/${key}`)),
+    `every available ${key} row points inside its own module`,
+  );
+
+  if (!(B1_FOUNDATION_MENUS as readonly string[]).includes(key)) {
+    // B3-built module: at least one real surface, and no foundation-page link left.
+    assert(
+      items.some((item) => item.available),
+      `${key} has at least one live surface (superseded by B3)`,
+    );
+    assert(
+      !items.some((item) => item.available && item.href === `/manager/${key}`),
+      `${key}'s module root is a redirect, not a menu destination (superseded by B3)`,
+    );
+    continue;
+  }
+
+  // Unchanged B1 foundation shape.
   assert(groups.length === 2, `${key} has exactly two groups: the real dashboard link + the honest not-yet tree`);
   const [realGroup, treeGroup] = groups;
   assert(realGroup.items.length === 1 && realGroup.items[0].available, `${key}'s first group is the one real, clickable link`);
   assert(realGroup.items[0].href === `/manager/${key}`, `${key}'s real link targets the existing /manager/${key} foundation page`);
   assert(
-    treeGroup.items.length === expectedItemCounts[key],
-    `${key}'s not-yet tree has exactly the ${expectedItemCounts[key]} items named in the roadmap B1(c) table`,
+    treeGroup.items.length === expectedItemCounts[key as (typeof B1_FOUNDATION_MENUS)[number]],
+    `${key}'s not-yet tree has exactly the items named in the roadmap B1(c) table`,
   );
   assert(
     treeGroup.items.every((item) => !item.available),
@@ -177,9 +218,30 @@ assert(searchFilterSource.includes("Saved on this terminal only"), "Favorites is
 assert(!/\/api\/.*favorite/i.test(searchFilterSource), "ManagerSearchFilterMenu calls no save-search endpoint (none exists — NG-11)");
 
 // ── Pages now render through the manager chrome, not the generic PageShell ──
+//
+// Track B3 turned Operations and Staff into module DIRECTORIES whose root is a
+// redirect, so a nav href may resolve to `<href>.tsx` or `<href>/index.tsx`. The
+// B1 invariant is unchanged: every surface a manager lands on renders inside
+// `ManagerShell`, so for a module root the check follows the redirect.
+function managerPageSources(href: string) {
+  const flat = `apps/web/src/pages${href}.tsx`;
+  if (existsSync(join(process.cwd(), flat))) return [source(flat)];
+
+  const index = `apps/web/src/pages${href}/index.tsx`;
+  assert(existsSync(join(process.cwd(), index)), `a page resolves for ${href}`);
+  const dir = join(process.cwd(), `apps/web/src/pages${href}`);
+  return readdirSync(dir)
+    .filter((entry) => entry.endsWith(".tsx") && entry !== "index.tsx")
+    .map((entry) => source(`apps/web/src/pages${href}/${entry}`));
+}
+
 for (const item of managerRoutes.filter((route) => route.href !== "/manager/me")) {
-  const page = source(`apps/web/src/pages${item.href}.tsx`);
-  assert(page.includes("<ManagerShell>"), `${item.href} still renders inside ManagerShell`);
+  const pages = managerPageSources(item.href);
+  assert(pages.length > 0, `${item.href} resolves to at least one page`);
+  assert(
+    pages.every((page) => page.includes("<ManagerShell>")),
+    `${item.href} still renders inside ManagerShell`,
+  );
 }
 const foundationSource = source("apps/web/src/components/manager/foundation/ManagerFoundationScreen.tsx");
 assert(foundationSource.includes("ManagerControlPanel") && foundationSource.includes("ManagerContentShell"), "foundation pages render through the B1 control-panel + content-shell primitives");

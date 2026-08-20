@@ -404,6 +404,41 @@ parallelises; branch guard caches/dedupes; session `lastActivityAt` throttled
 AbortController; secondary invalidations non-blocking; list N+1 fan-outs removed
 (cashier startup ~101→~9). Source: `ai/APPLICATION_PERFORMANCE_HARDENING_COMPLETION_REPORT.md`.
 
+### D-B3-READONLY — Manager Operations is read-only; no escalation write (Track B3, 2026-08-20)
+The roadmap said both "Operations is read-only oversight" **and** "Operations may surface an
+escalation and route to its decision affordance". B3 resolved it: **Operations ships strictly
+read-only and no escalation write was built**, because the roadmap's own precondition — a verified
+domain DTO — was unmet, and because a read-only escalation *list* has no honest source
+(`GET /api/approvals` is only partly branch-scoped, MP0-05; discounts have no branch-wide list,
+SUP-RG-035). Approval **counts** stay on Overview from the four canonical branch-scoped domain
+endpoints; leave and shift-swap review live in Staff. Adding an escalation surface requires
+verifying `/pos/discounts/:id/approve|reject`, `/pos/refunds/:id/approve` and
+`/pos/orders/:id/post-close-void` first. Source:
+`ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` §4.
+
+### D-B3-SWAP — Manager shift-swap review is REJECT ONLY (Outcome C, 2026-08-20)
+Manager holds `pos:hr:shift-swaps:approve` and the route accepts `APPROVED`, so an Approve button
+would return 200 — and would be a lie. `scheduleAssignment` has **six call sites API-wide, all
+reads**; approving mutates **zero** roster rows, and the request names only a `shiftDate`, not a
+specific shift. **Proven live, not asserted:** 3 `schedule_assignment` rows before a real rejection,
+3 after; `/workforce/roster` byte-identical. Mirrors the Supervisor precedent (SUP-RG-036/042).
+**Do not add an Approve control without a roster-mutation service, a specific-shift reference, and
+explicit authorization.**
+
+### D-B3-PROJECTION — Manager staff data is projected at the API-client boundary (2026-08-20)
+`lib/manager/staff-projection.ts` is an **allow-list** of 14 safe employee fields, applied where the
+response is parsed — not at render. C-02 made `/hr/employees` safe by default, but `/hr/leave` and
+`/hr/shift-swaps` **still embed full employee `dateOfBirth` / `address` / `emergencyContact*` /
+`notes`** (re-verified live), and a render-time whitelist cannot keep those out of the React Query
+cache. Corollaries: `?view=full` is never sent (it *would* return compensation to a Manager token —
+FU-1, confirmed live); `GET /hr/employees/:id` is never called; a one-time PIN is returned from a
+**mutation** so React Query has nowhere to keep it.
+
+### D-B3-SURFACECLAIM — "Read-only" is a surface claim, not a workspace claim (2026-08-20)
+M-P1 put a global "Read-only oversight" badge in the Manager readiness strip. It was true then and
+became **false** the moment Staff shipped a **New** button, so B3 removed it. Each read-only surface
+states its own contract in its control panel; a surface that writes says nothing of the kind.
+
 ## Superseded decisions (history — do NOT treat as current)
 
 ### ~~D-SUP5TAB — Supervisor 5-tab nav with a dedicated Orders screen~~ (SUPERSEDED 2026-07-18)

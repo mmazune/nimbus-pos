@@ -1,12 +1,15 @@
 # Manager UI Documentation — Nimbus POS
 
-**Status:** Owner decisions **APPROVED (2026-08-20)**. **M-P0 audit ✅ · M-P1 shell foundation ✅
-(2026-08-20) · M-P2…M-P6 not started.** The Manager workspace shell, six-tab navigation, session
-guard, and branch switcher are live in `apps/web`; every surface still renders an honest foundation
-state with **no live data** except Manager Me (built solely from `/api/auth/me`).
+**Status:** Owner decisions **APPROVED (2026-08-20)**. **M-P0 audit ✅ · M-P1 shell ✅ · Track B1
+top-nav ✅ · B2 Overview ✅ · B3 Operations + Staff ✅ (all 2026-08-20) · B4 / B5 / B6 / B7 not
+started.** Four of the six Manager surfaces now carry live data; **Reports (B4) and Settings (B6)
+still render the honest foundation screen.**
+⚠️ The phased plan is now [`ai/ENTERPRISE_UI_ROADMAP.md`](../../ai/ENTERPRISE_UI_ROADMAP.md) Track B
+— `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` is **superseded from M-P2 onward**.
 **Role target:** `JobRole.MANAGER` (no separate `BRANCH_MANAGER` enum).
 **Landing route:** `/manager/overview`.
-**Bottom nav (locked):** Overview · Operations · Staff · Reports · Settings · Me.
+**Nav (locked, six modules):** Overview · Operations · Staff · Reports · Settings · Me — rendered as
+an Odoo-style **top module bar** since B1 (D-MGRTOPNAV), **not** a bottom nav.
 **Last updated:** 2026-08-20.
 
 This directory is the **in-repo, portable** Manager doc set. It is the copy to read from a repo
@@ -17,6 +20,47 @@ which remains the richer source for design, blueprint, scope, and gap detail (se
 ---
 
 ## Dated notes
+
+### 2026-08-20 — Track B3: Operations + Staff COMPLETE
+
+Canonical record: [`ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md`](../../ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md)
+· evidence: [`ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md`](../../ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md).
+
+**Operations and Staff became modules with real sub-routes.** `/manager/operations` and
+`/manager/staff` are now redirects; the eight live surfaces are:
+
+| Module | Routes |
+| --- | --- |
+| Operations (**read-only**) | `/operations/orders` (list + read-only record), `/operations/tables` (the shared `OperationalFloor`), `/operations/reservations` |
+| Staff | `/staff/directory` (kanban + list + read-only record), `/staff/onboarding`, `/staff/quick-pin`, `/staff/leave`, `/staff/shift-swaps` |
+
+Boundaries this doc set must be read under from now on:
+
+- **Operations decides nothing.** No checkout, tender, order builder, close, void, discount or
+  table-status write. **No escalation write was built** — the roadmap permits one only through a
+  verified domain DTO, and those were not verified. §8 of `MANAGER_LIFECYCLE.md` therefore remains a
+  read/detail description only.
+- **Staff writes exactly four things**: frontline onboarding, Quick-PIN reset/disable/enable, leave
+  review, and shift-swap **rejection**.
+- **Shift swaps are Outcome C — reject only.** Approving would mutate **zero** roster rows
+  (proven live: 3 `schedule_assignment` rows before, 3 after). There is no Approve control and there
+  must not be one.
+- **Leave review makes no payroll or roster claim**, and the decision is **organization-scoped** by
+  backend design (leave has a nullable branch) — the UI says so.
+- **The Staff directory narrows to the branch in the browser.** `GET /hr/employees` is org-scoped and
+  400s on `?branchId=` (MP0-06 / C-09, re-confirmed live: the payload spans 5 branches). The screen
+  discloses this and offers an explicit whole-organization view.
+- **`?view=full` is never requested.** ⚠️ Confirmed live that it *would* return full compensation and
+  PII to a Manager token (FU-1) — the frontend guard is the only thing preventing exposure.
+- **Deferred with reasons, not silently dropped:** Operations **Exceptions**, Staff **Attendance**
+  (both outside the owner's enumerated B3 scope, tagged `Deferred` in the menu tree), and the
+  **chatter rail** (still gated on **B0**).
+
+⚠️ **Defect found and fixed (B3-D1):** backend gap batch 1 inverted the meaning of
+`grossSales`/`netSales`, so the B2 Overview was rendering the ex-tax figure under the label
+"Sales today (tax-inclusive)". The KPI bindings are re-pointed and pinned by an assertion.
+
+**B4 (Reporting) has NOT started and must not start without explicit authorization.**
 
 ### 2026-08-20 — M-P1 shell/nav/session/branch-switcher COMPLETE
 

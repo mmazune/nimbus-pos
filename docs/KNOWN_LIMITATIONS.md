@@ -295,6 +295,44 @@ unavailable").
   (67/67) but the disposable-branch API matrix / concurrency / query-plan / smoke
   runs were blocked pending Neon MCP auth completion.
 
+## Manager Operations + Staff (Track B3, 2026-08-20) — known limitations
+
+Canonical record: `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md`.
+
+### Backend constraints the UI works around and discloses
+
+| Limitation | Consequence, and what the UI says |
+| --- | --- |
+| `GET /hr/employees` is **organization-scoped and 400s on `?branchId=`** (MP0-06 / C-09; re-verified live — the payload spans **5 branches**) | The directory reads the org with an explicit `take=100` bound and narrows **in the browser**. The screen states this and offers an explicit whole-organization view, so the branch switcher does not look broken. A server-side branch filter is the real fix. |
+| No **bulk** Quick-PIN status endpoint | Status is read **one employee at a time**, on selection. A status column for 40 people would be 40 requests on mount. The screen says so rather than hiding it. |
+| `/hr/leave` and `/hr/shift-swaps` **embed full employee PII** on the wire (`dateOfBirth`, `address`, `emergencyContact*`, `notes`) | The client projects to a name + code identity at the **API-client boundary**; the raw object never reaches state or the React Query cache. A render-time whitelist would not be sufficient. |
+| `POST /hr/frontline-staff/onboard` and `/quick-pin/reset` return a **plaintext PIN** (MP0-14) | Displayed **masked**, revealed only on a deliberate action, copy-once, and never logged, cached, stored or URL-encoded. **The backend behaviour itself is unchanged and remains a gap.** |
+| `GET /api/tills` and `GET /api/shifts` **do not exist** (MP0-02, re-confirmed live 404/404) | No tills or shifts list anywhere in Operations. The Tables screen **discloses the absence in words**; Overview shows counts only. |
+| `/pos/orders` returns **no aggregate** | The orders totals row is a **page** total, labelled "This page", with a footnote saying day totals live on Reports. |
+| `/pos/orders`, `/hr/employees` and `/reports` have **no server-side `@Max`** (MP0-11 / C-12) | Every Manager list sends an explicit bound from a named constant. |
+| Leave review is **organization-scoped**, not branch-guarded (`{id, orgId}` lookup by design — leave has a nullable branch) | The list is branch-filtered server-side, but the decision is not branch-guarded. The UI states this rather than implying a boundary that is not enforced. |
+| A decided leave request or shift swap **400s on a second review** | Terminal rows render read-only; offering the buttons would be offering a guaranteed error. |
+
+### New findings — recorded, NOT implemented
+
+| ID | Finding | Why it was not fixed |
+| --- | --- | --- |
+| **B3-F1** | `GET/POST/PATCH /hr/frontline-staff/:id/quick-pin*` resolve the employee by `{ id, orgId }` only — they are **org-scoped, not branch-guarded**. Verified live: 200 from a second branch. A manager could administer the PIN of an employee in a branch they do not manage, by id. | Backend change, out of B3 scope. The B3 UI only lists employees from the selected branch, so it cannot reach one by accident. Recommended fix: add `branchId` to `loadEmployeeForOrg`, matching the shift-swap approve hardening. |
+| **B3-F2** | **FU-1 confirmed live:** `?view=full` returns full compensation and PII to a **Manager** token, because the seeded matrix grants `pos:hr:compensation:read` to Owner, Manager and Accountant. | Seed/permission change, explicitly unauthorised. The frontend never sends it, and an assertion proves the string appears nowhere in the Manager surface. |
+| **B3-F3** | `POST /api/hr/leave` and `POST /api/hr/shift-swaps` are **self-service only** — a manager cannot file leave or a swap on an employee's behalf (403: *"can only create leave for their own linked employee profile"*). | Correct as designed. Recorded so it is not re-discovered as a missing feature; B3 offers no create control for either. |
+| **B3-D1** *(fixed)* | Backend gap batch 1 **inverted** `grossSales`/`netSales`, so the B2 Overview rendered the **ex-tax** figure under the label "Sales today (tax-inclusive)". | **Fixed in B3** — bindings re-pointed and pinned by an assertion. Recorded here because FU-3 described it as merely stale documentation. |
+
+### Deliberately deferred, with reasons
+
+- **Operations → Exceptions** and **Staff → Attendance** — outside the owner's enumerated B3 scope.
+  Both are tagged **`Deferred`** in the menu tree rather than given an invented phase number.
+- **Chatter rail (Odoo C6)** over `GET /api/audit/timeline` — gated on **B0**, which has not run.
+- **All escalation writes, and the escalation list** — see `docs/DECISIONS.md` D-B3-READONLY.
+- **Graph and pivot views** — impossible until `GET /api/reports/:id` returns rows (C-03 / NG-06).
+  The view switcher does not advertise them.
+- **Supervisor/Manager roles in the onboarding picker** — creating an account with approval
+  authority is not "frontline onboarding". Omitted from the picker, not disabled in it.
+
 ## Deferred features (product-level, by design)
 
 Full accounting, payroll admin, franchise, developer portal, owner SaaS billing,

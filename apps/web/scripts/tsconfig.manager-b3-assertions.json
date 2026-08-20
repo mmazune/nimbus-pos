@@ -1,0 +1,27 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "manager-b3-assertions.ts",
+    "../src/lib/manager/routes.ts",
+    "../src/lib/manager/top-nav.ts",
+    "../src/lib/manager/operations-model.ts",
+    "../src/lib/manager/operations-route.ts",
+    "../src/lib/manager/operations-types.ts",
+    "../src/lib/manager/staff-model.ts",
+    "../src/lib/manager/staff-projection.ts",
+    "../src/lib/manager/staff-route.ts",
+    "../src/lib/manager/dashboard-model.ts",
+    "../src/lib/manager/dashboard-types.ts",
+    "../src/lib/waiter/formatters.ts",
+    "../src/components/floor/formatters.ts",
+    "../src/components/floor/types.ts"
+  ]
+}

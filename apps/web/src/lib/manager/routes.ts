@@ -23,13 +23,18 @@ export const managerRoutes = [
     href: "/manager/operations",
     label: "Operations",
     icon: operationalIconNames.operations,
-    match: (pathname: string) => pathname === "/manager/operations",
+    // Track B3 gives Operations and Staff real sub-routes (`/orders`, `/tables`,
+    // `/reservations`; `/directory`, `/onboarding`, `/quick-pin`, `/leave`,
+    // `/shift-swaps`), so their nav entry matches the whole module, not one exact
+    // path — otherwise the module bar de-highlights the moment you open a surface
+    // inside it. The four single-page surfaces keep their exact match.
+    match: (pathname: string) => pathname.startsWith("/manager/operations"),
   },
   {
     href: "/manager/staff",
     label: "Staff",
     icon: operationalIconNames.staff,
-    match: (pathname: string) => pathname === "/manager/staff",
+    match: (pathname: string) => pathname.startsWith("/manager/staff"),
   },
   {
     href: "/manager/reports",

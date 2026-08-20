@@ -83,10 +83,44 @@ assert(managerIndex.includes('destination: "/manager/overview"'), "/manager redi
 assert(managerIndex.includes("permanent: false"), "/manager redirect is non-permanent");
 
 // ── Every nav route has a real page ────────────────────────────────────────
+//
+// Track B3 (2026-08-20) turned Operations and Staff into MODULES with real
+// sub-routes, so their nav href now resolves to `pages/manager/<module>/index.tsx`
+// rather than a single `pages/manager/<module>.tsx`. The M-P1 invariant this
+// check exists to protect is unchanged and still enforced below: no navigation
+// entry may point at a route that does not resolve, and every surface a manager
+// actually lands on renders inside `ManagerShell`. A module index is allowed to
+// be a redirect (it owns no chrome of its own), so it is required to send the
+// manager to a route that DOES render the shell.
 for (const item of manager) {
-  const page = `apps/web/src/pages${item.href}.tsx`;
-  assert(existsSync(join(process.cwd(), page)), `page exists for ${item.href} (${page})`);
-  assert(source(page).includes("<ManagerShell>"), `${item.href} renders inside ManagerShell`);
+  const flatPage = `apps/web/src/pages${item.href}.tsx`;
+  const indexPage = `apps/web/src/pages${item.href}/index.tsx`;
+  const isFlat = existsSync(join(process.cwd(), flatPage));
+  const isModule = existsSync(join(process.cwd(), indexPage));
+  assert(isFlat || isModule, `page exists for ${item.href} (${flatPage} or ${indexPage})`);
+
+  if (isFlat) {
+    assert(source(flatPage).includes("<ManagerShell>"), `${item.href} renders inside ManagerShell`);
+    continue;
+  }
+
+  const moduleIndex = source(indexPage);
+  const destination = moduleIndex.match(/destination:\s*([A-Z_]+|["'][^"']+["'])/)?.[1];
+  assert(destination, `${item.href} module index redirects somewhere concrete`);
+  assert(moduleIndex.includes("permanent: false"), `${item.href} module redirect is non-permanent`);
+
+  // Prove the redirect target is a real page that renders the shell.
+  const landingConstants: Record<string, string> = {
+    MANAGER_OPERATIONS_LANDING: "/manager/operations/orders",
+    MANAGER_STAFF_LANDING: "/manager/staff/directory",
+  };
+  const landing = landingConstants[destination as string] || (destination as string).replace(/["']/g, "");
+  const landingPage = `apps/web/src/pages${landing}.tsx`;
+  assert(existsSync(join(process.cwd(), landingPage)), `${item.href} redirects to a real page (${landingPage})`);
+  assert(
+    source(landingPage).includes("<ManagerShell>"),
+    `${item.href}'s landing route renders inside ManagerShell`,
+  );
 }
 
 // ── Role compatibility helper ──────────────────────────────────────────────
@@ -309,13 +343,18 @@ for (const token of ["UGX ", "0.00", "Sample", "Lorem", "placeholder data", "TOD
   assert(!foundationSource.includes(token), `the foundation screen fabricates nothing ("${token}")`);
 }
 // Track B2 (2026-08-20): /manager/overview graduated from the honest foundation
-// screen to the real KPI dashboard, so it is no longer part of this loop — its own
-// invariants live in `manager-b2-assertions.ts`. Every OTHER not-yet surface must
-// still render the foundation screen, which is what this check now proves.
-const foundationRoutes = manager.filter(
-  (navItem) => navItem.href !== "/manager/me" && navItem.href !== "/manager/overview",
-);
-assert(foundationRoutes.length === 4, "four Manager surfaces still ship the honest foundation screen");
+// screen to the real KPI dashboard — its invariants live in
+// `manager-b2-assertions.ts`.
+// Track B3 (2026-08-20): /manager/operations and /manager/staff graduated the
+// same way, into modules of real surfaces — their invariants live in
+// `manager-b3-assertions.ts`.
+//
+// What remains true, and is what this check now proves: every surface that is
+// still NOT built renders the honest foundation screen rather than an empty page
+// or fabricated data. Two are left — Reports (B4) and Settings (B6).
+const BUILT_MANAGER_SURFACES = ["/manager/me", "/manager/overview", "/manager/operations", "/manager/staff"];
+const foundationRoutes = manager.filter((navItem) => !BUILT_MANAGER_SURFACES.includes(navItem.href));
+assert(foundationRoutes.length === 2, "two Manager surfaces still ship the honest foundation screen");
 for (const item of foundationRoutes) {
   const page = source(`apps/web/src/pages${item.href}.tsx`);
   assert(page.includes("ManagerFoundationScreen"), `${item.href} renders the honest foundation screen`);

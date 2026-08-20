@@ -10,11 +10,19 @@ import { formatManagerMoney, toManagerAmount } from "@/lib/manager/dashboard-mod
 /**
  * Sales today.
  *
- * ⚠️ MP0-10 — the single most dangerous label on this dashboard. The backend's
- * `netSales` is `SUM(order.total)` and is **tax-INCLUSIVE**; its `grossSales` is
- * `SUM(order.subtotal)` and is **ex-tax**, so `netSales > grossSales` — inverted
- * against hospitality convention. Neither may ever be labelled a bare "Gross" or
- * "Net"; both labels here state the tax basis explicitly.
+ * ⚠️ MP0-10 — the single most dangerous label on this dashboard, and the one
+ * place a backend fix silently inverted a shipped frontend.
+ *
+ * B2 was written against the pre-batch vocabulary (`netSales = SUM(order.total)`,
+ * tax-inclusive; `grossSales = SUM(order.subtotal)`, ex-tax). Backend gap batch 1
+ * (2026-08-20) **swapped both meanings**: `grossSales` is now `SUM(order.total)`
+ * (tax-inclusive) and `netSales` is `grossSales − taxTotal` (ex-tax), restoring
+ * `gross >= net`. B2's bindings were not updated with it, so this card rendered
+ * the EX-tax figure under the tax-inclusive label. **B3 re-points both rows
+ * (defect B3-D1).**
+ *
+ * Neither figure may ever be labelled a bare "Gross" or "Net"; both labels here
+ * state the tax basis explicitly, and the binding registry pins each to its field.
  *
  * **No chart.** Nimbus has no bucketed revenue series on any dashboard endpoint,
  * and `/dash/snapshots` — the only candidate — is gated behind
@@ -41,18 +49,18 @@ export function ManagerSalesTodayCard({ snapshot }: { snapshot: ManagerDashboard
       isLoading={managerQuery.isLoading}
       isError={managerQuery.isError}
       actions={<ManagerCardActionLink href="/manager/reports">Reports</ManagerCardActionLink>}
-      footnote="Counts orders SERVED or CLOSED since midnight. The tax-inclusive figure is the backend's netSales and is larger than the ex-tax figure — neither is a bare “gross” or “net”."
+      footnote="Counts orders SERVED or CLOSED since midnight. The tax-inclusive figure is the sum of order totals; the ex-tax figure is that same sum less tax — neither is a bare “gross” or “net”."
     >
       <ManagerCardPrimaryKpi
         kpiKey="sales.taxInclusive"
-        value={formatManagerMoney(today?.netSales, currencyCode)}
+        value={formatManagerMoney(today?.grossSales, currencyCode)}
         hint="Sum of order totals, tax included."
       />
       <ManagerCardStatList
         rows={[
           {
             kpiKey: "sales.exTax",
-            value: formatManagerMoney(today?.grossSales, currencyCode),
+            value: formatManagerMoney(today?.netSales, currencyCode),
           },
           { kpiKey: "sales.tax", value: summaryMoney(summary?.taxTotal) },
           { kpiKey: "sales.discounts", value: summaryMoney(summary?.discountTotal) },

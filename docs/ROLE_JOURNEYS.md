@@ -243,10 +243,10 @@ lifecycle is otherwise proven by 67/67 Jest tests + the compiled Playwright suit
 
 ## Manager
 
-**Nav: Overview · Operations · Staff · Reports · Settings · Me.** Branch-centric oversight.
-**Shipped state (2026-08-20): M-P1 foundation only** — the journey below is navigable end-to-end,
-but only the shell, the branch switcher, the readiness chips, and **Me** carry real data. Every
-other surface states honestly that it is not built yet and names the phase that brings it.
+**Nav: Overview · Operations · Staff · Reports · Settings · Me**, rendered as an Odoo-style top
+module bar. Branch-centric oversight.
+**Shipped state (2026-08-20): M-P1 + B1 + B2 + B3.** Overview, Operations and Staff carry real data;
+**Reports (B4) and Settings (B6) still state honestly that they are not built yet.**
 
 1. **Sign in** (email/password or the seeded high-tier Quick PIN `11223344`) → the app reads
    `/api/auth/me`, confirms `JobRole.MANAGER`, resolves the active branch
@@ -260,19 +260,42 @@ other surface states honestly that it is not built yet and names the phase that 
    the new `X-Branch-Id`. It never re-fetches auth and never clears the query cache.
 3. **Read the readiness strip:** Branch · report-generator health · device-registry health. Tills
    and shifts are deliberately absent — this backend has no branch-wide tills or shifts list, so a
-   chip there could only lie. They return as **counts** in M-P2.
-4. **Overview → Operations → Staff → Reports → Settings.** Each tab renders its scope, the phase
-   that makes it live (M-P2…M-P6), and the verified backend limits it must respect.
-5. **Me.** Identity, branch memberships (selectable — same action as the header switcher), session
+   chip there could only lie. They appear as **counts** on Overview and nowhere else.
+4. **Overview.** Eight cards over the verified `/dash/*` reads — sales (both tax bases, never a bare
+   gross/net), orders, payment mix, open orders + aging, low stock, items needing a decision, till &
+   shift coverage, branch readiness. Counts link into the surface that owns them; Overview itself
+   decides nothing. It is **polled, not streamed**, and says so.
+5. **Operations — read-only oversight.** *Orders* is a dense list with status/service filters and
+   server pagination; a row opens a read-only record with the real order lifecycle on a statusbar,
+   the line grid and the totals block — and **no action of any kind**, because sending, serving,
+   splitting, voiding, discounting, collecting payment and closing all belong to the roles that own
+   them. *Tables* is the **same floor the service roles see**, read-only, with a panel that links
+   into the order record. *Reservations* lists active and historical bookings; creating, confirming,
+   seating and cancelling stay with Supervisor.
+6. **Staff — the one place Manager writes.** *Directory* shows the branch's people as cards or a
+   list, filtered by position, with a read-only record carrying position, employment type, start
+   date and work contact — and an on-screen card stating exactly what is withheld and why. Because
+   the employee endpoint is organization-scoped, the branch narrowing happens in the browser and the
+   screen says so, offering a whole-organization view rather than appearing to lose people.
+   *Onboard* creates a real frontline account in three confirmed steps and shows the Quick PIN
+   **once**, masked until deliberately revealed — it cannot be retrieved afterwards. *Quick PIN*
+   administers one person at a time (there is no bulk status endpoint, and the screen says so).
+   *Leave* approves or rejects, stating plainly that it creates no payroll entry and reassigns no
+   shift. *Shift swaps* can only be **declined** — Nimbus cannot reassign a shift, so an approval
+   would be a lie, and the screen explains that instead of offering a button.
+7. **Reports → Settings.** Both still render their scope, the phase that makes them live (B4 / B6),
+   and the verified backend limits they will have to respect.
+8. **Me.** Identity, branch memberships (selectable — same action as the header switcher), session
    context, and an explicit **restricted surfaces** disclosure: the session holds compensation,
    contracts, generic approvals-decide, membership-admin and receipt permissions that the approved
    manager scope **excludes**, and the workspace says so rather than hiding it.
-6. **Idle → logout.** Manager shares the one operational idle-logout mechanism (15 minutes →
+9. **Idle → logout.** Manager shares the one operational idle-logout mechanism (15 minutes →
    `/login?reason=idle_timeout`).
 
 **Never in the manager journey:** collecting payment, closing an order, entering menu items,
-driving KDS, touching payroll/compensation, deciding through the generic approvals inbox, or any
-fabricated data or success state.
+driving KDS, touching payroll/compensation or contracts, mutating a table's status or a roster row,
+approving a shift swap, deciding through the generic approvals inbox, or any fabricated data or
+success state.
 
 ## Role boundaries & handoffs
 
@@ -285,6 +308,8 @@ fabricated data or success state.
   other role is fixed to, and reads across Overview/Operations/Staff/Reports/Settings. It never
   collects payment, closes an order, enters the menu, or touches compensation/payroll. If Manager
   ever gets a Floor-like view it renders the same shared `OperationalFloor`, read-only.
-- **Floor parity:** Waiter, Supervisor, and Cashier (Prompt C1) share one Floor
-  presentation; behaviour diverges only **after** table selection. Manager (M-P1) shares the same
-  shell, header, bottom nav, idle handler, and profile primitives as the fourth consumer.
+- **Floor parity:** Waiter, Supervisor, Cashier (Prompt C1) and now **Manager (Track B3)** share one
+  Floor presentation; behaviour diverges only **after** table selection — Waiter opens an order
+  builder, Cashier a settlement workspace, Supervisor a table-control workspace, and **Manager a
+  read-only summary**. Manager shares the same shell, header, idle handler and profile primitives as
+  the fourth consumer; only its navigation presentation differs (top module bar, B1).

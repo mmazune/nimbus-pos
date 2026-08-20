@@ -28,14 +28,27 @@ export type ManagerControlPanelPager = {
   onNext: () => void;
 };
 
+/**
+ * The chip-search box.
+ *
+ * `value`/`onChange` are OPTIONAL and the text input renders only when both are
+ * supplied (Track B3). Not every list endpoint has a text-search parameter —
+ * `/pos/orders` and `/api/reservations` have none, while `/hr/employees` has a
+ * real `?search=`. On the endpoints without one the box still hosts the filter
+ * chips and the Filters menu, but the input is **omitted**, never rendered
+ * disabled: a greyed-out search field advertises a capability the backend does
+ * not have, which is the exact soft untruth the standing rules forbid.
+ */
 export type ManagerControlPanelSearch = {
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  onChange?: (value: string) => void;
   placeholder?: string;
   /** Applied filters rendered as chips inside the search box, each with a ✕. */
   filterChips?: ReactNode;
   /** The Filters / Group By / Favorites dropdown trigger (`ManagerSearchFilterMenu`). */
   filterMenu?: ReactNode;
+  /** Shown inside the box when there is no input — states why, in words. */
+  emptyHint?: string;
 };
 
 type ManagerControlPanelProps = {
@@ -50,6 +63,31 @@ type ManagerControlPanelProps = {
   viewSwitcher?: ReactNode;
   className?: string;
 };
+
+/**
+ * One applied filter, rendered inside the chip-search box with a ✕ that clears
+ * it (Odoo screenshot `05`: the teal `Invoices or Receipts ✕` facet). Track B3
+ * adds it as the counterpart to `ManagerSearchFilterMenu` — the menu applies a
+ * filter, the chip shows and removes it.
+ */
+export function ManagerFilterChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <span
+      data-manager-filter-chip
+      className="flex shrink-0 items-center gap-1 rounded bg-status-info-surface px-2 py-0.5 text-xs font-semibold text-status-info"
+    >
+      {label}
+      <button
+        type="button"
+        aria-label={`Remove filter ${label}`}
+        onClick={onClear}
+        className="rounded-sm px-0.5 outline-none hover:text-text-primary focus-visible:shadow-focus"
+      >
+        ✕
+      </button>
+    </span>
+  );
+}
 
 export function ManagerControlPanel({
   actionsMenu,
@@ -96,13 +134,19 @@ export function ManagerControlPanel({
               aria-hidden
             />
             {search.filterChips}
-            <input
-              type="search"
-              value={search.value}
-              placeholder={search.placeholder || "Search…"}
-              onChange={(event) => search.onChange(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
-            />
+            {search.onChange ? (
+              <input
+                type="search"
+                value={search.value ?? ""}
+                placeholder={search.placeholder || "Search…"}
+                onChange={(event) => search.onChange?.(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
+              />
+            ) : (
+              <span className="min-w-0 flex-1 truncate text-sm text-text-muted">
+                {search.emptyHint || "Filter this list from the menu."}
+              </span>
+            )}
           </div>
           {search.filterMenu}
         </div>

@@ -306,6 +306,51 @@ Destructive API mutation checks can also be scripted directly against the isolat
 API (Node `fetch`) — every Prompt 3 action + rejection case + idempotency replay.
 **Never point these at shared Neon.**
 
+## Playwright E2E harness (Manager Operations + Staff — Track B3, 2026-08-20)
+
+Track B3 adds two suites under the same `apps/web/playwright.config.ts` and the same env-driven
+credentials — **`e2e/manager-operations/` (4 spec files) and `e2e/manager-staff/` (3 spec files),
+69 tests × the four viewport projects = 276 tests.**
+
+⚠️ **These suites CREATE AND MUTATE REAL RECORDS.** They onboard staff, reset Quick PINs, and decide
+leave requests and shift swaps. Run them **only** against the isolated disposable stack described
+above — **never shared Neon.** Every record they create is tagged **`ZZQA`**.
+
+### Fixture prerequisite
+
+The seeded demo dataset leaves the e2e branch (Tapas Downtown) with **zero PENDING leave requests**
+(finding **B3-F3**: a manager cannot create one — those endpoints are self-service only, 403). The
+decision specs therefore `test.skip()` on a bare stack. To exercise them, insert `ZZQA`-tagged
+PENDING rows directly on the disposable database before the run; a four-viewport pass consumes
+roughly 8 leave requests and 4 swaps.
+
+### What the suites prove, beyond rendering
+
+- **Privacy, three ways.** The forbidden-key set is checked on the **wire** (captured response
+  bodies), in the **DOM**, and in the **serialised page state** — because `/hr/leave` and
+  `/hr/shift-swaps` genuinely do send employee PII, and the point is that the projection stops it.
+- **`?view=full` is never requested** — asserted on every captured `/hr/employees` request.
+- **The shared Floor is unforked** — proven through the shared components' own
+  `data-operational-floor-toolbar` / `data-operational-table-id` attributes rather than by matching
+  copy, which is both stronger and less brittle.
+- **The one-time PIN never persists** — after a real onboarding, the revealed PIN is asserted absent
+  from `localStorage`, `sessionStorage`, the URL, and a subsequently loaded page.
+- **Shift swaps can never approve** — the outgoing request body is captured and asserted to contain
+  `REJECTED` and **not** `APPROVED`.
+- **Request-count discipline** — a per-surface budget plus a no-interaction hold proving nothing
+  polls.
+
+### Two harness lessons worth reusing
+
+1. **Measure a cold load with a RELOAD, not with the first navigation after login.** Attaching a
+   request capture straight after `managerLogin` catches the tail of the landing page's own
+   `/auth/me` and reports it as a duplicate. A reload of the already-open surface measures that
+   surface alone.
+2. **An "is it settled?" helper is an ARRIVAL barrier, not a TRANSITION barrier.** After a paginate
+   or a scope switch the previous rows stay on screen, so a settle check returns *before* the new
+   request is issued. Wait for the request itself (`waitForApiRequest` in
+   `e2e/manager-operations/fixtures.ts`).
+
 ## Playwright E2E harness (Manager shell — Prompt M-P1, 2026-08-20)
 
 Manager M-P1 adds `apps/web/e2e/manager-shell/` — **4 spec files, 23 tests × the four viewport

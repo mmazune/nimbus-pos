@@ -4,6 +4,26 @@ This document describes the operational lifecycle states, state transitions, con
 
 ---
 
+## 2026-08-20 — Header note: Track B3 SHIPPED Operations + Staff (read this first)
+
+**This lifecycle document predates the build.** Where it and the shipped code disagree, the code and
+[`ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md`](../../ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md)
+win. The corrections that matter:
+
+| This doc says | What actually shipped (B3, 2026-08-20) |
+| --- | --- |
+| §4 Operations as a general oversight surface | **Strictly read-only**, three surfaces (Orders / Tables / Reservations). No mutation of any kind exists in `components/manager/operations` — proven by assertion. |
+| §8 an Approvals Inbox committing via `POST /api/approvals/:id/decide` | **Not built, and deliberately.** No escalation write and no escalation *list* ships: `/api/approvals` is only partly branch-scoped (MP0-05 — a Tapas-scoped read returned 16 rows across **5 branches**), and the three domain DTOs were never verified. Approval **counts** stay on Overview from the four canonical branch-scoped domain endpoints. |
+| Shift-swap approval as a lifecycle transition | **Outcome C — reject only.** Approving mutates **zero** roster rows; `scheduleAssignment` has no write path anywhere in the API. Proven live: 3 rows before a real rejection, 3 after. |
+| Leave review as an HR lifecycle step | Correct, but it makes **no payroll or roster claim**, and the decision is **org-scoped** (leave has a nullable branch) rather than branch-guarded. The UI states both. |
+| Staff data as a general employee record | The workspace holds an **allow-list of 14 safe fields**, projected at the API-client boundary. Compensation, contracts, `dateOfBirth`, `address`, `emergencyContact*` and private notes are never fetched — `?view=full` is never requested, and `GET /hr/employees/:id` is never called at all. |
+
+Still true and unchanged: nav is the locked six modules, Operations excludes any cashier/waiter
+clone, Staff excludes compensation/contracts/payroll, Reports must show a truthful
+generator-unavailable state.
+
+---
+
 ## 2026-08-20 — Header note: owner decisions are LOCKED
 
 The product owner approved the Manager core + MVP scope on **2026-08-20**. The canonical register is

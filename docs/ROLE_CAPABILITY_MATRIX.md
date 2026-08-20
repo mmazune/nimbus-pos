@@ -164,14 +164,18 @@
 
 ## Manager
 
-> **Manager M-P1 IMPLEMENTED (2026-08-20); M-P2…M-P6 not started.** Manager is the fourth consumer
-> of the shared operational shell. Nav is locked to **Overview · Operations · Staff · Reports ·
-> Settings · Me** (no More tab, no Approvals tab), landing `/manager/overview`. A **branch switcher**
-> in the header selects among the account's ACTIVE memberships and drives `X-Branch-Id` on every
-> manager read. **No permission change** — the manager token already held everything M-P1 touches;
-> in fact it holds *more* than the approved scope, which is exactly why
-> `lib/manager/permissions.ts` is a **surface allow-list, not a permission check**. Canonical
-> record: `ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md`.
+> **Manager M-P1 + Track B1 + B2 + B3 IMPLEMENTED (2026-08-20). Reports (B4) and Settings (B6) are
+> NOT started.** Manager is the fourth consumer of the shared operational shell. Nav is locked to
+> **Overview · Operations · Staff · Reports · Settings · Me** (no More tab, no Approvals tab),
+> rendered as an Odoo-style **top module bar** since B1; Operations and Staff are now **modules**
+> whose root redirects into real sub-routes. A **branch switcher** in the header selects among the
+> account's ACTIVE memberships and drives `X-Branch-Id` on every manager read.
+> **No permission change in any phase** — the manager token already held everything; in fact it
+> holds *more* than the approved scope, which is exactly why `lib/manager/permissions.ts` is a
+> **surface allow-list, not a permission check**. Canonical records:
+> `ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md`, `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`,
+> `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`,
+> `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md`.
 
 | Page | Capability | Endpoint(s) | State |
 | --- | --- | --- | --- |
@@ -180,11 +184,23 @@
 | Shell | Session guard (manager-compatible only → `/login?reason=manager_only`) + shared idle logout | `GET /auth/me` | **Implemented** (M-P1) |
 | Shell | Readiness: report-generator health | `GET /reports/catalog` (`pos:reports:history:read`) | **Implemented** (M-P1; truthful IMPLEMENTED/CONDITIONAL/PENDING_LATER counts) |
 | Shell | Readiness: device registry health | `GET /devices?page=1&pageSize=50` (`devices:read`) | **Implemented** (M-P1; branch-scoped total) |
-| Shell | Readiness: tills / shifts / pending approvals chips | — | **Excluded from M-P1** — `GET /api/tills` + `GET /api/shifts` do not exist and `/tills|shifts/active` are operator-scoped (MP0-02); approvals list is only partly branch-scoped (MP0-05). Counts only, from M-P2. |
-| Overview | KPIs, payment mix, snapshots, approval counts, live stream | `/dash/manager`, `/dash/*`, `/stream/metrics` | **Deferred → M-P2** (foundation page shipped) |
-| Operations | Read-only tables/orders/reservations oversight | `/tables`, `/pos/orders`, `/reservations` | **Deferred → M-P3** (foundation page shipped) |
+| Shell | Readiness: tills / shifts / pending approvals chips | — | **Permanently excluded** — `GET /api/tills` + `GET /api/shifts` do not exist and `/tills\|shifts/active` are operator-scoped (MP0-02, re-confirmed live in B3: 404/404); approvals list is only partly branch-scoped (MP0-05). Counts only, on Overview. |
+| Shell | Workspace-wide "Read-only oversight" badge | — | **Removed in B3** — it became false the moment Staff shipped a create action. Read-only is a per-surface claim now (`docs/DECISIONS.md` D-B3-SURFACECLAIM). |
+| Overview | KPIs, payment mix, open-order aging, low stock, approval counts, readiness | `/dash/manager`, `/dash/{today-summary,payment-mix,open-orders,low-stock}`, 4 domain approval counts | **Implemented** (B2; 8 cards, 9 bounded reads, **polled not streamed** — no SSE client exists, C-04 open). ⚠️ B3 re-pointed the two sales KPIs after backend gap batch 1 inverted `grossSales`/`netSales` (**B3-D1**) |
+| Operations | Orders list (C4) + read-only order record (C5 + C14 statusbar) | `GET /pos/orders`, `GET /pos/orders/:id` | **Implemented** (B3; server pagination on the real `total`, bounded page size, page-total row. **No action control of any kind**) |
+| Operations | Tables oversight through the **shared** `OperationalFloor` | `GET /tables` + `/pos/orders` + `/reservations` (one bounded 3-read snapshot) | **Implemented** (B3; unforked, read-only selection panel, no table-status write) |
+| Operations | Reservations list, read-only | `GET /reservations?scope=active\|history` | **Implemented** (B3; no create/confirm/seat/cancel/no-show — those stay Supervisor's) |
+| Operations | Escalation surface + escalation writes | — | **Not built** (B3) — the roadmap's own precondition (a verified domain DTO) was unmet, and `/api/approvals` is only partly branch-scoped. `docs/DECISIONS.md` **D-B3-READONLY** |
+| Operations | Exceptions / anomaly feed · chatter rail | — | **Deferred** (outside the enumerated B3 scope) · **gated on B0** |
 | Operations | Cashier checkout clone / waiter order-entry clone | — | **Excluded** (locked owner decision) |
-| Staff | Safe-field directory, onboarding, Quick PIN, attendance, leave/swap review | `/hr/*` | **Deferred → M-P4** (needs an allow-list projection at the API-client boundary — `GET /hr/employees` returns compensation on the wire, MP0-01) |
+| Staff | Safe-field directory (C7 kanban + C4 list + facet sidebar) and read-only employee record | `GET /hr/employees` (**default safe payload only — never `?view=full`**; `/hr/employees/:id` is never called) | **Implemented** (B3; allow-list projection of 14 fields at the API-client boundary. Branch narrowing is **client-side** and disclosed — the endpoint is org-scoped and 400s on `?branchId=`, MP0-06/C-09) |
+| Staff | Frontline onboarding, one-time PIN shown once | `POST /hr/frontline-staff/onboard` | **Implemented** (B3; confirmed, masked → reveal → copy-once, never cached/logged/stored/URL-encoded. Never sends `contractId`/`compensationProfileId`, MP0-15) |
+| Staff | Quick-PIN status / reset / disable / enable (Odoo C12) | `GET /:id/quick-pin-status`, `POST /:id/quick-pin/reset`, `PATCH /:id/quick-pin/{disable,enable}` | **Implemented** (B3; status read **on demand**, one request per selection — there is no bulk endpoint) |
+| Staff | Password admin, 2FA, API keys, passkeys, session revocation | — | **Excluded — they do not exist in Nimbus** (NG-08). Omitted from the C12 table, not greyed out |
+| Staff | Leave review (approve / reject) | `PATCH /hr/leave/:id/review` | **Implemented** (B3; makes **no payroll or roster claim**; the decision is org-scoped by backend design and the UI says so) |
+| Staff | Shift-swap review — **REJECT ONLY** | `PATCH /hr/shift-swaps/:id/approve {status: REJECTED}` | **Implemented as Outcome C** (B3). **No Approve control**: approving mutates zero roster rows — proven live, 3 `schedule_assignment` rows before and after. `docs/DECISIONS.md` **D-B3-SWAP** |
+| Staff | Attendance timeline | — | **Deferred** (outside the enumerated B3 scope; `/hr/attendance` embeds the same nested PII) |
+| Staff | Creating leave or a shift swap on an employee's behalf | — | **Not possible** — those endpoints are self-service only (403). Finding **B3-F3** |
 | Staff | Compensation / contracts / payroll / bank / tax / private HR notes | — | **Excluded** (locked; permissions are held but never used) |
 | Reports | Catalog, generate, history/detail, export | `/reports/*` | **Deferred → M-P5** (CSV-only; no row table — `/reports/:id` returns summary + rowCount only) |
 | Settings | Branch profile (read-only), device registry, printer metadata, terminal stub | `/branches`, `/devices/*` | **Deferred → M-P6** (`PATCH /branches/:id` does not exist, MP0-04) |

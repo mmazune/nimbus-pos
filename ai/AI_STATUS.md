@@ -31,6 +31,52 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
+- **2026-08-20 — ENTERPRISE UI TRACK B3 COMPLETE — Manager OPERATIONS + STAFF — A: B3 COMPLETE /
+  B4 GATED.** Frontend + docs only; **no backend, schema, migration, seed, permission or Postman
+  change**. Operations and Staff graduate from honest foundation screens to **eight live surfaces**,
+  built on the B1 chrome primitives — which B3 is the first phase to actually MOUNT
+  (`ManagerSearchFilterMenu`, `ManagerBreadcrumbs`) — plus four new shared ones: `ManagerListTable`
+  (Odoo **C4**), `ManagerStatusPipeline` (**C14**), `ManagerViewSwitcher`, `ManagerRecordActionsMenu`
+  (**C13**).
+  **OPERATIONS is strictly read-only** — `/operations/orders` (C4 list: server pagination fed by the
+  real `total` **298**, status/service filters, removable chips, optional-column gear, a totals row
+  labelled *This page* because the endpoint returns no aggregate) → a read-only **C5** record
+  (breadcrumb + record pager, statusbar pipeline, notebook tabs, totals block, **zero** action
+  controls); `/operations/tables` renders the **shared `OperationalFloor` unforked** (proven in e2e by
+  its own `data-operational-*` attributes) with a read-only selection panel; `/operations/reservations`
+  is read-only over the same bounded `scope=active|history` contract Supervisor 4A/4B established.
+  Assertions prove **zero mutations and zero `useMutation` hooks** anywhere in Operations.
+  **STAFF writes exactly four things**: frontline onboarding (3-step, `ActionConfirmDialog`, PIN
+  **masked → revealed once → copy-once**, never cached/logged/stored/URL-encoded — verified live);
+  Quick-PIN reset/disable/enable (Odoo **C12** with only the rows Nimbus can back — password/2FA/API
+  keys/passkeys/session revocation **omitted, not greyed out**, NG-08); leave review (**no payroll or
+  roster claim**, org-scoped decision disclosed); and shift-swap **rejection only**.
+  🔴 **Shift swaps are Outcome C, proven not asserted:** a real rejection changed **0 of 3**
+  `schedule_assignment` rows and left `/workforce/roster` byte-identical. There is **no Approve
+  control** and must not be one.
+  **Privacy:** `lib/manager/staff-projection.ts` is an **allow-list** (14 safe fields) applied at the
+  **API-client boundary**, because `/hr/leave` and `/hr/shift-swaps` still embed full employee
+  `dateOfBirth`/`address`/`emergencyContact*`/`notes` — verified live. `?view=full` is never sent
+  (⚠️ confirmed live that it *would* return compensation to a Manager token — **FU-1 is real**);
+  `GET /hr/employees/:id` is never called; the directory narrows to the branch **in the browser** and
+  says so, because the endpoint is org-scoped and 400s on `?branchId=` (MP0-06/C-09, re-confirmed —
+  the payload spans 5 branches).
+  ⚠️ **Defect found and fixed (B3-D1):** backend gap batch 1 **inverted** `grossSales`/`netSales`, so
+  the B2 Overview was rendering the **ex-tax** figure under the label *"Sales today (tax-inclusive)"*.
+  FU-3 recorded this as merely stale notes; it was a live mislabel of the dashboard's headline money.
+  Bindings re-pointed and pinned by an assertion. A second B3-caused untruth was also removed: the
+  M-P1 global *"Read-only oversight"* badge in the readiness strip, which became false the moment
+  Staff shipped a **New** button — read-only is now a per-surface claim.
+  **Deferred with reasons, not silently dropped:** Operations **Exceptions** and Staff **Attendance**
+  (outside the owner's enumerated scope, tagged `Deferred` — not an invented phase number); the
+  **chatter rail** (still gated on **B0**); and **every escalation write and the escalation list** —
+  the roadmap's own precondition (a verified domain DTO) was unmet, and `/api/approvals` is only
+  partly branch-scoped (MP0-05).
+  **New findings recorded, none implemented:** **B3-F1** the Quick-PIN admin routes are org-scoped, not
+  branch-guarded (200 from another branch); **B3-F2** FU-1 confirmed live; **B3-F3** leave/shift-swap
+  creation is self-service only (403 for a manager acting on behalf).
+  Validation: web typecheck / lint / production build pass; **15/15** assertion scripts (the new `manager-b3-assertions.ts` proves 7 allow-listed mutations, 14 safe employee fields, 20 forbidden keys absent, 0 `view=full`, 0 roster writes, 0 SSE clients); a live API matrix of **39/39** checks; Playwright `e2e/manager-operations/` + `e2e/manager-staff/` across **four viewports**; 9 screenshots per viewport; per-surface request budgets measured. All of it on an **isolated local Docker Postgres stack — shared Neon was never touched**, and both `.env` files were restored byte-for-byte (SHA-256 verified). See `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` and `ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md`. **B4 (Reporting) has NOT started — do not begin it, or any later Track B phase, without explicit owner authorization.**
+
 - **BACKEND GAP BATCH 1 COMPLETE — Track C: C-02 · MP0-10 · MP0-09 · C-01 (2026-08-20) — A: BATCH
   COMPLETE / B3 UNBLOCKED ON C-02 / SHARED-NEON DEPLOY STILL GATED.** Backend service + controller +
   DTO + tests + Postman + docs. **No schema, no migration, no seed, no permission added or regranted,

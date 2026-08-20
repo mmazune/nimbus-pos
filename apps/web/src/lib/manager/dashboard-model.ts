@@ -206,10 +206,16 @@ export function toOrderStatusSplit(rows: readonly ManagerOpenOrderRow[]): Manage
 }
 
 /**
- * `/dash/open-orders` returns at most 50 rows and reports `count = page length`
- * (MP0-09). Anything derived from those rows — aging, status split, oldest order —
- * describes the preview, not the branch, whenever the branch total exceeds it.
- * The UI must say so; this helper is what it asks.
+ * `/dash/open-orders` returns a bounded page and reports `count = page length`.
+ * Anything derived from those rows — aging, status split, oldest order — describes
+ * the page, not the branch, whenever the branch total exceeds it. The UI must say
+ * so; this helper is what it asks.
+ *
+ * ✅ FU-3 (backend gap batch 1, 2026-08-20): the endpoint now answers the question
+ * itself with `truncated`, alongside the honest `total` and the server's own
+ * `limit`. That reply is preferred whenever it is present. The length comparison
+ * below survives only as the fallback for an API that predates the fix — it is not
+ * a second source of truth.
  */
 export const OPEN_ORDERS_PREVIEW_CAP = 50;
 
@@ -218,9 +224,23 @@ export function isOpenOrdersPreviewCapped(
   authoritativeOpenOrders: number | null,
 ) {
   if (!preview) return false;
+  if (typeof preview.truncated === "boolean") return preview.truncated;
   const previewLength = preview.orders?.length ?? 0;
-  if (previewLength >= OPEN_ORDERS_PREVIEW_CAP) return true;
+  if (previewLength >= (preview.limit ?? OPEN_ORDERS_PREVIEW_CAP)) return true;
   return authoritativeOpenOrders !== null && authoritativeOpenOrders > previewLength;
+}
+
+/**
+ * The branch-wide open-order count as reported by `/dash/open-orders` itself
+ * (MP0-09 `total`). Returns `null` on a pre-batch API rather than falling back to
+ * `count`, which is the page length — a wrong number is worse than an honest gap.
+ *
+ * This is a CROSS-CHECK, not the headline: the Overview card still binds its KPI to
+ * `/dash/manager.openOrders` (CLAUDE.md §12).
+ */
+export function openOrdersReportedTotal(preview: ManagerOpenOrdersResponse | undefined) {
+  const total = preview?.total;
+  return typeof total === "number" && Number.isFinite(total) ? total : null;
 }
 
 export function oldestOpenOrder(rows: readonly ManagerOpenOrderRow[]): ManagerOpenOrderRow | null {
@@ -361,17 +381,17 @@ export const MANAGER_KPI_BINDINGS: readonly ManagerKpiBinding[] = [
     key: "sales.taxInclusive",
     label: "Sales today (tax-inclusive)",
     endpoint: "GET /api/dash/manager",
-    field: "today.netSales",
+    field: "today.grossSales",
     drillIn: "/manager/reports",
-    note: "netSales is SUM(order.total) and is tax-INCLUSIVE — larger than the ex-tax figure (MP0-10).",
+    note: "MP0-10 was FIXED by backend gap batch 1 (2026-08-20) and the meaning of both fields INVERTED: grossSales is now SUM(order.total) — tax-inclusive — and netSales is grossSales − taxTotal. B2 shipped before that batch and bound this label to today.netSales, which after the batch renders the EX-tax figure under a tax-inclusive label. B3 re-pointed it to today.grossSales (defect B3-D1).",
   },
   {
     key: "sales.exTax",
     label: "Sales excluding tax",
     endpoint: "GET /api/dash/manager",
-    field: "today.grossSales",
+    field: "today.netSales",
     drillIn: "/manager/reports",
-    note: "grossSales is SUM(order.subtotal) and is EX-tax — smaller than the tax-inclusive figure (MP0-10).",
+    note: "netSales = grossSales − taxTotal and is EX-tax — smaller than the tax-inclusive figure. Re-pointed from today.grossSales in B3 alongside sales.taxInclusive (defect B3-D1).",
   },
   {
     key: "sales.tax",
@@ -450,7 +470,7 @@ export const MANAGER_KPI_BINDINGS: readonly ManagerKpiBinding[] = [
     endpoint: "GET /api/dash/manager",
     field: "openOrders",
     drillIn: "/manager/operations",
-    note: "Authoritative count. /dash/open-orders returns count = page length capped at 50 (MP0-09).",
+    note: "Authoritative count, and the locked binding (CLAUDE.md §12). /dash/open-orders.count is the PAGE LENGTH and must never be shown; since backend gap batch 1 that endpoint also publishes an honest `total` — used only as a cross-check and to word the page footnote (MP0-09).",
   },
   {
     key: "openOrders.aging",
@@ -458,7 +478,7 @@ export const MANAGER_KPI_BINDINGS: readonly ManagerKpiBinding[] = [
     endpoint: "GET /api/dash/open-orders",
     field: "orders[].createdAt",
     drillIn: "/manager/operations",
-    note: "Derived from the 50 oldest open orders the endpoint returns — labelled as a preview when capped.",
+    note: "Derived from the oldest open orders the endpoint's bounded page returns — labelled as a preview whenever the endpoint's own `truncated` flag says the branch has more (MP0-09).",
   },
   {
     key: "openOrders.oldest",

@@ -73,7 +73,7 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Operations",
     route: "/manager/operations",
     status: "allowed",
-    liveFrom: "B3",
+    liveFrom: "live",
     summary: "Read-only oversight of tables, orders, and reservations. No checkout, no order entry.",
     permissions: ["pos:floor:read", "pos:table:read", "pos:order:read", "pos:reservation:read"],
   },
@@ -82,7 +82,7 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Staff",
     route: "/manager/staff",
     status: "allowed",
-    liveFrom: "B3",
+    liveFrom: "live",
     summary:
       "Safe-field staff directory, frontline onboarding, Quick PIN admin, attendance, leave and shift-swap review.",
     permissions: [

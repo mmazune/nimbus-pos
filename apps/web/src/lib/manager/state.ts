@@ -41,7 +41,7 @@ export const managerCaveats = {
   tillsShifts:
     "There is no branch-wide tills or shifts list on this backend (GET /api/tills and GET /api/shifts do not exist); tills and shifts can only ever be shown as counts.",
   employees:
-    "The employee endpoint is organization-scoped and returns compensation on the wire, so Staff needs an allow-list projection before it can ship.",
+    "The employee endpoint is organization-scoped and cannot be filtered by branch, so the directory reads the organization and filters to the selected branch in the browser.",
   approvals:
     "The approvals list is only partly branch-scoped, so approval counts must be filtered client-side before they are shown.",
   exports:
