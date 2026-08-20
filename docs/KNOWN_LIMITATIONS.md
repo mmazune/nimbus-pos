@@ -28,8 +28,13 @@
 > **NEW / RETAINED**
 > - **BGB1-L1 — no PDF export exists at all.** Requesting one is an explicit 501; there is no
 >   renderer and adding one is owner decision **OD-10**. `ExportArtifact` rows created **before**
->   2026-08-20 keep their fake `application/pdf` mime type and are still downloadable — they were
->   not deleted (that would be a data migration).
+>   2026-08-20 keep their fake `application/pdf` mime type and were not deleted (that would be a
+>   data migration).
+>   ⚠️ **Corrected by Track B4 (2026-08-20):** this entry previously said those legacy rows "are
+>   still downloadable". They are **not** — `GET /api/reports/exports/:id/download` returns
+>   **404 "Export file not found on disk"** for them, verified live. They still advertise
+>   `status: READY`, so the row and the file disagree; B4 discloses them in words and never offers
+>   a download control (**B4-F5**).
 > - **BGB1-L2 — a Manager token can still opt into compensation.** The gate is the pre-existing
 >   `pos:hr:compensation:read`, which the seeded matrix grants to Owner, **Manager** and Accountant.
 >   Only the *default* payload is guaranteed compensation-free (for every role, including Owner).
@@ -294,6 +299,23 @@ unavailable").
 - **Isolated Neon live QA pending** — the completion contract is unit-tested
   (67/67) but the disposable-branch API matrix / concurrency / query-plan / smoke
   runs were blocked pending Neon MCP auth completion.
+
+## Manager Reports (Track B4, 2026-08-20) — known limitations
+
+Canonical record: `ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md`.
+
+| Limitation | Consequence, and what the UI says |
+| --- | --- |
+| **No PDF renderer** — `POST /reports/export` with `format: PDF` returns **501** (C-01) | CSV is the only export offered anywhere. The catalog footnote states Nimbus has no PDF renderer. The format is **hard-coded** in the request layer, so no caller can ask for one. |
+| **Legacy PDF artifacts advertise `status: READY` but their files 404** (B4-F5) | A run carrying one discloses that Nimbus withdrew its PDF writer and that the file is not downloadable. No PDF control is rendered. |
+| **`/reports/:id` returns no rows** — `rowCount` + an aggregate `summary` only (MP0-08 / C-03) | The detail is a key/value panel. **No table is derived from `rowCount`**, which is labelled *"Records aggregated"* — it counts SOURCE records (219 for SALES_BY_HOUR, whose export is 24 rows). |
+| **No per-order row payload → no graph and no pivot** (C-03) | Neither is built **and neither is advertised** — no menu row, no view-switcher entry. B4-F3 notes 16 of 24 summaries embed a real breakdown array (which the CSV is built from, and which B4 renders), but that is not a pivot source. |
+| ⚠️ **`grossSales` carries two different tax bases** — tax-inclusive at summary level, **ex-tax** inside `topItems[]`/`categories[]` (B4-F2) | Each report declares its own breakdown columns mirroring its CSV header, so the per-item figure is labelled **"Gross sales (ex-tax)"**. A single global label map would mislabel money. Reconciling the backend vocabulary is a backend decision. |
+| **`GET /reports/:id` and the artifact download are org-scoped, not branch-scoped** (MP0-12 / B4-F4) | The API client rejects a run whose own `branchId` is not the active branch, so another branch's money can never render under this branch's name. The route itself is still not branch-guarded. |
+| **`/api/reports` has no server-side `@Max` on `pageSize`** (MP0-11 / C-12) | Every history request sends an explicit bound from one named constant. |
+| **`parameters` is accepted by all 24 generator DTOs but read by none** (B4-F6) | No free-form parameters control is rendered — it would silently do nothing. |
+| **`POST /reports/export` is gated by a *read* permission** (`pos:reports:exports:read`, MP0-13 / B4-F1) | No Manager impact — all export permissions are held. Recorded as a backend guard defect. |
+| **`MENU_ENGINEERING` is `CONDITIONAL` in the catalog but has no POST route** | It is presented as **not yet available** with the API's own note about M8 recipe-costing data quality. Availability requires BOTH an `IMPLEMENTED` status and a real route. |
 
 ## Manager Operations + Staff (Track B3, 2026-08-20) — known limitations
 

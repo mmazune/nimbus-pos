@@ -43,6 +43,26 @@ test.describe("Manager top-nav navigation + landing", () => {
     await page.waitForURL(/\/manager\/overview/, { timeout: 30_000 });
   });
 
+  /**
+   * The first REAL link inside each module's dropdown.
+   *
+   * B1 shipped every module with a single `"<Module> dashboard"` link to its
+   * honest foundation page. **B3 replaced that for Operations and Staff, and B4
+   * for Reports**, so those menus now open onto their first real surface
+   * instead. Settings is the last module still carrying the B1 shape, and keeps
+   * the original expectation until B6.
+   *
+   * This spec was last updated at B2 and had drifted behind both phases; the
+   * invariant it protects — every module dropdown has a real, working link — is
+   * unchanged.
+   */
+  const MODULE_REAL_LINK = {
+    Operations: /^Orders$/i,
+    Staff: /^Directory$/i,
+    Reports: /^Catalog$/i,
+    Settings: /^Settings dashboard$/i,
+  } as const;
+
   for (const label of ["Operations", "Staff", "Reports", "Settings"] as const) {
     test(`${label} opens a dropdown and navigates through its real link`, async ({ page }) => {
       await managerLogin(page);
@@ -57,7 +77,7 @@ test.describe("Manager top-nav navigation + landing", () => {
       const menu = page.getByRole("menu");
       await expect(menu).toBeVisible();
 
-      const realLink = menu.getByRole("menuitem", { name: new RegExp(`^${label} dashboard$`, "i") });
+      const realLink = menu.getByRole("menuitem", { name: MODULE_REAL_LINK[label] });
       await expect(realLink).toBeVisible();
       await realLink.click();
       const slug = label.toLowerCase();
@@ -72,14 +92,17 @@ test.describe("Manager top-nav navigation + landing", () => {
     await page.waitForURL(/\/manager\/overview/);
     test.skip(!isDesktopTopNavViewport(page), "below xl the module bar collapses (OD-4) — proven in shell-parity.spec.ts");
     const menubar = page.locator('[data-operational-top-nav] [role="menubar"]');
-    await menubar.getByRole("menuitem", { name: /^operations$/i }).click();
+    // Settings is the last module whose tree is still mostly not-yet, so it is
+    // where this invariant can still be observed. Operations/Staff (B3) and
+    // Reports (B4) are now built, and their rows are real links by design.
+    await menubar.getByRole("menuitem", { name: /^settings$/i }).click();
 
-    const notYetRow = page.getByRole("menu").getByText(/^Orders$/);
+    const notYetRow = page.getByRole("menu").getByText(/^Branch profile$/);
     await expect(notYetRow).toBeVisible();
-    await expect(page.getByRole("menu").getByRole("link", { name: /^Orders$/ })).toHaveCount(0);
-    // Every not-yet Operations row is tagged "B3" — assert at least one renders, not exactly one.
-    await expect(page.getByRole("menu").getByText(/^B3$/).first()).toBeVisible();
-    await expect(page.getByRole("menu").getByText(/^B3$/)).toHaveCount(4);
+    await expect(page.getByRole("menu").getByRole("link", { name: /^Branch profile$/ })).toHaveCount(0);
+    // Every not-yet Settings row is tagged "B6".
+    await expect(page.getByRole("menu").getByText(/^B6$/).first()).toBeVisible();
+    await expect(page.getByRole("menu").getByText(/^B6$/)).toHaveCount(6);
   });
 
   test("bare /manager redirects to /manager/overview", async ({ page }) => {
@@ -91,11 +114,13 @@ test.describe("Manager top-nav navigation + landing", () => {
 
   test("foundation pages state the boundary instead of showing fabricated data", async ({ page }) => {
     await managerLogin(page);
-    await page.goto("/manager/reports");
+    // Settings is the ONLY surface still on the honest foundation screen:
+    // Overview graduated at B2, Operations and Staff at B3, Reports at B4.
+    await page.goto("/manager/settings");
     await expect(page.getByText(/This surface is not built yet/i)).toBeVisible();
     // Track B2 re-tagged the not-yet badges from the superseded M-P* numbering to
     // the canonical Track B phases, matching the labels the top-nav tree already uses.
-    await expect(page.getByText(/Live data arrives in B4/i)).toBeVisible();
+    await expect(page.getByText(/Live data arrives in B6/i)).toBeVisible();
     await expect(page.locator("body")).not.toContainText(/UGX\s?\d/);
   });
 });

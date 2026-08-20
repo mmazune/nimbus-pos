@@ -75,7 +75,10 @@ test.describe("Manager top-nav keyboard operation", () => {
     await page.getByRole("menuitem", { name: /^reports$/i }).click();
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
-    await menu.getByRole("menuitem", { name: /reports dashboard/i }).click();
+    // Track B4 replaced the "Reports dashboard" foundation link with the module's
+    // first real surface. What this spec proves — a route change closes the
+    // dropdown — is unchanged.
+    await menu.getByRole("menuitem", { name: /^Catalog$/i }).click();
     await page.waitForURL(/\/manager\/reports/, { timeout: 30_000 });
     await expect(page.getByRole("menu")).toHaveCount(0);
   });

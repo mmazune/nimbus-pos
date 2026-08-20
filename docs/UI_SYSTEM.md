@@ -678,6 +678,48 @@ colour; **no photo placeholder** (Nimbus stores no employee image); and the last
 is the **hire date**, not Odoo's contract window, because contracts are excluded from
 the Manager workspace.
 
+## 8d. Rendering an API payload you did not design (Track B4, 2026-08-20)
+
+Reports renders **~90 distinct summary keys across 24 generators** into one panel.
+That is a different problem from a hand-built screen, and B4 established two rules
+for it that any future surface over a generic payload must follow.
+
+### Fail-safe value classification
+
+A value is formatted as **money only if its key is on an explicit list** built by
+reading live responses. Anything unrecognised renders as plain text with a
+humanised label. The tempting alternative — a `/total|amount|sales/i` regex —
+would have formatted `conversionRate` and `noShowRate` as currency.
+
+The cost of the safe default is that a new backend field looks unpolished. The
+cost of the unsafe one is a **mislabelled number**, which is the single defect
+class this workspace has already shipped once (**B3-D1**) and must not ship again.
+
+Money labels state their basis. `grossSales` → *"Sales (tax-inclusive)"*,
+`netSales` → *"Sales (ex-tax)"*. **A bare "Gross"/"Net" is forbidden** anywhere in
+the Manager workspace.
+
+### Curated columns, mirroring the export
+
+Where a payload carries an array, do **not** render "every key on the first
+array". B4's first attempt did, and produced a live mislabel: `grossSales` is
+`SUM(order.total)` (tax-inclusive) at the top level of a summary but
+`SUM(orderItem.subtotal)` (**ex-tax**) inside `topItems[]` and `categories[]` —
+the same field name with two tax bases in one payload (**B4-F2**).
+
+So each report declares its own columns, and those columns **mirror that report's
+CSV header**. Three things follow: labels can state the right basis per depth, raw
+identifiers (`menuItemId`, `categoryId`) stay out because the export omits them
+too, and the on-screen claim *"these rows are what the CSV contains"* is literally
+true rather than approximately true.
+
+### Never fabricate rows from a count
+
+`rowCount` is each generator's count of the source records it aggregated — 219 for
+SALES_BY_HOUR, **whose export is 24 rows**. It is labelled *"Records aggregated"*
+with a sentence saying it is not the export's line count, and no table may be
+derived from it.
+
 ## 9. Known UI inconsistencies (recorded, not yet fixed)
 
 These are functional/architectural inconsistencies out of scope for a UI-polish

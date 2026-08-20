@@ -400,6 +400,19 @@ assert(
  * onboarding, quick-pin (reset/disable/enable), leave review, shift-swap reject.
  * Operations is read-only, and the B2 KPI refresh is the only pre-existing one.
  */
+/**
+ * The Manager mutation allow-list.
+ *
+ * This gate exists so that an additional Manager write is a CONSCIOUS act with a
+ * recorded reason, never an accident. **Track B4 (2026-08-20) added exactly
+ * two**, both on Reports and both owner-scoped by the B4 brief:
+ *
+ *   8. `POST /api/reports/{generator}` — run a report
+ *   9. `POST /api/reports/export`      — create the CSV artifact to download
+ *
+ * The download itself is a GET. Operations remains at zero. Staff remains at the
+ * same four writes, and shift swaps still have no Approve control.
+ */
 const ALLOWED_MUTATION_PATHS = [
   "/api/hr/frontline-staff/onboard",
   "quick-pin/reset",
@@ -408,6 +421,8 @@ const ALLOWED_MUTATION_PATHS = [
   "/review",
   "/approve",
   "/api/dash/kpi/refresh", // pre-existing (B2)
+  "/api/reports/export", // B4
+  "/api/reports/${encodeURIComponent(generatorPath)}", // B4
 ];
 
 const mutationRegex = /method:\s*["'](POST|PATCH|PUT|DELETE)["']/g;
@@ -422,7 +437,10 @@ for (const file of managerFiles) {
     `every mutation in ${file} targets an allow-listed path`,
   );
 }
-assert(managerMutationCount === 7, `exactly 7 manager mutations exist (found ${managerMutationCount})`);
+assert(
+  managerMutationCount === 9,
+  `exactly 9 manager mutations exist — B3's 7 plus B4's generate and export (found ${managerMutationCount})`,
+);
 
 /**
  * The read-only claim is scoped to the surfaces that are read-only.

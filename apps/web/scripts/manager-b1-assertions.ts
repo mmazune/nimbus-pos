@@ -112,18 +112,18 @@ const dropdownMenuKeys = ["operations", "staff", "reports", "settings"] as const
  * The B1 shape was: ONE real link to the module's foundation page, plus an
  * honest not-yet tree naming the phase that would ship each surface.
  *
- * **Track B3 (2026-08-20) superseded that for `operations` and `staff`** — those
- * surfaces are now built, so their trees are real links and the module root is a
- * redirect rather than a foundation page. `reports` and `settings` are untouched
- * and still carry the original B1 shape; they are still checked against it.
+ * **Track B3 (2026-08-20) superseded that for `operations` and `staff`**, and
+ * **Track B4 (2026-08-20) superseded it for `reports`** — those surfaces are now
+ * built, so their trees are real links and the module root is a redirect rather
+ * than a foundation page. `settings` is untouched and still carries the original
+ * B1 shape; it is still checked against it, and will be until B6.
  *
  * What this gate protects is unchanged for BOTH shapes and is asserted for every
  * menu below: no dropdown row may be a fake navigation target, and every row that
  * is not yet available must say so.
  */
-const B1_FOUNDATION_MENUS = ["reports", "settings"] as const;
+const B1_FOUNDATION_MENUS = ["settings"] as const;
 const expectedItemCounts: Record<(typeof B1_FOUNDATION_MENUS)[number], number> = {
-  reports: 2,
   settings: 6,
 };
 

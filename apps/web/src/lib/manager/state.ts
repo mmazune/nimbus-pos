@@ -44,7 +44,12 @@ export const managerCaveats = {
     "The employee endpoint is organization-scoped and cannot be filtered by branch, so the directory reads the organization and filters to the selected branch in the browser.",
   approvals:
     "The approvals list is only partly branch-scoped, so approval counts must be filtered client-side before they are shown.",
+  // Refreshed by Track B4. This previously said the PDF export "returns a
+  // plain-text file" — true before 2026-08-20, stale after it. Backend gap
+  // batch 1 (C-01) deleted that writer: `format: PDF` now returns 501 before
+  // any artifact row is created, and all 37 catalog entries advertise CSV only.
+  // The conclusion is unchanged, but the reason had to stop being wrong.
   exports:
-    "Report exports are CSV-only; the backend's PDF export returns a plain-text file, so no PDF download is offered.",
+    "Report exports are CSV-only; the backend has no PDF renderer and returns 501 for a PDF export, so no PDF download is offered.",
   branchProfile: "The branch profile is read-only — this backend has no branch-update route.",
 } as const;

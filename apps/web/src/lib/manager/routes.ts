@@ -40,7 +40,9 @@ export const managerRoutes = [
     href: "/manager/reports",
     label: "Reports",
     icon: operationalIconNames.reports,
-    match: (pathname: string) => pathname === "/manager/reports",
+    // Track B4 gives Reports real sub-routes (`/catalog`, `/runs`), so — like
+    // Operations and Staff before it — its nav entry matches the whole module.
+    match: (pathname: string) => pathname.startsWith("/manager/reports"),
   },
   {
     href: "/manager/settings",

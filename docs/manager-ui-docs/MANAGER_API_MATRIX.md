@@ -140,6 +140,23 @@ wherever they disagree.** The rest of the row body is the 2026-07-06 draft and w
    a deliberate `?view=full` still works for Manager (follow-up FU-1); the default payload the Staff
    directory fetches is compensation- and PII-free for every role.
 
+> **Track B4 (2026-08-20) executed all 24 generators live.** Every one returned **201** with
+> `status: COMPLETED` synchronously for a Manager token, confirming MP0-16's uniform DTO
+> (`{reportWindow!, dateFrom?, dateTo?, parameters?}`, plus `limit?` on `top-items` alone). Also
+> re-confirmed live: `GET /api/reports/catalog` returns a **bare array of 37** tagged
+> `IMPLEMENTED` 24 / `CONDITIONAL` 1 / `PENDING_LATER` 12, every entry `formats: ["CSV"]`;
+> `POST /api/reports/export` with `format: PDF` → **501**; a legacy PDF artifact's download → **404**
+> (*"Export file not found on disk"*); `CUSTOM` without dates → **400**; and `GET /api/reports/:id`
+> under **another branch's** `X-Branch-Id` → **200** (MP0-12).
+> ⚠️ **New (B4-F2), not previously recorded:** `grossSales` carries **two different tax bases** in the
+> same payload — `SUM(order.total)` (tax-inclusive) at summary level, but
+> `SUM(orderItem.subtotal)` (**ex-tax**) inside `summary.topItems[]` and `summary.categories[]`.
+> ⚠️ **New (B4-F3):** MP0-08's "no rows" is true at the top level, but **16 of 24 summaries embed a
+> real breakdown array** which the CSV export is generated from. This does **not** unblock a pivot —
+> there is still no per-order row payload — so **C-03 stays open**.
+> ⚠️ **New (B4-F4):** `GET /api/reports/exports/:id/download` is org-scoped like `/reports/:id`.
+> See [`ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md`](../../ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md).
+
 **Two further headline corrections to this matrix's body:**
 
 - **Reports: the 17 generator rows below are a subset — the controller exposes 24.** The seven

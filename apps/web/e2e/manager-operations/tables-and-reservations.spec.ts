@@ -25,7 +25,13 @@ test.describe("Manager Operations — tables (shared floor, read-only)", () => {
     await expect(sharedFloorHeading(page)).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("[data-operational-floor-toolbar]")).toBeVisible();
     await expect(page.getByRole("grid").or(page.getByLabel("Operational tables"))).toBeVisible();
-    expect(await page.locator("[data-operational-table-id]").count()).toBeGreaterThan(0);
+    // `expect.poll`, not a bare `count()`: the shared floor renders its toolbar
+    // and grid shell before the table cards arrive, so a one-shot count races
+    // the render and reports 0. Probed live during Track B4 — the surface really
+    // does paint 22 cards with zero console errors; the assertion was the flake.
+    await expect
+      .poll(() => page.locator("[data-operational-table-id]").count(), { timeout: 30_000 })
+      .toBeGreaterThan(0);
     // `.first()`: the shared toolbar badge AND the Manager summary line both say
     // "N tables", which is a strict-mode ambiguity, not a duplicate control.
     await expect(page.getByText(/\d+\s*tables/).first()).toBeVisible();

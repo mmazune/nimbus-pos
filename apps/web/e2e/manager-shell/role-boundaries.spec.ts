@@ -64,16 +64,26 @@ test.describe("Manager role boundaries", () => {
     await page.waitForURL(/\/manager\/overview/);
     for (const tab of MANAGER_TABS.filter((label) => label !== "Me")) {
       await page.goto(`/manager/${tab.toLowerCase()}`);
+      /**
+       * Anchored, not substring.
+       *
+       * A loose `/void/i` matched the Reports catalog's **"Voids Summary
+       * Report"** row — a read-only navigation target whose NAME contains the
+       * word, not a write affordance. Matching on it asserted the opposite of
+       * what this spec means. These are the actual control labels the
+       * operational roles use, so the boundary is still proven exactly.
+       */
       for (const name of [
-        /take payment/i,
-        /collect payment/i,
-        /close order/i,
-        /add item/i,
-        /send to kitchen/i,
-        /approve/i,
-        /reject/i,
-        /void/i,
-        /refund/i,
+        /^take payment$/i,
+        /^collect payment$/i,
+        /^close order$/i,
+        /^add item$/i,
+        /^send to kitchen$/i,
+        /^approve$/i,
+        /^reject$/i,
+        /^void$/i,
+        /^void order$/i,
+        /^refund$/i,
       ]) {
         await expect(page.getByRole("button", { name })).toHaveCount(0);
       }

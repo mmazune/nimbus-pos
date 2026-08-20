@@ -1811,7 +1811,7 @@ apps/web/src/components/manager/me/             (new)
 
 apps/web/src/pages/manager/                     (new)
   index.tsx (→ /manager/overview)  overview.tsx  operations.tsx  staff.tsx
-  reports.tsx  settings.tsx  me.tsx
+  settings.tsx  me.tsx   (reports.tsx removed — now the reports/ module directory)
 
 apps/web/scripts/                               (new)
   manager-p1-assertions.ts  tsconfig.manager-p1-assertions.json
@@ -1954,8 +1954,34 @@ apps/web/src/pages/manager/staff/                (new — replaces staff.tsx)
   index.tsx (→ /manager/staff/directory)  directory.tsx  onboarding.tsx
   quick-pin.tsx  leave.tsx  shift-swaps.tsx
 
+apps/web/src/lib/manager/                        (new — B4 Reports)
+  reports-types.ts      (wire + projected shapes; catalog fields all optional but `key`)
+  reports-catalog.ts    (key→POST-path map, UI categories mirroring the backend's A–H
+                         sections, availability from the API's OWN status — fails closed)
+  reports-model.ts      (FAIL-SAFE money classification; per-report breakdown columns
+                         mirroring each CSV header — see B4-F2)
+  reports-api.ts        (bounded + branch-scoped; cross-branch run rejected at the boundary;
+                         CSV format HARD-CODED; download via response.blob(), never new Blob)
+  reports-route.ts      (URL state validated against real enums)
+  reports-context.ts    (React Query; SHARES the M-P1 report-catalog key — see B4-D1)
+
+apps/web/src/components/manager/reports/         (new — B4)
+  ManagerReportCatalogScreen.tsx   (37 entries; truthful unavailable state, no disabled button)
+  ManagerReportParameterForm.tsx   (ONE form — the DTO really is uniform, MP0-16)
+  ManagerReportSummaryPanel.tsx    (key/value summary + the CSV's own breakdown rows;
+                                    NO table derived from rowCount)
+  ManagerReportRunsScreen.tsx      (persisted, server-paginated history + run detail)
+  index.ts
+
+apps/web/src/pages/manager/reports/              (new — replaces reports.tsx)
+  index.tsx (→ /manager/reports/catalog)  catalog.tsx  runs.tsx
+
+apps/web/e2e/manager-reports/                    (new — B4)
+  fixtures.ts  catalog.spec.ts  generate-and-export.spec.ts  runs-and-evidence.spec.ts
+
 apps/web/scripts/                                (new — B3)
   manager-b3-assertions.ts  tsconfig.manager-b3-assertions.json
+  manager-b4-assertions.ts                       (new — B4)
 
 apps/web/e2e/manager-operations/                 (new — B3)
   fixtures.ts  orders-list.spec.ts  order-detail.spec.ts

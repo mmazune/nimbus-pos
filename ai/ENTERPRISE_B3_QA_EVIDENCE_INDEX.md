@@ -231,6 +231,9 @@ is recorded here rather than quietly left out:
   `apps/api/.env` → `0f7cfb12b37988b23062d37db741d349961e69aadf87c1447a0783389829b48b`,
   `packages/db/.env` → `2dad4d3c5f8762dbaad7b93b8d743cdaf9bf45fadd27a8142c0f237294aa9b75`.
 
-**Teardown and the byte-for-byte `.env` restoration are therefore owed by Track B4 and are recorded
-in `ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md`.** Until that entry exists, treat this worktree's
-`.env` files as QA-pointed.
+**Teardown and the byte-for-byte `.env` restoration were therefore owed by Track B4.**
+
+✅ **SETTLED 2026-08-20 — see `ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md` §9.** The container was
+stopped and **removed**, the API and web servers stopped, ports 3100/4001/55437 verified down, the
+92 QA export CSVs deleted, and both `.env` files restored with their SHA-256 sums re-verified equal
+to the "before" values in §1 above. Shared Neon was never touched.

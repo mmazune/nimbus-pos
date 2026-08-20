@@ -77,7 +77,78 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI Track B3 complete - Manager OPERATIONS + STAFF (2026-08-20) -
+**Enterprise UI Track B4 complete - Manager REPORTS (2026-08-20) -
+A: B4 COMPLETE / B5, B6, B0 and the permissions cutover GATED.** Frontend and
+docs only; no backend, schema, migration, seed, permission or Postman change.
+
+`/manager/reports` becomes a MODULE (its root now redirects) carrying two live
+surfaces - `/reports/catalog` and `/reports/runs` - built on the existing B1/B3
+chrome. No new shared primitive was added. The two `B4`-tagged placeholder rows
+in the B1 menu tree are now real links.
+
+- **Precondition repaired first.** The B4 brief required B3 complete AND
+  committed. It was neither: no B3 commit existed, its Playwright run had been
+  cut off at 245/292, and its report section 10 plus evidence sections 5 and 7
+  were placeholders. The interrupted run was recovered (292 passed, 37.5m, 0
+  failed), the evidence filled in with real numbers, and B3 committed as
+  `c34d12e` before B4 began.
+- **Catalog** lists all 37 entries and takes availability from the API's OWN
+  `status` field - IMPLEMENTED 24, CONDITIONAL 1, PENDING_LATER 12 - so the UI
+  cannot drift from what the backend can run. The 13 non-implemented entries get
+  `generatorPath: null` and are structurally uncallable: no form, no disabled
+  button, and each names the milestone the API itself cites. An unknown status
+  fails closed.
+- **Generate** is ONE shared form. MP0-16 was re-verified live on all 24 routes
+  (all returned 201): every DTO is `{reportWindow!, dateFrom?, dateTo?,
+  parameters?}` and only `top-items` adds `limit?`. CUSTOM requires both dates
+  and the form says so instead of letting the API 400. `parameters` is accepted
+  by every DTO but read by none, so no free-form editor ships (B4-F6).
+- **History is genuinely persisted** - verified before it was built, because the
+  brief required an honest session-only fallback otherwise. `GET /api/reports`
+  is a real server-paginated, branch-scoped read fed by the endpoint's `total`.
+- **Export is CSV-only and the format is hard-coded** - there is no format
+  parameter, so no caller can request a PDF. `format: PDF` returns 501
+  (re-verified live) and a legacy pre-2026-08-20 PDF artifact's download returns
+  404; those artifacts are disclosed in prose and never offered as a control.
+  The download streams the server's bytes via `response.blob()`; `new Blob(`
+  appears nowhere in the Manager tree.
+- **No graph and no pivot, and neither is advertised** - gated on C-03.
+  `ManagerViewSwitcher` is deliberately not mounted on Reports.
+- **Defect found and fixed (B4-D1).** The first implementation added a second
+  query key for `/api/reports/catalog`, which the M-P1 readiness strip already
+  fetches on every Manager page, so the catalog page issued that request TWICE
+  per load. Reports now shares the readiness strip's key and fetcher and
+  projects with `select` - one endpoint, one cache entry, two consumers.
+- **Defect caught before shipping (B4-F2).** `grossSales` is tax-inclusive at
+  summary level but ex-tax inside `topItems[]` and `categories[]` - the same
+  field name with two tax bases. A generic "render every key" breakdown
+  mislabelled per-item ex-tax money as tax-inclusive, so each report now
+  declares its own columns, mirroring its CSV header. Money uses fail-safe
+  classification: an unrecognised key renders as text, never guessed into
+  currency. `rowCount` is labelled "Records aggregated" (219 for SALES_BY_HOUR,
+  whose export is 24 rows) and no table may be derived from it.
+- **Cross-branch reads fail safe at the API-client boundary** - MP0-12
+  re-verified live: another branch's run returns 200 from `/reports/:id`.
+- **Live money cross-check:** DAILY_SALES, `/dash/today-summary` and
+  `/dash/manager` agree exactly - gross 33,014,100 = net 27,978,300 + tax
+  5,035,800, subtotal 28,107,000.
+
+Validated on the same isolated local Docker Postgres stack B3 used (never shared
+Neon): web typecheck, lint and build pass; 16/16 assertion scripts including the
+new `manager-b4-assertions`; Playwright `e2e/manager-reports/` 152/152 across
+four viewports (38 each, 0 skipped) with CSV file CONTENTS asserted rather than
+just status; 10 screenshots at 1440x900 and 1280x680 viewed; per-surface budgets
+at or under 4 requests; zero console errors; `/api/health` ok. Six findings
+recorded and none implemented (B4-F1 through B4-F6). See
+`ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md`.
+
+**B5 (Accounting), B6 (Settings), B0 and the C-21 permissions cutover are NOT
+started. Do not begin any of them without explicit authorization.** Do not add a
+PDF affordance, a graph or pivot view, a second catalog query key, a
+client-built CSV, a row table derived from `rowCount`, or a delete/edit control
+on run history.
+
+**Prior status (superseded above) - Enterprise UI Track B3 complete - Manager OPERATIONS + STAFF (2026-08-20) -
 A: B3 COMPLETE / B4 GATED.** Frontend and docs only; no backend, schema,
 migration, seed, permission or Postman change.
 

@@ -98,9 +98,14 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Reports",
     route: "/manager/reports",
     status: "allowed",
-    liveFrom: "B4",
+    liveFrom: "live",
     summary: "Report catalog, generation, history/detail, and export with a truthful unavailable state.",
-    permissions: ["pos:reports:history:read", "pos:reports:exports:read"],
+    permissions: [
+      "pos:reports:catalog:read",
+      "pos:reports:history:read",
+      "pos:reports:exports:read",
+      "pos:reports:exports:download",
+    ],
   },
   {
     key: "settings",

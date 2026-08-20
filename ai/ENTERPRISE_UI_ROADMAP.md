@@ -895,7 +895,7 @@ zero-bill copy) and **F-C3-6** (readiness badge copy) belong to C4 and C5/C6 res
                         │  control panel · search/filters · breadcrumb · pager
        ┌────────────────┼───────────────┬───────────────┬────────┴────────┐
        ▼                ▼               ▼               ▼                 ▼
-   B2 Overview ✅   B3 Ops+Staff ✅   B4 Reports (M)  B6 Settings (M)  [B5 waits on B0]
+   B2 Overview ✅   B3 Ops+Staff ✅   B4 Reports ✅   B6 Settings (M)  [B5 waits on B0]
        │                │               │               │
        │ live mode      │ directory     │ graph/pivot   │ settings routes
        │ ◀── C-04       │ ✅◀── C-02    │ 🔴◀── C-03    │ ◀── B0
@@ -940,7 +940,7 @@ permission/seed cutover before any AP/AR/Budget UI**.
 | B | **B1** | Manager **top-nav shell**: module bar, click dropdowns, control panel, chip search, pager, view switcher, breadcrumb | **L** | ✅ **COMPLETE (2026-08-20).** Blocks B2–B7 (still gated on their own owner go). Shared-shell variant, frontline unchanged |
 | B | **B2** | Manager Overview — Odoo C10 KPI card grid over `/dash/*`, truthful checklists, degraded stream | **M** | ✅ **COMPLETE (2026-08-20).** 8 cards, 9 bounded reads, polled (C-04 still open). Blocks nothing; B3–B7 stay gated |
 | B | **B3** | Operations (read-only lists/forms/floor) + Staff (kanban directory, onboarding, Quick-PIN table, leave & swap review) | **L** | ✅ **COMPLETE (2026-08-20).** 8 surfaces, 7 allow-listed mutations, 0 `view=full`, 0 roster writes. Shift-swap = **Outcome C** (reject only, roster integrity proven live). Chatter **still gated on B0** and NOT built; exceptions + attendance **deferred with reasons**. FU-3 carried — **and a defect it understated (B3-D1) found and fixed**. Blocks nothing; B4–B7 stay gated |
-| B | **B4** | Reports — catalog, one generic generate form, history, summary detail, **CSV-only** export | **M** | B1. **No PDF — enforced by the backend since 2026-08-20 (C-01: `format: PDF` → 501, catalog advertises CSV only)**. 🔴 Graph/pivot gated on **C-03** |
+| B | **B4** | Reports — catalog, one generic generate form, history, summary detail, **CSV-only** export | **M** | ✅ **COMPLETE (2026-08-20).** 37-entry catalog driven by the API's own status (24/1/12), one DTO-correct generate form, server-paginated persisted history, summary detail + real CSV. **No PDF affordance** (C-01 501 re-verified live); **graph/pivot NOT built and NOT advertised** — C-03 still open. Found + fixed **B4-D1** (duplicate catalog query) and recorded **B4-F2** (`grossSales` means tax-inclusive at summary level but ex-tax inside `topItems`/`categories`). Blocks nothing; B5–B7 stay gated |
 | B | **B5** | Accounting suite over ~90 endpoints — 7-menu tree, sub-phased B5.1…B5.6 | **L** | 🔴 **B0 go** + B1 (+ B3 primitives). No financial statements. 🔴 **C-21: 38 AP/AR/Budget routes are 403 for every role — their permissions were never seeded** |
 | B | **B6** | Settings — C11 two-pane: branch (read-only), devices, printers (metadata), terminals (stub), alerts (rules read-only), sync (no diff), org settings | **M** | B1 + B0. Branch read-only per **C-10** |
 | B | **B7** | Owner dashboard variant — same shell, wider scope, explicit org-vs-branch scope labels | **M** | B1, B2, B0. Needs **OD-1** |
@@ -1016,9 +1016,21 @@ The report resolves the two things the roadmap required it to state explicitly:
 under the label "Sales today (tax-inclusive)". The KPI bindings are re-pointed and pinned by an
 assertion. See the report §3.
 
-### 5. **B4 — Reporting** *(NOT started — needs its own owner go)*
+### 5. **B4 — Reporting** *(✅ COMPLETE 2026-08-20 — `ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md`)*
 
-The next runtime phase per the sequencing above. Nothing in it is begun.
+Shipped as a two-surface module (`/manager/reports/catalog`, `/manager/reports/runs`) with the module
+root redirecting, exactly as B3 converted Operations and Staff. Every acceptance gate in §B4 above was
+met: the generate payload matches the verified uniform DTO (MP0-16, re-verified live on all 24
+routes), **no code path synthesizes a file client-side**, **no PDF option is reachable**, no row table
+is derived from `/reports/:id`, every history list sends a bounded page size, and a run's own
+`branchId` is displayed and enforced (MP0-12).
+
+**Graph and pivot stayed gated on C-03 and are not advertised** — no menu row, no view switcher entry.
+B4-F3 records the nuance that 16 of 24 summaries embed a real breakdown array (which the CSV is built
+from, and which B4 renders), but there is still no per-order row payload, so **C-03 does not move**.
+
+**The next runtime phases are B5 (Accounting), B6 (Settings) and B0 (API verification). None is
+started, and B5 additionally needs the C-21 permissions/seed cutover budgeted first.**
 
 ---
 

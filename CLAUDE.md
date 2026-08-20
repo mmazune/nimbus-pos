@@ -127,7 +127,7 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 | **Waiter** | **Floor · Reservations · Me** | Table-centric order entry (order builder behind Floor table selection) |
 | **Cashier** | **Floor · Till · Me** (Prompt C1–C3, default `/cashier/floor`; Queue/Receipts are hidden compatibility routes reachable by direct URL only, retire C4/C5) | Payment collection, receipts, till/close (C2 delivered table→bill resolution + the canonical settlement workspace + Find bill; **C3 delivered payment / partial / split / close execution inside that workspace**; receipts + refunds arrive C4) |
 | **Supervisor** | **Floor · Reservations · Approvals · Me** | Read-first oversight; table-control workspace behind Floor selection |
-| **Manager** | **Overview · Operations · Staff · Reports · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). Overview/Me are direct links; **Operations and Staff are now MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`); Reports/Settings still host one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**. Reports (B4) and Settings (B6) data is **NOT started** |
+| **Manager** | **Overview · Operations · Staff · Reports · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). Overview/Me are direct links; **Operations and Staff are now MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`); **Reports is now a MODULE too** (`/reports/{catalog,runs}`, Track B4); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces — a 37-entry catalog driven by the API's own availability status, one DTO-correct generate form, persisted run history and CSV-only export**. Settings (B6) data is **NOT started** |
 
 ⚠️ **Cashier Floor-First reconstruction (locked target, C3 complete / C4 not started, 2026-08-20):**
 Cashier's Queue-first navigation above is **historically complete and demo-ready but superseded** as
@@ -157,7 +157,61 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**ENTERPRISE UI TRACK B3 COMPLETE — Manager OPERATIONS + STAFF (2026-08-20) — A: B3 COMPLETE / B4
+**ENTERPRISE UI TRACK B4 COMPLETE — Manager REPORTS (2026-08-20) — A: B4 COMPLETE / B5 · B6 · B0 ·
+PERMISSIONS-CUTOVER GATED.** Frontend + docs only; **no backend / schema / migration / seed /
+permission / Postman change**. `/manager/reports` becomes a **module** (the root now redirects)
+carrying two live surfaces — **`/reports/catalog`** and **`/reports/runs`** — built on the B1/B3
+chrome with no new shared primitive. The B1 menu tree's two `B4`-tagged placeholder rows are now
+real links.
+⚠️ **The B4 precondition failed and was repaired first:** Track B3 was **not committed**, its
+Playwright run had been **cut off at 245/292**, and its report §10 + evidence §5/§7 were
+placeholders. The interrupted run was recovered (**292 passed, 37.5m, 0 failed**), the evidence was
+filled in with real numbers, and **B3 was committed as `c34d12e`** before B4 began.
+**CATALOG** lists all **37** entries and **drives availability from the API's own `status` field**
+(`IMPLEMENTED` 24 / `CONDITIONAL` 1 / `PENDING_LATER` 12 — the exact 24-of-37 split M-P0 verified),
+so the UI cannot drift from what the backend can run. The 13 non-implemented entries have
+`generatorPath: null` — **structurally uncallable**, no form and no disabled button, each naming the
+milestone the API itself cites (e.g. *"needs M30 — Payroll Engine + Pay Runs + Payslips"*). An
+unknown status **fails closed**.
+**GENERATE** is ONE shared form, because **MP0-16 was re-verified live on all 24 routes** (all
+returned **201**): every DTO is `{reportWindow!, dateFrom?, dateTo?, parameters?}` and `top-items`
+alone adds `limit?`. `CUSTOM` requires both dates (the API 400s otherwise) and the form says so
+rather than letting the request fail. `parameters` is accepted by every DTO but **read by none**, so
+no free-form editor ships (B4-F6).
+**HISTORY is genuinely persisted** — verified before it was built, because the brief required an
+honest session-only fallback otherwise: `GET /api/reports` is a real server-paginated branch-scoped
+read fed by the endpoint's own `total`.
+**EXPORT IS CSV-ONLY AND THE FORMAT IS HARD-CODED** — there is no format parameter, so no caller can
+request a PDF; `format: PDF` → **501** re-verified live, and a legacy pre-2026-08-20 PDF artifact's
+download → **404**. Those artifacts are **disclosed in prose and never offered as a control**. The
+download streams the server's bytes via `response.blob()`; **`new Blob(` appears nowhere in the
+Manager tree.**
+🔴 **Graph and pivot are NOT built and NOT advertised** (gated on **C-03**); `ManagerViewSwitcher` is
+deliberately unmounted and no menu row hints at them.
+⚠️ **Defect found and fixed (B4-D1):** the first implementation added a second query key for
+`/api/reports/catalog`, which the M-P1 readiness strip already fetches on every Manager page — the
+catalog page issued **`2x GET /api/reports/catalog`** per load. Reports now **shares the readiness
+strip's key and fetcher** and projects with `select`: one endpoint, one cache entry, two consumers.
+⚠️ **Defect caught before shipping (B4-F2):** `grossSales` is **tax-inclusive** at summary level but
+**ex-tax** inside `topItems[]`/`categories[]` — the same field name with two tax bases. A generic
+"render every key" breakdown mislabelled per-item ex-tax money as tax-inclusive, so **each report now
+declares its own columns, mirroring its CSV header**. Money uses **fail-safe classification**: an
+unrecognised key renders as text, never guessed into currency. `rowCount` is labelled **"Records
+aggregated"** (219 for SALES_BY_HOUR, whose export is 24 rows) and no table may derive from it.
+**Cross-branch reads fail safe at the API-client boundary** (MP0-12 re-verified live: another
+branch's run returns **200**).
+**Live money cross-check:** DAILY_SALES, `/dash/today-summary` and `/dash/manager` agree exactly —
+gross **33,014,100** = net **27,978,300** + tax **5,035,800**, subtotal **28,107,000**.
+Validated on the same isolated local Docker stack B3 used (**never shared Neon**): web typecheck /
+lint / build pass; **16/16** assertion scripts incl. the new `manager-b4-assertions`; Playwright
+`e2e/manager-reports/` **152/152 across four viewports** (38 each, 0 skipped) with **CSV file
+contents asserted**, not just status; 10 screenshots at 1440×900 + 1280×680 viewed; per-surface
+budgets **≤4 requests**; zero console errors; `/api/health` → ok. Six findings recorded and **none
+implemented** (B4-F1…F6). See `ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md`. **B5 (Accounting),
+B6 (Settings), B0 and the C-21 permissions cutover are NOT started — do not begin any of them
+without explicit authorization.**
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B3 COMPLETE — Manager OPERATIONS + STAFF (2026-08-20) — A: B3 COMPLETE / B4
 GATED.** Frontend + docs only; **no backend / schema / migration / seed / permission / Postman
 change**. Operations and Staff become **modules** (`/manager/operations` and `/manager/staff` now
 redirect) carrying **eight live surfaces**, built on the B1 chrome primitives — B3 is the first phase
@@ -750,11 +804,11 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
 - Do not alter API contracts, DTOs, Prisma schema, migrations, seed/demo import,
   permissions, auth semantics, or branch isolation.
 - Do not edit Postman collections unless an actual contract change requires it.
-- Manager reconstruction **M-P1, Track B1 (top-nav shell), Track B2 (Overview dashboard) and Track
-  B3 (Operations + Staff) are COMPLETE** (shell, nav, session guard, branch switcher, Manager Me, the
-  Odoo-style top module bar + chrome primitives, the live eight-card Overview dashboard, and the
-  eight Operations/Staff surfaces). **Reports and Settings still render the honest foundation
-  screen.** Do not add an approval **decision** control to Overview, render a KPI that is not in
+- Manager reconstruction **M-P1, Track B1 (top-nav shell), Track B2 (Overview dashboard), Track B3
+  (Operations + Staff) and Track B4 (Reports) are COMPLETE** (shell, nav, session guard, branch
+  switcher, Manager Me, the Odoo-style top module bar + chrome primitives, the live eight-card
+  Overview dashboard, the eight Operations/Staff surfaces, and the two Reports surfaces).
+  **Only Settings still renders the honest foundation screen.** Do not add an approval **decision** control to Overview, render a KPI that is not in
   `MANAGER_KPI_BINDINGS`, add an SSE/`EventSource` client (gated on C-04), add a charting dependency,
   fabricate a revenue trend (no bucketed series exists and `/dash/snapshots` needs
   `pos:dash:owner:read`, which Manager does not hold), take the open-order count from
@@ -762,15 +816,32 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   ⚠️ **B3-D1:** backend gap batch 1 *inverted* `grossSales`/`netSales` (`grossSales` is now
   tax-INCLUSIVE, `netSales = gross − tax`); B3 re-pointed the two sales KPI bindings and pinned them
   by assertion — **do not "fix" them back**.
-  **B4…B7 (and B0, B5's sub-phases) are NOT started and plan from `ai/ENTERPRISE_UI_ROADMAP.md`
-  Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. Do not begin B4 (Reporting) or any later
-  Track B phase without explicit authorization.**
+  **B5…B7 (and B0, B5's sub-phases) are NOT started and plan from `ai/ENTERPRISE_UI_ROADMAP.md`
+  Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. Do not begin B5 (Accounting), B6
+  (Settings), B0 or the permissions cutover without explicit authorization.**
   Do not add a Manager More/Approvals tab, change the `/manager/overview` landing, turn
   `lib/manager/permissions.ts` into a
   `hasPermission()` check, add tills/shifts chips or lists (those routes do not exist), offer a PDF
   report export (the backend 501s on `format: PDF`), build a branch-profile edit form
   (`PATCH /branches/:id` does not exist), fork any shared shell/floor/profile component for Manager,
   or add Accounting as a seventh top-nav menu (OD-3 stays open, gated on B5).
+- **Track B4 boundaries — do not cross without explicit authorization.** **No PDF affordance
+  anywhere** — `format: PDF` returns **501** and there is no renderer (OD-10 open); prose that
+  discloses the absence is allowed, a control is not, and the assertion targets code
+  (`format: "PDF"`, `application/pdf`, `.pdf`) precisely so the disclosure may stay. **No graph or
+  pivot view, and none advertised** — gated on **C-03**; `ManagerViewSwitcher` is deliberately not
+  mounted on Reports. Do not render a row table derived from `rowCount` (it counts SOURCE records —
+  219 for SALES_BY_HOUR, whose export is 24 rows — and is labelled *"Records aggregated"*). Do not
+  relabel `grossSales`/`netSales` as a bare "Gross"/"Net", and ⚠️ **do not reuse the summary-level
+  label for the per-item one: `grossSales` is tax-INCLUSIVE at summary level but EX-TAX inside
+  `topItems[]`/`categories[]` (B4-F2)** — each report declares its own breakdown columns, mirroring
+  its CSV header. Do not add a second fetcher or query key for `/api/reports/catalog` — it is shared
+  with the M-P1 readiness strip on purpose (**B4-D1**: a second key made the page fetch it twice).
+  Do not build a CSV in the browser (`new Blob(` appears nowhere in the Manager tree — the download
+  streams the server's bytes). Do not open a run whose own `branchId` is not the active branch
+  (**MP0-12** — `/reports/:id` resolves by `orgId` alone; the client rejects it at the API boundary).
+  Do not add a delete, edit or rename control to run history. Do not offer a free-form `parameters`
+  editor (all 24 DTOs accept it; **none reads it** — B4-F6).
 - **Track B3 boundaries — do not cross without explicit authorization.** **Operations is strictly
   read-only**: do not add any mutation, `useMutation` hook, checkout/tender/order-builder control,
   order close/void/discount, or table-status write to `components/manager/operations`. **Staff writes

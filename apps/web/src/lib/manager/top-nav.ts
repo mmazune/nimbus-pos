@@ -1,6 +1,7 @@
 import type { OperationalTopNavGroup, OperationalTopNavMenu } from "@/components/pos-shell/OperationalTopNav";
 
 import { MANAGER_OPERATIONS_ROUTES } from "./operations-route";
+import { MANAGER_REPORTS_ROUTES } from "./reports-route";
 import { managerRoutes } from "./routes";
 import { MANAGER_STAFF_ROUTES } from "./staff-route";
 
@@ -104,13 +105,25 @@ const MANAGER_MENU_GROUPS: ManagerMenuGroupsByKey = {
   ],
   reports: [
     {
-      items: [{ key: "reports-dashboard", label: "Reports dashboard", href: "/manager/reports", available: true }],
-    },
-    {
       heading: "Reporting",
       items: [
-        { key: "reports-catalog", label: "Catalog", href: "/manager/reports", available: false, notYetNote: "B4" },
-        { key: "reports-runs", label: "Report runs", href: "/manager/reports", available: false, notYetNote: "B4" },
+        {
+          key: "reports-catalog",
+          label: "Catalog",
+          href: MANAGER_REPORTS_ROUTES.catalog,
+          available: true,
+        },
+        {
+          key: "reports-runs",
+          label: "Report runs",
+          href: MANAGER_REPORTS_ROUTES.runs,
+          available: true,
+        },
+        // Graph and pivot are deliberately ABSENT rather than listed as not-yet.
+        // The roadmap gates them on C-03 and requires that the UI "does not
+        // advertise them" — a menu row tagged with a phase would advertise them,
+        // because Nimbus has no row payload to pivot over and nothing is
+        // scheduled to add one. See ai/ENTERPRISE_B4_REPORTS_COMPLETION_REPORT.md.
       ],
     },
   ],

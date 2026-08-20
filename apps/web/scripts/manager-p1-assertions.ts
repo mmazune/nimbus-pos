@@ -113,6 +113,10 @@ for (const item of manager) {
   const landingConstants: Record<string, string> = {
     MANAGER_OPERATIONS_LANDING: "/manager/operations/orders",
     MANAGER_STAFF_LANDING: "/manager/staff/directory",
+    // Track B4 converts Reports to a module the same way B3 converted
+    // Operations and Staff. The invariant this file protects is unchanged —
+    // the locked surface must still resolve to a real page inside the shell.
+    MANAGER_REPORTS_LANDING: "/manager/reports/catalog",
   };
   const landing = landingConstants[destination as string] || (destination as string).replace(/["']/g, "");
   const landingPage = `apps/web/src/pages${landing}.tsx`;
@@ -348,13 +352,21 @@ for (const token of ["UGX ", "0.00", "Sample", "Lorem", "placeholder data", "TOD
 // Track B3 (2026-08-20): /manager/operations and /manager/staff graduated the
 // same way, into modules of real surfaces — their invariants live in
 // `manager-b3-assertions.ts`.
+// Track B4 (2026-08-20): /manager/reports graduated into a module of two real
+// surfaces — its invariants live in `manager-b4-assertions.ts`.
 //
 // What remains true, and is what this check now proves: every surface that is
 // still NOT built renders the honest foundation screen rather than an empty page
-// or fabricated data. Two are left — Reports (B4) and Settings (B6).
-const BUILT_MANAGER_SURFACES = ["/manager/me", "/manager/overview", "/manager/operations", "/manager/staff"];
+// or fabricated data. One is left — Settings (B6).
+const BUILT_MANAGER_SURFACES = [
+  "/manager/me",
+  "/manager/overview",
+  "/manager/operations",
+  "/manager/staff",
+  "/manager/reports",
+];
 const foundationRoutes = manager.filter((navItem) => !BUILT_MANAGER_SURFACES.includes(navItem.href));
-assert(foundationRoutes.length === 2, "two Manager surfaces still ship the honest foundation screen");
+assert(foundationRoutes.length === 1, "one Manager surface still ships the honest foundation screen");
 for (const item of foundationRoutes) {
   const page = source(`apps/web/src/pages${item.href}.tsx`);
   assert(page.includes("ManagerFoundationScreen"), `${item.href} renders the honest foundation screen`);
