@@ -261,7 +261,7 @@ describe('AccountsPayableService', () => {
       prisma.supplier.findMany.mockResolvedValue([mockSupplier]);
       prisma.supplier.count.mockResolvedValue(1);
 
-      const result = await service.listSuppliers({ orgId: 'org-1' });
+      const result = await service.listSuppliers({ orgId: 'org-1', branchId: 'branch-1' });
       expect(result).toEqual({ data: [mockSupplier], total: 1, skip: 0, take: 50 });
     });
   });
@@ -350,7 +350,7 @@ describe('AccountsPayableService', () => {
       };
       prisma.vendorBill.findFirst.mockResolvedValue(fullBill);
 
-      const result = await service.getVendorBill({ orgId: 'org-1', billId: 'bill-1' });
+      const result = await service.getVendorBill({ orgId: 'org-1', branchId: 'branch-1', billId: 'bill-1' });
       expect(result).toEqual(fullBill);
     });
 
@@ -358,7 +358,7 @@ describe('AccountsPayableService', () => {
       prisma.vendorBill.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.getVendorBill({ orgId: 'org-1', billId: 'nonexistent' }),
+        service.getVendorBill({ orgId: 'org-1', branchId: 'branch-1', billId: 'nonexistent' }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -378,6 +378,7 @@ describe('AccountsPayableService', () => {
 
       const result = await service.approveVendorBill({
         orgId: 'org-1',
+        branchId: 'branch-1',
         billId: 'bill-1',
         userId: 'user-1',
       });
@@ -397,7 +398,7 @@ describe('AccountsPayableService', () => {
       prisma.vendorBill.findFirst.mockResolvedValue(mockBillApproved);
 
       await expect(
-        service.approveVendorBill({ orgId: 'org-1', billId: 'bill-1', userId: 'user-1' }),
+        service.approveVendorBill({ orgId: 'org-1', branchId: 'branch-1', billId: 'bill-1', userId: 'user-1' }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -405,7 +406,7 @@ describe('AccountsPayableService', () => {
       prisma.vendorBill.findFirst.mockResolvedValue({ ...mockBillApproved, status: 'PAID' });
 
       await expect(
-        service.approveVendorBill({ orgId: 'org-1', billId: 'bill-1', userId: 'user-1' }),
+        service.approveVendorBill({ orgId: 'org-1', branchId: 'branch-1', billId: 'bill-1', userId: 'user-1' }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -413,7 +414,7 @@ describe('AccountsPayableService', () => {
       prisma.vendorBill.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.approveVendorBill({ orgId: 'org-1', billId: 'ghost', userId: 'user-1' }),
+        service.approveVendorBill({ orgId: 'org-1', branchId: 'branch-1', billId: 'ghost', userId: 'user-1' }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -682,7 +683,7 @@ describe('AccountsPayableService', () => {
       ];
       prisma.vendorBill.findMany.mockResolvedValue(openBills);
 
-      const result = await service.getApAgingSummary({ orgId: 'org-1' });
+      const result = await service.getApAgingSummary({ orgId: 'org-1', branchId: 'branch-1' });
 
       expect(result).toHaveProperty('bySupplier');
       expect(Array.isArray(result.bySupplier)).toBe(true);
@@ -771,7 +772,7 @@ describe('AccountsPayableService', () => {
       prisma.recurringBillProfile.findMany.mockResolvedValue([]);
       prisma.recurringBillProfile.count.mockResolvedValue(0);
 
-      const result = await service.listRecurringProfiles({ orgId: 'org-1', query: {} });
+      const result = await service.listRecurringProfiles({ orgId: 'org-1', branchId: 'branch-1', query: {} });
       expect(result).toEqual({ data: [], total: 0, skip: 0, take: 50 });
     });
   });
@@ -783,6 +784,7 @@ describe('AccountsPayableService', () => {
       await expect(
         service.updateRecurringProfile({
           orgId: 'org-1',
+          branchId: 'branch-1',
           profileId: 'nonexistent',
           userId: 'user-1',
           dto: { isActive: false },
@@ -807,6 +809,7 @@ describe('AccountsPayableService', () => {
 
       const result = await service.updateRecurringProfile({
         orgId: 'org-1',
+        branchId: 'branch-1',
         profileId: 'rp-1',
         userId: 'user-1',
         dto: { isActive: false },
@@ -885,11 +888,19 @@ describe('AccountsPayableService', () => {
       await expect(
         service.generateBillFromRecurring({
           orgId: 'org-1',
+          branchId: 'branch-1',
           userId: 'user-1',
           profileId: 'nonexistent',
         }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    // ── PC-04 ──────────────────────────────────────────────────────────
+    // The old guard compared `lastBill.dueDate === profile.nextDueDate`, but
+    // the generating transaction ADVANCES nextDueDate in the same breath, so
+    // after any generation the two could never be equal: the
+    // ConflictException was unreachable and a second call issued a SECOND BILL
+    // for the same supplier. Two checks replace it — see the service doc block.
 
     it('should throw ConflictException if duplicate bill for same cycle', async () => {
       const lastBill = { id: 'bill-prev', dueDate: new Date('2025-03-01') };
@@ -902,10 +913,151 @@ describe('AccountsPayableService', () => {
       await expect(
         service.generateBillFromRecurring({
           orgId: 'org-1',
+          branchId: 'branch-1',
           userId: 'user-1',
           profileId: 'rp-1',
         }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    /**
+     * PC-04 check 1, stated with explicit dates.
+     *
+     * The profile is MONTHLY and has just been generated, so its pointer has
+     * moved on: nextDueDate 2025-03-01 -> 2025-04-01, lastGeneratedBillId ->
+     * the March bill. Under the OLD guard this state was the bug: March !=
+     * April, so a second call sailed through and billed April immediately.
+     * The repaired check asks the bill table for a bill on the cycle it is
+     * about to bill, so a rewound pointer is caught too.
+     */
+    it('PC-04: 409 when a bill already exists for the cycle being billed', async () => {
+      const advancedProfile = {
+        ...activeProfile,
+        nextDueDate: new Date('2025-04-01'),
+        lastGeneratedAt: new Date('2025-03-01T09:00:00.000Z'),
+        lastGeneratedBillId: 'bill-march',
+      };
+      prisma.recurringBillProfile.findFirst.mockResolvedValue(advancedProfile);
+      // A bill already carries dueDate 2025-04-01 for this profile.
+      prisma.vendorBill.findFirst.mockResolvedValue({
+        id: 'bill-april',
+        billNumber: 'BILL-000042',
+        dueDate: new Date('2025-04-01'),
+      });
+
+      await expect(
+        service.generateBillFromRecurring({
+          orgId: 'org-1',
+          branchId: 'branch-1',
+          userId: 'user-1',
+          profileId: 'rp-1',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      // Nothing was written.
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    /**
+     * PC-04 check 2 — the check that makes an immediate repeat a 409.
+     *
+     * MONTHLY cadence, last generated 2 days ago: the next generation is not
+     * due for ~28 more days, so a double-click must be refused even though
+     * check 1 finds no bill for the (already advanced) April cycle.
+     */
+    it('PC-04: 409 on an immediate repeat — cadence has not elapsed', async () => {
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      prisma.recurringBillProfile.findFirst.mockResolvedValue({
+        ...activeProfile,
+        nextDueDate: new Date('2025-04-01'),
+        lastGeneratedAt: twoDaysAgo,
+        lastGeneratedBillId: 'bill-march',
+      });
+      prisma.vendorBill.findFirst.mockResolvedValue(null); // no bill for April yet
+
+      await expect(
+        service.generateBillFromRecurring({
+          orgId: 'org-1',
+          branchId: 'branch-1',
+          userId: 'user-1',
+          profileId: 'rp-1',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    /**
+     * PC-04, the other half of the contract: refusing a duplicate must not
+     * refuse the LEGITIMATE next-period bill. Same profile, same MONTHLY
+     * cadence, but last generated 35 days ago — one full cadence has elapsed,
+     * so this call must succeed.
+     */
+    it('PC-04: 201-equivalent — the next-period bill still generates', async () => {
+      const thirtyFiveDaysAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
+      prisma.recurringBillProfile.findFirst.mockResolvedValue({
+        ...activeProfile,
+        nextDueDate: new Date('2025-04-01'),
+        lastGeneratedAt: thirtyFiveDaysAgo,
+        lastGeneratedBillId: 'bill-march',
+      });
+      prisma.vendorBill.findFirst.mockResolvedValue(null);
+
+      const aprilBill = {
+        ...mockBillDraft,
+        id: 'bill-april',
+        sourceType: 'RECURRING',
+        recurringProfileId: 'rp-1',
+        dueDate: new Date('2025-04-01'),
+        lines: [],
+        supplier: { id: 'sup-1', name: 'Fresh Produce Co', code: 'SUPP-001' },
+      };
+      prisma.$transaction.mockImplementation(async (fn: any) =>
+        fn({
+          vendorBill: { create: jest.fn().mockResolvedValue(aprilBill) },
+          recurringBillProfile: { update: jest.fn().mockResolvedValue({}) },
+        }),
+      );
+
+      const result = await service.generateBillFromRecurring({
+        orgId: 'org-1',
+        branchId: 'branch-1',
+        userId: 'user-1',
+        profileId: 'rp-1',
+      });
+
+      expect(result.id).toBe('bill-april');
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'RECURRING_BILL_GENERATED' }),
+      );
+    });
+  });
+
+  // ── PC-03 fail-closed ──────────────────────────────────────────────────
+  describe('PC-03 branch scoping is fail-closed', () => {
+    it('refuses to build an org-wide read when no branch is resolved', async () => {
+      // Every caller sits behind @RequireBranchContext(), so this can only be
+      // reached by a future caller that forgets to thread the branch through.
+      // It must fail loudly rather than quietly return every branch's rows —
+      // the exact silent degradation PC-03 documented.
+      await expect(service.listSuppliers({ orgId: 'org-1' } as any)).rejects.toThrow(
+        /without a branch id/,
+      );
+      await expect(
+        service.listCreditNotes({ orgId: 'org-1' } as any),
+      ).rejects.toThrow(/without a branch id/);
+    });
+
+    it('narrows suppliers to the acting branch plus org-level rows', async () => {
+      prisma.supplier.findMany.mockResolvedValue([]);
+      prisma.supplier.count.mockResolvedValue(0);
+
+      await service.listSuppliers({ orgId: 'org-1', branchId: 'branch-1' });
+
+      const where = prisma.supplier.findMany.mock.calls[0][0].where;
+      expect(where.orgId).toBe('org-1');
+      expect(where.OR).toEqual([{ branchId: 'branch-1' }, { branchId: null }]);
     });
   });
 
@@ -963,7 +1115,7 @@ describe('AccountsPayableService', () => {
       prisma.payableReminder.findMany.mockResolvedValue([]);
       prisma.payableReminder.count.mockResolvedValue(0);
 
-      const result = await service.listReminders({ orgId: 'org-1', query: {} });
+      const result = await service.listReminders({ orgId: 'org-1', branchId: 'branch-1', query: {} });
       expect(result).toEqual({ data: [], total: 0, skip: 0, take: 50 });
     });
   });
@@ -976,6 +1128,7 @@ describe('AccountsPayableService', () => {
 
       const result = await service.dismissReminder({
         orgId: 'org-1',
+        branchId: 'branch-1',
         reminderId: 'rem-1',
         userId: 'user-1',
       });
@@ -989,7 +1142,7 @@ describe('AccountsPayableService', () => {
       prisma.payableReminder.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.dismissReminder({ orgId: 'org-1', reminderId: 'nope', userId: 'user-1' }),
+        service.dismissReminder({ orgId: 'org-1', branchId: 'branch-1', reminderId: 'nope', userId: 'user-1' }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -1001,7 +1154,7 @@ describe('AccountsPayableService', () => {
       });
 
       await expect(
-        service.dismissReminder({ orgId: 'org-1', reminderId: 'rem-1', userId: 'user-1' }),
+        service.dismissReminder({ orgId: 'org-1', branchId: 'branch-1', reminderId: 'rem-1', userId: 'user-1' }),
       ).rejects.toThrow(ConflictException);
     });
   });

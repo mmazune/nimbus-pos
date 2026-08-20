@@ -62,17 +62,16 @@
 > by the Track B0 verification, which could only run once the routes became reachable. Full detail
 > in `ai/ACCOUNTING_API_VERIFICATION_REPORT.md` §7.
 >
-> - 🔴 **PC-03 — four accounting reads leak across branches.** `GET /api/accounting/ap/suppliers`,
->   `/ap/credit-notes`, `/ar/credit-notes` and `/bank-statements` return **another branch's rows**
->   regardless of `X-Branch-Id` (proven live). 9 of 34 list/get service methods filter on `orgId`
->   only. Two pairs are internally inconsistent: `listBankStatements` is org-scoped while
->   `getBankStatement` is branch-scoped, and `getPostingError` is org-scoped while
->   `listPostingErrors` is branch-scoped. **B5 must not present these as branch-scoped.**
-> - 🔴 **PC-04 — AP recurring-bill duplicate prevention does not work.** The guard compares
->   `lastBill.dueDate === profile.nextDueDate`, but the same transaction advances `nextDueDate`, so
->   the `ConflictException` is unreachable dead code and a second
->   `POST /accounting/ap/recurring-profiles/:id/generate-bill` issues a **second bill for the same
->   profile**. The e2e test is deliberately left **red** to document the correct contract.
+> - ~~🔴 **PC-03 — four accounting reads leak across branches.**~~ **RESOLVED 2026-08-21 (backend
+>   gap batch 2).** The four named reads plus **eleven further instances of the same class** are
+>   branch-scoped; cross-branch targets return **404, never 403**. ⚠️ The original write-up was
+>   wrong on one point in the caller's favour: `getBankStatement` was **also** org-scoped, so the
+>   detail leaked rather than 404ing. It also **undercounted** (9 of 34 methods was a floor, not a
+>   total) and **conflated** four genuinely org-level surfaces with real leaks.
+> - ~~🔴 **PC-04 — AP recurring-bill duplicate prevention does not work.**~~ **RESOLVED 2026-08-21
+>   (backend gap batch 2).** A repeat now returns **409** while the legitimate next-period bill still
+>   succeeds; the deliberately-red e2e is **green**. Before → after on three clicks of one MONTHLY
+>   150,000 profile: **3 bills / 450,000 billed → 1 bill / 150,000.**
 > - **PC-06 — ten accounting list routes return a bare JSON array** with no `total` and no
 >   pagination bound (`bank-accounts`, `bank-statements`, `reconciliation`, `period-close-runs`,
 >   `cost-centers`, `periods`, `posting-source-maps`, `finance/budgets`, `finance/demand-calendar`,
@@ -88,15 +87,30 @@
 > - **`GET /api/franchise/forecast`, not `/api/finance/forecast`** — the route lives on a third
 >   `@Controller('franchise')` class inside `budget.controller.ts`.
 > - **`GET /api/accounting/ar/aging` returns its totals under `summary`**, not `totals.grand*`
->   (**PC-05**). The unit spec `accounts-receivable.service.spec.ts` still uses the stale name and
->   **fails to compile** — pre-existing, reproduced at `30c67aa`.
+>   (**PC-05**). ⚠️ The **endpoint shape is unchanged and still applies to B5.5.** ~~The unit spec
+>   `accounts-receivable.service.spec.ts` still uses the stale name and fails to compile~~ —
+>   **repaired 2026-08-21 (batch 2)**; the whole AR unit suite had been dead because of it.
 > - **C-22 — 37 further permission strings still have no seeded row**: `franchise:*` (12),
 >   `ops:*` (8), `dev:*` (5), `merchant:*` (4), `billing:*` (3), `onboarding:*` (2),
 >   `support:*` (2). The franchise, ops-portal, developer-portal and owner-SaaS-billing surfaces are
 >   **403 for every role**, exactly as accounting was. They were **deliberately not seeded** — those
 >   modules are deferred. **B7 and any developer-portal work must budget the same cutover.**
-> - **Deploy gate:** none of the above — the 36 new permissions, the Manager compensation revoke, or
->   the Quick-PIN branch guard — **has been deployed to shared Neon.** It is applied on the local
+> - **C-23 — the M33 GL Postman collection cannot run** (found by backend gap batch 2). It sends a
+>   literal `{{accountId}}`, so `POST /api/accounting/journals` returns **400 `"Account
+>   {{accountId}} not found or inactive"`**, cascading into **20 failed assertions over 18
+>   requests**. It needs the **R17** folder pre-request the other accounting collections carry.
+>   **Proven pre-existing** — identical failure set at `bcbabd9` on a from-scratch database. B0
+>   never ran M33, so **B5.3's journals surface has no Postman verification.**
+> - **Batch 2 leaves the accounting block genuinely branch-scoped, which is behaviour-visible.**
+>   Accounting reads now return **fewer** rows than before (one branch's, not the org's), **AP and
+>   AR aging figures change value**, and cross-branch AP approvals / reconciliation matches stop
+>   working. Four surfaces remain **org-level by design and must be labelled as such**:
+>   `accounting/periods`, `accounting/posting-source-maps`, `accounting/tax-config` (no `branch_id`
+>   column exists on those models) and `accounting/period-close-runs` (nullable column the close
+>   path never stamps).
+> - **Deploy gate:** none of the above — the 36 new permissions, the Manager compensation revoke,
+>   the Quick-PIN branch guard, **or the batch-2 branch scoping and duplicate-bill guard** — **has
+>   been deployed to shared Neon.** It is applied on the local
 >   isolated stack only and remains gated on an explicit per-cutover authorisation.
 > - **BGB1-L5 — `/hr/employees` is still org-scoped** (`?branchId=` → 400, MP0-06 / C-09) and its
 >   `take` is still unbounded (C-12). Neither was in this batch's scope.

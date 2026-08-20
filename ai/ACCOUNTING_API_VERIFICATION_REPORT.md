@@ -4,7 +4,9 @@
 **Phase:** Track B **B0** (API verification extension, M-P0 pass #2), executed as part of the
 **permissions cutover** milestone (Track C: C-21 · FU-1 · B3-F1).
 **Status:** **COMPLETE**
-**Verdict for B5:** 🟡 **CONDITIONAL GO** — see §9.
+**Verdict for B5:** 🟢 **GO** — upgraded 2026-08-21. Both blocking conditions were cleared by
+**backend gap batch 2** (`ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md`). The original verdict of this
+pass was 🟡 **CONDITIONAL GO**; §9 records what changed and what remains as a B5 design decision.
 
 > **Why this report exists.** `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` reported that ~90
 > accounting/finance endpoints exist with no UI. That finding came from a **static scan only** —
@@ -302,8 +304,13 @@ Some of these are legitimately org-level (**chart of accounts, tax config, fisca
 source maps** are org-wide by design, and `period-close-runs` rows carry `branchId: null`). Four
 are not, and two are internally inconsistent:
 
-- 🔴 **`listBankStatements` is org-scoped while `getBankStatement` is branch-scoped** — the list
-  shows another branch's statements, but opening one 404s. B5.2's master-detail would break.
+- 🔴 **`listBankStatements` is org-scoped.** ⚠️ **CORRECTION (batch 2, 2026-08-21):** this bullet
+  originally read *"…while `getBankStatement` is branch-scoped — the list shows another branch's
+  statements, but opening one 404s."* **That was wrong in the caller's favour.** `getBankStatement`
+  filtered on `where: { id, orgId }` too, so the detail did **not** 404 — it leaked as well. The pair
+  did not disagree; both were wrong. Proven by running the batch-2 cross-branch suite against this
+  commit, where the detail assertion fails with a **200** where a 404 was expected. **FIXED in batch
+  2** — `BankStatement.branchId` is NOT NULL, so both sides now use strict branch equality.
 - 🔴 **`getPostingError` is org-scoped while `listPostingErrors` is branch-scoped** — the exact
   MP0-12 shape (a detail read that resolves by `orgId` alone). Not reproducible on this dataset
   (0 posting errors) so it is recorded as **static-verified, not live-verified**.
@@ -324,9 +331,9 @@ seed change; the roadmap reserved `BV-*` for a docs-only B0.
 | --- | --- | --- | --- |
 | **PC-01** | Medium | **Manager holds no accounting write at all.** OD-9 named AP bill approve, reconciliation match/skip/complete, period close/lock and budget update-actuals as "operationally necessary", but conditioned them on "B0 proving the permission is held" — a condition that cannot be met, because B0 can only observe what the seed grants. The owner's stated default (Manager read-only) was applied. **B5 must request these five writes explicitly if it needs them.** | **Recorded, not implemented** |
 | **PC-02** | Medium | **`procurement:advisory:read` gates a read AND a write** (`PATCH /procurement-suggestions/:id/review`). One string cannot express "Manager may look but not review", so Manager was granted neither. Needs splitting into `…:read` + `…:review`. | **Recorded, not implemented** |
-| **PC-03** | 🔴 High | **Cross-branch leakage on 4 accounting reads** (`ap/suppliers`, `ap/credit-notes`, `ar/credit-notes`, `bank-statements`), plus list/detail scope inconsistency on `bank-statements` and `posting-errors`. Proven live for the four; static for `getPostingError`. | **Recorded, not implemented** — §9 condition |
-| **PC-04** | 🔴 High | **AP recurring-bill duplicate prevention is dead code.** `generateBillFromProfile` guards duplicates with `lastBill.dueDate === profile.nextDueDate`, but the same transaction **advances** `nextDueDate` to the next cycle, so the two can never be equal and the `ConflictException` is unreachable. A second call issues a **second bill for the same profile**. Invisible until this cutover made AP reachable. | **Recorded, not implemented.** The e2e test is **deliberately left red** with an explanatory comment — it documents the correct contract |
-| **PC-05** | Low | **`ar/aging` totals were renamed** `totals.grand*` → `summary.*`. The e2e spec and the M35 Postman collection asserted the old names and could never have run. Both corrected. The **unit** spec still uses `result.totals` and fails to **compile** (pre-existing — see §8). | **e2e + Postman fixed; unit spec left** |
+| **PC-03** | 🔴 High | **Cross-branch leakage on 4 accounting reads** (`ap/suppliers`, `ap/credit-notes`, `ar/credit-notes`, `bank-statements`), plus list/detail scope inconsistency on `bank-statements` and `posting-errors`. Proven live for the four; static for `getPostingError`. | ✅ **FIXED 2026-08-21 (batch 2).** All four, both list/detail pairs, **and eleven further instances of the same class** this pass had missed — including three cross-branch **writes** (`ap/bills/:id/approve`, reconciliation `match`/`skip`) and both **aging** aggregates. Four surfaces (`periods`, `posting-source-maps`, `tax-config`, `period-close-runs`) were ruled **org-level by design** with written justification. Before → after on the same suite: **19 failed → 0 failed / 31 passed** |
+| **PC-04** | 🔴 High | **AP recurring-bill duplicate prevention is dead code.** `generateBillFromProfile` guards duplicates with `lastBill.dueDate === profile.nextDueDate`, but the same transaction **advances** `nextDueDate` to the next cycle, so the two can never be equal and the `ConflictException` is unreachable. A second call issues a **second bill for the same profile**. Invisible until this cutover made AP reachable. | ✅ **FIXED 2026-08-21 (batch 2)** and the deliberately-red e2e is **green**. Measured before → after on three clicks of one MONTHLY 150,000 profile: `200/200/200` → **3 bills, 450,000 billed**, versus `200/409/409` → **1 bill, 150,000**. Two checks replace the dead one: *cycle already billed* (asks the bill table, not the profile's mutable pointer) and *cadence not yet elapsed* |
+| **PC-05** | Low | **`ar/aging` totals were renamed** `totals.grand*` → `summary.*`. The e2e spec and the M35 Postman collection asserted the old names and could never have run. Both corrected. The **unit** spec still uses `result.totals` and fails to **compile** (pre-existing — see §8). | ✅ **CLOSED 2026-08-21 (batch 2).** The unit spec is repaired — its compile failure meant the whole AR unit suite was dead, so batch 2 could not add AR scoping tests without fixing it. Test-only change |
 | **PC-06** | Low | **Ten list routes return a bare array** with no `total` and no pagination bound (§5). B5's C4 list contract binds the pager to a server `total`. | **Recorded, not implemented** |
 | **PC-07** | Low | **Fiscal periods are created `DRAFT`, not `OPEN`**, and there is **no unlock route**. B5.4 must model `DRAFT → OPEN → CLOSED → LOCKED` and present `LOCKED` as terminal. | **Documented here** |
 
@@ -345,7 +352,22 @@ Honest gaps — these are **not** claimed as verified:
 
 ---
 
-## 9. Verdict for B5 — 🟡 CONDITIONAL GO
+## 9. Verdict for B5 — 🟢 GO (upgraded 2026-08-21)
+
+> **Update — backend gap batch 2, 2026-08-21.** Both 🔴 conditions below are **cleared**;
+> `ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md` is the record. **Condition 1 (PC-03)** and
+> **condition 2 (PC-04)** are fixed and covered by executable before/after evidence. **Conditions 3
+> and 4 (PC-06, PC-01/PC-02) were never defects** — B0 raised them as *decisions B5 must make rather
+> than discover*, and they stand unchanged as such. The section below is preserved as written on
+> 2026-08-20; the per-condition status is annotated inline.
+>
+> ⚠️ Batch 2 also corrected one factual error in §6 (`getBankStatement` leaked too — it did not
+> 404) and found **eleven further instances** of the PC-03 class that this pass missed, including
+> **three cross-branch writes** and **both aging aggregates**. The static "9 of 34 methods" scan in
+> §6 was an **undercount**, and it also conflated four genuinely org-level surfaces with the real
+> leaks.
+
+## 9 (original, 2026-08-20). Verdict for B5 — 🟡 CONDITIONAL GO
 
 **GO**, because the block is now genuinely reachable and genuinely works:
 
@@ -361,16 +383,16 @@ Honest gaps — these are **not** claimed as verified:
 
 **CONDITIONAL**, on four things B5 must handle rather than discover:
 
-1. 🔴 **PC-03 — branch scoping.** Four reads return another branch's rows and two list/detail
+1. ✅ **CLEARED (batch 2).** 🔴 **PC-03 — branch scoping.** Four reads return another branch's rows and two list/detail
    pairs disagree about scope. **B5.1 and B5.2 must not present these as branch-scoped.** Either
    fix the `where` clauses (backend) or narrow in the client and say so on screen, per the C-09
    precedent. **This is the blocking condition — an accounting UI that silently mixes branches
    is worse than no accounting UI.**
-2. 🔴 **PC-04 — duplicate vendor bills.** B5.1 must not ship a "Generate bill" control until the
+2. ✅ **CLEARED (batch 2).** 🔴 **PC-04 — duplicate vendor bills.** B5.1 must not ship a "Generate bill" control until the
    dead duplicate guard is fixed; the current endpoint will happily bill a supplier twice.
-3. 🟡 **PC-06 — ten unpaginated bare-array routes.** Decide per surface: honest "all N loaded",
+3. 🟡 **STILL OPEN — a B5 decision, not a defect.** **PC-06 — ten unpaginated bare-array routes.** Decide per surface: honest "all N loaded",
    or a backend envelope first. Do not fabricate a server total.
-4. 🟡 **PC-01 / PC-02 — writes.** Manager currently has none. If B5 wants the five OD-9 writes, it
+4. 🟡 **STILL OPEN — a B5 decision, not a defect.** **PC-01 / PC-02 — writes.** Manager currently has none. If B5 wants the five OD-9 writes, it
    must request them explicitly; `procurement:advisory` additionally needs splitting before
    Manager can even *read* procurement suggestions.
 
@@ -378,8 +400,8 @@ Honest gaps — these are **not** claimed as verified:
 
 | Sub-phase | Routes | Ready? |
 | --- | --- | --- |
-| **B5.1 Customers + Vendors** | AR 10 + AP 19 | 🟡 Reads verified. **Blocked on PC-03** (suppliers + both credit-note lists leak) and **PC-04** (no generate-bill control). |
-| **B5.2 Bank reconciliation** | bank-rec 12 (excl. period close/lock) | 🟡 Richest verified flow — import → match → skip → complete all live. **Blocked on PC-03** (`bank-statements` list is org-scoped while its detail is branch-scoped) and **PC-06** (all four lists are bare arrays). |
+| **B5.1 Customers + Vendors** | AR 10 + AP 19 | 🟢 **Ready (batch 2).** ~~Blocked on PC-03 + PC-04~~ — both cleared; a *Generate bill* control may now ship. |
+| **B5.2 Bank reconciliation** | bank-rec 12 (excl. period close/lock) | 🟢 **Ready on scoping (batch 2)** — statements *and* reconciliations are strictly branch-scoped (both models are NOT NULL on `branchId`), and cross-branch `match`/`skip` now 404. **PC-06 still applies** to its four bare-array lists. |
 | **B5.3 Accounting core + Review** | `accounting` 11 + `ledger` 8 | 🟢 **Ready, read-only for Manager** — the guides are confirmed correct. Chatter rail still gated on B0's chatter question, which this pass did not cover. |
 | **B5.4 Closing** | periods open/close/lock + period-close-runs | 🟢 **Ready** with **PC-07** applied: four states, `LOCKED` terminal, no unlock. Manager cannot close or lock. |
 | **B5.5 Reporting + Configuration** | `ar/aging`, `ap/aging`, budgets, demand calendar, procurement, forecast, COA, cost centres, source maps, tax config | 🟡 Aging + budgets + demand calendar ready (mind the `summary` naming, **PC-05**). **Procurement is unverified (§8)** and **forecast is at `/api/franchise/forecast`**. |

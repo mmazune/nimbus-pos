@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { strictBranchScope } from '../../common/scope';
 import { Prisma } from '@prisma/client';
 import {
   CreateBankAccountDto,
@@ -100,10 +101,14 @@ export class BankRecService {
   // ── Bank Statements ──
   // ═══════════════════════════════════════════════════
 
+  // PC-03: `orgId` alone. BankStatement.branchId is NOT NULL, so there is no
+  // org-level statement to accommodate — strict branch equality is the only
+  // correct predicate. Its detail sibling below applies the identical one.
   async listBankStatements(ctx: BranchContext, bankAccountId?: string) {
     return this.prisma.bankStatement.findMany({
       where: {
         orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'bank statement'),
         ...(bankAccountId ? { bankAccountId } : {}),
       },
       orderBy: { statementDate: 'desc' },
@@ -117,7 +122,7 @@ export class BankRecService {
 
   async getBankStatement(ctx: BranchContext, id: string) {
     const stmt = await this.prisma.bankStatement.findFirst({
-      where: { id, orgId: ctx.organizationId },
+      where: { id, orgId: ctx.organizationId, ...strictBranchScope(ctx.branchId, 'bank statement') },
       include: {
         bankAccount: { select: { id: true, name: true, accountCode: true } },
         importedBy: { select: { id: true, firstName: true, lastName: true } },
@@ -135,7 +140,11 @@ export class BankRecService {
     meta: AuditMeta,
   ) {
     const bankAccount = await this.prisma.bankAccount.findFirst({
-      where: { id: dto.bankAccountId, orgId: ctx.organizationId },
+      where: {
+        id: dto.bankAccountId,
+        orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'bank account'),
+      },
     });
     if (!bankAccount) throw new NotFoundException('Bank account not found');
 
@@ -220,10 +229,12 @@ export class BankRecService {
   // ── Reconciliations ──
   // ═══════════════════════════════════════════════════
 
+  // PC-03 (extension): `orgId` alone, on a model whose branchId is NOT NULL.
   async listReconciliations(ctx: BranchContext, bankAccountId?: string) {
     return this.prisma.bankReconciliation.findMany({
       where: {
         orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'reconciliation'),
         ...(bankAccountId ? { bankAccountId } : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -244,7 +255,11 @@ export class BankRecService {
     meta: AuditMeta,
   ) {
     const bankAccount = await this.prisma.bankAccount.findFirst({
-      where: { id: dto.bankAccountId, orgId: ctx.organizationId },
+      where: {
+        id: dto.bankAccountId,
+        orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'bank account'),
+      },
     });
     if (!bankAccount) throw new NotFoundException('Bank account not found');
 
@@ -273,7 +288,11 @@ export class BankRecService {
 
     if (dto.bankStatementId) {
       const stmt = await this.prisma.bankStatement.findFirst({
-        where: { id: dto.bankStatementId, orgId: ctx.organizationId },
+        where: {
+          id: dto.bankStatementId,
+          orgId: ctx.organizationId,
+          ...strictBranchScope(ctx.branchId, 'bank statement'),
+        },
       });
       if (!stmt) throw new NotFoundException('Bank statement not found');
       statementBalance = stmt.closingBalance;
@@ -333,7 +352,7 @@ export class BankRecService {
 
   async getReconciliation(ctx: BranchContext, id: string) {
     const rec = await this.prisma.bankReconciliation.findFirst({
-      where: { id, orgId: ctx.organizationId },
+      where: { id, orgId: ctx.organizationId, ...strictBranchScope(ctx.branchId, 'reconciliation') },
       include: {
         bankAccount: { select: { id: true, name: true, accountCode: true } },
         bankStatement: {
@@ -364,7 +383,11 @@ export class BankRecService {
     meta: AuditMeta,
   ) {
     const rec = await this.prisma.bankReconciliation.findFirst({
-      where: { id: reconciliationId, orgId: ctx.organizationId },
+      where: {
+        id: reconciliationId,
+        orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'reconciliation'),
+      },
     });
     if (!rec) throw new NotFoundException('Reconciliation not found');
     if (rec.status === 'COMPLETED') {
@@ -381,7 +404,13 @@ export class BankRecService {
     }
 
     const line = await this.prisma.bankStatementLine.findFirst({
-      where: { id: dto.bankStatementLineId, orgId: ctx.organizationId },
+      where: {
+        id: dto.bankStatementLineId,
+        orgId: ctx.organizationId,
+        // BankStatementLine has no branchId column; it inherits scope from the
+        // statement that owns it (PC-03).
+        bankStatement: strictBranchScope(ctx.branchId, 'bank statement line'),
+      },
     });
     if (!line) throw new NotFoundException('Bank statement line not found');
     if (line.status === 'MATCHED') {
@@ -401,7 +430,11 @@ export class BankRecService {
 
     if (dto.manualEntryId) {
       const entry = await this.prisma.manualBankEntry.findFirst({
-        where: { id: dto.manualEntryId, orgId: ctx.organizationId },
+        where: {
+          id: dto.manualEntryId,
+          orgId: ctx.organizationId,
+          ...strictBranchScope(ctx.branchId, 'manual bank entry'),
+        },
       });
       if (!entry) throw new NotFoundException('Manual bank entry not found');
     }
@@ -465,7 +498,11 @@ export class BankRecService {
     meta: AuditMeta,
   ) {
     const rec = await this.prisma.bankReconciliation.findFirst({
-      where: { id: reconciliationId, orgId: ctx.organizationId },
+      where: {
+        id: reconciliationId,
+        orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'reconciliation'),
+      },
     });
     if (!rec) throw new NotFoundException('Reconciliation not found');
     if (rec.status === 'COMPLETED') {
@@ -473,7 +510,13 @@ export class BankRecService {
     }
 
     const line = await this.prisma.bankStatementLine.findFirst({
-      where: { id: dto.bankStatementLineId, orgId: ctx.organizationId },
+      where: {
+        id: dto.bankStatementLineId,
+        orgId: ctx.organizationId,
+        // BankStatementLine has no branchId column; it inherits scope from the
+        // statement that owns it (PC-03).
+        bankStatement: strictBranchScope(ctx.branchId, 'bank statement line'),
+      },
     });
     if (!line) throw new NotFoundException('Bank statement line not found');
     if (line.status === 'MATCHED') {
@@ -528,7 +571,11 @@ export class BankRecService {
     meta: AuditMeta,
   ) {
     const bankAccount = await this.prisma.bankAccount.findFirst({
-      where: { id: dto.bankAccountId, orgId: ctx.organizationId },
+      where: {
+        id: dto.bankAccountId,
+        orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'bank account'),
+      },
     });
     if (!bankAccount) throw new NotFoundException('Bank account not found');
 
@@ -585,7 +632,11 @@ export class BankRecService {
     meta: AuditMeta,
   ) {
     const rec = await this.prisma.bankReconciliation.findFirst({
-      where: { id: reconciliationId, orgId: ctx.organizationId },
+      where: {
+        id: reconciliationId,
+        orgId: ctx.organizationId,
+        ...strictBranchScope(ctx.branchId, 'reconciliation'),
+      },
     });
     if (!rec) throw new NotFoundException('Reconciliation not found');
     if (rec.status === 'COMPLETED') {

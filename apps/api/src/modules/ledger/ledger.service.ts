@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { branchOrOrgScope } from '../../common/scope';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -572,8 +573,12 @@ export class LedgerService {
   }) {
     const { orgId, branchId, status, skip = 0, take = 50 } = params;
 
-    const where: Prisma.PostingErrorWhereInput = { orgId };
-    if (branchId) where.branchId = branchId;
+    // PC-03: was strict `where.branchId = branchId` on a NULLABLE column, which
+    // hid every unattributed org-level posting error from every branch at once.
+    const where: Prisma.PostingErrorWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'posting error'),
+    };
     if (status) where.status = status as any;
 
     const [data, total] = await Promise.all([
@@ -594,9 +599,17 @@ export class LedgerService {
 
   // ── Get Posting Error ──
 
-  async getPostingError(params: { orgId: string; errorId: string }) {
+  // PC-03: this detail resolved by `orgId` alone while its list was
+  // branch-filtered — the exact MP0-12 shape, and the one item of PC-03 B0
+  // could only verify statically (the dataset held 0 posting errors). Both
+  // sides now apply the identical predicate.
+  async getPostingError(params: { orgId: string; branchId?: string; errorId: string }) {
     const error = await this.prisma.postingError.findFirst({
-      where: { id: params.errorId, orgId: params.orgId },
+      where: {
+        id: params.errorId,
+        orgId: params.orgId,
+        ...branchOrOrgScope(params.branchId, 'posting error'),
+      },
       include: {
         postingRun: {
           select: {

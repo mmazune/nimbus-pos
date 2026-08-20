@@ -64,8 +64,10 @@ export class AccountsPayableController {
     @Query('take') take?: string,
   ) {
     const orgId = req.branchContext.organizationId;
+    const branchId = req.branchContext.branchId;
     return this.apService.listSuppliers({
       orgId,
+      branchId,
       activeOnly: activeOnly === 'true',
       counterpartyType,
       skip: skip ? Number(skip) : 0,
@@ -81,7 +83,8 @@ export class AccountsPayableController {
     @Param('id') supplierId: string,
   ) {
     const orgId = req.branchContext.organizationId;
-    return this.apService.getSupplierDetail({ orgId, supplierId });
+    const branchId = req.branchContext.branchId;
+    return this.apService.getSupplierDetail({ orgId, branchId, supplierId });
   }
 
   // ── Vendor Bills ──
@@ -110,7 +113,8 @@ export class AccountsPayableController {
   @Permissions('accounting:ap:bill:read')
   async getVendorBill(@Request() req: any, @Param('id') billId: string) {
     const orgId = req.branchContext.organizationId;
-    return this.apService.getVendorBill({ orgId, billId });
+    const branchId = req.branchContext.branchId;
+    return this.apService.getVendorBill({ orgId, branchId, billId });
   }
 
   @Post('bills/:id/approve')
@@ -122,7 +126,8 @@ export class AccountsPayableController {
     @CurrentUser() user: { id: string },
   ) {
     const orgId = req.branchContext.organizationId;
-    return this.apService.approveVendorBill({ orgId, billId, userId: user.id });
+    const branchId = req.branchContext.branchId;
+    return this.apService.approveVendorBill({ orgId, branchId, billId, userId: user.id });
   }
 
   // ── AP Payments ──
@@ -163,8 +168,10 @@ export class AccountsPayableController {
     @Query('take') take?: string,
   ) {
     const orgId = req.branchContext.organizationId;
+    const branchId = req.branchContext.branchId;
     return this.apService.listApPayments({
       orgId,
+      branchId,
       supplierId,
       status,
       skip: skip ? Number(skip) : 0,
@@ -196,8 +203,10 @@ export class AccountsPayableController {
     @Query('take') take?: string,
   ) {
     const orgId = req.branchContext.organizationId;
+    const branchId = req.branchContext.branchId;
     return this.apService.listCreditNotes({
       orgId,
+      branchId,
       supplierId,
       status,
       skip: skip ? Number(skip) : 0,
@@ -211,7 +220,8 @@ export class AccountsPayableController {
   @Permissions('accounting:ap:bill:read')
   async getApAging(@Request() req: any, @Query('asOf') asOf?: string) {
     const orgId = req.branchContext.organizationId;
-    return this.apService.getApAgingSummary({ orgId, asOf });
+    const branchId = req.branchContext.branchId;
+    return this.apService.getApAgingSummary({ orgId, branchId, asOf });
   }
 
   // ── Recurring Bill Profiles ──
@@ -232,7 +242,8 @@ export class AccountsPayableController {
   @Permissions('accounting:ap:recurring:read')
   async listRecurringProfiles(@Request() req: any, @Query() query: ListRecurringProfilesQueryDto) {
     const orgId = req.branchContext.organizationId;
-    return this.apService.listRecurringProfiles({ orgId, query });
+    const branchId = req.branchContext.branchId;
+    return this.apService.listRecurringProfiles({ orgId, branchId, query });
   }
 
   @Patch('recurring-profiles/:id')
@@ -244,7 +255,14 @@ export class AccountsPayableController {
     @CurrentUser() user: { id: string },
   ) {
     const orgId = req.branchContext.organizationId;
-    return this.apService.updateRecurringProfile({ orgId, profileId, userId: user.id, dto });
+    const branchId = req.branchContext.branchId;
+    return this.apService.updateRecurringProfile({
+      orgId,
+      branchId,
+      profileId,
+      userId: user.id,
+      dto,
+    });
   }
 
   @Post('recurring-profiles/:id/generate-bill')
@@ -293,6 +311,7 @@ export class AccountsPayableController {
     @CurrentUser() user: { id: string },
   ) {
     const orgId = req.branchContext.organizationId;
-    return this.apService.dismissReminder({ orgId, reminderId, userId: user.id });
+    const branchId = req.branchContext.branchId;
+    return this.apService.dismissReminder({ orgId, branchId, reminderId, userId: user.id });
   }
 }

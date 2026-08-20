@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { branchOrOrgScope } from '../../common/scope';
 import { LedgerService } from '../ledger/ledger.service';
 import { Prisma } from '@prisma/client';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
@@ -163,13 +164,18 @@ export class AccountsPayableService {
 
   async listSuppliers(params: {
     orgId: string;
+    branchId?: string;
     activeOnly?: boolean;
     counterpartyType?: string;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, activeOnly, counterpartyType, skip = 0, take = 50 } = params;
-    const where: Prisma.SupplierWhereInput = { orgId };
+    const { orgId, branchId, activeOnly, counterpartyType, skip = 0, take = 50 } = params;
+    // PC-03: was `{ orgId }` alone, which returned every branch's suppliers
+    // regardless of X-Branch-Id (41 rows spanning four branches, measured live
+    // in B0 §6). Supplier.branchId is nullable, so org-level suppliers stay
+    // visible to every branch — see common/scope/branch-scope.ts.
+    const where: Prisma.SupplierWhereInput = { orgId, ...branchOrOrgScope(branchId, 'supplier') };
     if (activeOnly) where.isActive = true;
     if (counterpartyType) where.counterpartyType = counterpartyType as any;
 
@@ -195,42 +201,55 @@ export class AccountsPayableService {
    * metadata, branch/org scope, payable totals derived from existing
    * VendorBill / VendorPayment / CreditNote rows, and short recent
    * bills/payments lists. No analytics, no aggregation across other
-   * orgs/branches — strictly org-scoped to match list/read ACLs.
+   * orgs/branches.
+   *
+   * PC-03: this detail read used to resolve by `orgId` alone while its list
+   * sibling has been narrowed to the acting branch. A detail route that
+   * resolves wider than its list is the MP0-12 shape — it turns a link the UI
+   * would never render into a working cross-branch read. Both now apply the
+   * identical predicate.
    */
-  async getSupplierDetail(params: { orgId: string; supplierId: string }) {
-    const { orgId, supplierId } = params;
+  async getSupplierDetail(params: { orgId: string; branchId?: string; supplierId: string }) {
+    const { orgId, branchId, supplierId } = params;
 
     const supplier = await this.prisma.supplier.findFirst({
-      where: { id: supplierId, orgId },
+      where: { id: supplierId, orgId, ...branchOrOrgScope(branchId, 'supplier') },
     });
     if (!supplier) {
       throw new NotFoundException('Supplier not found');
     }
 
+    // PC-03: the summary money below is now computed over the SAME branch scope
+    // the caller's bill/payment lists use. Left org-wide it would have shown a
+    // supplier's four-branch outstanding total on a single-branch screen — a
+    // headline figure disagreeing with the rows beneath it.
+    const scope = branchOrOrgScope(branchId, 'supplier detail');
+
     // Serialised (not Promise.all) to keep Prisma's connection pool
     // healthy on Neon's free-tier 25-connection limit when this endpoint
     // is hit concurrently from supplier list pages.
-    const billCount = await this.prisma.vendorBill.count({ where: { orgId, supplierId } });
+    const billCount = await this.prisma.vendorBill.count({ where: { orgId, supplierId, ...scope } });
     const openBillCount = await this.prisma.vendorBill.count({
       where: {
         orgId,
         supplierId,
+        ...scope,
         status: { in: ['APPROVED', 'PARTIALLY_PAID'] as any },
       },
     });
     const paymentCount = await this.prisma.vendorPayment.count({
-      where: { orgId, supplierId },
+      where: { orgId, supplierId, ...scope },
     });
     const outstandingAgg = await this.prisma.vendorBill.aggregate({
-      where: { orgId, supplierId },
+      where: { orgId, supplierId, ...scope },
       _sum: { outstandingAmount: true, totalAmount: true },
     });
     const paidAgg = await this.prisma.vendorPayment.aggregate({
-      where: { orgId, supplierId, status: 'POSTED' as any },
+      where: { orgId, supplierId, ...scope, status: 'POSTED' as any },
       _sum: { amount: true },
     });
     const recentBills = await this.prisma.vendorBill.findMany({
-      where: { orgId, supplierId },
+      where: { orgId, supplierId, ...scope },
       orderBy: { billDate: 'desc' },
       take: 5,
       select: {
@@ -245,7 +264,7 @@ export class AccountsPayableService {
       },
     });
     const recentPayments = await this.prisma.vendorPayment.findMany({
-      where: { orgId, supplierId },
+      where: { orgId, supplierId, ...scope },
       orderBy: { paymentDate: 'desc' },
       take: 5,
       select: {
@@ -260,7 +279,7 @@ export class AccountsPayableService {
       },
     });
     const openCreditNotes = await this.prisma.creditNote.aggregate({
-      where: { orgId, supplierId, status: 'OPEN' as any },
+      where: { orgId, supplierId, ...scope, status: 'OPEN' as any },
       _sum: { remainingAmount: true },
       _count: true,
     });
@@ -313,9 +332,11 @@ export class AccountsPayableService {
   }) {
     const { orgId, branchId, userId, dto } = params;
 
-    // Validate supplier
+    // Validate supplier. PC-03: resolved within the acting branch's scope, so a
+    // bill cannot be raised against another branch's supplier. Org-level
+    // (NULL-branch) suppliers remain billable from anywhere.
     const supplier = await this.prisma.supplier.findFirst({
-      where: { id: dto.supplierId, orgId, isActive: true },
+      where: { id: dto.supplierId, orgId, isActive: true, ...branchOrOrgScope(branchId, 'supplier') },
     });
     if (!supplier) {
       throw new NotFoundException('Supplier not found or inactive');
@@ -415,8 +436,11 @@ export class AccountsPayableService {
       take = 50,
     } = query;
 
-    const where: Prisma.VendorBillWhereInput = { orgId };
-    if (branchId) where.branchId = branchId;
+    // PC-03: was `if (branchId) where.branchId = branchId` — strict equality on
+    // a NULLABLE column, which hid every unattributed org-level bill from every
+    // branch at once. The shared helper keeps branch isolation and stops
+    // orphaning those rows.
+    const where: Prisma.VendorBillWhereInput = { orgId, ...branchOrOrgScope(branchId, 'vendor bill') };
     if (supplierId) where.supplierId = supplierId;
     if (status) where.status = status as any;
     if (sourceType) where.sourceType = sourceType as any;
@@ -463,9 +487,16 @@ export class AccountsPayableService {
     return { data, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getVendorBill(params: { orgId: string; billId: string }) {
+  // PC-03: the detail resolved by `orgId` alone while its list was already
+  // branch-scoped — the same list/detail disagreement B0 flagged on
+  // bank-statements, inverted. Both now use the identical predicate.
+  async getVendorBill(params: { orgId: string; branchId?: string; billId: string }) {
     const bill = await this.prisma.vendorBill.findFirst({
-      where: { id: params.billId, orgId: params.orgId },
+      where: {
+        id: params.billId,
+        orgId: params.orgId,
+        ...branchOrOrgScope(params.branchId, 'vendor bill'),
+      },
       include: {
         supplier: { select: { id: true, name: true, code: true, email: true, phone: true } },
         lines: true,
@@ -492,11 +523,20 @@ export class AccountsPayableService {
     return bill;
   }
 
-  async approveVendorBill(params: { orgId: string; billId: string; userId: string }) {
-    const { orgId, billId, userId } = params;
+  // PC-03: approval is a WRITE that used to resolve its target by `orgId`
+  // alone — a cross-branch approval was reachable by id. It now fails closed
+  // with 404 (never 403, which would confirm the id exists in another branch —
+  // the B3-F1 precedent).
+  async approveVendorBill(params: {
+    orgId: string;
+    branchId?: string;
+    billId: string;
+    userId: string;
+  }) {
+    const { orgId, branchId, billId, userId } = params;
 
     const bill = await this.prisma.vendorBill.findFirst({
-      where: { id: billId, orgId },
+      where: { id: billId, orgId, ...branchOrOrgScope(branchId, 'vendor bill') },
     });
 
     if (!bill) {
@@ -549,9 +589,9 @@ export class AccountsPayableService {
   }) {
     const { orgId, branchId, userId, dto } = params;
 
-    // Validate supplier
+    // Validate supplier (PC-03 — branch-scoped, see createVendorBill).
     const supplier = await this.prisma.supplier.findFirst({
-      where: { id: dto.supplierId, orgId },
+      where: { id: dto.supplierId, orgId, ...branchOrOrgScope(branchId, 'supplier') },
     });
     if (!supplier) {
       throw new NotFoundException('Supplier not found');
@@ -587,7 +627,7 @@ export class AccountsPayableService {
     // Fetch all referenced bills and validate
     const billIds = dto.allocations.map((a) => a.vendorBillId);
     const bills = await this.prisma.vendorBill.findMany({
-      where: { id: { in: billIds }, orgId },
+      where: { id: { in: billIds }, orgId, ...branchOrOrgScope(branchId, 'vendor bill') },
     });
 
     const billMap = new Map(bills.map((b) => [b.id, b]));
@@ -802,13 +842,19 @@ export class AccountsPayableService {
 
   async listApPayments(params: {
     orgId: string;
+    branchId?: string;
     supplierId?: string;
     status?: string;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, supplierId, status, skip = 0, take = 50 } = params;
-    const where: Prisma.VendorPaymentWhereInput = { orgId };
+    const { orgId, branchId, supplierId, status, skip = 0, take = 50 } = params;
+    // PC-03 (extension): `orgId` alone — payments made in one branch were
+    // listed in all of them.
+    const where: Prisma.VendorPaymentWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'AP payment'),
+    };
     if (supplierId) where.supplierId = supplierId;
     if (status) where.status = status as any;
 
@@ -844,7 +890,7 @@ export class AccountsPayableService {
     const { orgId, branchId, userId, dto } = params;
 
     const supplier = await this.prisma.supplier.findFirst({
-      where: { id: dto.supplierId, orgId },
+      where: { id: dto.supplierId, orgId, ...branchOrOrgScope(branchId, 'supplier') },
     });
     if (!supplier) {
       throw new NotFoundException('Supplier not found');
@@ -897,13 +943,19 @@ export class AccountsPayableService {
 
   async listCreditNotes(params: {
     orgId: string;
+    branchId?: string;
     supplierId?: string;
     status?: string;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, supplierId, status, skip = 0, take = 50 } = params;
-    const where: Prisma.CreditNoteWhereInput = { orgId };
+    const { orgId, branchId, supplierId, status, skip = 0, take = 50 } = params;
+    // PC-03: proven live — 1 row returned under X-Branch-Id=ROOFTOP, and it
+    // belonged to TAPAS.
+    const where: Prisma.CreditNoteWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'AP credit note'),
+    };
     if (supplierId) where.supplierId = supplierId;
     if (status) where.status = status as any;
 
@@ -924,16 +976,22 @@ export class AccountsPayableService {
   // ── AP Aging (internal / structural) ──
 
   /**
-   * Returns an AP aging summary for the org: open bills grouped by
+   * Returns an AP aging summary for the acting branch: open bills grouped by
    * days-overdue buckets (current, 1-30, 31-60, 61-90, 90+).
+   *
+   * PC-03 (extension): this aggregated every branch's open bills while
+   * `GET /ap/bills` returned one branch's — the aging total and the bill list
+   * beneath it could not be reconciled by anyone reading the screen. It is now
+   * computed over the same scope as the list.
    */
-  async getApAgingSummary(params: { orgId: string; asOf?: string }) {
-    const { orgId, asOf } = params;
+  async getApAgingSummary(params: { orgId: string; branchId?: string; asOf?: string }) {
+    const { orgId, branchId, asOf } = params;
     const referenceDate = asOf ? new Date(asOf) : new Date();
 
     const openBills = await this.prisma.vendorBill.findMany({
       where: {
         orgId,
+        ...branchOrOrgScope(branchId, 'AP aging'),
         status: { in: ['APPROVED', 'PARTIALLY_PAID', 'OVERDUE'] },
         outstandingAmount: { gt: 0 },
       },
@@ -1016,7 +1074,7 @@ export class AccountsPayableService {
     const { orgId, branchId, userId, dto } = params;
 
     const supplier = await this.prisma.supplier.findFirst({
-      where: { id: dto.supplierId, orgId, isActive: true },
+      where: { id: dto.supplierId, orgId, isActive: true, ...branchOrOrgScope(branchId, 'supplier') },
     });
     if (!supplier) {
       throw new NotFoundException('Supplier not found or inactive');
@@ -1061,11 +1119,19 @@ export class AccountsPayableService {
     return profile;
   }
 
-  async listRecurringProfiles(params: { orgId: string; query: ListRecurringProfilesQueryDto }) {
-    const { orgId, query } = params;
+  async listRecurringProfiles(params: {
+    orgId: string;
+    branchId?: string;
+    query: ListRecurringProfilesQueryDto;
+  }) {
+    const { orgId, branchId, query } = params;
     const { supplierId, cadence, isActive, skip = 0, take = 50 } = query;
 
-    const where: Prisma.RecurringBillProfileWhereInput = { orgId };
+    // PC-03 (extension): `orgId` alone.
+    const where: Prisma.RecurringBillProfileWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'recurring bill profile'),
+    };
     if (supplierId) where.supplierId = supplierId;
     if (cadence) where.cadence = cadence as any;
     if (isActive !== undefined) where.isActive = isActive;
@@ -1088,14 +1154,15 @@ export class AccountsPayableService {
 
   async updateRecurringProfile(params: {
     orgId: string;
+    branchId?: string;
     profileId: string;
     userId: string;
     dto: UpdateRecurringProfileDto;
   }) {
-    const { orgId, profileId, userId, dto } = params;
+    const { orgId, branchId, profileId, userId, dto } = params;
 
     const existing = await this.prisma.recurringBillProfile.findFirst({
-      where: { id: profileId, orgId },
+      where: { id: profileId, orgId, ...branchOrOrgScope(branchId, 'recurring bill profile') },
     });
     if (!existing) {
       throw new NotFoundException('Recurring profile not found');
@@ -1133,7 +1200,34 @@ export class AccountsPayableService {
 
   /**
    * Generate a vendor bill from a recurring profile.
-   * Prevents duplicates for the same nextDueDate window.
+   *
+   * ## PC-04 — the duplicate guard used to be unreachable dead code
+   *
+   * The original guard compared `lastBill.dueDate === profile.nextDueDate`.
+   * But the generating transaction ADVANCES `nextDueDate` to the following
+   * cycle in the same breath, so after any generation the two values can never
+   * be equal again: the `ConflictException` branch could not be reached, and a
+   * second call issued a **second bill for the same supplier**. The defect was
+   * invisible until the C-21 permissions cutover made AP reachable at all.
+   *
+   * Two independent checks now stand in its place, both evaluated BEFORE
+   * anything is written:
+   *
+   * 1. **Cycle already billed.** Asks the bill table — "does a bill generated
+   *    from this profile already carry the due date I am about to bill?" —
+   *    instead of trusting the profile's own mutable pointer. This is the
+   *    honest form of the original intent, and it survives a `PATCH` that
+   *    rewinds `nextDueDate`.
+   *
+   * 2. **Cadence has not elapsed.** A profile may produce at most one bill per
+   *    cadence period of real time, measured from `lastGeneratedAt`. This is
+   *    the check that makes an immediate repeat a 409: after generation the
+   *    profile has moved to the next cycle, so check 1 alone would happily let
+   *    a double-click bill the supplier for next month too.
+   *
+   * The escape hatch for a genuinely extra bill is the ad-hoc route,
+   * `POST /api/accounting/ap/bills` — this endpoint enforces the cadence the
+   * profile itself declares.
    */
   async generateBillFromRecurring(params: {
     orgId: string;
@@ -1144,28 +1238,53 @@ export class AccountsPayableService {
     const { orgId, branchId, userId, profileId } = params;
 
     const profile = await this.prisma.recurringBillProfile.findFirst({
-      where: { id: profileId, orgId, isActive: true },
+      where: {
+        id: profileId,
+        orgId,
+        isActive: true,
+        ...branchOrOrgScope(branchId, 'recurring bill profile'),
+      },
       include: { supplier: true },
     });
     if (!profile) {
       throw new NotFoundException('Recurring profile not found or inactive');
     }
 
-    // Duplicate prevention: check if a bill was already generated for this cycle
-    if (profile.lastGeneratedBillId) {
-      const lastBill = await this.prisma.vendorBill.findFirst({
-        where: { id: profile.lastGeneratedBillId },
-      });
-      if (lastBill && lastBill.dueDate.getTime() === profile.nextDueDate.getTime()) {
+    const now = new Date();
+
+    // PC-04 check 1 — has this exact cycle already been billed?
+    const existingForCycle = await this.prisma.vendorBill.findFirst({
+      where: {
+        orgId,
+        recurringProfileId: profile.id,
+        dueDate: profile.nextDueDate,
+      },
+      select: { id: true, billNumber: true },
+    });
+    if (existingForCycle) {
+      throw new ConflictException(
+        `A bill has already been generated for due date ` +
+          `${profile.nextDueDate.toISOString().split('T')[0]} ` +
+          `(${existingForCycle.billNumber}).`,
+      );
+    }
+
+    // PC-04 check 2 — has a full cadence period elapsed since the last one?
+    if (profile.lastGeneratedAt) {
+      const eligibleFrom = this.advanceDueDate(profile.cadence, profile.lastGeneratedAt);
+      if (now < eligibleFrom) {
         throw new ConflictException(
-          `A bill has already been generated for due date ${profile.nextDueDate.toISOString().split('T')[0]}`,
+          `A ${String(profile.cadence).toLowerCase()} bill was already generated for profile ` +
+            `"${profile.profileName}" on ${profile.lastGeneratedAt.toISOString().split('T')[0]}. ` +
+            `The next scheduled generation is available from ` +
+            `${eligibleFrom.toISOString().split('T')[0]}. ` +
+            `Raise a one-off bill via POST /api/accounting/ap/bills if an extra bill is genuinely due.`,
         );
       }
     }
 
     const billNumber = await this.nextBillNumber(orgId);
     const totalAmount = profile.expectedAmount;
-    const now = new Date();
 
     const bill = await this.prisma.$transaction(async (tx) => {
       const created = await tx.vendorBill.create({
@@ -1341,8 +1460,10 @@ export class AccountsPayableService {
     const { orgId, branchId, query } = params;
     const { supplierId, status, dueBefore, skip = 0, take = 50 } = query;
 
-    const where: Prisma.PayableReminderWhereInput = { orgId };
-    if (branchId) where.branchId = branchId;
+    const where: Prisma.PayableReminderWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'payable reminder'),
+    };
     if (supplierId) where.supplierId = supplierId;
     if (status) where.status = status as any;
     if (dueBefore) where.dueDate = { lte: new Date(dueBefore) };
@@ -1366,11 +1487,16 @@ export class AccountsPayableService {
     return { data, total, skip: Number(skip), take: Number(take) };
   }
 
-  async dismissReminder(params: { orgId: string; reminderId: string; userId: string }) {
-    const { orgId, reminderId, userId } = params;
+  async dismissReminder(params: {
+    orgId: string;
+    branchId?: string;
+    reminderId: string;
+    userId: string;
+  }) {
+    const { orgId, branchId, reminderId, userId } = params;
 
     const reminder = await this.prisma.payableReminder.findFirst({
-      where: { id: reminderId, orgId },
+      where: { id: reminderId, orgId, ...branchOrOrgScope(branchId, 'payable reminder') },
     });
     if (!reminder) {
       throw new NotFoundException('Reminder not found');

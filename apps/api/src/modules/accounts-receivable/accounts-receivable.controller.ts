@@ -44,14 +44,16 @@ export class AccountsReceivableController {
   @Permissions('accounting:ar:account:read')
   async listCustomerAccounts(@Request() req: any, @Query() query: ListAccountsQueryDto) {
     const orgId = req.branchContext.organizationId;
-    return this.arService.listCustomerAccounts({ orgId, query });
+    const branchId = req.branchContext.branchId;
+    return this.arService.listCustomerAccounts({ orgId, branchId, query });
   }
 
   @Get('accounts/:id')
   @Permissions('accounting:ar:account:read')
   async getCustomerAccount(@Request() req: any, @Param('id') accountId: string) {
     const orgId = req.branchContext.organizationId;
-    return this.arService.getCustomerAccount({ orgId, accountId });
+    const branchId = req.branchContext.branchId;
+    return this.arService.getCustomerAccount({ orgId, branchId, accountId });
   }
 
   // ── Invoices ──
@@ -93,7 +95,8 @@ export class AccountsReceivableController {
   @Permissions('accounting:ar:invoice:read')
   async getInvoice(@Request() req: any, @Param('id') invoiceId: string) {
     const orgId = req.branchContext.organizationId;
-    return this.arService.getInvoice({ orgId, invoiceId });
+    const branchId = req.branchContext.branchId;
+    return this.arService.getInvoice({ orgId, branchId, invoiceId });
   }
 
   // ── Receipts ──
@@ -130,7 +133,8 @@ export class AccountsReceivableController {
   @Permissions('accounting:ar:aging:read')
   async getAgingSummary(@Request() req: any, @Query() query: AgingQueryDto) {
     const orgId = req.branchContext.organizationId;
-    return this.arService.getAgingSummary({ orgId, query });
+    const branchId = req.branchContext.branchId;
+    return this.arService.getAgingSummary({ orgId, branchId, query });
   }
 
   // ── AR Credit Notes ──
@@ -157,8 +161,10 @@ export class AccountsReceivableController {
     @Query('take') take?: string,
   ) {
     const orgId = req.branchContext.organizationId;
+    const branchId = req.branchContext.branchId;
     return this.arService.listArCreditNotes({
       orgId,
+      branchId,
       customerAccountId,
       status,
       skip: skip ? Number(skip) : 0,

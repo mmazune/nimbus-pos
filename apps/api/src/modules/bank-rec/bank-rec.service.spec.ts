@@ -734,4 +734,44 @@ describe('BankRecService', () => {
       );
     });
   });
+
+  // ── PC-03 branch scoping ────────────────────────────────────────────────
+  describe('PC-03 branch scoping', () => {
+    it('scopes bank statements strictly — branchId is NOT NULL on this model', async () => {
+      prisma.bankStatement.findMany.mockResolvedValue([]);
+
+      await service.listBankStatements(CTX);
+
+      const where = prisma.bankStatement.findMany.mock.calls[0][0].where;
+      expect(where.orgId).toBe(ORG);
+      // Strict equality, not an OR-with-null: there is no org-level statement
+      // to accommodate, so admitting NULL would admit nothing but corruption.
+      expect(where.branchId).toBe(BRANCH);
+      expect(where.OR).toBeUndefined();
+    });
+
+    it('scopes the statement DETAIL with the identical predicate as its list', async () => {
+      prisma.bankStatement.findFirst.mockResolvedValue({ id: 'stmt-1' });
+
+      await service.getBankStatement(CTX, 'stmt-1');
+
+      const where = prisma.bankStatement.findFirst.mock.calls[0][0].where;
+      expect(where.branchId).toBe(BRANCH);
+    });
+
+    it('scopes reconciliations strictly', async () => {
+      prisma.bankReconciliation.findMany.mockResolvedValue([]);
+
+      await service.listReconciliations(CTX);
+
+      const where = prisma.bankReconciliation.findMany.mock.calls[0][0].where;
+      expect(where.branchId).toBe(BRANCH);
+    });
+
+    it('is fail-closed when no branch is resolved', async () => {
+      await expect(
+        service.listBankStatements({ organizationId: ORG } as any),
+      ).rejects.toThrow(/without a branch id/);
+    });
+  });
 });

@@ -6,6 +6,7 @@
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { branchOrOrgScope } from '../../common/scope';
 import { LedgerService } from '../ledger/ledger.service';
 import { Prisma } from '@prisma/client';
 import { CreateCustomerAccountDto } from './dto/create-customer-account.dto';
@@ -173,14 +174,26 @@ export class AccountsReceivableService {
     return account;
   }
 
-  async listCustomerAccounts(params: { orgId: string; query: ListAccountsQueryDto }) {
-    const { orgId, query } = params;
-    const { status, type, branchId, skip = '0', take = '50' } = query;
+  async listCustomerAccounts(params: {
+    orgId: string;
+    branchId?: string;
+    query: ListAccountsQueryDto;
+  }) {
+    const { orgId, branchId, query } = params;
+    const { status, type, branchId: branchIdFilter, skip = '0', take = '50' } = query;
 
-    const where: Prisma.CustomerAccountWhereInput = { orgId };
+    // PC-03 (extension): this honoured only the OPTIONAL `?branchId=` query
+    // param and ignored `X-Branch-Id` entirely, so the default read was
+    // org-wide. The header now scopes it; the query param survives as a
+    // narrowing filter inside that scope and can no longer be used to read
+    // another branch (an unmatched value simply returns nothing).
+    const where: Prisma.CustomerAccountWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'customer account'),
+    };
     if (status) where.status = status as any;
     if (type) where.type = type as any;
-    if (branchId) where.branchId = branchId;
+    if (branchIdFilter) where.branchId = branchIdFilter;
 
     const [data, total] = await Promise.all([
       this.prisma.customerAccount.findMany({
@@ -198,9 +211,13 @@ export class AccountsReceivableService {
     return { data, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getCustomerAccount(params: { orgId: string; accountId: string }) {
+  async getCustomerAccount(params: { orgId: string; branchId?: string; accountId: string }) {
     const account = await this.prisma.customerAccount.findFirst({
-      where: { id: params.accountId, orgId: params.orgId },
+      where: {
+        id: params.accountId,
+        orgId: params.orgId,
+        ...branchOrOrgScope(params.branchId, 'customer account'),
+      },
       include: {
         _count: { select: { invoices: true, receipts: true, creditNotes: true } },
       },
@@ -221,9 +238,15 @@ export class AccountsReceivableService {
   }) {
     const { orgId, branchId, userId, dto } = params;
 
-    // Validate customer account
+    // Validate customer account (PC-03 — branch-scoped, so an invoice cannot be
+    // raised against another branch's customer; org-level accounts stay usable).
     const account = await this.prisma.customerAccount.findFirst({
-      where: { id: dto.customerAccountId, orgId, status: 'ACTIVE' },
+      where: {
+        id: dto.customerAccountId,
+        orgId,
+        status: 'ACTIVE',
+        ...branchOrOrgScope(branchId, 'customer account'),
+      },
     });
     if (!account) {
       throw new NotFoundException('Customer account not found or inactive');
@@ -319,8 +342,7 @@ export class AccountsReceivableService {
     take?: number;
   }) {
     const { orgId, branchId, customerAccountId, status, skip = 0, take = 50 } = params;
-    const where: Prisma.InvoiceWhereInput = { orgId };
-    if (branchId) where.branchId = branchId;
+    const where: Prisma.InvoiceWhereInput = { orgId, ...branchOrOrgScope(branchId, 'invoice') };
     if (customerAccountId) where.customerAccountId = customerAccountId;
     if (status) where.status = status as any;
 
@@ -342,9 +364,14 @@ export class AccountsReceivableService {
     return { data, total, skip, take };
   }
 
-  async getInvoice(params: { orgId: string; invoiceId: string }) {
+  // PC-03: detail resolved by `orgId` alone while its list was branch-scoped.
+  async getInvoice(params: { orgId: string; branchId?: string; invoiceId: string }) {
     const invoice = await this.prisma.invoice.findFirst({
-      where: { id: params.invoiceId, orgId: params.orgId },
+      where: {
+        id: params.invoiceId,
+        orgId: params.orgId,
+        ...branchOrOrgScope(params.branchId, 'invoice'),
+      },
       include: {
         customerAccount: true,
         lines: true,
@@ -381,9 +408,13 @@ export class AccountsReceivableService {
   }) {
     const { orgId, branchId, userId, dto } = params;
 
-    // Validate customer account
+    // Validate customer account (PC-03 — branch-scoped).
     const account = await this.prisma.customerAccount.findFirst({
-      where: { id: dto.customerAccountId, orgId },
+      where: {
+        id: dto.customerAccountId,
+        orgId,
+        ...branchOrOrgScope(branchId, 'customer account'),
+      },
     });
     if (!account) {
       throw new NotFoundException('Customer account not found');
@@ -419,7 +450,7 @@ export class AccountsReceivableService {
     // Fetch all referenced invoices
     const invoiceIds = dto.allocations.map((a) => a.invoiceId);
     const invoices = await this.prisma.invoice.findMany({
-      where: { id: { in: invoiceIds }, orgId },
+      where: { id: { in: invoiceIds }, orgId, ...branchOrOrgScope(branchId, 'invoice') },
     });
     const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
 
@@ -638,14 +669,21 @@ export class AccountsReceivableService {
   // AR Aging
   // ───────────────────────────────────────────
 
-  async getAgingSummary(params: { orgId: string; query: AgingQueryDto }) {
-    const { orgId, query } = params;
+  /**
+   * PC-03 (extension): aged every branch's open invoices while
+   * `GET /ar/invoices` returned one branch's, so the aging summary and the
+   * invoice list beneath it could not be reconciled. Now computed over the
+   * same scope as the list.
+   */
+  async getAgingSummary(params: { orgId: string; branchId?: string; query: AgingQueryDto }) {
+    const { orgId, branchId, query } = params;
     const asOf = query.asOf ? new Date(query.asOf) : new Date();
     const skip = Number(query.skip ?? 0);
     const take = Number(query.take ?? 50);
 
     const where: Prisma.InvoiceWhereInput = {
       orgId,
+      ...branchOrOrgScope(branchId, 'AR aging'),
       status: { in: ['ISSUED', 'PARTIALLY_PAID'] },
       outstandingBalance: { gt: 0 },
     };
@@ -802,7 +840,11 @@ export class AccountsReceivableService {
     const { orgId, branchId, userId, dto } = params;
 
     const account = await this.prisma.customerAccount.findFirst({
-      where: { id: dto.customerAccountId, orgId },
+      where: {
+        id: dto.customerAccountId,
+        orgId,
+        ...branchOrOrgScope(branchId, 'customer account'),
+      },
     });
     if (!account) {
       throw new NotFoundException('Customer account not found');
@@ -810,7 +852,12 @@ export class AccountsReceivableService {
 
     if (dto.invoiceId) {
       const inv = await this.prisma.invoice.findFirst({
-        where: { id: dto.invoiceId, orgId, customerAccountId: dto.customerAccountId },
+        where: {
+          id: dto.invoiceId,
+          orgId,
+          customerAccountId: dto.customerAccountId,
+          ...branchOrOrgScope(branchId, 'invoice'),
+        },
       });
       if (!inv) {
         throw new NotFoundException(
@@ -870,13 +917,19 @@ export class AccountsReceivableService {
 
   async listArCreditNotes(params: {
     orgId: string;
+    branchId?: string;
     customerAccountId?: string;
     status?: string;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, customerAccountId, status, skip = 0, take = 50 } = params;
-    const where: Prisma.ArCreditNoteWhereInput = { orgId };
+    const { orgId, branchId, customerAccountId, status, skip = 0, take = 50 } = params;
+    // PC-03: proven live — 1 row returned under X-Branch-Id=ROOFTOP, and it
+    // belonged to TAPAS.
+    const where: Prisma.ArCreditNoteWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'AR credit note'),
+    };
     if (customerAccountId) where.customerAccountId = customerAccountId;
     if (status) where.status = status as any;
 

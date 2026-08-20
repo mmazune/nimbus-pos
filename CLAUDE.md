@@ -96,6 +96,7 @@ for the full document catalog with provenance.
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) — shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | Track C backend gap batch 1 (C-02/MP0-10/MP0-09/C-01) | `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md` (canonical record, 2026-08-20) |
+| **Backend gap batch 2 (PC-03 · PC-04)** | **`ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md`** (canonical record, 2026-08-21) |
 | **Permissions cutover (C-21 · FU-1 · B3-F1)** | **`ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md`** (canonical record, 2026-08-20) |
 | **Accounting/finance API verification (Track B0)** | **`ai/ACCOUNTING_API_VERIFICATION_REPORT.md`** (canonical B0 record + the B5 go/no-go, 2026-08-20) |
 | Locked decisions | `docs/DECISIONS.md` |
@@ -159,7 +160,76 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**PERMISSIONS CUTOVER COMPLETE — C-21 · FU-1 · B3-F1 + Track B0 (2026-08-20) — A: COMPLETE / B5
+**BACKEND GAP BATCH 2 COMPLETE — PC-03 · PC-04 (2026-08-21) — A: COMPLETE / B5 GATE NOW 🟢 GO /
+SHARED-NEON DEPLOY STILL GATED.** The second owner-authorized Track C batch clears the **two 🔴
+blocking conditions** on the B5 gate. Backend source + tests + docs only; **no Prisma schema change,
+no migration, no seed change, no permission change, no `demo-import.ts` change, no Postman collection
+edited, no frontend file touched.** Validated on an isolated local Docker Postgres stack (`:55433`,
+API `:4021`, web `:3100`) with a second container (`:55434`, API `:4022`) carrying a `bcbabd9`
+worktree for the before-measurements — **shared Neon was never connected to or written**, and
+**neither `.env` was modified** (SHA-256 identical before and after).
+**PC-03 — the leak was wider than recorded, and each entity was ruled on from SCHEMA TRUTH, not
+preference.** Three categories, not two: **NOT NULL `branchId`** (`BankAccount`, `BankStatement`,
+`BankReconciliation`, `ManualBankEntry`) → **strict** equality; **nullable `branchId`** (suppliers,
+bills, payments, AP/AR credit notes, invoices, customer accounts, reminders, recurring profiles,
+posting errors) → *acting branch **OR** `branchId IS NULL`* — the repo's existing predicate in
+`attendance`/`workforce`/`payroll`/`analytics`, because strict equality on a nullable column would
+orphan every org-level row from **every** branch at once; and **no `branchId` column at all**
+(`FiscalPeriod`, `PostingSourceMap`, `TaxLedgerConfig`) plus `PeriodCloseRun` (nullable, never
+stamped by the close path) → **org-level BY DESIGN, documented and downgraded, no column invented.**
+Both rules live once in `apps/api/src/common/scope/branch-scope.ts`, so a list and its detail cannot
+drift apart again. ⚠️ **B0 undercounted and got one fact backwards:** beyond the four named reads,
+**eleven further instances of the same class** were found — including **three cross-branch WRITES**
+(`POST /ap/bills/:id/approve`, reconciliation `match`/`skip`), **both aging aggregates** (org-wide
+money under a single-branch list), and `GET /ar/accounts`, which honoured only the optional
+`?branchId=` query param and **ignored `X-Branch-Id` entirely**. And `getBankStatement` was **also**
+org-scoped — the detail leaked rather than 404ing as B0 claimed. Cross-branch targets return **404,
+never 403** (the B3-F1 precedent); the helpers **throw** rather than degrade to an org-wide read.
+**Before → after on the same 31-case suite: 19 failed / 12 passed at `bcbabd9` → 31 passed / 0
+failed.**
+**PC-04 — the dead guard is fixed with two checks, because repairing the comparison alone cannot
+work.** After a generation the profile points at the *next* cycle, so a "cycle already billed" check
+finds nothing; it is paired with a **cadence-elapsed** check measured from `lastGeneratedAt`.
+Measured before → after, three clicks of one MONTHLY 150,000 profile: **`200/200/200` → 3 bills,
+450,000 billed** versus **`200/409/409` → 1 bill, 150,000**. The deliberately-red e2e is **green**,
+with its "do not relax this to 200" warning retained, plus a test proving the **legitimate
+next-period bill still returns 200** (count goes 1 → 2, not 1 → 3).
+**PC-05 closed as a precondition:** the stale `totals.grand*` names meant `accounts-receivable.service.spec.ts`
+**could not compile**, so the entire AR unit suite was dead — repaired (test-only) before the new AR
+scoping tests could exist.
+**PC-01 / PC-02 / PC-06 / PC-07 remain open by design** — B0 raised them as *decisions B5 must make*,
+not defects, and all four are carried as explicit roadmap entries. **Do not grant Manager an
+accounting write, and do not fabricate a server `total` from `array.length`.**
+🔴 **New finding C-23: the M33 GL Postman collection cannot run** — it sends a literal
+`{{accountId}}`, so journal creation returns **400**, cascading into 20 failed assertions over 18
+requests. **Proven pre-existing** (identical failure set at `bcbabd9` on a from-scratch DB); B0 never
+ran M33, so **B5.3's journals surface has no Postman verification**. **C-22** (37 unseeded
+deferred-module permissions) was promoted from a passing mention to a proper Track C register row
+with the **B7-must-budget** note.
+**Validation:** AP+AR e2e **91 passed / 0 failed** (baseline at `bcbabd9` on a from-scratch DB: **1
+failed / 88 passed**, that one being the deliberately-red test); new cross-branch e2e **31/31**;
+full API e2e **98 failed / 1043** vs **99 failed / 1010** at HEAD from equally clean databases, with
+the failing **test-name sets diffed** — the only difference is the PC-04 test going green, so **zero
+regressions** (the 98 are pre-existing cross-suite interference in billing/HMS/quick-pin/franchise/
+attendance/tenancy — **none in accounting**; B0's "272/273" was a subset run); touched unit suites
+**148/148**; full API unit **1100 passed / 4 failed** with the 4 **proven pre-existing** at `bcbabd9`
+(`client-onboarding`); API typecheck **0 errors**; newman **M34 23 req/46 assert 0 failed**, **M35 21/45
+0 failed**, M32 17/34 0 failed, M36 18/24 0 failed, **M33 20 assertions failed — pre-existing, C-23**;
+**56/56** collections parse; web typecheck + lint + production build pass; **16/16** assertion
+scripts; Playwright `manager-operations` **40/40**; `/api/health` → ok.
+⚠️ **Disclosed:** the first QA API launch used `PORT=4021` but `main.ts` reads **`API_PORT`**, so it
+defaulted to 3001 and exited with `EADDRINUSE` — it **failed rather than taking the port**, and the
+pre-existing dev API was verified healthy immediately after. The QA browser run initially failed at
+login because `API_CORS_ORIGINS` defaults to `:3000` only; it was restarted with `:3100` allowed.
+**Both pre-existing dev servers (`:3001`, `:3003`) were left running and verified afterwards; no
+shared-Neon write occurred.**
+🔴 **Shared-Neon deploy is STILL GATED and is now behaviour-visible in one more way:** accounting
+reads will return **fewer** rows (one branch's, not the org's), **AP and AR aging figures will change
+value**, and cross-branch AP approvals / reconciliation matches will stop working. **B5, B6 and B7
+are NOT started — do not begin any of them without explicit owner authorisation.** See
+`ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md`.
+
+**Prior milestone record (superseded above) — PERMISSIONS CUTOVER COMPLETE — C-21 · FU-1 · B3-F1 + Track B0 (2026-08-20) — A: COMPLETE / B5
 CONDITIONAL GO / SHARED-NEON DEPLOY GATED.** Backend + **seed data** only; **no Prisma schema
 change, no migration, no `demo-import.ts` change, no frontend file touched**. Validated on an
 isolated local Docker Postgres stack (`:55432`, API `:4011`, web `:3111`) — **shared Neon was never
@@ -984,22 +1054,41 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   confirm the id exists in another branch). **Do not seed the 37 `franchise:*` / `ops:*` / `dev:*` /
   `merchant:*` / `billing:*` / `onboarding:*` / `support:*` strings (C-22)** — those modules are
   deferred, and B7 must budget its own cutover.
-- **Do not "fix" the deliberately-red AP test.**
+- **Backend gap batch 2 is complete and must not be undone.** Do not widen any accounting `where`
+  clause back to `orgId` alone — use `branchOrOrgScope` / `strictBranchScope` from
+  `apps/api/src/common/scope/`, and make a list and its detail sibling call the **same** helper.
+  Do not make those helpers fail **open** when no branch is resolved (the throw is the point — an
+  org-wide fallback is exactly the PC-03 defect). Do not turn a cross-branch **404 into a 403** — a
+  403 confirms the id exists in another branch (the B3-F1 precedent). Do not use **strict** equality
+  on a **nullable** `branchId` — it orphans org-level rows from every branch at once; the repo's
+  predicate is `OR: [{ branchId }, { branchId: null }]`. **Do not invent a `branchId`** for
+  `FiscalPeriod`, `PostingSourceMap`, `TaxLedgerConfig` or `PeriodCloseRun` — those are **org-level
+  by design** (the first three have no `branch_id` column at all; the fourth is never stamped by the
+  close path) and B5 must **label** them as organisation data rather than "fix" them. Do not relax
+  the **PC-04** guard: a repeat generation must 409 while the legitimate next-period bill still
+  returns 200.
+- **The formerly-red AP test now PASSES — keep it that way.**
   `accounts-payable.e2e-spec.ts` → *"should return 409 when generating duplicate for same cycle"*
-  is **correct and left failing on purpose** (**PC-04**): the duplicate guard compares
-  `lastBill.dueDate === profile.nextDueDate` while the same transaction advances `nextDueDate`, so
-  the `ConflictException` is unreachable and a second call issues a **second bill for the same
-  supplier**. Relaxing the expectation to 200 would encode a duplicate-billing bug as the contract.
-- **B5 boundaries set by B0 (`ai/ACCOUNTING_API_VERIFICATION_REPORT.md`, verdict 🟡 CONDITIONAL
-  GO).** Do not present `GET /api/accounting/{ap/suppliers,ap/credit-notes,ar/credit-notes,
-  bank-statements}` as branch-scoped — they return **another branch's rows** regardless of
-  `X-Branch-Id` (**PC-03**). Do not bind a C4 pager to a fabricated total on the **ten** list routes
-  that return a bare array with no server `total` (**PC-06**). Do not call
-  `/api/finance/forecast` — the route is **`/api/franchise/forecast`**. Do not read the AR aging
-  totals from `totals.grand*` — they are under **`summary`** (**PC-05**). Model fiscal periods as
+  was left failing on purpose by B0 to document the correct contract; **backend gap batch 2 fixed
+  the source and the test is green.** Relaxing the expectation to 200 would encode a
+  duplicate-billing bug as the contract. Its two sibling cases — the next-period bill still
+  returning 200, and a rewound `nextDueDate` returning 409 — guard the two halves of the guard, and
+  must not be deleted.
+- **B5 boundaries set by B0 (`ai/ACCOUNTING_API_VERIFICATION_REPORT.md`, verdict upgraded to 🟢
+  **GO** on 2026-08-21).** ~~Do not present `ap/suppliers`, `ap/credit-notes`, `ar/credit-notes`,
+  `bank-statements` as branch-scoped~~ — **PC-03 is FIXED**; they, and eleven further routes of the
+  same class, are now genuinely branch-scoped. ⚠️ But **do** label `accounting/periods`,
+  `accounting/posting-source-maps`, `accounting/tax-config` and `accounting/period-close-runs` as
+  **organisation** data — they are org-level by design. Do not bind a C4 pager to a fabricated total
+  on the **ten** list routes that return a bare array with no server `total` (**PC-06**, still
+  open) — ship them as explicitly unpaginated instead. Do not call `/api/finance/forecast` — the
+  route is **`/api/franchise/forecast`**. Do not read the AR aging totals from `totals.grand*` —
+  they are under **`summary`** (**PC-05**; the endpoint shape is unchanged). Model fiscal periods as
   **`DRAFT → OPEN → CLOSED → LOCKED`** with no unlock route (**PC-07**). Ship journals **read-only**
-  for Manager — the guides are now live-verified correct (`journals:create` / `reverse` /
-  `posting:replay` → 403).
+  for Manager — the guides are live-verified correct (`journals:create` / `reverse` /
+  `posting:replay` → 403); ⚠️ note **C-23**, the M33 collection cannot run, so that surface has no
+  Postman verification. **Manager still holds NO accounting write** (**PC-01**) and is deliberately
+  denied `procurement:advisory:read` (**PC-02**) — B5 must request those explicitly.
 - Do not broadly refactor React Query or the performance architecture.
 - Do not hide known limitations or fabricate QA results.
 

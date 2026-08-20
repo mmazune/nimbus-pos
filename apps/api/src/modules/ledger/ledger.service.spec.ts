@@ -641,6 +641,7 @@ describe('LedgerService', () => {
 
       await service.listPostingErrors({
         orgId: ctx.organizationId,
+        branchId: ctx.branchId,
         status: 'OPEN',
       });
 
@@ -671,6 +672,7 @@ describe('LedgerService', () => {
 
       const result = await service.getPostingError({
         orgId: ctx.organizationId,
+        branchId: ctx.branchId,
         errorId: 'err-1',
       });
 
@@ -683,9 +685,41 @@ describe('LedgerService', () => {
       await expect(
         service.getPostingError({
           orgId: ctx.organizationId,
+          branchId: ctx.branchId,
           errorId: 'nonexistent',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── PC-03 branch scoping ────────────────────────────────────────────────
+  describe('PC-03 posting-error scoping', () => {
+    it('applies the same predicate to the list and the detail', async () => {
+      prisma.postingError.findMany.mockResolvedValue([]);
+      prisma.postingError.count.mockResolvedValue(0);
+      prisma.postingError.findFirst.mockResolvedValue({ id: 'err-1' });
+
+      await service.listPostingErrors({ orgId: ctx.organizationId, branchId: ctx.branchId });
+      await service.getPostingError({
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        errorId: 'err-1',
+      });
+
+      const listWhere = prisma.postingError.findMany.mock.calls[0][0].where;
+      const detailWhere = prisma.postingError.findFirst.mock.calls[0][0].where;
+
+      // B0 could only verify this one statically (0 posting-error rows on the
+      // dataset): the detail resolved by orgId alone while the list filtered by
+      // branch — the MP0-12 shape.
+      expect(listWhere.OR).toEqual([{ branchId: ctx.branchId }, { branchId: null }]);
+      expect(detailWhere.OR).toEqual(listWhere.OR);
+    });
+
+    it('is fail-closed when no branch is resolved', async () => {
+      await expect(
+        service.getPostingError({ orgId: ctx.organizationId, errorId: 'err-1' } as any),
+      ).rejects.toThrow(/without a branch id/);
     });
   });
 });

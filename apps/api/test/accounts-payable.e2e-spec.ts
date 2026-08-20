@@ -888,22 +888,16 @@ describe('AccountsPayable (e2e)', () => {
       generatedRecurringBillId = res.body.id;
     });
 
-    // ⚠️ KNOWN FAILING — finding PC-04 (B0, 2026-08-20). This test is CORRECT and is
-    // deliberately left red: it documents the intended contract, and the source does not
-    // honour it.
+    // PC-04 — RESOLVED in backend gap batch 2 (2026-08-21). This test was
+    // deliberately left RED by B0 because it documented the correct contract
+    // while the source did not honour it: the old guard compared
+    // `lastBill.dueDate === profile.nextDueDate`, but the generating
+    // transaction ADVANCES `nextDueDate` in the same breath, so the two could
+    // never be equal again and the ConflictException was unreachable dead code.
+    // A second call issued a second bill for the same supplier.
     //
-    // `generateBillFromProfile` guards duplicates by comparing
-    // `lastBill.dueDate === profile.nextDueDate`, but the same transaction ADVANCES
-    // `profile.nextDueDate` to the following cycle. After a generation the two values can
-    // never be equal, so the ConflictException branch is unreachable dead code and a
-    // second call happily issues another bill for the same profile.
-    //
-    // The defect was invisible until the C-21 permissions cutover made AP reachable at
-    // all — before it, every AP route returned 403 for every role and this assertion was
-    // never evaluated. Fixing it is a behaviour change to AP bill generation and is
-    // OUTSIDE the authorised scope of the permissions cutover (B0 is verification only),
-    // so it is recorded for B5.1 rather than patched here. Do NOT "fix" this by relaxing
-    // the expectation to 200 — that would encode a duplicate-billing bug as the contract.
+    // It now passes. Do NOT "fix" it by relaxing the expectation to 200 — that
+    // would encode a duplicate-billing bug as the contract.
     it('should return 409 when generating duplicate for same cycle', async () => {
       const res = await request(app.getHttpServer())
         .post(`/api/accounting/ap/recurring-profiles/${recurringProfileId}/generate-bill`)
@@ -912,6 +906,74 @@ describe('AccountsPayable (e2e)', () => {
         .send();
 
       expect(res.status).toBe(409);
+    });
+
+    // PC-04, the other half of the contract: the guard must refuse a DUPLICATE
+    // without refusing the legitimate NEXT-PERIOD bill. The profile is MONTHLY,
+    // so the second leg is proved by backdating `lastGeneratedAt` past one full
+    // cadence — the only part of the state a caller cannot reach through the
+    // API, and the reason this leg is asserted here rather than by waiting.
+    it('should still generate the next-period bill once the cadence has elapsed', async () => {
+      const before = await prisma.vendorBill.count({
+        where: { recurringProfileId },
+      });
+      expect(before).toBe(1);
+
+      const fiveWeeksAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
+      await prisma.recurringBillProfile.update({
+        where: { id: recurringProfileId },
+        data: { lastGeneratedAt: fiveWeeksAgo },
+      });
+
+      const res = await request(app.getHttpServer())
+        .post(`/api/accounting/ap/recurring-profiles/${recurringProfileId}/generate-bill`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('x-branch-id', branchId)
+        .send();
+
+      expect(res.status).toBe(200);
+      expect(res.body.recurringProfileId).toBe(recurringProfileId);
+
+      // Exactly one further bill — 1 -> 2, not 1 -> 3.
+      const after = await prisma.vendorBill.count({ where: { recurringProfileId } });
+      expect(after).toBe(2);
+
+      // ...and the two bills cover DIFFERENT cycles.
+      const bills = await prisma.vendorBill.findMany({
+        where: { recurringProfileId },
+        select: { dueDate: true },
+        orderBy: { dueDate: 'asc' },
+      });
+      expect(bills[0].dueDate.getTime()).not.toBe(bills[1].dueDate.getTime());
+    });
+
+    // PC-04 check 1 — the repaired form of the original intent. Rewinding
+    // `nextDueDate` onto a cycle that has already been billed must 409 even
+    // though the cadence clock says the profile is eligible.
+    it('should return 409 when the targeted cycle has already been billed', async () => {
+      const bills = await prisma.vendorBill.findMany({
+        where: { recurringProfileId },
+        select: { dueDate: true },
+        orderBy: { dueDate: 'asc' },
+      });
+      const alreadyBilledCycle = bills[0].dueDate;
+
+      await prisma.recurringBillProfile.update({
+        where: { id: recurringProfileId },
+        data: {
+          nextDueDate: alreadyBilledCycle,
+          lastGeneratedAt: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .post(`/api/accounting/ap/recurring-profiles/${recurringProfileId}/generate-bill`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('x-branch-id', branchId)
+        .send();
+
+      expect(res.status).toBe(409);
+      expect(await prisma.vendorBill.count({ where: { recurringProfileId } })).toBe(2);
     });
 
     it('should return 404 for nonexistent profile', async () => {

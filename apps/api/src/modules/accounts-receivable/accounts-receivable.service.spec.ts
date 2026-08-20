@@ -2,6 +2,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AccountsReceivableService } from './accounts-receivable.service';
+import { CustomerAccountTypeEnum } from './dto/create-customer-account.dto';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { LedgerService } from '../ledger/ledger.service';
@@ -263,7 +264,7 @@ describe('AccountsReceivableService', () => {
         dto: {
           name: 'Acme Corp',
           code: 'CORP-001',
-          type: 'CORPORATE',
+          type: CustomerAccountTypeEnum.CORPORATE,
           currencyCode: 'UGX',
         },
       });
@@ -501,22 +502,27 @@ describe('AccountsReceivableService', () => {
 
       const result = await service.getAgingSummary({
         orgId: ORG,
+        branchId: BRANCH,
         query: { asOf: '2025-04-01' },
       });
 
       expect(result.accounts).toHaveLength(1);
       expect(result.accounts[0].bucket_1_30).toBe('200');
-      expect(result.totals.grand_1_30).toBe('200');
-      expect(result.totals.grandTotal).toBe('200');
+      // PC-05: this block was renamed `totals.grand*` -> `summary.*`. The spec
+      // asserted the pre-rename names and could not compile, so the whole AR
+      // unit suite was dead. Corrected to the shape the service actually
+      // returns (verified live in B0 §5).
+      expect(result.summary.bucket_1_30).toBe('200');
+      expect(result.summary.totalOutstanding).toBe('200');
     });
 
     it('should return empty accounts when no open invoices', async () => {
       prisma.invoice.findMany.mockResolvedValue([]);
 
-      const result = await service.getAgingSummary({ orgId: ORG, query: {} });
+      const result = await service.getAgingSummary({ orgId: ORG, branchId: BRANCH, query: {} });
 
       expect(result.accounts).toHaveLength(0);
-      expect(result.totals.grandTotal).toBe('0');
+      expect(result.summary.totalOutstanding).toBe('0');
     });
   });
 
@@ -593,6 +599,48 @@ describe('AccountsReceivableService', () => {
           dto: { ...creditNoteDto, invoiceId: 'nonexistent-inv' },
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── PC-03 branch scoping ────────────────────────────────────────────────
+  describe('PC-03 branch scoping', () => {
+    it('scopes AR credit notes to the acting branch plus org-level rows', async () => {
+      prisma.arCreditNote.findMany.mockResolvedValue([]);
+      prisma.arCreditNote.count.mockResolvedValue(0);
+
+      await service.listArCreditNotes({ orgId: ORG, branchId: BRANCH });
+
+      const where = prisma.arCreditNote.findMany.mock.calls[0][0].where;
+      expect(where.orgId).toBe(ORG);
+      expect(where.OR).toEqual([{ branchId: BRANCH }, { branchId: null }]);
+    });
+
+    it('scopes customer accounts by the HEADER, not only by ?branchId=', async () => {
+      // Before the fix this list honoured the optional query param alone, so
+      // the default read — the one every UI issues — was organisation-wide.
+      prisma.customerAccount.findMany.mockResolvedValue([]);
+      prisma.customerAccount.count.mockResolvedValue(0);
+
+      await service.listCustomerAccounts({ orgId: ORG, branchId: BRANCH, query: {} });
+
+      const where = prisma.customerAccount.findMany.mock.calls[0][0].where;
+      expect(where.OR).toEqual([{ branchId: BRANCH }, { branchId: null }]);
+    });
+
+    it('ages only the acting branch’s invoices', async () => {
+      prisma.invoice.findMany.mockResolvedValue([]);
+      prisma.invoice.count.mockResolvedValue(0);
+
+      await service.getAgingSummary({ orgId: ORG, branchId: BRANCH, query: {} });
+
+      const where = prisma.invoice.findMany.mock.calls[0][0].where;
+      expect(where.OR).toEqual([{ branchId: BRANCH }, { branchId: null }]);
+    });
+
+    it('is fail-closed when no branch is resolved', async () => {
+      await expect(
+        service.listArCreditNotes({ orgId: ORG } as any),
+      ).rejects.toThrow(/without a branch id/);
     });
   });
 });

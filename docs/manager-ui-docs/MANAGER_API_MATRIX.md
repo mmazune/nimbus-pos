@@ -54,10 +54,37 @@ correct and are now live-verified. It **does** hold the pre-existing `accounts:c
 
 - ⚠️ **`GET /api/franchise/forecast`, not `/api/finance/forecast`** — the route sits on a third
   `@Controller('franchise')` class inside `budget.controller.ts`.
-- 🔴 **Four accounting reads leak across branches** regardless of `X-Branch-Id`
-  (`ap/suppliers`, `ap/credit-notes`, `ar/credit-notes`, `bank-statements`) — finding **PC-03**.
+- ✅ **PC-03 is FIXED (backend gap batch 2, 2026-08-21).** The four leaking reads
+  (`ap/suppliers`, `ap/credit-notes`, `ar/credit-notes`, `bank-statements`) — **and eleven further
+  instances of the same class that B0 missed**, including three cross-branch **writes**
+  (`POST /ap/bills/:id/approve`, reconciliation `match` / `skip`) and **both aging aggregates** —
+  are branch-scoped. Cross-branch targets return **404, never 403** (the B3-F1 precedent).
+  Two rules, chosen from the schema and not from preference:
+  **NOT NULL `branchId`** (`BankAccount`, `BankStatement`, `BankReconciliation`, `ManualBankEntry`)
+  → strict equality; **nullable `branchId`** (suppliers, bills, payments, credit notes, invoices,
+  customer accounts, reminders, recurring profiles, posting errors) → *acting branch **or**
+  `branchId IS NULL`*, the repo's existing predicate for nullable-branch models, so genuinely
+  org-level rows are not orphaned from every branch at once.
+  ⚠️ **Four surfaces are org-level BY DESIGN and are NOT branch-scoped** — do not present them as
+  branch data and do not "fix" them: `accounting/periods`, `accounting/posting-source-maps`,
+  `accounting/tax-config` (these three Prisma models have **no `branch_id` column at all**) and
+  `accounting/period-close-runs` (nullable column the close path never stamps — every row is
+  `NULL`). See `ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md` §2.
 - 🔴 **Ten accounting list routes return a bare array** with no `total` and no pagination bound —
-  finding **PC-06**. The C4 pager contract cannot bind to them.
+  finding **PC-06**, **still open**. The C4 pager contract cannot bind to them. Ship them as
+  explicitly unpaginated ("showing all N loaded") or gain a backend envelope first — **never
+  synthesise a server total from `array.length`.**
+- 🔴 **Manager holds NO accounting write** (PC-01) and is deliberately denied
+  `procurement:advisory:read` because that one string also gates the mutation
+  `PATCH /finance/procurement-suggestions/:id/review` (PC-02). B5 must request the five OD-9 writes
+  explicitly; neither was changed by batch 2 (no permission change was authorised).
+- ✅ **PC-04 is FIXED (batch 2).** `POST /ap/recurring-profiles/:id/generate-bill` no longer
+  double-bills: a repeat returns **409**, and the legitimate next-period bill still returns 200. A
+  *Generate bill* control may now ship. Measured before → after on three clicks of one MONTHLY
+  150,000 profile: **3 bills / 450,000 → 1 bill / 150,000.**
+- ⚠️ **C-23** — the M33 GL Postman collection **cannot run** (it sends a literal `{{accountId}}`, so
+  journal creation 400s). Proven pre-existing at `bcbabd9`. B5.3's journals surface therefore has
+  no Postman verification, only the live B0 matrix.
 - ⚠️ `GET /api/accounting/ar/aging` returns its totals under **`summary`**
   (`totalOutstanding` / `current` / `bucket_*`), **not** `totals.grand*` — finding **PC-05**.
 - ⚠️ **All 7 `/api/settings*` reads are org-scoped** and readable by Supervisor too

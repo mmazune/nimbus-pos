@@ -137,6 +137,7 @@ export class LedgerController {
     const ctx = (req as any).branchContext;
     return this.ledgerService.getPostingError({
       orgId: ctx.organizationId,
+      branchId: ctx.branchId,
       errorId: id,
     });
   }
