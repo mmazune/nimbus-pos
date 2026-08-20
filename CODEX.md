@@ -76,7 +76,62 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI Track B2 complete - Manager Overview dashboard (2026-08-20)
+**Backend gap batch 1 complete - Track C: C-02, MP0-10, MP0-09, C-01 (2026-08-20)
+- A: BATCH COMPLETE / B3 UNBLOCKED ON C-02 / SHARED-NEON DEPLOY STILL GATED.**
+The first owner-authorized Track C batch fixes four backend defects. No schema,
+migration, seed or permission change; no frontend file touched; local dev DB only.
+
+- **C-02 (NG-02 / MP0-01)** - new `apps/api/src/modules/hr/employee-projection.ts`.
+  The DEFAULT payload on `GET /hr/employees`, `GET /hr/employees/:id`, the POST and
+  PATCH echoes, and the employee embedded in `/hr/contracts` never *selects*
+  `compensationProfile`, `dateOfBirth`, `address`, `emergencyContact*`, private
+  `notes` or `metadata` from Postgres; `/:id` returns contracts with no salary
+  field. `?view=full` restores the historical payload behind the PRE-EXISTING
+  `pos:hr:compensation:read` (403 without it; an unknown `view` is a 400). Live:
+  40 manager rows, zero forbidden keys. Caveat recorded honestly - the seeded role
+  matrix grants that permission to Owner, MANAGER and Accountant, so a Manager can
+  still opt in explicitly; narrowing the grant is a seed change and was NOT
+  authorized (follow-up FU-1). B3's Staff directory is unblocked.
+- **MP0-10** - the gross/net inversion was a labelling defect, not an aggregation
+  bug: `Order.total = subtotal + tax - discount`, so `total` is tax-inclusive. Now
+  `grossSales = SUM(order.total)` and `netSales = grossSales - taxTotal`, with the
+  old ex-tax figure kept ADDITIVELY as `subtotalSales`; `gross = net + tax` implies
+  `gross >= net`. Live: gross 28,107,000 -> 33,014,100, net 33,014,100 ->
+  27,978,300. Applied to `/dash/today-summary`, `/dash/owner`, `/dash/manager`,
+  `/stream/metrics`, `POST /dash/kpi/refresh` AND the SHIFT_END / DAILY_SALES report
+  summaries through one `salesFigures()` helper, so the dashboard and the exported
+  report cannot disagree.
+- **MP0-09** - `/dash/open-orders` gains `total` (uncapped), `limit` and `truncated`
+  from the SAME `where` clause the dashboards count with; `count` deliberately keeps
+  its page-length meaning so the B2 Overview keeps working. Live: `total` 107 ==
+  `/dash/manager.openOrders` 107 (was 50 vs 107). Use `total` for any number shown
+  to a user.
+- **C-01 (NG-01 / MP0-03)** - `format: PDF` now returns 501 before any artifact row
+  is created; `generateTextPdf` is deleted; all 37 catalog entries advertise
+  `['CSV']`; the BG6 `/api/exports` facade 501s too. No PDF renderer was added -
+  OD-10 stays open. Artifacts created before 2026-08-20 keep their fake mime type.
+
+Validated on an isolated local Docker Postgres stack (never shared Neon; both `.env`
+files restored byte-for-byte, SHA-256 verified): API unit 1057/1061 (the 4 failures
+are pre-existing, proven by re-running the same suites at `HEAD` in a throwaway git
+worktree); `hr` e2e 25/25, `dashboards` + `reports` e2e 53/53; web typecheck pass,
+14/14 assertion scripts, Playwright `manager-dashboard` 84/84, `manager-shell` 125
+passed / 11 skipped, cross-role 36/36 (the B2 dashboard is untouched and still
+passes); newman M19 55/55, M20 40/40, M23 39/39, BG6 46 assertions with 7
+pre-existing AP failures; 56/56 collections parse; `/api/health` -> ok.
+
+**New finding recorded as Track C `C-21`: 38 accounting routes are 403 for EVERY
+role, including Owner.** accounts-payable (19 routes), accounts-receivable (10) and
+budget (9) are guarded by 23 permission strings (`accounting:ap:*`,
+`accounting:ar:*`, `finance:*`) that have ZERO rows in the permissions table (237
+seeded). `pos:accounting:*` (17 rows) IS seeded, so accounting, ledger and bank-rec
+are reachable. B5 must budget a permission/seed cutover before any AP/AR/Budget UI.
+
+Deploying these fixes to shared Neon is still gated on the cutover authorization.
+B3 and every other Track B phase remain NOT started. See
+`ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md`.
+
+**Prior milestone record (superseded above) - Enterprise UI Track B2 complete - Manager Overview dashboard (2026-08-20)
 - A: B2 COMPLETE / GATED FOR B3.** Frontend-only; no backend/schema/migration/
 seed/permission/Postman change. `/manager/overview` graduates from the B1 honest
 foundation screen to a real branch dashboard: the Odoo C10 journal-card pattern
@@ -375,6 +430,20 @@ icon registry; it renders inline SVG in `currentColor` and is mounted in
 `BranchContextLabel` (44px header tile) and `login.tsx` (56px hero tile). This is
 the only documented exception, not a licence to import glyphs directly. Brand
 files live in `apps/web/public/brand/`; see `docs/BRAND_IDENTITY.md`.
+
+### Backend gap batch 1 - do not undo (2026-08-20)
+
+- Do not reintroduce a PDF export path (`format: PDF` returns 501; there is no
+  renderer, OD-10 is still open) or re-advertise PDF in the report catalog.
+- Do not widen the employee safe projection - `compensationProfile`, `dateOfBirth`,
+  `address`, `emergencyContact*`, `notes` and `metadata` must stay off the default
+  `/hr/employees` payload.
+- Do not take an open-order COUNT from `/dash/open-orders.count` (page length) -
+  use `total`.
+- Do not reintroduce `grossSales = SUM(subtotal)` / `netSales = SUM(total)`.
+- Do not seed the missing `accounting:*` / `finance:*` permissions (C-21), change
+  the Manager role's `pos:hr:compensation:read` grant (FU-1), or deploy this batch
+  to shared Neon without the cutover gate.
 
 ## 7. Worktree safety
 

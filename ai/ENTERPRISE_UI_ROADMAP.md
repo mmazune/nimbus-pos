@@ -831,8 +831,8 @@ under the standing rule.
 
 | ID | Gap | What is wrong | Type | Unblocks | Size | Priority |
 | --- | --- | --- | --- | --- | --- | --- |
-| **C-01** | **NG-01 / MP0-03** — fake PDF export | `POST /reports/export` with `format: PDF` emits a **plain-text file stamped `application/pdf`** at `status: READY` (`reports.service.ts:2056` → `generateTextPdf`). A fake success **already in the backend**. | Backend | **B4** PDF export | S (withhold) / M (real renderer) | **1 — trust-destroying** |
-| **C-02** | **NG-02 / MP0-01** — compensation leak | `GET /hr/employees` returns full `compensationProfile` on **all 40 rows**; `/:id` adds `contracts[].salaryAmount`, `dateOfBirth`, `address`, HR `notes`. Violates the locked "never fetched" rule at the **wire**. | Mixed | 🔴 **B3** Staff directory — **hard block** | S (client projection) / M (backend projection) | **2** |
+| **C-01** ✅ | **NG-01 / MP0-03** — fake PDF export | ~~`POST /reports/export` with `format: PDF` emits a **plain-text file stamped `application/pdf`** at `status: READY` (`reports.service.ts:2056` → `generateTextPdf`).~~ **DONE 2026-08-20 (backend gap batch 1).** `format: PDF` now returns **501** with an honest message before any artifact row is created; `generateTextPdf` is deleted; all 37 catalog entries advertise `['CSV']` only. CSV verified unchanged. **No renderer was added — OD-10 still open.** | Backend | **B4** PDF export | S (withhold) / M (real renderer) | **1 — trust-destroying** |
+| **C-02** ✅ | **NG-02 / MP0-01** — compensation leak | ~~`GET /hr/employees` returns full `compensationProfile` on **all 40 rows**; `/:id` adds `contracts[].salaryAmount`, `dateOfBirth`, `address`, HR `notes`.~~ **DONE 2026-08-20 (backend gap batch 1).** The default payload is a safe projection whose sensitive columns are **not selected from Postgres** (list, detail, write echoes, and the employee embedded in `/hr/contracts`); the historical payload survives behind `?view=full`, gated by the existing `pos:hr:compensation:read`. ⚠️ **Caveat:** the seeded matrix grants that permission to Owner **and Manager** and Accountant, so a Manager token can still opt in explicitly — narrowing the grant is a seed change and was NOT authorised (follow-up FU-1). The default wire payload is safe for every role, which is what B3 needed. | Mixed | 🟢 **B3** Staff directory — **unblocked** | S (client projection) / M (backend projection) | **2** |
 | **C-03** | **NG-06 / MP0-08** — no report rows | `GET /reports/:id` returns `summary` + `rowCount` only. **A pivot/graph clone is a backend gap, not a UI gap.** | Backend | **B4** graph + pivot | S (accept summary) / L (row payload) | 5 |
 | **C-04** | **NG-14 / MP0-07** — SSE unusable from the browser | `/api/stream/metrics` requires `Authorization` **and** `X-Branch-Id`; `EventSource` supports neither; `apps/web` has **no SSE client at all**. 15s interval verified. | UI infra | **B2** live mode (degrades to polling) | M | 6 |
 | **C-05** | **NG-09 / MP0-14 + MP0-15** — plaintext credential | `POST /hr/frontline-staff/onboard` returns a plaintext `quickPin.pin`; `issueQuickPin` defaults **true**; the DTO accepts `contractId` + `compensationProfileId`. | Discipline (+ backend hardening) | **B3** onboarding | S | 3 |
@@ -850,6 +850,7 @@ under the standing rule.
 | **C-17** | **NG-17** — no tax-return document | Nimbus has `tax-config` + `periods/:id/close\|lock` + `period-close-runs` but **no return object**. | Backend | **B5.4** ships the honest period-close analogue instead | M | Defer |
 | **C-18** | **NG-19** — assets / loans / deferrals | Assets, Loans, Deferred Revenue/Expense, Unrealized Currencies — none exist. | Backend | — | L | **Defer — out of scope for a hospitality POS** |
 | **C-19** | `hr` module surface | `POST/GET /api/hr/positions` and `/api/hr/compensation-profiles` exist and are **compensation-adjacent** — they fall under the locked exclusion. Recorded so nobody re-discovers them as "missing features". | Docs/discipline | **B3** exclusion card | S | Record only |
+| **C-21** 🔴 | **Accounting/AP/AR/Budget permissions were never seeded** | **Found live 2026-08-20 (backend gap batch 1).** `accounts-payable` (19 routes), `accounts-receivable` (10) and `budget` (9) are guarded by **23 permission strings** — `accounting:ap:*`, `accounting:ar:*`, `finance:*` — that have **zero rows** in the `permissions` table (237 seeded; `accounting:%` → 0, `finance:%` → 0). Live: owner `POST /api/accounting/ap/suppliers` → **403 Insufficient permissions**. `pos:accounting:*` (17 rows) IS seeded, so `accounting`, `ledger` and `bank-rec` are reachable. **This qualifies the "~90 accounting endpoints exist with zero UI" headline: 38 of them cannot be called by anyone today.** Also the standing cause of the 3 pre-existing `bg6` e2e / 7 newman failures. | Seed + permissions | **B5** accounting suite — must budget a permission/seed cutover FIRST | S (seed) but needs a shared-Neon cutover gate | **3** |
 | **C-20** | **F-C3-1** — order-number collision 500 | `OrdersService.generateOrderNumber` (`orders.service.ts:67`) parses `/ORD-(\d+)/`; a branch-prefixed demo number (`ORD-TAPAS_DOWNTOWN-00374`) does not match, the sequence resets to `ORD-000001`, and the unique constraint fires. Breaks QA fixtures. | Backend | QA fixtures for every track | S | 14 |
 
 ## Track C-P — Cashier reconstruction (independent, parallel, unchanged scope)
@@ -889,7 +890,7 @@ zero-bill copy) and **F-C3-6** (readiness badge copy) belong to C4 and C5/C6 res
    B2 Overview (M)  B3 Ops+Staff (L)  B4 Reports (M)  B6 Settings (M)  [B5 waits on B0]
        │                │               │               │
        │ live mode      │ directory     │ graph/pivot   │ settings routes
-       │ ◀── C-04       │ 🔴◀── C-02    │ 🔴◀── C-03    │ ◀── B0
+       │ ◀── C-04       │ ✅◀── C-02    │ 🔴◀── C-03    │ ◀── B0
        │                │               │
        ▼                ▼               │
    B7 Owner (M) ◀───────┘               │
@@ -902,19 +903,22 @@ zero-bill copy) and **F-C3-6** (readiness badge copy) belong to C4 and C5/C6 res
                                 ├─▶ B5.3 Core+Review ─┴─▶ B5.4 Closing
                                 └─▶ B5.5 Reporting+Config ──▶ B5.6 Dashboard
 
-   TRACK C (gaps)    C-01 ▶B4   C-02 ▶B3(hard)   C-03 ▶B4   C-04 ▶B2   C-05 ▶B3
-                     C-06 ▶B0/B5   C-09 ▶B3   C-10 ▶B6   C-15 ▶B1
+   TRACK C (gaps)    C-01 ✅DONE   C-02 ✅DONE   C-03 ▶B4   C-04 ▶B2   C-05 ▶B3
+                     C-06 ▶B0/B5   C-09 ▶B3   C-10 ▶B6   C-15 ▶B1   C-21 🔴▶B5
                      C-07/C-08/C-20 ▶ Cashier C4/C6 · C-11/16/17/18 deferred
 
    TRACK C-P         Cashier C4 ──▶ C5 ──▶ C6   (independent, unchanged, parallel)
                         ▲ shares pos-shell/* with B1 — coordinate
 ```
 
-**Critical path to an Odoo-grade suite:** `B1 → B3 → B5.1` (with `B0` running alongside `B1` and
-`C-02` landing before `B3`'s directory).
-**Hard blocks:** `C-02` → B3 Staff directory · `B0 go` → B5 · `C-03` → B4 graph/pivot.
-**Soft blocks (degrade honestly):** `C-04` → B2 live mode (polls instead) · `C-01` → B4 PDF (CSV
-only) · `C-15` → B1 Favorites (localStorage-only or absent).
+**Critical path to an Odoo-grade suite:** `B1 → B3 → B5.1` (with `B0` running alongside `B1`).
+`C-02` **landed 2026-08-20**, so B3's directory is no longer blocked.
+**Hard blocks:** ~~`C-02` → B3 Staff directory~~ **cleared** · `B0 go` → B5 · `C-03` → B4
+graph/pivot · **`C-21` (unseeded `accounting:*` / `finance:*` permissions) → B5, which must budget a
+permission/seed cutover before any AP/AR/Budget UI**.
+**Soft blocks (degrade honestly):** `C-04` → B2 live mode (polls instead) · ~~`C-01` → B4 PDF~~
+**resolved: PDF returns 501, B4 ships CSV-only by contract** · `C-15` → B1 Favorites
+(localStorage-only or absent).
 
 ---
 
@@ -927,12 +931,12 @@ only) · `C-15` → B1 Favorites (localStorage-only or absent).
 | B | **B0** | M-P0-style live verification of the ~90 accounting/finance routes + settings/alerts/sync/audit/analytics | **M** | None. Docs only. **Gates B5**; informs B6/B7 |
 | B | **B1** | Manager **top-nav shell**: module bar, click dropdowns, control panel, chip search, pager, view switcher, breadcrumb | **L** | ✅ **COMPLETE (2026-08-20).** Blocks B2–B7 (still gated on their own owner go). Shared-shell variant, frontline unchanged |
 | B | **B2** | Manager Overview — Odoo C10 KPI card grid over `/dash/*`, truthful checklists, degraded stream | **M** | ✅ **COMPLETE (2026-08-20).** 8 cards, 9 bounded reads, polled (C-04 still open). Blocks nothing; B3–B7 stay gated |
-| B | **B3** | Operations (read-only lists/forms/floor/chatter) + Staff (kanban directory, onboarding, Quick-PIN table) | **L** | B1. 🔴 Directory **hard-gated on C-02**. Chatter gated on B0. Shift-swap = Outcome C |
-| B | **B4** | Reports — catalog, one generic generate form, history, summary detail, **CSV-only** export | **M** | B1. **No PDF** (C-01). 🔴 Graph/pivot gated on **C-03** |
-| B | **B5** | Accounting suite over ~90 endpoints — 7-menu tree, sub-phased B5.1…B5.6 | **L** | 🔴 **B0 go** + B1 (+ B3 primitives). No financial statements |
+| B | **B3** | Operations (read-only lists/forms/floor/chatter) + Staff (kanban directory, onboarding, Quick-PIN table) | **L** | B1. ✅ Directory **unblocked — C-02 landed 2026-08-20** (default `/hr/employees` payload is compensation- and PII-free). Chatter gated on B0. Shift-swap = Outcome C. Carries doc follow-up FU-3 |
+| B | **B4** | Reports — catalog, one generic generate form, history, summary detail, **CSV-only** export | **M** | B1. **No PDF — enforced by the backend since 2026-08-20 (C-01: `format: PDF` → 501, catalog advertises CSV only)**. 🔴 Graph/pivot gated on **C-03** |
+| B | **B5** | Accounting suite over ~90 endpoints — 7-menu tree, sub-phased B5.1…B5.6 | **L** | 🔴 **B0 go** + B1 (+ B3 primitives). No financial statements. 🔴 **C-21: 38 AP/AR/Budget routes are 403 for every role — their permissions were never seeded** |
 | B | **B6** | Settings — C11 two-pane: branch (read-only), devices, printers (metadata), terminals (stub), alerts (rules read-only), sync (no diff), org settings | **M** | B1 + B0. Branch read-only per **C-10** |
 | B | **B7** | Owner dashboard variant — same shell, wider scope, explicit org-vs-branch scope labels | **M** | B1, B2, B0. Needs **OD-1** |
-| C | **C-01…C-20** | Backend + discipline gaps, each naming the phase it unblocks | S–L | Each needs explicit per-change authorization |
+| C | **C-01…C-21** | Backend + discipline gaps, each naming the phase it unblocks | S–L | Each needs explicit per-change authorization. **C-01 + C-02 DONE 2026-08-20** (backend gap batch 1 — `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md`); **C-21 newly recorded** by that batch |
 | C-P | **C4 → C6** | Cashier receipts/refunds → Queue retirement → closure QA | — | Unchanged scope; **C4 gated on explicit authorization** |
 
 ---

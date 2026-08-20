@@ -31,6 +31,91 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
+- **BACKEND GAP BATCH 1 COMPLETE — Track C: C-02 · MP0-10 · MP0-09 · C-01 (2026-08-20) — A: BATCH
+  COMPLETE / B3 UNBLOCKED ON C-02 / SHARED-NEON DEPLOY STILL GATED.** Backend service + controller +
+  DTO + tests + Postman + docs. **No schema, no migration, no seed, no permission added or regranted,
+  no frontend file touched, local dev DB only, no shared-Neon deploy.**
+  **C-02 (NG-02 / MP0-01) — the compensation + PII leak is closed at the wire.** New
+  `apps/api/src/modules/hr/employee-projection.ts` defines `SAFE_EMPLOYEE_SELECT` (id, orgId,
+  branchId, userId, employeeCode, first/middle/last name, phone, email, hireDate, status,
+  employmentType, positionId, **compensationProfileId**, timestamps, position) and
+  `SAFE_CONTRACT_SELECT` (no `salaryAmount`/`salaryBasis`). The **default** payload on
+  `GET /hr/employees`, `GET /hr/employees/:id`, the POST/PATCH echoes **and** the employee embedded
+  in `GET|POST /hr/contracts` never *selects* `compensationProfile`, `dateOfBirth`, `address`,
+  `emergencyContact*`, private `notes` or `metadata` from Postgres — a mapper alone would have been
+  bypassable by a future `include`. `?view=full` restores the historical payload gated by the
+  **pre-existing** `pos:hr:compensation:read` (403 without it, naming the permission; an unknown
+  `view` is a 400 from the DTO). **Consumer audit first:** `apps/web` never calls these routes;
+  `HrService` is injected nowhere else; payroll reads `compensationProfile` through Prisma, not HTTP,
+  so it is untouched. ⚠️ **Recorded honestly:** the seeded matrix grants
+  `pos:hr:compensation:read` to Owner, **Manager** and Accountant (the manager token holds 214
+  permissions incl. this one), and no existing *read* permission is compensation-grade AND
+  Manager-excluded — so a Manager can still deliberately request `?view=full`. What is guaranteed is
+  that the **default** wire payload is compensation- and PII-free for every role, which is what B3
+  needed; narrowing the grant is a seed change and was **not** authorised (follow-up **FU-1**).
+  **MP0-10 — `netSales > grossSales` was a labelling inversion, not an aggregation bug.** Both
+  figures come from one `order.aggregate` over one `where`; the persisted identity is
+  `Order.total = subtotal + tax − discount` (asserted at `demo-import.ts:443`, and
+  `recalcOrderTotals` is the same with `tax = 0`), so `subtotal` is ex-tax and `total` is
+  tax-inclusive. Now **`grossSales = SUM(order.total)`**, **`netSales = grossSales − taxTotal`**, and
+  the old ex-tax figure is preserved **additively** as **`subtotalSales`**. Invariant
+  `gross = net + tax` ⇒ `gross ≥ net`. Live before → after on the same branch-day: gross
+  **28,107,000 → 33,014,100**; net **33,014,100 → 27,978,300**; tax 5,035,800 unchanged; subtotal
+  28,107,000. Applied to `/dash/today-summary`, `/dash/owner` (today+mtd), `/dash/manager`,
+  `/stream/metrics`, `POST /dash/kpi/refresh` **and** the reporting `SHIFT_END` / `DAILY_SALES`
+  summaries through one exported `salesFigures()` helper — fixing only the dashboard would have made
+  the Overview disagree with the report the same manager exports (deliberate scope extension,
+  disclosed).
+  **MP0-09 — open-order count parity, additively.** One private `openOrdersWhere()` is now the single
+  definition of "open" (`NEW, SENT, IN_KITCHEN, READY, SERVED`) for both the count and the list.
+  `/dash/open-orders` keeps `count` (rows in THIS response) and `orders`, and **gains `total`
+  (uncapped), `limit` (50) and `truncated`**. Live: `total: 107` == `/dash/manager.openOrders: 107`
+  == `/dash/today-summary.openOrders`; before, the list said 50.
+  **C-01 (NG-01 / MP0-03) — the fabricated PDF is withdrawn.** `format: PDF` now throws **501
+  `NotImplementedException` before the artifact row is created** (no PENDING/FAILED litter, no file),
+  with a message naming the missing renderer and pointing at CSV; `generateTextPdf` is **deleted**;
+  `mimeType`/`ext` are unconditionally `text/csv`/`csv`; all **37** catalog entries advertise
+  `formats: ['CSV']` (advertising a format that 501s would just move the lie). The BG6 facade
+  `POST /api/exports` delegates here, so it 501s too — verified. **No renderer was added (OD-10
+  open).** Pre-2026-08-20 `ExportArtifact` rows keep their fake mime type and stay downloadable.
+  **Validated** on an isolated local Docker Postgres stack (`:55436`, API `:4001`, web `:3100`;
+  shared Neon never targeted; both `.env` files restored **byte-for-byte**, SHA-256 verified;
+  container removed): API unit **1057 passed / 4 failed / 1061** — the 4 failures
+  (`client-onboarding`, `accounts-receivable` specs) are **pre-existing**, proven by running the same
+  two suites at `HEAD` in a throwaway git worktree (identical result); `hr` e2e **25/25** (4 new
+  C-02 live tests), `dashboards`+`reports` e2e **53/53**, `bg6` e2e 15/18 (3 pre-existing AP
+  failures); web **typecheck pass**, **14/14** assertion scripts incl. `manager-b2`, Playwright
+  `e2e/manager-dashboard/` **84/84**, `e2e/manager-shell/` **125 passed / 11 skipped**, cross-role
+  **36/36** — **the B2 dashboard was not modified and still passes**; newman on the isolated stack:
+  M19 **16 req / 55 assertions / 0 failed**, M20 **17/40/0**, M23 **15/39/0**, BG6 27/46/7 (the 7 are
+  the pre-existing AP-supplier group; the new PDF-501 assertion passes); all **56** collections
+  parse; `GET /api/health` → `ok`; `git diff --check` clean.
+  **Postman updated:** M19 (gross≥net, gross=net+tax, `subtotalSales`, open-order `total`/`limit`/
+  `truncated` + parity with `/dash/manager` via an env var per R16 with an R11 skip message), M20
+  (CSV mime/extension + new `10b — [501] PDF export is withdrawn`), M23 (safe projection on list +
+  detail + create echo, new `view=full` 200 and `view=everything` 400 requests), BG6 (idempotency
+  pair moved PDF→CSV, new `[501] PDF withdrawn`, description corrected). One **pre-existing**
+  collection defect fixed in passing because it made a permission test lie: M20 request 13 (`[403]
+  Chef tries shift-end`) was returning **201** because collection-level bearer auth overrode its
+  explicit chef header — now `"auth": {"type":"noauth"}` (a real chef token holds 19 permissions and
+  gets a real 403).
+  🔴 **NEW FINDING → Track C `C-21`: 38 accounting routes are 403 for every role, including Owner.**
+  `accounts-payable` (19 routes), `accounts-receivable` (10) and `budget` (9) are guarded by 23
+  permission strings (`accounting:ap:*`, `accounting:ar:*`, `finance:*`) that have **zero rows** in
+  the `permissions` table (237 seeded; `accounting:%` → 0, `finance:%` → 0). Live: owner
+  `POST /api/accounting/ap/suppliers` → **403 Insufficient permissions**. `pos:accounting:*` (17
+  rows) **is** seeded, so `accounting`, `ledger` and `bank-rec` are reachable. **This qualifies the
+  roadmap's "~90 accounting endpoints exist with zero UI" headline — a third of them cannot be called
+  at all — and means B5 must budget a permission/seed cutover before any AP/AR/Budget UI.** It is
+  also the standing cause of the pre-existing `bg6` e2e / newman failures.
+  **Follow-ups recorded, none implemented:** FU-1 (Manager's `pos:hr:compensation:read` grant),
+  FU-2/C-21 (unseeded accounting permissions), FU-3 (two now-stale notes in
+  `apps/web/src/lib/manager/dashboard-model.ts` about MP0-09/MP0-10 — **B3 doc follow-up, no
+  frontend edit was permitted here**), FU-4 (M23/BG6 collections are not re-runnable against the same
+  database — an R3 violation). See `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md`.
+  **Shared-Neon deploy of these fixes is still pending the cutover gate. B3 and every other Track B
+  phase remain NOT started — do not begin one without explicit owner authorisation.**
+
 - **ENTERPRISE UI TRACK B2 COMPLETE — Manager Overview dashboard (2026-08-20) — A: B2 COMPLETE /
   GATED FOR B3. Frontend-only; no backend/API/schema/migration/seed/permission/Postman change.**
   `/manager/overview` graduates from the B1 honest-foundation screen to a real branch dashboard: the

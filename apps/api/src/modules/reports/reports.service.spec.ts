@@ -3,7 +3,7 @@ import { ReportsService } from './reports.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { Decimal } from '@prisma/client/runtime/library';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, NotImplementedException } from '@nestjs/common';
 import * as fs from 'fs';
 
 jest.mock('fs', () => ({
@@ -217,6 +217,63 @@ describe('ReportsService', () => {
     expect(prisma.reportRun.create).toHaveBeenCalledTimes(1);
   });
 
+  // ── MP0-10: reporting shares the dashboard's gross/net definition ──
+
+  describe('MP0-10 gross vs net in report summaries', () => {
+    /** Same controlled fixture as the dashboard regression: total = subtotal + tax - discount. */
+    const SALES_AGG = {
+      _sum: {
+        subtotal: new Decimal(28107000),
+        total: new Decimal(33014100),
+        tax: new Decimal(5059260),
+        discount: new Decimal(152160),
+      },
+      _count: 374,
+      _avg: { total: new Decimal(88273) },
+    };
+
+    function summaryFromUpdate() {
+      const completing = prisma.reportRun.update.mock.calls.find(
+        (call: any) => call[0]?.data?.status === 'COMPLETED',
+      );
+      return completing[0].data.summary;
+    }
+
+    it('DAILY_SALES: gross 33,014,100 >= net 27,954,840 (was net > gross)', async () => {
+      prisma.reportRun.create.mockResolvedValue(fakeRun({ reportType: 'DAILY_SALES' }));
+      prisma.reportRun.update.mockResolvedValue(fakeRun({ status: 'COMPLETED' }));
+      prisma.order.aggregate.mockResolvedValue(SALES_AGG);
+      prisma.payment.groupBy.mockResolvedValue([]);
+      prisma.refund.aggregate.mockResolvedValue({ _sum: { amount: new Decimal(0) }, _count: 0 });
+
+      await service.generateDailySalesReport(orgId, branchId, userId, 'DAY' as any);
+
+      const summary = summaryFromUpdate();
+      expect(summary.grossSales).toBe('33014100');
+      expect(summary.netSales).toBe('27954840');
+      expect(summary.taxTotal).toBe('5059260');
+      expect(summary.subtotalSales).toBe('28107000');
+      expect(Number(summary.grossSales)).toBeGreaterThanOrEqual(Number(summary.netSales));
+      expect(Number(summary.netSales) + Number(summary.taxTotal)).toBe(Number(summary.grossSales));
+    });
+
+    it('SHIFT_END: same definition', async () => {
+      prisma.reportRun.create.mockResolvedValue(fakeRun({ reportType: 'SHIFT_END' }));
+      prisma.reportRun.update.mockResolvedValue(fakeRun({ status: 'COMPLETED' }));
+      prisma.shift.findMany.mockResolvedValue([]);
+      prisma.order.aggregate.mockResolvedValue(SALES_AGG);
+      prisma.payment.groupBy.mockResolvedValue([]);
+      prisma.refund.aggregate.mockResolvedValue({ _sum: { amount: new Decimal(0) }, _count: 0 });
+
+      await service.generateShiftEndReport(orgId, branchId, userId, 'DAY' as any);
+
+      const summary = summaryFromUpdate();
+      expect(summary.grossSales).toBe('33014100');
+      expect(summary.netSales).toBe('27954840');
+      expect(Number(summary.grossSales)).toBeGreaterThanOrEqual(Number(summary.netSales));
+    });
+  });
+
   // ── Payment Mix Report ──
 
   it('should generate payment mix report', async () => {
@@ -353,6 +410,79 @@ describe('ReportsService', () => {
 
     expect(result.status).toBe('READY');
     expect(fs.writeFileSync).toHaveBeenCalled();
+  });
+
+  // ── C-01 (NG-01 / MP0-03): the fake PDF export is withdrawn ──
+
+  describe('C-01 export formats', () => {
+    function mockCompletedRun() {
+      prisma.reportRun.findFirst.mockResolvedValue(
+        fakeRun({
+          status: 'COMPLETED',
+          reportType: 'DAILY_SALES',
+          summary: { grossSales: '33014100', netSales: '27954840', orderCount: 374 },
+        }),
+      );
+      prisma.exportArtifact.create.mockResolvedValue({
+        id: 'art-1',
+        status: 'PENDING',
+        storagePath: '/tmp/daily_sales.csv',
+        fileName: 'daily_sales.csv',
+        mimeType: 'text/csv',
+      });
+      prisma.exportArtifact.update.mockResolvedValue({ id: 'art-1', status: 'READY' });
+    }
+
+    it('refuses PDF with 501 Not Implemented instead of a text file stamped application/pdf', async () => {
+      mockCompletedRun();
+      (fs.writeFileSync as jest.Mock).mockClear();
+
+      await expect(
+        service.createExport(orgId, branchId, userId, 'run-1', 'PDF' as any),
+      ).rejects.toThrow(NotImplementedException);
+
+      // Nothing was written, no artifact row was created, no audit event was emitted.
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+      expect(prisma.exportArtifact.create).not.toHaveBeenCalled();
+      expect(audit.log).not.toHaveBeenCalled();
+    });
+
+    it('the 501 message names the real reason and the working alternative', async () => {
+      mockCompletedRun();
+
+      await expect(
+        service.createExport(orgId, branchId, userId, 'run-1', 'PDF' as any),
+      ).rejects.toThrow(/does not have a PDF renderer/);
+      await expect(
+        service.createExport(orgId, branchId, userId, 'run-1', 'PDF' as any),
+      ).rejects.toThrow(/CSV/);
+    });
+
+    it('CSV still works end to end and writes a .csv artifact as text/csv', async () => {
+      mockCompletedRun();
+      (fs.writeFileSync as jest.Mock).mockClear();
+
+      const result = await service.createExport(orgId, branchId, userId, 'run-1', 'CSV' as any);
+
+      expect(result.status).toBe('READY');
+      expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+      const [writtenPath, content] = (fs.writeFileSync as jest.Mock).mock.calls[0];
+      expect(String(writtenPath)).toMatch(/\.csv$/);
+      expect(content).toContain('Gross Sales,33014100');
+      expect(content).toContain('Net Sales,27954840');
+
+      const created = prisma.exportArtifact.create.mock.calls[0][0].data;
+      expect(created.mimeType).toBe('text/csv');
+      expect(created.fileName).toMatch(/\.csv$/);
+    });
+
+    it('the catalog no longer advertises PDF on any report', () => {
+      const catalog = service.getReportCatalog();
+      expect(catalog.length).toBeGreaterThan(20);
+      for (const entry of catalog) {
+        expect(entry.formats).toEqual(['CSV']);
+      }
+    });
   });
 
   it('should reject export for non-completed report', async () => {

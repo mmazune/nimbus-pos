@@ -94,6 +94,7 @@ for the full document catalog with provenance.
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C — **supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward**) |
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) — shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
+| Track C backend gap batch 1 (C-02/MP0-10/MP0-09/C-01) | `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md` (canonical record, 2026-08-20) |
 | Locked decisions | `docs/DECISIONS.md` |
 | Testing / QA | `docs/TESTING_AND_QA.md` |
 | Known limitations | `docs/KNOWN_LIMITATIONS.md` |
@@ -155,7 +156,48 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**ENTERPRISE UI TRACK B2 COMPLETE — Manager Overview dashboard (2026-08-20) — A: B2 COMPLETE /
+**BACKEND GAP BATCH 1 COMPLETE — Track C: C-02 · MP0-10 · MP0-09 · C-01 (2026-08-20) — A: BATCH
+COMPLETE / B3 UNBLOCKED ON C-02 / SHARED-NEON DEPLOY STILL GATED.** The first owner-authorized Track
+C batch fixes four backend defects. **No schema / migration / seed / permission change, no frontend
+file touched, local dev DB only.**
+**C-02 (NG-02/MP0-01)** — new `apps/api/src/modules/hr/employee-projection.ts`. The **default**
+payload on `GET /hr/employees`, `GET /hr/employees/:id`, the POST/PATCH echoes and the employee
+embedded in `/hr/contracts` never *selects* `compensationProfile`, `dateOfBirth`, `address`,
+`emergencyContact*`, private `notes` or `metadata` from Postgres; `/:id` returns contracts with no
+salary field. `?view=full` restores the historical payload behind the **pre-existing**
+`pos:hr:compensation:read` (403 without it; unknown `view` → 400). Live: 40 manager rows, zero
+forbidden keys. ⚠️ The seeded matrix grants that permission to Owner, **Manager** and Accountant, so a
+Manager can still opt in explicitly — narrowing it is a seed change, **not authorized** (FU-1). **B3's
+Staff directory is unblocked.**
+**MP0-10** — the gross/net inversion was a labelling defect: `Order.total = subtotal + tax − discount`,
+so `total` is tax-inclusive. Now **`grossSales = SUM(order.total)`**, **`netSales = gross − taxTotal`**,
+with the old ex-tax figure kept **additively** as **`subtotalSales`**; `gross = net + tax` ⇒
+`gross ≥ net`. Live: gross **28,107,000 → 33,014,100**, net **33,014,100 → 27,978,300**. Applied to
+`/dash/{today-summary,owner,manager}`, `/stream/metrics`, `kpi/refresh` **and** the SHIFT_END /
+DAILY_SALES report summaries (one `salesFigures()` helper) so dashboard and export cannot disagree.
+**MP0-09** — `/dash/open-orders` gains **`total`** (uncapped) + `limit` + `truncated` from the *same*
+`where` the dashboards count with; `count` deliberately keeps its page-length meaning so B2 keeps
+working. Live: `total 107` == `/dash/manager.openOrders 107` (was 50 vs 107). **Use `total` for any
+number shown to a user.**
+**C-01 (NG-01/MP0-03)** — `format: PDF` now returns **501** before any artifact row is created;
+`generateTextPdf` is deleted; all 37 catalog entries advertise `['CSV']`; the BG6 `/api/exports`
+facade 501s too. **No PDF renderer was added — OD-10 stays open.** Pre-2026-08-20 PDF artifacts keep
+their fake mime type.
+Validated on an isolated local Docker Postgres stack (never shared Neon; both `.env` files restored
+byte-for-byte): API unit **1057/1061** (4 pre-existing failures, proven at `HEAD` in a throwaway
+worktree); `hr` e2e 25/25, `dashboards`+`reports` e2e 53/53; web typecheck pass, **14/14** assertion
+scripts, Playwright `manager-dashboard` **84/84**, `manager-shell` 125 passed/11 skipped, cross-role
+36/36 — **the B2 dashboard is untouched and still passes**; newman M19 55/55, M20 40/40, M23 39/39,
+BG6 46 with 7 pre-existing AP failures; 56/56 collections parse; `/api/health` → ok.
+🔴 **New finding → Track C `C-21`: 38 accounting routes are 403 for EVERY role, including Owner** —
+AP (19), AR (10) and Budget (9) are guarded by 23 permission strings (`accounting:ap:*`,
+`accounting:ar:*`, `finance:*`) with **zero rows** in the permissions table. `pos:accounting:*` (17
+rows) is seeded, so `accounting`/`ledger`/`bank-rec` are fine. **B5 must budget a permission/seed
+cutover before any AP/AR/Budget UI.**
+**Deploying these fixes to shared Neon is still gated on the cutover authorization. B3 and every
+other Track B phase remain NOT started.** See `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md`.
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B2 COMPLETE — Manager Overview dashboard (2026-08-20) — A: B2 COMPLETE /
 GATED FOR B3.** Frontend-only; no backend/schema/migration/seed/permission/Postman change.
 `/manager/overview` graduates from the B1 honest-foundation screen to a real branch dashboard: the
 Odoo **C10** journal-card pattern rebuilt natively as a 3-column grid of **eight** cards with a
@@ -690,6 +732,15 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   without explicit authorization to proceed past C3. See §10,
   `ai/CASHIER_FLOOR_RECONSTRUCTION_ROADMAP.md`, and
   `ai/CASHIER_FLOOR_RECONSTRUCTION_C3_SETTLEMENT_COMPLETION_REPORT.md`.
+- Backend gap batch 1 is **complete and must not be undone**: do not reintroduce a PDF export path
+  (`format: PDF` returns 501; there is no renderer — OD-10 is still open) or re-advertise PDF in the
+  report catalog; do not widen the employee safe projection or add `compensationProfile`,
+  `dateOfBirth`, `address`, `emergencyContact*`, `notes` or `metadata` to a default `/hr/employees`
+  payload; do not take an open-order **count** from `/dash/open-orders.count` (that is the page
+  length — use `total`); and do not reintroduce `grossSales = SUM(subtotal)` /
+  `netSales = SUM(total)`. **Do not seed the missing `accounting:*` / `finance:*` permissions
+  (C-21), change the Manager role's `pos:hr:compensation:read` grant (FU-1), or deploy this batch to
+  shared Neon without the cutover gate.**
 - Do not broadly refactor React Query or the performance architecture.
 - Do not hide known limitations or fabricate QA results.
 

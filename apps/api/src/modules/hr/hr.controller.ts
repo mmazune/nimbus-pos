@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Req, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  HttpCode,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { HrService } from './hr.service';
 import { FrontlineStaffOnboardingService } from './frontline-staff-onboarding.service';
@@ -14,6 +25,7 @@ import {
   FrontlineStaffOnboardDto,
   FrontlineQuickPinResetDto,
 } from './dto';
+import { resolveEmployeeView } from './employee-projection';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
 
@@ -25,7 +37,7 @@ export class HrController {
     private readonly hrService: HrService,
     private readonly frontlineOnboarding: FrontlineStaffOnboardingService,
     private readonly frontlineQuickPin: FrontlineStaffQuickPinService,
-  ) { }
+  ) {}
 
   // ── Employees ──
 
@@ -43,18 +55,33 @@ export class HrController {
     });
   }
 
+  // C-02 (NG-02 / MP0-01): both employee reads default to the SAFE projection — no
+  // compensation, no date of birth / address / emergency contact / private HR notes.
+  // `?view=full` restores the historical payload and is gated by the existing
+  // compensation-grade permission (see employee-projection.ts).
+
   @Get('employees')
   @Permissions('pos:hr:employees:read')
-  async listEmployees(@Query() query: ListEmployeesQueryDto, @Req() req: Request) {
+  async listEmployees(
+    @Query() query: ListEmployeesQueryDto,
+    @CurrentUser() user: { permissions?: string[] },
+    @Req() req: Request,
+  ) {
     const ctx = (req as any).branchContext;
-    return this.hrService.listEmployees(ctx, query);
+    const view = resolveEmployeeView(query.view, user?.permissions);
+    return this.hrService.listEmployees(ctx, query, view);
   }
 
   @Get('employees/:id')
   @Permissions('pos:hr:employees:read')
-  async getEmployee(@Param('id') id: string, @Req() req: Request) {
+  async getEmployee(
+    @Param('id') id: string,
+    @Query('view') view: string | undefined,
+    @CurrentUser() user: { permissions?: string[] },
+    @Req() req: Request,
+  ) {
     const ctx = (req as any).branchContext;
-    return this.hrService.getEmployee(ctx, id);
+    return this.hrService.getEmployee(ctx, id, resolveEmployeeView(view, user?.permissions));
   }
 
   @Patch('employees/:id')

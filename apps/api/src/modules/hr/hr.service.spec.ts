@@ -2,7 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HrService } from './hr.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { FORBIDDEN_SAFE_EMPLOYEE_KEYS, resolveEmployeeView } from './employee-projection';
 
 describe('HrService', () => {
   let service: HrService;
@@ -600,6 +606,193 @@ describe('HrService', () => {
       expect(prisma.compensationProfile.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ orderBy: { code: 'asc' } }),
       );
+    });
+  });
+
+  // ── C-02 (NG-02 / MP0-01): compensation + PII projection ──
+
+  describe('C-02 employee projection', () => {
+    /**
+     * A row exactly as Postgres would have returned it BEFORE C-02: every sensitive
+     * column populated. The projection is asserted against this worst case, so the test
+     * fails if a future change re-widens the payload.
+     */
+    const leakyEmployee = {
+      ...mockEmployee,
+      dateOfBirth: new Date('1994-03-02'),
+      address: { line1: '12 Kira Road', city: 'Kampala' },
+      emergencyContactName: 'Jane Doe',
+      emergencyContactPhone: '+256700000009',
+      notes: 'On a performance improvement plan',
+      metadata: { bankAccount: '01234567890', tin: 'TIN-99881' },
+      compensationProfileId: 'comp-1',
+      compensationProfile: {
+        id: 'comp-1',
+        code: 'MONTHLY-STANDARD',
+        salaryBasis: 'MONTHLY',
+        baseAmount: 2800000,
+        currency: 'UGX',
+        allowances: { transport: 200000 },
+        deductions: { nssf: 150000 },
+      },
+      position: mockPosition,
+    };
+
+    /** Permission sets taken from packages/db/prisma/seed.ts ROLE_PERM_MATRIX. */
+    const MANAGER_PERMISSIONS = [
+      'pos:hr:employees:read',
+      'pos:hr:employees:create',
+      'pos:hr:employees:update',
+      'pos:hr:contracts:read',
+      'pos:hr:compensation:read',
+    ];
+    const SUPERVISOR_PERMISSIONS = ['pos:hr:employees:read', 'pos:hr:contracts:read'];
+
+    it('default list projection returns NO compensation and NO personal PII (manager token)', async () => {
+      prisma.employee.findMany.mockResolvedValue([leakyEmployee]);
+      prisma.employee.count.mockResolvedValue(1);
+
+      const view = resolveEmployeeView(undefined, MANAGER_PERMISSIONS);
+      const result = await service.listEmployees(ctx, {}, view);
+
+      expect(view).toBe('safe');
+      expect(result.view).toBe('safe');
+      expect(result.data).toHaveLength(1);
+
+      const row = result.data[0] as Record<string, unknown>;
+      for (const forbidden of FORBIDDEN_SAFE_EMPLOYEE_KEYS) {
+        expect(row).not.toHaveProperty(forbidden);
+      }
+      // The directory fields a Staff list actually needs survive.
+      expect(row.id).toBe('emp-1');
+      expect(row.employeeCode).toBe('EMP-00001');
+      expect(row.firstName).toBe('John');
+      expect(row.lastName).toBe('Doe');
+      expect(row.status).toBe('ACTIVE');
+      expect(row.employmentType).toBe('PERMANENT');
+      expect(row.position).toEqual(mockPosition);
+      // The link is kept; the amounts behind it are not.
+      expect(row.compensationProfileId).toBe('comp-1');
+      // Serialised the way the wire sees it — belt and braces.
+      expect(JSON.stringify(row)).not.toContain('2800000');
+      expect(JSON.stringify(row)).not.toContain('01234567890');
+    });
+
+    it('default list never SELECTS the sensitive columns from Postgres', async () => {
+      prisma.employee.findMany.mockResolvedValue([]);
+      prisma.employee.count.mockResolvedValue(0);
+
+      await service.listEmployees(ctx, {}, 'safe');
+
+      const args = prisma.employee.findMany.mock.calls[0][0];
+      expect(args.include).toBeUndefined();
+      expect(args.select).toBeDefined();
+      expect(args.select.compensationProfile).toBeUndefined();
+      expect(args.select.dateOfBirth).toBeUndefined();
+      expect(args.select.address).toBeUndefined();
+      expect(args.select.notes).toBeUndefined();
+      expect(args.select.metadata).toBeUndefined();
+      expect(args.select.firstName).toBe(true);
+    });
+
+    it('view=full still returns compensation for a token holding pos:hr:compensation:read', async () => {
+      prisma.employee.findMany.mockResolvedValue([leakyEmployee]);
+      prisma.employee.count.mockResolvedValue(1);
+
+      const view = resolveEmployeeView('full', MANAGER_PERMISSIONS);
+      const result = await service.listEmployees(ctx, {}, view);
+
+      expect(view).toBe('full');
+      expect(result.view).toBe('full');
+      const row = result.data[0] as any;
+      expect(row.compensationProfile.baseAmount).toBe(2800000);
+      expect(prisma.employee.findMany.mock.calls[0][0].include).toEqual({
+        position: true,
+        compensationProfile: true,
+      });
+    });
+
+    it('view=full is refused (403) without pos:hr:compensation:read', () => {
+      expect(() => resolveEmployeeView('full', SUPERVISOR_PERMISSIONS)).toThrow(ForbiddenException);
+      expect(() => resolveEmployeeView('full', [])).toThrow(/pos:hr:compensation:read/);
+    });
+
+    it('unknown view values fall back to safe rather than failing open', () => {
+      expect(resolveEmployeeView(undefined, [])).toBe('safe');
+      expect(resolveEmployeeView('safe', [])).toBe('safe');
+      expect(resolveEmployeeView('FULL', MANAGER_PERMISSIONS)).toBe('safe');
+    });
+
+    it('detail route drops contract salary on the safe path', async () => {
+      prisma.employee.findUnique.mockResolvedValue({
+        ...leakyEmployee,
+        contracts: [
+          {
+            id: 'ctr-1',
+            contractNumber: 'CTR-00001',
+            contractStatus: 'ACTIVE',
+            startsAt: new Date('2024-01-15'),
+            endsAt: null,
+            salaryBasis: 'MONTHLY',
+            salaryAmount: 2800000,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      });
+
+      const result: any = await service.getEmployee(ctx, 'emp-1', 'safe');
+
+      expect(result.contracts).toHaveLength(1);
+      expect(result.contracts[0].contractNumber).toBe('CTR-00001');
+      expect(result.contracts[0]).not.toHaveProperty('salaryAmount');
+      expect(result.contracts[0]).not.toHaveProperty('salaryBasis');
+      for (const forbidden of FORBIDDEN_SAFE_EMPLOYEE_KEYS) {
+        expect(result).not.toHaveProperty(forbidden);
+      }
+      expect(JSON.stringify(result)).not.toContain('2800000');
+    });
+
+    it('create and update echoes are projected too', async () => {
+      prisma.employee.count.mockResolvedValue(0);
+      prisma.employee.findUnique.mockResolvedValue(null);
+      prisma.employee.create.mockResolvedValue(leakyEmployee);
+
+      const created: any = await service.createEmployee(
+        'user-1',
+        ctx,
+        {
+          firstName: 'John',
+          lastName: 'Doe',
+          hireDate: '2024-01-15',
+          employmentType: 'PERMANENT' as any,
+        },
+        meta,
+      );
+      expect(created).not.toHaveProperty('compensationProfile');
+      expect(created).not.toHaveProperty('notes');
+      expect(prisma.employee.create.mock.calls[0][0].select).toBeDefined();
+
+      prisma.employee.findUnique.mockResolvedValue(mockEmployee);
+      prisma.employee.update.mockResolvedValue(leakyEmployee);
+      const updated: any = await service.updateEmployee('user-1', ctx, 'emp-1', {
+        firstName: 'John',
+      });
+      expect(updated).not.toHaveProperty('compensationProfile');
+      expect(updated).not.toHaveProperty('address');
+    });
+
+    it('contract list embeds the projected employee, keeping contract salary itself', async () => {
+      prisma.employmentContract.findMany.mockResolvedValue([mockContract]);
+      prisma.employmentContract.count.mockResolvedValue(1);
+
+      await service.listContracts(ctx, {});
+
+      const args = prisma.employmentContract.findMany.mock.calls[0][0];
+      expect(args.include.employee.select).toBeDefined();
+      expect(args.include.employee.select.dateOfBirth).toBeUndefined();
+      expect(args.include.employee.select.compensationProfile).toBeUndefined();
+      expect(args.include.employee).not.toBe(true);
     });
   });
 });

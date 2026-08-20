@@ -502,7 +502,10 @@
                             "pm.environment.set('exportArtifactId', body.id);",
                             "pm.test('Status 201', () => pm.response.to.have.status(201));",
                             "pm.test('Status is READY', () => pm.expect(body.status).to.eql('READY'));",
-                            "pm.test('Format is CSV', () => pm.expect(body.format).to.eql('CSV'));"
+                            "pm.test('Format is CSV', () => pm.expect(body.format).to.eql('CSV'));",
+                            "// C-01: CSV is the only real export format — see request 10b.",
+                            "pm.test('C-01 mime type is text/csv', () => pm.expect(body.mimeType).to.eql('text/csv'));",
+                            "pm.test('C-01 file name ends .csv', () => pm.expect(body.fileName).to.match(/\\.csv$/));"
                         ]
                     }
                 }
@@ -526,6 +529,56 @@
                 "body": {
                     "mode": "raw",
                     "raw": "{\"reportRunId\":\"{{reportRunId}}\",\"format\":\"CSV\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/reports/export",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "reports",
+                        "export"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "10b — [501] PDF export is withdrawn (C-01)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const body = pm.response.json();",
+                            "// C-01 (NG-01 / MP0-03): PDF used to return a plain-text file stamped application/pdf",
+                            "// at status READY. Nimbus has no PDF renderer, so the request is now refused honestly.",
+                            "pm.test('Status 501', () => pm.response.to.have.status(501));",
+                            "pm.test('Message names the missing renderer', () => pm.expect(body.message).to.match(/PDF renderer/));",
+                            "pm.test('Message points at CSV', () => pm.expect(body.message).to.match(/CSV/));"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{accessToken}}"
+                    },
+                    {
+                        "key": "x-branch-id",
+                        "value": "{{branchId}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"reportRunId\":\"{{reportRunId}}\",\"format\":\"PDF\"}"
                 },
                 "url": {
                     "raw": "{{baseUrl}}/api/reports/export",
@@ -633,6 +686,9 @@
                 }
             ],
             "request": {
+                "auth": {
+                    "type": "noauth"
+                },
                 "method": "POST",
                 "header": [
                     {

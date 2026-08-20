@@ -15,6 +15,13 @@ import {
   CreatePositionDto,
   CreateCompensationProfileDto,
 } from './dto';
+import {
+  EmployeeView,
+  FULL_EMPLOYEE_INCLUDE,
+  SAFE_CONTRACT_SELECT,
+  SAFE_EMPLOYEE_SELECT,
+  projectEmployeeSafe,
+} from './employee-projection';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -124,7 +131,7 @@ export class HrService {
         notes: dto.notes,
         metadata: dto.metadata || Prisma.JsonNull,
       },
-      include: { position: true, compensationProfile: true },
+      select: SAFE_EMPLOYEE_SELECT,
     });
 
     await this.audit.log({
@@ -140,7 +147,10 @@ export class HrService {
       },
     });
 
-    return employee;
+    // C-02: write echoes carry the safe projection too — a create/update response is not
+    // a compensation channel. `compensationProfileId` is still returned so a caller can
+    // confirm the link it just made.
+    return projectEmployeeSafe(employee);
   }
 
   async updateEmployee(
@@ -203,7 +213,7 @@ export class HrService {
     const updated = await this.prisma.employee.update({
       where: { id: employeeId },
       data,
-      include: { position: true, compensationProfile: true },
+      select: SAFE_EMPLOYEE_SELECT,
     });
 
     await this.audit.log({
@@ -221,12 +231,13 @@ export class HrService {
       },
     });
 
-    return updated;
+    return projectEmployeeSafe(updated);
   }
 
   async listEmployees(
     ctx: { branchId: string; organizationId: string },
     query: ListEmployeesQueryDto,
+    view: EmployeeView = 'safe',
   ) {
     const orgId = ctx.organizationId;
     const where: any = { orgId };
@@ -246,33 +257,61 @@ export class HrService {
     const skip = query.skip ? Number(query.skip) : 0;
     const take = query.take ? Number(query.take) : 50;
 
-    const [data, total] = await Promise.all([
+    // C-02: the default projection never selects compensation or personal columns.
+    const projection =
+      view === 'full' ? { include: FULL_EMPLOYEE_INCLUDE } : { select: SAFE_EMPLOYEE_SELECT };
+
+    const [rows, total] = await Promise.all([
       this.prisma.employee.findMany({
         where,
-        include: { position: true, compensationProfile: true },
+        ...projection,
         orderBy: { createdAt: 'desc' },
         skip,
         take,
-      }),
+      } as any),
       this.prisma.employee.count({ where }),
     ]);
 
-    return { data, total, skip, take };
+    const data = view === 'full' ? rows : rows.map((row: any) => projectEmployeeSafe(row));
+
+    return { data, total, skip, take, view };
   }
 
-  async getEmployee(ctx: { branchId: string; organizationId: string }, employeeId: string) {
+  // Return type is deliberately `any`: the payload shape depends on the resolved view
+  // (SafeEmployee vs the historical Prisma include). See employee-projection.ts.
+  async getEmployee(
+    ctx: { branchId: string; organizationId: string },
+    employeeId: string,
+    view: EmployeeView = 'safe',
+  ): Promise<any> {
+    // C-02: `contracts[]` carries `salaryBasis` + `salaryAmount`, so the safe detail
+    // payload lists the contracts without any salary field.
+    const projection =
+      view === 'full'
+        ? {
+            include: {
+              ...FULL_EMPLOYEE_INCLUDE,
+              contracts: { orderBy: { createdAt: 'desc' as const } },
+            },
+          }
+        : {
+            select: {
+              ...SAFE_EMPLOYEE_SELECT,
+              contracts: {
+                select: SAFE_CONTRACT_SELECT,
+                orderBy: { createdAt: 'desc' as const },
+              },
+            },
+          };
+
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
-      include: {
-        position: true,
-        compensationProfile: true,
-        contracts: { orderBy: { createdAt: 'desc' } },
-      },
-    });
-    if (!employee || employee.orgId !== ctx.organizationId) {
+      ...projection,
+    } as any);
+    if (!employee || (employee as any).orgId !== ctx.organizationId) {
       throw new NotFoundException(`Employee "${employeeId}" not found`);
     }
-    return employee;
+    return view === 'full' ? employee : projectEmployeeSafe(employee);
   }
 
   // ── Contracts ──
@@ -319,7 +358,10 @@ export class HrService {
         createdById: userId,
         metadata: dto.metadata || Prisma.JsonNull,
       },
-      include: { employee: true },
+      // C-02: the contract keeps its own salary fields (this route is gated by
+      // pos:hr:contracts:*), but the embedded employee is projected — a contract
+      // response is not a channel for date of birth, address or private HR notes.
+      include: { employee: { select: SAFE_EMPLOYEE_SELECT } },
     });
 
     await this.audit.log({
@@ -355,7 +397,8 @@ export class HrService {
     const [data, total] = await Promise.all([
       this.prisma.employmentContract.findMany({
         where,
-        include: { employee: true },
+        // C-02: same projection as createContract — see the note there.
+        include: { employee: { select: SAFE_EMPLOYEE_SELECT } },
         orderBy: { createdAt: 'desc' },
         skip,
         take,

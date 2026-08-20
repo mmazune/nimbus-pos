@@ -4,6 +4,47 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
+**2026-08-20 — BACKEND GAP BATCH 1 COMPLETE (Track C: C-02, MP0-10, MP0-09, C-01) — A: BATCH
+COMPLETE / B3 UNBLOCKED ON C-02 / SHARED-NEON DEPLOY STILL GATED.** Backend + tests + Postman + docs;
+**no schema, migration, seed, permission or frontend change**, local dev DB only.
+**C-02 (NG-02/MP0-01)** — `GET /hr/employees` no longer puts compensation or personal PII on the
+wire: the default payload is a safe projection whose sensitive columns (`compensationProfile`,
+`dateOfBirth`, `address`, `emergencyContact*`, private `notes`, `metadata`) are **not selected from
+Postgres at all**, `/:id` returns contracts without any salary field, the write echoes and the
+employee embedded in `/hr/contracts` are projected too, and the historical payload survives behind
+`?view=full` gated by the pre-existing `pos:hr:compensation:read` (403 without it, 400 on an unknown
+view). Live as manager: 40 rows, **zero** forbidden keys. ⚠️ Honest caveat — the seeded matrix grants
+that permission to Owner, **Manager** and Accountant, so a Manager can still opt in explicitly;
+narrowing the grant is a seed change and was not authorised (**FU-1**). **This unblocks B3's Staff
+directory.**
+**MP0-10** — the gross/net inversion was a labelling defect, not an aggregation bug: the persisted
+identity is `total = subtotal + tax − discount`, so `total` is tax-inclusive. Now
+`grossSales = SUM(total)` and `netSales = gross − tax`, with the old ex-tax figure kept **additively**
+as `subtotalSales`. Live before/after on the same branch-day: gross **28,107,000 → 33,014,100**, net
+**33,014,100 → 27,978,300**, `gross = net + tax` exact, `gross ≥ net` always. Applied to
+`/dash/{today-summary,owner,manager}`, `/stream/metrics`, `kpi/refresh` **and** the SHIFT_END /
+DAILY_SALES report summaries so the dashboard and the exported report cannot disagree.
+**MP0-09** — `/dash/open-orders` gains a real **`total`** (+ `limit`, `truncated`) from the *same*
+`where` clause the dashboards count with; `count` deliberately keeps its old page-length meaning so
+B2 keeps working. Live: `total 107` == `/dash/manager.openOrders 107` (was 50 vs 107).
+**C-01 (NG-01/MP0-03)** — the fake PDF is gone: `format: PDF` returns **501** before any artifact row
+is created, `generateTextPdf` is deleted, and all 37 catalog entries advertise `['CSV']`. The same
+501 applies through the BG6 `/api/exports` facade. **No renderer added — OD-10 still open.**
+Validated on an isolated local Docker Postgres stack (never shared Neon; both `.env` files restored
+byte-for-byte, SHA-256 verified): API unit **1057/1061** (the 4 failures pre-existing, proven by
+re-running them at `HEAD` in a throwaway worktree); `hr` e2e **25/25**, `dashboards`+`reports` e2e
+**53/53**; web **typecheck pass**, **14/14** assertion scripts, Playwright `manager-dashboard`
+**84/84**, `manager-shell` **125 passed/11 skipped**, cross-role **36/36** — **the B2 dashboard was
+not touched and still passes**; newman M19 **55/55**, M20 **40/40**, M23 **39/39**, BG6 46 with 7
+pre-existing AP failures; all 56 collections parse; `/api/health` → ok.
+🔴 **New finding recorded as Track C `C-21`:** **38 accounting routes are 403 for every role,
+including Owner** — AP (19), AR (10) and Budget (9) are guarded by 23 permission strings
+(`accounting:ap:*`, `accounting:ar:*`, `finance:*`) with **zero rows** in the permissions table.
+This qualifies the "~90 accounting endpoints exist with zero UI" headline and means **B5 must budget
+a permission/seed cutover first**. See `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md`.
+**Deploying these fixes to shared Neon is still gated on the cutover authorisation. B3 and every
+other Track B phase remain NOT started.**
+
 **2026-08-20 — ENTERPRISE UI TRACK B2 COMPLETE (Manager Overview dashboard) — A: B2 COMPLETE /
 GATED FOR B3.** Frontend-only; no backend/schema/migration/seed/permission/Postman change.
 `/manager/overview` stops being the honest foundation screen and becomes a real branch dashboard: an

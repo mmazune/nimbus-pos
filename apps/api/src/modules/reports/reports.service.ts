@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  NotImplementedException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { ReportType, ReportWindow, ReportRunStatus, ExportFormat, Prisma } from '@prisma/client';
@@ -16,6 +21,34 @@ export interface CatalogEntry {
   permission: string;
   dependencyMilestone?: string;
   notes?: string;
+}
+
+/**
+ * MP0-10 — one sales vocabulary shared with `DashboardsService.aggregateSales`.
+ *
+ * The persisted identity is `Order.total = Order.subtotal + Order.tax - Order.discount`,
+ * so `subtotal` is EX-tax and `total` is TAX-INCLUSIVE. Reporting used to publish
+ * `grossSales = SUM(subtotal)` and `netSales = SUM(total)`, which inverted the two
+ * whenever tax exceeded discount.
+ *
+ *   grossSales    = SUM(order.total)            — billed to the guest, tax included
+ *   netSales      = grossSales - SUM(order.tax) — revenue excluding tax
+ *   subtotalSales = SUM(order.subtotal)         — ex-tax, before discount (additive; the
+ *                                                 figure previously called `grossSales`)
+ *
+ * Invariant: `grossSales = netSales + taxTotal`, hence `grossSales >= netSales`.
+ */
+export function salesFigures(agg: {
+  _sum: { subtotal?: Prisma.Decimal | null; total?: Prisma.Decimal | null; tax?: Prisma.Decimal | null };
+}): { grossSales: string; netSales: string; taxTotal: string; subtotalSales: string } {
+  const gross = agg._sum.total ?? new Prisma.Decimal(0);
+  const tax = agg._sum.tax ?? new Prisma.Decimal(0);
+  return {
+    grossSales: gross.toString(),
+    netSales: gross.sub(tax).toString(),
+    taxTotal: tax.toString(),
+    subtotalSales: (agg._sum.subtotal ?? new Prisma.Decimal(0)).toString(),
+  };
 }
 
 @Injectable()
@@ -202,13 +235,16 @@ export class ReportsService {
           }
         }
 
+        const shiftSales = salesFigures(salesAgg);
+
         return {
           summary: {
             shiftCount: shifts.length,
             tillCount,
-            grossSales: (salesAgg._sum.subtotal ?? new Prisma.Decimal(0)).toString(),
-            netSales: (salesAgg._sum.total ?? new Prisma.Decimal(0)).toString(),
-            taxTotal: (salesAgg._sum.tax ?? new Prisma.Decimal(0)).toString(),
+            grossSales: shiftSales.grossSales,
+            netSales: shiftSales.netSales,
+            taxTotal: shiftSales.taxTotal,
+            subtotalSales: shiftSales.subtotalSales,
             discountTotal: (salesAgg._sum.discount ?? new Prisma.Decimal(0)).toString(),
             orderCount: salesAgg._count ?? 0,
             paymentBreakdown,
@@ -276,11 +312,14 @@ export class ReportsService {
         for (const p of payments)
           paymentBreakdown[p.method] = (p._sum.amount ?? new Prisma.Decimal(0)).toString();
 
+        const dailySales = salesFigures(salesAgg);
+
         return {
           summary: {
-            grossSales: (salesAgg._sum.subtotal ?? new Prisma.Decimal(0)).toString(),
-            netSales: (salesAgg._sum.total ?? new Prisma.Decimal(0)).toString(),
-            taxTotal: (salesAgg._sum.tax ?? new Prisma.Decimal(0)).toString(),
+            grossSales: dailySales.grossSales,
+            netSales: dailySales.netSales,
+            taxTotal: dailySales.taxTotal,
+            subtotalSales: dailySales.subtotalSales,
             discountTotal: (salesAgg._sum.discount ?? new Prisma.Decimal(0)).toString(),
             orderCount: salesAgg._count ?? 0,
             avgOrderValue: (salesAgg._avg.total ?? new Prisma.Decimal(0)).toString(),
@@ -1617,7 +1656,7 @@ export class ReportsService {
         title: 'Shift-End Report',
         description: 'Shift/till counts, gross/net sales, payment breakdown, refunds, safe drops',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:shift-end:generate',
       },
       {
@@ -1625,7 +1664,7 @@ export class ReportsService {
         title: 'Daily Sales Report',
         description: 'Gross/net sales, tax, discounts, order count, AOV, payment mix',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:daily-sales:generate',
       },
       {
@@ -1633,7 +1672,7 @@ export class ReportsService {
         title: 'Payment Mix Report',
         description: 'Payment method breakdown with amounts, counts, percentages',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:payment-mix:generate',
       },
       {
@@ -1641,7 +1680,7 @@ export class ReportsService {
         title: 'Top Items Report',
         description: 'Top-N items by quantity sold and gross sales contribution',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:top-items:generate',
       },
       {
@@ -1649,7 +1688,7 @@ export class ReportsService {
         title: 'Sales by Category / PMIX Report',
         description: 'Sales breakdown by menu category with percentages',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:sales-by-category:generate',
       },
       {
@@ -1657,7 +1696,7 @@ export class ReportsService {
         title: 'Sales by Hour / Daypart Report',
         description: 'Hourly sales distribution with peak identification',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:sales-by-hour:generate',
       },
       {
@@ -1665,7 +1704,7 @@ export class ReportsService {
         title: 'Open vs Closed Orders Summary',
         description: 'Order status distribution with value totals',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:daily-sales:generate',
         notes: 'Uses daily-sales permission',
       },
@@ -1676,7 +1715,7 @@ export class ReportsService {
         title: 'Discounts Summary Report',
         description: 'All discounts by type, status, actor with amounts',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:discounts:generate',
       },
       {
@@ -1684,7 +1723,7 @@ export class ReportsService {
         title: 'Voids Summary Report',
         description: 'Voided orders by actor with value totals',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:voids:generate',
       },
       {
@@ -1692,7 +1731,7 @@ export class ReportsService {
         title: 'Refunds Summary Report',
         description: 'Refund breakdown by status, actor with amounts',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:refunds:generate',
       },
 
@@ -1702,7 +1741,7 @@ export class ReportsService {
         title: 'Till Cash Variance Report',
         description: 'Till reconciliation variance by operator',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:cash-variance:generate',
       },
       {
@@ -1710,7 +1749,7 @@ export class ReportsService {
         title: 'Cash Movements Report',
         description: 'Cash movement breakdown by type (safe drops, pickups, etc.)',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:cash-movements:generate',
       },
 
@@ -1720,7 +1759,7 @@ export class ReportsService {
         title: 'Stock Variance Report',
         description: 'Positive/negative adjustments, net change per item',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:stock-variance:generate',
       },
       {
@@ -1728,7 +1767,7 @@ export class ReportsService {
         title: 'Wastage / Shrinkage Report',
         description: 'Negative stock adjustments with estimated cost impact',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:wastage:generate',
       },
       {
@@ -1736,7 +1775,7 @@ export class ReportsService {
         title: 'Low Stock / Reorder Report',
         description: 'Items below reorder point with current stock levels',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:low-stock:generate',
       },
 
@@ -1746,7 +1785,7 @@ export class ReportsService {
         title: 'Reservations Summary Report',
         description: 'Reservation counts by status, party sizes, conversion rate',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:reservations:generate',
       },
       {
@@ -1754,7 +1793,7 @@ export class ReportsService {
         title: 'Reservation Deposits Report',
         description: 'Deposit amounts by status with totals',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:reservations:generate',
       },
       {
@@ -1762,7 +1801,7 @@ export class ReportsService {
         title: 'No-Show / Cancellation Report',
         description: 'No-show and cancellation counts with rates',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:reservations:generate',
       },
 
@@ -1772,7 +1811,7 @@ export class ReportsService {
         title: 'Event Summary Report',
         description: 'Events by status, capacity utilization, sold/checked-in counts',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:events:generate',
       },
       {
@@ -1780,7 +1819,7 @@ export class ReportsService {
         title: 'Event Bookings Report',
         description: 'Booking breakdown by status with revenue and quantity',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:events:generate',
       },
       {
@@ -1788,7 +1827,7 @@ export class ReportsService {
         title: 'Event Check-Ins Report',
         description: 'Check-in / denied-check-in counts by status',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:events:generate',
       },
 
@@ -1798,7 +1837,7 @@ export class ReportsService {
         title: 'Anomaly Summary Report',
         description: 'Anomaly totals by status, severity, type',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:anomaly-summary:generate',
       },
       {
@@ -1806,7 +1845,7 @@ export class ReportsService {
         title: 'High-Risk Actors Report',
         description: 'Staff with most anomaly events, severity breakdown',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:anomaly-summary:generate',
       },
 
@@ -1816,7 +1855,7 @@ export class ReportsService {
         title: 'Staff Operations Report',
         description: 'Per-staff sales, refunds, voids, discounts handled',
         status: 'IMPLEMENTED',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:staff-operations:generate',
       },
 
@@ -1826,7 +1865,7 @@ export class ReportsService {
         title: 'Menu Engineering Report',
         description: 'Margin vs popularity analysis using recipe cost + sales data',
         status: 'CONDITIONAL',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:sales-by-category:generate',
         notes: 'Depends on M8 recipe costing data quality. Not all items may have cost data.',
       },
@@ -1837,7 +1876,7 @@ export class ReportsService {
         title: 'Customer Feedback Trends',
         description: 'Feedback trends, NPS, complaint themes',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M25 — Customer Feedback + NPS + QR Follow-up',
       },
@@ -1846,7 +1885,7 @@ export class ReportsService {
         title: 'Document Export Packs',
         description: 'Invoice/receipt attachment bundles, evidence bundles',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M26 — Documents + Uploads + Attachments',
       },
@@ -1855,7 +1894,7 @@ export class ReportsService {
         title: 'Labor Hours Report',
         description: 'Attendance, overtime, leave, shift hours worked',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M27-M30 — HR / Attendance / Scheduling / Payroll',
       },
@@ -1864,7 +1903,7 @@ export class ReportsService {
         title: 'Payroll Run Summary',
         description: 'Pay periods, gross/net pay, deductions, tax',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M30 — Payroll Engine + Pay Runs + Payslips',
       },
@@ -1873,7 +1912,7 @@ export class ReportsService {
         title: 'P&L / Income Statement',
         description: 'Revenue, expenses, net income by period',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M32-M37 — Accounting Foundation + GL + AP/AR',
       },
@@ -1882,7 +1921,7 @@ export class ReportsService {
         title: 'Balance Sheet',
         description: 'Assets, liabilities, equity snapshot',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M32-M37 — Accounting Foundation + GL + AP/AR',
       },
@@ -1891,7 +1930,7 @@ export class ReportsService {
         title: 'Cash Flow Statement',
         description: 'Operating, investing, financing cash flow',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M32-M37 — Accounting Foundation + GL + AP/AR',
       },
@@ -1900,7 +1939,7 @@ export class ReportsService {
         title: 'Accounts Payable Aging',
         description: 'Vendor bills by aging bucket',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M34 — Accounts Payable',
       },
@@ -1909,7 +1948,7 @@ export class ReportsService {
         title: 'Accounts Receivable Aging',
         description: 'Customer invoices by aging bucket',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M35 — Accounts Receivable',
       },
@@ -1918,7 +1957,7 @@ export class ReportsService {
         title: 'Budget vs Actual',
         description: 'Planned vs actual by GL account and cost center',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M37 — Budgets + Forecasts',
       },
@@ -1927,7 +1966,7 @@ export class ReportsService {
         title: 'Franchise / Multi-Branch Consolidation',
         description: 'Branch league tables, consolidated KPIs',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M38 — Franchise + Multi-Branch Suite',
       },
@@ -1936,7 +1975,7 @@ export class ReportsService {
         title: 'Scheduled Report Digest',
         description: 'Daily/weekly automated report delivery to owners',
         status: 'PENDING_LATER',
-        formats: ['CSV', 'PDF'],
+        formats: ['CSV'],
         permission: 'pos:reports:history:read',
         dependencyMilestone: 'M40 — Alerts + Digests + Real-Time Owner Views',
       },
@@ -1989,13 +2028,26 @@ export class ReportsService {
     reportRunId: string,
     format: ExportFormat,
   ) {
+    // C-01 (NG-01 / MP0-03): PDF export used to write a PLAIN-TEXT file, stamp it
+    // `application/pdf` and mark the artifact READY — a fabricated success. The fake is
+    // gone. Until a real renderer exists (owner decision OD-10) a PDF request is refused
+    // honestly, BEFORE any artifact row is created, so no PENDING/FAILED record and no
+    // file are left behind.
+    if (format !== 'CSV') {
+      throw new NotImplementedException(
+        `Export format "${format}" is not supported. Nimbus does not have a PDF renderer; ` +
+          'the previous PDF export produced a plain-text file with a .pdf extension and has been ' +
+          'withdrawn. Use format "CSV".',
+      );
+    }
+
     const run = await this.prisma.reportRun.findFirst({ where: { id: reportRunId, orgId } });
     if (!run) throw new NotFoundException('Report run not found');
     if (run.status !== 'COMPLETED')
       throw new BadRequestException('Can only export completed reports');
 
-    const mimeType = format === 'CSV' ? 'text/csv' : 'application/pdf';
-    const ext = format === 'CSV' ? 'csv' : 'pdf';
+    const mimeType = 'text/csv';
+    const ext = 'csv';
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = `${run.reportType.toLowerCase()}_${timestamp}.${ext}`;
     const storagePath = path.join(this.exportDir, fileName);
@@ -2053,10 +2105,17 @@ export class ReportsService {
 
   // ── Export Content Generation ──
 
+  /**
+   * C-01: CSV is the only format Nimbus can actually produce. `createExport` refuses
+   * anything else with a 501 before reaching this point; the guard here keeps that true
+   * for any future caller.
+   */
   private generateExportContent(run: any, format: ExportFormat): string {
     const summary = run.summary ?? {};
-    if (format === 'CSV') return this.generateCsv(run.reportType, summary);
-    return this.generateTextPdf(run.reportType, summary, run);
+    if (format !== 'CSV') {
+      throw new NotImplementedException(`Export format "${format}" is not supported`);
+    }
+    return this.generateCsv(run.reportType, summary);
   }
 
   private generateCsv(reportType: string, summary: any): string {
@@ -2286,36 +2345,9 @@ export class ReportsService {
     return lines.join('\n');
   }
 
-  private generateTextPdf(reportType: string, summary: any, run: any): string {
-    const lines: string[] = [];
-    lines.push('='.repeat(60));
-    lines.push(`NIMBUS POS — ${reportType.replace(/_/g, ' ')} REPORT`);
-    lines.push('='.repeat(60));
-    lines.push(`Report ID: ${run.id}`);
-    lines.push(`Generated: ${new Date().toISOString()}`);
-    lines.push(`Period: ${run.dateFrom?.toISOString()} to ${run.dateTo?.toISOString()}`);
-    lines.push(`Window: ${run.reportWindow}`);
-    lines.push('-'.repeat(60));
-    lines.push('');
-    for (const [key, val] of Object.entries(summary)) {
-      if (typeof val === 'object' && val !== null) {
-        lines.push(`${key}:`);
-        if (Array.isArray(val)) {
-          for (const item of val) lines.push(`  - ${JSON.stringify(item)}`);
-        } else {
-          for (const [k, v] of Object.entries(val as Record<string, unknown>))
-            lines.push(`  ${k}: ${v}`);
-        }
-      } else {
-        lines.push(`${key}: ${val}`);
-      }
-    }
-    lines.push('');
-    lines.push('-'.repeat(60));
-    lines.push('This is an operational report, not a formal accounting statement.');
-    lines.push('='.repeat(60));
-    return lines.join('\n');
-  }
+  // C-01: `generateTextPdf` was deleted. It rendered a plain-text document that was
+  // written to a `.pdf` file and served as `application/pdf`. Nimbus has no PDF renderer;
+  // adding one is a separate owner decision (OD-10).
 
   // ── Get Export Artifact ──
 

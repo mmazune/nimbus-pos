@@ -92,6 +92,26 @@ All under `/api/hr`, protected by JWT + Permission + BranchContext guards.
 - `positionId` — Filter by position
 - `search` — Search firstName, lastName, employeeCode, email
 - `skip`, `take` — Pagination (default take=50)
+- `view` — **Response projection (C-02, 2026-08-20).** `safe` (default) | `full`
+
+## Response projection (C-02 — compensation and PII)
+
+`GET /hr/employees`, `GET /hr/employees/:id` and the `POST` / `PATCH` echoes return a **safe
+projection by default**, and the excluded columns are not selected from Postgres at all:
+
+| Returned | Never returned on the safe path |
+| --- | --- |
+| `id, orgId, branchId, userId, employeeCode, firstName, middleName, lastName, phone, email, hireDate, status, employmentType, positionId, compensationProfileId, createdAt, updatedAt, position` | `compensationProfile` (whole relation), `dateOfBirth`, `address`, `emergencyContactName`, `emergencyContactPhone`, `notes`, `metadata` |
+
+The list response also echoes `view`. On `GET /hr/employees/:id`, `contracts[]` is returned
+**without `salaryAmount` or `salaryBasis`**.
+
+`?view=full` restores the historical payload and requires **`pos:hr:compensation:read`** (the same
+permission that gates `GET /hr/compensation-profiles`); without it the request is **403**, and an
+unrecognised `view` value is **400**. The employee embedded in `GET|POST /hr/contracts` is projected
+the same way — the contract's own salary fields are unaffected there.
+
+Implementation: `apps/api/src/modules/hr/employee-projection.ts`.
 
 ### GET /hr/contracts
 - `employeeId` — Filter by employee

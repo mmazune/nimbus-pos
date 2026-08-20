@@ -229,6 +229,10 @@ describe('BG6 Exports / Downloads + AP Supplier Detail (e2e)', () => {
             expect(res.status).toBe(403);
         });
 
+        // C-01: this replay previously used format: 'PDF', which the reports service
+        // silently satisfied with a plain-text file. The replay behaviour it actually
+        // tests is format-agnostic, so it now runs on the one format Nimbus can really
+        // produce; the PDF contract is asserted directly in the test below.
         it('BG3 idempotency replay returns identical body for same key+payload', async () => {
             const runId = await generateDailySalesRun();
             const key = idemKey('export-replay');
@@ -237,7 +241,7 @@ describe('BG6 Exports / Downloads + AP Supplier Detail (e2e)', () => {
                 .set('Authorization', `Bearer ${ownerToken}`)
                 .set('X-Branch-Id', branchId)
                 .set('Idempotency-Key', key)
-                .send({ sourceDomain: 'reports', reportRunId: runId, format: 'PDF' });
+                .send({ sourceDomain: 'reports', reportRunId: runId, format: 'CSV' });
             expect(first.status).toBe(200);
             createdExportArtifactIds.push(first.body.export.exportId.split(':')[1]);
 
@@ -246,9 +250,22 @@ describe('BG6 Exports / Downloads + AP Supplier Detail (e2e)', () => {
                 .set('Authorization', `Bearer ${ownerToken}`)
                 .set('X-Branch-Id', branchId)
                 .set('Idempotency-Key', key)
-                .send({ sourceDomain: 'reports', reportRunId: runId, format: 'PDF' });
+                .send({ sourceDomain: 'reports', reportRunId: runId, format: 'CSV' });
             expect(second.status).toBe(200);
             expect(second.body.export.exportId).toBe(first.body.export.exportId);
+        });
+
+        // C-01 (NG-01 / MP0-03): the export facade must not be a back door to the
+        // withdrawn PDF path — it delegates to ReportsService.createExport.
+        it('PDF through the export facade is refused with 501, not a fake artifact', async () => {
+            const runId = await generateDailySalesRun();
+            const res = await request(app.getHttpServer())
+                .post('/api/exports')
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .set('X-Branch-Id', branchId)
+                .send({ sourceDomain: 'reports', reportRunId: runId, format: 'PDF' });
+            expect(res.status).toBe(501);
+            expect(res.body.message).toMatch(/PDF renderer/);
         });
     });
 

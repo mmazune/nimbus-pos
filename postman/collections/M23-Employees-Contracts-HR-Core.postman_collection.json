@@ -244,7 +244,10 @@
                             "pm.environment.set('employeeId', json.id);",
                             "pm.test('Employee created', () => pm.response.to.have.status(201));",
                             "pm.test('Has employeeCode', () => pm.expect(json.employeeCode).to.be.a('string'));",
-                            "pm.test('Has position', () => pm.expect(json.position).to.not.be.null);"
+                            "pm.test('Has position', () => pm.expect(json.position).to.not.be.null);",
+                            "// C-02: the write echo confirms the compensation LINK but never the amounts behind it.",
+                            "pm.test('C-02 echoes compensationProfileId', () => pm.expect(json.compensationProfileId).to.eql(pm.environment.get('compensationProfileId')));",
+                            "pm.test('C-02 echo carries no compensationProfile', () => pm.expect(json).to.not.have.property('compensationProfile'));"
                         ]
                     }
                 }
@@ -271,7 +274,78 @@
                             "const json = pm.response.json();",
                             "pm.test('Employees listed', () => pm.response.to.have.status(200));",
                             "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));",
-                            "pm.test('Has total', () => pm.expect(json.total).to.be.a('number'));"
+                            "pm.test('Has total', () => pm.expect(json.total).to.be.a('number'));",
+                            "// C-02 (NG-02 / MP0-01): the DEFAULT payload is the safe projection — no compensation,",
+                            "// no date of birth / address / emergency contact / private HR notes / free-form metadata.",
+                            "const FORBIDDEN = ['compensationProfile', 'dateOfBirth', 'address', 'emergencyContactName', 'emergencyContactPhone', 'notes', 'metadata'];",
+                            "pm.test('C-02 default view is safe', () => pm.expect(json.view).to.eql('safe'));",
+                            "pm.test('C-02 no compensation or PII on any row', () => {",
+                            "    json.data.forEach(row => FORBIDDEN.forEach(k => pm.expect(row, `row ${row.employeeCode}`).to.not.have.property(k)));",
+                            "});",
+                            "pm.test('C-02 directory fields survive', () => json.data.forEach(row => {",
+                            "    pm.expect(row.employeeCode).to.be.a('string');",
+                            "    pm.expect(row.firstName).to.be.a('string');",
+                            "}));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Employees (view=full — needs pos:hr:compensation:read)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees?view=full&take=5",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"],
+                    "query": [
+                        { "key": "view", "value": "full" },
+                        { "key": "take", "value": "5" }
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "const json = pm.response.json();",
+                            "// C-02: the historical payload is still available, but ONLY to a token holding the",
+                            "// existing compensation-grade permission. Owner holds it; a token without it gets 403.",
+                            "pm.test('Full view OK for a compensation-grade token', () => pm.response.to.have.status(200));",
+                            "pm.test('C-02 view echoes full', () => pm.expect(json.view).to.eql('full'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "List Employees ([400] unknown view value)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    { "key": "X-Branch-Id", "value": "{{branchId}}" }
+                ],
+                "url": {
+                    "raw": "{{baseUrl}}/api/hr/employees?view=everything",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "hr", "employees"],
+                    "query": [
+                        { "key": "view", "value": "everything" }
+                    ]
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "// C-02: the DTO accepts only 'safe' | 'full' — an unknown value never falls through.",
+                            "pm.test('Rejected with 400', () => pm.response.to.have.status(400));"
                         ]
                     }
                 }
@@ -327,7 +401,15 @@
                             "const json = pm.response.json();",
                             "pm.test('Employee fetched', () => pm.response.to.have.status(200));",
                             "pm.test('Has contracts array', () => pm.expect(json.contracts).to.be.an('array'));",
-                            "pm.test('Has position', () => pm.expect(json.position).to.not.be.null);"
+                            "pm.test('Has position', () => pm.expect(json.position).to.not.be.null);",
+                            "// C-02: the detail route used to add contracts[].salaryAmount + salaryBasis on top of",
+                            "// the employee's own compensation and personal fields. The safe payload has neither.",
+                            "const FORBIDDEN = ['compensationProfile', 'dateOfBirth', 'address', 'emergencyContactName', 'emergencyContactPhone', 'notes', 'metadata'];",
+                            "pm.test('C-02 no compensation or PII on detail', () => FORBIDDEN.forEach(k => pm.expect(json).to.not.have.property(k)));",
+                            "pm.test('C-02 contracts carry no salary field', () => json.contracts.forEach(c => {",
+                            "    pm.expect(c).to.not.have.property('salaryAmount');",
+                            "    pm.expect(c).to.not.have.property('salaryBasis');",
+                            "}));"
                         ]
                     }
                 }

@@ -7,6 +7,46 @@
 > - Supervisor: `ai/SUPERVISOR_RECONSTRUCTION_GAP_REGISTER.md` (+ the reconciled final register,
 >   `ai/SUPERVISOR_FINAL_KNOWN_LIMITATIONS.md`)
 
+> **Backend gap batch 1 (2026-08-20) — `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md`.**
+> Four Track C defects were fixed on the **local dev database only** (no schema, migration, seed or
+> permission change; **shared-Neon deploy still pending the cutover gate**). Limitations
+> **removed**, and the new ones the fixes leave behind:
+>
+> **REMOVED**
+> - ~~`POST /reports/export` with `format: PDF` returns a plain-text file stamped
+>   `application/pdf` at `status: READY`~~ (C-01/NG-01/MP0-03). It now returns **501** with an
+>   honest message; the catalog advertises `['CSV']` on all 37 entries. **CSV is unchanged.**
+> - ~~`GET /hr/employees` returns compensation + `dateOfBirth`/`address`/`emergencyContact*`/private
+>   `notes`/`metadata` on every row, and `/:id` adds `contracts[].salaryAmount`~~
+>   (C-02/NG-02/MP0-01). The default payload is a safe projection; the sensitive columns are not
+>   selected from Postgres.
+> - ~~`/dash/today-summary` publishes `netSales` larger than `grossSales`~~ (MP0-10). Now
+>   `grossSales = SUM(order.total)`, `netSales = grossSales − taxTotal`, so **gross ≥ net always**.
+> - ~~`/dash/open-orders` reports a count that is really the 50-row page length~~ (MP0-09). It now
+>   also returns a real `total` that agrees with `/dash/manager.openOrders`.
+>
+> **NEW / RETAINED**
+> - **BGB1-L1 — no PDF export exists at all.** Requesting one is an explicit 501; there is no
+>   renderer and adding one is owner decision **OD-10**. `ExportArtifact` rows created **before**
+>   2026-08-20 keep their fake `application/pdf` mime type and are still downloadable — they were
+>   not deleted (that would be a data migration).
+> - **BGB1-L2 — a Manager token can still opt into compensation.** The gate is the pre-existing
+>   `pos:hr:compensation:read`, which the seeded matrix grants to Owner, **Manager** and Accountant.
+>   Only the *default* payload is guaranteed compensation-free (for every role, including Owner).
+>   Narrowing the Manager grant is a seed change and was not authorised (follow-up **FU-1**).
+> - **BGB1-L3 — `KpiSnapshot` rows written before 2026-08-20 carry the OLD gross/net semantics**
+>   (`grossSales = SUM(subtotal)`, `netSales = SUM(total)`). No backfill was performed. Any trend
+>   built over historical snapshots mixes two definitions.
+> - **BGB1-L4 — 38 accounting routes are unreachable by every role, including Owner**
+>   (new Track C entry **C-21**). `accounts-payable` (19), `accounts-receivable` (10) and `budget`
+>   (9) are guarded by 23 permission strings (`accounting:ap:*`, `accounting:ar:*`, `finance:*`)
+>   that have **zero rows** in the `permissions` table. Live: owner
+>   `POST /api/accounting/ap/suppliers` → **403**. `pos:accounting:*` (17 rows) is seeded, so
+>   `accounting`, `ledger` and `bank-rec` are fine. **Track B5 must budget a permission/seed
+>   cutover before any AP/AR/Budget UI.**
+> - **BGB1-L5 — `/hr/employees` is still org-scoped** (`?branchId=` → 400, MP0-06 / C-09) and its
+>   `take` is still unbounded (C-12). Neither was in this batch's scope.
+
 > **Cashier Floor-First reconstruction (2026-07-31):** Cashier's nav changed from
 > Queue/Receipts/Till/Me to **Floor/Till/Me** — **Prompt C1 is implemented** (default
 > `/cashier/floor`, Cashier as the third shared-`OperationalFloor` consumer). The limitations below

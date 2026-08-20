@@ -1,7 +1,7 @@
 {
     "info": {
         "name": "BG6 - Exports / Downloads + AP Supplier Detail",
-        "description": "BG6 collection. Validates the unified Exports facade and the closing AP supplier detail route:\n\n- `GET  /api/accounting/ap/suppliers/:id` — closes the BG0 missing-route gap. Returns supplier + summary block + recentBills + recentPayments. Permission: `accounting:ap:bill:read`.\n- `POST /api/exports`              — request a new export (sourceDomain=reports, reportRunId, format=CSV|PDF). Wrapped by BG3 facade (category:null, idempotencyMode:optional). Permission: `exports:write`.\n- `GET  /api/exports`              — paginated history list across both `reports` and `documents` source domains. Permission: `exports:read`.\n- `GET  /api/exports/:id`          — detail returning the unified envelope. Permission: `exports:read`.\n- `GET  /api/exports/:id/download` — streams the artefact bytes. Permission: `exports:download`.\n\nUnified envelope: `{ exportId, sourceDomain, sourceType, sourceRefId, requestedBy, requestedAt, status, format, fileName, contentType, fileSizeBytes, checksum, readyAt, failedAt, failureReason, downloadReady, downloadUrl, retentionExpiresAt }`. `exportId = '<sourceDomain>:<id>'`. Status mapping: PENDING→QUEUED, READY→COMPLETED, FAILED→FAILED.\n\nLocked rules verified:\n- `/api/auth/me` canonical (R14).\n- POST /api/auth/login accepts [200, 201] (R12).\n- New permissions: `exports:read | exports:write | exports:download` granted to Owner / Manager / Accountant. **Chef intentionally denied** — verified 403.\n- BG3 facade reused for the one mutating route (`POST /api/exports`).\n- No new schema (delegates to existing ExportArtifact + Document tables).\n- Public diner payments still PENDING (out of scope).\n- PesaPal owner-SaaS-only (out of scope).\n- No hotel structures.\n- Async vs sync semantics preserved honestly: report exports complete synchronously today; envelope still expresses status + downloadReady so a future async pipeline does not break the contract.\n\n⚠️ **Re-import required after any script change.** Postman caches scripts at import time.",
+        "description": "BG6 collection. Validates the unified Exports facade and the closing AP supplier detail route:\n\n- `GET  /api/accounting/ap/suppliers/:id` — closes the BG0 missing-route gap. Returns supplier + summary block + recentBills + recentPayments. Permission: `accounting:ap:bill:read`.\n- `POST /api/exports`              — request a new export (sourceDomain=reports, reportRunId, format=CSV). **C-01: `format=PDF` now returns 501** — Nimbus has no PDF renderer and the previous PDF path wrote a plain-text file stamped `application/pdf`. Wrapped by BG3 facade (category:null, idempotencyMode:optional). Permission: `exports:write`.\n- `GET  /api/exports`              — paginated history list across both `reports` and `documents` source domains. Permission: `exports:read`.\n- `GET  /api/exports/:id`          — detail returning the unified envelope. Permission: `exports:read`.\n- `GET  /api/exports/:id/download` — streams the artefact bytes. Permission: `exports:download`.\n\nUnified envelope: `{ exportId, sourceDomain, sourceType, sourceRefId, requestedBy, requestedAt, status, format, fileName, contentType, fileSizeBytes, checksum, readyAt, failedAt, failureReason, downloadReady, downloadUrl, retentionExpiresAt }`. `exportId = '<sourceDomain>:<id>'`. Status mapping: PENDING→QUEUED, READY→COMPLETED, FAILED→FAILED.\n\nLocked rules verified:\n- `/api/auth/me` canonical (R14).\n- POST /api/auth/login accepts [200, 201] (R12).\n- New permissions: `exports:read | exports:write | exports:download` granted to Owner / Manager / Accountant. **Chef intentionally denied** — verified 403.\n- BG3 facade reused for the one mutating route (`POST /api/exports`).\n- No new schema (delegates to existing ExportArtifact + Document tables).\n- Public diner payments still PENDING (out of scope).\n- PesaPal owner-SaaS-only (out of scope).\n- No hotel structures.\n- Async vs sync semantics preserved honestly: report exports complete synchronously today; envelope still expresses status + downloadReady so a future async pipeline does not break the contract.\n\n⚠️ **Re-import required after any script change.** Postman caches scripts at import time.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -686,13 +686,16 @@
             "name": "H. Reliability / Idempotency Checks",
             "item": [
                 {
-                    "name": "POST /api/exports (Idempotency-Key first PDF)",
+                    "name": "POST /api/exports (Idempotency-Key first CSV)",
                     "event": [
                         {
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
                                 "exec": [
+                                    "// C-01: this pair used format PDF, which the reports service satisfied with a",
+                                    "// plain-text file. The replay behaviour under test is format-agnostic, so it now",
+                                    "// runs on CSV; the withdrawn PDF contract is asserted in the request below.",
                                     "pm.test('200 OK', () => pm.response.to.have.status(200));",
                                     "const body = pm.response.json();",
                                     "pm.test('Has exportId', () => pm.expect(body.export.exportId).to.match(/^reports:/));",
@@ -709,6 +712,34 @@
                             { "key": "Authorization", "value": "Bearer {{accessToken}}" },
                             { "key": "X-Branch-Id", "value": "{{branchId}}" },
                             { "key": "Idempotency-Key", "value": "{{bg6IdemKey}}" }
+                        ],
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"CSV\"\n}" },
+                        "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
+                    }
+                },
+                {
+                    "name": "POST /api/exports ([501] PDF withdrawn - C-01)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// C-01 (NG-01 / MP0-03): the export facade delegates to ReportsService.createExport,",
+                                    "// so it must not be a back door to the withdrawn fake-PDF path.",
+                                    "pm.test('501 Not Implemented', () => pm.response.to.have.status(501));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('Message names the missing renderer', () => pm.expect(body.message).to.match(/PDF renderer/));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+                            { "key": "X-Branch-Id", "value": "{{branchId}}" }
                         ],
                         "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"PDF\"\n}" },
                         "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
@@ -737,7 +768,7 @@
                             { "key": "X-Branch-Id", "value": "{{branchId}}" },
                             { "key": "Idempotency-Key", "value": "{{bg6IdemKey}}" }
                         ],
-                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"PDF\"\n}" },
+                        "body": { "mode": "raw", "raw": "{\n  \"sourceDomain\": \"reports\",\n  \"reportRunId\": \"{{bg6ReportRunId}}\",\n  \"format\": \"CSV\"\n}" },
                         "url": { "raw": "{{baseUrl}}/api/exports", "host": ["{{baseUrl}}"], "path": ["api", "exports"] }
                     }
                 }

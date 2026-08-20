@@ -14,6 +14,7 @@ describe('Employees + Contracts + HR Core (e2e)', () => {
   let prisma: PrismaService;
   let ownerToken: string;
   let chefToken: string;
+  let managerToken: string;
   let branchId: string;
 
   // IDs captured during tests
@@ -51,6 +52,12 @@ describe('Employees + Contracts + HR Core (e2e)', () => {
       .post('/api/auth/login')
       .send({ email: 'chef@demo.local', password: 'Chef#123' });
     chefToken = chefLogin.body.accessToken;
+
+    // C-02: login as manager — the role the Staff directory (Track B3) will run as
+    const managerLogin = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: 'manager@demo.local', password: 'Manager#123' });
+    managerToken = managerLogin.body.accessToken;
 
     // Get branch ID
     const me = await request(app.getHttpServer())
@@ -189,7 +196,9 @@ describe('Employees + Contracts + HR Core (e2e)', () => {
       expect(res.body.firstName).toBe('E2E');
       expect(res.body.employmentType).toBe('PERMANENT');
       expect(res.body.position).toBeDefined();
-      expect(res.body.compensationProfile).toBeDefined();
+      // C-02: the create echo carries the link, never the amounts behind it.
+      expect(res.body.compensationProfileId).toBe(compensationProfileId);
+      expect(res.body).not.toHaveProperty('compensationProfile');
       employeeId = res.body.id;
     });
 
@@ -250,6 +259,70 @@ describe('Employees + Contracts + HR Core (e2e)', () => {
         .expect(200);
 
       expect(res.body.data.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ── C-02 (NG-02 / MP0-01): compensation + PII never on the default wire ──
+
+  describe('C-02 employee projection (live)', () => {
+    const FORBIDDEN = [
+      'compensationProfile',
+      'dateOfBirth',
+      'address',
+      'emergencyContactName',
+      'emergencyContactPhone',
+      'notes',
+      'metadata',
+    ];
+
+    it('manager list returns no compensation and no personal PII on ANY row', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/hr/employees?take=100')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(200);
+
+      expect(res.body.view).toBe('safe');
+      expect(res.body.data.length).toBeGreaterThan(0);
+      for (const row of res.body.data) {
+        for (const key of FORBIDDEN) expect(row).not.toHaveProperty(key);
+        expect(row.employeeCode).toBeDefined();
+        expect(row.firstName).toBeDefined();
+      }
+    });
+
+    it('manager detail returns contracts without any salary field', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/hr/employees/${employeeId}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(200);
+
+      for (const key of FORBIDDEN) expect(res.body).not.toHaveProperty(key);
+      for (const contract of res.body.contracts ?? []) {
+        expect(contract).not.toHaveProperty('salaryAmount');
+        expect(contract).not.toHaveProperty('salaryBasis');
+      }
+    });
+
+    it('view=full still serves compensation to a compensation-grade token', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/hr/employees?view=full&take=5')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(200);
+
+      expect(res.body.view).toBe('full');
+      const withProfile = res.body.data.find((r: any) => r.compensationProfileId);
+      if (withProfile) expect(withProfile.compensationProfile).toBeDefined();
+    });
+
+    it('an unknown view value is rejected by the DTO', async () => {
+      await request(app.getHttpServer())
+        .get('/api/hr/employees?view=everything')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('X-Branch-Id', branchId)
+        .expect(400);
     });
   });
 

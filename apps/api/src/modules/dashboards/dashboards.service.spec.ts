@@ -64,12 +64,18 @@ describe('DashboardsService', () => {
     service = module.get<DashboardsService>(DashboardsService);
   });
 
-  /** Helper: mock all aggregation primitives with sensible defaults */
+  /**
+   * Helper: mock all aggregation primitives with sensible defaults.
+   *
+   * The sales figures obey the persisted identity `total = subtotal + tax - discount`
+   * (500000 + 20000 - 10000 = 510000), which is what the database actually stores —
+   * see the MP0-10 note on `aggregateSales`.
+   */
   function mockDefaults() {
     prisma.order.aggregate.mockResolvedValue({
       _sum: {
         subtotal: new Decimal(500000),
-        total: new Decimal(480000),
+        total: new Decimal(510000),
         tax: new Decimal(20000),
         discount: new Decimal(10000),
       },
@@ -101,8 +107,10 @@ describe('DashboardsService', () => {
     const result = await service.getTodaySummary(orgId, branchId);
 
     expect(result.date).toBeDefined();
-    expect(result.grossSales).toEqual(new Decimal(500000));
-    expect(result.netSales).toEqual(new Decimal(480000));
+    // MP0-10: gross is the tax-inclusive billed amount, net is gross minus tax.
+    expect(result.grossSales).toEqual(new Decimal(510000));
+    expect(result.netSales).toEqual(new Decimal(490000));
+    expect(result.subtotalSales).toEqual(new Decimal(500000));
     expect(result.paymentMix.cash).toEqual(new Decimal(300000));
     expect(result.paymentMix.card).toEqual(new Decimal(100000));
     expect(result.paymentMix.momo).toEqual(new Decimal(80000));
@@ -175,16 +183,189 @@ describe('DashboardsService', () => {
         createdAt: new Date(),
       },
     ]);
+    prisma.order.count.mockResolvedValue(1);
 
     const result = await service.getOpenOrders(orgId, branchId);
 
     expect(result.count).toBe(1);
+    expect(result.total).toBe(1);
+    expect(result.truncated).toBe(false);
     expect(result.orders[0].orderNumber).toBe('ORD-001');
     expect(prisma.order.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ orgId, branchId }),
       }),
     );
+  });
+
+  // ── MP0-09: open-order count parity ──
+
+  describe('MP0-09 open-order count parity', () => {
+    /** 107 open orders in the branch; the list can only carry 50 of them. */
+    const OPEN_ORDER_TOTAL = 107;
+
+    function mockOversizedOpenOrders() {
+      const rows = Array.from({ length: 50 }, (_, i) => ({
+        id: `o${i + 1}`,
+        orderNumber: `ORD-${String(i + 1).padStart(3, '0')}`,
+        status: 'SENT',
+        serviceType: 'DINE_IN',
+        total: new Decimal(10000),
+        createdAt: new Date(2026, 7, 20, 8, i),
+      }));
+      prisma.order.findMany.mockResolvedValue(rows);
+      prisma.order.count.mockResolvedValue(OPEN_ORDER_TOTAL);
+    }
+
+    it('reports the real total next to the capped rows', async () => {
+      mockOversizedOpenOrders();
+
+      const result = await service.getOpenOrders(orgId, branchId);
+
+      // Before MP0-09 the only number here was `count: 50` — the page length.
+      expect(result.orders).toHaveLength(50);
+      expect(result.count).toBe(50);
+      expect(result.limit).toBe(50);
+      expect(result.total).toBe(OPEN_ORDER_TOTAL);
+      expect(result.truncated).toBe(true);
+    });
+
+    it('agrees with /dash/manager.openOrders on the same fixture', async () => {
+      mockOversizedOpenOrders();
+      mockDefaults();
+      prisma.order.count.mockResolvedValue(OPEN_ORDER_TOTAL);
+
+      const list = await service.getOpenOrders(orgId, branchId);
+      const manager = await service.getManagerDashboard(orgId, branchId);
+      const summary = await service.getTodaySummary(orgId, branchId);
+
+      expect(list.total).toBe(manager.openOrders);
+      expect(list.total).toBe(summary.openOrders);
+      expect(manager.openOrders).toBe(OPEN_ORDER_TOTAL);
+    });
+
+    it('uses one shared definition of "open" for the list and the count', async () => {
+      mockOversizedOpenOrders();
+
+      await service.getOpenOrders(orgId, branchId);
+      const listWhere = prisma.order.findMany.mock.calls[0][0].where;
+      const countWhere = prisma.order.count.mock.calls[0][0].where;
+
+      expect(listWhere).toEqual(countWhere);
+      expect(listWhere.status).toEqual({
+        in: ['NEW', 'SENT', 'IN_KITCHEN', 'READY', 'SERVED'],
+      });
+    });
+  });
+
+  // ── MP0-10: gross/net ordering ──
+
+  describe('MP0-10 gross vs net sales', () => {
+    /**
+     * Controlled fixture reproducing the live inversion.
+     * subtotal 28,107,000 (ex-tax) · tax 5,059,260 · discount 152,160
+     *   → total = 28,107,000 + 5,059,260 - 152,160 = 33,014,100
+     * Before the fix: grossSales = 28,107,000 and netSales = 33,014,100 → net > gross.
+     * After the fix:  grossSales = 33,014,100 and netSales = 27,954,840 (= gross - tax).
+     */
+    const SUBTOTAL = new Decimal(28107000);
+    const TAX = new Decimal(5059260);
+    const DISCOUNT = new Decimal(152160);
+    const TOTAL = new Decimal(33014100);
+
+    function mockLiveShapedSales() {
+      prisma.order.aggregate.mockResolvedValue({
+        _sum: { subtotal: SUBTOTAL, total: TOTAL, tax: TAX, discount: DISCOUNT },
+        _count: 374,
+        _avg: { total: new Decimal(88273) },
+      });
+      prisma.payment.groupBy.mockResolvedValue([]);
+      prisma.refund.aggregate.mockResolvedValue({ _sum: { amount: null } });
+      prisma.order.count.mockResolvedValue(0);
+      prisma.inventoryItem.findMany.mockResolvedValue([]);
+      prisma.anomalyEvent.count.mockResolvedValue(0);
+      prisma.reservation.count.mockResolvedValue(0);
+      prisma.event.count.mockResolvedValue(0);
+      prisma.shift.count.mockResolvedValue(0);
+      prisma.tillSession.count.mockResolvedValue(0);
+    }
+
+    it('today-summary: gross >= net, and gross = net + tax', async () => {
+      mockLiveShapedSales();
+
+      const result = await service.getTodaySummary(orgId, branchId);
+
+      expect(result.grossSales).toEqual(TOTAL); // 33,014,100
+      expect(result.netSales).toEqual(new Decimal(27954840)); // 33,014,100 - 5,059,260
+      expect(result.taxTotal).toEqual(TAX);
+      expect(result.subtotalSales).toEqual(SUBTOTAL); // the old, ex-tax "gross"
+      expect(new Decimal(result.grossSales).gte(new Decimal(result.netSales))).toBe(true);
+      expect(new Decimal(result.netSales).add(result.taxTotal)).toEqual(
+        new Decimal(result.grossSales),
+      );
+    });
+
+    it('manager, owner and stream metrics use the same definition', async () => {
+      mockLiveShapedSales();
+
+      const manager = await service.getManagerDashboard(orgId, branchId);
+      const owner = await service.getOwnerDashboard(orgId, branchId);
+      const stream = await service.getStreamMetrics(orgId, branchId);
+
+      for (const scope of [manager.today, owner.today, owner.mtd]) {
+        expect(scope.grossSales).toEqual(TOTAL);
+        expect(scope.netSales).toEqual(new Decimal(27954840));
+      }
+      expect(stream.grossSales).toEqual(TOTAL);
+      expect(stream.netSales).toEqual(new Decimal(27954840));
+    });
+
+    it('holds when there is no tax at all (POS-created orders)', async () => {
+      prisma.order.aggregate.mockResolvedValue({
+        _sum: {
+          subtotal: new Decimal(120000),
+          total: new Decimal(110000),
+          tax: new Decimal(0),
+          discount: new Decimal(10000),
+        },
+        _count: 4,
+        _avg: { total: new Decimal(27500) },
+      });
+      prisma.payment.groupBy.mockResolvedValue([]);
+      prisma.refund.aggregate.mockResolvedValue({ _sum: { amount: null } });
+      prisma.order.count.mockResolvedValue(0);
+      prisma.inventoryItem.findMany.mockResolvedValue([]);
+      prisma.anomalyEvent.count.mockResolvedValue(0);
+      prisma.reservation.count.mockResolvedValue(0);
+      prisma.event.count.mockResolvedValue(0);
+
+      const result = await service.getTodaySummary(orgId, branchId);
+
+      expect(result.grossSales).toEqual(new Decimal(110000));
+      expect(result.netSales).toEqual(new Decimal(110000));
+      expect(result.subtotalSales).toEqual(new Decimal(120000));
+    });
+
+    it('an empty day returns zeros, not nulls', async () => {
+      prisma.order.aggregate.mockResolvedValue({
+        _sum: { subtotal: null, total: null, tax: null, discount: null },
+        _count: 0,
+        _avg: { total: null },
+      });
+      prisma.payment.groupBy.mockResolvedValue([]);
+      prisma.refund.aggregate.mockResolvedValue({ _sum: { amount: null } });
+      prisma.order.count.mockResolvedValue(0);
+      prisma.inventoryItem.findMany.mockResolvedValue([]);
+      prisma.anomalyEvent.count.mockResolvedValue(0);
+      prisma.reservation.count.mockResolvedValue(0);
+      prisma.event.count.mockResolvedValue(0);
+
+      const result = await service.getTodaySummary(orgId, branchId);
+
+      expect(result.grossSales).toEqual(new Decimal(0));
+      expect(result.netSales).toEqual(new Decimal(0));
+      expect(result.subtotalSales).toEqual(new Decimal(0));
+    });
   });
 
   // ── Low Stock ──

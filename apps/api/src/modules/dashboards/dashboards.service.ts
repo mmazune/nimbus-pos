@@ -29,6 +29,28 @@ export class DashboardsService {
 
   // ── Live Aggregation Helpers ──
 
+  /**
+   * MP0-10 — sales aggregation with a stated, order-preserving definition.
+   *
+   * The persisted money model is `Order.total = Order.subtotal + Order.tax -
+   * Order.discount` (asserted by `packages/db/prisma/demo-import.ts:443`; the POS write
+   * path in `OrdersService.recalcOrderTotals` is the same identity with `tax = 0`).
+   * `subtotal` is therefore EX-tax and `total` is TAX-INCLUSIVE.
+   *
+   * Before this fix `grossSales` was `SUM(subtotal)` and `netSales` was `SUM(total)`, so
+   * whenever tax exceeded discount the "net" figure was LARGER than the "gross" figure
+   * (live: net 33,014,100 > gross 28,107,000). The labels were inverted, not the maths.
+   *
+   * The definition is now:
+   *   grossSales    = SUM(order.total)               — billed to the guest, tax included
+   *   netSales      = grossSales - SUM(order.tax)    — revenue excluding tax
+   *   subtotalSales = SUM(order.subtotal)            — ex-tax, BEFORE discount (additive;
+   *                                                    this is the value that used to be
+   *                                                    published as `grossSales`)
+   *
+   * Invariant: `grossSales = netSales + taxTotal`, and tax is never negative, so
+   * `grossSales >= netSales` always holds.
+   */
   private async aggregateSales(
     orgId: string,
     branchId: string | null,
@@ -48,11 +70,15 @@ export class DashboardsService {
       _avg: { total: true },
     });
 
+    const grossSales = result._sum.total ?? new Prisma.Decimal(0);
+    const taxTotal = result._sum.tax ?? new Prisma.Decimal(0);
+
     return {
-      grossSales: result._sum.subtotal ?? new Prisma.Decimal(0),
-      netSales: result._sum.total ?? new Prisma.Decimal(0),
-      taxTotal: result._sum.tax ?? new Prisma.Decimal(0),
+      grossSales,
+      netSales: grossSales.sub(taxTotal),
+      taxTotal,
       discountTotal: result._sum.discount ?? new Prisma.Decimal(0),
+      subtotalSales: result._sum.subtotal ?? new Prisma.Decimal(0),
       orderCount: result._count ?? 0,
       avgOrderValue: result._avg.total ?? new Prisma.Decimal(0),
     };
@@ -118,14 +144,26 @@ export class DashboardsService {
     return result._sum.amount ?? new Prisma.Decimal(0);
   }
 
-  private async countOpenOrders(orgId: string, branchId: string | null) {
+  /**
+   * MP0-09 — the ONE definition of an "open" order, shared by the count on
+   * `/dash/manager`, `/dash/owner`, `/dash/today-summary`, `/stream/metrics` and by the
+   * `/dash/open-orders` list. Previously the list rebuilt the same filter inline, so the
+   * two could drift apart silently.
+   */
+  private openOrdersWhere(orgId: string, branchId: string | null) {
     const where: any = {
       orgId,
       status: { in: ['NEW', 'SENT', 'IN_KITCHEN', 'READY', 'SERVED'] },
     };
     if (branchId) where.branchId = branchId;
+    return where;
+  }
 
-    return this.prisma.order.count({ where });
+  /** Maximum rows `/dash/open-orders` returns. The list is a preview, not the count. */
+  private readonly OPEN_ORDERS_PAGE_LIMIT = 50;
+
+  private async countOpenOrders(orgId: string, branchId: string | null) {
+    return this.prisma.order.count({ where: this.openOrdersWhere(orgId, branchId) });
   }
 
   private async countClosedOrders(
@@ -238,10 +276,14 @@ export class DashboardsService {
 
     return {
       date: range.start.toISOString().split('T')[0],
+      // MP0-10: grossSales = SUM(order.total) (tax-inclusive, discount applied);
+      // netSales = grossSales - taxTotal; subtotalSales is the additive ex-tax,
+      // pre-discount figure that used to be published as `grossSales`.
       grossSales: sales.grossSales,
       netSales: sales.netSales,
       taxTotal: sales.taxTotal,
       discountTotal: sales.discountTotal,
+      subtotalSales: sales.subtotalSales,
       refundsTotal,
       paymentMix: {
         cash: paymentMix.cash,
@@ -292,6 +334,8 @@ export class DashboardsService {
       today: {
         grossSales: todaySales.grossSales,
         netSales: todaySales.netSales,
+        taxTotal: todaySales.taxTotal,
+        subtotalSales: todaySales.subtotalSales,
         orderCount: todaySales.orderCount,
         avgOrderValue: todaySales.avgOrderValue,
         refundsTotal: todayRefunds,
@@ -299,6 +343,8 @@ export class DashboardsService {
       mtd: {
         grossSales: mtdSales.grossSales,
         netSales: mtdSales.netSales,
+        taxTotal: mtdSales.taxTotal,
+        subtotalSales: mtdSales.subtotalSales,
         orderCount: mtdSales.orderCount,
         avgOrderValue: mtdSales.avgOrderValue,
         refundsTotal: mtdRefunds,
@@ -345,6 +391,8 @@ export class DashboardsService {
       today: {
         grossSales: todaySales.grossSales,
         netSales: todaySales.netSales,
+        taxTotal: todaySales.taxTotal,
+        subtotalSales: todaySales.subtotalSales,
         orderCount: todaySales.orderCount,
         avgOrderValue: todaySales.avgOrderValue,
       },
@@ -381,28 +429,51 @@ export class DashboardsService {
 
   // ── Open Orders ──
 
+  /**
+   * MP0-09 — `/dash/open-orders`.
+   *
+   * The rows are still the 50 oldest open orders. What changed is that the response now
+   * carries the REAL number of open orders alongside them, from the same `where` clause
+   * the dashboard counts use, so `/dash/open-orders.total` and
+   * `/dash/manager.openOrders` are guaranteed to agree (live repro: the list reported
+   * `count: 50` while the branch actually had 107 open orders).
+   *
+   * Additive only — `count` and `orders` keep their existing meaning so today's Manager
+   * Overview keeps working:
+   *   `count`     — rows returned in THIS response (page length; equals `total` only when
+   *                 the branch has 50 or fewer open orders). Retained for compatibility;
+   *                 prefer `total`.
+   *   `total`     — every open order matching the shared definition (not capped).
+   *   `limit`     — the page cap applied (50).
+   *   `truncated` — `total > count`, i.e. the rows are a preview.
+   */
   async getOpenOrders(orgId: string, branchId: string | null) {
-    const where: any = {
-      orgId,
-      status: { in: ['NEW', 'SENT', 'IN_KITCHEN', 'READY', 'SERVED'] },
+    const where = this.openOrdersWhere(orgId, branchId);
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          serviceType: true,
+          total: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        take: this.OPEN_ORDERS_PAGE_LIMIT,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      count: orders.length,
+      total,
+      limit: this.OPEN_ORDERS_PAGE_LIMIT,
+      truncated: total > orders.length,
+      orders,
     };
-    if (branchId) where.branchId = branchId;
-
-    const orders = await this.prisma.order.findMany({
-      where,
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        serviceType: true,
-        total: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'asc' },
-      take: 50,
-    });
-
-    return { count: orders.length, orders };
   }
 
   // ── Low Stock ──

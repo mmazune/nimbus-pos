@@ -414,9 +414,9 @@ Owner/manager dashboards, today summary, payment mix, open orders, low stock, KP
 | ------ | --------------------------- | ---- | --------------------------- | ------ | ------------------------------------ |
 | GET    | `/api/dash/owner`           | Yes  | pos:dash:owner:read         | Yes    | Owner dashboard (today + MTD)        |
 | GET    | `/api/dash/manager`         | Yes  | pos:dash:manager:read       | Yes    | Manager dashboard (today + shifts)   |
-| GET    | `/api/dash/today-summary`   | Yes  | pos:dash:today-summary:read | Yes    | Compact today summary                |
+| GET    | `/api/dash/today-summary`   | Yes  | pos:dash:today-summary:read | Yes    | Compact today summary. **`grossSales = SUM(order.total)` (tax-incl.), `netSales = gross − tax`, additive `subtotalSales` (MP0-10)** |
 | GET    | `/api/dash/payment-mix`     | Yes  | pos:dash:today-summary:read | Yes    | Payment method breakdown             |
-| GET    | `/api/dash/open-orders`     | Yes  | pos:dash:today-summary:read | Yes    | Open orders list                     |
+| GET    | `/api/dash/open-orders`     | Yes  | pos:dash:today-summary:read | Yes    | Open orders list — 50 rows max. **Use `total` for the count; `count` is the page length (MP0-09)** |
 | GET    | `/api/dash/low-stock`       | Yes  | pos:dash:today-summary:read | Yes    | Low stock items                      |
 | GET    | `/api/dash/snapshots`       | Yes  | pos:dash:owner:read         | Yes    | KPI snapshot history                 |
 | POST   | `/api/dash/kpi/refresh`     | Yes  | pos:dash:kpi:refresh        | Yes    | Trigger manual KPI refresh           |
@@ -443,7 +443,7 @@ Core report generation, history listing, CSV/PDF export, and artifact download.
 | POST   | `/api/reports/anomaly-summary`    | Yes  | pos:reports:anomaly-summary:generate      | Yes    | Anomaly summary report               |
 | GET    | `/api/reports`                    | Yes  | pos:reports:history:read                  | Yes    | List report runs                     |
 | GET    | `/api/reports/:id`                | Yes  | pos:reports:history:read                  | Yes    | Get report run by ID                 |
-| POST   | `/api/reports/export`             | Yes  | pos:reports:exports:read                  | Yes    | Create CSV/PDF export                |
+| POST   | `/api/reports/export`             | Yes  | pos:reports:exports:read                  | Yes    | Create **CSV** export. `format: PDF` → **501** (C-01: no PDF renderer) |
 | GET    | `/api/reports/exports/:id/download` | Yes | pos:reports:exports:download             | Yes    | Download export file                 |
 
 ### Report Depth Expansion Endpoints (M20.1)
@@ -477,8 +477,8 @@ Core report generation, history listing, CSV/PDF export, and artifact download.
 | Method | Path                            | Auth | Permission                     | Branch | Description                  |
 | ------ | ------------------------------- | ---- | ------------------------------ | ------ | ---------------------------- |
 | POST   | `/api/hr/employees`             | Yes  | pos:hr:employees:create        | Yes    | Create employee              |
-| GET    | `/api/hr/employees`             | Yes  | pos:hr:employees:read          | Yes    | List employees (paginated)   |
-| GET    | `/api/hr/employees/:id`         | Yes  | pos:hr:employees:read          | Yes    | Get employee with contracts  |
+| GET    | `/api/hr/employees`             | Yes  | pos:hr:employees:read          | Yes    | List employees (paginated). **Safe projection by default** — no compensation/PII; `?view=full` needs `pos:hr:compensation:read` (C-02) |
+| GET    | `/api/hr/employees/:id`         | Yes  | pos:hr:employees:read          | Yes    | Get employee with contracts. **Contracts carry no salary field on the safe path** (C-02) |
 | PATCH  | `/api/hr/employees/:id`         | Yes  | pos:hr:employees:update        | Yes    | Update employee              |
 | POST   | `/api/hr/contracts`             | Yes  | pos:hr:contracts:create        | Yes    | Create employment contract   |
 | GET    | `/api/hr/contracts`             | Yes  | pos:hr:contracts:read          | Yes    | List contracts               |

@@ -156,6 +156,9 @@
                             "pm.test('Has today', () => pm.expect(body.today).to.be.an('object'));",
                             "pm.test('Has shiftSummary', () => pm.expect(body.shiftSummary).to.be.an('object'));",
                             "pm.test('Has openOrders', () => pm.expect(body).to.have.property('openOrders'));",
+                            "// MP0-09: this is the authoritative open-order count; request 06 asserts parity.",
+                            "pm.environment.set('managerOpenOrders', body.openOrders);",
+                            "pm.test('MP0-10 gross >= net on today', () => pm.expect(Number(body.today.grossSales)).to.be.at.least(Number(body.today.netSales)));",
                             "pm.test('Has calculatedAt', () => pm.expect(body.calculatedAt).to.be.a('string'));"
                         ]
                     }
@@ -194,6 +197,11 @@
                             "pm.test('Has date', () => pm.expect(body.date).to.be.a('string'));",
                             "pm.test('Has grossSales', () => pm.expect(body).to.have.property('grossSales'));",
                             "pm.test('Has netSales', () => pm.expect(body).to.have.property('netSales'));",
+                            "// MP0-10: grossSales = SUM(order.total) (tax-inclusive), netSales = grossSales - taxTotal.",
+                            "pm.test('MP0-10 gross >= net', () => pm.expect(Number(body.grossSales)).to.be.at.least(Number(body.netSales)));",
+                            "pm.test('MP0-10 gross = net + tax', () => pm.expect(Number(body.netSales) + Number(body.taxTotal)).to.eql(Number(body.grossSales)));",
+                            "pm.test('MP0-10 has subtotalSales (ex-tax, pre-discount)', () => pm.expect(body).to.have.property('subtotalSales'));",
+                            "pm.environment.set('todaySummaryOpenOrders', body.openOrders);",
                             "pm.test('Has paymentMix', () => pm.expect(body.paymentMix).to.be.an('object'));",
                             "pm.test('Has openOrders', () => pm.expect(body).to.have.property('openOrders'));",
                             "pm.test('Has closedOrders', () => pm.expect(body).to.have.property('closedOrders'));",
@@ -272,7 +280,19 @@
                             "const body = pm.response.json();",
                             "pm.test('Status 200', () => pm.response.to.have.status(200));",
                             "pm.test('Has count', () => pm.expect(body).to.have.property('count'));",
-                            "pm.test('Has orders array', () => pm.expect(body.orders).to.be.an('array'));"
+                            "pm.test('Has orders array', () => pm.expect(body.orders).to.be.an('array'));",
+                            "// MP0-09: `count` is the page length (rows in THIS response). `total` is the real number",
+                            "// of open orders and must agree with /dash/manager.openOrders (request 03).",
+                            "pm.test('MP0-09 has total', () => pm.expect(body).to.have.property('total'));",
+                            "pm.test('MP0-09 has limit', () => pm.expect(body.limit).to.eql(50));",
+                            "pm.test('MP0-09 count is the page length', () => pm.expect(body.count).to.eql(body.orders.length));",
+                            "pm.test('MP0-09 truncated flags the preview', () => pm.expect(body.truncated).to.eql(body.total > body.count));",
+                            "const managerOpen = pm.environment.get('managerOpenOrders');",
+                            "if (managerOpen === undefined || managerOpen === null || managerOpen === '') {",
+                            "    console.warn('skipped parity check: run request 03 (Manager Dashboard) first to populate managerOpenOrders');",
+                            "} else {",
+                            "    pm.test('MP0-09 total agrees with /dash/manager.openOrders', () => pm.expect(body.total).to.eql(Number(managerOpen)));",
+                            "}"
                         ]
                     }
                 }
