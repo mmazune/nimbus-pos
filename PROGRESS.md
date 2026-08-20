@@ -4,6 +4,75 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
+**2026-08-20 — ENTERPRISE UI TRACK B2 COMPLETE (Manager Overview dashboard) — A: B2 COMPLETE /
+GATED FOR B3.** Frontend-only; no backend/schema/migration/seed/permission/Postman change.
+`/manager/overview` stops being the honest foundation screen and becomes a real branch dashboard: an
+Odoo C10-style **3-column grid of eight bordered cards with a coloured left accent bar** — Sales
+today, Orders today, Payment mix, Open orders, Low stock, Needs a decision, Shift & till coverage,
+Branch readiness — composed through the B1 chrome (`ManagerControlPanel` + `ManagerContentShell`).
+Every rendered figure resolves through **`MANAGER_KPI_BINDINGS`**, a 26-entry registry binding each
+KPI to a verified endpoint field and a drill-in target; an unregistered KPI **throws** rather than
+renders, and only the two till/shift KPIs may lack a drill-in (each with a written reason — MP0-02).
+The verified boundaries are all honoured live: the open count comes from `/dash/manager.openOrders`
+(**107** live) not `/dash/open-orders.count` (**50**, the capped page length — MP0-09 reproduced);
+`netSales` **33,014,100** > `grossSales` **28,107,000** (MP0-10 reproduced) so both labels state the
+tax basis and no bare Gross/Net exists; approval counts come from the **four canonical branch-scoped
+domain endpoints**, never the partly org-scoped `/api/approvals` inbox (MP0-05), and are projected to
+**count-only at the API-client boundary** with `take=1`/`limit=1` so the leave/shift-swap PII payload
+never reaches state or cache (MP0-01); tills and shifts are counts with no list and no drill-in.
+**Polled, not streamed** — 60 s, with a permanent "Live stream unavailable — showing the latest
+fetched data." (C-04/NG-14 still open; the assertion script fails if any SSE code appears).
+`POST /dash/kpi/refresh` sits behind the shared `ActionConfirmDialog` + an in-flight lock (live: one
+POST per confirm, zero on cancel). **No charting dependency was added** — three hand-rolled
+token-driven SVG marks (donut, bar series, ratio meter), each `role="img"` with `<title>`/`<desc>`;
+new `chart-series-1…4` + `chart-track` brand-monochrome tokens. **Defect found and fixed by this
+phase's own e2e:** M-P1's branch-switch `invalidateQueries` ran while the observers still held the
+OUTGOING branch's keys, refetching them — **9 wasted requests per switch**, now `refetchType: "none"`.
+Validated 2026-08-20: web typecheck/lint/build pass; **14/14** assertion scripts pass (new
+`manager-b2-assertions.ts`); Playwright on an isolated local Docker Postgres stack (never shared
+Neon) — `e2e/manager-dashboard/` **84/84**, `e2e/manager-shell/` **125 passed / 11 deliberately
+skipped**, `e2e/supervisor-prompt3/` **64/64**, `e2e/cashier-floor` cross-role **48/48**; measured
+**12 requests** for one clean Overview load (1 `/auth/me` + 2 shell + 9 dashboard); 5 screenshots at
+1440×900 + 1280×680 viewed (full dashboard, branch-switched, forced card error, confirmation); zero
+console errors; `GET /api/health` → `ok`; `git diff --check` clean; stack torn down and both `.env`
+files restored byte-for-byte (SHA-256 verified). See
+`ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`. **B3 (Operations + Staff) and B0 (API
+verification, docs-only, parallel) are next — neither is started; both remain gated on an explicit
+owner go.**
+
+**2026-08-20 — ENTERPRISE UI TRACK B1 COMPLETE (Manager top-nav shell conversion) — A: B1 COMPLETE /
+GATED FOR B0+B2.** Frontend-only; no backend/schema/migration/seed/permission/Postman change; no
+commit/push. Manager's presentation converts from the M-P1 fixed **bottom nav** to an Odoo-style
+**top module bar**, shipped as an additive `OperationalShell` variant (`navigation="top" | "bottom"`,
+default `"bottom"`) — never a Manager shell fork. The shared `OperationalTopNav` +
+`OperationalTopNavDropdown` (click-to-open, full keyboard operation: roving-tabindex menubar,
+Escape/outside-click/route-change close, arrow-key item navigation) are consumed by a thin
+`ManagerTopNav` adapter; the retired M-P1 `ManagerHeader.tsx`/`ManagerBottomNav.tsx` were deleted.
+The six locked M-P1 surfaces survive unchanged as the menu tree (Overview/Me direct links;
+Operations/Staff/Reports/Settings host dropdowns with one real link to today's foundation page plus
+an honest, inert not-yet tree tagged by the phase that ships it — e.g. "Orders — B3"). New Manager
+chrome primitives (`components/manager/chrome/`: `ManagerControlPanel`, `ManagerBreadcrumbs`,
+`ManagerContentShell`, `ManagerSearchFilterMenu`) are built for every later Track B phase to reuse;
+B1 mounts only `ManagerControlPanel`/`ManagerContentShell`, title-only, since no B1 surface has data
+to back a create action, search, pager, or view switcher yet — `ManagerSearchFilterMenu` and
+`ManagerBreadcrumbs` ship built but deliberately unmounted (first consumed from B3). **OD-4 answered
+with a deviation:** the collapse-to-single-menu-control breakpoint is `xl` (1280px), not the
+roadmap-suggested `lg` (1024px) — the full bar does not reliably fit at 1024×768, so that project
+gets the collapsed control too, preserving the "no horizontal overflow at 1024×768" invariant.
+**OD-5 needed no fallback** — the shared shell absorbed the variant with one additive prop. Validated
+2026-08-20: web typecheck/lint/build pass; 13 static assertion scripts pass (new
+`manager-b1-assertions.ts` + the updated `manager-p1-assertions.ts`, changed only for the retired
+Header/BottomNav files, per the density-pass precedent); Playwright executed live on an isolated
+local Docker Postgres stack (never shared Neon) — `e2e/manager-shell/` **125/136 passed, 11
+deliberately skipped** (desktop-only dropdown mechanics at viewports where the module bar is
+collapsed by design — proven separately by a viewport-forced OD-4 test), `e2e/supervisor-prompt3/`
+**64/64**, `e2e/cashier-floor` cross-role regression **48/48**; 8 screenshots at 1440×900 + 1280×680
+(Manager Overview with a dropdown open + all three frontline shells, byte-identical); zero console
+errors; `GET /api/health` → `ok`; `git diff --check` clean; isolated stack fully torn down and
+`apps/api/.env`/`packages/db/.env` restored byte-for-byte. See
+`ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`. *(Superseded by the B2 entry above: B2 shipped on
+2026-08-20; B0 remains unstarted.)*
+
 **2026-08-20 — ENTERPRISE UI RESEARCH COMPLETE; NEW CANONICAL ROADMAP ADOPTED (documentation only).**
 The owner's live Odoo instance was explored read-only through his authenticated browser session
 (17 screenshots, no record created/edited/deleted) and written up as `ai/ODOO_REFERENCE_RESEARCH.md`;

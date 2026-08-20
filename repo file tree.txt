@@ -1839,3 +1839,64 @@ apps/web/scripts/{shell,profile}-assertions.ts  (modified — extended to four r
 ai/
   MANAGER_P1_SHELL_COMPLETION_REPORT.md         (new — canonical M-P1 record)
 ```
+
+## 2026-08-20 — Enterprise UI Track B1 (top-nav shell) + B2 (Overview dashboard)
+
+```
+apps/web/src/components/pos-shell/               (new — B1, shared by design)
+  OperationalTopNav.tsx          (module bar: brand/home, role="menubar", roving tabindex, xl collapse)
+  OperationalTopNavDropdown.tsx  (click-to-open dropdown: Escape / outside click / route change close)
+
+apps/web/src/components/manager/chrome/          (new — B1 primitives)
+  ManagerControlPanel.tsx  ManagerBreadcrumbs.tsx  ManagerContentShell.tsx
+  ManagerSearchFilterMenu.tsx  index.ts
+  (B2 mounts ControlPanel + ContentShell only; SearchFilterMenu/Breadcrumbs stay unmounted → B3)
+
+apps/web/src/components/manager/shell/           (modified — B1)
+  ManagerTopNav.tsx    (new — thin adapter over the shared OperationalTopNav)
+  ManagerHeader.tsx / ManagerBottomNav.tsx        (DELETED — retired with the bottom-nav presentation)
+
+apps/web/src/lib/manager/top-nav.ts              (new — B1 menu tree, derived from managerRoutes)
+
+apps/web/src/lib/manager/                        (new — B2 dashboard data layer)
+  dashboard-types.ts   (verified /dash/* + approval response shapes; Decimals arrive as STRINGS)
+  dashboard-model.ts   (pure: Decimal parsing, money/count/%, aging buckets, low-stock ranking,
+                        MANAGER_KPI_BINDINGS — the KPI → verified field → drill-in registry)
+  dashboard-api.ts     (5 /dash reads + KPI refresh + 4 COUNT-ONLY approval projections)
+  dashboard-context.ts (9 bounded branch-scoped queries, 60s polling, narrow 9-key refresh)
+
+apps/web/src/components/manager/dashboard/       (new — B2)
+  ManagerDashboardCard.tsx     (Odoo C10 card primitive: accent bar, KPI, stat list, checklist,
+                                loading/error/empty/ready — error is FAIL-CLOSED, no figure)
+  ManagerDashboardCharts.tsx   (hand-rolled SVG donut / bar series / ratio meter — no chart library)
+  ManagerOverviewDashboard.tsx (grid, provenance strip, recalculate confirmation, no-branch state)
+  cards/ManagerSalesTodayCard.tsx      cards/ManagerOrdersTodayCard.tsx
+  cards/ManagerPaymentMixCard.tsx      cards/ManagerOpenOrdersCard.tsx
+  cards/ManagerLowStockCard.tsx        cards/ManagerApprovalsCard.tsx
+  cards/ManagerCoverageCard.tsx        cards/ManagerReadinessCard.tsx
+  index.ts
+
+apps/web/scripts/                                (new)
+  manager-b1-assertions.ts  tsconfig.manager-b1-assertions.json
+  manager-b2-assertions.ts  tsconfig.manager-b2-assertions.json
+
+apps/web/e2e/manager-dashboard/                  (new — B2)
+  fixtures.ts  dashboard-cards.spec.ts  branch-scope-and-refresh.spec.ts
+  states-and-performance.spec.ts  capture-evidence.spec.ts
+apps/web/e2e/manager-shell/topnav-keyboard.spec.ts   (new — B1)
+
+apps/web/src/components/pos-shell/               (modified — shared, all four roles regressed)
+  types.ts / OperationalShell.tsx  (additive navigation="top" | "bottom", default "bottom")
+  role-icon-config.ts / role-icons.ts (+revenue → Coins, +inventory → Package — B2)
+
+apps/web/src/lib/manager/branch-context.ts       (modified — currencyCode exposed; switch
+                                                  invalidation gained refetchType: "none")
+apps/web/src/lib/manager/permissions.ts          (modified — liveFrom re-tagged to Track B phases)
+apps/web/src/pages/manager/overview.tsx          (modified — renders the B2 dashboard)
+apps/web/src/styles/globals.css                  (modified — chart-series-1..4 + chart-track tokens)
+apps/web/tailwind.config.ts                      (modified — chart colour mappings)
+
+ai/
+  ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md      (new — canonical B1 record)
+  ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md   (new — canonical B2 record)
+```

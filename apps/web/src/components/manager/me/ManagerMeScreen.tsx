@@ -1,7 +1,8 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { Badge, Button, Card, PageShell } from "@/components/ui";
+import { Badge, Button, Card } from "@/components/ui";
+import { ManagerContentShell, ManagerControlPanel } from "@/components/manager/chrome";
 import {
   ProfileMetaGrid,
   ProfileSection,
@@ -59,27 +60,30 @@ export function ManagerMeScreen() {
   ];
 
   return (
-    <PageShell
-      title="Manager profile"
-      subtitle="Identity, session, and branch context for this manager workspace."
-      actions={
-        <Button
-          variant="secondary"
-          aria-busy={isLoggingOut}
-          disabled={isLoggingOut}
-          leadingIcon={
-            <LogoutIcon
-              size={operationalIconSizes.compactAction}
-              weight={operationalIconWeights.default}
-              aria-hidden
-            />
-          }
-          onClick={handleLogout}
-        >
-          {isLoggingOut ? "Logging out" : "Log out"}
-        </Button>
-      }
-    >
+    <ManagerContentShell>
+      <ManagerControlPanel
+        title="Manager profile"
+        secondaryActions={
+          <Button
+            variant="secondary"
+            aria-busy={isLoggingOut}
+            disabled={isLoggingOut}
+            leadingIcon={
+              <LogoutIcon
+                size={operationalIconSizes.compactAction}
+                weight={operationalIconWeights.default}
+                aria-hidden
+              />
+            }
+            onClick={handleLogout}
+          >
+            {isLoggingOut ? "Logging out" : "Log out"}
+          </Button>
+        }
+      />
+      <p className="max-w-2xl text-sm text-text-secondary">
+        Identity, session, and branch context for this manager workspace.
+      </p>
       <div className="flex min-w-0 flex-col gap-5">
         <RoleProfileHero
           role="manager"
@@ -173,6 +177,6 @@ export function ManagerMeScreen() {
           </ul>
         </ProfileSection>
       </div>
-    </PageShell>
+    </ManagerContentShell>
   );
 }

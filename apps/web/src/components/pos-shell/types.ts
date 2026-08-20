@@ -28,9 +28,23 @@ export type OperationalHeaderContext = {
 };
 
 export type OperationalShellProps = {
-  bottomNavigation: ReactNode;
+  /**
+   * OPTIONAL when `navigation="top"` (the fixed bottom bar is not rendered in that
+   * mode). Waiter, Cashier, and Supervisor always pass a real node here and never
+   * pass `navigation`, so their markup is byte-identical to before this field
+   * existed.
+   */
+  bottomNavigation?: ReactNode;
   children: ReactNode;
   header: ReactNode;
   idleHandler?: ReactNode;
   readiness: ReactNode;
+  /**
+   * Additive shell variant (Track B1, D-MGRTOPNAV / OD-5). Defaults to "bottom" —
+   * the shell Waiter/Cashier/Supervisor have always rendered. "top" is Manager-only:
+   * it omits the fixed bottom bar and the bottom content clearance, and expects the
+   * `header` slot to render a top-module-bar component instead of the shared
+   * `OperationalHeader`.
+   */
+  navigation?: "top" | "bottom";
 };

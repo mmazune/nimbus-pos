@@ -1,30 +1,22 @@
 import type { GetServerSideProps } from "next";
 
-import { ManagerFoundationScreen } from "@/components/manager/foundation/ManagerFoundationScreen";
+import { ManagerOverviewDashboard } from "@/components/manager/dashboard";
 import { ManagerShell } from "@/components/manager/shell";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
 });
 
+/**
+ * Manager landing surface. Track B1 shipped the honest foundation screen here;
+ * Track B2 replaces it with the real KPI dashboard over the verified `/dash/*`
+ * reads. Every other Manager surface keeps its foundation screen until its own
+ * phase lands.
+ */
 export default function ManagerOverviewPage() {
   return (
     <ManagerShell>
-      <ManagerFoundationScreen
-        surface="overview"
-        title="Manager overview"
-        subtitle="Branch performance, operational load, staff coverage, and pending exceptions."
-        scope={[
-          "Today KPIs for the selected branch: sales, open orders, coverage counts, pending approvals, low stock, anomalies.",
-          "Payment mix, open-orders, low-stock, and pending-approvals snapshots.",
-          "A live metrics stream with an explicit degraded state when the stream is unavailable.",
-        ]}
-        boundaries={[
-          "Tills and shifts can only ever be counts — this backend has no branch-wide tills or shifts list.",
-          "Approval counts must be filtered client-side first: the approvals list is only partly branch-scoped.",
-          "Sales figures must be labelled precisely: the backend's net figure is tax-inclusive and its gross figure is not.",
-        ]}
-      />
+      <ManagerOverviewDashboard />
     </ManagerShell>
   );
 }

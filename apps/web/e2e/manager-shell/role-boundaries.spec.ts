@@ -20,6 +20,7 @@ test.describe("Manager role boundaries", () => {
         timeout: 20_000,
       });
       await expect(page.locator("[data-operational-bottom-nav]")).toHaveCount(0);
+      await expect(page.locator("[data-operational-top-nav]")).toHaveCount(0);
 
       await page.getByRole("button", { name: /return to login/i }).click();
       // The guard clears the session and replaces to /login?reason=manager_only. The

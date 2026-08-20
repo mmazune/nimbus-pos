@@ -8,6 +8,10 @@ export const operationalIconNames = {
   cashierTill: "cashierTill",
   close: "close",
   floor: "floor",
+  // Track B2 (Manager Overview dashboard): two card glyphs with no existing
+  // equivalent in the registry. Added HERE rather than imported ad hoc, per
+  // docs/UI_SYSTEM.md §4 — this file stays the only place a glyph is chosen.
+  inventory: "inventory",
   logout: "logout",
   me: "me",
   operations: "operations",
@@ -15,6 +19,7 @@ export const operationalIconNames = {
   refresh: "refresh",
   reports: "reports",
   reservations: "reservations",
+  revenue: "revenue",
   search: "search",
   serviceArea: "serviceArea",
   settings: "settings",

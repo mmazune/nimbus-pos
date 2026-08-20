@@ -43,8 +43,16 @@ export type ManagerSurface = {
   label: string;
   route: string;
   status: ManagerSurfaceStatus;
-  /** The phase that puts live data behind this surface. M-P1 ships the foundation only. */
-  liveFrom: "M-P1" | "M-P2" | "M-P3" | "M-P4" | "M-P5" | "M-P6";
+  /**
+   * The phase that puts live data behind this surface.
+   *
+   * Track B2 (2026-08-20) re-tagged the not-yet surfaces from the superseded
+   * M-P* numbering to the canonical `ai/ENTERPRISE_UI_ROADMAP.md` Track B phases,
+   * so the on-screen badge names the phase that will actually build them — the
+   * same phase labels the B1 top-nav tree already shows. `"live"` marks a surface
+   * whose data has shipped.
+   */
+  liveFrom: "live" | "M-P1" | "B2" | "B3" | "B4" | "B6";
   summary: string;
   /** Documentation of the backing guards — never used as the gate. */
   permissions: readonly string[];
@@ -56,8 +64,8 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Overview",
     route: "/manager/overview",
     status: "allowed",
-    liveFrom: "M-P2",
-    summary: "Branch command dashboard: KPIs, payment mix, snapshots, approval counts.",
+    liveFrom: "live",
+    summary: "Branch command dashboard: KPIs, payment mix, open-order aging, low stock, approval counts.",
     permissions: ["pos:dash:manager:read", "pos:dash:today-summary:read", "pos:dash:stream:read"],
   },
   {
@@ -65,7 +73,7 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Operations",
     route: "/manager/operations",
     status: "allowed",
-    liveFrom: "M-P3",
+    liveFrom: "B3",
     summary: "Read-only oversight of tables, orders, and reservations. No checkout, no order entry.",
     permissions: ["pos:floor:read", "pos:table:read", "pos:order:read", "pos:reservation:read"],
   },
@@ -74,7 +82,7 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Staff",
     route: "/manager/staff",
     status: "allowed",
-    liveFrom: "M-P4",
+    liveFrom: "B3",
     summary:
       "Safe-field staff directory, frontline onboarding, Quick PIN admin, attendance, leave and shift-swap review.",
     permissions: [
@@ -90,7 +98,7 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Reports",
     route: "/manager/reports",
     status: "allowed",
-    liveFrom: "M-P5",
+    liveFrom: "B4",
     summary: "Report catalog, generation, history/detail, and export with a truthful unavailable state.",
     permissions: ["pos:reports:history:read", "pos:reports:exports:read"],
   },
@@ -99,7 +107,7 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     label: "Settings",
     route: "/manager/settings",
     status: "allowed",
-    liveFrom: "M-P6",
+    liveFrom: "B6",
     summary:
       "Read-only branch profile and device registry; printer routes metadata-only; terminal pairing stub-only.",
     permissions: ["devices:read", "devices:routes:write", "devices:terminals:write"],

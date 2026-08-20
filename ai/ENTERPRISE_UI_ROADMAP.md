@@ -8,8 +8,9 @@ and their history stays intact — see §2.2 and the banner on that file).
 **Does not supersede:** `docs/cashier-ui-docs/CASHIER_RECONSTRUCTION_ROADMAP.md` (C4→C6 continue
 unchanged, in parallel — Track C-P).
 
-**Nothing in Track B has been implemented.** This document is a plan. **B1 requires an explicit
-owner "go" before any runtime code is written.**
+**Track B1 and B2 are COMPLETE (2026-08-20)** — see `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`
+and `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`. Every other Track B phase remains
+unimplemented and **requires an explicit owner "go" before any runtime code is written**, per-phase.
 
 > **Honesty rule for this document.** Every Odoo pattern referenced here is one that was actually
 > observed and screenshotted in `ai/ODOO_REFERENCE_RESEARCH.md`. Where that research says
@@ -254,6 +255,11 @@ None. **B0 can run in parallel with B1** — it writes only documentation and to
 
 ## B1 — Manager TOP-NAV shell conversion
 
+**Status: ✅ COMPLETE (2026-08-20).** See `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` for the
+full scope checklist, validation numbers, and recorded deviations (OD-4 answered at the `xl`/1280px
+breakpoint rather than the `lg`/1024px suggested below — the full bar does not reliably fit at
+1024×768). **B0, B2 and every later phase remain gated on an explicit owner go.**
+
 **Type:** frontend implementation on shared components. **Sizing: L.**
 **This is the foundation every later Track B phase mounts on.**
 
@@ -372,6 +378,12 @@ changed, the cross-role regression result, and how the frontline bottom nav was 
 
 ## B2 — Manager Overview dashboard
 
+**Status: ✅ COMPLETE (2026-08-20)** — `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`.
+Eight cards over the five verified `/dash/*` reads plus four branch-scoped approval-count endpoints;
+polled at 60 s with a permanent, truthful degraded-stream statement (C-04 still open); every KPI
+bound to a verified field through a machine-checked registry; no charting dependency added.
+**B3 remains gated on an explicit owner go.**
+
 **Type:** frontend implementation. **Sizing: M.**
 
 **Odoo pattern cloned:** **C10** KPI card grid — the Accounting Dashboard, screenshot `02`,
@@ -445,9 +457,11 @@ financials (that is B7). Graph/pivot (B4). Accounting cards (B5).
 
 ### Completion report
 
-`ai/ENTERPRISE_B2_OVERVIEW_COMPLETION_REPORT.md` — must include the **KPI → endpoint field → drill-in
-target** table and state plainly which Odoo card features were *not* cloned and why (charts, if the
-series could not be proven).
+**Delivered as `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`** (the owner's B2 brief named the
+file `…_DASHBOARD_…`; this is the canonical B2 record). It carries the **KPI → endpoint field →
+drill-in target** table and an explicit list of the Odoo card features that were *not* cloned and
+why — including the revenue trend, which could not be proven: Nimbus exposes no bucketed series, and
+`/dash/snapshots` is gated behind `pos:dash:owner:read`, which the Manager does **not** hold.
 
 ---
 
@@ -911,8 +925,8 @@ only) · `C-15` → B1 Favorites (localStorage-only or absent).
 | A | **A0** | Density, fullscreen login, terminal identity, short labels | — | **DONE 2026-08-20** — record only |
 | A | **A1** | Remaining polish debt: **floor-toolbar wrap at 1024** is the only item this track owns; the cashier copy items belong to C4/C5-C6 and the waiter PIN to C-13. Token contrast, role accents, jargon leak and the Inter bundle are **already fixed** | **S** | Shared-file coordination with B1 + Cashier C4 |
 | B | **B0** | M-P0-style live verification of the ~90 accounting/finance routes + settings/alerts/sync/audit/analytics | **M** | None. Docs only. **Gates B5**; informs B6/B7 |
-| B | **B1** | Manager **top-nav shell**: module bar, click dropdowns, control panel, chip search, pager, view switcher, breadcrumb | **L** | 🔴 **Explicit owner go.** Blocks B2–B7. Shared-shell variant, frontline unchanged. Coordinate with Cashier C4 |
-| B | **B2** | Manager Overview — Odoo C10 KPI card grid over `/dash/*`, truthful checklists, degraded stream | **M** | B1. Live mode soft-gated on **C-04**. MP0-05/09/10 bind every card |
+| B | **B1** | Manager **top-nav shell**: module bar, click dropdowns, control panel, chip search, pager, view switcher, breadcrumb | **L** | ✅ **COMPLETE (2026-08-20).** Blocks B2–B7 (still gated on their own owner go). Shared-shell variant, frontline unchanged |
+| B | **B2** | Manager Overview — Odoo C10 KPI card grid over `/dash/*`, truthful checklists, degraded stream | **M** | ✅ **COMPLETE (2026-08-20).** 8 cards, 9 bounded reads, polled (C-04 still open). Blocks nothing; B3–B7 stay gated |
 | B | **B3** | Operations (read-only lists/forms/floor/chatter) + Staff (kanban directory, onboarding, Quick-PIN table) | **L** | B1. 🔴 Directory **hard-gated on C-02**. Chatter gated on B0. Shift-swap = Outcome C |
 | B | **B4** | Reports — catalog, one generic generate form, history, summary detail, **CSV-only** export | **M** | B1. **No PDF** (C-01). 🔴 Graph/pivot gated on **C-03** |
 | B | **B5** | Accounting suite over ~90 endpoints — 7-menu tree, sub-phased B5.1…B5.6 | **L** | 🔴 **B0 go** + B1 (+ B3 primitives). No financial statements |
@@ -925,19 +939,22 @@ only) · `C-15` → B1 Favorites (localStorage-only or absent).
 
 # 6. Next three prompts to run
 
-> None of these may start without the owner's explicit go for that specific prompt.
+> **B1 is complete** (2026-08-20) — see `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`. None of the
+> remaining prompts below may start without the owner's explicit go for that specific prompt.
 
-### 1. **B1 — Manager top-nav shell conversion** *(the owner's stated next step)*
+### 1. **B1 — Manager top-nav shell conversion** ✅ COMPLETE (2026-08-20)
 
-Convert Manager navigation from the M-P1 bottom nav to the Odoo-style top module bar, and build the
+Converted Manager navigation from the M-P1 bottom nav to the Odoo-style top module bar, and built the
 reusable primitives every later phase depends on: the module bar with click-to-open grouped
 dropdowns, the control-panel row (`New` + title + cog + chip search + server pager + view switcher),
-the three-column search/filter dropdown, and the breadcrumb + record pager. Carry the branch
-switcher, session guard, idle handling and surface allow-list forward from M-P1 **unchanged**.
-Deliver it as an **additive variant of the shared `OperationalShell`**, not a Manager fork — Waiter,
-Cashier and Supervisor must render byte-identically afterwards. Ship the six existing menus with
+the three-column search/filter dropdown, and the breadcrumb + record pager. The branch switcher,
+session guard, idle handling and surface allow-list carried forward from M-P1 **unchanged**.
+Delivered as an **additive variant of the shared `OperationalShell`**, not a Manager fork — Waiter,
+Cashier and Supervisor were verified live to render byte-identically. The six existing menus ship
 honest not-yet states; **no live data, no writes**. Full cross-role regression + keyboard traversal
-required. **Size L. Gated on explicit owner go.**
+executed live on an isolated stack. **Size L.** See the completion report for the full checklist,
+the OD-4 breakpoint deviation, and what remains deliberately unmounted (search/filter menu,
+breadcrumbs, and the control panel's non-title slots).
 
 ### 2. **B0 — API verification extension (M-P0 pass #2)** *(can run in parallel — docs only)*
 
@@ -950,7 +967,7 @@ failure modes B5 must render. Produce a `Verified (B0, …)` column on the matri
 finding table, and an explicit **go / no-go for B5**. **Isolated disposable stack only.**
 **Size M. No runtime code.**
 
-### 3. **B2 — Manager Overview dashboard** *(after the B1 gate passes)*
+### 3. **B2 — Manager Overview dashboard** ✅ COMPLETE (2026-08-20)
 
 Build the Odoo-style KPI card grid over the verified `/dash/*` reads: three columns of bordered
 cards with a coloured accent bar, **counts as drill-in links and amounts as plain data**,
@@ -958,22 +975,30 @@ mixed-weight action buttons, and a card that is allowed to have no chart or a tr
 checklist instead. Bind every card to a verified field; use `/dash/manager.openOrders` for the open
 count; never label a bare Gross/Net; filter approval counts by branch before display; tills and
 shifts are counts only. Ship polled with a truthful degraded-stream state unless **C-04** has landed
-an authenticated SSE reader. **Size M.**
+an authenticated SSE reader. **Size M.** — *Delivered exactly as specified. Eight cards; the revenue
+trend was proven impossible (no bucketed series; `/dash/snapshots` needs `pos:dash:owner:read`, which
+Manager does not hold) so the money cards ship chartless, and the payment-mix ring plus the
+open-order aging bars are both derived from rows the endpoints actually return. See
+`ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`.*
+
+### 4. **B3 — Operations + Staff** *(NOT started — needs its own owner go)*
+
+The next runtime phase per the sequencing above. Nothing in it is begun.
 
 ---
 
 # 7. Open owner decisions
 
-Each carries a recommendation. None blocks B1 except **OD-4** and **OD-5**, which B1 must answer at
-its start.
+Each carries a recommendation. **OD-4 and OD-5 are ANSWERED** (B1, 2026-08-20) — see the outcome
+column. The rest remain open.
 
-| ID | Question | Recommendation |
-| --- | --- | --- |
-| **OD-1** | **Does Owner reuse the manager suite with wider scope, or get its own application?** | **Reuse.** One suite, one shell, one set of primitives; Owner is a **scope variant** — a wider dashboard (`/dash/owner` + franchise rollups) and additional menus, gated by the same surface allow-list mechanism. A second application would double the maintenance of every primitive built in B1 and would fork the shell the whole architecture forbids. Ship as **B7**. |
-| **OD-2** | **Does the accounting UI live under Manager, or wait for a future Accountant role?** | **Build it under Manager now, designed to be remounted.** The endpoints exist today and Manager provably holds most of the reads; waiting for a role that does not exist delays the single biggest capability unlock. Build B5 as a **self-contained module** (`components/manager/accounting/*` + `lib/accounting/*`) with **no Manager-specific coupling**, so an Accountant role later mounts the same module behind its own allow-list. **Write** surfaces stay gated on B0 proving the permission is actually held. |
-| **OD-3** | **Does Accounting become a seventh top-nav menu for Manager?** | **Yes** — as a top-level module entry alongside the six M-P1 surfaces. Record explicitly that the locked "exactly six tabs, no More tab" decision applied to the **bottom nav** presentation, which D2 supersedes; it was never a statement about how many *modules* Manager may reach. If the owner prefers, Accounting can instead sit behind a module launcher — but do **not** hide it inside Reports. |
-| **OD-4** | **What happens to the top nav below desktop width?** *(B1 must answer)* | Collapse the module bar to a **single menu control** at the same left position, opening the full menu tree as a panel. **Do not** fall back to the frontline bottom nav — that reintroduces exactly what D2 supersedes, and Manager's tree is bigger than six items. Suggested breakpoint: the existing 1024 project boundary. |
-| **OD-5** | **Additive shell variant, or a separate management shell?** *(B1 must answer)* | **Additive variant of `OperationalShell`** (`navigation="top" \| "bottom"`, default `bottom`). It keeps one layout, one idle handler, one guard pattern and one density system, and it keeps Manager as the fourth *consumer* rather than a fork. Fall back to a separate `ManagementShell` **only if** B1 finds the shared component genuinely cannot absorb the variant — and record that finding explicitly rather than forking quietly. |
+| ID | Question | Recommendation | Outcome |
+| --- | --- | --- | --- |
+| **OD-1** | **Does Owner reuse the manager suite with wider scope, or get its own application?** | **Reuse.** One suite, one shell, one set of primitives; Owner is a **scope variant** — a wider dashboard (`/dash/owner` + franchise rollups) and additional menus, gated by the same surface allow-list mechanism. A second application would double the maintenance of every primitive built in B1 and would fork the shell the whole architecture forbids. Ship as **B7**. | Open |
+| **OD-2** | **Does the accounting UI live under Manager, or wait for a future Accountant role?** | **Build it under Manager now, designed to be remounted.** The endpoints exist today and Manager provably holds most of the reads; waiting for a role that does not exist delays the single biggest capability unlock. Build B5 as a **self-contained module** (`components/manager/accounting/*` + `lib/accounting/*`) with **no Manager-specific coupling**, so an Accountant role later mounts the same module behind its own allow-list. **Write** surfaces stay gated on B0 proving the permission is actually held. | Open |
+| **OD-3** | **Does Accounting become a seventh top-nav menu for Manager?** | **Yes** — as a top-level module entry alongside the six M-P1 surfaces. Record explicitly that the locked "exactly six tabs, no More tab" decision applied to the **bottom nav** presentation, which D2 supersedes; it was never a statement about how many *modules* Manager may reach. If the owner prefers, Accounting can instead sit behind a module launcher — but do **not** hide it inside Reports. | Open — B1 confirmed Accounting is NOT a menu today; gated on B5 |
+| **OD-4** | **What happens to the top nav below desktop width?** *(B1 must answer)* | Collapse the module bar to a **single menu control** at the same left position, opening the full menu tree as a panel. **Do not** fall back to the frontline bottom nav — that reintroduces exactly what D2 supersedes, and Manager's tree is bigger than six items. Suggested breakpoint: the existing 1024 project boundary. | **Answered, with a deviation.** Collapse breakpoint is Tailwind `xl` (1280px), not `lg`/1024 as suggested — measured, the full bar (brand + six menus + branch switcher + clock + identity) does not reliably fit at 1024×768, so that project gets the collapsed control too. Never falls back to the frontline bottom nav (verified live). |
+| **OD-5** | **Additive shell variant, or a separate management shell?** *(B1 must answer)* | **Additive variant of `OperationalShell`** (`navigation="top" \| "bottom"`, default `bottom`). It keeps one layout, one idle handler, one guard pattern and one density system, and it keeps Manager as the fourth *consumer* rather than a fork. Fall back to a separate `ManagementShell` **only if** B1 finds the shared component genuinely cannot absorb the variant — and record that finding explicitly rather than forking quietly. | **Answered as recommended.** The shared shell absorbed the variant cleanly; no `ManagementShell` fork was needed. |
 | **OD-6** | **Do Manager approvals move to the generic `POST /api/approvals/:id/decide` now that the top nav has room for an inbox?** | **No — keep Option B.** Manager *does* hold `approvals:read` + `approvals:decide` (seed 974/975), so this is a product/safety choice, not a permission block. Domain routes preserve per-domain DTOs, per-domain audit and the Supervisor precedent. Use the generic endpoint for **reads and counts only**, and keep the branch-filtering discipline (MP0-05). |
 | **OD-7** | **Odoo's `Favorites → Save current search` — build it, fake it, or omit it?** | **Ship localStorage-only, explicitly labelled "saved on this terminal only"**, or omit the Favorites column entirely. Nimbus has **no saved-view concept in the API** (NG-11). A server-looking "saved filter" that lives in one browser is exactly the kind of soft untruth the standing rules forbid — the label is what makes it honest. A real implementation is **C-15**, deferred. |
 | **OD-8** | **Is the floor-toolbar wrap at 1024×768 (A1-1) worth fixing before B1, or folded into it?** | **Fix it standalone, first.** It is a **shared** `floor/` component touched by Waiter, Cashier, Supervisor and Manager, and both B1 and Cashier C4 will be editing neighbouring shared files. Landing a small, independently-regressed layout fix before either lands avoids attributing a Floor regression to the top-nav conversion. *(This slot previously asked about status-token contrast and role accents — both were fixed and owner-approved on 2026-08-20; see the Track A "already fixed" table.)* |

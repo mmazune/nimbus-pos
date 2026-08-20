@@ -44,6 +44,21 @@ export function branchSwitcher(page: Page) {
   return page.locator('select[name="managerBranchId"]');
 }
 
+/**
+ * The full desktop module bar (`role="menubar"`, per-menu click-to-open
+ * dropdowns) only renders at `xl` (1280px) and up — below that, OD-4's
+ * single collapsed "Menu" control takes over with a flat, already-expanded
+ * tree (no per-item toggle). Specs about desktop dropdown MECHANICS
+ * (roving tabindex, click-to-open, Escape/outside-click/route-change close)
+ * are only meaningful at desktop widths; the collapse itself is proven
+ * separately by the dedicated OD-4 spec in shell-parity.spec.ts, which
+ * forces a sub-xl viewport regardless of the project's own size.
+ */
+export function isDesktopTopNavViewport(page: Page) {
+  const size = page.viewportSize();
+  return Boolean(size && size.width >= 1280);
+}
+
 /** Captures the X-Branch-Id header of every API request the page makes. */
 export function captureBranchHeaders(page: Page) {
   const seen: Array<{ url: string; branchId: string | null }> = [];

@@ -147,8 +147,20 @@
 
 ### D-MGRTOPNAV — Management navigation is an Odoo-style TOP NAV BAR (OWNER-APPROVED, 2026-08-20)
 
-**Owner:** Moses. **Status:** locked. **Supersedes:** the Manager **bottom-nav** presentation
-locked in M-P1 (2026-08-20) — see D-NAV below, which remains correct for the three frontline roles.
+**Owner:** Moses. **Status:** locked — **IMPLEMENTED 2026-08-20 (Track B1)**. **Supersedes:** the
+Manager **bottom-nav** presentation locked in M-P1 (2026-08-20) — see D-NAV below, which remains
+correct for the three frontline roles.
+
+**B1 implementation note (2026-08-20):** the top nav shipped as the shared
+`components/pos-shell/OperationalTopNav.tsx` (an additive `OperationalShell` variant,
+`navigation="top" | "bottom"`, default `bottom`), consumed by a thin `ManagerTopNav` adapter — the
+retired M-P1 `ManagerHeader.tsx`/`ManagerBottomNav.tsx` were deleted, not kept as dead code. **OD-4
+answered:** the module bar collapses to a single "Menu" control below **`xl` (1280px)**, not the
+`lg` (1024px) suggested in the roadmap — measured layout risk showed the full bar (brand lockup +
+six menus + branch switcher + clock + identity) does not reliably fit at the tightest supported
+project (1024×768), so that viewport gets the collapsed control too, preserving the existing
+"no horizontal overflow at 1024×768" invariant. **OD-3 remains open** (Accounting is not added as a
+seventh menu — gated on B5). See `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`.
 
 Manager (and later Owner) navigation converts from a fixed six-item bottom nav to an **Odoo-style
 top module bar**: a single module bar with the brand/home control at the far left, text menu items
@@ -234,10 +246,11 @@ Source: owner directives 2026-08-20; `ai/ENTERPRISE_UI_ROADMAP.md`.
   compatibility routes** (direct URL, off the visible nav — retire Receipts C4 / Queue C5).
 - Supervisor: **Floor · Reservations · Approvals · Me**
 - Manager: ~~**Overview · Operations · Staff · Reports · Settings · Me** (bottom nav, M-P1,
-  2026-08-20)~~ — **SUPERSEDED 2026-08-20 by D-MGRTOPNAV** (owner-approved): Manager navigation
-  becomes an **Odoo-style top module bar**. The six surfaces survive as the first six top-nav
-  menus; the *bottom-bar presentation* is what was superseded. M-P1's shell, session guard, branch
-  switcher and surface allow-list carry forward unchanged. Landing stays `/manager/overview`.
+  2026-08-20)~~ — **SUPERSEDED 2026-08-20 by D-MGRTOPNAV, IMPLEMENTED 2026-08-20 (Track B1)**:
+  Manager navigation is now an **Odoo-style top module bar**. The six surfaces survive as the first
+  six top-nav menus (Operations/Staff/Reports/Settings host click-to-open dropdowns with an honest
+  not-yet tree; Overview/Me stay direct links). M-P1's shell, session guard, branch switcher and
+  surface allow-list carry forward unchanged. Landing stays `/manager/overview`.
 - Source: `lib/<role>/routes.ts`; `ai/SUPERVISOR_RECONSTRUCTION_*`; date 2026-07-18; Cashier target
   superseded 2026-07-31, see `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`; Manager presentation
   superseded 2026-08-20, see **D-MGRTOPNAV** above and `ai/ENTERPRISE_UI_ROADMAP.md` Track B **B1**.

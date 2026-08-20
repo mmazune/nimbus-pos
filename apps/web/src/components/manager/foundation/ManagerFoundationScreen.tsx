@@ -1,4 +1,5 @@
-import { Badge, Card, PageShell } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
+import { ManagerContentShell, ManagerControlPanel } from "@/components/manager/chrome";
 import { operationalIcons, operationalIconSizes, operationalIconWeights } from "@/components/pos-shell/role-icons";
 import { useManagerBranch } from "@/lib/manager/branch-context";
 import { getManagerSurface, type ManagerSurfaceKey } from "@/lib/manager/permissions";
@@ -36,15 +37,19 @@ export function ManagerFoundationScreen({
   const Icon = operationalIcons[surface];
 
   return (
-    <PageShell
-      title={title}
-      subtitle={subtitle}
-      actions={
-        <Badge variant="info" aria-label={`Live data arrives in ${definition?.liveFrom}`}>
-          Live data arrives in {definition?.liveFrom}
-        </Badge>
-      }
-    >
+    <ManagerContentShell>
+      {/* Track B1: the control-panel row replaces PageShell for Manager — title +
+          actions slot only in this phase, since no B1 surface has a create action,
+          record menu, search, pager, or view switcher yet. */}
+      <ManagerControlPanel
+        title={title}
+        badge={
+          <Badge variant="info" aria-label={`Live data arrives in ${definition?.liveFrom}`}>
+            Live data arrives in {definition?.liveFrom}
+          </Badge>
+        }
+      />
+      {subtitle ? <p className="max-w-2xl text-sm text-text-secondary">{subtitle}</p> : null}
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.55fr)]">
         <Card className="min-w-0">
           <div className="flex items-start gap-4">
@@ -117,6 +122,6 @@ export function ManagerFoundationScreen({
           ) : null}
         </div>
       </div>
-    </PageShell>
+    </ManagerContentShell>
   );
 }

@@ -53,6 +53,14 @@ const config: Config = {
           "manager-soft": "var(--color-role-manager-soft)",
         },
         focus: "var(--color-focus-ring)",
+        // Track B2 dashboard chart series — see globals.css for the ramp rationale.
+        chart: {
+          "series-1": "var(--color-chart-series-1)",
+          "series-2": "var(--color-chart-series-2)",
+          "series-3": "var(--color-chart-series-3)",
+          "series-4": "var(--color-chart-series-4)",
+          track: "var(--color-chart-track)",
+        },
         skeleton: {
           base: "var(--color-skeleton-base)",
           highlight: "var(--color-skeleton-highlight)",

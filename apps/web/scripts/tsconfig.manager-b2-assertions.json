@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "manager-b2-assertions.ts",
+    "../src/lib/manager/routes.ts",
+    "../src/lib/manager/dashboard-model.ts",
+    "../src/lib/manager/dashboard-types.ts",
+    "../src/lib/waiter/formatters.ts"
+  ]
+}

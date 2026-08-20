@@ -45,6 +45,14 @@
 > the other three roles, which render byte-identical markup), and the icon registry gained six
 > names (`overview`, `operations`, `staff`, `reports`, `settings`, `caretDown`). See
 > `ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md`.
+>
+> **Manager Track B1 (2026-08-20):** Manager's presentation converts from that bottom nav to an
+> Odoo-style **top module bar** — see §3b. `OperationalShell` gained an additive
+> `navigation="top" | "bottom"` prop (default `"bottom"`); `OperationalHeader`/`OperationalBottomNav`
+> are untouched and still serve Waiter/Cashier/Supervisor exactly as M-P1 left them. Manager's M-P1
+> `ManagerHeader.tsx`/`ManagerBottomNav.tsx` are **retired** (deleted, replaced by `ManagerTopNav.tsx`
+> over the new shared `OperationalTopNav.tsx`/`OperationalTopNavDropdown.tsx`). See
+> `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`.
 
 ## 1. Principle: shared-first
 
@@ -243,6 +251,11 @@ role `SessionGuard` around `OperationalShell` and injects four slots: `header`,
 `readiness`, `bottomNavigation`, `idleHandler`. `ManagerShell` additionally mounts
 `ManagerBranchProvider` outside its guard, because Manager is the only multi-branch
 role and the guard, header switcher, and pages must share one selected branch.
+Since Track B1 (2026-08-20), `OperationalShell` also accepts an additive
+`navigation="top" | "bottom"` prop (default `"bottom"`) — `ManagerShell` is the only
+`navigation="top"` consumer today: it passes no `bottomNavigation` and its `header`
+slot renders `ManagerTopNav` instead of `ManagerHeader`. The other three roles pass
+neither prop and render exactly the markup they always have — see §3b.
 
 - **Header** (`OperationalHeader`): role identity, branch/workstation/service-area
   context (`BranchContextLabel`, `RoleIdentity`), shared `CurrentTime`, and the
@@ -290,7 +303,7 @@ role's `lib/<role>/routes.ts`:
 | Waiter | **Floor · Reservations · Me** (Floor stays active on `/waiter/orders*`) |
 | Cashier | **Floor · Till · Me** (Prompt C1+C2, 2026-07-31; default `/cashier/floor`) |
 | Supervisor | **Floor · Reservations · Approvals · Me** |
-| Manager | ~~**Overview · Operations · Staff · Reports · Settings · Me** (bottom nav, M-P1, 2026-08-20)~~ → **SUPERSEDED 2026-08-20: Odoo-style TOP NAV BAR** (see §3b). The six surfaces survive as the first six top-nav menus; landing stays `/manager/overview`. **Not yet implemented.** |
+| Manager | ~~**Overview · Operations · Staff · Reports · Settings · Me** (bottom nav, M-P1, 2026-08-20)~~ → **Odoo-style TOP NAV BAR, IMPLEMENTED Track B1 (2026-08-20)** (see §3b). The six surfaces survive as the first six top-nav menus; landing stays `/manager/overview`. |
 
 There is **no Orders tab** for Waiter or Supervisor. Legacy Orders routes are
 redirect-only.
@@ -318,27 +331,61 @@ routes** (direct URL, retire C4/C5). See `docs/cashier-ui-docs/CASHIER_ARCHITECT
 `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`, and
 `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md`.
 
-### 3b. Management top nav (owner-approved 2026-08-20 — NOT YET IMPLEMENTED)
+### 3b. Management top nav (owner-approved 2026-08-20 — IMPLEMENTED Track B1, 2026-08-20)
 
 **Decision:** `docs/DECISIONS.md` **D-MGRTOPNAV**. **Plan:** `ai/ENTERPRISE_UI_ROADMAP.md`
 Track B **B1**. **Reference:** `ai/ODOO_REFERENCE_RESEARCH.md` §1.2/§1.3/§1.5/§1.6/§1.7 and
-components C1/C2/C3/C15 (17 screenshots in `ai/odoo-reference-screenshots/`).
+components C1/C2/C3/C15 (17 screenshots in `ai/odoo-reference-screenshots/`). **Completion
+record:** `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`.
 
 Manager (and later Owner) navigation converts from the M-P1 **bottom nav** to an **Odoo-style top
-module bar**:
+module bar**, shipped as `components/pos-shell/OperationalTopNav.tsx` (shared, so a future Owner
+variant reuses it unforked per OD-1/OD-5) consumed by the thin `components/manager/shell/ManagerTopNav.tsx`
+adapter. The retired M-P1 `ManagerHeader.tsx`/`ManagerBottomNav.tsx` are deleted (not dead code):
 
-- a single module bar — brand/home control at the far left, text menu items with **click-to-open**
-  dropdown submenus (grouped by muted section headers, scrolling inside the panel, `Escape` to
-  close), and a top-right cluster carrying the **existing** branch switcher, the shared
-  `CurrentTime` and the identity/logout control;
-- a **control-panel row** directly beneath it — `New` + optional secondary · view title + actions
-  cog · pill search box with **filter chips** and a three-column Filters / Group-By / Favorites
-  dropdown · **server-backed pager** · view-type switcher;
-- **breadcrumb + record pager** on a record (parent list link over the record identity).
+- a single module bar (`h-16`, `bg-brand-navy-950`) — the `NimbusLogomark` brand tile doubles as the
+  home control (→ `/manager/overview`); `role="menubar"` with **roving-tabindex** Left/Right/Home/End
+  keyboard traversal; Overview and Me are **direct-action** menu items (no dropdown); Operations,
+  Staff, Reports and Settings are **click-to-open** dropdown triggers grouped by muted section
+  headers, scrolling inside the panel, `Escape` closes and returns focus to the trigger, outside
+  click closes, and a Next.js route change closes any open dropdown. A top-right cluster carries the
+  **existing** branch switcher (unchanged from M-P1), the shared `CurrentTime`, and an
+  identity/logout dropdown ("My profile" → `/manager/me`, "Logout").
+- **The dropdown mechanics are generic** (`OperationalTopNavDropdown.tsx`) and reused for both the
+  grouped menus and the identity menu: `ArrowDown`/`ArrowUp`/`Home`/`End` move focus among
+  `role="menuitem"` rows inside an open panel, opening focuses the first item.
+- **The B1 menu tree is honest, not fabricated.** Each of Operations/Staff/Reports/Settings' dropdown
+  carries ONE real, clickable link (today's M-P1 foundation page) plus the roadmap's named tree items
+  rendered as **inert `aria-disabled` rows** tagged with the phase that ships them (e.g. "Orders — B3")
+  — never a link to a page that does not exist. Accounting is **not** added as a seventh menu (OD-3
+  stays open, gated on B5).
+- **Manager chrome primitives** (`components/manager/chrome/`) — `ManagerControlPanel` (title +
+  optional New/secondary action + actions-cog + chip search + server-backed pager + view switcher,
+  every slot optional and omitted, never disabled, when a surface has nothing to back it),
+  `ManagerSearchFilterMenu` (the three-column Filters/Group-By/Favorites dropdown; Favorites is
+  explicitly labelled "saved on this terminal only" per **OD-7**, localStorage-only, no save-search
+  endpoint exists), `ManagerContentShell` (layout wrapper, no nested scroll owner), and
+  `ManagerBreadcrumbs` (parent link + record identity + cog + record pager). B1 mounts
+  `ManagerControlPanel`/`ManagerContentShell` on every Manager page with **title only** — no B1
+  surface has a create action, record menu, searchable list, or real pager yet, so those slots stay
+  empty rather than faked. `ManagerSearchFilterMenu` and `ManagerBreadcrumbs` are built and exported
+  but **not mounted anywhere in B1** (no surface has filterable/record data yet) — first consumed
+  from B3 onward, same precedent as the roadmap set for breadcrumbs.
+- The pager type (`ManagerControlPanelPager`) requires an explicit `{ from, to, total }` — it
+  structurally cannot be fed a client-side array length.
 
-**Frontline roles keep bottom nav.** Waiter, Cashier and Supervisor must render **byte-identically**
-after the conversion — the top nav ships as an **additive variant of `OperationalShell`**
-(`navigation="top" | "bottom"`, default `bottom`), **never** a Manager shell fork.
+**Frontline roles keep bottom nav, byte-identical.** `OperationalShell` gained an additive
+`navigation="top" | "bottom"` prop (default `"bottom"`) and `bottomNavigation` became optional;
+Waiter/Cashier/Supervisor pass neither a `navigation` prop nor an empty `bottomNavigation`, so their
+markup is unchanged. Verified live: `e2e/manager-shell/shell-parity.spec.ts` screenshots + assertions
+across all four viewport projects.
+
+**OD-4 answered — sub-desktop collapse breakpoint is `xl` (1280px), not the roadmap-suggested `lg`
+(1024px).** Layout measurement showed the full bar (brand lockup + six menus + branch switcher +
+clock + identity) does not reliably fit at the tightest supported project (1024×768); collapsing
+there too preserves the existing "no horizontal overflow at 1024×768" invariant. Below `xl`, the
+module bar is replaced by a single "Menu" control opening the same dropdown mechanism with a flat,
+already-expanded tree — **never** the frontline bottom nav.
 
 **Carried forward from M-P1 unchanged:** Manager as the fourth shared-system consumer;
 `ManagerShell`/`ManagerSessionGuard`; the branch switcher (source `me.memberships`, persistence
@@ -349,11 +396,73 @@ never faked" rule.
 
 **Do not port Odoo's dark palette.** The reference's hexes are a *layout and hierarchy* guide only —
 Nimbus stays navy/silver/graphite per `docs/BRAND_IDENTITY.md`, and the §1c density mechanism applies
-to every new management surface.
+to every new management surface (verified: no hard-coded hex in any new B1 file).
 
-Open sub-decisions recorded in `ai/ENTERPRISE_UI_ROADMAP.md` §7: the sub-desktop collapsed
-presentation (**OD-4** — collapse to a menu control, never fall back to the frontline bottom nav) and
-whether Accounting becomes a seventh top-level module (**OD-3**).
+**OD-3 remains open** (whether Accounting becomes a seventh top-level module — gated on B5).
+
+### 3c. Management dashboard card (IMPLEMENTED Track B2, 2026-08-20)
+
+**Plan:** `ai/ENTERPRISE_UI_ROADMAP.md` Track B **B2**. **Reference:** `ai/ODOO_REFERENCE_RESEARCH.md`
+§2.1/§2.2, component **C10**, screenshots `02-accounting-dashboard.jpg` / `16-zoom-kpi-card-palette.png`.
+**Completion record:** `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`.
+
+The canonical management KPI card is `components/manager/dashboard/ManagerDashboardCard.tsx`, with
+its content primitives in the same file and its marks in `ManagerDashboardCharts.tsx`. Every future
+management dashboard card — including the Owner variant (B7) — composes these rather than forking a
+second card.
+
+**Anatomy** (cloned from the observed Odoo journal card):
+
+```
+▌ [icon] Title                                    [action] [action]
+▌ PRIMARY KPI (2xl, tabular)
+▌ PRIMARY LABEL (xs, uppercase, tracked)
+▌ <count label — the drill-in LINK>        <amount — plain data>
+▌ <count label>                            <amount>
+▌ ─── mini mark OR checklist OR nothing ───
+▌ ─────────────────────────────────────────
+▌ provenance footnote (xs, muted, pinned to the card foot)
+```
+
+**Rules:**
+
+- **A 4px coloured left accent bar** (`accent`: `brand | info | success | warning | danger`) — the
+  Odoo card's per-journal edge, rotated onto Nimbus's own tone tokens.
+- **Counts are links, amounts are plain data.** `ManagerCardStatList` links the *label*, never the
+  value. Every linked count targets the surface that owns it.
+- **Mixed-weight actions.** At most one filled button per surface (the control-panel action); card
+  actions are outlined secondaries (`ManagerCardActionLink`).
+- **A card may legitimately have no mark**, or a checklist instead of one (`ManagerCardChecklist`,
+  the Odoo Tax-Returns pattern). The grid does **not** force visual symmetry.
+- **Four exclusive states**, each carrying `data-manager-card-state`: `loading` (skeleton), `error`,
+  `empty`, `ready`. The error state is **fail-closed — it renders no figure at all**, not a stale one
+  and never a zero. A zero on a money surface is a claim, not a fallback.
+- **Every KPI must be registered.** `ManagerCardPrimaryKpi`/`ManagerCardStatList` take a `kpiKey`
+  resolved through `MANAGER_KPI_BINDINGS` (`lib/manager/dashboard-model.ts`), which binds it to a
+  verified endpoint field and a drill-in target. An unregistered key **throws**. A KPI with no drill-in
+  must record a written `noDrillInReason`.
+- **Provenance footnote.** Where a number is capped, derived, or bounded by a backend limit, the card
+  says so in product copy (e.g. the 50-row open-orders preview, MP0-09).
+
+**Marks** (`ManagerDashboardCharts.tsx`) are hand-rolled SVG — the app has **no charting
+dependency**, and `manager-b2-assertions.ts` fails if one is added:
+
+- `ManagerDonutChart` — part-of-whole, only where the endpoint returns the total itself.
+- `ManagerBarSeries` — bucketed counts derived from real returned rows. **Never a synthetic series:**
+  nothing interpolates, smooths, or back-fills, and a bucket with no data renders as a real zero
+  against a visible baseline.
+- `ManagerRatioMeter` — one value against its own threshold; an unreadable pair renders an empty
+  track plus an explicit "unavailable" label, never a bar at zero.
+
+Each mark is `role="img"` with a real `<title>` and `<desc>`, and the same numbers are always present
+as text — colour is never the only carrier of meaning (§7).
+
+**Chart tokens** live in `globals.css` and `tailwind.config.ts`: `--color-chart-series-1…4` is a
+brand-monochrome **navy → silver** ramp (series separate by lightness as well as hue) plus
+`--color-chart-track` for the unfilled remainder. Severity ramps (open-order aging) deliberately use
+the existing `status-*` ink tokens instead, because there the colour *is* the semantic. **Role accent
+tokens are never used as chart series** — they are role-semantic and overloading them would break
+that meaning.
 
 ## 4. Canonical icon registry
 

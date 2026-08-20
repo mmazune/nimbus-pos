@@ -38,6 +38,21 @@
   --color-skeleton-base: #ECECEC;
   --color-skeleton-highlight: #F7F7F7;
 
+  /* Chart series tokens (Track B2, 2026-08-20 — Manager Overview dashboard).
+     Compositional series (payment mix, share bars) are BRAND-MONOCHROME: a four
+     rung navy -> silver ramp stepped down from the canonical navy #000033, so
+     series separate by LIGHTNESS as well as hue and stay legible to colour-blind
+     viewers. Colour is never the only carrier of meaning — every series also
+     renders its own text label and value (docs/UI_SYSTEM.md §7). Severity ramps
+     (open-order aging) deliberately do NOT use these; they reuse the existing
+     status ink tokens, because there the colour IS the semantic. */
+  --color-chart-series-1: #000033;
+  --color-chart-series-2: #33356B;
+  --color-chart-series-3: #7C7EA3;
+  --color-chart-series-4: #B3B4AF;
+  /* Unfilled remainder of a meter / donut ring. */
+  --color-chart-track: #E3E5E8;
+
   /* Status ink tokens are darkened so each clears WCAG AA (4.5:1) as text on
      BOTH its own -surface token AND plain #FFFFFF, and so white text sitting on
      the solid fill clears AA too. Hue is preserved (OKLCH hue shift <5deg from

@@ -172,8 +172,14 @@ const branchContextCode = branchContextSource
   .join("\n");
 assert(!branchContextCode.includes("queryClient.clear()"), "branch switching never clears the whole query cache");
 assert(
-  branchContextSource.includes("invalidateQueries({ queryKey: [MANAGER_QUERY_NAMESPACE] })"),
+  /invalidateQueries\(\{\s*queryKey: \[MANAGER_QUERY_NAMESPACE\],?/.test(branchContextSource),
   "branch switching invalidates only the manager query namespace (MANAGER-GAP-016)",
+);
+// Track B2: the invalidation must not refetch the OUTGOING branch's keys — it ran
+// while the observers still held them, costing one wasted request per manager query.
+assert(
+  /refetchType: "none"/.test(branchContextCode),
+  "branch switching marks the manager namespace stale without refetching the branch being left",
 );
 assert(MANAGER_QUERY_NAMESPACE === "manager", "manager query namespace is 'manager'");
 assert(
@@ -207,6 +213,12 @@ assert(resolveManagerBranchId(options, null, null) === "b1", "with no stored/def
 assert(resolveManagerBranchId([], "b1", "b1") === null, "no memberships resolves to no branch (fail-closed)");
 
 // ── Shell composition: thin adapters over the shared shell, no fork ────────
+// NOTE (Track B1, 2026-08-20): `ManagerHeader.tsx` and `ManagerBottomNav.tsx`
+// were RETIRED — the top-nav conversion replaced them with `ManagerTopNav`,
+// a thin adapter over the new shared `OperationalTopNav` (see
+// `manager-b1-assertions.ts`). This section is updated to match; the "no
+// manager fork of a shared component" invariant continues to hold — see
+// `docs/DECISIONS.md` D-MGRTOPNAV for the recorded change.
 const shellSource = source("apps/web/src/components/manager/shell/ManagerShell.tsx");
 for (const shared of [
   "@/components/pos-shell/OperationalShell",
@@ -217,21 +229,16 @@ for (const shared of [
 assert(shellSource.includes("<ManagerSessionGuard>"), "ManagerShell wraps the manager session guard");
 assert(shellSource.includes("<ManagerBranchProvider>"), "ManagerShell mounts the branch provider");
 assert(
-  source("apps/web/src/components/manager/shell/ManagerHeader.tsx").includes(
-    "@/components/pos-shell/OperationalHeader",
+  source("apps/web/src/components/manager/shell/ManagerTopNav.tsx").includes(
+    "@/components/pos-shell/OperationalTopNav",
   ),
-  "ManagerHeader is a thin adapter over the shared OperationalHeader",
-);
-assert(
-  source("apps/web/src/components/manager/shell/ManagerBottomNav.tsx").includes(
-    "getOperationalRoleNavigation(\"manager\")",
-  ),
-  "ManagerBottomNav feeds the shared bottom nav from the central registry",
+  "ManagerTopNav is a thin adapter over the shared OperationalTopNav",
 );
 for (const forbidden of [
   "apps/web/src/components/manager/shell/ManagerOperationalShell.tsx",
   "apps/web/src/components/manager/shell/OperationalShell.tsx",
   "apps/web/src/components/manager/shell/OperationalHeader.tsx",
+  "apps/web/src/components/manager/shell/OperationalTopNav.tsx",
   "apps/web/src/components/manager/shell/ManagerIdleLogoutHandler.tsx",
   "apps/web/src/components/manager/floor/OperationalFloor.tsx",
   "apps/web/src/components/manager/floor/ManagerTableCard.tsx",
@@ -239,7 +246,7 @@ for (const forbidden of [
   assert(!existsSync(join(process.cwd(), forbidden)), `no manager fork of a shared component: ${forbidden}`);
 }
 
-// ── The branch switcher is in the header, sourced from memberships ─────────
+// ── The branch switcher is in the top nav, sourced from memberships ────────
 const switcherSource = source("apps/web/src/components/manager/shell/ManagerBranchSwitcher.tsx");
 const switcherCode = switcherSource
   .split("\n")
@@ -253,11 +260,11 @@ assert(
   "the branch switcher costs no extra request — it reads me.memberships",
 );
 assert(
-  source("apps/web/src/components/manager/shell/ManagerHeader.tsx").includes("branchSwitcher={<ManagerBranchSwitcher />}"),
-  "the branch switcher is mounted in the shared header slot",
+  source("apps/web/src/components/manager/shell/ManagerTopNav.tsx").includes("branchSwitcher={<ManagerBranchSwitcher />}"),
+  "the branch switcher is mounted in the top-nav's branch switcher slot",
 );
 
-// ── The shared header slot is OPTIONAL: other roles are unchanged ──────────
+// ── The shared header slot is OPTIONAL: frontline roles are unchanged ──────
 const headerSource = source("apps/web/src/components/pos-shell/OperationalHeader.tsx");
 assert(headerSource.includes("branchSwitcher ? ("), "the shared header renders the switcher slot only when provided");
 for (const [role, path] of [
@@ -266,6 +273,7 @@ for (const [role, path] of [
   ["Waiter", "apps/web/src/components/waiter/shell/WaiterHeader.tsx"],
 ] as const) {
   assert(!source(path).includes("branchSwitcher"), `${role} header passes no switcher — its header is unchanged`);
+  assert(source(path).includes("@/components/pos-shell/OperationalHeader"), `${role} header still consumes the shared bottom-nav-era OperationalHeader unchanged`);
 }
 
 // ── Existing role navigation is untouched ─────────────────────────────────
@@ -300,10 +308,22 @@ const foundationSource = source("apps/web/src/components/manager/foundation/Mana
 for (const token of ["UGX ", "0.00", "Sample", "Lorem", "placeholder data", "TODO", "Coming soon"]) {
   assert(!foundationSource.includes(token), `the foundation screen fabricates nothing ("${token}")`);
 }
-for (const item of manager.filter((navItem) => navItem.href !== "/manager/me")) {
+// Track B2 (2026-08-20): /manager/overview graduated from the honest foundation
+// screen to the real KPI dashboard, so it is no longer part of this loop — its own
+// invariants live in `manager-b2-assertions.ts`. Every OTHER not-yet surface must
+// still render the foundation screen, which is what this check now proves.
+const foundationRoutes = manager.filter(
+  (navItem) => navItem.href !== "/manager/me" && navItem.href !== "/manager/overview",
+);
+assert(foundationRoutes.length === 4, "four Manager surfaces still ship the honest foundation screen");
+for (const item of foundationRoutes) {
   const page = source(`apps/web/src/pages${item.href}.tsx`);
   assert(page.includes("ManagerFoundationScreen"), `${item.href} renders the honest foundation screen`);
 }
+assert(
+  source("apps/web/src/pages/manager/overview.tsx").includes("ManagerOverviewDashboard"),
+  "/manager/overview renders the Track B2 dashboard",
+);
 
 // ── Readiness strip: no unverified chip (GO condition 3) ──────────────────
 function codeOnly(path: string) {

@@ -44,6 +44,13 @@ export type ManagerBranchContextValue = {
   branchName: string;
   organizationId: string | null;
   organizationName: string;
+  /**
+   * The selected branch's own currency code from `me.memberships`, or null when
+   * the session carries none (Quick-PIN branch sessions). Added in Track B2 so
+   * dashboard money renders in the BRANCH's currency instead of a hard-coded one;
+   * the shared formatter falls back to UGX when this is null.
+   */
+  currencyCode: string | null;
   options: ManagerBranchOption[];
   isMultiBranch: boolean;
   isReady: boolean;
@@ -100,7 +107,19 @@ export function ManagerBranchProvider({ children }: { children: ReactNode }) {
         // NARROW invalidation (MANAGER-GAP-016): only the Manager namespace. Auth,
         // profile, and every other role's cache are deliberately untouched, and this
         // is never `queryClient.clear()`.
-        void queryClient.invalidateQueries({ queryKey: [MANAGER_QUERY_NAMESPACE] });
+        //
+        // `refetchType: "none"` added in Track B2. Without it, this call runs while
+        // the observers still hold the OUTGOING branch's keys, so React Query
+        // immediately refetches them — measured live as 9 wasted requests against
+        // the branch the manager just left, before the new keys mounted and fetched
+        // again. Marking stale without refetching keeps the intent (nothing cached
+        // survives a switch unchallenged) and drops the wasted round trip: every
+        // Manager key carries its branchId, so the new branch fetches on mount and a
+        // return visit refetches because the entry is already stale.
+        void queryClient.invalidateQueries({
+          queryKey: [MANAGER_QUERY_NAMESPACE],
+          refetchType: "none",
+        });
         return branchId;
       });
     },
@@ -115,6 +134,7 @@ export function ManagerBranchProvider({ children }: { children: ReactNode }) {
       branchName: active?.branchName || "Select branch",
       organizationId: active?.organizationId || user?.context.defaultOrganizationId || null,
       organizationName: active?.organizationName || "Organization unavailable",
+      currencyCode: active?.currencyCode || null,
       options,
       isMultiBranch: options.length > 1,
       isReady: Boolean(active),

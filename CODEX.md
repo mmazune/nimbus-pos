@@ -67,6 +67,7 @@ unless the task explicitly requires them and the relevant isolation rules are me
 | API / Postman contract | `docs/API_CONVENTIONS.md`, `docs/POSTMAN_ENDPOINT_GUIDE.md`, `ai/AI_POSTMAN_WORKING_PATTERNS.md` |
 | Testing / QA | `docs/TESTING_AND_QA.md` |
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C - supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward) |
+| Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) - shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | Locked decisions | `docs/DECISIONS.md` |
 | Known limitations | `docs/KNOWN_LIMITATIONS.md` |
@@ -75,8 +76,103 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI research complete; new canonical roadmap adopted (2026-08-20) -
-documentation only.** The owner's live Odoo instance was explored read-only (17
+**Enterprise UI Track B2 complete - Manager Overview dashboard (2026-08-20)
+- A: B2 COMPLETE / GATED FOR B3.** Frontend-only; no backend/schema/migration/
+seed/permission/Postman change. `/manager/overview` graduates from the B1 honest
+foundation screen to a real branch dashboard: the Odoo C10 journal-card pattern
+rebuilt natively as a 3-column grid of EIGHT cards with a coloured left accent
+bar - Sales today, Orders today, Payment mix, Open orders, Low stock, Needs a
+decision, Shift and till coverage, Branch readiness - composed through the B1
+chrome (`ManagerControlPanel` + `ManagerContentShell`; `ManagerSearchFilterMenu`
+and `ManagerBreadcrumbs` stay unmounted because Overview has no record list).
+New `components/manager/dashboard/*` plus
+`lib/manager/dashboard-{types,model,api,context}.ts`.
+
+Every rendered figure resolves through the 26-entry `MANAGER_KPI_BINDINGS`
+registry, which binds it to a verified endpoint field AND a drill-in target; an
+unregistered KPI THROWS rather than renders, and only the two till/shift KPIs may
+lack a drill-in (each carrying a written reason, MP0-02). Boundaries reproduced
+live on the isolated stack: the open count uses `/dash/manager.openOrders` (107),
+never `/dash/open-orders.count` (50 = the capped page length, MP0-09, disclosed in
+card copy); `netSales` 33,014,100 is greater than `grossSales` 28,107,000
+(MP0-10), so both labels state the tax basis and no bare Gross/Net exists;
+approval counts come from the four canonical branch-scoped domain endpoints
+(`/pos/discounts/pending`, `/hr/leave`, `/hr/shift-swaps`,
+`/analytics/anomalies`), never the partly org-scoped `/api/approvals` inbox
+(MP0-05), bounded to `take=1`/`limit=1` and projected to count-only at the
+API-client boundary so the leave/shift-swap PII payload never reaches React state
+or the query cache (MP0-01); tills and shifts are counts with no list and no
+drill-in. Overview decides nothing - counts link into the surface that owns the
+decision.
+
+Polled, not streamed: 60 s refetch with a permanent worded degraded state, and
+there is NO SSE code anywhere (the assertion script fails if any appears) because
+`EventSource` cannot carry `Authorization` + `X-Branch-Id` - MP0-07 / NG-14,
+Track C-04. `POST /dash/kpi/refresh` sits behind the shared `ActionConfirmDialog`
+plus an in-flight lock, then narrowly re-reads the nine dashboard keys, never the
+whole `["manager"]` namespace. No charting dependency was added: three hand-rolled
+token-driven SVG marks, each `role="img"` with `<title>` and `<desc>`, plus new
+`chart-series-1..4` / `chart-track` tokens and two new canonical icon-registry
+names (`revenue`, `inventory`). A real defect was found by this phase's own e2e
+and fixed: M-P1's branch-switch `invalidateQueries` ran while the observers still
+held the OUTGOING branch's keys and refetched them - 9 wasted requests per switch -
+now `refetchType: "none"`. Foundation `liveFrom` badges were re-tagged from the
+superseded M-P* numbering to the Track B phases (B3/B3/B4/B6).
+
+Validated 2026-08-20: web typecheck, lint, and build pass; 14/14 assertion
+scripts pass (new `manager-b2-assertions.ts`); Playwright executed live on an
+isolated local Docker Postgres stack, never shared Neon - `e2e/manager-dashboard/`
+84/84, `e2e/manager-shell/` 125 passed / 11 deliberately skipped,
+`e2e/supervisor-prompt3/` 64/64, `e2e/cashier-floor` cross-role 48/48; 12 requests
+measured for one clean Overview load (1 `/auth/me` + 2 shell readiness + 9
+dashboard); five screenshots at 1440x900 and 1280x680 captured and viewed; zero
+console errors; `GET /api/health` returns ok; the stack was torn down and both
+`.env` files restored byte-for-byte. See
+`ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`. NEXT = B3 (Operations + Staff)
+and B0 (API verification, docs-only, parallel). Neither is started - do not begin
+B3 or any later Track B phase without an explicit owner go.
+
+**Prior milestone record (superseded above) - Enterprise UI Track B1 complete - Manager top-nav shell conversion (2026-08-20)
+- A: B1 COMPLETE / GATED FOR B0+B2.** Frontend-only; no backend/schema/migration/
+seed/permission/Postman change; no commit or push. Manager's presentation
+converts from the M-P1 fixed bottom nav to an Odoo-style top module bar, shipped
+as an ADDITIVE `OperationalShell` variant (`navigation="top" | "bottom"`, default
+`"bottom"`) - never a Manager shell fork; the three frontline roles were verified
+live to render byte-identically. New shared
+`components/pos-shell/OperationalTopNav.tsx` plus `OperationalTopNavDropdown.tsx`
+(click-to-open, full keyboard operation: roving-tabindex menubar, Escape/outside-
+click/route-change close) are consumed by a thin `ManagerTopNav` adapter; the
+retired M-P1 `ManagerHeader.tsx` and `ManagerBottomNav.tsx` were deleted. The six
+locked M-P1 surfaces survive unchanged as the menu tree - Overview and Me stay
+direct links; Operations, Staff, Reports, and Settings host dropdowns, each with
+ONE real link to today's foundation page plus an honest, inert not-yet tree
+tagged by phase (for example "Orders - B3"); Accounting is NOT a seventh menu
+(OD-3 stays open, gated on B5). New reusable Manager chrome primitives
+(`components/manager/chrome/`: `ManagerControlPanel`, `ManagerBreadcrumbs`,
+`ManagerContentShell`, `ManagerSearchFilterMenu`) - B1 mounts only
+`ManagerControlPanel` and `ManagerContentShell`, title-only, since no B1 surface
+has data to back a create action, search, pager, or view switcher;
+`ManagerSearchFilterMenu` and `ManagerBreadcrumbs` ship built but deliberately
+unmounted (first consumed from B3). OD-4 answered with a recorded deviation: the
+collapse breakpoint is `xl` (1280px), not the roadmap-suggested `lg` (1024px) -
+the full bar does not reliably fit at 1024x768, so that project gets the
+collapsed "Menu" control too, never falling back to the frontline bottom nav.
+OD-5 needed no fallback - the shared shell absorbed the variant with one additive
+prop. Validated: typecheck, lint, and build pass; 13 static assertion scripts
+pass; Playwright executed live on an isolated local Docker Postgres stack (never
+shared Neon) - `e2e/manager-shell/` 125/136 passed, 11 deliberately skipped
+(desktop-only mechanics at the collapsed viewport, proven separately),
+`e2e/supervisor-prompt3/` 64/64, `e2e/cashier-floor` cross-role regression 48/48;
+8 screenshots at 1440x900 and 1280x680, zero console errors; isolated stack fully
+torn down, `.env` files restored byte-for-byte. See
+`ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`. NEXT = B0 (API verification,
+parallel, docs-only) and B2 (Overview dashboard, gated on B1). Neither is
+started - do not begin B2 or any later Track B phase without an explicit owner
+go.
+
+**Prior status record (superseded above) - Enterprise UI research complete; new
+canonical roadmap adopted (2026-08-20) - documentation only.** The owner's live
+Odoo instance was explored read-only (17
 screenshots, no record created or edited) and written up as
 `ai/ODOO_REFERENCE_RESEARCH.md`, then compared against this repo in
 `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` (20 typed gaps NG-01 to NG-20). Headline
@@ -221,11 +317,14 @@ search, or refund execution, and do not retire Queue or Receipts, without explic
 authorization to proceed past C3.
 
 Supervisor reconstruction is demo-ready with known limitations. Waiter is
-complete and visually locked. Manager reconstruction is at M-P1 COMPLETE: the
-shell, locked six-tab nav, session guard, branch switcher, foundation pages, and a
-real Manager Me are shipped, and every surface's live data is still M-P2 through
-M-P6. Per the 2026-08-20 owner decision the Manager track is no longer blocked on
-Cashier C6, but M-P2 must not start without explicit authorization.
+complete and visually locked. Manager reconstruction is at M-P1, Track B1 and
+Track B2 COMPLETE: the shell, the Odoo-style top-nav menu tree, session guard,
+branch switcher, Manager chrome primitives, foundation pages, a real Manager Me,
+and the live eight-card Overview dashboard over the verified `/dash/*` reads are
+shipped. Operations, Staff, Reports and Settings still carry only their honest
+foundation screens - their live data is B3 through B7. Per the 2026-08-20 owner
+decision the Manager track is no longer blocked on Cashier C6, but B3 (Operations
++ Staff) must not start without explicit authorization.
 
 ## 6. Locked role boundaries
 
@@ -241,21 +340,29 @@ Cashier C6, but M-P2 must not start without explicit authorization.
   approved supervisor actions only; no payment collection, order close, refund
   creation, or transfer-server UI without explicit authorization.
 - Manager: Overview / Operations / Staff / Reports / Settings / Me, landing
-  `/manager/overview`. Implemented today as a bottom nav (M-P1, 2026-08-20).
-  WARNING - the bottom-nav PRESENTATION is superseded by owner decision
-  `docs/DECISIONS.md` D-MGRTOPNAV (2026-08-20): Manager converts to an Odoo-style
-  TOP NAV BAR and the six surfaces become the first six top-nav menus; the landing
-  is unchanged. That conversion is Track B1 in `ai/ENTERPRISE_UI_ROADMAP.md` and is
-  NOT implemented. Waiter, Cashier and Supervisor keep bottom nav. Branch-level
-  oversight with a required header branch switcher that drives `X-Branch-Id` on
-  every manager read. M-P1 shipped the foundation only - do not begin Track B1 or
-  any later Track B phase, add a More/Approvals tab, change the
-  landing route, convert `lib/manager/permissions.ts` into a `hasPermission()`
-  check, add tills or shifts chips/lists (those routes do not exist), pull
-  `/hr/employees` into Manager state without the agreed allow-list projection,
-  offer a PDF report export (the backend's PDF is a plain-text file), or build a
-  branch-profile edit form (`PATCH /branches/:id` does not exist) - without
-  explicit authorization.
+  `/manager/overview`, presented as an Odoo-style TOP NAV BAR module bar (Track
+  B1, 2026-08-20, owner decision `docs/DECISIONS.md` D-MGRTOPNAV - now
+  implemented, superseding the M-P1 bottom-nav presentation). Overview and Me are
+  direct links; Operations, Staff, Reports, and Settings host click-to-open
+  dropdowns with one real link plus an honest not-yet tree. Waiter, Cashier and
+  Supervisor keep bottom nav and render byte-identically. Branch-level oversight
+  with a required header branch switcher that drives `X-Branch-Id` on every
+  manager read. M-P1 and B1 shipped the shell/nav foundation and B2 shipped the
+  live Overview dashboard - do not begin B3 (Operations + Staff) or any later
+  Track B phase, add an approval DECISION control to Overview, render a KPI that
+  is not in `MANAGER_KPI_BINDINGS`, add an SSE/`EventSource` client (gated on
+  C-04), add a charting dependency, fabricate a revenue trend (no bucketed series
+  exists and `/dash/snapshots` needs `pos:dash:owner:read`, which Manager does not
+  hold), take the open-order count from `/dash/open-orders.count`, read approval
+  counts from the generic `/api/approvals` inbox, add a More/Approvals tab,
+  change the landing route, convert `lib/manager/permissions.ts` into a
+  `hasPermission()` check, add tills or shifts chips/lists (those routes do not
+  exist), pull `/hr/employees` into Manager state without the agreed allow-list
+  projection, offer a PDF report export (the backend's PDF is a plain-text file),
+  build a branch-profile edit form (`PATCH /branches/:id` does not exist), add
+  Accounting as a seventh top-nav menu (OD-3 stays open, gated on B5), or mount
+  `ManagerSearchFilterMenu`/`ManagerBreadcrumbs` without real data to back them -
+  without explicit authorization.
 
 Shared components are mandatory for equivalent UI concepts across roles:
 `components/pos-shell`, `components/floor`, and `components/profile`. Do not fork

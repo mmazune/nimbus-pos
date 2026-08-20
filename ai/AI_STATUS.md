@@ -31,6 +31,118 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
+- **ENTERPRISE UI TRACK B2 COMPLETE — Manager Overview dashboard (2026-08-20) — A: B2 COMPLETE /
+  GATED FOR B3. Frontend-only; no backend/API/schema/migration/seed/permission/Postman change.**
+  `/manager/overview` graduates from the B1 honest-foundation screen to a real branch dashboard: the
+  Odoo **C10** journal-card pattern rebuilt natively as a 3-column grid of **eight** bordered cards
+  with a coloured left accent bar (Sales today · Orders today · Payment mix · Open orders · Low stock
+  · Needs a decision · Shift & till coverage · Branch readiness), composed through the B1 chrome
+  (`ManagerControlPanel` + `ManagerContentShell`; `ManagerSearchFilterMenu`/`ManagerBreadcrumbs` stay
+  deliberately unmounted — Overview has no record list to search or page). New
+  `components/manager/dashboard/*` (card primitive + three hand-rolled SVG marks + the eight cards)
+  and `lib/manager/dashboard-{types,model,api,context}.ts`.
+  **Truthfulness is machine-checked:** every rendered figure resolves through the 26-entry
+  `MANAGER_KPI_BINDINGS` registry binding it to a verified endpoint field **and** a drill-in target —
+  `getManagerKpiBinding` **throws** for an unregistered key, and only the two till/shift KPIs may lack
+  a drill-in (each carrying a written reason, MP0-02). Live-reproduced boundaries: the open count uses
+  `/dash/manager.openOrders` (**107**) not `/dash/open-orders.count` (**50**, the capped page length —
+  **MP0-09**), and the aging bars/status split are labelled as a 50-row preview; `netSales`
+  **33,014,100** > `grossSales` **28,107,000** (**MP0-10**) so both labels state the tax basis and no
+  bare Gross/Net exists anywhere; approval counts come from the **four canonical branch-scoped domain
+  endpoints** (`/pos/discounts/pending`, `/hr/leave`, `/hr/shift-swaps`, `/analytics/anomalies`), never
+  the partly org-scoped `/api/approvals` inbox (**MP0-05**), and are bounded to `take=1`/`limit=1` and
+  **projected to count-only at the API-client boundary** so the leave/shift-swap PII payload never
+  reaches React state or the query cache (**MP0-01**); tills/shifts are counts with **no list and no
+  drill-in**. Overview **decides nothing** — counts link into the surface that owns the decision.
+  **Polled, not streamed:** 60 s `refetchInterval` with a permanent, worded degraded state ("Live
+  stream unavailable — showing the latest fetched data") because `EventSource` cannot carry
+  `Authorization` + `X-Branch-Id` and the app has no SSE reader (**MP0-07 / NG-14 → Track C-04**); the
+  assertion script fails if any SSE code appears. `POST /dash/kpi/refresh` sits behind the shared
+  `ActionConfirmDialog` + an in-flight lock (live: exactly one POST per confirmation, zero on cancel),
+  then narrowly re-reads the **nine** dashboard keys — never the whole `["manager"]` namespace.
+  **No charting dependency was added** (recharts et al. are blocked by assertion): three token-driven
+  hand-rolled SVG marks, each `role="img"` with `<title>`/`<desc>`, plus new brand-monochrome
+  `--color-chart-series-1…4` / `--color-chart-track` tokens and two new canonical icon-registry names
+  (`revenue`, `inventory`). **A real defect was found by this phase's own e2e and fixed:** M-P1's
+  branch-switch `invalidateQueries({queryKey:["manager"]})` ran while the observers still held the
+  **outgoing** branch's keys, so React Query refetched them — **9 wasted requests per switch**, now
+  `refetchType: "none"` (locked in by a new `manager-p1-assertions.ts` check). Foundation-page
+  `liveFrom` badges were re-tagged from the superseded M-P* numbering to the canonical Track B phases
+  (B3/B3/B4/B6). Validated 2026-08-20: web **typecheck + lint + build** pass; **14/14** assertion
+  scripts pass; Playwright executed live on an **isolated local Docker Postgres** stack (`:55434`, API
+  `:4001`, web `:3100`; shared Neon never touched) — `e2e/manager-dashboard/` **84/84**,
+  `e2e/manager-shell/` **125 passed / 11 deliberately skipped** (B1's documented OD-4 skips),
+  `e2e/supervisor-prompt3/` **64/64**, `e2e/cashier-floor` cross-role **48/48**; **12 requests**
+  measured for one clean Overview load (1 `/auth/me` + 2 shell readiness + 9 dashboard); five
+  screenshots at 1440×900 + 1280×680 captured **and viewed**; zero console errors; `GET /api/health`
+  → `ok`; `git diff --check` clean; the stack was torn down and both `.env` files restored
+  **byte-for-byte** (SHA-256 verified). See `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md`.
+  **B3 (Operations + Staff) and B0 (API verification, docs-only, parallel) are NOT started — do not
+  begin B3 or any later Track B phase without explicit owner authorization.**
+
+- **ENTERPRISE UI TRACK B1 COMPLETE — Manager top-nav shell conversion (2026-08-20) — A: B1
+  COMPLETE / GATED FOR B0+B2. Frontend-only; no backend/API/schema/migration/seed/permission/Postman
+  change; no commit/push.** Manager's presentation converts from the M-P1 fixed **bottom nav** to an
+  Odoo-style **top module bar** — the owner-approved `docs/DECISIONS.md` **D-MGRTOPNAV** decision is
+  now implemented. Shipped as an **additive `OperationalShell` variant**
+  (`navigation="top" | "bottom"`, default `"bottom"`; `bottomNavigation` became optional) —
+  **never** a Manager shell fork: `OperationalShell`/`types.ts` gained the prop, and the three
+  frontline roles pass neither `navigation` nor an empty `bottomNavigation`, so their markup is
+  unchanged (verified live, byte-identical). New shared `components/pos-shell/OperationalTopNav.tsx`
+  (module bar: brand/home control, `role="menubar"` with **roving-tabindex** keyboard traversal,
+  responsive collapse) + `OperationalTopNavDropdown.tsx` (generic click-to-open dropdown: Escape
+  closes and returns focus to the trigger, outside click closes, a route change closes any open
+  dropdown, ArrowDown/ArrowUp/Home/End move focus among items) — built shared, not Manager-scoped,
+  so a future Owner variant reuses it per OD-1/OD-5. Consumed by the thin
+  `components/manager/shell/ManagerTopNav.tsx` adapter; the retired M-P1 `ManagerHeader.tsx` and
+  `ManagerBottomNav.tsx` were **deleted** (not left as dead code). The locked six M-P1 surfaces
+  (Overview · Operations · Staff · Reports · Settings · Me) survive unchanged as the top-nav menu
+  tree (`lib/manager/top-nav.ts`, derived from the same `managerRoutes` — never hand-duplicated):
+  Overview and Me stay **direct-action** links (no dropdown); Operations/Staff/Reports/Settings host
+  **click-to-open dropdowns**, each carrying ONE real, clickable link to today's M-P1 foundation page
+  plus the roadmap's named tree items rendered as **honest, inert `aria-disabled` rows** tagged with
+  the phase that ships them (e.g. "Orders — B3") — never a link to a page that does not exist.
+  Accounting is **not** added as a seventh menu (OD-3 stays open, gated on B5). New reusable
+  **Manager chrome primitives** (`components/manager/chrome/`): `ManagerControlPanel` (title +
+  optional New/secondary action + actions-cog + chip search + server-backed pager + view switcher,
+  every slot optional and *omitted*, never faked, when a surface has nothing to back it — the pager
+  type takes an explicit `{from,to,total}`, structurally unable to be fed a client array length),
+  `ManagerBreadcrumbs` and `ManagerSearchFilterMenu` (Filters/Group-By/Favorites, Favorites
+  explicitly labelled "saved on this terminal only" per **OD-7**, localStorage-only), and
+  `ManagerContentShell` (layout wrapper, no nested scroll owner). **B1 mounts only
+  `ManagerControlPanel`/`ManagerContentShell`, title-only**, on every Manager page (replacing the
+  generic `PageShell`) — `ManagerSearchFilterMenu` and `ManagerBreadcrumbs` are built and exported
+  but **deliberately unmounted** (no B1 surface has filterable or record data yet; first consumed
+  from B3, the same precedent the roadmap itself set for breadcrumbs). ⚠️ **OD-4 answered with a
+  recorded deviation:** the sub-desktop collapse breakpoint is Tailwind **`xl` (1280px)**, not the
+  roadmap-suggested `lg` (1024px) — live measurement showed the full bar (brand lockup + six menus +
+  branch switcher + clock + identity) does not reliably fit at the tightest supported project
+  (1024×768), so that viewport gets the collapsed single "Menu" control too, which **never** falls
+  back to the frontline bottom nav (verified live) — this is a *stricter*, not weaker, application of
+  the existing "no horizontal overflow at 1024×768" invariant. **OD-5 answered as recommended:** the
+  shared shell absorbed the variant with one additive prop; no `ManagementShell` fork was needed.
+  **Validated 2026-08-20:** web typecheck + lint + build all pass; **13 static assertion scripts**
+  pass (new `manager-b1-assertions.ts`, ~30 invariants, plus `manager-p1-assertions.ts` updated only
+  where the retired Header/BottomNav files made an assertion factually wrong — recorded in
+  `docs/DECISIONS.md`, the precedent the density pass set); Playwright **executed live** on an
+  **isolated local Docker Postgres stack** (`postgres:16` on a non-default port →
+  `prisma migrate deploy` + `db:seed` + `db:demo:import`; API + web on non-default ports; shared Neon
+  never touched) — `e2e/manager-shell/` **125/136 passed, 11 deliberately skipped** (desktop-only
+  `role="menubar"` click-to-open mechanics that exist only at `xl`+; the collapse itself is proven by
+  a dedicated, viewport-forced test regardless of which project runs it), cross-role regression
+  `e2e/supervisor-prompt3/` **64/64** and `e2e/cashier-floor` **48/48**; 8 screenshots at 1440×900 +
+  1280×680 (Manager Overview with the Operations dropdown open — both sizes are ≥1280px so both show
+  the full desktop bar — plus all three frontline shells, confirmed byte-identical); **zero console
+  errors** (verified via `page.on("console")`/`pageerror` listeners, not just visual review);
+  `GET /api/health` → `ok`; `git diff --check` clean; the isolated stack was fully torn down and
+  `apps/api/.env`/`packages/db/.env` restored byte-for-byte (verified empty diff post-restore).
+  **No commit/push.** See `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md`.
+  **NEXT = B0 (API verification, can run in parallel, docs-only) and B2 (Overview KPI dashboard,
+  gated on B1). Neither is started; both remain gated on an explicit owner go for that specific
+  prompt.** `docs/DECISIONS.md` D-MGRTOPNAV and D-NAV's Manager row, `docs/UI_SYSTEM.md` §3b (now the
+  implemented spec, not a plan), `ai/ENTERPRISE_UI_ROADMAP.md` (B1 marked complete, OD-4/OD-5 marked
+  answered), `PROGRESS.md`, this file, `CLAUDE.md` + `CODEX.md` all updated in this pass.
+
 - **ENTERPRISE UI RESEARCH COMPLETE + NEW CANONICAL ROADMAP ADOPTED (2026-08-20) — A. COMPLETE.
   Documentation only; no code, no backend/API/schema/migration/seed/permission/Postman change; no
   commit/push.**
