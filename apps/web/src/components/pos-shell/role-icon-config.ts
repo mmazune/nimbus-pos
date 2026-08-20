@@ -2,6 +2,7 @@ export const operationalIconNames = {
   approvals: "approvals",
   back: "back",
   branch: "branch",
+  caretDown: "caretDown",
   cashierQueue: "cashierQueue",
   cashierReceipts: "cashierReceipts",
   cashierTill: "cashierTill",
@@ -9,10 +10,15 @@ export const operationalIconNames = {
   floor: "floor",
   logout: "logout",
   me: "me",
+  operations: "operations",
+  overview: "overview",
   refresh: "refresh",
+  reports: "reports",
   reservations: "reservations",
   search: "search",
   serviceArea: "serviceArea",
+  settings: "settings",
+  staff: "staff",
   success: "success",
   table: "table",
   time: "time",
@@ -22,10 +28,18 @@ export const operationalIconNames = {
 
 export type OperationalIconName = (typeof operationalIconNames)[keyof typeof operationalIconNames];
 
+/**
+ * Canonical icon sizes, in CSS px.
+ *
+ * Density pass (owner-approved 2026-08-20): reduced from 18 / 24 / 32 to
+ * 16 / 20 / 28. Phosphor renders a raw `size` in px, so these do NOT follow the
+ * viewport-scaled root font size in `globals.css` — this registry is the ONE
+ * place icon geometry may be re-tuned, per docs/UI_SYSTEM.md §4.
+ */
 export const operationalIconSizes = {
-  compactAction: 18,
-  bottomNavigation: 24,
-  pageState: 32,
+  compactAction: 16,
+  bottomNavigation: 20,
+  pageState: 28,
 } as const;
 
 export const operationalIconWeights = {

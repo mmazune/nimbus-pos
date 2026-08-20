@@ -1,6 +1,23 @@
 # CASHIER_API_MATRIX.md — Nimbus POS Cashier API Matrix
 
-Status: Verified v1  
+> ⚠️ **HISTORICAL / SUPERSEDED (2026-08-20).** This is the **pre-reconstruction, Queue-first**
+> cashier endpoint matrix (Verified v1, 2026-07-01). It has been **superseded by
+> `docs/cashier-ui-docs/CASHIER_API_MATRIX.md`**, which documents the implemented C2
+> Floor-first build — Floor/bill-resolution, Find bill, and the read-only settlement workspace
+> rows this file has no concept of — adds a **live-verified status** column (2026-08-20,
+> isolated local stack), cites the actual controller and `@Permissions` guard per row, and
+> separates the endpoints that are now reachable **only** through the hidden compatibility
+> routes `/cashier/queue` + `/cashier/receipts` (retire C4/C5).
+>
+> This file is retained for history: it remains an accurate record of the **pre-reconstruction**
+> cashier surface, which is exactly what those hidden compatibility routes still mount. That
+> material now lives as §7 of the superseding file. **Do not treat it as current spec** — in
+> particular, payment collection, order close, split/merge/move/transfer, receipts and refunds
+> are **not** wired on the primary Cashier Floor path by design until C3+.
+>
+> Body below is unchanged.
+
+Status: Verified v1 (superseded — see banner above)  
 Date: 2026-07-01  
 Scope: cashier-relevant endpoint matrix verified against repository source code.
 

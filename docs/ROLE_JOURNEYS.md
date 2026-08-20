@@ -33,6 +33,8 @@
 - **Cashier:** `Front End/cashier_ui_docs_pack/docs/cashier-ui-docs/CASHIER_LIFECYCLE.md`
 - **Supervisor:** `docs/supervisor-ui-docs/SUPERVISOR_LIFECYCLE.md`
   (+ `SUPERVISOR_RESERVATION_LIFECYCLE.md`, `SUPERVISOR_APPROVAL_LIFECYCLE.md`)
+- **Manager:** `docs/manager-ui-docs/MANAGER_LIFECYCLE.md` (+ `MANAGER_API_MATRIX.md`);
+  shipped-state record `ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md`
 
 ## Waiter
 
@@ -239,6 +241,39 @@ is unchanged (126 rows); a pre-migration recovery branch is retained. Classifica
 4-viewport run against a properly-isolated stack remains the outstanding QA gate (the
 lifecycle is otherwise proven by 67/67 Jest tests + the compiled Playwright suite).
 
+## Manager
+
+**Nav: Overview · Operations · Staff · Reports · Settings · Me.** Branch-centric oversight.
+**Shipped state (2026-08-20): M-P1 foundation only** — the journey below is navigable end-to-end,
+but only the shell, the branch switcher, the readiness chips, and **Me** carry real data. Every
+other surface states honestly that it is not built yet and names the phase that brings it.
+
+1. **Sign in** (email/password or the seeded high-tier Quick PIN `11223344`) → the app reads
+   `/api/auth/me`, confirms `JobRole.MANAGER`, resolves the active branch
+   (stored `nimbus.managerBranchId` → `context.defaultBranchId` → first ACTIVE membership) and
+   lands on **`/manager/overview`**. A non-manager account is returned to
+   `/login?reason=manager_only`; a manager visiting `/waiter|/cashier|/supervisor` hits that role's
+   own access-required state.
+2. **Pick the branch.** The header switcher lists the account's ACTIVE memberships (the seeded demo
+   manager has four: Tapas Downtown *default*, Rooftop Bar, Garden Cafe, Events Kitchen). Choosing
+   one persists it, re-labels the header + readiness chip, and re-issues every manager read with
+   the new `X-Branch-Id`. It never re-fetches auth and never clears the query cache.
+3. **Read the readiness strip:** Branch · report-generator health · device-registry health. Tills
+   and shifts are deliberately absent — this backend has no branch-wide tills or shifts list, so a
+   chip there could only lie. They return as **counts** in M-P2.
+4. **Overview → Operations → Staff → Reports → Settings.** Each tab renders its scope, the phase
+   that makes it live (M-P2…M-P6), and the verified backend limits it must respect.
+5. **Me.** Identity, branch memberships (selectable — same action as the header switcher), session
+   context, and an explicit **restricted surfaces** disclosure: the session holds compensation,
+   contracts, generic approvals-decide, membership-admin and receipt permissions that the approved
+   manager scope **excludes**, and the workspace says so rather than hiding it.
+6. **Idle → logout.** Manager shares the one operational idle-logout mechanism (15 minutes →
+   `/login?reason=idle_timeout`).
+
+**Never in the manager journey:** collecting payment, closing an order, entering menu items,
+driving KDS, touching payroll/compensation, deciding through the generic approvals inbox, or any
+fabricated data or success state.
+
 ## Role boundaries & handoffs
 
 - **Waiter → Cashier:** waiter builds/sends the order; **cashier** collects payment,
@@ -246,5 +281,10 @@ lifecycle is otherwise proven by 67/67 Jest tests + the compiled Playwright suit
 - **Supervisor** oversees Floor/reservations/approvals and may **read** order and
   payment state; it never collects payment, enters the menu, drives KDS, or issues
   receipts.
+- **Manager** oversees a *branch* rather than a service station: it selects the branch every
+  other role is fixed to, and reads across Overview/Operations/Staff/Reports/Settings. It never
+  collects payment, closes an order, enters the menu, or touches compensation/payroll. If Manager
+  ever gets a Floor-like view it renders the same shared `OperationalFloor`, read-only.
 - **Floor parity:** Waiter, Supervisor, and Cashier (Prompt C1) share one Floor
-  presentation; behaviour diverges only **after** table selection.
+  presentation; behaviour diverges only **after** table selection. Manager (M-P1) shares the same
+  shell, header, bottom nav, idle handler, and profile primitives as the fourth consumer.

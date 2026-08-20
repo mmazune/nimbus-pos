@@ -1,6 +1,18 @@
 # Cashier Floor-First Architecture
 
-> **Status (2026-07-31): Prompt C2 IMPLEMENTED.** Behind a Floor table selection, one bounded
+> **Status (2026-08-20): Prompt C3 IMPLEMENTED.** The C2 structure below is unchanged; the
+> settlement workspace now also **executes**. A `Settlement` section mounts
+> `CashierSettlementActions`, which composes the existing `CashierPaymentPanel` (payment entry,
+> fail-closed validation, result notice, payment history, `CashierCloseOrderPanel`) and
+> `CashierResolutionPanel variant="split-only"` (split-bill allocation + split-items child order;
+> the merge / move-items / transfer-table group is **not** mounted). Post-mutation refresh lives in
+> `lib/cashier/settlement-mutations.ts`: the two canonical money reads are refetched and **awaited**
+> before any result is presented, and everything else is invalidated narrowly through the C2 key
+> factories. Cash settles **and** closes at the one verified choke point
+> `POST /pos/orders/:id/close`; there is **no standalone Close control**, because the backend has no
+> zero-payment close. Receipt actions and refunds remain C4.
+>
+> **(Superseded) Status (2026-07-31): Prompt C2 IMPLEMENTED.** Behind a Floor table selection, one bounded
 > `GET /pos/orders?tableId=` query is classified by `lib/cashier/bill-resolution.ts` (fail-closed)
 > into zero/one/multiple payable bills: one auto-resolves, multiple opens `CashierBillSelector`
 > (no silent first-pick), zero shows a truthful empty state. A selected bill opens the single

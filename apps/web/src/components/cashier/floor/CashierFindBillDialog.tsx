@@ -9,6 +9,7 @@ import { normalizeCashierOrder } from "@/lib/cashier/order-state";
 import type { CashierOrderApi, CashierServiceType } from "@/lib/cashier/order-types";
 import { getCashierOrder, listCashierOrders } from "@/lib/cashier/orders";
 import { cn } from "@/lib/utils/cn";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 
 /**
  * Compact, bounded "Find bill" lookup for the Cashier Floor (Prompt C2).
@@ -138,7 +139,7 @@ export function CashierFindBillDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-start justify-center bg-black/40 p-4 sm:pt-16"
+      className="fixed inset-0 z-[70] flex items-start justify-center bg-brand-navy-950/40 p-4 sm:pt-16"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -256,7 +257,11 @@ export function CashierFindBillDialog({
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
                         <Badge variant={view.statusTone}>{view.statusLabel}</Badge>
-                        <span>{view.serviceType === "TAKEAWAY" ? "Takeaway" : view.tableName}</span>
+                        <span title={view.tableName}>
+                          {view.serviceType === "TAKEAWAY"
+                            ? "Takeaway"
+                            : formatOperationalTableLabel(view.tableName) || view.tableName}
+                        </span>
                         <span>{view.serverName}</span>
                         {view.itemCount ? <span>{view.itemCount} items</span> : null}
                         <span>Opened {view.openedLabel}</span>

@@ -247,6 +247,18 @@ migrations / enum has `COMPLETED` / role_permissions 836); recovery branch
 
 ## Completion Blocker
 
+> **RESOLVED — dated note 2026-08-20.** This heading and its checklist are a **Prompt-4A-era
+> pre-implementation gate** and no longer describe an open blocker. Every item below was
+> delivered: the controller endpoint exists (`reservations.controller.ts`
+> `@Post(':id/complete')` `@Permissions('pos:reservation:update')`), the
+> `ReservationEventType.COMPLETED` enum shipped in migration
+> `20260518000000_prompt4a_reservation_completed_event` and was **deployed to shared Neon in
+> Prompt 4C (2026-07-29)**, and the transition was live-exercised in Prompt 4D (53/53). The route
+> was re-confirmed present on the isolated local stack during the 2026-08-20 API-matrix audit
+> (not invoked — mutation). Retained verbatim as the historical acceptance checklist; do **not**
+> read it as outstanding work. See `SUPERVISOR_API_MATRIX.md` (Reservations table) for current
+> verified status.
+
 Before adding a Complete action, verify or add:
 
 - Controller endpoint.

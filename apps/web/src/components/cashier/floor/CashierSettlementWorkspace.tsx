@@ -20,9 +20,13 @@ import type { CashierOrderApi } from "@/lib/cashier/order-types";
 import { getCashierOrder, getCashierOrderPayments } from "@/lib/cashier/orders";
 import { CASHIER_TILL_ROUTE } from "@/lib/cashier/floor-route";
 import type { CashierReadinessSnapshot } from "@/lib/cashier/readiness";
+import { useCashierSettlementRefresh } from "@/lib/cashier/settlement-mutations";
+
+import { CashierSettlementActions } from "./CashierSettlementActions";
 
 /**
- * Canonical Cashier settlement workspace (Prompt C2) — READ-ONLY foundation.
+ * Canonical Cashier settlement workspace (Prompt C2 read foundation + Prompt C3
+ * payment / split / close execution).
  *
  * This is the single settlement surface behind a Floor table selection (and
  * behind a Find-bill / tableless selection). It composes the SAME presentation
@@ -30,16 +34,26 @@ import type { CashierReadinessSnapshot } from "@/lib/cashier/readiness";
  * `CashierPaymentSummary`, `CashierQueueStatusBadge`, `normalizeCashierOrder`)
  * so there is no duplicated financial logic and no second selected-order model.
  *
- * C2 exposes NO payment / split / close / receipt / refund mutation control —
- * those arrive in C3/C4. Payment state fails CLOSED: if the payment summary is
- * unavailable it is never presented as unpaid or zero-due, and no readiness or
- * action state is derived from missing data.
+ * C3 mounts the already-verified execution primitives through
+ * `CashierSettlementActions` (payment entry incl. partial + remaining balance,
+ * split allocation/item split, and the close-state surface). It adds NO new
+ * financial logic and NO optimistic total: every mutation re-reads the canonical
+ * order detail + payment summary through `useCashierSettlementRefresh` before a
+ * result is presented.
+ *
+ * Payment state fails CLOSED: if the payment summary is unavailable it is never
+ * presented as unpaid or zero-due, no readiness or action state is derived from
+ * missing data, and payment entry stays blocked while the summary is unresolved.
+ *
+ * Receipt actions and refunds remain out of scope (C4).
  */
 
 type CashierSettlementWorkspaceProps = {
   orderId: string;
   token: string;
   branchId: string;
+  /** Floor table this bill was resolved from, when there is one (narrow invalidation). */
+  tableId?: string | null;
   fallbackBranchName?: string;
   readiness: CashierReadinessSnapshot;
   fallbackOrder?: CashierOrderApi;
@@ -93,6 +107,7 @@ export function CashierSettlementWorkspace({
   orderId,
   token,
   branchId,
+  tableId,
   fallbackBranchName,
   readiness,
   fallbackOrder,
@@ -114,6 +129,15 @@ export function CashierSettlementWorkspace({
     queryFn: () => getCashierOrderPayments(token, branchId, orderId),
     retry: shouldRetryApiRequest,
     staleTime: 8_000,
+  });
+
+  // Narrow post-mutation refresh (C3). Awaits the canonical money reads; every
+  // other domain is invalidated by its exact key factory, non-blocking.
+  const refreshSettlement = useCashierSettlementRefresh({
+    branchId,
+    orderId,
+    tableId,
+    readiness,
   });
 
   // Move focus into the workspace when the selected bill changes.
@@ -168,7 +192,6 @@ export function CashierSettlementWorkspace({
           <ArrowLeft size={18} weight="bold" aria-hidden />
           {backLabel}
         </button>
-        <Badge variant="info">Read-only</Badge>
       </div>
 
       {detailError && !order ? (
@@ -335,8 +358,20 @@ export function CashierSettlementWorkspace({
               </div>
             ) : null}
             <p className="text-sm font-medium text-text-secondary">
-              Payment, split, and close actions open here in a later step. This foundation is read-only.
+              Payment entry needs an active shift; cash settlement also needs an active till owned by
+              this cashier. Settlement stays blocked until both read green.
             </p>
+          </Section>
+
+          {/* SETTLEMENT — payment / split / close execution (C3) */}
+          <Section id="cashier-settlement-actions" title="Settlement">
+            <CashierSettlementActions
+              order={view}
+              readiness={readiness}
+              detailBlocked={Boolean(detailError) || (detailQuery.isLoading && !order)}
+              paymentSummaryBlocked={paymentUnavailable || paymentsQuery.isLoading}
+              onRefresh={refreshSettlement}
+            />
           </Section>
 
           {/* HISTORY / CONTEXT */}
@@ -351,14 +386,18 @@ export function CashierSettlementWorkspace({
               <li className="flex items-center gap-2 rounded-md bg-surface-muted p-3">
                 <Info size={18} weight="bold" aria-hidden className="shrink-0 text-text-muted" />
                 {refundEligible
-                  ? "This bill is closed — refund eligibility is reviewed in a later step."
+                  ? "Refund eligibility for this closed bill is reviewed in a later step."
                   : "Refunds are available after this bill is closed."}
               </li>
             </ul>
           </Section>
 
+          {/* One live region for both selection and settlement-state transitions, so a
+              close / partial payment is announced without a second announcer. */}
           <div className="sr-only" aria-live="polite">
-            {detailQuery.isLoading ? "Loading selected bill." : `Selected bill ${view.orderNumber} loaded.`}
+            {detailQuery.isLoading
+              ? "Loading selected bill."
+              : `Selected bill ${view.orderNumber} loaded. ${classificationMeta.label}.`}
           </div>
         </>
       )}

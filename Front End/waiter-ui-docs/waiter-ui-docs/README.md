@@ -47,7 +47,7 @@ These docs are based on:
 - current Nimbus POS waiter MVP backend hardening;
 - waiter role Postman collection verification;
 - uploaded prior `DESIGN.md`, `waiter_design.md`, and `waiterui.md`;
-- latest visual reference image with navy / white / silver / graphite palette;
+- the Nimbus POS Brand Identity guide (Andimashimwe Rhoda, Aug 2026) — navy `#000033` / white / light grey `#B3B4AF` / dark grey palette, Inter-only type, steering-wheel logomark (see `docs/BRAND_IDENTITY.md`); it replaced the earlier visual reference image;
 - agreed desktop-first waiter MVP scope.
 
 ## Most important product rules

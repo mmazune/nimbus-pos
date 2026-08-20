@@ -21,7 +21,7 @@ The cashier workspace should feel premium, exact, safe, controlled, fast, readab
 
 ## 3. Palette usage
 
-Use global tokens only.
+Use global tokens only. Token names are unchanged; their **values** were rebranded in Aug 2026 to the Nimbus POS Brand Identity guide — canonical Navy Blue `--color-brand-navy-900` `#000033`, with `--color-brand-navy-950` `#000024` and `--color-brand-navy-800` `#1E1E52` as derived shade/tint; `--color-brand-white` `#FFFFFF`; `--color-brand-silver` `#B3B4AF` (brand Light Grey); `--color-brand-graphite` `#6B6B6B` (brand Dark Grey, sampled from the guide's swatch — the guide's printed hex is a typo). See `docs/BRAND_IDENTITY.md`.
 
 | UI area | Token usage |
 |---|---|
@@ -75,7 +75,7 @@ Apply these because cashier workflows handle money:
 Header height: 64px. Bottom nav height: 76–84px. Main padding: 20–24px.
 
 Header:
-- left: logo, branch, terminal;
+- left: logo (44×44 white brand tile — renders the shipped steering-wheel logomark via `components/pos-shell/NimbusLogomark.tsx`, see `docs/BRAND_IDENTITY.md` §2.6), branch, terminal;
 - center: current time;
 - right: shift chip, till chip, cashier avatar/name, logout.
 

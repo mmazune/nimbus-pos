@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { useStationTerminalLabel } from "@/components/pos-shell/station";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { getPrimaryRoleLabel, resolveDefaultMembership } from "@/lib/auth/role";
 
@@ -27,6 +28,8 @@ export type CashierWorkspaceContext = {
 
 export function useCashierContext() {
   const { branchId, branchName, displayName, organizationId, user } = useAuth();
+  // Station label, NOT backend data — see components/pos-shell/station.ts.
+  const terminalLabel = useStationTerminalLabel();
 
   return useMemo<CashierWorkspaceContext>(() => {
     const membership = resolveDefaultMembership(user);
@@ -45,7 +48,7 @@ export function useCashierContext() {
       organizationCount: user?.context.organizationCount || 0,
       branchCount: user?.context.branchCount || 0,
       requiresContextSelection: user?.context.requiresContextSelection || false,
-      workstationLabel: "Workstation unavailable",
+      workstationLabel: terminalLabel,
       sessionPlatform: user?.session?.platform || "Session check pending",
       sessionSource: user?.session?.source || "Session check pending",
       sessionId: user?.session?.id || null,
@@ -53,5 +56,5 @@ export function useCashierContext() {
       sessionLastActivityAt: user?.session?.lastActivityAt || null,
       permissions: user?.permissions || [],
     };
-  }, [branchId, branchName, displayName, organizationId, user]);
+  }, [branchId, branchName, displayName, organizationId, terminalLabel, user]);
 }

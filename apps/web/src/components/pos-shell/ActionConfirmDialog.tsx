@@ -109,7 +109,7 @@ export function ActionConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy-950/40 p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !pending) onCancel();
       }}

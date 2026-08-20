@@ -6,10 +6,10 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          "navy-950": "var(--color-brand-navy-950)",
+          "navy-950": "rgb(var(--color-brand-navy-950-ch) / <alpha-value>)",
           "navy-900": "var(--color-brand-navy-900)",
           "navy-800": "var(--color-brand-navy-800)",
-          white: "var(--color-brand-white)",
+          white: "rgb(var(--color-brand-white-ch) / <alpha-value>)",
           silver: "var(--color-brand-silver)",
           graphite: "var(--color-brand-graphite)",
         },
@@ -31,13 +31,13 @@ const config: Config = {
           inverse: "var(--color-text-inverse)",
         },
         status: {
-          success: "var(--color-status-success)",
+          success: "rgb(var(--color-status-success-ch) / <alpha-value>)",
           "success-surface": "var(--color-status-success-surface)",
-          warning: "var(--color-status-warning)",
+          warning: "rgb(var(--color-status-warning-ch) / <alpha-value>)",
           "warning-surface": "var(--color-status-warning-surface)",
-          danger: "var(--color-status-danger)",
+          danger: "rgb(var(--color-status-danger-ch) / <alpha-value>)",
           "danger-surface": "var(--color-status-danger-surface)",
-          info: "var(--color-status-info)",
+          info: "rgb(var(--color-status-info-ch) / <alpha-value>)",
           "info-surface": "var(--color-status-info-surface)",
           neutral: "var(--color-status-neutral)",
           "neutral-surface": "var(--color-status-neutral-surface)",
@@ -49,6 +49,8 @@ const config: Config = {
           "cashier-soft": "var(--color-role-cashier-soft)",
           supervisor: "var(--color-role-supervisor)",
           "supervisor-soft": "var(--color-role-supervisor-soft)",
+          manager: "var(--color-role-manager)",
+          "manager-soft": "var(--color-role-manager-soft)",
         },
         focus: "var(--color-focus-ring)",
         skeleton: {
@@ -58,6 +60,10 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
+          // Bundled self-hosted variable Inter (@fontsource-variable/inter,
+          // imported in src/pages/_app.tsx) first; a system-installed "Inter"
+          // second; then the system stack. Keep aligned with globals.css `body`.
+          "\"Inter Variable\"",
           "Inter",
           "ui-sans-serif",
           "system-ui",
@@ -91,6 +97,7 @@ const config: Config = {
         panel: "var(--shadow-panel)",
         overlay: "var(--shadow-overlay)",
         focus: "var(--shadow-focus)",
+        "focus-inverse": "var(--shadow-focus-inverse)",
       },
     },
   },

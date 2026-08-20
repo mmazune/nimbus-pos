@@ -3,6 +3,7 @@ import { Armchair, WarningCircle } from "@phosphor-icons/react";
 
 import { Badge, Skeleton, StatusMessage } from "@/components/ui";
 import { cn } from "@/lib/utils/cn";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 import { fetchSupervisorTables, type SupervisorTableStatus } from "@/lib/supervisor/floor";
 
 type SupervisorReservationTableSelectProps = {
@@ -134,8 +135,11 @@ export function SupervisorReservationTableSelect({
               <span className="flex min-w-0 items-center gap-2">
                 <Armchair size={18} weight="bold" className="shrink-0 text-text-muted" aria-hidden />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-bold text-text-primary">
-                    {table.label || table.id}
+                  <span
+                    className="block truncate text-sm font-bold text-text-primary"
+                    title={table.label || table.id}
+                  >
+                    {formatOperationalTableLabel(table.label) || table.label || table.id}
                     {isCurrent ? (
                       <span className="ml-2 text-xs font-semibold text-text-muted">(current)</span>
                     ) : null}

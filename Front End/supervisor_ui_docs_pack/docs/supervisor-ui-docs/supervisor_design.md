@@ -4,6 +4,7 @@
 > Reservations · Approvals · Me**), **no visible Orders tab**, **shared** Floor.
 > Current canonical: `docs/supervisor-ui-docs/*`, `ai/SUPERVISOR_RECONSTRUCTION_*`,
 > root `CLAUDE.md`, `docs/DECISIONS.md`. Kept for history.
+> Also: any palette values shown here are the **pre-Aug-2026** brand; current brand → `docs/BRAND_IDENTITY.md`.
 
 # supervisor_design.md — Nimbus POS Supervisor Workspace Product Design
 

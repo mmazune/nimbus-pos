@@ -1,6 +1,18 @@
 # Cashier Component Reuse Map
 
-> **Status (2026-07-31): Prompt C2 IMPLEMENTED.** C2 added `CashierBillResolutionPanel`,
+> **Status (2026-08-20): Prompt C3 IMPLEMENTED — settlement reuses, it does not rewrite.** The C3
+> mount point `components/cashier/floor/CashierSettlementActions.tsx` composes the **existing**
+> verified primitives: `checkout/CashierPaymentPanel` (payment entry, amount validation, blocked
+> banner, result notice, payment history, `CashierCloseOrderPanel`) and
+> `resolution/CashierResolutionPanel` with the new additive `variant="split-only"` prop
+> (`CashierSplitBillPanel` + `CashierSplitItemsPanel`; `CashierAdvancedResolutionPanel` is
+> deliberately not mounted). No financial logic, validation rule, or API helper was duplicated —
+> `lib/cashier/{payments,resolution,payment-validation,resolution-validation,idempotency}.ts` are
+> used as-is. The only new library file is `lib/cashier/settlement-mutations.ts`, which owns the
+> narrow post-mutation refresh and contains no money logic. The legacy Queue checkout preview is
+> unchanged and keeps the default `variant="full"`.
+>
+> **(Superseded) Status (2026-07-31): Prompt C2 IMPLEMENTED.** C2 added `CashierBillResolutionPanel`,
 > `CashierBillSelector`, `CashierSettlementWorkspace`, and `CashierFindBillDialog`. The settlement
 > workspace **reuses** existing checkout primitives (`queue/CashierOrderTotals`,
 > `queue/CashierPaymentSummary`, `queue/CashierQueueStatusBadge`, `lib/cashier/order-state`)

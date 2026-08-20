@@ -9,7 +9,7 @@ Frontend foundation for the desktop-first Nimbus POS waiter MVP.
 - Tailwind CSS
 - React Query
 - Phosphor Icons
-- CSS variable design tokens
+- CSS variable design tokens (brand token **values** rebranded 2026-08-20 — names unchanged; see `docs/BRAND_IDENTITY.md`)
 
 ## Scripts
 
@@ -317,6 +317,14 @@ and Supervisor. They contain no queries, mutations, permissions, or role busines
 ## Design Tokens
 
 Global design tokens live in `src/styles/globals.css` and are mapped into Tailwind in `tailwind.config.ts`.
+
+The `--color-brand-*` token **values** were rebranded on 2026-08-20 to the Aug 2026 Nimbus POS Brand
+Identity (canonical navy `#000033`, light grey `#B3B4AF`; navy 950/800 are derived shade/tint; shadow
+ink derives from `--color-brand-navy-rgb: 0, 0, 51`). **Token names did not change**, so no component
+required edits. Extended neutrals, status colors, and the per-role accents are unchanged. Never
+hard-code a hex — the only exceptions are static assets that can't read CSS variables (`public/`
+icons and `<meta name="theme-color">` in `src/pages/_app.tsx`). Full reference:
+`docs/BRAND_IDENTITY.md`.
 
 Waiter Floor uses the full card grid when no table is selected. Reservation/detail content uses one
 responsive right drawer. Any new/resumed/owned/seated-reservation order uses one full-screen workspace

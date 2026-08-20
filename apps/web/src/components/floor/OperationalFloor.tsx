@@ -2,11 +2,13 @@ import { WarningCircle } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge, PageShell } from "@/components/ui";
+import { operationalIconSizes } from "@/components/pos-shell/role-icons";
 
 import { OperationalFloorErrorState } from "./OperationalFloorErrorState";
 import { OperationalFloorToolbar } from "./OperationalFloorToolbar";
 import { OperationalTableGrid } from "./OperationalTableGrid";
 import {
+  buildOperationalTableLabelMap,
   countOperationalTables,
   filterOperationalTables,
   getOperationalFloorPlans,
@@ -45,6 +47,12 @@ export function OperationalFloor<T extends OperationalTableViewModel>({
   const [selectedFloorPlanId, setSelectedFloorPlanId] = useState<string | null>(null);
   const counts = useMemo(() => countOperationalTables(tables), [tables]);
   const floorPlans = useMemo(() => getOperationalFloorPlans(tables), [tables]);
+  // Built from the FULL fetched set (not the filtered view) so a table's short
+  // label never changes as the operator types into the search box.
+  const displayLabels = useMemo(
+    () => buildOperationalTableLabelMap(tables.map((table) => table.label)),
+    [tables],
+  );
   const filteredTables = useMemo(
     () => filterOperationalTables({ filter, floorPlanId: selectedFloorPlanId, query, tables }),
     [filter, query, selectedFloorPlanId, tables],
@@ -86,6 +94,7 @@ export function OperationalFloor<T extends OperationalTableViewModel>({
       ) : (
         <OperationalTableGrid
           tables={filteredTables}
+          displayLabels={displayLabels}
           isLoading={isLoading}
           selectedTableId={selectedTableId}
           onSelectTable={onSelectTable}
@@ -94,7 +103,7 @@ export function OperationalFloor<T extends OperationalTableViewModel>({
 
       {!isLoading && !error && tables.length === 0 ? (
         <div className="flex items-center gap-2 text-sm font-medium text-text-muted" role="status">
-          <WarningCircle size={18} weight="bold" aria-hidden />
+          <WarningCircle size={operationalIconSizes.compactAction} weight="bold" aria-hidden />
           <span>No active operational tables were returned for this branch.</span>
         </div>
       ) : null}

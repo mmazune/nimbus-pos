@@ -6,10 +6,13 @@ export { OperationalTableGrid } from "./OperationalTableGrid";
 export { OperationalTableStatusBadge } from "./OperationalTableStatusBadge";
 export { OperationalTableWorkspaceFrame } from "./OperationalTableWorkspaceFrame";
 export {
+  OPERATIONAL_TABLE_LABEL_MAX_CHARS,
+  buildOperationalTableLabelMap,
   countOperationalTables,
   filterOperationalTables,
   formatOperationalStaffIdentity,
   formatOperationalStaffName,
+  formatOperationalTableLabel,
   getOperationalFloorPlans,
   operationalTableStatusLabels,
   sortOperationalTables,

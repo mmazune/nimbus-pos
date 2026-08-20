@@ -48,7 +48,7 @@ function getErrorCopy(error: unknown) {
 }
 
 /**
- * Cashier Floor screen (Prompt C2).
+ * Cashier Floor screen (Prompt C2 resolution + Prompt C3 settlement execution).
  *
  * Cashier is the third consumer of the shared `OperationalFloor`. Behaviour
  * differs from Waiter/Supervisor ONLY after selection:
@@ -58,8 +58,9 @@ function getErrorCopy(error: unknown) {
  *    opens tableless/takeaway/closed bills into the SAME workspace via orderId.
  *
  * URL state: `?tableId=` (table context) and `?orderId=` (selected bill), both
- * refresh / Back / Forward safe. Everything here is READ-ONLY — no payment,
- * split, close, refund, receipt, transfer, void, or discount affordance.
+ * refresh / Back / Forward safe. Floor and resolution stay read-only; payment,
+ * partial/split settlement, and close execute inside the settlement workspace
+ * (C3). Refund, receipt, transfer, void, and discount remain out of scope.
  */
 export function CashierFloorScreen() {
   const router = useRouter();
@@ -263,6 +264,7 @@ export function CashierFloorScreen() {
             orderId={requestedOrderId as string}
             token={accessToken}
             branchId={branchId}
+            tableId={selectedTableId ?? null}
             fallbackBranchName={context.branchName}
             fallbackOrder={floorOrder}
             readiness={readiness}

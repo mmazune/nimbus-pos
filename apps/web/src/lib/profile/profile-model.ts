@@ -1,6 +1,6 @@
 import type { AuthMeResponse } from "../auth/types";
 
-export type ProfileRole = "waiter" | "cashier" | "supervisor";
+export type ProfileRole = "waiter" | "cashier" | "supervisor" | "manager";
 export type OperationalTone = "neutral" | "success" | "warning" | "danger" | "info";
 
 export type RoleAccent = {
@@ -28,6 +28,12 @@ export const roleAccentMap: Record<ProfileRole, RoleAccent> = {
     heroClassName: "bg-role-supervisor text-text-inverse",
     softClassName: "bg-role-supervisor-soft",
     textClassName: "text-role-supervisor",
+  },
+  manager: {
+    label: "Manager",
+    heroClassName: "bg-role-manager text-text-inverse",
+    softClassName: "bg-role-manager-soft",
+    textClassName: "text-role-manager",
   },
 };
 

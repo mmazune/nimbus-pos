@@ -4,6 +4,41 @@ This document describes the operational lifecycle states, state transitions, con
 
 ---
 
+## 2026-08-20 — Header note: owner decisions are LOCKED
+
+The product owner approved the Manager core + MVP scope on **2026-08-20**. The canonical register is
+[`Front End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_APPROVAL_DECISIONS.md`](../../Front%20End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_APPROVAL_DECISIONS.md)
+(every previously-pending row now reads **Approved (owner, 2026-08-20)**). The phased plan is
+[`ai/MANAGER_RECONSTRUCTION_ROADMAP.md`](../../ai/MANAGER_RECONSTRUCTION_ROADMAP.md). Read this
+lifecycle under those locked constraints:
+
+- Nav is **Overview · Operations · Staff · Reports · Settings · Me**; **no Approvals tab** and
+  **no More tab**; landing `/manager/overview`; a **required** branch switcher drives every
+  branch-scoped query.
+- Operations (§4) is **read-only oversight** — no cashier-checkout or waiter-order-entry clone.
+- Staff (§5) excludes **compensation / contracts / payroll**.
+- Reports (§6) must show a truthful **generator-unavailable** state; **fake downloads forbidden**.
+- Settings (§7): printer routes **metadata-only**, terminal pairing **stub-only**, alert rules
+  **defer-or-read-only**, sync-conflict diff **deferred**.
+- **§8 (Escalation & Approval) reads against the locked decision.** It describes an "Approvals
+  Inbox" driven by `GET /api/approvals` and committing decisions with
+  `POST /api/approvals/:id/decide`. The owner decision **prefers domain-specific decision routes**
+  (Supervisor Option B precedent), and Approvals is **not a bottom tab** — counts surface on
+  Overview, order/void/refund/discount escalation lives in Operations, leave/swap review in Staff.
+  Treat §8's generic-decide flow as the **read/detail** path only; route every **write** through the
+  verified domain endpoint. Details and the seed-permission finding (Manager **does** hold
+  `approvals:read` + `approvals:decide`; Supervisor holds neither) are in the header annotation of
+  [`MANAGER_API_MATRIX.md`](MANAGER_API_MATRIX.md).
+- **Sequencing:** the "Manager is blocked until Cashier C6" rule is **replaced** — Cashier C3 is
+  authorized in parallel and the Manager track is unblocked.
+
+**This document has not been rewritten.** It is a condensed lifecycle; the **fuller** version is
+[`Front End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_LIFECYCLE.md`](../../Front%20End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_LIFECYCLE.md)
+(~4× longer), which is authoritative on edge cases, blocked states, and the full action contract.
+Nothing below is live-verified against today's backend — that is **M-P0's** job.
+
+---
+
 ## 1. Manager Login & Session
 - **Authentication Routes**: The Manager authenticates at `http://localhost:3000/login` via either:
   1. **Email & Password**: `manager@nimbus.demo` / `Demo1234!` (or local seed `manager@demo.local` / `Manager#123`).

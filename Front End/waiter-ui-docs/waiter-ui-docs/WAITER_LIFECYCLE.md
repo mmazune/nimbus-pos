@@ -1,6 +1,17 @@
 # WAITER_LIFECYCLE.md — Nimbus POS Waiter Service Lifecycle
 
-Status: Draft v1  
+> ⚠️ **HISTORICAL / SUPERSEDED (2026-08-20).** This is a pre-implementation draft
+> (Draft v1, 2026-06-16). It has been **superseded by
+> `docs/waiter-ui-docs/WAITER_LIFECYCLE.md`**, which documents the implemented build and
+> cites the code for every claim; the deltas from this draft are enumerated in its §11.
+> Endpoint contracts, permissions and live-verification status now live in
+> `docs/waiter-ui-docs/WAITER_API_MATRIX.md`.
+>
+> This file is retained for history — it remains the best record of intent and of the
+> denied-action reasoning. **Do not treat it as current spec.** Palette references also
+> predate the Aug-2026 rebrand; `docs/BRAND_IDENTITY.md` is canonical for brand colours.
+
+Status: Draft v1 (superseded — see banner above)  
 Date: 2026-06-16  
 Purpose: exhaustive waiter MVP lifecycle and action contract  
 Scope: backend-verified waiter MVP, desktop-first shared POS terminal

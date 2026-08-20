@@ -31,6 +31,325 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
+- **ENTERPRISE UI RESEARCH COMPLETE + NEW CANONICAL ROADMAP ADOPTED (2026-08-20) — A. COMPLETE.
+  Documentation only; no code, no backend/API/schema/migration/seed/permission/Postman change; no
+  commit/push.**
+  **Research.** The owner's live Odoo instance (MARU CREDIT LIMITED, Uganda, Odoo 18-era, dark
+  theme) was explored **read-only** through his authenticated browser session — menus opened, list
+  and form views opened; **no record created, edited, saved, confirmed or deleted**. Written up as
+  `ai/ODOO_REFERENCE_RESEARCH.md` with **17 screenshots** in `ai/odoo-reference-screenshots/`:
+  the per-module top bar and click-to-open grouped dropdowns, the **full 58-item Accounting menu
+  tree**, the **control-panel row** (`New` + title + cog + chip search + pager + view switcher), the
+  three-column Filters/Group-By/Favorites dropdown, breadcrumb + record pager, the dashboard **KPI
+  card** anatomy (counts are drill-in links, amounts are data, mixed-weight buttons, and a card may
+  have a mini chart *or* a checklist *or* nothing), the Settings two-pane layout, the Employees
+  kanban, the user-form credential model, and a **15-component inventory C1…C15**. Surfaces not
+  opened are marked **(not opened)**; §6 records what the instance does **not** have (no Point of
+  Sale app, no Sales app, the reports themselves not opened).
+  **Gap analysis.** `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` — 20 typed gaps **NG-01…NG-20**
+  (UI-over-API / Backend / Mixed) with sizing and a top-10 priority list. **Headline finding:
+  Nimbus's accounting backend is far larger than any Nimbus document admits.** A route scan found
+  four registered, wired controllers — `accounts-payable` (20 routes), `accounts-receivable` (11),
+  `bank-rec` (16), `budget` (12) — that `docs/MODULES.md` still marks **"⬜ Planned"**. Roughly **90
+  accounting/finance endpoints exist with zero UI**, so most of what the owner admires in Odoo
+  Accounting is a **UI gap over an existing API**, not a backend build. ⚠️ Those four modules were
+  found by **static scan only** and are explicitly *claimed-by-code, unverified-at-runtime* — an
+  M-P0-style live pass has never covered them.
+  **Roadmap adopted.** New canonical **`ai/ENTERPRISE_UI_ROADMAP.md`**, three tracks, phased and
+  gated, each phase carrying scope / out-of-scope / dependencies / acceptance gates / S-M-L sizing /
+  its required completion report. **Track A** experience polish — A0 shipped today (density,
+  fullscreen login, terminal identity, short table labels); **A1 is down to one owned item**, the
+  shared floor-toolbar wrap at 1024×768, after verifying against the code that status-token
+  contrast, the role accents, the jargon-leak string and the Inter webfont bundle are **already
+  fixed**. **Track B** the management suite: **B0** API verification extension (docs only, gates
+  B5) → **B1** Manager **top-nav shell conversion** (L) → **B2** Overview KPI card grid (M) →
+  **B3** Operations + Staff (L) → **B4** Reporting (M, CSV-only) → **B5** Accounting suite (L,
+  sub-phased B5.1–B5.6 over a 7-menu tree adapted from Odoo) → **B6** Settings (M) → **B7** Owner
+  variant (M). **Track C** the true backend/discipline gaps **C-01…C-20**, each naming the Track B
+  phase it unblocks; **Track C-P** carries Cashier **C4→C6** forward unchanged and in parallel.
+  Hard blocks recorded: **C-02** (the `/hr/employees` compensation leak) blocks B3's staff
+  directory; a **B0 go** blocks B5; **C-03** (no report rows) blocks B4's graph/pivot. Soft blocks
+  degrade honestly: **C-04** (SSE) → B2 polls; **C-01** (fake PDF) → B4 ships CSV only; **C-15**
+  (no saved views) → Favorites is localStorage-only or absent.
+  ⚠️ **OWNER DECISION RECORDED — `docs/DECISIONS.md` D-MGRTOPNAV: management navigation switches to
+  an Odoo-style TOP NAV BAR, superseding the M-P1 bottom-nav decision for Manager.** Module bar +
+  click-to-open dropdown submenus, a control-panel row and breadcrumb + record pager. **Waiter,
+  Cashier and Supervisor keep bottom nav and must render byte-identically.** **Only the navigation
+  presentation is superseded** — M-P1's shell, `ManagerSessionGuard`, the **branch switcher** (source,
+  persistence, `X-Branch-Id` plumbing, narrow `["manager", …]` invalidation), the **surface
+  allow-list**, the honest foundation pages, the real Manager **Me** and the "three verified chips
+  only" readiness rule all carry forward, and M-P0's **MP0-01…MP0-18** remain in force. The top nav
+  ships as an **additive variant of the shared `OperationalShell`**, never a Manager fork.
+  **Docs updated:** `ai/ENTERPRISE_UI_ROADMAP.md` (new); `docs/DECISIONS.md` (**D-MGRTOPNAV** +
+  **D-ENTERPRISE**, both owner-approved and dated, with D-NAV's Manager row struck through rather
+  than deleted); `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` (supersession banner + M-P2 and
+  dependency-graph annotations; **M-P0/M-P1 history intact**); `docs/UI_SYSTEM.md` §3 + new §3b;
+  `docs/DOCUMENT_INDEX.md` (new Enterprise UI push section + the Manager-roadmap row reclassified);
+  `PROGRESS.md`; this file; `CLAUDE.md` + `CODEX.md`.
+  **NEXT = Track B1 (Manager top-nav shell conversion) — pending an explicit owner go. Nothing in
+  Track B is implemented.** Eleven open owner decisions (**OD-1…OD-11**) are recorded with
+  recommendations in the roadmap §7; **OD-4** (sub-desktop collapsed presentation) and **OD-5**
+  (additive shell variant vs a separate management shell) must be answered at the start of B1.
+
+- **OWNER UI POLISH WAVE 2 — GLOBAL DENSITY + FULLSCREEN LOCK SCREEN COMPLETE (2026-08-20) — A.
+  COMPLETE. Frontend + docs only; no backend/API/schema/migration/seed/permission/Postman change;
+  no commit/push.** Five owner complaints fixed entirely in the SHARED layer (no role fork):
+  **(1) `/login` no longer scrolls** — it is a true `h-screen` + `overflow-hidden` layout whose card
+  scrolls internally if ever needed. Live proof (`document.documentElement.scrollHeight` vs
+  `window.innerHeight`): **680/680, 768/768, 900/900, 1080/1080** at 1280×680, 1366×768, 1440×900,
+  1920×1080.
+  **(2) Global density mechanism** — `html { font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px) }`
+  in `globals.css` plus rem-normalized `--space-*` tokens, so every rem-based Tailwind utility scales
+  with viewport height; measured root font size 13.50 / 14.05 / 14.88 / 16.00px across the matrix
+  (16px ceiling = the unchanged pre-density baseline). Targeted px fixes where rem cannot reach:
+  icon registry **18/24/32 → 16/20/28**, table card **`min-h-[176px]` → `min-h-[9.5rem]`**
+  (measured 152 / 141 / 128px), grid track `minmax(220px,1fr)` → `minmax(13rem,1fr)`. Shared regions:
+  header **80→64px**, brand + identity tiles 44→36px, readiness 44→36px, main top padding 160→116px,
+  bottom nav **80→64px**, bottom clearance 112→80px, `PageShell` title `text-2xl`→`text-xl`.
+  Uniform across all four roles; `pos-shell/layout.ts` documents the rem class behind each number.
+  **(3) Brand-led lock screen** — logomark tile + inline Inter-ExtraBold "Nimbus POS" lockup (≈41px
+  tall at 1440), "Service terminal" heading, three compact Workstation/Time/API chips. The
+  role-marketing paragraph and the always-visible footer sentence were **removed**; the truthful
+  blocked-role `StatusMessage` behaviour is unchanged.
+  **(4) Terminal identity** — new shared `components/pos-shell/station.ts` replaces the dead
+  "Service area unavailable" / "Workstation unavailable" fallbacks with a deterministic station
+  label (`localStorage["nimbus.stationTerminalLabel"]`, else **"Terminal 01"**), hydration-safe and
+  documented in code as a station label, **not** backend data. Verified live in all four role
+  headers, the Cashier Till toolbar and the Cashier/Supervisor Me screens.
+  **(5) Short floor table labels** — deterministic display-side abbreviation in the shared
+  `floor/formatters.ts` (`QA-OPEN-01→QO-01`, `QA-P4-CLEAN-02→QP4C-02`, `QA-P4-PASS2-1440→QP4P2-1440`,
+  `QA-PRE-BILL-01→QPB-01`; ≤7 chars untouched), collision-safe within a fetched set via
+  `buildOperationalTableLabelMap()`, with the FULL label preserved in `title`/`aria-label`. Card
+  titles are now one line. Applied to floor cards (all roles), selected-table workspace headers,
+  cashier bill panels, reservation/table selects and find-bill/split/transfer dialogs.
+  **Two assertions updated to the new canonical values** (both noted in `docs/DECISIONS.md`):
+  `shell-assertions.ts` bottom-nav icon size 24→**20**; `floor-assertions.ts` card title
+  `break-words`→**`truncate`** (full-identifier guarantee re-asserted through `title` + `aria-label`).
+  **Validated 2026-08-20:** web typecheck + lint pass (`next build` deliberately not run);
+  **12/12** assertion scripts pass; Playwright **180/180** — `e2e/manager-shell` **92/92**,
+  `e2e/cashier-floor` navigation + shared-floor-parity + responsive **32/32**, `e2e/supervisor-prompt3`
+  floor + regression + responsive **32/32**, supervisor approvals/reservations navigation + responsive
+  **24/24** — all across the four viewport projects; **zero console errors** across every captured
+  surface; 15 screenshots at 1280×680 + 1440×900 in `/tmp/qa-shots/polish2/`. **Known gap:** the live
+  demo branch seeds only short labels (TD-01…TD-22), so the abbreviation was proven live by rewriting
+  the `GET /api/tables` RESPONSE in the browser (a display-side test double — no demo-data change)
+  plus executable assertions. Docs: `docs/UI_SYSTEM.md` §1c/§1d/§2b/§4/§5/§5b, `docs/DECISIONS.md`
+  D-DENSITY / D-LOGIN / D-TERMINAL / D-TABLELABEL.
+
+- **MANAGER RECONSTRUCTION — PROMPT M-P1 COMPLETE (2026-08-20) — A. M-P1 COMPLETE / READY FOR
+  M-P2. Frontend + docs only; no backend/schema/migration/seed/permission/Postman change; no
+  commit/push.** Manager joined the shared operational UI system as its **fourth consumer** (never
+  a fork): `"manager"` added to `OperationalRole` + `role-navigation.ts`; the locked six-tab nav
+  **Overview · Operations · Staff · Reports · Settings · Me** (no More tab, no Approvals tab) in
+  `lib/manager/routes.ts` with landing `/manager/overview` and a `/manager` redirect; six new
+  canonical icon-registry names (`overview` ChartLineUp, `operations` ListChecks, `staff`
+  UsersThree, `reports` FileText, `settings` GearSix, `caretDown` for the switcher);
+  `components/manager/shell/*` as thin adapters over `OperationalShell` / `OperationalHeader` /
+  `OperationalBottomNav` / `OperationalIdleLogoutHandler`; `ManagerSessionGuard` sending non-manager
+  users to `/login?reason=manager_only`; and the **branch switcher** — the one genuinely new shell
+  affordance — mounted through a new **optional** `OperationalHeaderContext.branchSwitcher` slot so
+  Waiter/Cashier/Supervisor headers render byte-identically. Branch state
+  (`lib/manager/branch-model.ts` + `branch-context.ts`) resolves stored → `defaultBranchId` →
+  default-flagged → first ACTIVE membership, persists at **`nimbus.managerBranchId`** (deliberately
+  separate from the station key `nimbus.stationBranchId`), flows into `X-Branch-Id` via the existing
+  `apiRequest({ branchId })` parameter (**no API-client change**), and invalidates **only** the
+  `["manager", …]` namespace — never `queryClient.clear()`, never auth/profile. `lib/manager/
+  permissions.ts` is a **surface allow-list, NOT a permission check** (M-P0 §12: the manager JWT
+  holds 214 permissions including `pos:hr:compensation:read`, `pos:hr:contracts:*`,
+  `approvals:decide`, `tenancy:membership:manage` — a `hasPermission()` UI would open payroll-adjacent
+  surfaces). Pages: six foundation screens stating scope + phase + verified backend limits with **no
+  fabricated data**, plus a real Manager **Me** built solely from the already-fetched
+  `/api/auth/me` (no HR read — that endpoint returns compensation on the wire). Readiness ships
+  **three verified chips only** (Branch, `GET /reports/catalog` → 24 of 37 generators, `GET /devices`
+  → branch-scoped total); **tills/shifts/pending-approvals chips are omitted, not faked.** Fourth
+  navy-family role accent added (`--color-role-manager` `oklch(0.36 0.06 324)` → `#4D324F`,
+  white-on-solid **11.18:1**; soft `oklch(0.965 0.015 324)`), mapped in Tailwind + `roleAccentMap`.
+  Validated 2026-08-20: web typecheck + lint pass (`next build` deliberately NOT run in the dev QA
+  sandbox and stated as such); `manager-p1-assertions.ts` plus **11/11** existing assertion scripts
+  pass (`shell-assertions` and `profile-assertions` extended to four roles); Playwright
+  `e2e/manager-shell/` **92/92** across `vp-1024x768`/`vp-1366x768`/`vp-1440x900`/`vp-1920x1080`;
+  cross-role regression (`e2e/supervisor-prompt3/{regression,role-boundaries}` +
+  `e2e/cashier-floor/{role-boundaries,navigation-and-default-route,cross-role-c2-regression,
+  till-and-me-regression}`) **68/68**; live manager browse at 1440×900 + 1024×768 (all six tabs, the
+  switcher open, a branch switch with the `X-Branch-Id` change captured, persistence across reload
+  and route change, zero console errors, zero horizontal overflow, one `/auth/me` per page load);
+  Waiter/Cashier/Supervisor re-verified live — unchanged landings, navs and headers, no switcher.
+  `GET /api/health` `ok`; `git diff --check` clean of new issues. Three findings recorded and **none
+  implemented**: the shared role-guard "Return to login" can lose its `reason` query to the guard's
+  own session effect (pre-existing in all four guards), the header branch label truncates at
+  1024×768, and the switcher drops a `(default)` suffix in favour of a badge on Me. **M-P2 (Overview
+  dashboard) NOT started — do not start without explicit authorization; when authorized it inherits
+  count-only tills/shifts, client-filtered approval counts, a `fetch`+ReadableStream SSE reader, and
+  qualified gross/net labels.** See `ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md`.
+
+- **CASHIER FLOOR-FIRST RECONSTRUCTION — PROMPT C3 COMPLETE (2026-08-20) — A. C3 COMPLETE /
+  READY FOR C4. Frontend-only; no backend/schema/migration/seed/permission/Postman change; no
+  commit/push.** C3 turns the C2 read-only settlement workspace into a working, **fail-closed
+  payment + close** surface by **mounting** the already-verified checkout/split primitives rather
+  than rewriting them. New: `apps/web/src/components/cashier/floor/CashierSettlementActions.tsx`
+  (composes `checkout/CashierPaymentPanel` — payment entry, amount + readiness validation, blocked
+  banner, result notice, payment history, `CashierCloseOrderPanel` — and
+  `resolution/CashierResolutionPanel` with the **additive** `variant="split-only"` prop →
+  `CashierSplitBillPanel` + `CashierSplitItemsPanel`; `CashierAdvancedResolutionPanel`
+  (merge/move-items/transfer-table) is deliberately **not** mounted) and
+  `apps/web/src/lib/cashier/settlement-mutations.ts` (the only post-mutation refresh: **awaits** a
+  canonical refetch of `orderDetail` + `orderPayments` before any result is presented — no
+  optimistic money — then narrowly invalidates `tableBills`, `floor`, the `find-bills` prefix and
+  the `["waiter"|"supervisor","floor",branchId]` keys; **no** bare `invalidateQueries()`, no
+  `["cashier"]` root sweep, no menu/profile/auth/receipts/refunds/queue/reservations touch).
+  Delivered capabilities: **cash payment settles AND closes** in one call at the single verified
+  choke point `POST /api/pos/orders/:id/close`; **card / MTN / Airtel / bank manual-reference**
+  payments via `POST /api/payments/manual-reference` (a final one auto-settles server-side);
+  **partial payment** with a canonical remaining balance re-read from the backend; **split-bill**
+  allocation (metadata only, truthful "no child orders" copy) and **split-items** child order
+  (`NEW`, correctly not offered as payable); truthful terminal state — a CLOSED/VOIDED bill renders
+  **no settlement control at all**. Everything fails closed: shift not `active` (covers
+  loading/unavailable/failed/inactive), till not `active` for cash (a till owned by another operator
+  is simply absent from `GET /tills/active` → blocked), unresolved payment summary, pending provider
+  intent, terminal order, amount > outstanding, or a non-`SERVED` bill for cash close.
+  ⚠️ **Documented deviation — no standalone Close button.** `CloseOrderDto.payments` is
+  `@ArrayMinSize(1)` and `closeOrderWithPayment` requires `SERVED` + full coverage, so a
+  zero-payment close is impossible and "settled but awaiting close" is unreachable; close is
+  therefore reached *through* payment and `CashierCloseOrderPanel` states the real precondition.
+  Exposing a synthetic close would need a backend change C3 was not authorized to make.
+  **Validated:** web typecheck PASS, lint PASS (0/0); `next build` **not run** (forbidden in the QA
+  sandbox — stated, not implied); shell/floor/profile/cashier-c1/cashier-c2/**cashier-c3**
+  assertions PASS; Playwright `e2e/cashier-floor/` **192 passed / 0 failed / 0 skipped** (48 tests ×
+  4 viewports, 26 spec files) and cross-role regression **20/20** (Waiter/Supervisor unaffected),
+  executed against an **isolated disposable local Postgres** stack with REAL payments/closes
+  (`GET /api/health` → ok); console/network clean; 36 screenshots at 1440×900 + 1024×768, all
+  viewed. **Six findings recorded, none implemented** — F-C3-1 `generateOrderNumber` can 500 on
+  branch-prefixed demo numbers (matrix **M8**); F-C3-2 `POST /payments/manual-reference` accepts a
+  payment on an already-CLOSED order (matrix **M7**, UI fails closed); F-C3-3 cashier idempotency
+  keys are not reused across retries (the shared `pos-shell` intent model is); F-C3-4 reservation
+  auto-completion does **not** fire on the cashier close path (it lives in
+  `OrdersService.transitionOrder`, which `closeOrderWithPayment` bypasses); F-C3-5 split allocations
+  can produce sub-unit UGX amounts, rendered truthfully; F-C3-6 the readiness-strip
+  "Read-only readiness" badge is now ambiguous. **C4 NOT started** — receipt print/reprint/deliver,
+  receipt search, refund execution and Receipts retirement remain gated, as do Queue retirement (C5)
+  and closure (C6). See `ai/CASHIER_FLOOR_RECONSTRUCTION_C3_SETTLEMENT_COMPLETION_REPORT.md` +
+  `ai/CASHIER_FLOOR_RECONSTRUCTION_C3_QA_EVIDENCE_INDEX.md`; docs updated in
+  `docs/cashier-ui-docs/{README,CASHIER_RECONSTRUCTION_ROADMAP,CASHIER_API_MATRIX,CASHIER_LIFECYCLE,
+  CASHIER_COMPONENT_REUSE_MAP}.md`.
+
+- **MANAGER OWNER DECISIONS APPROVED — MANAGER TRACK UNBLOCKED (2026-08-20). Documentation only;
+  no code, no backend/schema/migration/seed/permission/Postman change; no commit/push.** The
+  product owner (Moses) approved the Manager core + MVP scope **as recommended**: role
+  `JobRole.MANAGER` (no separate Branch Manager role); landing `/manager/overview`; bottom nav
+  exactly **Overview · Operations · Staff · Reports · Settings · Me** (**no More tab, no Approvals
+  tab**); a **required** branch switcher in the shell/header driving **every** branch-scoped query;
+  approval **counts** on Overview with escalations integrated into Operations and leave/swap review
+  into Staff; Reports + Settings first-class. Scope: Staff = directory (safe fields) + frontline
+  onboarding + Quick PIN admin + leave review + shift-swap review, **compensation/contracts/payroll
+  EXCLUDED**; Operations = **read-only oversight** of tables/orders/tills/shifts/reservations with
+  **no cashier-checkout and no waiter-order-entry clone**; Reports = catalog + DTO-verified generate
+  + history/detail + export **with a truthful generator-unavailable state, fake downloads
+  forbidden**; Settings = branch profile + device registry, printer routes **metadata-only**,
+  terminal pairing **stub-only**, alert rules **defer-or-read-only**, sync-conflict diff
+  **deferred**, owner/admin + SaaS billing **excluded**. **Domain-specific decision routes are
+  preferred** over the generic `POST /api/approvals/:id/decide`, aligning with the **Supervisor
+  Option B precedent**.
+  ⚠️ **Sequencing changed by the same decision:** the rule *"Manager reconstruction is blocked until
+  Cashier reconstruction closes at C6"* is **REPLACED** — **Cashier C3 is authorized to proceed in
+  parallel** (tracked separately) and the **Manager track no longer waits for Cashier C6**. Older
+  wording in `CLAUDE.md` §10/§12, `CODEX.md`, and the Cashier roadmap's scope lock is **stale on
+  sequencing only**.
+  **Artifacts:** `Front End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_APPROVAL_DECISIONS.md`
+  — all 42 previously "Pending owner approval" cells now **Approved (owner, 2026-08-20)**, the 8
+  §8 Safety rows stay **Locked**, the §9 checklist is fully ticked, and a dated header records the
+  approval session + the sequencing replacement. **NEW canonical
+  `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`** — seven phased prompts **M-P0 → M-P6** (M-P0 repo/API
+  verification audit incl. dash endpoints, SSE `/api/stream/metrics`, and the report generators;
+  M-P1 shell/nav/session-guard/branch-switcher with MANAGER wired into the `pos-shell` role
+  registry and login routing; M-P2 Overview; M-P3 Operations read-only; M-P4 Staff; M-P5 Reports;
+  M-P6 Settings + Me + closure QA), each with scope, out-of-scope, key files, validation gates
+  (typecheck/lint/build, assertion scripts, **Playwright 4-viewport matrix**, **isolated-DB rule**)
+  and its locked constraints; it also records the **shared-shell reuse rule** (Manager is the **4th
+  consumer** via thin adapters — **never a fork**; Floor-like views reuse `OperationalFloor`
+  read-only), the rebrand reference (`NimbusLogomark`, brand tokens, navy `#000033`), and **7
+  recorded contradictions** between the pack docs and the locked decisions. `docs/manager-ui-docs/`
+  reconciled into a **portable canonical set** — every dead `file:///C:/Users/arman/...` link
+  replaced with repo-relative paths, status/date header + doc index with an explicit authority
+  split vs. the fuller pack, dated decisions-approved + rebrand notes; `MANAGER_API_MATRIX.md`,
+  `MANAGER_LIFECYCLE.md`, and `MANAGER_GAP_REGISTER.md` got dated header notes (annotated, **not**
+  rewritten). `docs/DOCUMENT_INDEX.md` updated with the decisions register, the roadmap, and the
+  reconciliation status.
+  **Finding recorded during this pass:** `packages/db/prisma/seed.ts` grants **MANAGER both
+  `approvals:read` (line 974) and `approvals:decide` (line 975)** (`Manager:` block at line 758,
+  "BG2 … Manager: full"), while the `Supervisor:` block (line 1090) grants **neither**. So unlike
+  Supervisor, Manager is *not* permission-blocked from the generic approvals inbox — the
+  domain-route preference is a **product/safety constraint the frontend must enforce**, not a
+  permission block (risk already registered as MANAGER-GAP-007). **Do not remove those seed grants**
+  without explicit authorization.
+  **Manager UI implementation remains NOT STARTED.** Approval of decisions is **not** authorization
+  to write Manager runtime code — **M-P0 runs first** and every phase keeps its own gate.
+
+- **REBRAND + ROLE UI QA WAVE COMPLETE (2026-08-20).** Frontend + documentation only; **no
+  backend/schema/migration/seed/permission/Postman change; no commit/push.** (1) The **Aug-2026
+  Nimbus POS Brand Identity** (designer Andimashimwe Rhoda) fully landed: canonical tokens in
+  `apps/web/src/styles/globals.css` (navy-950 `#000024` / **navy-900 `#000033`** canonical, RGB
+  `0 0 51` / navy-800 `#1E1E52` / silver `#B3B4AF` / graphite `#6B6B6B` — sampled from the guide's
+  swatch, the guide's printed hex is a typo); `surface-navy` + `focus-ring` now resolve to navy-900;
+  a **NEW alpha-channel token system** (channel triplets + `tailwind.config.ts`
+  `rgb(var() / <alpha-value>)` mappings) that **FIXED a pre-existing app-wide defect** — every
+  `token/alpha` utility (all modal scrims, e.g. `bg-brand-navy-950/40`) previously rendered fully
+  transparent. Steering-wheel logomark extracted as **true vectors** from the brand PDF into
+  `apps/web/public/brand/` (logomark/wordmark/combination-mark ± white ± stacked, favicon set,
+  apple-touch-icon, icon-192/512(+maskable), og-image, `manifest.webmanifest`); root `favicon.svg`
+  replaced; new `components/pos-shell/NimbusLogomark.tsx` (`currentColor`, **non-registry brand
+  mark** — the documented exception to the canonical icon registry) mounted in `BranchContextLabel`
+  (44px header tile) and `login.tsx` (56px hero tile, replacing `LockKey`); `_app.tsx` gained
+  theme-color `#000033`, manifest, apple-touch-icon, og meta. New canonical `docs/BRAND_IDENTITY.md`;
+  live design docs rebranded, historical ones given supersession banners, `docs/DOCUMENT_INDEX.md`
+  updated. (2) **Accessibility/consistency fixes** in shared components (verified in all 3 roles at
+  1440×900 + 1024×768): `ui/Button.tsx` new **`inverse`** variant + `disabled:text-text-primary`
+  (disabled contrast **3.62 → 8.51:1**); `OperationalHeader` logout on the inverse variant
+  (**2.71 → 20.48:1**, off-palette hover → navy-800); new `--shadow-focus-inverse` wired into
+  `OperationalBottomNav` + Button inverse (the focus ring was navy-on-navy = invisible on
+  header/nav); `ActionConfirmDialog` + `CashierFindBillDialog` + `SupervisorFindOrderDialog` +
+  `SupervisorCreateReservationDialog` scrims `bg-black/40` → `bg-brand-navy-950/40`;
+  `CashierPaymentMethodSelector` selected-tile class conflict fixed (label was **1.18:1** =
+  invisible on the legacy queue route); `CashierCheckoutPreview` `text-white` → `text-text-inverse`.
+  (3) **WAITER pass complete** — all surfaces QA'd live at 2 viewports (floor, workspace/order
+  builder, reservations, me, receipt drawer, login), flows confirmed, **zero console errors**,
+  **37 endpoints verified** (20 GETs + 11 writes live, rest static); NEW canonical
+  `docs/waiter-ui-docs/{WAITER_API_MATRIX,WAITER_LIFECYCLE,README}.md` (Waiter previously had **no**
+  canonical docs dir and **no** API matrix anywhere). (4) **CASHIER pass complete within the C2
+  boundary** — zero/one/multiple bill resolution (fail-closed, bounded queries, URL state all
+  confirmed), Till, Me, hidden Queue/Receipts compatibility routes confirmed rendering; NEW canonical
+  `docs/cashier-ui-docs/CASHIER_API_MATRIX.md` (32 endpoints, **19 live-verified**) + README update;
+  legacy pack matrix superseded. **C3 NOT started; nothing gated was implemented.** (5) **SUPERVISOR
+  pass complete** — floor + action dialogs opened/cancelled, reservations 4 views + create, approvals
+  4 domains incl. reject-only shift-swap, me; reservations **one bounded query** design confirmed;
+  legacy `/supervisor/orders` redirect confirmed; `SUPERVISOR_API_MATRIX.md` live-verified (**68
+  rows: 24 live + 3 probes + 41 static**) and its **quick-pin path defect FIXED** (real route
+  `auth/quick-pin-login`); `docs/UI_SYSTEM.md` §9 idle-logout claims **corrected** (Supervisor DOES
+  inject the shared idle handler — code wins); 7 supervisor docs annotated. **Validated (all
+  executed, final run 2026-08-20):** web typecheck + lint + production build all **PASS**;
+  Playwright-driven visual QA **~180 screenshots** across roles/viewports; `git diff --check` clean
+  except pre-existing md whitespace. **QA environment:** isolated local **Docker-free Postgres 16 +
+  WASM-Prisma harness** + API `:3001` + web dev `:3000`; **shared Neon untouched**; destructive QA
+  never ran against shared Neon. ⚠️ **Harness caveat:** the two "500 defects" first seen (receipts
+  `GET`, add-item `POST`) were **QA-harness artifacts** (WASM Prisma Decimal class identity), fixed
+  in the harness and **re-verified 200/201 — NOT product bugs.** The only `packages/db` change is the
+  generator line `previewFeatures = ["driverAdapters"]` required by that harness (no model/enum/
+  migration/seed change). **OPEN findings recorded for the owner, none implemented:** (a) Cashier has
+  **no shift-open control** while `tills.service` requires an actor-owned active shift → cold-start
+  cashier cannot open a till unaided, and `/shifts/active` vs `/tills/active` key on different fields
+  → contradictory readiness chips (CASHIER_API_MATRIX **M1**); (b) status-warning-on-warning-surface
+  contrast **2.37:1** (+ success 3.94, danger 3.83) — status tokens deliberately unchanged, owner
+  decision pending; (c) six `--color-role-*` oklch accents read off-brand vs the new navy — owner
+  decision pending; (d) `--color-status-neutral #616367` now decoupled from graphite `#6B6B6B`;
+  (e) zero-bill "closed bills" list reuses `CashierBillSelector` copy ("N payable bills are open") —
+  untruthful, fix in C3/C4; (f) Supervisor discount dialog placeholder leaks internal jargon
+  ("Prompt 3B3A discount validation"); (g) `OperationalFloor` toolbar wraps awkwardly at 1024×768
+  (all roles); (h) no waiter Quick PIN seeded for `waiter@nimbus.demo` though docs advertise 246810;
+  (i) Inter webfont still not bundled (system-font fallback). **Cashier C3 remains gated (pending
+  authorization) and Manager reconstruction remains NOT STARTED and blocked until Cashier C6 —
+  the owner decisions in `Front End/manager_ui_full_docs_pack/manager-ui-docs/
+  MANAGER_APPROVAL_DECISIONS.md` are all still pending.** See
+  `ai/REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md` (canonical record) and `docs/BRAND_IDENTITY.md`.
+
 - **CASHIER FLOOR-FIRST RECONSTRUCTION — PROMPT C2 COMPLETE (2026-07-31) — A. C2 COMPLETE /
   READY FOR C3.** Frontend-only; **no backend/schema/migration/seed/permission/Postman change; no
   commit/push.** C2 replaces C1's neutral selected-table boundary with **table→bill resolution + a

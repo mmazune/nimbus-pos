@@ -4,7 +4,169 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**Status date:** 2026-07-31 — **Cashier Floor-First reconstruction Prompt C2 COMPLETE (A: C2
+**2026-08-20 — ENTERPRISE UI RESEARCH COMPLETE; NEW CANONICAL ROADMAP ADOPTED (documentation only).**
+The owner's live Odoo instance was explored read-only through his authenticated browser session
+(17 screenshots, no record created/edited/deleted) and written up as `ai/ODOO_REFERENCE_RESEARCH.md`;
+it was then compared against the Nimbus repo in `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` (20 typed gaps
+**NG-01…NG-20**). **Headline finding: Nimbus's accounting backend is far larger than any Nimbus
+document admits** — four registered, wired controllers (`accounts-payable` 20 routes,
+`accounts-receivable` 11, `bank-rec` 16, `budget` 12) that `docs/MODULES.md` still marks
+"⬜ Planned", so ~90 accounting/finance endpoints exist with **zero UI**. ⚠️ Those routes were found
+by **static scan only** and are *claimed-by-code, unverified-at-runtime*. On that basis a new
+canonical plan was adopted: **`ai/ENTERPRISE_UI_ROADMAP.md`** — three tracks, phased and gated.
+**Track A** experience polish (A0 shipped today; A1 = the floor-toolbar wrap at 1024×768, the only
+item that track still owns). **Track B** the management suite: **B0** API verification extension →
+**B1** Manager **top-nav shell conversion** → **B2** Overview KPI card grid → **B3** Operations +
+Staff → **B4** Reporting (CSV-only; graph/pivot gated) → **B5** Accounting suite (sub-phased
+B5.1–B5.6) → **B6** Settings → **B7** Owner variant. **Track C** the true backend gaps
+**C-01…C-20**, each naming the phase it unblocks, plus **Track C-P** carrying Cashier **C4→C6**
+forward unchanged. ⚠️ **Owner decision recorded (`docs/DECISIONS.md` D-MGRTOPNAV): management
+navigation switches to an Odoo-style TOP NAV BAR, superseding the M-P1 bottom-nav decision for
+Manager** — module bar + click-to-open dropdown submenus, a control-panel row (`New` + title + chip
+search + server pager + view switcher) and breadcrumb + record pager. **Frontline roles keep bottom
+nav.** Only the navigation *presentation* is superseded: M-P1's shell, session guard, **branch
+switcher**, surface allow-list, honest foundation pages and Manager Me all carry forward, and M-P0's
+18 findings remain in force. `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` is now **superseded from M-P2
+onward** (M-P0/M-P1 history intact) and carries a banner saying so. Also recorded:
+`docs/DECISIONS.md` **D-ENTERPRISE** (the Odoo-grade direction), `docs/UI_SYSTEM.md` §3b (the
+top-nav spec), and `docs/DOCUMENT_INDEX.md` (the new roadmap + both research docs). **Documentation
+only — no code, no backend/schema/seed/permission/Postman change, no commit/push. Nothing in Track
+B is implemented. NEXT = Track B1 (top-nav shell conversion), pending an explicit owner go.**
+
+**2026-08-20 — OWNER UI POLISH WAVE 2 COMPLETE (global density + fullscreen lock screen).**
+Five owner complaints fixed in the SHARED layer, frontend + docs only, no backend/API/schema/seed/
+permission change, no commit/push. **(1)** `/login` is a true `h-screen` + `overflow-hidden` layout
+with an internally scrolling card — page scroll is now zero at every terminal viewport
+(`scrollHeight`/`innerHeight` = 680/680, 768/768, 900/900, 1080/1080). **(2)** A **global density
+mechanism** — viewport-height-scaled root font size `clamp(13.5px, calc(0.625vh + 9.25px), 16px)`
+plus rem-normalized `--space-*` tokens — makes the whole app enterprise-tight at laptop sizes while
+leaving 1920×1080 identical to the previous baseline; targeted px fixes cover what rem cannot reach
+(icon registry 18/24/32 → **16/20/28**, table card 176px → **`min-h-[9.5rem]`** = 152/141/128px,
+grid track 220px → 13rem, header and bottom nav **80 → 64px**). **(3)** The lock screen is brand-led:
+logomark + inline Inter-ExtraBold "Nimbus POS" lockup, "Service terminal" heading, three compact
+status chips — the role-marketing paragraph and the always-visible footer sentence are gone, while
+the truthful blocked-role toast behaviour is unchanged. **(4)** The header now prints a **terminal
+identity** ("Terminal 01", from the new shared `pos-shell/station.ts`) instead of "Service area
+unavailable" / "Workstation unavailable" — documented in code as a station label, not backend data.
+**(5)** Long floor table labels are abbreviated deterministically and collision-safely
+(`QA-P4-PASS2-1440` → `QP4P2-1440`), with the full label preserved in `title`/`aria-label`; card
+titles are one line. Two assertions were updated to the new canonical values (bottom-nav icon 24→20;
+card title `break-words`→`truncate`) and both are recorded in `docs/DECISIONS.md`. Validated:
+typecheck + lint; 12/12 assertion scripts; Playwright **180/180** across four viewport projects
+(manager-shell 92, cashier-floor 32, supervisor-prompt3 32, supervisor approvals/reservations 24);
+zero console errors; 15 screenshots at 1280×680 + 1440×900. See `docs/UI_SYSTEM.md` §1c/§1d/§2b/§5b
+and `docs/DECISIONS.md` D-DENSITY / D-LOGIN / D-TERMINAL / D-TABLELABEL.
+
+**2026-08-20 — MANAGER RECONSTRUCTION PROMPT M-P1 COMPLETE (A: M-P1 COMPLETE / READY FOR M-P2).**
+The Manager workspace foundation is live and Manager is now the **fourth consumer** of the shared
+operational UI system — never a fork. Delivered (frontend + docs only): `"manager"` in
+`OperationalRole` and the nav registry; the locked six-tab nav **Overview · Operations · Staff ·
+Reports · Settings · Me** (no More tab, no Approvals tab) with landing `/manager/overview` and a
+`/manager` redirect; `ManagerShell`/`ManagerSessionGuard`/`ManagerHeader`/`ManagerBottomNav`/
+`ManagerReadinessStrip` as thin adapters over `OperationalShell`, `OperationalHeader`,
+`OperationalBottomNav` and the shared `OperationalIdleLogoutHandler`; the **branch switcher** — the
+one genuinely new shell affordance — in a new **optional** `branchSwitcher` header slot, sourced
+from `me.memberships` (zero extra requests), persisted at `nimbus.managerBranchId` (deliberately NOT
+the station key), driving `X-Branch-Id` through the existing `apiRequest({ branchId })` parameter
+(no API-client change) and invalidating **only** the `["manager", …]` query namespace;
+`isManagerCompatible()` + `getManagerLandingPath()` and all four `login.tsx` call sites plus the
+`manager_only` reason copy; `lib/manager/permissions.ts` as a **surface allow-list, not a permission
+check** (the manager token holds 214 permissions incl. compensation/contracts/approvals-decide that
+the approved MVP forbids); six honest foundation pages with **no fabricated data**; a real Manager
+**Me** built solely from the already-fetched `/api/auth/me`; and a fourth navy-family role accent
+(`--color-role-manager` `oklch(0.36 0.06 324)`, white-on-solid **11.18:1**). The readiness strip
+ships **three verified chips only** (Branch, report generators `24 of 37`, devices) — tills, shifts
+and pending-approvals chips are **omitted, not faked**, because those routes do not exist or are
+operator/org-scoped. Validated: typecheck + lint pass (`next build` deliberately not run in the dev
+QA sandbox); `manager-p1-assertions.ts` + **11/11** existing assertion scripts pass (`shell` and
+`profile` extended to four roles); Playwright `e2e/manager-shell/` **92/92** across four viewports;
+cross-role regression **68/68**; live manager browse at 1440×900 + 1024×768 with a captured
+`X-Branch-Id` change and persistence across reload; Waiter/Cashier/Supervisor re-verified live and
+unchanged. Three findings recorded and **none implemented** (pre-existing guard reason-race, header
+label truncation at 1024, the switcher's dropped `(default)` suffix). **No backend / schema /
+migration / seed / permission / Postman change; no commit/push. M-P2 (Overview dashboard) NOT
+started — do not start without explicit authorization.** See
+`ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md` and `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`.
+
+**2026-08-20 — CASHIER FLOOR-FIRST RECONSTRUCTION PROMPT C3 COMPLETE (A: C3 COMPLETE / READY FOR
+C4).** The C2 read-only settlement workspace is now a working, **fail-closed payment + close**
+surface — implemented as a **mount, not a rewrite**. A new thin
+`components/cashier/floor/CashierSettlementActions.tsx` composes the already-verified primitives
+(`CashierPaymentPanel` → payment entry / blocked banner / result notice / payment history /
+`CashierCloseOrderPanel`, and `CashierResolutionPanel` with a new additive `variant="split-only"` →
+split-bill + split-items; the merge/move/transfer group is deliberately **not** mounted). New
+`lib/cashier/settlement-mutations.ts` owns the only post-mutation refresh: it **awaits** a canonical
+re-read of `orderDetail` + `orderPayments` before any result is shown (no optimistic money) and
+otherwise invalidates only the bounded table-bill list, the Floor snapshot, open Find-bill results
+and the Waiter/Supervisor Floor keys — all via the C2 key factories, no broad sweep (measured: **9
+requests** after a close). Delivered: cash payment (settles **and** closes at the single verified
+choke point `POST /pos/orders/:id/close`), card/MTN/Airtel/bank manual-reference payments,
+**partial** payment with a canonical remaining balance, **split** allocation + split-items child
+order, and truthful terminal state (a CLOSED/VOIDED bill renders **no** settlement control). Fails
+closed on inactive/loading/failed/other-operator readiness, an unresolved payment summary, a pending
+provider intent, and a non-`SERVED` bill. **Documented deviation:** there is **no standalone Close
+button** — the backend has no zero-payment close (`payments` is `@ArrayMinSize(1)`; order must be
+`SERVED` with the balance covered), so close is reached through payment and the close panel states
+the real precondition. **Frontend-only — no backend/schema/migration/seed/permission/Postman change;
+no commit/push.** Validated: web typecheck + lint (build deliberately not run in the QA sandbox);
+shell/floor/profile/C1/C2/**C3** assertion scripts all pass; Playwright `e2e/cashier-floor/`
+**192/192** (48 × 4 viewports) and cross-role regression **20/20**, executed against an **isolated
+disposable local Postgres** stack with REAL payments/closes; console/network clean; 36 screenshots
+at 1440×900 + 1024×768. Six findings recorded and **none implemented** (notably: manual-reference
+accepts a payment on a CLOSED order; reservation auto-completion does not fire on the cashier close
+path; `generateOrderNumber` can 500 on branch-prefixed demo numbers). **C4 NOT started** — receipts,
+refunds and Receipts retirement remain gated. See
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C3_SETTLEMENT_COMPLETION_REPORT.md` and
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C3_QA_EVIDENCE_INDEX.md`.
+
+**2026-08-20 — MANAGER OWNER DECISIONS APPROVED; MANAGER TRACK UNBLOCKED (documentation only).**
+The product owner (Moses) approved the Manager core + MVP scope as recommended: role
+`JobRole.MANAGER`, landing `/manager/overview`, bottom nav **Overview · Operations · Staff ·
+Reports · Settings · Me**, required branch switcher driving every branch-scoped query, **no
+Approvals bottom tab** (counts on Overview; escalations in Operations; leave/swap in Staff), Reports
++ Settings first-class, no More tab; Staff excludes compensation/contracts/payroll; Operations is
+read-only oversight (no cashier-checkout or waiter-order-entry clone); Reports need a truthful
+generator-unavailable state (**fake downloads forbidden**); Settings = branch profile + devices,
+printer routes metadata-only, terminal pairing stub-only, alerts defer-or-read-only, sync-conflict
+diff deferred, owner/SaaS billing excluded; **domain-specific decision routes preferred** over the
+generic `POST /api/approvals/:id/decide` (Supervisor **Option B** precedent). ⚠️ **Sequencing
+changed:** the "Manager is blocked until Cashier C6" rule is **REPLACED** — **Cashier C3 is
+authorized to proceed in parallel** (in progress separately) and the **Manager track no longer waits
+for C6**. Every "Pending owner approval" row in
+`Front End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_APPROVAL_DECISIONS.md` now reads
+**Approved (owner, 2026-08-20)**; new canonical roadmap
+**`ai/MANAGER_RECONSTRUCTION_ROADMAP.md`** (**M-P0 → M-P6**) created; `docs/manager-ui-docs/` made
+portable and canonical-with-an-authority-split (dead `file:///C:/Users/arman/...` links removed).
+**Documentation only — no code, no backend/schema/seed/permission change, no commit/push. Manager UI
+implementation remains NOT STARTED**; approval of decisions is not authorization to write Manager
+runtime code, and **M-P0 (repo/API verification audit) runs first.** Note recorded during this pass:
+Manager **does** hold `approvals:read` + `approvals:decide` in the seed
+(`packages/db/prisma/seed.ts:974–975`) while Supervisor holds neither — so the domain-route
+preference is a product/safety constraint, not a permission block.
+
+(Prior status date:) **2026-08-20 — Rebrand + role UI QA wave COMPLETE.** The **Aug-2026 Nimbus POS
+Brand Identity** (designer Andimashimwe Rhoda) is fully landed in `apps/web` — canonical navy/silver/
+graphite tokens (navy-900 `#000033` canonical), a **new alpha-channel token system** that fixed a
+pre-existing app-wide defect (every `token/alpha` utility, i.e. every modal scrim, rendered fully
+transparent), true-vector steering-wheel assets in `apps/web/public/brand/`, the new non-registry
+`NimbusLogomark` in the operational header + login hero, PWA/OG metadata, and new canonical
+`docs/BRAND_IDENTITY.md`. Shared-component **accessibility fixes** landed (Button `inverse` variant,
+header logout 2.71→20.48:1, disabled 3.62→8.51:1, a visible `focus-inverse` ring on navy surfaces,
+navy scrims, two invisible-label fixes). **Waiter, Cashier (within the C2 boundary), and Supervisor**
+each got a full live QA pass at 1440×900 + 1024×768, producing NEW canonical
+`docs/waiter-ui-docs/*` (37 endpoints; Waiter had no docs dir and no API matrix before) and
+`docs/cashier-ui-docs/CASHIER_API_MATRIX.md` (32 endpoints, 19 live-verified), plus a live-verified
+`SUPERVISOR_API_MATRIX.md` (68 rows) with its quick-pin path defect fixed and a `docs/UI_SYSTEM.md`
+§9 correction. Frontend + docs only — **no backend/schema/migration/seed/permission/Postman change;
+no commit/push.** Validated 2026-08-20: web typecheck + lint + production build **PASS**;
+Playwright-driven visual QA ~180 screenshots. QA ran on an isolated local **Docker-free Postgres 16 +
+WASM-Prisma harness** stack (API :3001, web :3000); **shared Neon untouched**. ⚠️ The two "500
+defects" first seen (receipts GET, add-item POST) were **QA-harness artifacts**, fixed in the harness
+and re-verified 200/201 — **not product bugs**. Nine open findings are recorded for the owner and
+**none were implemented**. **Cashier C3 stays gated; Manager reconstruction stays NOT STARTED and
+blocked until Cashier C6.** See `ai/REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md`.
+
+(Prior status date: 2026-07-31 —) **Cashier Floor-First reconstruction Prompt C2 COMPLETE (A: C2
 COMPLETE / READY FOR C3).** C2 replaces C1's neutral boundary with table→bill resolution
 (zero/one/multiple, fail-closed, no first-pick), canonical `?tableId=&orderId=` URL state, ONE
 read-only `CashierSettlementWorkspace` (Bill/Totals/Payment state/Readiness/History) that reuses the
@@ -31,13 +193,46 @@ uncommitted by design; treat the worktree as source of truth.
 
 | Role | Nav (locked) | State |
 | --- | --- | --- |
-| **Waiter** | Floor · Reservations · Me | ✅ Complete & visually locked |
-| **Cashier** | **Floor · Till · Me** (implemented, default `/cashier/floor`); Queue/Receipts hidden compatibility routes (retire C4/C5) | ✅ **Floor-First reconstruction Prompt C1 COMPLETE (2026-07-31) — A. C1 COMPLETE / READY FOR C2.** Cashier now consumes the shared `OperationalFloor` (Waiter/Supervisor/Cashier); nav Floor/Till/Me; `/cashier` → `/cashier/floor`; `?tableId=` selection URL state; table selection opens a **read-only** truthful settlement boundary ("Select a bill to continue.") with no payment action (the mount point C2 replaces). Queue/Receipts preserved & reachable by direct URL. Frontend-only — no backend/schema/migration/seed/permission/Postman change. Validated: web typecheck/lint/build; shell/floor/cashier-c1 assertions; Playwright `e2e/cashier-floor/` **88/88** + cross-role regression **40/40** (× 4 viewports) executed on an isolated local Docker Postgres stack (shared Neon untouched); no commit/push. **C2 not started.** See `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`, `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md`, `ai/CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C2.md`. |
-| **Supervisor** | Floor · Reservations · Approvals · Me | ✅ Reconstruction Prompt 0–3 complete (3D demo-ready); **Prompt 4A backend lifecycle complete**; **Prompt 4B Reservations UI = COMPLETE WITH KNOWN LIMITATIONS**. The read-only triple-query Reservations page is replaced by a premium master-detail workspace on the 4A `scope=active/history` contracts — **Arriving/Seated/Attention/History** views (one bounded active query + lazy history; no triple-fetch/merge; no all-history load), reservation **creation**, and the full verified **lifecycle** (confirm/assign/change-table/seat/cancel/no-show/manual-complete) — **all already permitted for Supervisor, so zero permission/backend change**. Attention = overdue + structural SEATED issues (individual actions, **no bulk**). Cross-role Waiter visibility via narrow invalidation; URL-persisted state; responsive/accessible. Validated: web typecheck/lint/build + reservations+orders Jest 67/67 + Playwright suite (72 tests × 4 viewports) compiles. ✅ **Prompt 4C shared-Neon cutover COMPLETE (2026-07-29):** migration `20260518000000_prompt4a_reservation_completed_event` (`ReservationEventType.COMPLETED`) **deployed + verified on the shared `production` branch** via `db:migrate:deploy` (checksum match; counts unchanged), and `db:seed` applied the authorized `pos:order:transfer` Supervisor mapping — so **manual-complete + order-close auto-completion + Transfer table now all work on shared Neon** (the 4B + 3D shared residuals are closed). Pre-migration **recovery branch retained**. During the optional live-QA phase an isolated API accidentally hit production (inherited shell `DATABASE_URL` overrode the swapped `.env`) and created one marked QA reservation, immediately deleted (user-authorized) → production restored to 126/12. Closed at **B** per user decision. ✅ **Prompt 4D isolated live QA COMPLETE (2026-07-29):** the outstanding live-browser/API gate is closed with durable **fail-closed isolation tooling** (`tools/qa/`: env-isolation lib + DB-identity preflight using the API's own Prisma client + launcher = denylist→preflight→spawn), fixing the 4C incident root cause (inherited shell `DATABASE_URL` overriding a swapped `.env`). **Live reservation mutation matrix 53/53** on the isolated stack (create/confirm/assign/reassign/seat/cancel/no-show/manual-complete/queries/pagination/overdue/branch-isolation/concurrency); the Playwright reservations suite (72 tests × 4 viewports) was **actually executed** against an isolated local Docker stack (the disposable Neon branch's EAT↔us-east-1 latency exceeds the app's 30s client abort — external, not a UI defect), with first-run spec fragilities found & fixed and the product independently verified (create-dialog validation renders correctly; Jest 67/67). **Shared Neon verified untouched** (126/12/0-QA; recovery branch `br-dawn-truth-a4zjs1p7` retained). No backend/DTO/schema/migration/seed/permission/Postman change; new non-blocking gap **SUP-RG-034** (reservation-number create race → recommended backend hardening). ✅ **Prompt 5A Approvals backend/contract/QA foundation COMPLETE — READY FOR PROMPT 5B (2026-07-30):** audited all four approval domains (discount/leave/shift-swap/anomaly — decision lifecycles already existed & pass Jest); applied **backward-compatible hardening** (bounded leave/swap pagination `Max(100)`, **branch-isolation** on shift-swap approve + anomaly ack/resolve, **concurrency-safe** conditional-claim on all four decisions → duplicate = 409/400, History `dateFrom`/`dateTo`, anomaly-list `actorUser` identity include) with **no permission/schema/migration/seed/Postman change**; added the additive `lib/supervisor/approvals-contract.ts` (Needs-action/Resolved/History scopes, minimal identity, query keys, narrow invalidation) leaving the read-only Approvals page **visually unchanged**. Architecture locked **domain-specific (Option B)** — Supervisor lacks `approvals:*`, so no generic `/api/approvals/:id/decide`. **Live QA on a disposable Neon branch:** API decision matrix **29/29** + Playwright smoke **8/8** (4 viewports); shared `production` verified **untouched** (58/0/836/126). ✅ **Prompt 5B1 Approvals premium UI — Discount + Leave decisions — COMPLETE WITH KNOWN LIMITATIONS / READY FOR PROMPT 5B2 (2026-07-30):** the read-only Approvals page is replaced by `SupervisorApprovalsWorkspace` on the 5A contract — **Needs action / Resolved / History** scope tabs, All + per-domain filters, server-`total` counts, identity-safe queue rows, responsive master-detail (desktop split / mobile stack — one detail workspace), URL-persisted state, bounded pagination. **Discount** approve/reject (Prompt 3 endpoints + financials, UI-only payment gate, truthful self-approval notice) and **Leave** approve/reject (`/hr/leave/:id/review`, no payroll/roster claim) are **fully actionable**; terminal records read-only. **Shift-swap + Anomaly render read-only** (decisions → Prompt 5B2). Discounts omitted from Resolved/History (**SUP-RG-035**, truthful order-scoped notice). **No permission/schema/migration/seed/backend/Postman change; no commit/push.** Validated: web typecheck/lint/build; API attendance+discounts+analytics+DTO **126/126** + reservations **39/39**; **isolated live browser QA on disposable Neon branch `br-aged-resonance-a47lmtt5`** (fail-closed launcher, `/api/health` ok) — Playwright Approvals suite **80/80** (10 files × 4 viewports); shared `production` verified **untouched** (58/836/126, 0 QA rows, sentinel absent); disposable branch deleted. New non-blocking gap **SUP-RG-040** (pre-existing `POST /pos/orders` order-number collision on a populated branch — not a 5B1 defect). Prompt 5B2 (live Shift-swap + Anomaly decisions) **not started**. Reports: `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5B1_APPROVALS_DISCOUNT_LEAVE_UI_COMPLETION_REPORT.md`, `ai/SUPERVISOR_APPROVALS_UI_QA_EVIDENCE_INDEX.md`. ✅ **Prompt 5B2 Approvals closure — SUPERVISOR APPROVALS CLOSED AT B / DEMO-READY WITH KNOWN LIMITATIONS (2026-07-31):** completes the four-domain workspace. **Anomaly** Acknowledge (OPEN→ACK, note optional, row stays actionable) + Resolve (ACK→RESOLVED, note required; evidence preserved, underlying entity untouched) are live via `pos:analytics:anomalies:acknowledge`. **Shift-swap = Outcome C (user-authorized): Reject only, NO Approve control** — a truthful roster swap is unsupported (`ScheduleAssignment` is **read-only across the entire API**; no roster-mutation service; the request references only a date; the approve permission has never mutated roster — SUP-RG-036/**042**); the UI says so honestly and Reject changes **0** roster rows (verified). **Frontend-only: no backend/schema/migration/seed/permission/Postman change; no commit/push.** Validated: web typecheck/lint/build; API **126/126** + reservations **39/39**; **isolated live QA** on disposable Neon branch `br-hidden-king-a4rbwvj0` — API matrix **11/11** (shift-swap reject/dup/bound + anomaly ack/resolve/dup/stale) + roster-integrity **0 assignments touched** + full Playwright Approvals suite **120/120** (15 files × 4 viewports, 2 flaky recovered on retry, exit 0); shared `production` verified **untouched** (58/836/126, 0 QA rows, sentinel absent); disposable branch deleted. **Supervisor Approvals is CLOSED.** Next major track: **Manager reconstruction (not started).** Reports: `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5B2_SHIFT_SWAP_ANOMALY_UI_COMPLETION_REPORT.md`, `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5_APPROVALS_FINAL_COMPLETION_REPORT.md`. |
-| **Manager** | — | ⬜ Planning only (Prompt 0 verification); UI not started; blocked until Cashier C6 closes |
+| **Waiter** | Floor · Reservations · Me | ✅ Complete & visually locked. **Rebranded + fully live-QA'd (2026-08-20):** all surfaces (floor, workspace/order builder, reservations, me, receipt drawer, login) verified on the live isolated stack at 1440×900 + 1024×768; flows confirmed; zero console errors; **37 endpoints verified** (20 GETs + 11 writes live, rest static). NEW canonical `docs/waiter-ui-docs/{README,WAITER_API_MATRIX,WAITER_LIFECYCLE}.md` — Waiter previously had **no** canonical docs dir and **no** API matrix anywhere. Open finding: no Quick PIN seeded for `waiter@nimbus.demo` though docs advertise 246810. See `ai/REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md`. |
+| **Cashier** | **Floor · Till · Me** (implemented, default `/cashier/floor`); Queue/Receipts hidden compatibility routes (retire C4/C5) | ✅ **Floor-First reconstruction Prompt C1 COMPLETE (2026-07-31) — A. C1 COMPLETE / READY FOR C2.** Cashier now consumes the shared `OperationalFloor` (Waiter/Supervisor/Cashier); nav Floor/Till/Me; `/cashier` → `/cashier/floor`; `?tableId=` selection URL state; table selection opens a **read-only** truthful settlement boundary ("Select a bill to continue.") with no payment action (the mount point C2 replaces). Queue/Receipts preserved & reachable by direct URL. Frontend-only — no backend/schema/migration/seed/permission/Postman change. Validated: web typecheck/lint/build; shell/floor/cashier-c1 assertions; Playwright `e2e/cashier-floor/` **88/88** + cross-role regression **40/40** (× 4 viewports) executed on an isolated local Docker Postgres stack (shared Neon untouched); no commit/push. **C2 not started.** See `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md`, `ai/CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md`, `ai/CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C2.md`. **Rebranded + live-QA'd within the C2 boundary (2026-08-20):** all surfaces QA'd live incl. **zero/one/multiple** bill resolution (fail-closed confirmed, bounded queries confirmed, URL state confirmed), Till, Me, and the hidden Queue/Receipts compatibility routes (confirmed still rendering). NEW canonical `docs/cashier-ui-docs/CASHIER_API_MATRIX.md` (32 endpoints, **19 live-verified**) + README update; the legacy pack matrix is superseded. **C3 remains NOT started and gated — nothing gated was implemented.** Open finding **M1**: Cashier has no shift-open control while `tills.service` requires an actor-owned active shift (cold-start cashier cannot open a till unaided), and `/shifts/active` vs `/tills/active` key on different fields → contradictory readiness chips. See `ai/REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md`. |
+| **Supervisor** | Floor · Reservations · Approvals · Me | ✅ Reconstruction Prompt 0–3 complete (3D demo-ready); **Prompt 4A backend lifecycle complete**; **Prompt 4B Reservations UI = COMPLETE WITH KNOWN LIMITATIONS**. The read-only triple-query Reservations page is replaced by a premium master-detail workspace on the 4A `scope=active/history` contracts — **Arriving/Seated/Attention/History** views (one bounded active query + lazy history; no triple-fetch/merge; no all-history load), reservation **creation**, and the full verified **lifecycle** (confirm/assign/change-table/seat/cancel/no-show/manual-complete) — **all already permitted for Supervisor, so zero permission/backend change**. Attention = overdue + structural SEATED issues (individual actions, **no bulk**). Cross-role Waiter visibility via narrow invalidation; URL-persisted state; responsive/accessible. Validated: web typecheck/lint/build + reservations+orders Jest 67/67 + Playwright suite (72 tests × 4 viewports) compiles. ✅ **Prompt 4C shared-Neon cutover COMPLETE (2026-07-29):** migration `20260518000000_prompt4a_reservation_completed_event` (`ReservationEventType.COMPLETED`) **deployed + verified on the shared `production` branch** via `db:migrate:deploy` (checksum match; counts unchanged), and `db:seed` applied the authorized `pos:order:transfer` Supervisor mapping — so **manual-complete + order-close auto-completion + Transfer table now all work on shared Neon** (the 4B + 3D shared residuals are closed). Pre-migration **recovery branch retained**. During the optional live-QA phase an isolated API accidentally hit production (inherited shell `DATABASE_URL` overrode the swapped `.env`) and created one marked QA reservation, immediately deleted (user-authorized) → production restored to 126/12. Closed at **B** per user decision. ✅ **Prompt 4D isolated live QA COMPLETE (2026-07-29):** the outstanding live-browser/API gate is closed with durable **fail-closed isolation tooling** (`tools/qa/`: env-isolation lib + DB-identity preflight using the API's own Prisma client + launcher = denylist→preflight→spawn), fixing the 4C incident root cause (inherited shell `DATABASE_URL` overriding a swapped `.env`). **Live reservation mutation matrix 53/53** on the isolated stack (create/confirm/assign/reassign/seat/cancel/no-show/manual-complete/queries/pagination/overdue/branch-isolation/concurrency); the Playwright reservations suite (72 tests × 4 viewports) was **actually executed** against an isolated local Docker stack (the disposable Neon branch's EAT↔us-east-1 latency exceeds the app's 30s client abort — external, not a UI defect), with first-run spec fragilities found & fixed and the product independently verified (create-dialog validation renders correctly; Jest 67/67). **Shared Neon verified untouched** (126/12/0-QA; recovery branch `br-dawn-truth-a4zjs1p7` retained). No backend/DTO/schema/migration/seed/permission/Postman change; new non-blocking gap **SUP-RG-034** (reservation-number create race → recommended backend hardening). ✅ **Prompt 5A Approvals backend/contract/QA foundation COMPLETE — READY FOR PROMPT 5B (2026-07-30):** audited all four approval domains (discount/leave/shift-swap/anomaly — decision lifecycles already existed & pass Jest); applied **backward-compatible hardening** (bounded leave/swap pagination `Max(100)`, **branch-isolation** on shift-swap approve + anomaly ack/resolve, **concurrency-safe** conditional-claim on all four decisions → duplicate = 409/400, History `dateFrom`/`dateTo`, anomaly-list `actorUser` identity include) with **no permission/schema/migration/seed/Postman change**; added the additive `lib/supervisor/approvals-contract.ts` (Needs-action/Resolved/History scopes, minimal identity, query keys, narrow invalidation) leaving the read-only Approvals page **visually unchanged**. Architecture locked **domain-specific (Option B)** — Supervisor lacks `approvals:*`, so no generic `/api/approvals/:id/decide`. **Live QA on a disposable Neon branch:** API decision matrix **29/29** + Playwright smoke **8/8** (4 viewports); shared `production` verified **untouched** (58/0/836/126). ✅ **Prompt 5B1 Approvals premium UI — Discount + Leave decisions — COMPLETE WITH KNOWN LIMITATIONS / READY FOR PROMPT 5B2 (2026-07-30):** the read-only Approvals page is replaced by `SupervisorApprovalsWorkspace` on the 5A contract — **Needs action / Resolved / History** scope tabs, All + per-domain filters, server-`total` counts, identity-safe queue rows, responsive master-detail (desktop split / mobile stack — one detail workspace), URL-persisted state, bounded pagination. **Discount** approve/reject (Prompt 3 endpoints + financials, UI-only payment gate, truthful self-approval notice) and **Leave** approve/reject (`/hr/leave/:id/review`, no payroll/roster claim) are **fully actionable**; terminal records read-only. **Shift-swap + Anomaly render read-only** (decisions → Prompt 5B2). Discounts omitted from Resolved/History (**SUP-RG-035**, truthful order-scoped notice). **No permission/schema/migration/seed/backend/Postman change; no commit/push.** Validated: web typecheck/lint/build; API attendance+discounts+analytics+DTO **126/126** + reservations **39/39**; **isolated live browser QA on disposable Neon branch `br-aged-resonance-a47lmtt5`** (fail-closed launcher, `/api/health` ok) — Playwright Approvals suite **80/80** (10 files × 4 viewports); shared `production` verified **untouched** (58/836/126, 0 QA rows, sentinel absent); disposable branch deleted. New non-blocking gap **SUP-RG-040** (pre-existing `POST /pos/orders` order-number collision on a populated branch — not a 5B1 defect). Prompt 5B2 (live Shift-swap + Anomaly decisions) **not started**. Reports: `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5B1_APPROVALS_DISCOUNT_LEAVE_UI_COMPLETION_REPORT.md`, `ai/SUPERVISOR_APPROVALS_UI_QA_EVIDENCE_INDEX.md`. ✅ **Prompt 5B2 Approvals closure — SUPERVISOR APPROVALS CLOSED AT B / DEMO-READY WITH KNOWN LIMITATIONS (2026-07-31):** completes the four-domain workspace. **Anomaly** Acknowledge (OPEN→ACK, note optional, row stays actionable) + Resolve (ACK→RESOLVED, note required; evidence preserved, underlying entity untouched) are live via `pos:analytics:anomalies:acknowledge`. **Shift-swap = Outcome C (user-authorized): Reject only, NO Approve control** — a truthful roster swap is unsupported (`ScheduleAssignment` is **read-only across the entire API**; no roster-mutation service; the request references only a date; the approve permission has never mutated roster — SUP-RG-036/**042**); the UI says so honestly and Reject changes **0** roster rows (verified). **Frontend-only: no backend/schema/migration/seed/permission/Postman change; no commit/push.** Validated: web typecheck/lint/build; API **126/126** + reservations **39/39**; **isolated live QA** on disposable Neon branch `br-hidden-king-a4rbwvj0` — API matrix **11/11** (shift-swap reject/dup/bound + anomaly ack/resolve/dup/stale) + roster-integrity **0 assignments touched** + full Playwright Approvals suite **120/120** (15 files × 4 viewports, 2 flaky recovered on retry, exit 0); shared `production` verified **untouched** (58/836/126, 0 QA rows, sentinel absent); disposable branch deleted. **Supervisor Approvals is CLOSED.** Next major track: **Manager reconstruction (not started).** Reports: `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5B2_SHIFT_SWAP_ANOMALY_UI_COMPLETION_REPORT.md`, `ai/SUPERVISOR_RECONSTRUCTION_PROMPT5_APPROVALS_FINAL_COMPLETION_REPORT.md`. **Rebranded + fully live-QA'd (2026-08-20):** floor (action dialogs opened + cancelled), reservations (4 views + create), approvals (4 domains incl. the reject-only shift-swap path), me — all verified live at 1440×900 + 1024×768; the reservations **one bounded query** design confirmed in flight; legacy `/supervisor/orders` redirect confirmed. `SUPERVISOR_API_MATRIX.md` live-verified (**68 rows: 24 live + 3 probes + 41 static**) and its **quick-pin path defect FIXED** (real route `auth/quick-pin-login`); `docs/UI_SYSTEM.md` §9 idle-logout claims **corrected** (Supervisor DOES inject the shared idle handler — code wins); 7 supervisor docs annotated. Open finding: the discount dialog placeholder leaks internal jargon ("Prompt 3B3A discount validation"). See `ai/REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md`. |
+| **Manager** | Overview · Operations · Staff · Reports · Settings · Me (**locked by owner decision, 2026-08-20**; not built) | ⬜ **UI NOT STARTED — but no longer blocked.** **Owner decisions APPROVED 2026-08-20:** every row in `Front End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_APPROVAL_DECISIONS.md` now reads **Approved (owner, 2026-08-20)** (§8 Safety rows stay Locked; §9 checklist ticked). ⚠️ **The "blocked until Cashier C6" rule is REPLACED** — Cashier C3 is authorized in parallel and the Manager track is unblocked. Canonical phased plan: **`ai/MANAGER_RECONSTRUCTION_ROADMAP.md`** (**M-P0** repo/API verification audit → **M-P1** shell/nav/session/branch switcher → **M-P2** Overview → **M-P3** Operations read-only → **M-P4** Staff → **M-P5** Reports → **M-P6** Settings/Me/closure QA). Manager will be the **4th consumer** of the shared `OperationalShell`/`OperationalFloor`/icon registry via thin adapters — **not a fork**. `docs/manager-ui-docs/` reconciled + made portable (dead Windows `file:///` links removed; explicit authority split vs. the pack). **M-P0 must run before any implementation.** Documentation-only pass — no code, no backend/permission change, no commit/push. |
 
 ## Completed milestones / workstreams
 
+- **Rebrand + role UI QA wave** ✅ (2026-08-20) — frontend + documentation only; **no backend/
+  schema/migration/seed/permission/Postman change; no commit/push.** Landed the **Aug-2026 Nimbus
+  POS Brand Identity** (designer Andimashimwe Rhoda) in `apps/web`: canonical tokens in
+  `styles/globals.css` (navy-950 `#000024` / **navy-900 `#000033`** canonical / navy-800 `#1E1E52` /
+  silver `#B3B4AF` / graphite `#6B6B6B` — sampled from the guide's swatch, its printed hex is a
+  typo), `surface-navy` + `focus-ring` → navy-900, and a **NEW alpha-channel token system** (channel
+  triplets + `tailwind.config.ts` `rgb(var() / <alpha-value>)` mappings) that **fixed a pre-existing
+  app-wide defect** — every `token/alpha` utility (all modal scrims) previously rendered fully
+  transparent. True-vector steering-wheel assets extracted from the brand PDF into
+  `apps/web/public/brand/` (logomark/wordmark/combination-mark ± white ± stacked, favicon set,
+  apple-touch-icon, icon-192/512(+maskable), og-image, `manifest.webmanifest`); root `favicon.svg`
+  replaced; new `components/pos-shell/NimbusLogomark.tsx` (`currentColor`, **non-registry brand
+  mark**) mounted in `BranchContextLabel` (44px header tile) and `login.tsx` (56px hero tile,
+  replacing `LockKey`); `_app.tsx` theme-color/manifest/apple-touch-icon/og meta. Shared-component
+  **accessibility/consistency fixes** verified in all 3 roles at 1440×900 + 1024×768: `ui/Button.tsx`
+  new **`inverse`** variant + `disabled:text-text-primary` (**3.62 → 8.51:1**); `OperationalHeader`
+  logout on the inverse variant (**2.71 → 20.48:1**, hover → navy-800); new `--shadow-focus-inverse`
+  wired into `OperationalBottomNav` + Button inverse (the ring was navy-on-navy = invisible);
+  four dialog scrims `bg-black/40` → `bg-brand-navy-950/40`; `CashierPaymentMethodSelector`
+  selected-tile class conflict fixed (label was **1.18:1**); `CashierCheckoutPreview`
+  `text-white` → `text-text-inverse`. Three role QA passes (**Waiter**, **Cashier** within the C2
+  boundary, **Supervisor**) executed live, producing new canonical `docs/BRAND_IDENTITY.md`,
+  `docs/waiter-ui-docs/*`, and `docs/cashier-ui-docs/CASHIER_API_MATRIX.md`. Validated 2026-08-20:
+  web typecheck + lint + production build **PASS**; Playwright-driven visual QA **~180 screenshots**;
+  `git diff --check` clean except pre-existing md whitespace. **QA environment:** isolated local
+  **Docker-free Postgres 16 + WASM-Prisma harness** + API `:3001` + web `:3000`; **shared Neon
+  untouched**; destructive QA never ran against shared Neon. ⚠️ The two "500 defects" first seen
+  (receipts GET, add-item POST) were **QA-harness artifacts** (WASM Prisma Decimal class identity),
+  fixed in the harness and re-verified **200/201 — not product bugs**; the only `packages/db` change
+  is the harness-required generator line `previewFeatures = ["driverAdapters"]`. **Nine open findings
+  (a)–(i) are recorded for the owner and none were implemented.** **Cashier C3 stays gated; Manager
+  reconstruction stays NOT STARTED and blocked until Cashier C6.** Report:
+  `ai/REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md` (canonical).
 - **Cashier Floor-First Reconstruction — Prompt C0** ✅ (2026-07-31) — documentation-and-
   verification-only pass. Safely fetched and fast-forwarded the canonical
   `docs/cashier-ui-docs/*` + `ai/CASHIER_FLOOR_RECONSTRUCTION_*` documentation branch
@@ -176,7 +371,15 @@ uncommitted by design; treat the worktree as source of truth.
 
 ## Active milestone
 
-Supervisor Reconstruction — **Prompt 4 COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY (2026-07-29).**
+**Current (2026-08-20): Rebrand + role UI QA wave — COMPLETE.** No implementation track is open.
+The Aug-2026 brand identity is landed across `apps/web`, and Waiter / Cashier (C2 boundary) /
+Supervisor have each been live-QA'd at 1440×900 + 1024×768 with canonical API matrices written or
+corrected. Frontend + docs only; no backend/schema/migration/seed/permission/Postman change; no
+commit/push. Next approved tracks are **Cashier C3 (pending authorization)** and **Manager
+(blocked until Cashier C6 + owner decisions)** — see "Next approved milestone" below and
+`ai/REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md`.
+
+(Prior active milestone, kept for history —) Supervisor Reconstruction — **Prompt 4 COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY (2026-07-29).**
 4A (backend lifecycle) + 4B (Reservations UI) + 4C (shared-Neon cutover) + **4D (isolated live QA +
 fail-closed DB isolation tooling)** are done. Prompt 4D closed the outstanding live-browser/API QA
 gate: durable `tools/qa/` isolation harness (denylist → DB-identity preflight → launcher), live
@@ -188,7 +391,21 @@ NOT started** (do not begin without approval).
 
 ## Next approved milestone
 
-- **Supervisor Reconstruction Prompt 3B2/3B3** (recommended next): transfer table,
+> ⚠️ **Dated supersession note (2026-08-20).** The Supervisor Prompt 3B2/3B3 line below is **stale
+> and superseded — it is kept only as history.** Supervisor reconstruction **closed on 2026-07-31**
+> (Prompts 3B2, 3B3A, 3B3B, 4A–4D and 5A/5B1/5B2 are all complete; the Approvals track is CLOSED at
+> B / DEMO-READY). The **actual next approved tracks are:**
+> 1. **Cashier Floor-First reconstruction Prompt C3** (payment/close execution) — **pending explicit
+>    owner authorization; NOT started.** Do not implement payment collection, partial/split
+>    execution, order close, receipt print/reprint/deliver, or refund execution; do not delete or
+>    redirect Queue/Receipts; do not fork the shared Floor; do not change a Cashier permission.
+> 2. **Manager reconstruction** — **NOT started and blocked until Cashier C6 closes**, and
+>    additionally pending the owner decisions in
+>    `Front End/manager_ui_full_docs_pack/manager-ui-docs/MANAGER_APPROVAL_DECISIONS.md` (all still
+>    pending).
+
+- ~~**Supervisor Reconstruction Prompt 3B2/3B3** (recommended next)~~ — **superseded 2026-08-20
+  (completed 2026-07-31); history only:** transfer table,
   void (active + post-close), discount request/approve/reject, complimentary,
   refunds — reusing the action-availability module, shared confirmation dialog, and
   idempotency-intent utility. **transfer-server stays blocked** until a safe narrow
@@ -200,8 +417,16 @@ NOT started** (do not begin without approval).
 
 - **Waiter post-send item additions** — blocked: backend lacks per-line sent
   state / idempotent send-additions contract (WKL-010).
-- **Supervisor reservation completion** — no verified completion endpoint and no
-  `ReservationEventType.COMPLETED` enum (SUP-RG-008/009; needs migration).
+- ~~**Supervisor reservation completion** — no verified completion endpoint and no
+  `ReservationEventType.COMPLETED` enum (SUP-RG-008/009; needs migration).~~
+  ⚠️ **SUPERSEDED — NOT BLOCKED (dated note 2026-08-20).** This line is stale and is kept only as
+  history. Reservation completion was **delivered in Supervisor Prompt 4A (2026-07-28)**
+  (`POST /api/reservations/:id/complete` + auto-completion on order close) and the
+  `ReservationEventType.COMPLETED` enum migration
+  `20260518000000_prompt4a_reservation_completed_event` was **deployed and verified on shared Neon
+  `production` in Prompt 4C (2026-07-29)**.
+  SUP-RG-008/009 are closed. The 4B Reservations UI exposes the full lifecycle and was re-verified
+  live in the 2026-08-20 QA pass.
 - Supervisor **Split bill / Split items / Move items / Merge** are live (Prompt 3B1).
   Remaining high-impact actions (transfer table, void, discount request/approve/
   reject, complimentary, refunds) are deferred to Prompt 3B2/3B3.
@@ -235,6 +460,11 @@ Consolidated in `docs/KNOWN_LIMITATIONS.md`, with role detail in
 | `GET /api/health` | ✅ `{ status: ok, db: ok }` (HTTP 200) |
 | `git diff --check` | ✅ clean (LF→CRLF info warnings only) |
 | Postman JSON (56 collections) | ✅ all valid (3 carry a legacy UTF-8 BOM Postman tolerates) |
+
+**Re-validated 2026-08-20 (rebrand + role UI QA wave):** `@nimbus-pos/web` typecheck ✅ · lint ✅ ·
+production build ✅ · `git diff --check` ✅ clean except pre-existing markdown whitespace ·
+Playwright-driven visual QA ~180 screenshots across 3 roles × 2 viewports on an isolated local
+Postgres 16 + WASM-Prisma stack (shared Neon untouched). Postman untouched (no contract change).
 
 ## Dirty-worktree warning
 

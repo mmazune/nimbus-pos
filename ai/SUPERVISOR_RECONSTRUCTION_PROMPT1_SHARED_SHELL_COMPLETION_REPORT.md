@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED IN PART (2026-08-20).** Historical record; the brand palette and favicon were rebranded Aug 2026 — see `docs/BRAND_IDENTITY.md`. Kept for history.
+
 # Supervisor Reconstruction Prompt 1 — Shared Shell Completion Report
 
 Date: 2026-07-18

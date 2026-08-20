@@ -36,10 +36,15 @@ export function CashierPaymentMethodSelector({
             <label
               key={method.id}
               className={cn(
-                "flex min-h-[74px] cursor-pointer flex-col justify-between rounded-md bg-surface-muted p-3 shadow-subtle",
+                "flex min-h-[74px] cursor-pointer flex-col justify-between rounded-md p-3 shadow-subtle",
                 "transition-[background-color,box-shadow,transform] duration-150 ease-out active:scale-[0.96]",
                 "has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-navy-900",
-                selected ? "bg-brand-navy-900 text-text-inverse" : "text-text-primary hover:bg-surface",
+                // `cn` is plain clsx: emitting both `bg-surface-muted` and `bg-brand-navy-900`
+                // lets CSS source order (surface-* is generated after brand-*) win, which left
+                // the SELECTED tile light-grey with white text (1.18:1). Emit exactly one bg.
+                selected
+                  ? "bg-brand-navy-900 text-text-inverse"
+                  : "bg-surface-muted text-text-primary hover:bg-surface",
                 blocked && !selected ? "opacity-70" : "",
               )}
             >

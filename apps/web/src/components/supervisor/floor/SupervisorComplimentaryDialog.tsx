@@ -91,7 +91,7 @@ export function SupervisorComplimentaryDialog({
       }
       reason={{
         label: "Complimentary reason (required)",
-        placeholder: "e.g. Prompt 3B3B complimentary validation",
+        placeholder: "e.g. Service recovery for a regular guest",
         value: reason,
         onChange: setReason,
         required: true,

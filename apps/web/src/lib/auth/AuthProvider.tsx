@@ -20,6 +20,7 @@ import {
 import {
   getDisplayName,
   isCashierCompatible,
+  isManagerCompatible,
   isSupervisorCompatible,
   isWaiterCompatible,
   resolveDefaultMembership,
@@ -228,6 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isWaiter: isWaiterCompatible(user),
       isCashier: isCashierCompatible(user),
       isSupervisor: isSupervisorCompatible(user),
+      isManager: isManagerCompatible(user),
       branchId: user?.context.defaultBranchId || membership?.branchId || null,
       branchName: membership?.branchName || null,
       currencyCode: membership?.branchCurrencyCode || null,

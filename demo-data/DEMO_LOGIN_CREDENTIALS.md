@@ -13,8 +13,8 @@ All accounts below are synthetic and local-demo only. Passwords and PINs are dem
 | Owner | Amina Kato | owner@nimbus.demo | Demo1234! | Not enabled | HIGH_8 | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | API auth context only | Owner workspace UI is not implemented in this MVP. |
 | Manager | Daniel Okello | manager@nimbus.demo | Demo1234! | 11223344 | HIGH_8, 8 digits | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | API auth context only | Quick PIN validates; manager workspace UI is not implemented in this MVP. |
 | Accountant | Grace Nabirye | accountant@nimbus.demo | Demo1234! | Not enabled | HIGH_8 | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | API auth context only | Accounting data is verified through DB/API. |
-| Supervisor | Peter Mugisha | supervisor@nimbus.demo | Demo1234! | 22334455 | HIGH_8, 8 digits | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | API auth context only | Quick PIN validates; supervisor workspace UI is not implemented in this MVP. |
-| Cashier | Sarah Namutebi | cashier@nimbus.demo | Demo1234! | 135790 | LOW_6, 6 digits | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | API auth context only | Quick PIN validates; cashier workspace UI is not implemented in this MVP. |
+| Supervisor | Peter Mugisha | supervisor@nimbus.demo | Demo1234! | 22334455 | HIGH_8, 8 digits | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | /supervisor/floor | Quick PIN validates; supervisor workspace (Floor / Reservations / Approvals / Me) is implemented. |
+| Cashier | Sarah Namutebi | cashier@nimbus.demo | Demo1234! | 135790 | LOW_6, 6 digits | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | /cashier/floor | Quick PIN validates; cashier workspace (Floor / Till / Me) is implemented — read-only settlement through Prompt C2. |
 | Waiter | Brian Kisekka | waiter@nimbus.demo | Demo1234! | 246810 | LOW_6, 6 digits | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | /waiter/floor | Recommended primary waiter demo account. Active shift `DEMO-WAITER-OPEN`. |
 | Chef | Moses Kigozi | chef@nimbus.demo | Demo1234! | 357913 | LOW_6, 6 digits | Tapas Downtown | TAPAS_DOWNTOWN | cb27be401a2c35dfc0d4e610 | API auth context only | Kitchen workspace UI is not implemented in this MVP. |
 | Bartender | Irene Akello | bartender@nimbus.demo | Demo1234! | 468024 | LOW_6, 6 digits | Rooftop Bar | ROOFTOP_BAR | c1f953ca4a21f8e0ba97abdd | API auth context only | Quick PIN validates for Rooftop Bar. |
@@ -31,7 +31,7 @@ All accounts below are synthetic and local-demo only. Passwords and PINs are dem
 2. Select Quick PIN mode.
 3. Use branch `Tapas Downtown`.
 4. Enter PIN `246810`.
-5. Click Enter workspace.
+5. Click **Enter**.
 6. Expected landing route: `/waiter/floor`.
 
 Email/password fallback:
@@ -43,8 +43,8 @@ Email/password fallback:
 
 ## Known Limitations
 
-- The current frontend MVP routes only waiter-compatible users into the waiter workspace.
-- Non-waiter enterprise users authenticate and return roles/permissions from `/api/auth/me`, but their role-specific workspaces are not implemented yet.
+- Waiter, Cashier, and Supervisor each have an implemented operational workspace and land on their own Floor route.
+- Owner, Manager, Accountant, Chef, Bartender, and Stock Manager authenticate and return roles/permissions from `/api/auth/me`, but their role-specific workspaces are not implemented yet.
 - Printer routes are metadata only and do not invoke print drivers.
 - Payment terminal devices are stubs only and do not invoke acquirer/card-terminal traffic.
 - Receipt send remains pending/no-adapter and does not deliver email, SMS, or WhatsApp.

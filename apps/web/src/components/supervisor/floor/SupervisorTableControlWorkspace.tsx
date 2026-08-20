@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { OperationalTableStatusBadge } from "@/components/floor/OperationalTableStatusBadge";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 import { ActionConfirmDialog } from "@/components/pos-shell/ActionConfirmDialog";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Badge, Button, Card, Skeleton, StatusMessage } from "@/components/ui";
@@ -185,8 +186,11 @@ function WorkspaceHeader({
           Back to Floor
         </button>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <h2 className="break-words text-2xl font-bold leading-7 text-text-primary">
-            {table?.label || "Order context"}
+          <h2
+            className="truncate text-xl font-bold leading-7 text-text-primary"
+            title={table?.label || "Order context"}
+          >
+            {table ? formatOperationalTableLabel(table.label) || table.label : "Order context"}
           </h2>
           {table ? <OperationalTableStatusBadge status={table.status} /> : <Badge variant="neutral">No table</Badge>}
         </div>

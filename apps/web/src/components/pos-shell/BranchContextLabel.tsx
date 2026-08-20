@@ -1,4 +1,5 @@
 import { operationalIcons, operationalIconSizes, operationalIconWeights } from "./role-icons";
+import { NimbusLogomark } from "./NimbusLogomark";
 
 type BranchContextLabelProps = {
   branchLabel: string;
@@ -11,19 +12,19 @@ export function BranchContextLabel({
   contextKind,
   contextLabel,
 }: BranchContextLabelProps) {
-  const BrandIcon = operationalIcons.branch;
   const ContextIcon = operationalIcons[contextKind === "service-area" ? "serviceArea" : "workstation"];
 
   return (
     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-brand-white text-brand-navy-900 shadow-subtle">
-        <BrandIcon size={operationalIconSizes.bottomNavigation} weight={operationalIconWeights.brand} aria-hidden />
+      {/* Density pass 2026-08-20: brand tile 2.75rem -> 2.25rem. */}
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand-white text-brand-navy-900 shadow-subtle">
+        <NimbusLogomark size={operationalIconSizes.bottomNavigation} aria-hidden />
       </div>
       <div className="min-w-0">
-        <p className="truncate text-xs font-semibold uppercase tracking-normal text-brand-silver sm:text-sm">
+        <p className="truncate text-[0.625rem] font-semibold uppercase tracking-wide text-brand-silver sm:text-xs">
           Nimbus POS
         </p>
-        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-sm font-semibold sm:gap-2 sm:text-base">
+        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs font-semibold sm:gap-2 sm:text-sm">
           <span className="max-w-[11rem] truncate lg:max-w-[14rem] xl:max-w-[18rem]" title={branchLabel}>
             {branchLabel}
           </span>

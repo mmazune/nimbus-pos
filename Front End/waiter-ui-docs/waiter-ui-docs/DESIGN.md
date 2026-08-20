@@ -1,6 +1,7 @@
 # DESIGN.md — Nimbus POS / ChefCloud Global Design System
 
 Status: Draft v2 for Waiter MVP and future role workspaces  
+Changelog: **v3 (2026-08-20) — rebranded to the Aug 2026 Nimbus POS Brand Identity; §4 palette values updated (canonical navy `#000033`); see `docs/BRAND_IDENTITY.md`.**  
 Date: 2026-06-16  
 Owner: Product + Design + Frontend  
 Applies to: all Nimbus POS / ChefCloud client surfaces  
@@ -89,18 +90,22 @@ It is not a generic admin dashboard.
 
 ## 4. Brand palette
 
-The current working palette was extracted from the latest Nimbus POS visual reference image. Values are production candidates and should be reviewed in Figma before final lock.
+The palette comes from the **Nimbus POS Brand Identity guide (Andimashimwe Rhoda, August 2026)**. Navy Blue `#000033`, White, Light Grey `#B3B4AF`, and Dark Grey are the brand colors; the navy 950/800 steps are derived product tints/shades of the canonical navy so the dark-surface hierarchy survives. Values are locked and live in `apps/web/src/styles/globals.css`. Full brand reference, including RGB/CMYK, logo system, and asset inventory: `docs/BRAND_IDENTITY.md`.
 
 ### 4.1 Core brand tokens
 
 | Token | Value | Use |
 |---|---:|---|
-| `--color-brand-navy-950` | `#0B1524` | Deepest header/sidebar/background. |
-| `--color-brand-navy-900` | `#101F34` | Primary brand dark, active bottom nav, key reversed actions. |
-| `--color-brand-navy-800` | `#273343` | Secondary dark surface, hover on dark. |
+| `--color-brand-navy-950` | `#000024` | Deepest header/sidebar/background (derived shade of the canonical navy). |
+| `--color-brand-navy-900` | `#000033` | **Canonical brand Navy Blue.** Primary brand dark, active bottom nav, key reversed actions, focus ring. |
+| `--color-brand-navy-800` | `#1E1E52` | Secondary dark surface, hover on dark, header time chip (derived tint). |
 | `--color-brand-white` | `#FFFFFF` | Primary surface and inverse text. |
-| `--color-brand-silver` | `#ACABA9` | Premium neutral accent, secondary buttons, disabled fills. |
-| `--color-brand-graphite` | `#616367` | Secondary text, muted status, dark grey controls. |
+| `--color-brand-silver` | `#B3B4AF` | Brand Light Grey. Premium neutral accent, secondary buttons, disabled fills. |
+| `--color-brand-graphite` | `#6B6B6B` | Brand Dark Grey. Secondary text, muted status, dark grey controls. |
+
+> **Dark Grey note (resolved).** The brand guide's text layer lists a duplicate hex for Dark Grey (the same value as Light Grey — a typo in the deck). The resolved value is `#6B6B6B` (RGB 107 107 107), sampled directly from the guide's Dark Grey swatch (p. 17). See `docs/BRAND_IDENTITY.md` §3.1.
+
+Shadow and selection ink derive from `--color-brand-navy-rgb: 0, 0, 51`.
 
 ### 4.2 Extended neutrals
 
@@ -110,14 +115,14 @@ The current working palette was extracted from the latest Nimbus POS visual refe
 | `--color-surface` | `#FFFFFF` | Cards, dialogs, tables, panels. |
 | `--color-surface-raised` | `#FFFFFF` | Elevated panels and drawers. |
 | `--color-surface-muted` | `#ECECEC` | Skeletons, toolbar background, disabled quiet areas. |
-| `--color-surface-navy` | `#101F34` | Dark header, selected nav, high-emphasis bottom bar. |
+| `--color-surface-navy` | `var(--color-brand-navy-900)` | Dark header, selected nav, high-emphasis bottom bar. |
 | `--color-border-subtle` | `#E3E5E8` | Cards, inputs, dividers. |
 | `--color-border-strong` | `#B8BCC2` | Active/selected neutral border. |
 | `--color-text-primary` | `#101828` | Main text. |
 | `--color-text-secondary` | `#4B5563` | Secondary text. |
 | `--color-text-muted` | `#6B7280` | Metadata and disabled text. |
 | `--color-text-inverse` | `#FFFFFF` | Text on navy/dark. |
-| `--color-focus-ring` | `#101F34` | Keyboard focus ring. |
+| `--color-focus-ring` | `var(--color-brand-navy-900)` | Keyboard focus ring. |
 | `--color-skeleton-base` | `#ECECEC` | Skeleton base. |
 | `--color-skeleton-highlight` | `#F7F7F7` | Skeleton shimmer. |
 
@@ -127,20 +132,34 @@ The core brand palette is intentionally restrained. Functional states require ap
 
 | Token | Value | Use |
 |---|---:|---|
-| `--color-status-success` | `#1F8A5B` | Available, seated, paid, synced, successful. |
+| `--color-status-success` | `#11774E` | Available, seated, paid, synced, successful. |
 | `--color-status-success-surface` | `#EAF7F1` | Success badge/banner surface. |
-| `--color-status-warning` | `#D19822` | Reserved, pending, bill requested, shift warning. |
+| `--color-status-warning` | `#8A6410` | Reserved, pending, bill requested, shift warning. |
 | `--color-status-warning-surface` | `#FFF6DF` | Warning badge/banner surface. |
-| `--color-status-danger` | `#D1495B` | Failed, destructive, denied, void/refund risk. |
+| `--color-status-danger` | `#B7384C` | Failed, destructive, denied, void/refund risk. |
 | `--color-status-danger-surface` | `#FDECEF` | Danger badge/banner surface. |
-| `--color-status-info` | `#2F6FBA` | In progress, sent, active service, informational. |
+| `--color-status-info` | `#2B69B2` | In progress, sent, active service, informational. |
 | `--color-status-info-surface` | `#EAF2FF` | Info badge/banner surface. |
-| `--color-status-neutral` | `#616367` | Closed, inactive, secondary statuses. |
+| `--color-status-neutral` | `#616367` | Closed, inactive, secondary statuses. Decoupled from `--color-brand-graphite` (`#6B6B6B`) — the two tokens used to share a value; they no longer do. |
 | `--color-status-neutral-surface` | `#F1F2F4` | Neutral badge/banner surface. |
+
+> **Contrast pass (owner-approved 2026-08-20).** The four status **ink** values
+> above were darkened from their Aug-2026 originals (`#1F8A5B` / `#D19822` /
+> `#D1495B` / `#2F6FBA`) so each clears WCAG AA (4.5:1) as text on **both** its
+> own `-surface` token **and** plain `#FFFFFF`, and so white text on the solid
+> fill (the `Button` `danger` variant) clears AA. Warning previously failed
+> everywhere at 2.37:1. New ratios (own surface / `#FFFFFF`): success 5.06 /
+> 5.57, warning 4.99 / 5.37, danger 5.00 / 5.70, info 4.95 / 5.58. Surface
+> tokens and token names are unchanged. Tailwind resolves `text-status-*` /
+> `bg-status-*` through the `--color-status-*-ch` channel triplets in
+> `globals.css`, so those must be edited alongside the hexes. Full derivation:
+> `docs/BRAND_IDENTITY.md` §3.4.
 
 ### 4.4 Brand color usage rules
 
-#### Navy
+Brand colors are consumed **only** through the tokens above (and their Tailwind mappings). Never hard-code a hex in a component or page. The only exceptions are static assets that cannot read CSS variables — the favicon/PWA/OG files under `apps/web/public/` and the `<meta name="theme-color">` value — which are inventoried in `docs/BRAND_IDENTITY.md` §5.
+
+#### Navy (`#000033`)
 
 Use for:
 
@@ -159,7 +178,7 @@ Do not use for:
 - destructive states;
 - body text on dark without contrast checks.
 
-#### Silver and graphite
+#### Silver and graphite (brand Light Grey `#B3B4AF` / Dark Grey)
 
 Use for:
 
@@ -210,7 +229,20 @@ Reason:
 - This is ideal for POS prices, timers, totals, table numbers, and dense terminal UI.
 - Decorative serif headings are not allowed in waiter/cashier/KDS workspaces.
 
+Brand rule (Aug 2026): **Inter is the only brand type family** — ExtraBold for display, Regular for body. The monospace row above is a debug/diagnostic fallback only and never appears in brand or operational chrome. Note that no webfont is currently bundled (system-installed Inter only); see `docs/BRAND_IDENTITY.md` §4.
+
 ### 5.2 Type scale
+
+> **SUPERSEDED SIZING (owner-approved density pass, 2026-08-20).** Every absolute pixel
+> figure in the tables below is now the value at the **16px root-font-size ceiling only**
+> (>=1080px-tall viewports). `apps/web` scales the root font size with viewport height
+> (`html { font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px) }`) and the `--space-*`
+> tokens are rem, so at 1440x900 every figure below renders at ~93% and at 1280x680 at
+> ~84%. Additionally the canonical **icon registry** sizes are now 16 / 20 / 28 (not
+> 18 / 24 / 32), the operational header and bottom nav are **64px** (not 80px), and the
+> shared Floor table card is **`min-h-[9.5rem]`** (not a fixed 176px). Canonical source:
+> `docs/UI_SYSTEM.md` sections 1c / 4 / 5, and `docs/DECISIONS.md` D-DENSITY.
+
 
 | Token | Size | Weight | Line height | Use |
 |---|---:|---:|---:|---|
@@ -251,6 +283,16 @@ Nimbus uses **Phosphor Icons** for all new frontend work.
 - Do not use emojis as icons.
 
 ### Icon sizes
+
+> **SUPERSEDED SIZING (owner-approved density pass, 2026-08-20).** Every absolute pixel
+> figure in the tables below is now the value at the **16px root-font-size ceiling only**
+> (>=1080px-tall viewports). `apps/web` scales the root font size with viewport height
+> (`html { font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px) }`) and the `--space-*`
+> tokens are rem, so at 1440x900 every figure below renders at ~93% and at 1280x680 at
+> ~84%. Additionally the canonical **icon registry** sizes are now 16 / 20 / 28 (not
+> 18 / 24 / 32), the operational header and bottom nav are **64px** (not 80px), and the
+> shared Floor table card is **`min-h-[9.5rem]`** (not a fixed 176px). Canonical source:
+> `docs/UI_SYSTEM.md` sections 1c / 4 / 5, and `docs/DECISIONS.md` D-DENSITY.
 
 | Context | Size |
 |---|---:|
@@ -309,6 +351,17 @@ Use:
 ---
 
 ## 8. Spacing scale
+
+> **SUPERSEDED SIZING (owner-approved density pass, 2026-08-20).** Every absolute pixel
+> figure in the tables below is now the value at the **16px root-font-size ceiling only**
+> (>=1080px-tall viewports). `apps/web` scales the root font size with viewport height
+> (`html { font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px) }`) and the `--space-*`
+> tokens are rem, so at 1440x900 every figure below renders at ~93% and at 1280x680 at
+> ~84%. Additionally the canonical **icon registry** sizes are now 16 / 20 / 28 (not
+> 18 / 24 / 32), the operational header and bottom nav are **64px** (not 80px), and the
+> shared Floor table card is **`min-h-[9.5rem]`** (not a fixed 176px). Canonical source:
+> `docs/UI_SYSTEM.md` sections 1c / 4 / 5, and `docs/DECISIONS.md` D-DENSITY.
+
 
 | Token | Value | Use |
 |---|---:|---|
@@ -388,6 +441,16 @@ Use for local status filters only, for example:
 - Button group/filter chips.
 
 ### Sizes
+
+> **SUPERSEDED SIZING (owner-approved density pass, 2026-08-20).** Every absolute pixel
+> figure in the tables below is now the value at the **16px root-font-size ceiling only**
+> (>=1080px-tall viewports). `apps/web` scales the root font size with viewport height
+> (`html { font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px) }`) and the `--space-*`
+> tokens are rem, so at 1440x900 every figure below renders at ~93% and at 1280x680 at
+> ~84%. Additionally the canonical **icon registry** sizes are now 16 / 20 / 28 (not
+> 18 / 24 / 32), the operational header and bottom nav are **64px** (not 80px), and the
+> shared Floor table card is **`min-h-[9.5rem]`** (not a fixed 176px). Canonical source:
+> `docs/UI_SYSTEM.md` sections 1c / 4 / 5, and `docs/DECISIONS.md` D-DENSITY.
 
 | Context | Height |
 |---|---:|

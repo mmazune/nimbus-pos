@@ -5,6 +5,20 @@ Date: 2026-07-06
 
 ## 2026-07-18 Reconstruction Supersession
 
+> **2026-08-20 audit note — scope of the staleness in the table below.** Re-checked against the
+> worktree during the Supervisor docs audit. The banner already flags this register as historical;
+> these specific rows are the ones a reader is most likely to mistake for current state:
+> **SUP-GAP-005** ("Floor/Orders/Reservations/Approvals/Me") and **SUP-GAP-023** ("nav remains five
+> tabs") describe the **retired 5-tab nav** — the locked nav is **Floor · Reservations · Approvals ·
+> Me**; **SUP-GAP-007/008** describe the retired read-only `/supervisor/orders` screen — that route
+> is now a redirect into Floor, and the Floor-contained order workspace has since gained live
+> mutations (Prompts 3A–3B3B); **SUP-GAP-016** ("no `/api/approvals` client call") is still
+> **accurate and was re-verified live** — supervisor token → `GET /api/approvals` **403**.
+> **SUP-GAP-019** (shift-swap selector) is also still accurate: `createSupervisorShiftSwap` exists in
+> `lib/supervisor/workforce.ts` but **no component imports it**, so no UI creates a shift swap.
+> Rows are **not** rewritten — this register is history. Current scope: `SUPERVISOR_API_MATRIX.md`,
+> `SUPERVISOR_LIFECYCLE.md`, `ai/SUPERVISOR_RECONSTRUCTION_GAP_REGISTER.md`.
+
 This historical register is retained for the original Supervisor UI closeout. Current reconstruction scope is governed by `ai/SUPERVISOR_RECONSTRUCTION_REPO_VERIFICATION_REPORT.md`, `ai/SUPERVISOR_RECONSTRUCTION_GAP_REGISTER.md`, and the updated docs in this folder. The visible Supervisor nav is now Floor, Reservations, Approvals, Me. Orders is no longer a visible Supervisor nav tab; order work must enter from Floor after table selection, with a Floor-contained exception lookup path for tableless, takeaway, closed, direct-reference, and post-close review cases.
 
 | ID | Area | Gap/Decision | Current Evidence | Status |

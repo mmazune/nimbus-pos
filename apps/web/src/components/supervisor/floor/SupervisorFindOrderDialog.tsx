@@ -146,7 +146,7 @@ export function SupervisorFindOrderDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 sm:pt-16"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-brand-navy-950/40 p-4 sm:pt-16"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

@@ -145,6 +145,87 @@
 
 ## Locked product / UI decisions
 
+### D-MGRTOPNAV — Management navigation is an Odoo-style TOP NAV BAR (OWNER-APPROVED, 2026-08-20)
+
+**Owner:** Moses. **Status:** locked. **Supersedes:** the Manager **bottom-nav** presentation
+locked in M-P1 (2026-08-20) — see D-NAV below, which remains correct for the three frontline roles.
+
+Manager (and later Owner) navigation converts from a fixed six-item bottom nav to an **Odoo-style
+top module bar**: a single module bar with the brand/home control at the far left, text menu items
+with **click-to-open** dropdown submenus (internally grouped by muted section headers, scrolling
+inside the panel, `Escape` to close), and a top-right cluster carrying the branch switcher, the
+shared clock and the identity/logout control. Directly beneath it sits the **control-panel row** —
+`New` + optional secondary action · view title + actions cog · pill search box with **filter chips**
+and a three-column Filters/Group-By/Favorites dropdown · **server-backed pager** · view-type
+switcher. On a record the title area becomes a **breadcrumb + record pager**.
+
+**Frontline roles keep bottom nav.** Waiter, Cashier and Supervisor are unchanged and must render
+byte-identically after the conversion.
+
+**What is superseded:** the *presentation* of Manager navigation only — the "exactly six bottom
+tabs, no More tab" wording applied to a bottom bar that no longer exists for this role.
+**What carries forward from M-P1 unchanged:** Manager as the **fourth consumer** of the shared
+operational UI system (never a fork); `ManagerShell` / `ManagerSessionGuard`; the **branch switcher**
+with its `me.memberships` source, `nimbus.managerBranchId` persistence, `X-Branch-Id` plumbing and
+narrow `["manager", …]` invalidation; `lib/manager/permissions.ts` as a **surface allow-list, not a
+permission check**; the honest foundation pages and the real Manager **Me**; and the readiness
+strip's "three verified chips only, never faked" rule. **M-P1 history is not deleted** — it shipped
+and its shell/session/branch-switcher work is the base the top nav mounts on.
+
+**Delivery constraint:** the top nav ships as an **additive variant of the shared `OperationalShell`**
+(e.g. `navigation="top" | "bottom"`, default `bottom`), **not** a Manager shell fork. If B1 finds the
+shared component cannot absorb the variant, that finding is recorded explicitly rather than resolved
+by forking.
+
+**Open sub-decisions** (recorded, not yet answered): the sub-desktop collapsed presentation (OD-4 —
+collapse to a menu control, **never** fall back to the frontline bottom nav) and whether Accounting
+becomes a seventh top-level module (OD-3).
+
+Source: `ai/ENTERPRISE_UI_ROADMAP.md` §1 (directive D2) and Track B **B1**;
+`ai/ODOO_REFERENCE_RESEARCH.md` §1.2/§1.3/§1.5/§1.6/§1.7 + components C1/C2/C3/C15.
+
+### D-ENTERPRISE — Enterprise-grade management suite direction (OWNER-APPROVED, 2026-08-20)
+
+**Owner:** Moses. **Status:** locked as a direction. **Canonical plan:**
+`ai/ENTERPRISE_UI_ROADMAP.md` — which **supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from
+M-P2 onward** (M-P0 and M-P1 remain the canonical record of what shipped).
+
+The management suite targets **Odoo-grade** depth, benchmarked against the owner's live Odoo
+instance (`ai/ODOO_REFERENCE_RESEARCH.md`, 17 screenshots) and scoped by
+`ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` (NG-01…NG-20). Approved direction:
+
+1. **Detailed dashboards** for Manager and later Owner, cloning Odoo's KPI card grid — counts are
+   drill-in links, amounts are data, buttons are mixed-weight, and a card may legitimately carry no
+   chart or a truthful checklist instead.
+2. **Control-panel, list, kanban and form patterns** built once as shared primitives and reused
+   across every management surface.
+3. **Settings covering everything a manager configures** — staff onboarding, Quick-PIN set/change,
+   devices, printers (metadata-only), terminals (stub-only), alerts (rules read-only), sync (no
+   conflict diff), org settings.
+4. **Reporting with graph/pivot only when the backend allows it** — today it does not
+   (`GET /reports/:id` returns no rows), so graph/pivot is gated, not promised.
+5. **An accounting UI over the ~90 endpoints that already exist** across `accounting/ap`,
+   `accounting/ar`, bank-rec, budget, accounting foundation and GL — a **UI gap over existing API**,
+   not a backend build. **Hard-gated** on an M-P0-style live verification of those routes, which has
+   never been run (they were found by static scan only).
+6. **The true backend gaps are scheduled as their own track**, not smuggled into UI phases: the fake
+   PDF export (plain text stamped `application/pdf` at `status: READY`), the `/hr/employees`
+   compensation leak, the missing report row payload, the unusable-from-browser SSE stream, the
+   plaintext Quick-PIN discipline, and the stale `docs/MODULES.md`.
+
+**Binding constraints, unchanged:** no fake success states of any kind; an unbacked KPI/column/chart
+is **omitted, not estimated**; compensation/contracts/payroll never rendered **and never fetched**;
+Nimbus brand tokens only (Odoo's palette is a layout reference, **not** a colour source); the 2026-08-20
+density mechanism applies to every new surface; no backend/DTO/schema/migration/seed/permission/
+Postman change inside a UI phase; destructive QA on isolated disposable databases only; no
+commit/push without an explicit ask.
+
+**Nothing in the suite track is implemented.** Approval of this direction is **not** authorization to
+write runtime code — the first build phase (**B1**, top-nav shell conversion) requires an explicit
+per-phase go.
+
+Source: owner directives 2026-08-20; `ai/ENTERPRISE_UI_ROADMAP.md`.
+
 ### D-NAV — Per-role navigation (locked)
 - Waiter: **Floor · Reservations · Me**
 - Cashier: **Floor · Till · Me** — **implemented in Prompt C1 (2026-07-31)**, default route
@@ -152,8 +233,14 @@
   ~~Queue · Receipts · Till · Me~~ nav is superseded; Queue/Receipts survive only as **hidden
   compatibility routes** (direct URL, off the visible nav — retire Receipts C4 / Queue C5).
 - Supervisor: **Floor · Reservations · Approvals · Me**
+- Manager: ~~**Overview · Operations · Staff · Reports · Settings · Me** (bottom nav, M-P1,
+  2026-08-20)~~ — **SUPERSEDED 2026-08-20 by D-MGRTOPNAV** (owner-approved): Manager navigation
+  becomes an **Odoo-style top module bar**. The six surfaces survive as the first six top-nav
+  menus; the *bottom-bar presentation* is what was superseded. M-P1's shell, session guard, branch
+  switcher and surface allow-list carry forward unchanged. Landing stays `/manager/overview`.
 - Source: `lib/<role>/routes.ts`; `ai/SUPERVISOR_RECONSTRUCTION_*`; date 2026-07-18; Cashier target
-  superseded 2026-07-31, see `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`.
+  superseded 2026-07-31, see `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`; Manager presentation
+  superseded 2026-08-20, see **D-MGRTOPNAV** above and `ai/ENTERPRISE_UI_ROADMAP.md` Track B **B1**.
 
 ### D-NOORDERS — No visible Orders tab (Waiter & Supervisor) (locked)
 Order work is reached from **Floor after a table is selected**, never as a primary
@@ -161,10 +248,106 @@ tab. Legacy `/waiter/orders*` and `/supervisor/orders` are **redirects** into Fl
 (supervisor resolves `orderId`→`tableId`). Rationale: table-centric workflow; avoid
 a parallel order-list surface. Source: Supervisor Reconstruction Repo Verification.
 
+### D-DENSITY — Global density mechanism (OWNER-APPROVED, 2026-08-20)
+**Owner:** Moses. **Status:** locked; supersedes the previously locked 176px card
+height, the 80px operational header and the 80px bottom nav.
+
+The app is a fullscreen terminal and "looked too big" at laptop sizes. Density is
+now driven by ONE systematic mechanism rather than piecemeal component edits:
+
+1. **Viewport-scaled root font size** — `html { font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px) }`
+   in `apps/web/src/styles/globals.css`. Height-driven, because vertical fit is what
+   overflows on a laptop with browser chrome. Measured: 13.50px @1280×680,
+   14.05px @1366×768, 14.88px @1440×900, 16.00px @1920×1080 (the ceiling — 1920×1080
+   is byte-identical to the pre-density baseline).
+2. **Rem-normalized spacing scale** — `--space-1…--space-12` converted from px to the
+   equivalent rem, so the nine Tailwind spacing keys this repo overrides scale too.
+3. **Targeted non-scaling fixes** — icon registry tokens 18/24/32 → **16/20/28**;
+   table card `min-h-[176px]` → **`min-h-[9.5rem]`** (152/141/128px across the
+   viewport matrix); grid track `minmax(220px,1fr)` → **`minmax(13rem,1fr)`**.
+4. **Shared region metrics** — header 80→**64px** (`h-16`), brand + identity tiles
+   44→**36px**, readiness 44→**36px**, main top padding 160→**116px**, bottom nav
+   80→**64px**, main bottom clearance 112→**80px**, `PageShell` title `text-2xl`→`text-xl`.
+
+**Rationale:** one mechanism, uniform across all four roles, documented and
+reversible by editing a single `clamp()`; per-component breakpoint tuning would
+have drifted per role. **Constraint kept:** the mechanism is role-agnostic — no role
+forks a density value. `pos-shell/layout.ts` documents the rem class behind each
+resolved pixel number. **Assertion updated:** `shell-assertions.ts` now guards
+`operationalIconSizes.bottomNavigation === 20` (was 24) — it still guards
+centralization, at the new canonical value. **Verified:** typecheck + lint; 12/12
+assertion scripts; 180 Playwright tests (manager-shell 92, cashier-floor 32,
+supervisor 32 + 24) across four viewports; zero console errors.
+Source: owner UI polish wave 2; `docs/UI_SYSTEM.md` §1c.
+
+### D-LOGIN — Fullscreen brand-led lock screen (OWNER-APPROVED, 2026-08-20)
+**Owner:** Moses. **Status:** locked.
+
+`/login` scrolled vertically on the owner's laptop browser. It is now a **true
+`h-screen` layout with `overflow-hidden`**: there is never a page-level scrollbar;
+if the sign-in card ever exceeds the available height, the CARD scrolls internally
+(`overflow-y-auto`). **Proof** (`document.documentElement.scrollHeight` vs
+`window.innerHeight`, live): 680/680, 768/768, 900/900, 1080/1080.
+
+Content is minimal and brand-led: a **combination-mark lockup** (white logomark tile
+`h-11 w-11` ≈41px at 1440, beside an inline Inter-ExtraBold "Nimbus **POS**"
+wordmark — crisper than an `<img>` at terminal sizes), the "Service terminal"
+heading, and three compact Workstation/Time/API chips.
+
+**REMOVED — role-marketing copy:** the paragraph "Shared desktop access for waiter
+service, cashier settlement, supervisor floor control, and manager oversight. Quick
+PIN is primary for frontline staff." and the footer sentence "Owner and accountant
+accounts can authenticate here, but this frontend opens only the waiter, cashier,
+supervisor, and manager workspaces." **The truthful blocked-account behaviour is
+UNCHANGED** — a genuinely blocked role still raises the `StatusMessage` warning; the
+claim is now made only when it is actually true, instead of always-visible marketing.
+Source: owner UI polish wave 2; `docs/UI_SYSTEM.md` §1d.
+
+### D-TERMINAL — Header terminal identity (OWNER-APPROVED, 2026-08-20)
+**Owner:** Moses. **Status:** locked.
+
+The header's second context slot printed a dead fallback ("Service area unavailable"
+for Waiter, "Workstation unavailable" for Cashier/Supervisor, "Manager workspace" for
+Manager). The API exposes **no** service-area or workstation entity, so the shell now
+shows a deterministic **station label** from `components/pos-shell/station.ts`:
+`localStorage["nimbus.stationTerminalLabel"]` if set for this physical station, else
+the constant **"Terminal 01"**.
+
+**Honesty boundary:** this is explicitly a *station label*, NOT backend data — the
+module header, the hook, and every render site say so in code comments. It fabricates
+no server state; it names the physical terminal, which a real POS station always has.
+When a real workstation contract lands, replace the fallback inside
+`useStationTerminalLabel()` — no render site changes. Applied uniformly to all four
+roles (and therefore also to the Cashier Till toolbar and the Cashier/Supervisor Me
+screens, which read the same context field).
+Source: owner UI polish wave 2; `docs/UI_SYSTEM.md` §2b.
+
+### D-TABLELABEL — Table display-label abbreviation (OWNER-APPROVED, 2026-08-20)
+**Owner:** Moses. **Status:** locked. **Display-side only — no backend/API/schema/demo-data change.**
+
+Long demo/QA labels ("QA-P4-PASS2-1440") produced three-line card titles. A shared
+formatter in `components/floor/formatters.ts` abbreviates deterministically: labels
+of ≤7 chars are unchanged; longer labels split on `-_/.` + whitespace, keep a
+digit-leading LAST segment whole as the trailing number, and collapse every leading
+segment to its first character plus its digits (`QA→Q`, `P4→P4`, `PASS2→P2`).
+`QA-OPEN-01→QO-01`, `QA-P4-CLEAN-02→QP4C-02`, `QA-P4-PASS2-1440→QP4P2-1440`,
+`QA-PRE-BILL-01→QPB-01`.
+
+**The persisted label is never mutated** and the full label always stays in `title`
+and `aria-label`. **Collision safety within one fetched set** is provided by
+`buildOperationalTableLabelMap()` (retry at depth 2, then 3; then a deterministic
+`~n` suffix on the sorted survivors); `OperationalFloor` builds it from the FULL
+fetched set so a card's label does not change while searching. **Assertion updated:**
+`floor-assertions.ts` previously asserted the card kept `break-words` ("preserves
+full table identifiers"); card titles are now ONE LINE (`truncate`) and that
+guarantee is asserted through `title` + `aria-label` instead.
+Source: owner UI polish wave 2; `docs/UI_SYSTEM.md` §5b.
+
 ### D-FLOOR — Shared Floor parity (locked)
 Waiter, Supervisor, **and Cashier (Prompt C1, 2026-07-31)** render **one**
 `OperationalFloor` presentation (toolbar, grid, cards, status labels, staff formatting,
-breakpoints, 176px cards). **Role behaviour diverges only after table selection**
+breakpoints, ~~176px cards~~ → **`min-h-[9.5rem]` cards, owner-approved override
+2026-08-20, see D-DENSITY below**). **Role behaviour diverges only after table selection**
 (Cashier → C1 read-only boundary, superseded in **C2** by table→bill resolution + a
 read-only settlement workspace; payment/close execution arrives C3).
 Presentation is shared; data access (queries/permissions/mutations) is role-owned.

@@ -1,0 +1,24 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "manager-p1-assertions.ts",
+    "../src/components/pos-shell/role-navigation.ts",
+    "../src/components/pos-shell/role-icon-config.ts",
+    "../src/components/pos-shell/types.ts",
+    "../src/lib/auth/role.ts",
+    "../src/lib/auth/types.ts",
+    "../src/lib/manager/branch-context.ts",
+    "../src/lib/manager/permissions.ts",
+    "../src/lib/manager/routes.ts",
+    "../src/lib/manager/state.ts",
+    "../src/lib/profile/profile-model.ts"
+  ]
+}

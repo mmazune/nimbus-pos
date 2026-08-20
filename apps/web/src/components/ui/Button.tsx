@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-type ButtonVariant = "primary" | "secondary" | "tertiary" | "danger";
+type ButtonVariant = "primary" | "secondary" | "tertiary" | "inverse" | "danger";
 type ButtonSize = "compact" | "standard" | "pos";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -15,11 +15,17 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand-navy-900 text-text-inverse shadow-subtle hover:bg-brand-navy-800 disabled:bg-brand-silver disabled:text-text-secondary",
+    "bg-brand-navy-900 text-text-inverse shadow-subtle hover:bg-brand-navy-800 disabled:bg-brand-silver disabled:text-text-primary",
   secondary:
     "bg-surface text-text-primary shadow-subtle hover:bg-surface-muted disabled:bg-surface-muted disabled:text-text-muted",
   tertiary:
     "bg-transparent text-text-secondary hover:bg-surface-muted disabled:text-text-muted",
+  // Tertiary-on-dark: used inside brand-navy surfaces (operational header).
+  // Kept as its own variant because `cn` is plain clsx — appending inverse
+  // colour utilities to `tertiary` cannot beat the variant's own colour
+  // utilities, so the override silently loses to CSS source order.
+  inverse:
+    "bg-transparent text-text-inverse hover:bg-brand-navy-800 disabled:text-brand-silver focus-visible:shadow-focus-inverse",
   danger:
     "bg-status-danger text-text-inverse shadow-subtle hover:brightness-95 disabled:bg-status-danger-surface disabled:text-status-danger",
 };

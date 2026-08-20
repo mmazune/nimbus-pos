@@ -1,4 +1,5 @@
 import { cashierRoutes } from "../../lib/cashier/routes";
+import { managerRoutes } from "../../lib/manager/routes";
 import { supervisorRoutes } from "../../lib/supervisor/routes";
 import { waiterRoutes } from "../../lib/waiter/routes";
 
@@ -9,6 +10,7 @@ export const operationalRoleNavigation: Record<
   readonly OperationalNavItem[]
 > = {
   cashier: cashierRoutes,
+  manager: managerRoutes,
   supervisor: supervisorRoutes,
   waiter: waiterRoutes,
 };

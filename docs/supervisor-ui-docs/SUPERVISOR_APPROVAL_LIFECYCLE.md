@@ -1,5 +1,21 @@
 # Supervisor Approval Lifecycle
 
+> **Verified 2026-08-20 (isolated local stack) — no stale claims found; the architecture claim is
+> now live-proven.** The document's central premise — Supervisor uses **domain-specific** decision
+> endpoints because it does **not** hold `approvals:read`/`approvals:decide` — was confirmed by
+> probe, not inference: the supervisor JWT carries 133 permissions and holds every
+> `pos:discount:approve` / `pos:hr:leave:review` / `pos:hr:shift-swaps:approve` /
+> `pos:analytics:anomalies:acknowledge` grant, while `GET /api/approvals` returns **403**
+> `Insufficient permissions`. All four Needs-action list queries returned **200**
+> (`GET /api/pos/discounts/pending`, `GET /api/hr/leave?status=PENDING`,
+> `GET /api/hr/shift-swaps?status=PENDING`, `GET /api/analytics/anomalies?status=OPEN`), as did
+> `GET /api/analytics/anomalies?status=ACKNOWLEDGED` and `GET /api/analytics/anomalies/:id`. The
+> bounded-pagination hardening also held: `take=500` → **400** *take must not be greater than 100*
+> (leave/swap) and `limit=500` → **400** *limit must not be greater than 100* (anomalies).
+> Decision endpoints were **not** executed (mutations); each is confirmed by its controller
+> decorator in `SUPERVISOR_API_MATRIX.md`. The **discount** queue caveat still holds: there is no
+> branch-wide discount list endpoint (SUP-RG-035), so no discount Resolved/History.
+
 Status: reconstruction CLOSED (Prompt 5B2 — Discount + Leave + Anomaly actionable; Shift-swap reject-only Outcome C — B / demo-ready) — 2026-07-31
 Date: 2026-07-18 (updated 2026-07-31)
 

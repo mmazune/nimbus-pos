@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 
 import { ApiError } from "@/lib/api/client";
+import { useStationTerminalLabel } from "@/components/pos-shell/station";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { getActiveShiftRequest } from "@/lib/auth/auth-api";
 import { getPrimaryRoleLabel, resolveDefaultMembership } from "@/lib/auth/role";
@@ -99,6 +100,8 @@ function formatMembershipSummary(
 
 export function useSupervisorContext() {
   const { branchId, branchName, displayName, organizationId, user } = useAuth();
+  // Station label, NOT backend data — see components/pos-shell/station.ts.
+  const terminalLabel = useStationTerminalLabel();
 
   return useMemo<SupervisorWorkspaceContext>(() => {
     const membership = resolveDefaultMembership(user);
@@ -129,7 +132,7 @@ export function useSupervisorContext() {
         resolvedOrganizationName,
       ),
       roleNames: user?.roles.map((role) => role.jobRole || role.name).filter(Boolean) || [],
-      workstationLabel: "Workstation unavailable",
+      workstationLabel: terminalLabel,
       sessionPlatform: user?.session?.platform || "Session check pending",
       sessionSource: user?.session?.source || "Session check pending",
       sessionId: user?.session?.id || null,
@@ -147,7 +150,7 @@ export function useSupervisorContext() {
       employeeJobRole: user?.employee?.jobRole || null,
       permissions: user?.permissions || [],
     };
-  }, [branchId, branchName, displayName, organizationId, user]);
+  }, [branchId, branchName, displayName, organizationId, terminalLabel, user]);
 }
 
 export function useSupervisorReadiness(): SupervisorReadinessSnapshot {

@@ -8,10 +8,17 @@ import {
 } from "../src/lib/cashier/floor-route";
 
 /**
- * Cashier C2 assertions — table→bill resolution, canonical read-only settlement
+ * Cashier C2 assertions — table→bill resolution, the canonical settlement
  * workspace foundation, orderId URL state, Find bill sibling, Queue/Receipts
- * compatibility, and the C2 read-only boundary (no payment/close/receipt/refund
- * mutation, no transfer-table control).
+ * compatibility, and the Cashier Floor scope boundary.
+ *
+ * **Superseded in part on 2026-08-20 (Prompt C3).** C2's "no payment / split /
+ * close mutation on the Floor path" boundary was the C2 gate, and C3 deliberately
+ * crosses it (payment collection, partial/split settlement, and close now execute
+ * inside the settlement workspace). The forbidden-token list below therefore keeps
+ * only what is still out of scope after C3 — receipt actions and refunds (C4), and
+ * the permanently Supervisor-owned handoff/adjustment actions. The C3-authorized
+ * surface is asserted positively in `cashier-c3-assertions.ts`.
  *
  * Run from the repo root: `npx tsx apps/web/scripts/cashier-c2-assertions.ts`.
  */
@@ -34,6 +41,8 @@ const billLib = source(`${BASE}/lib/cashier/bill-resolution.ts`);
 const floorRoute = source(`${BASE}/lib/cashier/floor-route.ts`);
 const queryKeys = source(`${BASE}/lib/cashier/bill-query-keys.ts`);
 
+const actions = source(`${BASE}/components/cashier/floor/CashierSettlementActions.tsx`);
+
 const c2FloorFiles: [string, string][] = [
   ["screen", screen],
   ["resolution panel", panel],
@@ -41,6 +50,9 @@ const c2FloorFiles: [string, string][] = [
   ["workspace", workspace],
   ["find bill", find],
 ];
+
+/** C2 files + the C3 settlement-actions mount point (scope-boundary checks). */
+const c3FloorFiles: [string, string][] = [...c2FloorFiles, ["settlement actions", actions]];
 
 // ── Cashier Floor still consumes the shared OperationalFloor (no fork) ──────
 assert(screen.includes("@/components/floor/OperationalFloor"), "Cashier screen imports the shared OperationalFloor");
@@ -118,34 +130,43 @@ assert(find.includes("pageSize") && find.includes("FIND_PAGE_SIZE"), "Find bill 
 assert(find.includes("listCashierOrders"), "Find bill uses the bounded branch orders contract");
 
 // ── Queue / Receipts are NOT mounted on Floor ──────────────────────────────
-for (const [name, src] of c2FloorFiles) {
+for (const [name, src] of c3FloorFiles) {
   assert(!src.includes("CashierQueueScreen"), `Queue screen is not mounted on Floor (${name})`);
   assert(!src.includes("CashierReceiptsScreen"), `Receipts screen is not mounted on Floor (${name})`);
   assert(!src.includes("CashierOrderList"), `Queue order list is not mounted on Floor (${name})`);
 }
 
-// ── No payment / close / receipt / refund mutation is introduced ───────────
+// ── Still-forbidden mutations after C3 (receipt/refund = C4; handoff = never) ──
+// NOTE: `CashierPaymentPanel`, `CashierResolutionPanel`, `splitCashierBill` and
+// `splitCashierItems` were forbidden in C2 and are AUTHORIZED from C3 onward — see
+// the header note and `cashier-c3-assertions.ts`.
 const MUTATION_TOKENS = [
-  "CashierPaymentPanel",
-  "CashierResolutionPanel",
   "CashierRefundPanel",
   "CashierRefundForm",
-  "splitCashierBill",
-  "splitCashierItems",
+  "createCashierRefund",
+  "CashierReceiptReprintDialog",
+  "CashierReceiptSendDialog",
+  "reprintCashierReceipt",
+  "sendCashierReceipt",
   "mergeCashierOrders",
   "moveCashierOrderItems",
   "transferCashierOrderTable",
   "transferCashierOrderServer",
   "CashierTransferTablePanel",
+  "CashierAdvancedResolutionPanel",
+  "voidCashierOrder",
+  "requestCashierDiscount",
 ];
-for (const [name, src] of c2FloorFiles) {
+for (const [name, src] of c3FloorFiles) {
   for (const token of MUTATION_TOKENS) {
-    assert(!src.includes(token), `C2 Floor ${name} introduces no mutation/out-of-scope control (${token})`);
+    assert(!src.includes(token), `Cashier Floor ${name} introduces no out-of-scope control (${token})`);
   }
 }
-// No settlement action button copy in the read-only foundation.
-for (const token of ["Collect payment", "Take payment", "Close order", "Print receipt", "Reprint receipt", "Create refund", "Issue refund"]) {
-  assert(!workspace.includes(token), `settlement workspace exposes no C3/C4 action (${token})`);
+// No C4 action copy anywhere on the Floor settlement path.
+for (const [name, src] of c3FloorFiles) {
+  for (const token of ["Print receipt", "Reprint receipt", "Create refund", "Issue refund", "Transfer table"]) {
+    assert(!src.includes(token), `Cashier Floor ${name} exposes no C4/out-of-scope action (${token})`);
+  }
 }
 
 // ── Query-key model exists and is narrow ───────────────────────────────────
@@ -171,4 +192,4 @@ for (const [name, src] of [["selector", selector], ["find bill", find]] as const
   }
 }
 
-console.log("Cashier C2 assertions passed: shared-Floor consumption, bounded table→bill resolution (zero/one/multiple, fail-closed, no first-pick), canonical orderId URL state, one read-only settlement workspace reusing checkout primitives, Find bill sibling (bounded), Queue/Receipts not mounted + still routable, no payment/close/receipt/refund mutation, narrow query keys, and privacy.");
+console.log("Cashier C2 assertions passed (C3-adjusted): shared-Floor consumption, bounded table→bill resolution (zero/one/multiple, fail-closed, no first-pick), canonical orderId URL state, one settlement workspace reusing checkout primitives, Find bill sibling (bounded), Queue/Receipts not mounted + still routable, no receipt/refund/handoff/void/discount control on the Floor path, narrow query keys, and privacy.");

@@ -85,7 +85,7 @@ It should not feel:
 
 ## 4. Waiter palette usage
 
-Use global tokens from `DESIGN.md`.
+Use global tokens from `DESIGN.md`. Token names below are unchanged; their **values** were rebranded in Aug 2026 to the Nimbus POS Brand Identity guide (canonical Navy Blue `#000033`, White, Light Grey `#B3B4AF`, Dark Grey). See `docs/BRAND_IDENTITY.md`.
 
 ### Waiter primary usage
 
@@ -105,9 +105,9 @@ Use global tokens from `DESIGN.md`.
 
 ### Complementary premium treatment
 
-- Use navy for trust and active operational controls.
+- Use navy (`#000033`) for trust and active operational controls.
 - Use white surfaces for clean scanning.
-- Use silver/graphite for quiet metadata.
+- Use silver/graphite (brand Light Grey / Dark Grey) for quiet metadata.
 - Use amber sparingly for reserved/pending states.
 - Use success/danger only for genuine outcomes.
 
@@ -155,7 +155,7 @@ Persistent across all waiter screens.
 
 #### Left
 
-- Placeholder/logo slot.
+- Brand tile (44×44 white tile, navy mark). Renders the steering-wheel logomark via `components/pos-shell/NimbusLogomark.tsx` (shipped — extracted from the brand guide). See `docs/BRAND_IDENTITY.md` §2.6.
 - Branch name.
 - Service area.
 
@@ -172,7 +172,7 @@ Persistent across all waiter screens.
 ### 7.2 Header behavior
 
 - Fixed to top.
-- Dark navy background.
+- Dark navy background (`--color-brand-navy-950`, the derived deepest shade of canonical navy `#000033`).
 - Inverse text.
 - No heavy shadow.
 - Current time uses tabular numbers.

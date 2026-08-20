@@ -1,6 +1,17 @@
 # Cashier Lifecycle — Floor to Settlement
 
-> **Status (2026-07-31): Prompt C2 IMPLEMENTED.** A table selection now resolves to zero/one/multiple
+> **Status (2026-08-20): Prompt C3 IMPLEMENTED — settlement executes.** Everything C2 delivered
+> still holds; the workspace is no longer read-only. Inside the selected bill the cashier can now
+> **collect payment** (cash, or a card / MTN / Airtel / bank manual reference), take a **partial**
+> payment and see a canonical remaining balance, record a **split allocation** or **split items to a
+> child order**, and **close** the bill. Close is not a separate button: a full **cash** payment is
+> the close (`POST /pos/orders/:id/close`, only valid on a `SERVED` bill), and a final
+> **manual-reference** payment auto-settles the order server-side. Everything fails closed — no
+> active shift, no active till (for cash), an unresolved payment summary, a pending provider intent,
+> or a terminal bill all block settlement with a truthful reason. **Receipt actions and refunds are
+> still C4**; the workspace only states that a receipt now exists.
+>
+> **(Superseded) Status (2026-07-31): Prompt C2 IMPLEMENTED.** A table selection now resolves to zero/one/multiple
 > payable bills and opens the read-only `CashierSettlementWorkspace` (bill detail + totals + payment
 > state + readiness + history); a Find bill sibling handles tableless/takeaway/exact-id. Canonical
 > URL state `?tableId=&orderId=`. Payment collection and order close **execution** arrive in C3.
@@ -106,6 +117,17 @@ Before exposing settlement actions, verify:
 - no conflicting pending mutation.
 
 When any critical state is unknown, fail closed and show a recoverable operational message.
+
+> **Note (2026-08-20) — the shift half of readiness is now self-serviceable.** Previously a cashier
+> with no active shift had **no** in-app way to fix it (the strip stated the block; nothing offered
+> the remedy), so a cold-start cashier could not open a till without another role opening a shift
+> first. **Me** now carries a shift card (shared `ShiftStatusCard`) with **Start shift** / **End
+> shift** and an optional note over `POST /api/shifts/open` / `POST /api/shifts/:id/close`
+> (`lib/cashier/shifts.ts`), and the readiness strip's inactive-shift chip now reads
+> *"No active shift · Open Me to start"*. Owner-approved, frontend-only — the cashier role already
+> held `pos:shift:open` + `pos:shift:close`; no backend/permission change. Resolves **M1(b)** in
+> `CASHIER_API_MATRIX.md`. Fail-closed behaviour above is unchanged: readiness still gates
+> settlement, and the Till preflight still requires an active shift.
 
 ## 6. Split settlement
 
@@ -266,6 +288,10 @@ Me uses the shared profile primitives.
 
 Cashier can review role/branch/readiness context and log out. Idle-session handling uses the
 shared operational mechanism.
+
+Since 2026-08-20 Me is also where the cashier **starts and ends their own shift** (shared
+`ShiftStatusCard`, optional note, no confirmation dialog — the same affordance Waiter Me uses).
+Me remains free of workforce self-service (attendance/leave/shift-swaps).
 
 ## 14. Cross-role lifecycle
 

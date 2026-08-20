@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED IN PART (2026-08-20).** Historical record; the brand palette and favicon were rebranded Aug 2026 — see `docs/BRAND_IDENTITY.md`. Kept for history.
+
 # CASHIER_UI_REPO_VERIFICATION_REPORT.md — Cashier UI Repository Verification Report
 
 ## 1. Context Snapshot

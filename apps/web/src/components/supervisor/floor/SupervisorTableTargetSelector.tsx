@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { OperationalTableStatusBadge } from "@/components/floor/OperationalTableStatusBadge";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 import { Button, SearchInput, Skeleton, StatusMessage } from "@/components/ui";
 import { shouldRetryApiRequest } from "@/lib/api/client";
 import { loadSupervisorFloorData } from "@/lib/supervisor/floor";
@@ -112,7 +113,9 @@ export function SupervisorTableTargetSelector({
                   )}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold text-text-primary">{target.label}</span>
+                    <span className="min-w-0 truncate font-semibold text-text-primary" title={target.label}>
+                      {formatOperationalTableLabel(target.label) || target.label}
+                    </span>
                     <OperationalTableStatusBadge status={target.status} />
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-text-muted">

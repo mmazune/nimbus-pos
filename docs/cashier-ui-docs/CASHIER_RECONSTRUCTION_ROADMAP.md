@@ -81,7 +81,24 @@ No removal of old Queue/Receipts pages yet.
 **Completion result:** physical-table and direct-lookup orders open the same canonical
 settlement workspace with truthful read state.
 
-## C3 — Payment, split settlement, partial payment, and close integration
+## C3 — Payment, split settlement, partial payment, and close integration — ✅ COMPLETE (2026-08-20)
+
+**Result:** A — C3 COMPLETE / READY FOR C4. The C2 read-only settlement workspace now executes
+settlement by **mounting the already-verified checkout primitives** (`CashierPaymentPanel` →
+`CashierCloseOrderPanel`, `CashierResolutionPanel variant="split-only"` → split-bill / split-items)
+through a new thin mount point `CashierSettlementActions`, plus a narrow post-mutation refresh
+(`lib/cashier/settlement-mutations.ts`). No financial logic was rewritten. Cash settles + closes in
+one call at the single verified choke point `POST /pos/orders/:id/close`; non-cash methods post
+partial/full manual references at `POST /payments/manual-reference` (a full one auto-settles).
+Terminal bills render a truthful notice and **no** control. See
+`ai/CASHIER_FLOOR_RECONSTRUCTION_C3_SETTLEMENT_COMPLETION_REPORT.md`.
+
+**Deviation (documented, not implemented):** there is **no standalone Close button**, because the
+backend has no zero-payment close — `CloseOrderDto.payments` is `@ArrayMinSize(1)` and
+`closeOrderWithPayment` requires `alreadyPaid + newPaid >= orderTotal` on a `SERVED` order. Close is
+therefore *reached through* payment, and `CashierCloseOrderPanel` states the real precondition
+instead of offering an action the API would reject. Exposing a synthetic close would require a
+backend change, which C3 was not authorized to make.
 
 Objectives:
 
@@ -100,7 +117,7 @@ No standalone Receipts removal in C3.
 **Completion result:** Cashier can settle and close a selected order entirely from the
 Floor-selected workspace.
 
-## C4 — Receipt, reprint, delivery, closed-order, and refund integration
+## C4 — Receipt, reprint, delivery, closed-order, and refund integration — ⏭️ NEXT (not started)
 
 Objectives:
 

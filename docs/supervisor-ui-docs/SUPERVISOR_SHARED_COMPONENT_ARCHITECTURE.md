@@ -32,7 +32,7 @@ Supervisor must feel like part of the same frontline product as Waiter and Cashi
 | Primitive | Consumers | Responsibility |
 |---|---|---|
 | `OperationalShell` | Waiter, Cashier, Supervisor | One fixed header slot, role readiness slot, max-width page container, bottom clearance, fixed nav, and safe-area padding. |
-| `OperationalHeader` | Waiter, Cashier, Supervisor | Stable brand, branch/context, centered clock, identity, role, and shared logout interaction. |
+| `OperationalHeader` | Waiter, Cashier, Supervisor | Stable brand, branch/context, centered clock, identity, role, and shared logout interaction. **(2026-08-20: the brand slot now renders the steering-wheel `NimbusLogomark` — see note below.)** |
 | `OperationalBottomNav` | Waiter, Cashier, Supervisor | Stable equal-width role destinations, active state, focus behavior, icon rendering, and safe-area placement. |
 | `CurrentTime` | Login and all operational roles | One memoized, non-live-announced locale time implementation with no API request. |
 | `role-icons` / `role-navigation` | All operational roles | Canonical shared-concept icons, centralized sizes/weights, and explicit route matching. |
@@ -47,6 +47,17 @@ Supervisor must feel like part of the same frontline product as Waiter and Cashi
 | `OperationalTableCard` | Waiter, Supervisor | Full table identifier, textual status, shared staff formatting, optional Mine, capacity, focus and selected state; never guest/order identifiers. |
 | `OperationalTableWorkspaceFrame` | Waiter, Supervisor | One responsive overlay/aside lifecycle with accessible close and shell/nav clearance. |
 | `RoleProfilePrimitives` | Waiter, Cashier, Supervisor | Already started through shared profile components. |
+
+> **Aug-2026 rebrand note (2026-08-20) — presentation only, no Supervisor behavior change.** The
+> shared header's brand slot (`components/pos-shell/BranchContextLabel.tsx`) now renders
+> **`NimbusLogomark`** — the steering-wheel brand mark from `docs/BRAND_IDENTITY.md` — on a
+> `bg-brand-white` / `text-brand-navy-900` chip, and the palette moved to navy `#000033`, light
+> grey `#B3B4AF`, dark grey `#6B6B6B`. The logomark is a **brand mark, not an operational icon**:
+> it is deliberately excluded from `operationalIconNames`, and it renders with `currentColor` so
+> token classes drive its color (never hard-code hex at call sites). The shared shell/Floor/profile
+> primitive **inventory, ownership boundaries, and adapter contracts in this document are
+> unchanged** — this is a token/asset swap inside an existing slot, and it propagates to Waiter,
+> Cashier, and Supervisor identically, exactly as the shared-shell rule intends.
 
 ## Ownership Boundaries
 
@@ -67,6 +78,17 @@ Each role should map backend data into a shared table presentation item:
 Prompt 2 implements this boundary as `OperationalTableViewModel`. Waiter maps its table/order/reservation/ownership cache and preserves menu prefetch and instant order entry. Supervisor maps permitted floor-plan/table/active-order/reservation reads and suppresses Mine because ownership is not a Supervisor concept. Queries, permissions, mutations, and React Query keys remain role-owned.
 
 After selection, shared presentation stops at the workspace frame. Waiter mounts `WaiterTableWorkspace`; Supervisor mounts `SupervisorTableControlWorkspace`. The Supervisor workspace is read-first and only preserves the verified table-status mutation. High-impact order actions remain deferred to Prompt 3.
+
+> **Stale-sentence correction (2026-08-20).** The last two sentences of the paragraph above are a
+> **Prompt-2 snapshot**. Prompts 3A–3B3B landed and the Supervisor table-control workspace is no
+> longer "read-first with only the table-status mutation": it now also exposes **Request bill**,
+> **Mark served**, **Split bill / Split items / Move items / Merge**, **Transfer table**,
+> **Find order**, and an **Adjustments** group (**Void**, **Discount request**, **Complimentary**,
+> inline discount **Approve/Reject**). Nothing "remains deferred to Prompt 3". What is still
+> genuinely out of scope: **transfer-server** (Outcome B), refund create/approve, post-close void,
+> payment collection, and order close. The architectural boundary this section documents — shared
+> presentation stops at the workspace frame, role owns API/permissions/mutations/query keys — is
+> **unchanged and still correct**. See `SUPERVISOR_LIFECYCLE.md` and `SUPERVISOR_API_MATRIX.md`.
 
 ```ts
 type OperationalTableView = {

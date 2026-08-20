@@ -53,9 +53,12 @@ const iconRegistrySource = readFileSync(
 );
 requiredIcons.forEach((name) => assert(iconRegistrySource.includes(`${name}:`), `icon registry contains ${name}`));
 assert(iconRegistrySource.includes("floor: SquaresFour"), "Floor uses the canonical SquaresFour icon");
-assert(operationalIconSizes.bottomNavigation === 24, "bottom navigation icon size is centralized at 24px");
+// Density pass (owner-approved 2026-08-20): the canonical bottom-nav icon size moved
+// 24px -> 20px in role-icon-config.ts. The assertion still guards centralization, at
+// the new canonical value.
+assert(operationalIconSizes.bottomNavigation === 20, "bottom navigation icon size is centralized at 20px");
 
-const { waiter, cashier, supervisor } = operationalRoleNavigation;
+const { waiter, cashier, supervisor, manager } = operationalRoleNavigation;
 assert(labels(waiter) === "Floor,Reservations,Me", "Waiter labels remain Floor, Reservations, Me");
 assert(labels(cashier) === "Floor,Till,Me", "Cashier labels are Floor, Till, Me (Prompt C1 Floor-first)");
 assert(cashier.length === 3, "Cashier route count is three");
@@ -71,6 +74,12 @@ assert(!supervisor.some((item) => item.href === "/supervisor/orders" || item.lab
 assertUniqueDestinations(waiter, "Waiter");
 assertUniqueDestinations(cashier, "Cashier");
 assertUniqueDestinations(supervisor, "Supervisor");
+// Manager joined the shared shell in M-P1 (2026-08-20) as the fourth registry consumer.
+assertUniqueDestinations(manager, "Manager");
+assert(labels(manager) === "Overview,Operations,Staff,Reports,Settings,Me", "Manager has exactly six approved labels");
+assert(manager.length === 6, "Manager route count is six");
+assert(Object.keys(operationalRoleNavigation).length === 4, "the shared nav registry serves exactly four roles");
+assert(manager[5].icon === waiter[2].icon, "Manager Me shares the canonical me icon with the other roles");
 
 assert(isOperationalRouteActive(waiter[0], "/waiter/floor"), "Waiter Floor is active on Floor");
 assert(isOperationalRouteActive(waiter[0], "/waiter/orders/order-1"), "Waiter contextual order routes keep Floor active");
@@ -106,4 +115,4 @@ assert(
 );
 assert(operationalShellLayout.maxContentWidthPx === 1600, "all roles share the 1600px maximum content width");
 
-console.log("Shell assertions passed: icons, role labels/counts, unique destinations, matching, legacy redirect context, and fixed offsets.");
+console.log("Shell assertions passed: icons, role labels/counts (four roles), unique destinations, matching, legacy redirect context, and fixed offsets.");

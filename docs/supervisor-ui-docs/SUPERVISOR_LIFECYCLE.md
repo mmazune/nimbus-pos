@@ -1,5 +1,18 @@
 # Supervisor Lifecycle
 
+> **Verified 2026-08-20 — no stale claims found in this document; two confirmations.**
+> (1) **Idle logout — this doc is CORRECT.** "Supervisor sessions share the operational
+> idle-logout mechanism" (Prompt 3A note below) matches the code:
+> `components/supervisor/shell/SupervisorShell.tsx` passes
+> `idleHandler={<OperationalIdleLogoutHandler />}` to `OperationalShell`, and the handler reads
+> `OPERATIONAL_IDLE_TIMEOUT_MS` (15 min) from the shared `components/pos-shell/idle.ts`.
+> `docs/UI_SYSTEM.md` §9 claimed the opposite ("Supervisor shell omits the idle-logout handler");
+> **that claim was the stale one and has been struck through with a dated correction** — code wins.
+> (2) **Aug-2026 rebrand is presentation-only for this document:** palette → navy `#000033` /
+> light grey `#B3B4AF` / dark grey `#6B6B6B`, and the steering-wheel logomark is live in the
+> header and login (`docs/BRAND_IDENTITY.md`). **No lifecycle, state machine, invalidation rule,
+> endpoint, or permission in this document is affected.**
+
 Status: Prompt 5B2 — Approvals CLOSED (Discount + Leave + Anomaly actionable; Shift-swap reject-only Outcome C); Prompt 3B3B order-workspace financial actions feature-complete
 
 > **Prompt 5B2 (2026-07-31):** Anomaly Acknowledge/Resolve are live; Shift-swap is Reject-only

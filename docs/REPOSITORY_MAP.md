@@ -37,7 +37,7 @@
 | `lib/auth/` | `AuthProvider`, auth types. |
 | `pages/` | Next.js Pages Router routes per role; legacy Orders pages are redirect-only. Cashier C1 added `pages/cashier/floor.tsx` (default landing) + `pages/cashier/index.tsx` (redirects `/cashier` → `/cashier/floor`); `pages/cashier/queue.tsx` + `receipts.tsx` remain as **hidden compatibility routes** (direct-URL only, off the visible nav — retire C4/C5); `till.tsx` + `me.tsx` unchanged. |
 | `scripts/` | Static assertion scripts (`floor-assertions.ts`, `shell-assertions.ts`, `profile-assertions.ts`, `cashier-c1-assertions.ts` + tsconfig) with their own tsconfigs — structural guards, not Jest tests. |
-| `public/` | Static assets (`favicon.svg`). |
+| `public/` | Static assets. `favicon.svg` — the **brand favicon** (navy `#000033` rounded tile + white steering-wheel mark, 64 viewBox; replaced the interim "N"). `public/brand/` — **shipped** brand asset directory, extracted as true vectors from the brand PDF: logomark(-white).svg, wordmark(-white).svg, wordmark-stacked(-white).svg, combination-mark(-white).svg, combination-mark-stacked(-white).svg, favicon.svg + favicon-16/32/48.png, apple-touch-icon.png (180), icon-192/512.png + icon-512-maskable.png, og-image.png (1200×630), manifest.webmanifest. `_app.tsx` links the svg favicon + 32px PNG fallback, apple-touch-icon, manifest, and og:image. See `docs/BRAND_IDENTITY.md` §5. |
 
 ### Note — reserved Supervisor order components
 

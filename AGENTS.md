@@ -4,7 +4,20 @@ Instructions here apply to this project and are shared with team members.
 
 ## Context
 
-Today's date is 2026-05-18.
+Today's date is 2026-08-02.
+
+## Agent Onboarding And Coordination
+
+- `CLAUDE.md` is the primary Claude Code onboarding file.
+- `CODEX.md` is the primary Codex onboarding file.
+- `AGENTS.md` is shared project memory for all coding agents.
+- When durable project guidance changes in `CLAUDE.md` or `CODEX.md`, update the
+  other file in the same change with the same facts, adapted only for
+  tool-specific wording. Durable guidance includes status summaries, locked
+  decisions, paths, commands, role boundaries, validation expectations,
+  governance rules, and handoff notes.
+- If a change intentionally applies to only one agent, explain that in the
+  changed file so Claude and Codex do not drift.
 
 ---
 
@@ -74,6 +87,8 @@ You MUST open and read before any code changes:
 - ai/AI_STATUS.md
 - ai/AI_ERROR_PROTOCOL.md
 - ai/AI_COMPLETION_REPORT_TEMPLATE.md
+- CLAUDE.md
+- CODEX.md
 - docs/ARCHITECTURE.md
 - docs/API_CONVENTIONS.md
 - docs/POSTMAN_ENDPOINT_GUIDE.md

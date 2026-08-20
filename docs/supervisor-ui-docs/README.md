@@ -1,5 +1,22 @@
 # Supervisor UI Docs
 
+> **2026-08-20 — Aug-2026 rebrand landed (no Supervisor behavior change).** The Nimbus POS
+> visual identity was refreshed: the canonical palette is now **navy `#000033`**, **light grey
+> `#B3B4AF`**, and **dark grey `#6B6B6B`**, and the **steering-wheel logomark**
+> (`components/pos-shell/NimbusLogomark.tsx`) is live in the operational header and on the login
+> screen, replacing the previous brand-icon treatment. Canonical reference:
+> **`docs/BRAND_IDENTITY.md`** (supersedes the pre-Aug-2026 palette carried by the `Front End/`
+> doc packs — old navy `#101F34`/`#0B1524` and silver `#ACABA9`). **No Supervisor route,
+> navigation, permission, endpoint, contract, or workflow changed.** The logomark is a brand
+> mark, deliberately *not* part of the `operationalIconNames` registry; the operational icon
+> registry (including `branch → Storefront`) is unchanged — see
+> `SUPERVISOR_ICON_AND_NAVIGATION_STANDARD.md`.
+>
+> **2026-08-20 — `SUPERVISOR_API_MATRIX.md` live-verified and one defect fixed.** Every endpoint
+> was re-checked against the code and an isolated local stack; a Verified column was added. The
+> matrix had documented `POST /api/auth/quick-pin/login`, which does not exist (**404**); the real
+> path is `POST /api/auth/quick-pin-login` (**401** on a wrong-PIN probe). Corrected in place.
+
 Status: **SUPERVISOR RECONSTRUCTION FINAL CLOSURE — B / COMPLETE WITH KNOWN LIMITATIONS /
 DEMO-READY (2026-07-31).** See `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md` for the
 canonical closure record (integrated final QA across Floor/Reservations/Approvals/Me + cross-role
@@ -134,3 +151,10 @@ Supervisor reconstruction target:
 ## Implementation Status
 
 Prompts 1-2 implement the shared shell/navigation/icons, exact shared Waiter/Supervisor Floor presentation, URL-backed selection, a read-first Supervisor table-control workspace, and safe legacy Orders handoff. Final tableless lookup, high-impact order actions, reservation actions, approval actions, and reconstruction closeout remain in Prompts 3-7.
+
+> **Stale-paragraph correction (2026-08-20).** The paragraph immediately above is a **Prompt-2-era
+> snapshot** and no longer describes current state: Prompts 3A–3B3B (order workspace), 4A–4D
+> (reservations), and 5A–5B2 (approvals) all landed, and the reconstruction was **closed at B —
+> COMPLETE WITH KNOWN LIMITATIONS / DEMO-READY on 2026-07-31** (see the Status line and the
+> Current Decision section above, and `ai/SUPERVISOR_RECONSTRUCTION_FINAL_COMPLETION_REPORT.md`).
+> Nothing "remains in Prompts 3-7" for Supervisor. Kept verbatim for history rather than rewritten.

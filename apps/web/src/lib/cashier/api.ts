@@ -1,6 +1,6 @@
 import { apiRequest } from "@/lib/api/client";
 
-export type CashierShiftApi = {
+export type CashierShiftRecord = {
   id: string;
   shiftNumber?: string | null;
   status?: string | null;
@@ -9,13 +9,16 @@ export type CashierShiftApi = {
   openedById?: string | null;
   branchId?: string | null;
   orgId?: string | null;
+  notes?: string | null;
   tillSessions?: Array<{
     id: string;
     tillCode?: string | null;
     status?: string | null;
     openingFloat?: string | number | null;
   }>;
-} | null;
+};
+
+export type CashierShiftApi = CashierShiftRecord | null;
 
 export type CashierTillApi = {
   id: string;

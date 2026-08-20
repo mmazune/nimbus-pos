@@ -1,5 +1,5 @@
 import { OperationalTableStatusBadge } from "@/components/floor/OperationalTableStatusBadge";
-import { operationalTableStatusLabels } from "@/components/floor/formatters";
+import { formatOperationalTableLabel, operationalTableStatusLabels } from "@/components/floor/formatters";
 import { operationalIconSizes, operationalIcons } from "@/components/pos-shell/role-icons";
 import type { CashierFloorTableViewModel } from "@/lib/cashier/floor-model";
 
@@ -47,8 +47,8 @@ export function CashierSelectedTablePanel({
 
       <header className="grid gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-2xl font-bold tracking-normal text-text-primary" title={table.label}>
-            {table.label}
+          <h2 className="text-xl font-bold tracking-normal text-text-primary" title={table.label}>
+            {formatOperationalTableLabel(table.label) || table.label}
           </h2>
           <OperationalTableStatusBadge status={table.status} />
         </div>

@@ -12,6 +12,7 @@ import { mapCashierResolutionError } from "@/lib/cashier/resolution-validation";
 
 import { CashierResolutionConfirmDialog } from "./CashierResolutionConfirmDialog";
 import { CashierResolutionResultNotice } from "./CashierResolutionResultNotice";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 
 type CashierTransferTablePanelProps = {
   order: CashierOrderViewModel;
@@ -121,7 +122,7 @@ export function CashierTransferTablePanel({ order, disabledReasons, onRefresh }:
           <option value="">Choose target table</option>
           {tableOptions.map((table) => (
             <option key={table.id} value={table.id}>
-              {table.label || table.id}
+              <span title={table.label || table.id}>{formatOperationalTableLabel(table.label) || table.label || table.id}</span>
             </option>
           ))}
         </select>

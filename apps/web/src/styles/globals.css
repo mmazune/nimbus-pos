@@ -3,55 +3,91 @@
 @tailwind utilities;
 
 :root {
-  --color-brand-navy-950: #0B1524;
-  --color-brand-navy-900: #101F34;
-  --color-brand-navy-800: #273343;
+  /* Brand core — Nimbus POS Brand Identity (Aug 2026). Canonical navy #000033
+     (RGB 0 0 51 / CMYK 94 89 43 65). 950/800 are derived shade/tint of the
+     canonical 900 to preserve the dark-surface hierarchy (header vs hover). */
+  --color-brand-navy-950: #000024;
+  --color-brand-navy-900: #000033;
+  --color-brand-navy-800: #1E1E52;
   --color-brand-white: #FFFFFF;
-  --color-brand-silver: #ACABA9;
-  --color-brand-graphite: #616367;
+  --color-brand-silver: #B3B4AF; /* brand Light Grey */
+  --color-brand-graphite: #6B6B6B; /* brand Dark Grey (sampled from Brand Identity guide swatch; the guide's printed hex is a typo) */
+
+  /* Channel triplets (space-separated R G B) for tokens consumed with Tailwind
+     opacity modifiers (e.g. bg-brand-navy-950/40). Keep in sync with the hex
+     values above/below — Tailwind cannot alpha-modify a bare hex var. */
+  --color-brand-navy-950-ch: 0 0 36;
+  --color-brand-white-ch: 255 255 255;
+  --color-status-success-ch: 17 119 78;
+  --color-status-warning-ch: 138 100 16;
+  --color-status-danger-ch: 183 56 76;
+  --color-status-info-ch: 43 105 178;
 
   --color-page-bg: #F6F7F9;
   --color-surface: #FFFFFF;
   --color-surface-raised: #FFFFFF;
   --color-surface-muted: #ECECEC;
-  --color-surface-navy: #101F34;
+  --color-surface-navy: var(--color-brand-navy-900);
   --color-border-subtle: #E3E5E8;
   --color-border-strong: #B8BCC2;
   --color-text-primary: #101828;
   --color-text-secondary: #4B5563;
   --color-text-muted: #6B7280;
   --color-text-inverse: #FFFFFF;
-  --color-focus-ring: #101F34;
+  --color-focus-ring: var(--color-brand-navy-900);
   --color-skeleton-base: #ECECEC;
   --color-skeleton-highlight: #F7F7F7;
 
-  --color-status-success: #1F8A5B;
+  /* Status ink tokens are darkened so each clears WCAG AA (4.5:1) as text on
+     BOTH its own -surface token AND plain #FFFFFF, and so white text sitting on
+     the solid fill clears AA too. Hue is preserved (OKLCH hue shift <5deg from
+     the Aug-2026 originals); only lightness/chroma moved. Contrast (own surface
+     / #FFFFFF): warning 4.99 / 5.37, success 5.06 / 5.57, danger 5.00 / 5.70,
+     info 4.95 / 5.58. Surface tokens are unchanged. Keep the -ch triplets above
+     in sync — Tailwind resolves text-status-* through those, not these hexes. */
+  --color-status-success: #11774E;
   --color-status-success-surface: #EAF7F1;
-  --color-status-warning: #D19822;
+  --color-status-warning: #8A6410;
   --color-status-warning-surface: #FFF6DF;
-  --color-status-danger: #D1495B;
+  --color-status-danger: #B7384C;
   --color-status-danger-surface: #FDECEF;
-  --color-status-info: #2F6FBA;
+  --color-status-info: #2B69B2;
   --color-status-info-surface: #EAF2FF;
   --color-status-neutral: #616367;
   --color-status-neutral-surface: #F1F2F4;
 
-  --color-role-waiter: oklch(0.39 0.055 190);
-  --color-role-waiter-soft: oklch(0.965 0.018 190);
-  --color-role-cashier: oklch(0.42 0.07 62);
-  --color-role-cashier-soft: oklch(0.97 0.022 72);
-  --color-role-supervisor: oklch(0.4 0.065 253);
-  --color-role-supervisor-soft: oklch(0.965 0.018 253);
+  /* Role accents are derived from the brand navy #000033 (OKLCH hue 264) so the
+     four profile heroes read as one navy family on a single 30deg hue ladder:
+     waiter steel-blue (232), supervisor on the brand hue itself (264), cashier
+     indigo (294), and manager (M-P1, 2026-08-20) the next rung at plum (324).
+     White text on each solid: waiter 9.13:1, cashier 10.83:1, supervisor
+     12.55:1, manager 11.18:1; text-primary on each soft is >=16:1 (manager
+     15.95:1). */
+  --color-role-waiter: oklch(0.4 0.062 232);
+  --color-role-waiter-soft: oklch(0.965 0.015 232);
+  --color-role-cashier: oklch(0.365 0.062 294);
+  --color-role-cashier-soft: oklch(0.965 0.015 294);
+  --color-role-supervisor: oklch(0.325 0.085 264);
+  --color-role-supervisor-soft: oklch(0.965 0.015 264);
+  --color-role-manager: oklch(0.36 0.06 324);
+  --color-role-manager-soft: oklch(0.965 0.015 324);
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
+  /* Density scale — owner-approved 2026-08-20.
+     These were absolute px (4/8/12/16/20/24/32/40/48). They are now rem so the
+     Tailwind spacing keys they back (1,2,3,4,5,6,8,10,12) track the
+     viewport-scaled root font size defined on `html` below. At the 16px root
+     ceiling every value resolves to EXACTLY its former pixel size; below that
+     the whole app scales down proportionally instead of overflowing the
+     viewport. See docs/UI_SYSTEM.md §1c. */
+  --space-1: 0.25rem;  /* 4px @ 16px root */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
 
   --radius-xs: 4px;
   --radius-sm: 8px;
@@ -60,17 +96,23 @@
   --radius-xl: 20px;
   --radius-2xl: 24px;
 
+  /* Shadow ink follows the brand navy (RGB 0 0 51). */
+  --color-brand-navy-rgb: 0, 0, 51;
   --shadow-subtle:
-    0 0 0 1px rgba(11, 21, 36, 0.06),
-    0 1px 2px -1px rgba(11, 21, 36, 0.08),
-    0 10px 24px -20px rgba(11, 21, 36, 0.22);
+    0 0 0 1px rgba(var(--color-brand-navy-rgb), 0.06),
+    0 1px 2px -1px rgba(var(--color-brand-navy-rgb), 0.08),
+    0 10px 24px -20px rgba(var(--color-brand-navy-rgb), 0.22);
   --shadow-panel:
-    0 0 0 1px rgba(11, 21, 36, 0.08),
-    0 10px 28px -18px rgba(11, 21, 36, 0.28);
+    0 0 0 1px rgba(var(--color-brand-navy-rgb), 0.08),
+    0 10px 28px -18px rgba(var(--color-brand-navy-rgb), 0.28);
   --shadow-overlay:
-    0 0 0 1px rgba(11, 21, 36, 0.1),
-    0 22px 60px -28px rgba(11, 21, 36, 0.42);
-  --shadow-focus: 0 0 0 3px rgba(16, 31, 52, 0.24);
+    0 0 0 1px rgba(var(--color-brand-navy-rgb), 0.1),
+    0 22px 60px -28px rgba(var(--color-brand-navy-rgb), 0.42);
+  --shadow-focus: 0 0 0 3px rgba(var(--color-brand-navy-rgb), 0.24);
+  /* Inverse focus ring for controls that sit ON the navy brand surfaces
+     (operational header, bottom nav). The default navy ring is invisible
+     against navy-950/navy-900, so those controls opt into this one. */
+  --shadow-focus-inverse: 0 0 0 3px rgb(var(--color-brand-white-ch) / 0.72);
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -79,10 +121,34 @@
   box-sizing: border-box;
 }
 
+/*
+ * GLOBAL DENSITY MECHANISM (owner-approved 2026-08-20).
+ *
+ * The operational app is a fullscreen terminal: it must FIT the viewport, not
+ * scroll it. Rather than hand-tuning dozens of components per breakpoint, the
+ * root font size is scaled with viewport HEIGHT (the axis that actually causes
+ * the overflow), and every rem-based Tailwind utility — type scale, spacing
+ * scale (see --space-* above), heights, paddings, radii in rem — follows it.
+ *
+ *   font-size: clamp(13.5px, 0.625vh + 9.25px, 16px)
+ *
+ *   1280x680  -> 13.50px   (0.625*6.80 + 9.25 = 13.50, clamped floor)
+ *   1366x768  -> 14.05px
+ *   1440x900  -> 14.88px
+ *   1920x1080 -> 16.00px   (clamped ceiling — the pre-density baseline)
+ *
+ * Consequences to respect when editing components:
+ *  - rem/Tailwind default utilities scale automatically. GOOD.
+ *  - raw px arbitrary values (min-h-[176px], minmax(220px,1fr)) do NOT scale —
+ *    convert them to rem when they express vertical rhythm.
+ *  - the icon registry is px-based by design; its tokens were re-scaled once in
+ *    role-icon-config.ts rather than per-component.
+ */
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px);
 }
 
 body {
@@ -91,6 +157,7 @@ body {
   background: var(--color-page-bg);
   color: var(--color-text-primary);
   font-family:
+    "Inter Variable",
     Inter,
     ui-sans-serif,
     system-ui,
@@ -116,7 +183,7 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(16, 31, 52, 0.16);
+  background: rgba(var(--color-brand-navy-rgb), 0.16);
 }
 
 :focus-visible {

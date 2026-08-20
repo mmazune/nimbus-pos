@@ -162,6 +162,36 @@
 > reverted); the lifecycle remains proven by 67/67 reservation+order Jest tests and
 > the compiled Prompt 4B Playwright suite (72 tests × 4 viewports).
 
+## Manager
+
+> **Manager M-P1 IMPLEMENTED (2026-08-20); M-P2…M-P6 not started.** Manager is the fourth consumer
+> of the shared operational shell. Nav is locked to **Overview · Operations · Staff · Reports ·
+> Settings · Me** (no More tab, no Approvals tab), landing `/manager/overview`. A **branch switcher**
+> in the header selects among the account's ACTIVE memberships and drives `X-Branch-Id` on every
+> manager read. **No permission change** — the manager token already held everything M-P1 touches;
+> in fact it holds *more* than the approved scope, which is exactly why
+> `lib/manager/permissions.ts` is a **surface allow-list, not a permission check**. Canonical
+> record: `ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md`.
+
+| Page | Capability | Endpoint(s) | State |
+| --- | --- | --- | --- |
+| Shell | Six-tab navigation + landing + `/manager` redirect | (client, shared registry) | **Implemented** (M-P1) |
+| Shell | **Branch switcher** across ACTIVE memberships; persists (`nimbus.managerBranchId`); re-scopes every manager query | `GET /auth/me` (`memberships`) + `X-Branch-Id` on subsequent reads | **Implemented** (M-P1; zero extra requests, narrow `["manager"]` invalidation) |
+| Shell | Session guard (manager-compatible only → `/login?reason=manager_only`) + shared idle logout | `GET /auth/me` | **Implemented** (M-P1) |
+| Shell | Readiness: report-generator health | `GET /reports/catalog` (`pos:reports:history:read`) | **Implemented** (M-P1; truthful IMPLEMENTED/CONDITIONAL/PENDING_LATER counts) |
+| Shell | Readiness: device registry health | `GET /devices?page=1&pageSize=50` (`devices:read`) | **Implemented** (M-P1; branch-scoped total) |
+| Shell | Readiness: tills / shifts / pending approvals chips | — | **Excluded from M-P1** — `GET /api/tills` + `GET /api/shifts` do not exist and `/tills|shifts/active` are operator-scoped (MP0-02); approvals list is only partly branch-scoped (MP0-05). Counts only, from M-P2. |
+| Overview | KPIs, payment mix, snapshots, approval counts, live stream | `/dash/manager`, `/dash/*`, `/stream/metrics` | **Deferred → M-P2** (foundation page shipped) |
+| Operations | Read-only tables/orders/reservations oversight | `/tables`, `/pos/orders`, `/reservations` | **Deferred → M-P3** (foundation page shipped) |
+| Operations | Cashier checkout clone / waiter order-entry clone | — | **Excluded** (locked owner decision) |
+| Staff | Safe-field directory, onboarding, Quick PIN, attendance, leave/swap review | `/hr/*` | **Deferred → M-P4** (needs an allow-list projection at the API-client boundary — `GET /hr/employees` returns compensation on the wire, MP0-01) |
+| Staff | Compensation / contracts / payroll / bank / tax / private HR notes | — | **Excluded** (locked; permissions are held but never used) |
+| Reports | Catalog, generate, history/detail, export | `/reports/*` | **Deferred → M-P5** (CSV-only; no row table — `/reports/:id` returns summary + rowCount only) |
+| Settings | Branch profile (read-only), device registry, printer metadata, terminal stub | `/branches`, `/devices/*` | **Deferred → M-P6** (`PATCH /branches/:id` does not exist, MP0-04) |
+| Me | Identity, session, branch memberships, restricted-surface disclosure, logout | `GET /auth/me` only | **Implemented** (M-P1; no HR read, no extra request) |
+| — | Generic approvals inbox / `POST /approvals/:id/decide` | — | **Excluded** (held but unused — domain routes preferred, Supervisor Option B precedent) |
+| — | Membership/role administration, receipt admin, owner/billing surfaces | — | **Excluded** (disclosed on Manager Me) |
+
 ## Cross-cutting / auth
 
 | Capability | Endpoint | State |

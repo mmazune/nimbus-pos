@@ -14,6 +14,7 @@ import {
 } from "@/lib/supervisor/orders";
 
 import { SupervisorLineSelector } from "./SupervisorLineSelector";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 
 type SupervisorSplitItemsDialogProps = {
   order: SupervisorOrderDetail;
@@ -149,7 +150,7 @@ export function SupervisorSplitItemsDialog({
             <option value="">Keep unassigned</option>
             {availableTables.map((table) => (
               <option key={table.id} value={table.id}>
-                {table.label || table.id}
+                <span title={table.label || table.id}>{formatOperationalTableLabel(table.label) || table.label || table.id}</span>
               </option>
             ))}
           </select>

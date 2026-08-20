@@ -199,7 +199,7 @@ export function SupervisorCreateReservationDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-navy-950/40 p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !mutation.isPending) onClose();
       }}

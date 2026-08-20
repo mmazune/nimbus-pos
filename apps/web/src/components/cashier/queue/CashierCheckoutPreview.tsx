@@ -226,7 +226,7 @@ export function CashierCheckoutPreview({
         {receiptAvailable ? (
           <Link
             href={`/cashier/receipts?receiptId=${current.id}`}
-            className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-navy-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-brand-navy-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy-900"
+            className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-navy-900 px-4 py-2 text-sm font-bold text-text-inverse transition-colors hover:bg-brand-navy-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy-900"
           >
             <Receipt size={18} weight="bold" aria-hidden />
             View receipt

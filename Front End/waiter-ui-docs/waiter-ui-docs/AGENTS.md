@@ -112,13 +112,15 @@ Do not invent routes because a screen needs data. If a route is missing, add it 
 
 ## 5. Brand and visual rules
 
-The current working waiter palette is extracted from the latest Nimbus POS visual reference:
+The waiter palette comes from the **Nimbus POS Brand Identity guide (Andimashimwe Rhoda, August 2026)** — canonical reference `docs/BRAND_IDENTITY.md`:
 
-- Deep navy.
-- White.
-- Warm silver.
-- Graphite.
+- Deep navy `#000033` (canonical brand Navy Blue).
+- White `#FFFFFF`.
+- Light grey `#B3B4AF` (brand Light Grey; the "warm silver" accent).
+- Dark grey `#6B6B6B` (brand Dark Grey — sampled from the guide's Dark Grey swatch; the guide's printed hex is a typo).
 - Complementary amber/status colors only where functionally needed.
+
+Brand type is **Inter only** (ExtraBold display, Regular body). The logomark is the steering wheel — now shipped: extracted from the brand PDF into `apps/web/public/brand/`, rendered in-app by `components/pos-shell/NimbusLogomark.tsx`, and the favicon is the brand mark (the interim "N" placeholder is gone).
 
 No arbitrary color values are allowed in components after tokens are created. Use tokens from `DESIGN.md`.
 

@@ -109,7 +109,7 @@ export function useCashierReadiness(): CashierReadinessSnapshot {
     return {
       status: "inactive",
       label: "No active shift",
-      detail: "Shift is not active. Payment actions will stay blocked.",
+      detail: "Shift is not active. Open Me to start a shift. Payment actions will stay blocked.",
       tone: "warning",
     };
   }, [canQuery, isAuthenticated, isCashier, shiftQuery.data, shiftQuery.error, shiftQuery.isError, shiftQuery.isLoading]);
@@ -156,7 +156,7 @@ export function useCashierReadiness(): CashierReadinessSnapshot {
       {
         key: "shift",
         label: "Shift",
-        value: shift.label,
+        value: shift.status === "inactive" ? `${shift.label} · Open Me to start` : shift.label,
         tone: shift.tone,
       },
       {
@@ -172,7 +172,7 @@ export function useCashierReadiness(): CashierReadinessSnapshot {
         tone: "info",
       },
     ],
-    [shift.label, shift.tone, till.label, till.tone],
+    [shift.label, shift.status, shift.tone, till.label, till.tone],
   );
 
   return {

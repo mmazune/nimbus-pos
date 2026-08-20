@@ -13,6 +13,7 @@ import { mapCashierResolutionError, validateResolutionItemSelection } from "@/li
 import { CashierResolutionConfirmDialog } from "./CashierResolutionConfirmDialog";
 import { CashierResolutionResultNotice } from "./CashierResolutionResultNotice";
 import { CashierSplitItemSelector } from "./CashierSplitItemSelector";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 
 type CashierSplitItemsPanelProps = {
   order: CashierOrderViewModel;
@@ -164,7 +165,7 @@ export function CashierSplitItemsPanel({ order, disabledReasons, onRefresh }: Ca
           <option value="">Keep source table</option>
           {tableOptions.map((table) => (
             <option key={table.id} value={table.id}>
-              {table.label || table.id}
+              <span title={table.label || table.id}>{formatOperationalTableLabel(table.label) || table.label || table.id}</span>
             </option>
           ))}
         </select>

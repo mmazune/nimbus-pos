@@ -12,6 +12,7 @@ nimbus-pos/
 ├── tsconfig.base.json
 ├── turbo.json
 ├── README.md
+├── CODEX.md
 ├── ROADMAP.md
 ├── repo file tree.txt
 │
@@ -1706,4 +1707,135 @@ ai/
   CASHIER_FLOOR_RECONSTRUCTION_C1_SHARED_FLOOR_COMPLETION_REPORT.md
   CASHIER_FLOOR_RECONSTRUCTION_C1_QA_EVIDENCE_INDEX.md
   CASHIER_FLOOR_RECONSTRUCTION_PROMPT_C2.md
+```
+
+## Rebrand + role UI QA wave additions (2026-08-20)
+
+```text
+docs/
+  BRAND_IDENTITY.md    (new — canonical Aug-2026 brand identity: palette, logo system, type, assets)
+
+docs/waiter-ui-docs/
+  README.md            (new — canonical Waiter role overview; Waiter had no docs dir before)
+  WAITER_API_MATRIX.md (new — 37 endpoints, 20 GETs + 11 writes live-verified)
+  WAITER_LIFECYCLE.md  (new)
+
+docs/cashier-ui-docs/
+  CASHIER_API_MATRIX.md (new — 32 endpoints, 19 live-verified; supersedes the legacy pack matrix)
+
+apps/web/public/brand/
+  logomark.svg
+  logomark-white.svg
+  wordmark.svg
+  wordmark-white.svg
+  wordmark-stacked.svg
+  wordmark-stacked-white.svg
+  combination-mark.svg
+  combination-mark-white.svg
+  combination-mark-stacked.svg
+  combination-mark-stacked-white.svg
+  favicon.svg
+  favicon-16.png
+  favicon-32.png
+  favicon-48.png
+  apple-touch-icon.png       (180x180)
+  icon-192.png
+  icon-512.png
+  icon-512-maskable.png
+  og-image.png               (1200x630)
+  manifest.webmanifest
+
+apps/web/public/
+  favicon.svg          (modified — replaced with the new steering-wheel mark)
+
+apps/web/src/components/pos-shell/
+  NimbusLogomark.tsx   (new — currentColor brand mark; deliberately NOT in the icon registry)
+  BranchContextLabel.tsx     (modified — 44px header brand tile)
+  OperationalHeader.tsx      (modified — logout uses the Button inverse variant)
+  OperationalBottomNav.tsx   (modified — wired to --shadow-focus-inverse)
+  ActionConfirmDialog.tsx    (modified — scrim bg-brand-navy-950/40)
+
+apps/web/src/components/ui/
+  Button.tsx           (modified — new inverse variant + disabled:text-text-primary)
+
+apps/web/src/components/cashier/checkout/
+  CashierPaymentMethodSelector.tsx  (modified — selected-tile class conflict fixed)
+
+apps/web/src/components/cashier/queue/
+  CashierCheckoutPreview.tsx        (modified — text-white -> text-text-inverse)
+
+apps/web/src/components/cashier/floor/
+  CashierFindBillDialog.tsx         (modified — navy scrim)
+
+apps/web/src/components/supervisor/floor/
+  SupervisorFindOrderDialog.tsx     (modified — navy scrim)
+
+apps/web/src/components/supervisor/reservations/
+  SupervisorCreateReservationDialog.tsx  (modified — navy scrim)
+
+apps/web/src/styles/
+  globals.css          (modified — brand palette + alpha-channel token triplets + --shadow-focus-inverse)
+
+apps/web/src/pages/
+  _app.tsx             (modified — theme-color #000033, manifest, apple-touch-icon, og meta)
+  login.tsx            (modified — 56px NimbusLogomark hero tile, replacing LockKey)
+
+apps/web/
+  tailwind.config.ts   (modified — rgb(var() / <alpha-value>) mappings + focus-inverse shadow token)
+
+ai/
+  REBRAND_AND_ROLE_QA_COMPLETION_REPORT.md   (new — canonical wave record)
+```
+
+## 2026-08-20 — Manager reconstruction M-P1 (shell / nav / session / branch switcher)
+
+```
+apps/web/src/lib/manager/                       (new)
+  routes.ts            (locked six nav items, icons by registry name)
+  permissions.ts       (SURFACE ALLOW-LIST — never a permission check)
+  branch-model.ts      (pure branch option projection + resolution order)
+  branch-context.ts    (React provider, persistence, narrow ["manager"] invalidation)
+  context.ts           (workspace context + readiness snapshot)
+  state.ts             (query-key namespace, readiness tones, caveat copy)
+  api.ts               (the two M-P0-verified readiness reads)
+
+apps/web/src/components/manager/shell/          (new)
+  ManagerShell.tsx  ManagerHeader.tsx  ManagerBottomNav.tsx
+  ManagerBranchSwitcher.tsx  ManagerReadinessStrip.tsx  ManagerSessionGuard.tsx  index.ts
+
+apps/web/src/components/manager/foundation/     (new)
+  ManagerFoundationScreen.tsx   (honest "not built yet" surface state — no fake data)
+
+apps/web/src/components/manager/me/             (new)
+  ManagerMeScreen.tsx           (real Me from /api/auth/me only)
+
+apps/web/src/pages/manager/                     (new)
+  index.tsx (→ /manager/overview)  overview.tsx  operations.tsx  staff.tsx
+  reports.tsx  settings.tsx  me.tsx
+
+apps/web/scripts/                               (new)
+  manager-p1-assertions.ts  tsconfig.manager-p1-assertions.json
+
+apps/web/e2e/manager-shell/                     (new)
+  fixtures.ts  navigation-and-landing.spec.ts  branch-switcher.spec.ts
+  role-boundaries.spec.ts  shell-parity.spec.ts
+
+apps/web/src/components/pos-shell/              (modified — shared, all four roles regressed)
+  types.ts             (OperationalRole += "manager"; optional branchSwitcher header slot)
+  role-navigation.ts   (manager: managerRoutes)
+  role-icon-config.ts  (+6 names: overview/operations/staff/reports/settings/caretDown)
+  role-icons.ts        (+6 Phosphor bindings)
+  OperationalHeader.tsx(optional switcher slot; no-slot branch renders the previous markup)
+
+apps/web/src/lib/auth/                          (modified)
+  role.ts  types.ts  AuthProvider.tsx   (isManagerCompatible, getManagerLandingPath, isManager)
+
+apps/web/src/lib/profile/profile-model.ts       (modified — ProfileRole += manager, accent entry)
+apps/web/src/pages/login.tsx                    (modified — 4 call sites, manager_only reason, copy)
+apps/web/src/styles/globals.css                 (modified — --color-role-manager[-soft])
+apps/web/tailwind.config.ts                     (modified — role.manager mappings)
+apps/web/scripts/{shell,profile}-assertions.ts  (modified — extended to four roles)
+
+ai/
+  MANAGER_P1_SHELL_COMPLETION_REPORT.md         (new — canonical M-P1 record)
 ```

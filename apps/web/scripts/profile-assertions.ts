@@ -103,9 +103,13 @@ const outgoingSwap = normalizeShiftSwap({
 assert(incomingSwap.directionLabel === "Incoming", "incoming swaps are distinguished");
 assert(outgoingSwap.directionLabel === "Outgoing", "outgoing swaps are distinguished");
 
-assert(Object.keys(roleAccentMap).length === 3, "all supported profile roles have variants");
+// Four roles since Manager M-P1 (2026-08-20): waiter, cashier, supervisor, manager.
+assert(Object.keys(roleAccentMap).length === 4, "all supported profile roles have variants");
 assert(getRoleAccent("waiter").heroClassName !== getRoleAccent("cashier").heroClassName, "waiter and cashier accents are distinct");
 assert(getRoleAccent("cashier").heroClassName !== getRoleAccent("supervisor").heroClassName, "cashier and supervisor accents are distinct");
+assert(getRoleAccent("manager").heroClassName !== getRoleAccent("supervisor").heroClassName, "manager and supervisor accents are distinct");
+assert(getRoleAccent("manager").heroClassName !== getRoleAccent("cashier").heroClassName, "manager and cashier accents are distinct");
+assert(getRoleAccent("manager").heroClassName !== getRoleAccent("waiter").heroClassName, "manager and waiter accents are distinct");
 
 console.log("Profile assertions passed: normalization, role variants, linkage, shift states, unavailable states, and swap direction.");
 

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
 import { OperationalTableStatusBadge } from "@/components/floor/OperationalTableStatusBadge";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 import { Button, Skeleton, StatusMessage } from "@/components/ui";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { cashierBillQueryKeys } from "@/lib/cashier/bill-query-keys";
@@ -28,7 +29,8 @@ import { CashierSettlementWorkspace } from "./CashierSettlementWorkspace";
  *   - many payable  → an explicit bounded selector (no silent first-pick).
  *
  * The table-order query stays mounted while a bill is open so "Back to bills"
- * can return to the selector without a re-fetch. Everything here is read-only.
+ * can return to the selector without a re-fetch. Resolution itself is read-only;
+ * settlement execution lives inside the workspace it opens (Prompt C3).
  */
 
 const TABLE_BILLS_PAGE_SIZE = 50;
@@ -112,6 +114,7 @@ export function CashierBillResolutionPanel({
         orderId={selectedOrderId}
         token={token}
         branchId={branchId}
+        tableId={table.id}
         fallbackBranchName={fallbackBranchName}
         fallbackOrder={matchingOrder}
         readiness={readiness}
@@ -133,8 +136,8 @@ export function CashierBillResolutionPanel({
       </button>
 
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold tracking-normal text-text-primary" title={table.label}>
-          {table.label}
+        <h2 className="text-xl font-bold tracking-normal text-text-primary" title={table.label}>
+          {formatOperationalTableLabel(table.label) || table.label}
         </h2>
         <OperationalTableStatusBadge status={table.status} />
       </header>
@@ -179,14 +182,12 @@ export function CashierBillResolutionPanel({
           </div>
 
           {resolution.terminal.length ? (
-            <section className="grid gap-2" aria-label="Recent closed bills for this table">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-text-muted">Recent closed bills</h3>
-              <CashierBillSelector
-                candidates={resolution.terminal}
-                fallbackBranchName={fallbackBranchName}
-                onSelect={onSelectBill}
-              />
-            </section>
+            <CashierBillSelector
+              mode="closed-history"
+              candidates={resolution.terminal}
+              fallbackBranchName={fallbackBranchName}
+              onSelect={onSelectBill}
+            />
           ) : null}
         </div>
       )}

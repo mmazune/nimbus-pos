@@ -21,8 +21,9 @@ export function OperationalBottomNav({ ariaLabel, items }: OperationalBottomNavP
       aria-label={ariaLabel}
       data-operational-bottom-nav
     >
+      {/* Density pass 2026-08-20: 5rem -> 4rem tall (64px at the 16px root ceiling). */}
       <div
-        className="mx-auto grid h-20 w-full max-w-[1600px] gap-1 px-2 py-2 sm:gap-2 sm:px-6 lg:px-8"
+        className="mx-auto grid h-16 w-full max-w-[1600px] gap-1 px-2 py-2 sm:gap-2 sm:px-4 lg:px-6"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map((item) => {
@@ -35,8 +36,10 @@ export function OperationalBottomNav({ ariaLabel, items }: OperationalBottomNavP
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-16 min-w-0 items-center justify-center gap-2 rounded-md px-2 text-xs font-semibold sm:gap-3 sm:px-4 sm:text-base",
+                "flex h-full min-w-0 items-center justify-center gap-2 rounded-md px-2 text-xs font-semibold sm:gap-2 sm:px-3 sm:text-sm",
                 "transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.98] focus-visible:relative focus-visible:z-10",
+                // The bar is brand navy, so the default navy focus ring is invisible here.
+                "focus-visible:shadow-focus-inverse",
                 active
                   ? "bg-brand-white text-brand-navy-900"
                   : "text-text-inverse hover:bg-brand-navy-800",

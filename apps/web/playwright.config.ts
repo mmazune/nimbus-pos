@@ -51,6 +51,10 @@ export default defineConfig({
     // These are standard constrained-environment flags, not a product/test behavior change.
     launchOptions: {
       args: ["--disable-gpu", "--disable-software-rasterizer", "--disable-dev-shm-usage"],
+      // Optional escape hatch for QA hosts that ship a pre-provisioned Chromium whose
+      // build number does not match this Playwright release (e.g. a sandboxed image
+      // with /opt/pw-browsers). Unset => Playwright's own managed browser, unchanged.
+      ...(process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {}),
     },
   },
   projects: [

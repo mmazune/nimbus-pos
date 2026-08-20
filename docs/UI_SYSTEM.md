@@ -1,8 +1,22 @@
 # UI_SYSTEM.md — Nimbus POS shared operational UI
 
 > The visual + structural system for the operational role apps (Waiter, Cashier,
-> Supervisor). Companion to `PRODUCT.md` (product/design principles) and
+> Supervisor, **Manager**). Companion to `PRODUCT.md` (product/design principles) and
 > `ARCHITECTURE.md` (system shape). Code lives in `apps/web/src/components/`.
+
+> **OWNER UI POLISH WAVE 2 — global density + fullscreen lock screen (owner-approved 2026-08-20).**
+> Five owner complaints were fixed in the SHARED layer: (1) `/login` is a true fullscreen layout with
+> **zero page scroll** at every terminal viewport; (2) a **global density mechanism** (§1c) makes the
+> whole app enterprise-tight at laptop sizes; (3) the lock screen is brand-led (logomark + wordmark
+> lockup, role-marketing copy removed); (4) the header prints a **terminal identity** ("Terminal 01")
+> instead of "Service area unavailable"; (5) long floor table labels are **abbreviated** on screen
+> (§5b) so card titles are one line. This wave DELIBERATELY overrides previously locked geometry —
+> the 176px table card, the 80px header, and the 80px bottom nav — under the owner's explicit
+> authorization. See `docs/DECISIONS.md` (2026-08-20 entries).
+
+> **Brand rebrand (2026-08-20):** the Aug 2026 Nimbus POS Brand Identity landed in
+> `apps/web/src/styles/globals.css` — brand token **values** changed (canonical navy is now
+> `#000033`), token **names** did not. See §1b below and `docs/BRAND_IDENTITY.md`.
 
 > **Supervisor final closure (2026-07-31):** the shared-first architecture below (one Floor, one
 > shell, one idle handler, one icon registry across all three roles) was verified intact by
@@ -24,37 +38,247 @@
 > use accessible `role=tablist`/`aria-pressed`; status/severity convey via labelled badges (not
 > colour alone). Components: `components/supervisor/approvals/workspace/*`.
 
+> **Manager M-P1 (2026-08-20):** the shell system now serves **four** roles. Manager consumes
+> `OperationalShell` / `OperationalHeader` / `OperationalBottomNav` / `OperationalIdleLogoutHandler`
+> through thin adapters in `components/manager/shell/` — no fork. Two shared additions landed:
+> `OperationalHeaderContext` gained an **optional** `branchSwitcher?: ReactNode` slot (absent for
+> the other three roles, which render byte-identical markup), and the icon registry gained six
+> names (`overview`, `operations`, `staff`, `reports`, `settings`, `caretDown`). See
+> `ai/MANAGER_P1_SHELL_COMPLETION_REPORT.md`.
+
 ## 1. Principle: shared-first
 
 Equivalent UI concepts across roles are implemented **once** as shared primitives
 and consumed via thin per-role adapters. Never fork a per-role copy of a shared
 concept. When you change a shared component, verify **every** consuming role.
 
-Three shared trees:
+Four consuming roles. Three shared trees:
 
 - `components/pos-shell/` — shell, header, bottom nav, clock, idle handler, icons.
 - `components/floor/` — the table Floor (toolbar, grid, cards, status, workspace frame).
 - `components/profile/` — the "Me"/profile presentation primitives.
 
+## 1b. Brand palette & logomark
+
+Rebranded 2026-08-20 to the **Nimbus POS Brand Identity** guide (Andimashimwe Rhoda,
+Aug 2026). Canonical reference: `docs/BRAND_IDENTITY.md`.
+
+| Token | Value | Note |
+| --- | ---: | --- |
+| `--color-brand-navy-950` | `#000024` | Derived shade — deepest header/scrim. |
+| `--color-brand-navy-900` | `#000033` | **Canonical brand Navy Blue** (RGB 0 0 51). Primary dark, reversed actions, focus ring. |
+| `--color-brand-navy-800` | `#1E1E52` | Derived tint — hover on dark, header time chip. |
+| `--color-brand-white` | `#FFFFFF` | |
+| `--color-brand-silver` | `#B3B4AF` | Brand Light Grey. |
+| `--color-brand-graphite` | `#6B6B6B` | Brand Dark Grey (RGB 107 107 107) — sampled directly from the guide's Dark Grey swatch (p. 17); the guide's printed hex is a typo (duplicates Light Grey). `--color-status-neutral` stays `#616367` and is now decoupled from graphite. |
+
+`--color-surface-navy` and `--color-focus-ring` now reference
+`var(--color-brand-navy-900)`; shadow/selection ink composes from
+`--color-brand-navy-rgb: 0, 0, 51`. Extended neutrals are **unchanged**.
+
+**Status ink — contrast pass (owner-approved 2026-08-20).** The four status ink
+tokens were darkened so each clears WCAG AA (4.5:1) as text on **both** its own
+`-surface` token **and** `#FFFFFF`, and so white text on the solid fill (the
+`Button` `danger` variant) clears AA. Surface tokens and token names are
+unchanged; hue is preserved.
+
+| Token | Before | After | On own surface | On `#FFFFFF` | White on solid |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `--color-status-success` | `#1F8A5B` | **`#11774E`** | 3.94 → **5.06** | 4.33 → **5.57** | 4.33 → **5.57** |
+| `--color-status-warning` | `#D19822` | **`#8A6410`** | 2.37 → **4.99** | 2.55 → **5.37** | 2.55 → **5.37** |
+| `--color-status-danger` | `#D1495B` | **`#B7384C`** | 3.83 → **5.00** | 4.36 → **5.70** | 4.36 → **5.70** |
+| `--color-status-info` | `#2F6FBA` | **`#2B69B2`** | 4.54 → **4.95** | 5.12 → **5.58** | 5.12 → **5.58** |
+
+`--color-status-neutral` `#616367` is unchanged (5.37 / 6.02). Tailwind resolves
+`text-status-*` / `bg-status-*` through the **`--color-status-*-ch` channel
+triplets**, not the hexes — edit both together (success `17 119 78`, warning
+`138 100 16`, danger `183 56 76`, info `43 105 178`).
+
+**Role accents — re-derived from brand navy (owner-approved 2026-08-20).** The
+`--color-role-*` tokens sit in one navy family derived from `#000033` (OKLCH
+hue 264) on a 30° hue ladder: waiter steel-blue (232), supervisor on the brand hue
+(264), cashier indigo (294), and — added by Manager M-P1 — **manager plum (324)**.
+The old cashier accent was amber (hue 62) and read as a warning colour.
+
+| Token | Before | After | Renders | White on solid |
+| --- | --- | --- | ---: | ---: |
+| `--color-role-waiter` | `oklch(0.39 0.055 190)` | **`oklch(0.4 0.062 232)`** | `#1F4D63` | **9.13:1** |
+| `--color-role-waiter-soft` | `oklch(0.965 0.018 190)` | **`oklch(0.965 0.015 232)`** | `#EAF6FC` | — |
+| `--color-role-cashier` | `oklch(0.42 0.07 62)` | **`oklch(0.365 0.062 294)`** | `#40385C` | **10.83:1** |
+| `--color-role-cashier-soft` | `oklch(0.97 0.022 72)` | **`oklch(0.965 0.015 294)`** | `#F4F2FD` | — |
+| `--color-role-supervisor` | `oklch(0.4 0.065 253)` | **`oklch(0.325 0.085 264)`** | `#1D325F` | **12.55:1** |
+| `--color-role-supervisor-soft` | `oklch(0.965 0.018 253)` | **`oklch(0.965 0.015 264)`** | `#EEF4FE` | — |
+| `--color-role-manager` | *(new, M-P1)* | **`oklch(0.36 0.06 324)`** | `#4D324F` | **11.18:1** |
+| `--color-role-manager-soft` | *(new, M-P1)* | **`oklch(0.965 0.015 324)`** | `#F9F0F9` | — |
+
+`text-primary` on each soft is ≥16:1. Consumed only via `roleAccentMap` in
+`lib/profile/profile-model.ts` (`bg-role-*` / `bg-role-*-soft` / `text-role-*`),
+rendered by `components/profile/RoleProfileHero.tsx`. Full derivation and the
+complete contrast tables live in `docs/BRAND_IDENTITY.md` §3.4–§3.5.
+
+**Tokenization rule:** brand colors are consumed only via the CSS variables in
+`apps/web/src/styles/globals.css` (and their Tailwind mappings). Never hard-code a
+hex in a component. The only exceptions are static assets that can't read CSS vars —
+the favicon/PWA/OG files under `apps/web/public/` and `<meta name="theme-color">`
+in `pages/_app.tsx` (`#000033`).
+
+**Lockup sites (two, both white tile + navy mark):**
+
+- `components/pos-shell/BranchContextLabel.tsx` — 44×44 header tile
+  (`h-11 w-11`, `bg-brand-white` + `text-brand-navy-900`).
+- `pages/login.tsx` — 56×56 login hero tile (`h-14 w-14`, same treatment).
+
+**Logomark status: live.** The brand logomark is a **steering wheel** ("in the driver's
+seat of your business"), extracted as a true vector from the brand PDF. In-app it renders
+via `components/pos-shell/NimbusLogomark.tsx` (inline SVG, `currentColor`-driven), mounted
+at both lockup sites above (`BranchContextLabel.tsx` 44px header tile, `pages/login.tsx`
+56px hero tile). `apps/web/public/favicon.svg` is now the brand favicon (navy rounded tile
++ white mark — the interim "N" is gone), and the full `apps/web/public/brand/` asset set is
+shipped (logomark/wordmark/combination-mark SVGs, favicon PNGs, apple-touch-icon, PWA icons
+192/512/512-maskable, og-image, `manifest.webmanifest` — all linked from `_app.tsx`; see
+`docs/BRAND_IDENTITY.md` §5). The logomark is **not** an `OperationalIconName` and must
+never be added to the icon registry in §4.
+
+## 1c. Global density mechanism (owner-approved 2026-08-20)
+
+The operational app is a **fullscreen terminal**: it must FIT the viewport rather
+than scroll it. Instead of per-component breakpoint tuning, density is driven by
+**one systematic mechanism plus a small set of targeted px fixes**.
+
+**(a) Viewport-scaled root font size.** `apps/web/src/styles/globals.css`:
+
+```css
+html { font-size: clamp(13.5px, calc(0.625vh + 9.25px), 16px); }
+```
+
+| Viewport | Root font size | Header | Bottom nav | Table card min-h |
+| --- | ---: | ---: | ---: | ---: |
+| 1280 × 680 | **13.50px** | 54px | 55px | 128px |
+| 1366 × 768 | **14.05px** | 56px | 57px | 133px |
+| 1440 × 900 | **14.88px** | 60px | 61px | 141px |
+| 1920 × 1080 | **16.00px** (ceiling) | 64px | 65px | 152px |
+
+(Header/nav/card figures are live-measured; the nav is 1px taller than the header
+because of its top border.) The scale is **height-driven** because vertical fit is
+what actually overflows on a laptop with browser chrome. At the 16px ceiling every
+metric equals its pre-density value, so 1920×1080 is unchanged.
+
+**(b) Rem-normalized spacing scale.** `--space-1 … --space-12` in `globals.css`
+were absolute px (4…48). They are now the equivalent **rem** values, so the
+Tailwind spacing keys they back (`1,2,3,4,5,6,8,10,12` — the only keys this repo
+overrides) follow the root font size. Every other Tailwind utility this app uses
+(type scale, default spacing keys, radii) is already rem-based and scales for free.
+
+**(c) Targeted non-scaling fixes.** Raw px values do NOT follow rem, so these were
+re-tuned once, in one place each:
+
+| What | Before | After | Where |
+| --- | --- | --- | --- |
+| Icon registry sizes | 18 / 24 / 32 | **16 / 20 / 28** | `pos-shell/role-icon-config.ts` (`compactAction` / `bottomNavigation` / `pageState`) |
+| Table card min height | `min-h-[176px]` | **`min-h-[9.5rem]`** | `floor/OperationalTableCard.tsx`, grid skeleton |
+| Table grid track | `minmax(220px,1fr)` | **`minmax(13rem,1fr)`** | `floor/OperationalTableGrid.tsx` |
+
+**(d) Shared-region metrics** (resolved at the 16px ceiling; see
+`pos-shell/layout.ts`, which documents the rem class for each):
+
+| Region | Before | After | Class |
+| --- | ---: | ---: | --- |
+| Header | 80px | **64px** | `h-16` |
+| Header brand tile | 44px | **36px** | `h-9 w-9` |
+| Header identity tile | 44px | **36px** | `h-9 w-9` |
+| Readiness strip | 44px | **36px** | `top-16` + `h-9` |
+| Main top padding | 160px | **116px** | `pt-[7.25rem]` |
+| Bottom nav | 80px | **64px** | `h-16` (items `h-full`) |
+| Main bottom clearance | 112px | **80px** | `pb-[calc(5rem+env(safe-area-inset-bottom))]` |
+| `PageShell` title | `text-2xl` | **`text-xl`** | `ui/PageShell.tsx` |
+| Table card title | `text-xl`, `break-words` | **`text-lg`, `truncate`** | `floor/OperationalTableCard.tsx` |
+
+**Rules when editing components under this mechanism:**
+
+1. Prefer rem/Tailwind utilities — they scale automatically.
+2. Never introduce a raw px arbitrary value for **vertical** rhythm; use rem.
+3. Icon geometry is re-tuned **only** through the registry tokens in §4.
+4. The mechanism is global and role-agnostic: it applies identically to Waiter,
+   Cashier, Supervisor and Manager. Verify all four after touching it.
+
+## 1d. Lock screen (`/login`) — fullscreen, brand-led (owner-approved 2026-08-20)
+
+`pages/login.tsx` is a **true `h-screen` layout with `overflow-hidden`**. There is
+never a page-level scrollbar; if the sign-in card ever exceeds the available
+height, the CARD scrolls internally (`overflow-y-auto`), not the document.
+
+Verified live (`document.documentElement.scrollHeight` vs `window.innerHeight`):
+680/680, 768/768, 900/900, 1080/1080 — **equal at all four viewports**.
+
+Content is minimal and brand-led:
+
+- **Lockup** — the brand combination mark: white logomark tile (`h-11 w-11`,
+  ≈41px at 1440) beside a one-line "Nimbus **POS**" wordmark set inline in Inter
+  ExtraBold (crisper than an `<img>` at terminal sizes; the visible spans are
+  `aria-hidden` with one `sr-only` "Nimbus POS" so it is announced once).
+- **"Service terminal"** heading.
+- **Three compact status chips** — Workstation (the terminal label, §2b), Time
+  (shared `CurrentTime`), API.
+- **REMOVED**: the role-marketing paragraph ("Shared desktop access for waiter
+  service, cashier settlement, …") and the footer sentence ("Owner and accountant
+  accounts can authenticate here, …"). The **truthful blocked-account behaviour is
+  unchanged** — a real failed role still raises the `StatusMessage` warning
+  "This frontend currently supports waiter, cashier, supervisor, and manager
+  workspaces only." It is now shown only when it is actually true.
+
+The PIN pad, card padding and type scale down with the root font size (keys are
+`h-11`, i.e. 44px at 1920 and 37px at 1280×680).
+
 ## 2. Shared operational shell
 
 `OperationalShell` is a fixed-region layout: fixed header (top), a readiness strip
-below it, a scrolling `main` with generous top padding and a
-`pb-[calc(7rem+safe-area-inset-bottom)]` bottom pad so content clears the fixed
+below it, a scrolling `main` with a `pt-[7.25rem]` top padding and a
+`pb-[calc(5rem+env(safe-area-inset-bottom))]` bottom pad so content clears the fixed
 bottom nav, and a fixed `OperationalBottomNav`. Max content width `1600px`.
+**All region heights are rem-based since the 2026-08-20 density pass** — see §1c(d)
+and `pos-shell/layout.ts` for the canonical numbers.
 
-Each role shell (`WaiterShell`/`CashierShell`/`SupervisorShell`) wraps a role
-`SessionGuard` around `OperationalShell` and injects four slots: `header`,
-`readiness`, `bottomNavigation`, `idleHandler`.
+Each role shell (`WaiterShell`/`CashierShell`/`SupervisorShell`/`ManagerShell`) wraps a
+role `SessionGuard` around `OperationalShell` and injects four slots: `header`,
+`readiness`, `bottomNavigation`, `idleHandler`. `ManagerShell` additionally mounts
+`ManagerBranchProvider` outside its guard, because Manager is the only multi-branch
+role and the guard, header switcher, and pages must share one selected branch.
 
 - **Header** (`OperationalHeader`): role identity, branch/workstation/service-area
   context (`BranchContextLabel`, `RoleIdentity`), shared `CurrentTime`, and the
-  shared logout. Role headers are thin adapters.
+  shared logout. Role headers are thin adapters. Since Manager M-P1 the header also
+  accepts an **optional** `branchSwitcher` node rendered immediately before the clock;
+  when a role passes nothing (Waiter, Cashier, Supervisor) the header renders exactly
+  the markup it did before the slot existed.
 - **Bottom nav** (`OperationalBottomNav`): renders the role's nav items from
   `getOperationalRoleNavigation(role)`; active item uses the `fill` icon weight,
   inactive uses `bold`.
 - **Clock** (`CurrentTime`): shared, updates on an interval (coarse granularity is
   intentional).
+
+### 2b. Terminal identity (owner-approved 2026-08-20)
+
+The header's second context slot used to print a dead fallback — "Service area
+unavailable" (Waiter) / "Workstation unavailable" (Cashier, Supervisor). The API
+exposes **no** service-area or workstation entity for a POS terminal, so instead of
+an unavailable-state the shell now shows a deterministic **station label**:
+
+`components/pos-shell/station.ts`
+
+1. `localStorage["nimbus.stationTerminalLabel"]` if an installer/operator set one
+   for this physical station, else
+2. the constant `DEFAULT_TERMINAL_LABEL` = **"Terminal 01"**.
+
+`useStationTerminalLabel()` is hydration-safe (server render and first client
+render both emit the constant; any override is applied in an effect). This is
+**honestly a station label, not backend data** — the module says so, and every
+render site is commented. When a real workstation contract lands, replace the
+fallback inside the hook; no render site changes.
+
+Consumed by all four roles: `WaiterHeader` (`contextKind="service-area"`) and
+`useCashierContext().workstationLabel` / `useSupervisorContext().workstationLabel` /
+`useManagerContext().workspaceLabel` (`contextKind="workstation"`), so the Cashier
+Till toolbar and the Cashier/Supervisor Me screens read the same label.
 
 ## 3. Navigation (locked)
 
@@ -66,9 +290,21 @@ role's `lib/<role>/routes.ts`:
 | Waiter | **Floor · Reservations · Me** (Floor stays active on `/waiter/orders*`) |
 | Cashier | **Floor · Till · Me** (Prompt C1+C2, 2026-07-31; default `/cashier/floor`) |
 | Supervisor | **Floor · Reservations · Approvals · Me** |
+| Manager | ~~**Overview · Operations · Staff · Reports · Settings · Me** (bottom nav, M-P1, 2026-08-20)~~ → **SUPERSEDED 2026-08-20: Odoo-style TOP NAV BAR** (see §3b). The six surfaces survive as the first six top-nav menus; landing stays `/manager/overview`. **Not yet implemented.** |
 
 There is **no Orders tab** for Waiter or Supervisor. Legacy Orders routes are
 redirect-only.
+
+✅ **Manager is the fourth registry consumer (M-P1, 2026-08-20).** The six tabs above are locked by
+the owner decision register; approvals appear as counts on Overview and as domain reviews inside
+Operations/Staff, never as a tab. The **branch switcher** is the one genuinely new shell
+affordance: a native `<select>` in the header's optional slot, sourced from `me.memberships` (no
+extra request), persisted at `nimbus.managerBranchId` (deliberately NOT the station key
+`nimbus.stationBranchId`, which seeds the terminal's Quick-PIN branch field), driving `X-Branch-Id`
+through the existing `apiRequest({ branchId })` parameter, and invalidating **only** the
+`["manager", …]` query namespace on change — never `queryClient.clear()`, never auth/profile. M-P1
+pages render honest foundation states with no live data; Manager **Me** is real and built solely
+from the already-fetched `/api/auth/me`.
 
 ✅ **Cashier is Floor-first (Prompt C1+C2 implemented 2026-07-31):** the visible nav is
 **Floor · Till · Me** (Queue/Receipts removed from the nav), default route `/cashier/floor`
@@ -82,13 +318,52 @@ routes** (direct URL, retire C4/C5). See `docs/cashier-ui-docs/CASHIER_ARCHITECT
 `ai/CASHIER_FLOOR_RECONSTRUCTION_DECISION.md`, and
 `ai/CASHIER_FLOOR_RECONSTRUCTION_C2_BILL_RESOLUTION_COMPLETION_REPORT.md`.
 
+### 3b. Management top nav (owner-approved 2026-08-20 — NOT YET IMPLEMENTED)
+
+**Decision:** `docs/DECISIONS.md` **D-MGRTOPNAV**. **Plan:** `ai/ENTERPRISE_UI_ROADMAP.md`
+Track B **B1**. **Reference:** `ai/ODOO_REFERENCE_RESEARCH.md` §1.2/§1.3/§1.5/§1.6/§1.7 and
+components C1/C2/C3/C15 (17 screenshots in `ai/odoo-reference-screenshots/`).
+
+Manager (and later Owner) navigation converts from the M-P1 **bottom nav** to an **Odoo-style top
+module bar**:
+
+- a single module bar — brand/home control at the far left, text menu items with **click-to-open**
+  dropdown submenus (grouped by muted section headers, scrolling inside the panel, `Escape` to
+  close), and a top-right cluster carrying the **existing** branch switcher, the shared
+  `CurrentTime` and the identity/logout control;
+- a **control-panel row** directly beneath it — `New` + optional secondary · view title + actions
+  cog · pill search box with **filter chips** and a three-column Filters / Group-By / Favorites
+  dropdown · **server-backed pager** · view-type switcher;
+- **breadcrumb + record pager** on a record (parent list link over the record identity).
+
+**Frontline roles keep bottom nav.** Waiter, Cashier and Supervisor must render **byte-identically**
+after the conversion — the top nav ships as an **additive variant of `OperationalShell`**
+(`navigation="top" | "bottom"`, default `bottom`), **never** a Manager shell fork.
+
+**Carried forward from M-P1 unchanged:** Manager as the fourth shared-system consumer;
+`ManagerShell`/`ManagerSessionGuard`; the branch switcher (source `me.memberships`, persistence
+`nimbus.managerBranchId`, `X-Branch-Id` plumbing, narrow `["manager", …]` invalidation);
+`lib/manager/permissions.ts` as a **surface allow-list, not a permission check**; the honest
+foundation pages and the real Manager **Me**; and the readiness strip's "three verified chips only,
+never faked" rule.
+
+**Do not port Odoo's dark palette.** The reference's hexes are a *layout and hierarchy* guide only —
+Nimbus stays navy/silver/graphite per `docs/BRAND_IDENTITY.md`, and the §1c density mechanism applies
+to every new management surface.
+
+Open sub-decisions recorded in `ai/ENTERPRISE_UI_ROADMAP.md` §7: the sub-desktop collapsed
+presentation (**OD-4** — collapse to a menu control, never fall back to the frontline bottom nav) and
+whether Accounting becomes a seventh top-level module (**OD-3**).
+
 ## 4. Canonical icon registry
 
 Single source of truth in `pos-shell/`:
 
 - `role-icon-config.ts` — the name constants (`operationalIconNames`), the
-  `OperationalIconName` type, and canonical **sizes** (`bottomNavigation: 24`,
-  `compactAction: 18`, `pageState: 32`) and **weights** (`activeNavigation: "fill"`,
+  `OperationalIconName` type, and canonical **sizes** (`bottomNavigation: 20`,
+  `compactAction: 16`, `pageState: 28` — reduced from 24/18/32 by the 2026-08-20
+  density pass; this registry is the ONLY place icon geometry may be re-tuned)
+  and **weights** (`activeNavigation: "fill"`,
   `inactiveNavigation: "bold"`, `default: "bold"`, `brand: "duotone"`).
 - `role-icons.ts` — maps each name → a concrete Phosphor component.
 
@@ -110,9 +385,13 @@ settlement workspace. Cashier's Floor reads only shared-safe data (tables + acti
 orders + reservations) and shows no guest name/contact/payment/receipt reference on
 cards.
 
-- **Cards** are a fixed `min-h-[176px]`, show table label, status badge, a status-
-  specific middle (ready / reservation time / assigned staff + "Mine" / temporarily
-  unavailable), and a capacity footer. Cards **never** expose guest names.
+- **Cards** are `min-h-[9.5rem]` (rem-based since 2026-08-20 — 152px at the 16px
+  root ceiling, ~141px at 1440×900, ~128px at 1280×680; the previously locked
+  absolute 176px is superseded by the owner-approved density pass, §1c). They show
+  the **display label** (§5b), a status badge, a status-specific middle (ready /
+  reservation time / assigned staff + "Mine" / temporarily unavailable), and a
+  capacity footer. Card titles are **one line** (`truncate`). Cards **never** expose
+  guest names.
 - **Staff names** are formatted `First L.` (e.g. "Peter M.") via
   `floor/formatters.ts` (`formatOperationalStaffName` / `formatOperationalStaffIdentity`),
   shared by both role floor models.
@@ -121,8 +400,56 @@ cards.
   is shared, the **contents differ by role** (Waiter → menu/order/reservation
   builder; Supervisor → read-first `SupervisorTableControlWorkspace`).
 
+### 5b. Table display labels (owner-approved 2026-08-20)
+
+Operational/demo labels can be long ("QA-P4-PASS2-1440"), which wrapped card titles
+onto three lines. `floor/formatters.ts` now owns a **display-side** abbreviation.
+The persisted label is **never** mutated; the full label always stays in `title`
+and `aria-label`.
+
+**Rule (deterministic):**
+
+1. Labels of **≤ 7 characters** (`OPERATIONAL_TABLE_LABEL_MAX_CHARS`) are returned
+   unchanged — "TD-01", "T-12", "BAR-3".
+2. Longer labels split on `-`, `_`, `/`, `.` and whitespace.
+3. If the LAST segment starts with a digit it is kept **whole** as the trailing
+   number; otherwise there is no trailing number.
+4. Each remaining (leading) segment collapses to its first character plus any
+   digits it contains, in order: `QA→Q`, `P4→P4`, `PASS2→P2`.
+5. The collapsed head is concatenated and joined to the tail with `-`.
+
+| Full label | Display label |
+| --- | --- |
+| `TD-01` | `TD-01` (unchanged) |
+| `QA-OPEN-01` | `QO-01` |
+| `QA-P4-CLEAN-02` | `QP4C-02` |
+| `QA-P4-PASS2-1440` | `QP4P2-1440` |
+| `QA-PRE-BILL-01` | `QPB-01` |
+| `TERRACELARGE12` (no separator) | `TER12` (≤3 leading letters + trailing digits) |
+
+**Collision safety within one fetched set.**
+`buildOperationalTableLabelMap(labels)` returns a Map keyed by the original label.
+Colliding abbreviations are retried at a wider depth (2, then 3 characters per
+segment); survivors are sorted ascending and the 2nd..nth get a `~n` suffix. Both
+steps are order-independent, so the map is stable across re-renders. Example: with
+`QA-OPEN-01` **and** `QA-OTHER-01` present, both escalate to `QAOP-01` / `QAOT-01`
+rather than silently sharing `QO-01`.
+
+`OperationalFloor` builds the map from the **full fetched set** (not the filtered
+view) and passes it down through `OperationalTableGrid` → `OperationalTableCard`, so
+a card's short label never changes while the operator types in the search box. All
+three Floor-consuming roles get this for free.
+
+**Other render sites** use the pure `formatOperationalTableLabel(label)`:
+`waiter/floor/WaiterTableWorkspace`, `supervisor/floor/SupervisorTableControlWorkspace`,
+`supervisor/floor/SupervisorTableTargetSelector`, `supervisor/floor/SupervisorSplitItemsDialog`,
+`supervisor/reservations/SupervisorReservationTableSelect`,
+`cashier/floor/CashierSelectedTablePanel`, `cashier/floor/CashierBillResolutionPanel`,
+`cashier/floor/CashierFindBillDialog`, `cashier/resolution/CashierSplitItemsPanel`,
+`cashier/resolution/CashierTransferTablePanel`.
+
 **Invariant:** default Floor geometry (toolbar, grid, card height, breakpoints,
-status/staff formatting) is identical across roles at every viewport. Any change
+status/staff/label formatting) is identical across roles at every viewport. Any change
 here propagates to all consuming roles by design.
 
 ## 6. Shared profile primitives
@@ -131,8 +458,8 @@ here propagates to all consuming roles by design.
 blocks: `RoleProfileHero`, `ProfileSection`, `ProfileMetaGrid`, `SessionCard`,
 `ShiftStatusCard`, `OperationalStatusBadge`, `CapabilityNotice`,
 `CompactUnavailableState`, plus `roleAccentMap`/`getRoleAccent`,
-`getProfileInitials`, `formatProfileDateTime`. Consumed by all three role
-`MeScreen`s (and the headers reuse `getProfileInitials`). Presentation is shared;
+`getProfileInitials`, `formatProfileDateTime`. Consumed by all **four** role
+`MeScreen`s (Manager joined in M-P1) — and the headers reuse `getProfileInitials`. Presentation is shared;
 each role keeps its own queries/mutations/permissions. Long shifts are presented
 truthfully (no fabricated durations).
 
@@ -193,9 +520,28 @@ These are functional/architectural inconsistencies out of scope for a UI-polish
 pass (they touch session/auth behaviour or cross-role refactors). See
 `docs/KNOWN_LIMITATIONS.md` §UI.
 
-- **Supervisor shell omits the idle-logout handler** that Waiter and Cashier both
+> **2026-08-20 — this section is now empty of live issues.** Both bullets below were verified
+> against the worktree during the Supervisor docs audit and are **stale**; both are struck through
+> with a dated correction rather than deleted. Section heading kept as-is for stable anchors.
+
+- ~~**Supervisor shell omits the idle-logout handler** that Waiter and Cashier both
   inject — supervisor sessions do not auto-logout on idle. (Auth-behaviour change;
-  document, do not silently patch.)
-- **Cross-role idle naming**: the shared `OperationalIdleLogoutHandler` and the
+  document, do not silently patch.)~~
+  **RESOLVED — stale claim corrected 2026-08-20 (code wins).** `SupervisorShell`
+  **does** inject the shared handler: `apps/web/src/components/supervisor/shell/SupervisorShell.tsx`
+  passes `idleHandler={<OperationalIdleLogoutHandler />}` to `OperationalShell`, exactly like
+  Waiter and Cashier. Supervisor sessions **do** auto-logout on idle
+  (→ `/login?reason=idle_timeout`). This bullet described the pre-Prompt-3A shell and was never
+  updated. It already contradicted `docs/KNOWN_LIMITATIONS.md` (which records the fix as
+  *"Supervisor idle-logout parity (was SUP-RG-020)"*), `docs/supervisor-ui-docs/SUPERVISOR_LIFECYCLE.md`
+  (*"Supervisor sessions share the operational idle-logout mechanism"*), and `CLAUDE.md` §11
+  (*"All three roles share one idle-logout mechanism (`pos-shell/idle`)"*) — all three were
+  correct; this file was the outlier.
+- ~~**Cross-role idle naming**: the shared `OperationalIdleLogoutHandler` and the
   cashier handler consume waiter-namespaced constants (`WAITER_IDLE_TIMEOUT_MS`
-  etc.). Behaviour-correct but a naming/coupling smell for a future rename.
+  etc.). Behaviour-correct but a naming/coupling smell for a future rename.~~
+  **RESOLVED — stale claim corrected 2026-08-20 (code wins).** The constants were renamed to the
+  shared `apps/web/src/components/pos-shell/idle.ts` namespace — `OPERATIONAL_IDLE_TIMEOUT_MS`
+  (15 min) and `OPERATIONAL_ACTIVITY_EVENTS` — and `OperationalIdleLogoutHandler` imports them
+  from there. `WAITER_IDLE_TIMEOUT_MS` survives only as a one-line back-compat re-export in
+  `lib/waiter/idle.ts`; no handler consumes a waiter-namespaced constant.

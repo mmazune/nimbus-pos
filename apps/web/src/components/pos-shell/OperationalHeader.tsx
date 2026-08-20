@@ -12,6 +12,7 @@ import type { OperationalHeaderContext } from "./types";
 
 export function OperationalHeader({
   branchLabel,
+  branchSwitcher,
   contextKind,
   contextLabel,
   displayName,
@@ -23,6 +24,21 @@ export function OperationalHeader({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const TimeIcon = operationalIcons.time;
   const LogoutIcon = operationalIcons.logout;
+
+  const clock = (
+    <div
+      className="flex h-8 shrink-0 items-center gap-2 rounded-md bg-brand-navy-800 px-2 text-xs font-semibold sm:px-2.5 sm:text-sm"
+      aria-label="Current time"
+    >
+      <TimeIcon
+        className="hidden sm:block"
+        size={operationalIconSizes.compactAction}
+        weight={operationalIconWeights.default}
+        aria-hidden
+      />
+      <CurrentTime />
+    </div>
+  );
 
   async function handleLogout() {
     if (isLoggingOut) return;
@@ -39,25 +55,22 @@ export function OperationalHeader({
 
   return (
     <header className="bg-brand-navy-950 text-text-inverse shadow-panel" data-operational-header>
-      <div className="mx-auto grid h-20 w-full max-w-[1600px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:gap-6 lg:px-8">
+      {/* Density pass 2026-08-20: 5rem -> 4rem tall (64px at the 16px root ceiling). */}
+      <div className="mx-auto grid h-16 w-full max-w-[1600px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:gap-5 lg:px-6">
         <BranchContextLabel
           branchLabel={branchLabel}
           contextKind={contextKind}
           contextLabel={contextLabel}
         />
 
-        <div
-          className="flex h-10 shrink-0 items-center gap-2 rounded-md bg-brand-navy-800 px-2.5 text-sm font-semibold sm:px-3 sm:text-base"
-          aria-label="Current time"
-        >
-          <TimeIcon
-            className="hidden sm:block"
-            size={operationalIconSizes.compactAction}
-            weight={operationalIconWeights.default}
-            aria-hidden
-          />
-          <CurrentTime />
-        </div>
+        {branchSwitcher ? (
+          <div className="flex min-w-0 items-center justify-center gap-2 sm:gap-3">
+            {branchSwitcher}
+            {clock}
+          </div>
+        ) : (
+          clock
+        )}
 
         <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-3">
           <RoleIdentity displayName={displayName} initials={initials} roleLabel={roleLabel} />
@@ -65,8 +78,8 @@ export function OperationalHeader({
             aria-label="Log out"
             aria-busy={isLoggingOut}
             size="compact"
-            variant="tertiary"
-            className="min-h-11 shrink-0 px-2 text-text-inverse hover:bg-brand-navy-800 disabled:text-brand-silver sm:px-3"
+            variant="inverse"
+            className="min-h-9 shrink-0 px-2 sm:px-2.5"
             leadingIcon={
               <LogoutIcon
                 size={operationalIconSizes.compactAction}

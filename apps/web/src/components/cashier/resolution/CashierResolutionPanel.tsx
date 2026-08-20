@@ -12,12 +12,23 @@ import { CashierResolutionBlockedBanner } from "./CashierResolutionBlockedBanner
 import { CashierSplitBillPanel } from "./CashierSplitBillPanel";
 import { CashierSplitItemsPanel } from "./CashierSplitItemsPanel";
 
+/**
+ * `variant` (added Prompt C3, additive — the Queue compat path keeps the default):
+ *  - `"full"`       : split allocation + item split + the advanced handoff group
+ *                     (merge / move items / transfer table). Legacy Queue behaviour.
+ *  - `"split-only"` : split allocation + item split ONLY. The Floor-first settlement
+ *                     workspace mounts this: handoff/transfer actions are not part of
+ *                     the Cashier settlement scope, so they are not offered there.
+ */
+type CashierResolutionPanelVariant = "full" | "split-only";
+
 type CashierResolutionPanelProps = {
   order: CashierOrderViewModel;
   targetOrders: CashierOrderViewModel[];
   readiness: CashierReadinessSnapshot;
   detailBlocked?: boolean;
   paymentSummaryBlocked?: boolean;
+  variant?: CashierResolutionPanelVariant;
   onRefresh: () => Promise<void>;
 };
 
@@ -27,6 +38,7 @@ export function CashierResolutionPanel({
   readiness,
   detailBlocked,
   paymentSummaryBlocked,
+  variant = "full",
   onRefresh,
 }: CashierResolutionPanelProps) {
   const { accessToken, branchId, isCashier, isLoading, isAuthenticated } = useAuth();
@@ -71,7 +83,9 @@ export function CashierResolutionPanel({
               </h3>
             </div>
             <p className="mt-1 text-sm font-medium text-text-secondary">
-              Operational split and handoff tools for the selected payable order.
+              {variant === "split-only"
+                ? "Split allocation for the selected payable bill. Table/server transfer and merge stay outside cashier settlement."
+                : "Operational split and handoff tools for the selected payable order."}
             </p>
           </div>
           <Badge variant={disabledReasons.length ? "warning" : "success"}>
@@ -86,12 +100,14 @@ export function CashierResolutionPanel({
 
       <CashierSplitBillPanel order={order} disabledReasons={disabledReasons} onRefresh={onRefresh} />
       <CashierSplitItemsPanel order={order} disabledReasons={disabledReasons} onRefresh={onRefresh} />
-      <CashierAdvancedResolutionPanel
-        order={order}
-        targetOrders={targetOrders}
-        disabledReasons={disabledReasons}
-        onRefresh={onRefresh}
-      />
+      {variant === "full" ? (
+        <CashierAdvancedResolutionPanel
+          order={order}
+          targetOrders={targetOrders}
+          disabledReasons={disabledReasons}
+          onRefresh={onRefresh}
+        />
+      ) : null}
     </section>
   );
 }

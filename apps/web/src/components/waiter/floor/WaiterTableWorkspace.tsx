@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { Badge, Button, ErrorState, Skeleton, StatusMessage } from "@/components/ui";
 import { OperationalTableStatusBadge } from "@/components/floor/OperationalTableStatusBadge";
+import { formatOperationalTableLabel } from "@/components/floor/formatters";
 import { useToast } from "@/components/providers/ToastProvider";
 import { WaiterOwnershipBlockedPanel } from "@/components/waiter/floor/WaiterOwnershipBlockedPanel";
 import { WaiterOrderBuilderScreen } from "@/components/waiter/orders";
@@ -47,7 +48,12 @@ function WorkspaceHeader({
     <div className="flex items-start justify-between gap-4 border-b border-border-subtle pb-5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="break-words text-2xl font-bold leading-7 text-text-primary">{table.label}</h2>
+          <h2
+            className="truncate text-xl font-bold leading-7 text-text-primary"
+            title={table.label}
+          >
+            {formatOperationalTableLabel(table.label) || table.label}
+          </h2>
           <OperationalTableStatusBadge status={table.status} />
           {table.isMine ? <Badge variant="info">Mine</Badge> : null}
         </div>

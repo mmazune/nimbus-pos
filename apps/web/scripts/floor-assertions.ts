@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 import {
+  buildOperationalTableLabelMap,
   formatOperationalStaffName,
+  formatOperationalTableLabel,
   operationalTableStatusLabels,
 } from "../src/components/floor/formatters";
 import {
@@ -49,7 +51,12 @@ assert(!existsSync(join(process.cwd(), "apps/web/src/components/supervisor/floor
 
 assert(!operationalCard.includes("guestName"), "shared Floor card does not consume a guest name");
 assert(!operationalCard.includes("orderNumber"), "shared Floor card does not consume an order number");
-assert(operationalCard.includes("break-words"), "shared card preserves full table identifiers");
+// Owner-approved 2026-08-20: card titles are now ONE LINE (`truncate` replaced
+// `break-words`) and show a deterministic abbreviation. "Preserves full table
+// identifiers" is now satisfied by title + aria-label, asserted at the end of
+// this file — the visible string is allowed to be shorter.
+assert(operationalCard.includes("truncate"), "shared card title is a single truncated line");
+assert(!operationalCard.includes("break-words"), "the old multi-line card title wrap is gone");
 assert(operationalCard.includes("aria-pressed={selected}"), "shared card announces selected state");
 assert(operationalCard.includes("data-operational-table-id"), "shared card supports focus return");
 assert(operationalToolbar.includes('value: "available"'), "shared toolbar exposes Available filter");
@@ -89,4 +96,48 @@ assert(!supervisorLabels.includes("Orders"), "Orders remains absent from navigat
 assert(!workspaceFrame.includes("hidden"), "one responsive workspace is mounted instead of hidden duplicates");
 assert(workspaceFrame.includes("data-operational-workspace"), "shared workspace has a structural assertion hook");
 
-console.log("Floor assertions passed: shared dependency graph, card safety, full labels, status/name formatting, URL context, legacy redirect, four-tab navigation, and single responsive workspace.");
+// ── Table display-label abbreviation (owner-approved 2026-08-20) ──────────────
+// Display-side only: the persisted label is never mutated and the full label
+// stays in title/aria-label (asserted structurally further below).
+assert(formatOperationalTableLabel("TD-01") === "TD-01", "short labels (<=7 chars) are untouched");
+assert(formatOperationalTableLabel("BAR-3") === "BAR-3", "short alpha labels are untouched");
+assert(formatOperationalTableLabel("QA-OPEN-01") === "QO-01", "QA-OPEN-01 abbreviates to QO-01");
+assert(formatOperationalTableLabel("QA-P4-CLEAN-02") === "QP4C-02", "QA-P4-CLEAN-02 abbreviates to QP4C-02");
+assert(
+  formatOperationalTableLabel("QA-P4-PASS2-1440") === "QP4P2-1440",
+  "QA-P4-PASS2-1440 abbreviates to QP4P2-1440",
+);
+assert(formatOperationalTableLabel("QA-PRE-BILL-01") === "QPB-01", "QA-PRE-BILL-01 abbreviates to QPB-01");
+assert(formatOperationalTableLabel("") === "", "empty labels do not fabricate text");
+assert(
+  formatOperationalTableLabel("QA-OPEN-01") === formatOperationalTableLabel("QA-OPEN-01"),
+  "abbreviation is deterministic",
+);
+
+const collisionMap = buildOperationalTableLabelMap([
+  "QA-OPEN-01",
+  "QA-OTHER-01",
+  "QA-P4-PASS2-1440",
+  "TD-01",
+]);
+const collisionValues = [...collisionMap.values()];
+assert(
+  new Set(collisionValues).size === collisionValues.length,
+  "abbreviations are collision-free within one fetched set",
+);
+assert(collisionMap.get("TD-01") === "TD-01", "short labels survive the collision pass unchanged");
+assert(
+  collisionMap.get("QA-P4-PASS2-1440") === "QP4P2-1440",
+  "non-colliding labels keep their depth-1 abbreviation",
+);
+
+const tableCardSource = source("apps/web/src/components/floor/OperationalTableCard.tsx");
+assert(tableCardSource.includes("title={table.label}"), "the FULL label stays in the card title attribute");
+assert(
+  tableCardSource.includes("aria-label={`${table.label}, ${statusLabel}, ${capacityLabel}`}"),
+  "the FULL label stays in the card aria-label",
+);
+assert(tableCardSource.includes("min-h-[9.5rem]"), "card min-height is the rem-based density value");
+assert(!tableCardSource.includes("min-h-[176px]"), "the old absolute 176px card height is gone");
+
+console.log("Floor assertions passed: shared dependency graph, card safety, full labels, status/name formatting, URL context, legacy redirect, four-tab navigation, single responsive workspace, and deterministic collision-safe table label abbreviation.");

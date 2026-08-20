@@ -306,6 +306,32 @@ Destructive API mutation checks can also be scripted directly against the isolat
 API (Node `fetch`) — every Prompt 3 action + rejection case + idempotency replay.
 **Never point these at shared Neon.**
 
+## Playwright E2E harness (Manager shell — Prompt M-P1, 2026-08-20)
+
+Manager M-P1 adds `apps/web/e2e/manager-shell/` — **4 spec files, 23 tests × the four viewport
+projects = 92 tests** (executed 2026-08-20: **92 passed / 0 failed**), under the same
+`apps/web/playwright.config.ts` and the same env-driven credential pattern
+(`PW_MANAGER_EMAIL` / `PW_MANAGER_PASSWORD` / `PW_MANAGER_SECOND_BRANCH_ID`, defaulting to the
+seeded disposable demo values). Specs:
+
+- `navigation-and-landing.spec.ts` — manager login lands `/manager/overview`; the bottom nav is
+  exactly the six locked tabs (no More, no Approvals); every tab navigates and sets `aria-current`;
+  `/manager` redirects; foundation pages state the boundary instead of showing fabricated data.
+- `branch-switcher.spec.ts` — the switcher lists the four ACTIVE memberships and is accessibly
+  labelled; a selection persists to `localStorage` and survives reload **and** route change;
+  **request capture proves `X-Branch-Id` changes on subsequent reads** and that `/api/auth/me` is
+  NOT re-issued; the readiness strip re-scopes and never renders a Tills/Shifts chip.
+- `role-boundaries.spec.ts` — waiter/cashier/supervisor are blocked from `/manager/*`;
+  `/login?reason=manager_only` states the boundary; a manager is blocked from
+  `/waiter|/cashier|/supervisor` by those roles' own guards; no manager tab exposes a write action.
+- `shell-parity.spec.ts` — Manager renders the shared shell regions and brand logomark, no tab
+  overflows horizontally, and each of the other three role headers still renders **without** a
+  branch switcher.
+
+Cross-role regression for the shared-file edits: `e2e/supervisor-prompt3/{regression,role-boundaries}`
+plus `e2e/cashier-floor/{role-boundaries,navigation-and-default-route,cross-role-c2-regression,
+till-and-me-regression}` — **68/68** on 2026-08-20.
+
 ## Playwright E2E harness (Cashier Floor — Prompt C1, 2026-07-31)
 
 Prompt C1 (Cashier Floor-first: nav Floor/Till/Me, `/cashier/floor` default, Cashier as the third
@@ -341,7 +367,13 @@ npx tsx apps/web/scripts/cashier-c2-assertions.ts   # Cashier C2: bounded table�
    # (zero/one/multiple, fail-closed, no first-pick), ?tableId=&orderId= URL model, ONE read-only
    # settlement workspace reusing checkout primitives, Find bill sibling, no payment/close/receipt/
    # refund mutation, Queue/Receipts not mounted + still routable
-npx tsx apps/web/scripts/shell-assertions.ts        # (also updated for the Cashier Floor-first nav)
+npx tsx apps/web/scripts/manager-p1-assertions.ts   # Manager M-P1: locked six-tab nav + order,
+   # registry icons, /manager→/manager/overview, six pages on the shared shell, manager login
+   # routing, surface allow-list (no permission lookup), branch resolution + narrow invalidation,
+   # optional header switcher slot, unchanged Waiter/Cashier/Supervisor nav+headers, role accent,
+   # no fabricated data, no unverified readiness chip
+npx tsx apps/web/scripts/shell-assertions.ts        # (also updated for the Cashier Floor-first nav
+   # and, since Manager M-P1, the four-role registry)
 npx tsx apps/web/scripts/floor-assertions.ts        # (also updated for the third Floor consumer)
 ```
 
