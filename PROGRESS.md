@@ -4,7 +4,39 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**ENTERPRISE UI TRACK B5.2 COMPLETE — Manager Accounting Customers + Vendors surfaces (2026-08-21) —
+**ENTERPRISE UI TRACK B5.3 COMPLETE — Manager Accounting Bank reconciliation surfaces (2026-08-21) —
+A: B5.3 COMPLETE / B5.4…B5.6 GATED.** Frontend + docs only; **no backend/schema/migration/seed/
+permission/DTO/Postman change**. The three Bank menu rows B5.1 shipped as honest not-yet placeholders
+— Bank accounts (list-only), Bank statements (list+detail), Reconciliation (list+detail) — are now
+real surfaces. **The Accounting menu goes from 12 live rows to 15** (of 28 total). Manager accounting
+stays **read-only by permission** — no Match/Skip/Complete control anywhere; `AccountingReadOnlyCard`
+names the three denied actions instead. All three routes are PC-06 bare arrays (no server total, no
+server-side status filter) — the status filter on Bank statements/Reconciliation runs entirely
+client-side over the already-fetched array, never forwarded to the server. The B5.1 Bank dashboard
+card's three KPIs (`bank.accounts`, `bank.reconciliations`, `bank.activeReconciliations`) are now real
+links, replacing their "not yet" placeholders. **Fixtures created live via the API (Owner token, since
+Manager holds no accounting write) on the isolated stack** — the demo dataset carries zero bank rows
+by default: 2 bank accounts, 2 statements (5+1 lines, a realistic mixed match state), 2
+reconciliations (one COMPLETED with a live-proven zero difference, one left IN_PROGRESS with a
+live-proven UGX 6,350,000 non-zero difference — `POST .../complete` correctly 400'd on the unbalanced
+one and 200'd on the balanced one). 🔴 **One stale B5.1 type field found and fixed**: `BankAccountRow`
+carried a `currentBalance` field that does not exist on the `BankAccount` Prisma model at all — B5.1
+never caught it because the card only ever rendered a count. Validated on an isolated local Docker
+stack (Postgres `:55450`, API `:4061`, web `:3150`; shared Neon never connected to or written — the
+isolated API held exactly one TCP connection, to its own local DB; `.env` files never edited, SHA-256
+identical before/after): typecheck+lint+build pass; 17/17 assertion scripts (`manager-b5-assertions.ts`
+extended with a new §13); `e2e/manager-accounting/bank.spec.ts` **64/64** across 4 viewports;
+`e2e/manager-accounting/menu-and-read-only.spec.ts` **29 passed/3 skipped** across 4 viewports (the
+skips are the pre-existing "desktop dropdown only at `xl`" reason, unrelated to B5.3); full
+`e2e/manager-accounting/` regression **66/66** at `vp-1440x900`; `e2e/manager-shell` regression
+**34/34**; live manual QA toured all 6 new/changed pages incl. both branches (Tapas Downtown with
+data, Rooftop Bar genuinely empty); zero console errors; `/api/health` → ok throughout. See
+`ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md`. **B5.4 (Accounting core + Review),
+B5.5 (Closing) and the remainder of B5.6 are NOT started — do not begin any of them without explicit
+owner authorisation.** ⚠️ Note for B5.4: **C-23** — the M33 GL Postman collection cannot run (a
+pre-existing defect), so the journals surface will ship without Postman verification.
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.2 COMPLETE — Manager Accounting Customers + Vendors surfaces (2026-08-21) —
 A: B5.2 COMPLETE / B5.3…B5.6 GATED.** Frontend + docs only; **no backend/schema/migration/seed/
 permission/DTO/Postman change**. Nine of B5.1's not-yet Customers/Vendors menu rows are now real
 surfaces (Invoices, Customer accounts, Credit notes ×2, Bills, Suppliers, Payments, Recurring

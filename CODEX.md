@@ -68,7 +68,7 @@ unless the task explicitly requires them and the relevant isolation rules are me
 | Testing / QA | `docs/TESTING_AND_QA.md` |
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C - supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward) |
 | Manager Operations + Staff (Track B3) | `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` (canonical B3 record, 2026-08-20) + `ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md` |
-| Manager Accounting (Track B5.1/B5.2) | `ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md` (canonical B5.1 record, 2026-08-21) + `ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md` (canonical B5.2 record, 2026-08-21) - the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
+| Manager Accounting (Track B5.1/B5.2/B5.3) | `ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md` (canonical B5.1 record, 2026-08-21) + `ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md` (canonical B5.2 record, 2026-08-21) + `ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md` (canonical B5.3 record, 2026-08-21) - the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) - shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | **Backend gap batch 2 (PC-03, PC-04)** | **`ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md`** (canonical record, 2026-08-21) |
@@ -81,8 +81,69 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI Track B5.2 complete - Manager Accounting Customers + Vendors surfaces
-(2026-08-21) - A: B5.2 COMPLETE / B5.3 through B5.6 gated.** Frontend and docs only; no
+**Enterprise UI Track B5.3 complete - Manager Accounting Bank reconciliation surfaces
+(2026-08-21) - A: B5.3 COMPLETE / B5.4 through B5.6 gated.** Frontend and docs only; no
+backend, schema, migration, seed, permission, DTO or Postman change. The three Bank menu
+rows B5.1 shipped as honest not-yet placeholders - Bank accounts, Bank statements,
+Reconciliation - are now real surfaces. The Accounting menu goes from 12 live rows to 15
+(of 28 total). Manager accounting stays read-only by permission - same 15 read strings,
+zero writes (PC-01, re-verified live: 5/5 representative bank writes to 403). Reconciliation
+is Odoo's most action-heavy accounting surface (Match/Skip/Reconcile/Validate) and none of
+those controls exist here, not even disabled - AccountingReadOnlyCard names the denied
+actions instead.
+
+Bank accounts is list-only (the registry has no bank.account detail key, matching how B5.2
+shipped Credit notes list-only). Bank statements is list plus detail (statement header plus
+its full line-level table). Reconciliation is list plus detail (a three-stage OPEN to
+IN_PROGRESS to COMPLETED status pipeline, DISPUTED as an exit chip rather than a fourth
+stage, statement balance/matched total/difference figures, and per-line match evidence
+naming journal-line vs manual-entry). All three routes are PC-06 bare arrays (no envelope,
+no server total, no server-side status filter beyond an optional bankAccountId) - the
+status filter on Bank statements/Reconciliation runs entirely client-side over the
+already-fetched complete array and never reaches the server. No pager binds to any of the
+three lists.
+
+The B5.1 Bank dashboard card - a permanent empty state since B5.1, because the demo dataset
+carried zero bank rows - is now wired for real: bank.accounts, bank.reconciliations and
+bank.activeReconciliations all gained a real drillIn, replacing their noDrillInReason
+placeholders.
+
+Fixtures were created live via the API (Owner token - Manager holds no accounting write) on
+the isolated stack, since the demo dataset carries zero bank rows by default: 2 bank
+accounts, 2 statements (a 5-line mixed batch and a 1-line batch), 2 manual bank entries, and
+2 reconciliations - one IN_PROGRESS with a live-proven UGX 6,350,000 non-zero difference
+(complete correctly returned 400, matching the documented "the 400 is the endpoint working,
+not a defect" behaviour), and one COMPLETED with a matched, zero difference (complete
+returned 200). Rooftop Bar was re-verified to carry zero bank rows throughout, proving the
+empty-branch state exercised in QA is a real read outcome.
+
+One stale B5.1 type field was found and fixed in this phase: BankAccountRow carried a
+currentBalance field that does not exist anywhere on the BankAccount Prisma model - B5.1
+never caught this because the Bank card only ever rendered a count. Removed; the assertion
+script now pins its absence.
+
+Validated on an isolated local Docker stack - Postgres :55450 (nimbus_b53_qa), API :4061,
+web :3150; shared Neon was never connected to or written (the isolated API held exactly one
+established TCP connection, to its own local Postgres); both .env files were never edited
+on disk - the isolated DB target was supplied by an explicitly exported DATABASE_URL, so
+SHA-256 is identical before and after by construction. Web typecheck, lint (no --fix), and
+production build all pass (3 new pages); 17/17 assertion scripts (manager-b5-assertions.ts
+extended with a new section 13 of B5.3-specific checks); e2e/manager-accounting/bank.spec.ts
+(new, 16 specs) 64/64 across 4 viewports; menu-and-read-only.spec.ts (updated for 12 to 15
+rows) 29 passed / 3 skipped across 4 viewports (the skips are the pre-existing "desktop
+dropdown only at xl" reason, not a B5.3 gap); full e2e/manager-accounting/ regression 66/66
+at vp-1440x900; e2e/manager-shell/ regression 34/34 (includes the cross-role boundary
+suite); live manual QA toured all 6 new/changed pages across both Tapas Downtown (populated)
+and Rooftop Bar (genuinely empty); zero console errors; api/health to ok throughout. See
+ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md. B5.4 (Accounting core and
+Review), B5.5 (Closing) and the remainder of B5.6 are NOT started - do not begin any of them
+without explicit owner authorization. Note for B5.4: C-23 - the M33 GL Postman collection
+cannot run (pre-existing defect), so the journals surface will ship without Postman
+verification.
+
+Prior milestone record (superseded above) - Enterprise UI Track B5.2 complete - Manager
+Accounting Customers + Vendors surfaces (2026-08-21) - A: B5.2 COMPLETE / B5.3 through B5.6
+gated. Frontend and docs only; no
 backend, schema, migration, seed, permission, DTO or Postman change. Nine of B5.1's not-yet
 Customers/Vendors menu rows are now real surfaces, plus the two Reporting Aged
 receivable/payable views pulled forward from B5.6 (same ar/aging and ap/aging routes the
@@ -1012,9 +1073,9 @@ start without explicit authorization.
   (Accounting as the seventh was approved under OD-3 and shipped in Track B5.1 on
   2026-08-21, superseding the earlier "OD-3 stays open, gated on B5" note here) -
   without explicit authorization.
-- Manager Track B5.1/B5.2 boundaries (2026-08-21): **Manager accounting is READ-ONLY BY
+- Manager Track B5.1/B5.2/B5.3 boundaries (2026-08-21): **Manager accounting is READ-ONLY BY
   PERMISSION** - 15 read strings, zero writes (PC-01/PC-02, re-verified live: 5 of 5
-  representative writes returned 403, still true after B5.2). Do not add any write affordance to the
+  representative writes returned 403, still true after B5.2 and B5.3). Do not add any write affordance to the
   accounting tree, not even a disabled one: the assertion script bans a write
   `method:`, `useMutation`, `<Button`, `onClick=` and `<form>` under
   `lib/accounting`, `components/manager/accounting`,
@@ -1063,10 +1124,24 @@ start without explicit authorization.
   NG-05); the aging bucket bars are honest because the backend computes that series
   itself. Do not remove the `@Max(100)` bound or `clampTake()` backstop added by
   batch 3 to the fourteen paginated accounting/finance list routes (B5-F3), and do
-  not revert `audit/timeline` to ignoring `X-Branch-Id` (B5-F4). B5.1 and B5.2 are
-  COMPLETE. B5.3 (Bank reconciliation workbench),
-  B5.4, B5.5, B5.6, B6 and B7 are NOT started - do not begin any of them without
-  explicit owner authorisation.
+  not revert `audit/timeline` to ignoring `X-Branch-Id` (B5-F4). B5.1, B5.2 and B5.3
+  are COMPLETE. B5.4, B5.5, B5.6, B6 and B7 are NOT started - do not begin any of
+  them without explicit owner authorisation.
+- Manager Track B5.3 boundaries (2026-08-21): Reconciliation is READ-ONLY - do not add a
+  Match, Skip, Reconcile, Validate or Complete control anywhere, not even disabled -
+  `pos:accounting:reconciliation:match`/`:create` and the bank-account/statement-import/
+  manual-entry write strings are all held only by Owner/Accountant, re-verified live at 403
+  for Manager. Do not bind a server-total pager to `bank.accounts`, `bank.statements` or
+  `bank.reconciliations` - all three are PC-06 bare arrays with no `total` field;
+  `toAccountingPager(` must never appear in `components/manager/accounting/bank/`. The
+  status filter on Bank statements/Reconciliation is client-side only (the backend accepts
+  no `?status=` on either route) - do not add a request param for it; an invalid value must
+  resolve to "no filter" via `readManagerEnum()`. Do not reintroduce
+  `BankAccountRow.currentBalance` - the `BankAccount` Prisma model has no such column
+  (B5.3-D1, confirmed against the schema directly). Do not add a cash-position or
+  bank-balance aggregate across accounts - no endpoint computes one. B5.4 (Accounting core
+  and Review), B5.5 (Closing) and the remainder of B5.6 are NOT started. Note for B5.4:
+  C-23 - the M33 GL Postman collection cannot run (pre-existing, unrelated to B5.3).
 - Manager Track B3 boundaries (2026-08-20): **Operations is strictly read-only** -
   do not add any mutation, `useMutation` hook, checkout/tender/order-builder
   control, order close/void/discount, or table-status write to

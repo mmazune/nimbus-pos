@@ -6,11 +6,12 @@
  * (B3), `/manager/staff` (B3) and `/manager/reports` (B4) already use.
  *
  * B5.2 adds the Customers (AR) and Vendors (AP) list/detail surfaces plus the
- * two Reporting aging views. The paths for everything still gated (Bank,
- * Journals, Closing, Configuration, the rest of Reporting) are deliberately
- * NOT declared here — a route constant is a promise that something answers at
- * that URL, and the menu tree names those surfaces as honest not-yet rows
- * instead (see `menu.ts`).
+ * two Reporting aging views. B5.3 adds the Bank group (accounts, statements,
+ * reconciliation). The paths for everything still gated (Journals, Closing,
+ * Configuration, the rest of Reporting) are deliberately NOT declared here —
+ * a route constant is a promise that something answers at that URL, and the
+ * menu tree names those surfaces as honest not-yet rows instead (see
+ * `menu.ts`).
  */
 export const ACCOUNTING_ROOT = "/manager/accounting";
 
@@ -33,6 +34,11 @@ export const ACCOUNTING_ROUTES = {
   // Reporting — Track B5.2 (Odoo's own placement for these two; see menu.ts)
   agedReceivable: "/manager/accounting/reporting/aged-receivable",
   agedPayable: "/manager/accounting/reporting/aged-payable",
+
+  // Bank — Track B5.3
+  bankAccounts: "/manager/accounting/bank/accounts",
+  bankStatements: "/manager/accounting/bank/statements",
+  bankReconciliation: "/manager/accounting/bank/reconciliation",
 } as const;
 
 export const ACCOUNTING_LANDING = ACCOUNTING_ROUTES.dashboard;

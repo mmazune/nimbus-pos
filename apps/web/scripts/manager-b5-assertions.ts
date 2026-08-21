@@ -26,7 +26,10 @@ import {
   getAccountingKpi,
   getAccountingKpiRoute,
   isArAgingComplete,
+  isReconciliationBalanced,
   overdueTotal,
+  reconciliationPipelineIndex,
+  RECONCILIATION_PIPELINE,
   toAccountingAmount,
   toAccountingCount,
   toApAgingBuckets,
@@ -121,12 +124,13 @@ assert(
 );
 /**
  * Track B5.2 (2026-08-21) added 11 real surfaces (3 Customers, 6 Vendors, 2
- * Reporting) to B5.1's 2 (index redirect + dashboard) — 13 total. Exact
- * equality on purpose: a page appearing here with no matching `available:true`
- * menu row below (or vice versa) is exactly the drift this gate exists to
- * catch.
+ * Reporting) to B5.1's 2 (index redirect + dashboard) — 13 total. Track B5.3
+ * (2026-08-21) added 3 more (Bank accounts, Bank statements, Reconciliation)
+ * — 16 total. Exact equality on purpose: a page appearing here with no
+ * matching `available:true` menu row below (or vice versa) is exactly the
+ * drift this gate exists to catch.
  */
-assert(accountingPageFiles.length === 13, `Accounting ships 13 pages (found ${accountingPageFiles.length})`);
+assert(accountingPageFiles.length === 16, `Accounting ships 16 pages (found ${accountingPageFiles.length})`);
 assert(
   existsSync(join(process.cwd(), `${MANAGER_LIB_DIR}/accounting-context.ts`)),
   "the Manager-side React Query adapter exists",
@@ -337,10 +341,16 @@ if (accountingComponentSource.includes("pager={")) {
   );
 }
 /**
- * Per-FILE check (not a substring-proximity guess): a file that binds a pager
- * must be one of the nine B5.2 `data-total` list screens, never a bare-array
- * (PC-06) or aggregate (aging) surface. The aging report screens intentionally
- * render a full unpaginated breakdown table instead.
+ * Per-FILE check (not a substring-proximity guess): a file that binds a
+ * `pager={` prop must be one of the nine B5.2 `data-total` list screens (a
+ * REAL server-total LIST pager via `toAccountingPager`), or one of the two
+ * B5.3 detail-bearing bank screens (a `ManagerBreadcrumbs` RECORD pager over
+ * the already-fetched `pageRows.length` — the same legitimate exception the
+ * `.length`-assigned-to-`total:` check above already carves out). Neither
+ * B5.3 file binds a LIST pager: `bank.statements` and `bank.reconciliations`
+ * are PC-06 bare arrays with no server total to bind to.
+ * `BankAccountsScreen.tsx` has no detail view and so is NOT here — it must
+ * bind no pager of either kind, same as every other bare-array surface.
  */
 const PAGER_ELIGIBLE_FILES = [
   "AccountingListScreen.tsx",
@@ -353,6 +363,8 @@ const PAGER_ELIGIBLE_FILES = [
   "VendorsPaymentsScreen.tsx",
   "VendorsRecurringScreen.tsx",
   "VendorsRemindersScreen.tsx",
+  "BankStatementsScreen.tsx",
+  "ReconciliationScreen.tsx",
 ];
 for (const file of accountingComponentFiles) {
   const isEligible = PAGER_ELIGIBLE_FILES.some((name) => file.endsWith(`/${name}`));
@@ -393,11 +405,12 @@ const availableItems = menuItems.filter((item) => item.available);
 /**
  * B5.1 shipped 1 (the dashboard). B5.2 (2026-08-21) turned 9 Customers/Vendors
  * rows available plus pulled 2 Reporting rows (Aged receivable/payable)
- * forward from B5.6 — 12 total. Exact equality: a menu row available with no
+ * forward from B5.6 — 12 total. B5.3 (2026-08-21) turned the 3 Bank rows
+ * available — 15 total. Exact equality: a menu row available with no
  * matching page (or vice versa) is exactly the drift `accountingPageFiles`
  * above also gates.
  */
-assert(availableItems.length === 12, `Accounting ships 12 live menu rows (found ${availableItems.length})`);
+assert(availableItems.length === 15, `Accounting ships 15 live menu rows (found ${availableItems.length})`);
 const dashboardMenuItem = availableItems.find((item) => item.key === "accounting-dashboard");
 assert(dashboardMenuItem, "the dashboard row is still present and available");
 assert(
@@ -418,10 +431,12 @@ const B52_AVAILABLE_KEYS = [
   "accounting-aged-receivable",
   "accounting-aged-payable",
 ];
+const B53_AVAILABLE_KEYS = ["accounting-bank-accounts", "accounting-bank-statements", "accounting-bank-reconciliation"];
+const ALL_AVAILABLE_KEYS = [...B52_AVAILABLE_KEYS, ...B53_AVAILABLE_KEYS];
 assert(
-  new Set(availableItems.map((item) => item.key)).size === B52_AVAILABLE_KEYS.length &&
-    B52_AVAILABLE_KEYS.every((key) => availableItems.some((item) => item.key === key)),
-  "exactly the 12 named rows are available — no undocumented row was made live, and none was missed",
+  new Set(availableItems.map((item) => item.key)).size === ALL_AVAILABLE_KEYS.length &&
+    ALL_AVAILABLE_KEYS.every((key) => availableItems.some((item) => item.key === key)),
+  "exactly the 15 named rows are available — no undocumented row was made live, and none was missed",
 );
 assert(ACCOUNTING_LANDING === ACCOUNTING_ROUTES.dashboard, "the module landing is the dashboard");
 assert(ACCOUNTING_ROOT === "/manager/accounting", "the module root is /manager/accounting");
@@ -854,4 +869,100 @@ for (const key of [
   assert(binding.drillIn !== null, `KPI ${key} now links into a real B5.2 surface instead of a "not yet" note`);
 }
 
-console.log("Manager B5.1 + B5.2 assertions: all checks passed.");
+// ═══════════════════════════════════════════════════════════════════════════
+// 13. TRACK B5.3 — BANK RECONCILIATION SURFACES
+//     (read-only guard over the bank tree, no fabricated match states,
+//     enum-only status filters, no fabricated list total on a bare array)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const BANK_DIR_FILES = accountingComponentFiles.filter((file) => file.includes("/accounting/bank/"));
+assert(BANK_DIR_FILES.length === 3, `B5.3 ships 3 Bank screens (found ${BANK_DIR_FILES.length})`);
+
+/** Neither B5.3 screen fabricates a list total — `toAccountingPager` never appears in the bank tree. */
+for (const file of BANK_DIR_FILES) {
+  assert(
+    !codeOnly(file).includes("toAccountingPager("),
+    `${file} binds no server-total list pager — bank.statements and bank.reconciliations are PC-06 bare arrays`,
+  );
+}
+
+/** The three bare-array bank routes stay declared PC-06, matching the general sweep above. */
+for (const key of ["bank.accounts", "bank.statements", "bank.reconciliations"]) {
+  const route = getAccountingRoute(key);
+  assert(route.envelope === "bare-array" && !route.serverTotal, `${key} is declared PC-06 (bare array, no server total)`);
+}
+/** The two detail keys are real single-object reads, not bare arrays. */
+for (const key of ["bank.statement", "bank.reconciliation"]) {
+  assert(getAccountingRoute(key).envelope === "object", `${key} is a single-object detail read`);
+}
+
+/**
+ * Enum-only status filters (same B5-F2-shaped rule §12 applies to B5.2): any
+ * status filter value that reaches a bank screen must come from
+ * `readManagerEnum`, never a raw `router.query.status` string forwarded
+ * anywhere — these two routes accept NO server-side status parameter at all
+ * (only `?bankAccountId=`), so the filter is applied client-side, but the
+ * VALUE it filters by must still be validated, never a hand-edited arbitrary
+ * string silently "matching" nothing.
+ */
+for (const file of BANK_DIR_FILES) {
+  const code = codeOnly(file);
+  if (!/router\.query\.status\b/.test(code)) continue;
+  assert(code.includes("readManagerEnum("), `${file} reads its status filter through readManagerEnum, never a raw query string`);
+  assert(!/\.filter\([^)]*router\.query\.status/.test(code), `${file} never filters rows against a raw router.query.status`);
+}
+
+/** No accounting route path is ever hand-typed as a server-side status query — the filter is applied to the fetched array, not sent to the server. */
+assert(
+  !accountingComponentSource.includes("bank-statements?status=") &&
+    !accountingComponentSource.includes("reconciliation?status="),
+  "no bank screen forwards a status filter to the server — neither route accepts one",
+);
+
+/** The reconciliation lifecycle models exactly three linear stages, DISPUTED is an exit, not a fourth stage. */
+assert(RECONCILIATION_PIPELINE.join(",") === "OPEN,IN_PROGRESS,COMPLETED", "the reconciliation pipeline has three stages");
+assert(reconciliationPipelineIndex("open") === 0, "a lowercase status is normalised before indexing");
+assert(reconciliationPipelineIndex("DISPUTED") === -1, "DISPUTED is off the pipeline, not a fourth stage");
+assert(reconciliationPipelineIndex(null) === -1, "an unread status is off the pipeline, never assumed OPEN");
+
+/** completeReconciliation requires an EXACT zero difference (bank-rec.service.ts) — never a rounded or fuzzy match. */
+assert(isReconciliationBalanced("0.00") === true, "a zero difference reads as balanced");
+assert(isReconciliationBalanced("0") === true, "a zero difference reads as balanced regardless of decimal formatting");
+assert(isReconciliationBalanced("200000.00") === false, "a non-zero difference reads as not balanced, never rounded away");
+assert(isReconciliationBalanced(undefined) === null, "an unreadable difference is null, never guessed into balanced or not");
+
+/** No match/skip/complete affordance anywhere in the bank tree — Manager holds the read permission only (PC-01). */
+for (const file of BANK_DIR_FILES) {
+  const code = codeOnly(file);
+  assert(!/\bmatchLine\b|\bskipLine\b|\bcompleteReconciliation\b/.test(code), `${file} calls no match/skip/complete function`);
+}
+assert(
+  accountingComponentSource.includes("AccountingReadOnlyCard") &&
+    BANK_DIR_FILES.some((file) => codeOnly(file).includes("AccountingReadOnlyCard")),
+  "the bank screens disclose the denied match/skip/complete actions in words",
+);
+
+/** The registry's two Bank dashboard-card KPI placeholders are gone — every bank KPI now links into a real B5.3 surface. */
+for (const key of ["bank.activeReconciliations", "bank.reconciliations", "bank.accounts"]) {
+  const binding = getAccountingKpi(key);
+  assert(binding.drillIn !== null, `KPI ${key} now links into a real B5.3 surface instead of a "not yet" note`);
+}
+assert(getAccountingKpi("bank.accounts").drillIn === ACCOUNTING_ROUTES.bankAccounts, "the bank-accounts KPI links to the bank accounts list");
+assert(
+  getAccountingKpi("bank.reconciliations").drillIn === ACCOUNTING_ROUTES.bankReconciliation &&
+    getAccountingKpi("bank.activeReconciliations").drillIn === ACCOUNTING_ROUTES.bankReconciliation,
+  "both reconciliation KPIs link to the reconciliation workbench",
+);
+
+/** The Bank menu group's three rows now cite their real registry keys and resolve to the three new routes. */
+const bankMenuItems = menuItems.filter((item) => item.key.startsWith("accounting-bank-"));
+assert(bankMenuItems.length === 3, `the Bank menu group carries exactly 3 rows (found ${bankMenuItems.length})`);
+for (const item of bankMenuItems) {
+  assert(item.available, `${item.key} is available (B5.3 shipped it)`);
+}
+
+/** `BankAccountRow` no longer claims a `currentBalance` the schema does not have — a stale B5.1 field, corrected in this pass. */
+const typesSource = codeOnly(`${ACCOUNTING_LIB_DIR}/types.ts`);
+assert(!/BankAccountRow[\s\S]{0,400}currentBalance/.test(typesSource), "BankAccountRow no longer declares a currentBalance field that does not exist on the Prisma schema");
+
+console.log("Manager B5.1 + B5.2 + B5.3 assertions: all checks passed.");

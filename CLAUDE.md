@@ -93,7 +93,7 @@ for the full document catalog with provenance.
 | Capability matrix | `docs/ROLE_CAPABILITY_MATRIX.md` |
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C — **supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward**) |
 | Manager Operations + Staff (Track B3) | `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` (canonical B3 record, 2026-08-20) + `ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md` |
-| **Manager Accounting (Track B5.1/B5.2)** | **`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`** (canonical B5.1 record, 2026-08-21) + **`ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`** (canonical B5.2 record, 2026-08-21) — the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
+| **Manager Accounting (Track B5.1/B5.2/B5.3)** | **`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`** (canonical B5.1 record, 2026-08-21) + **`ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`** (canonical B5.2 record, 2026-08-21) + **`ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md`** (canonical B5.3 record, 2026-08-21) — the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) — shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | Track C backend gap batch 1 (C-02/MP0-10/MP0-09/C-01) | `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md` (canonical record, 2026-08-20) |
@@ -131,7 +131,7 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 | **Waiter** | **Floor · Reservations · Me** | Table-centric order entry (order builder behind Floor table selection) |
 | **Cashier** | **Floor · Till · Me** (Prompt C1–C3, default `/cashier/floor`; Queue/Receipts are hidden compatibility routes reachable by direct URL only, retire C4/C5) | Payment collection, receipts, till/close (C2 delivered table→bill resolution + the canonical settlement workspace + Find bill; **C3 delivered payment / partial / split / close execution inside that workspace**; receipts + refunds arrive C4) |
 | **Supervisor** | **Floor · Reservations · Approvals · Me** | Read-first oversight; table-control workspace behind Floor selection |
-| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**. Settings (B6) data is **NOT started** |
+| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**; **B5.3 turned 3 more live — Bank accounts (list-only), Bank statements and Reconciliation (list+detail) — same read-only guarantee, no Match/Skip/Complete control anywhere, for 15 of 28 rows live total**. Settings (B6) data is **NOT started** |
 
 ⚠️ **Cashier Floor-First reconstruction (locked target, C3 complete / C4 not started, 2026-08-20):**
 Cashier's Queue-first navigation above is **historically complete and demo-ready but superseded** as
@@ -161,7 +161,70 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**ENTERPRISE UI TRACK B5.2 COMPLETE — Manager Accounting Customers + Vendors surfaces (2026-08-21) — A: B5.2 COMPLETE / B5.3…B5.6 GATED.** Frontend + docs only; **no backend / schema / migration /
+**ENTERPRISE UI TRACK B5.3 COMPLETE — Manager Accounting Bank reconciliation surfaces (2026-08-21) —
+A: B5.3 COMPLETE / B5.4…B5.6 GATED.** Frontend + docs only; **no backend / schema / migration /
+seed / permission / DTO / Postman change**. The three Bank menu rows B5.1 shipped as honest not-yet
+placeholders — Bank accounts, Bank statements, Reconciliation — are now real surfaces. **The
+Accounting menu goes from 12 live rows to 15** (of 28 total). Manager accounting stays **read-only by
+permission** — same 15 read strings, zero writes (PC-01, re-verified live: 5/5 representative bank
+writes → 403); the no-write-affordance guard was extended over the new tree, never relaxed —
+Reconciliation is Odoo's most action-heavy accounting surface (Match/Skip/Reconcile/Validate) and
+NONE of those controls exist here, not even disabled; `AccountingReadOnlyCard` names the denied
+actions instead.
+**Bank accounts** is list-only (the registry has no `bank.account` detail key, matching how B5.2
+shipped Credit notes list-only). **Bank statements** is list+detail (statement header + its full
+line-level table — date, description, direction, amount, match state). **Reconciliation** is
+list+detail (a three-stage `OPEN → IN_PROGRESS → COMPLETED` `ManagerStatusPipeline`, `DISPUTED` as an
+exit chip rather than a fourth stage, the statement balance/matched total/**difference** figures, and
+per-line match evidence naming journal-line vs. manual-entry). All three routes are **PC-06 bare
+arrays** (no envelope, no server total, no server-side status filter beyond an optional
+`?bankAccountId=`) — the status filter on Bank statements/Reconciliation runs entirely CLIENT-side
+over the already-fetched complete array and is proven, by a Playwright spec, never to reach the
+server as an unsupported query parameter. No pager binds to any of the three lists.
+The B5.1 Bank dashboard card — a permanent empty state since B5.1, because the demo dataset carried
+zero bank rows — is now wired for real: `bank.accounts`, `bank.reconciliations` and
+`bank.activeReconciliations` all gained a real `drillIn` in `ACCOUNTING_KPI_BINDINGS`, replacing
+their `noDrillInReason` placeholders.
+**Fixtures created live via the API (Owner token — Manager holds no accounting write) on the
+isolated stack**, since the demo dataset carries zero bank accounts/statements/reconciliations by
+default: 2 bank accounts (one active, one inactive — proving the Active/Inactive badge), 2 statements
+(a 5-line mixed CREDIT/DEBIT batch and a 1-line batch), 2 manual bank entries to match against, and 2
+reconciliations — one **IN_PROGRESS** with 2 lines MATCHED, 1 SKIPPED, 2 UNMATCHED and a live-proven
+**UGX 6,350,000 non-zero difference** (`POST .../complete` correctly returned **400** — "the endpoint
+working as designed, not a defect," matching `ai/ACCOUNTING_API_VERIFICATION_REPORT.md`'s own
+documented behaviour), and one **COMPLETED** with a matched, zero difference (`POST .../complete`
+returned **200**). Rooftop Bar was re-verified to carry zero bank rows throughout, proving the empty
+branch state exercised in QA is a real read outcome.
+🔴 **One stale B5.1 type field found and fixed in this phase**: `BankAccountRow` carried a
+`currentBalance` field that does **not exist anywhere** on the `BankAccount` Prisma model (confirmed
+by reading `packages/db/prisma/schema.prisma` directly) — B5.1 never caught this because the Bank
+card only ever rendered a count, never the field itself. Removed; `manager-b5-assertions.ts` §13 now
+pins its absence.
+**Validated on an isolated local Docker stack** — Postgres `:55450` (`nimbus_b53_qa`), API `:4061`,
+web `:3150`; **shared Neon was never connected to or written** (the isolated API held exactly one
+established TCP connection, to its own local Postgres, verified via `lsof` against its own PID); both
+`.env` files were **never edited on disk** — the isolated DB target was supplied by an explicitly
+exported `DATABASE_URL` (per `tools/qa/README.md`'s documented isolation rule: "dotenv never
+overrides an already-set `process.env` variable"), so SHA-256 is identical before and after by
+construction. Web typecheck + lint (no `--fix`) + production build all pass (3 new pages); **17/17**
+assertion scripts (`manager-b5-assertions.ts` extended with a new §13 of B5.3-specific checks — no
+fabricated list pager on any bare-array Bank route, enum-only client-side status filters, no
+match/skip/complete function called anywhere in the tree, all three bank KPIs now link somewhere
+real); `e2e/manager-accounting/bank.spec.ts` (new, 16 specs) **64/64 across 4 viewports**;
+`e2e/manager-accounting/menu-and-read-only.spec.ts` (updated for 12→15 rows) **29 passed / 3 skipped**
+across 4 viewports (the skips are the pre-existing "desktop dropdown only at `xl`" reason B5.1/B5.2's
+own menu specs already carry, not a B5.3 gap); full `e2e/manager-accounting/` regression **66/66** at
+`vp-1440x900`; `e2e/manager-shell/` regression **34/34** (includes the cross-role boundary suite);
+live manual QA toured all 6 new/changed pages across both Tapas Downtown (populated) and Rooftop Bar
+(genuinely empty); zero console errors; reconciliation-detail load measured at 5 real GETs + 5 OPTIONS
+preflights, all GET/OPTIONS, zero writes; `/api/health` → ok throughout; `git diff --check` clean. See
+`ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md`. **B5.4 (Accounting core + Review), B5.5
+(Closing) and the remainder of B5.6 are NOT started — do not begin any of them without explicit owner
+authorisation.** ⚠️ Note for B5.4: **C-23** — the M33 GL Postman collection cannot run (a pre-existing
+defect, proven pre-existing by backend gap batch 2), so the journals surface will ship without Postman
+verification.
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.2 COMPLETE — Manager Accounting Customers + Vendors surfaces (2026-08-21) — A: B5.2 COMPLETE / B5.3…B5.6 GATED.** Frontend + docs only; **no backend / schema / migration /
 seed / permission / DTO / Postman change**. Nine of B5.1's not-yet Customers/Vendors menu rows are
 now real surfaces, plus the two Reporting → Aged receivable/payable views pulled forward from B5.6
 (same `ar.aging`/`ap.aging` routes the B5.1 dashboard cards already read). **The Accounting menu
@@ -1197,9 +1260,10 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   tax-INCLUSIVE, `netSales = gross − tax`); B3 re-pointed the two sales KPI bindings and pinned them
   by assertion — **do not "fix" them back**.
   ~~**B5…B7 (and B0, B5's sub-phases) are NOT started**~~ — **B0, the permissions cutover, and B5.1 +
-  B5.2 (Accounting) are now COMPLETE**, plan any further sub-phase from `ai/ENTERPRISE_UI_ROADMAP.md`
-  Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. **B5.3, B5.4, B5.5, B5.6, B6 (Settings)
-  and B7 remain NOT started — do not begin any of them without explicit authorization.**
+  B5.2 + B5.3 (Accounting) are now COMPLETE**, plan any further sub-phase from
+  `ai/ENTERPRISE_UI_ROADMAP.md` Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. **B5.4,
+  B5.5, B5.6, B6 (Settings) and B7 remain NOT started — do not begin any of them without explicit
+  authorization.**
   Do not add a Manager More/Approvals tab, change the `/manager/overview` landing, turn
   `lib/manager/permissions.ts` into a
   `hasPermission()` check, add tills/shifts chips or lists (those routes do not exist), offer a PDF
@@ -1239,9 +1303,9 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   partly org-scoped `/api/approvals` (MP0-05). Do not build the chatter rail (gated on **B0**) or a
   graph/pivot view (gated on **C-03**). Do not reinstate a workspace-wide "Read-only oversight"
   badge in the readiness strip — it is false over Staff; read-only is a per-surface claim.
-- **Track B5.1/B5.2 boundaries — do not cross without explicit authorization.** **Manager accounting
+- **Track B5.1/B5.2/B5.3 boundaries — do not cross without explicit authorization.** **Manager accounting
   is READ-ONLY BY PERMISSION** — 15 read strings, **zero writes** (PC-01/PC-02, re-verified live: 5/5
-  representative writes → 403, still true after B5.2). **Do not add any write affordance to the
+  representative writes → 403, still true after B5.2 and B5.3). **Do not add any write affordance to the
   accounting tree, not even a disabled one**: the assertion script bans a write `method:`,
   `useMutation`, `<Button`, `onClick=` and `<form>` under `lib/accounting`,
   `components/manager/accounting`, `lib/manager/accounting-context.ts`,
@@ -1283,9 +1347,32 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   exclusion or widen the accounting tree's own field vocabulary to reintroduce the collision**; a
   Supplier's `taxId`/`bankName` are legitimate non-PII business fields, not an employee-data leak.
   Do not add a charting dependency or draw a time trend (no bucketed series exists — NG-05); the
-  aging bucket bars are honest because the backend computes that series itself. **B5.1 and B5.2 are
-  COMPLETE. B5.3 (Bank reconciliation workbench), B5.4, B5.5, B5.6, B6 and B7 are NOT started — do
-  not begin any of them without explicit owner authorisation.**
+  aging bucket bars are honest because the backend computes that series itself. **B5.1, B5.2 and B5.3
+  are COMPLETE. B5.4, B5.5, B5.6, B6 and B7 are NOT started — do not begin any of them without
+  explicit owner authorisation.**
+- **Track B5.3 boundaries — do not cross without explicit authorization.** **Reconciliation is
+  READ-ONLY**: do not add a Match, Skip, Reconcile, Validate or Complete control anywhere, not even
+  disabled — `pos:accounting:reconciliation:match`/`:create` and `pos:accounting:bank-accounts:create`/
+  `bank-statements:import`/`bank-entry:create` are all held ONLY by Owner/Accountant, re-verified live
+  at 403 for Manager. `manager-b5-assertions.ts` §13 greps the whole Bank tree for
+  `matchLine`/`skipLine`/`completeReconciliation` and fails if any appears. Do not bind a server-total
+  pager to `bank.accounts`, `bank.statements` or `bank.reconciliations` — all three are **PC-06 bare
+  arrays with no `total` field**; `toAccountingPager(` must never appear in
+  `components/manager/accounting/bank/`. The status filter on Bank statements/Reconciliation is
+  CLIENT-side only (the backend accepts no `?status=` on either route) — do not add a request param
+  for it; a hand-edited `?status=NOT_REAL` must resolve to "no filter" via `readManagerEnum()`, same
+  as every other accounting filter. Do not reintroduce `BankAccountRow.currentBalance` — the
+  `BankAccount` Prisma model has no such column (B5.3-D1, confirmed against the schema directly). Do
+  not add a "cash position" or "bank balance" aggregate across accounts — no endpoint computes one.
+  The `PAGER_ELIGIBLE_FILES` guard in `manager-b5-assertions.ts` was extended to include
+  `BankStatementsScreen.tsx` and `ReconciliationScreen.tsx` for their `ManagerBreadcrumbs` RECORD
+  pager only (`pageRows.length`, never a server total) — do not read that inclusion as license to add
+  a LIST pager to either file. **B5.1, B5.2 and B5.3 are COMPLETE. B5.4 (Accounting core + Review),
+  B5.5 (Closing) and the remainder of B5.6 are NOT started — do not begin any of them without explicit
+  owner authorisation.** Note for whoever starts B5.4: **C-23** — the M33 GL Postman collection
+  cannot run (pre-existing, proven by backend gap batch 2), so the journals surface will ship without
+  Postman verification; do not silently "fix" the collection as part of B5.4 without separate
+  authorisation.
 - Cashier reconstruction Prompt **C3 is COMPLETE** (nav Floor/Till/Me, `/cashier/floor` default,
   shared-Floor consumer, table→bill resolution with zero/one/multiple handling, canonical
   `?tableId=&orderId=` URL state, ONE `CashierSettlementWorkspace` reusing the checkout primitives,

@@ -7,6 +7,11 @@ import {
   getArAccountRequest,
   getArAgingRequest,
   getArInvoiceRequest,
+  getBankAccountsRequest,
+  getBankReconciliationRequest,
+  getBankReconciliationsRequest,
+  getBankStatementRequest,
+  getBankStatementsRequest,
   listApBillsRequest,
   listApCreditNotesRequest,
   listApPaymentsRequest,
@@ -43,6 +48,11 @@ import type {
   ArCreditNoteRow,
   ArInvoiceDetail,
   ArInvoiceRow,
+  BankAccountRow,
+  BankReconciliationDetail,
+  BankReconciliationRow,
+  BankStatementDetail,
+  BankStatementRow,
 } from "@/lib/accounting/types";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useManagerBranch } from "@/lib/manager/branch-context";
@@ -273,5 +283,66 @@ export function useApRemindersList(
     retry: 1,
     queryKey: managerQueryKey("accounting-ap-reminders", branchId, params),
     queryFn: () => listApRemindersRequest(token, scope, params),
+  });
+}
+
+// ── Bank — Track B5.3 ────────────────────────────────────────────────────────
+//
+// All three routes here are PC-06 bare arrays with no server total and no
+// server-side status filter — `bankAccountId` is the only accepted query
+// param, so every status/type filter this surface offers is applied CLIENT-
+// side by the screen over the full fetched array (see `unpaginatedCountLabel`).
+// Deliberately SEPARATE query keys from the B5.1 dashboard's own
+// `accounting-bank-accounts` / `accounting-bank-reconciliations` (which poll
+// every 5 minutes as part of the fixed 9-query snapshot) — these surface reads
+// fetch on demand instead, matching the Reporting precedent above.
+
+export function useBankAccountsList(): UseQueryResult<BankAccountRow[]> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-bank-accounts-list", branchId),
+    queryFn: () => getBankAccountsRequest(token, scope),
+  });
+}
+
+export function useBankStatementsList(bankAccountId?: string): UseQueryResult<BankStatementRow[]> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-bank-statements-list", branchId, bankAccountId),
+    queryFn: () => getBankStatementsRequest(token, scope, bankAccountId),
+  });
+}
+
+export function useBankStatementDetail(id: string | null): UseQueryResult<BankStatementDetail> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled: enabled && Boolean(id),
+    retry: 1,
+    queryKey: managerQueryKey("accounting-bank-statement", branchId, id),
+    queryFn: () => getBankStatementRequest(token, scope, id as string),
+  });
+}
+
+export function useBankReconciliationsList(bankAccountId?: string): UseQueryResult<BankReconciliationRow[]> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-bank-reconciliations-list", branchId, bankAccountId),
+    queryFn: () => getBankReconciliationsRequest(token, scope, bankAccountId),
+  });
+}
+
+export function useBankReconciliationDetail(id: string | null): UseQueryResult<BankReconciliationDetail> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled: enabled && Boolean(id),
+    retry: 1,
+    queryKey: managerQueryKey("accounting-bank-reconciliation", branchId, id),
+    queryFn: () => getBankReconciliationRequest(token, scope, id as string),
   });
 }

@@ -261,6 +261,31 @@ export function countActiveReconciliations(rows: readonly BankReconciliationRow[
   ).length;
 }
 
+/**
+ * The reconciliation lifecycle pipeline (Track B5.3) — `OPEN → IN_PROGRESS →
+ * COMPLETED`. `DISPUTED` is a side branch, not a further stage (a reconciliation
+ * does not pass through it on the way to completion), so it renders as an exit
+ * chip via `ManagerStatusPipeline`'s `currentIndex: -1`, the same treatment a
+ * voided order gets in Operations.
+ */
+export const RECONCILIATION_PIPELINE = ["OPEN", "IN_PROGRESS", "COMPLETED"] as const;
+
+export function reconciliationPipelineIndex(status: string | null | undefined): number {
+  if (!status) return -1;
+  return (RECONCILIATION_PIPELINE as readonly string[]).indexOf(status.toUpperCase());
+}
+
+/**
+ * `completeReconciliation` requires `statementBalance - matchedTotal` to be
+ * EXACTLY zero (`bank-rec.service.ts`) — `null` when either side is
+ * unreadable, never guessed into "balanced".
+ */
+export function isReconciliationBalanced(difference: AccountingDecimal): boolean | null {
+  const parsed = toAccountingAmount(difference);
+  if (parsed === null) return null;
+  return parsed === 0;
+}
+
 // ── PC-06: bare-array lists have no server total ────────────────────────────
 
 /**
@@ -334,6 +359,16 @@ const ACCOUNTING_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "w
   VOID: "danger",
   SUSPENDED: "danger",
   INACTIVE: "danger",
+  // Track B5.3 — bank statement / reconciliation / statement-line statuses.
+  IMPORTED: "info",
+  RECONCILED: "success",
+  VOIDED: "danger",
+  IN_PROGRESS: "info",
+  COMPLETED: "success",
+  DISPUTED: "danger",
+  UNMATCHED: "warning",
+  MATCHED: "success",
+  SKIPPED: "neutral",
 };
 
 export function accountingStatusTone(value: string | null | undefined): "neutral" | "info" | "success" | "warning" | "danger" {
@@ -506,14 +541,13 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     noDrillInReason: NOT_YET("B5.4", "Posting errors"),
   },
 
-  // Bank
+  // Bank — Track B5.3 wired every one of these into a real surface.
   {
     key: "bank.activeReconciliations",
     label: "Reconciliations in progress",
     routeKey: "bank.reconciliations",
     field: "[].status in (OPEN, IN_PROGRESS)",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.3", "The reconciliation workbench"),
+    drillIn: ACCOUNTING_ROUTES.bankReconciliation,
     note: "PC-06: a bare array with no server total, so this is an exact CLIENT count of the complete result set, labelled as such.",
   },
   {
@@ -521,16 +555,14 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     label: "Reconciliations on file",
     routeKey: "bank.reconciliations",
     field: "[].length",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.3", "The reconciliation workbench"),
+    drillIn: ACCOUNTING_ROUTES.bankReconciliation,
   },
   {
     key: "bank.accounts",
     label: "Bank accounts on file",
     routeKey: "bank.accounts",
     field: "[].length",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.3", "Bank accounts"),
+    drillIn: ACCOUNTING_ROUTES.bankAccounts,
   },
 
   // Closing

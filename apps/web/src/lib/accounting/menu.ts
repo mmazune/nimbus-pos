@@ -52,6 +52,13 @@ import { getAccountingRoute } from "./route-registry";
  * in the Reporting group (Odoo's own placement) rather than moving under
  * Customers/Vendors. The rest of Reporting (Budgets, Demand calendar,
  * Forecast) is still B5.6.
+ *
+ * B5.3 (2026-08-21) turns the three Bank rows live — Bank accounts (list-only:
+ * the registry has no `bank.account` detail key, matching how B5.2 shipped
+ * Credit notes list-only), Bank statements (list + detail, statement header +
+ * lines), and Reconciliation (list + detail, the match/skip/complete
+ * workbench rendered READ-ONLY — Manager holds no `reconciliation:match`/
+ * `:create`, PC-01).
  */
 export const ACCOUNTING_SUBPHASES = ["B5.2", "B5.3", "B5.4", "B5.5", "B5.6"] as const;
 export type AccountingSubphase = (typeof ACCOUNTING_SUBPHASES)[number];
@@ -178,22 +185,22 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-bank-accounts",
         label: "Bank accounts",
-        available: false,
-        subphase: "B5.3",
+        available: true,
+        href: ACCOUNTING_ROUTES.bankAccounts,
         routeKeys: ["bank.accounts"],
       },
       {
         key: "accounting-bank-statements",
         label: "Bank statements",
-        available: false,
-        subphase: "B5.3",
+        available: true,
+        href: ACCOUNTING_ROUTES.bankStatements,
         routeKeys: ["bank.statements", "bank.statement"],
       },
       {
         key: "accounting-bank-reconciliation",
         label: "Reconciliation",
-        available: false,
-        subphase: "B5.3",
+        available: true,
+        href: ACCOUNTING_ROUTES.bankReconciliation,
         routeKeys: ["bank.reconciliations", "bank.reconciliation"],
       },
     ],

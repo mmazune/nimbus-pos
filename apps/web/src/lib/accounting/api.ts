@@ -20,7 +20,10 @@ import type {
   ArInvoiceDetail,
   ArInvoiceRow,
   BankAccountRow,
+  BankReconciliationDetail,
   BankReconciliationRow,
+  BankStatementDetail,
+  BankStatementRow,
   FiscalPeriodRow,
   JournalRow,
   PeriodCloseRunRow,
@@ -101,8 +104,34 @@ export function getBankAccountsRequest(token: string, branchId: string) {
   return apiRequest<BankAccountRow[]>(routePath("bank.accounts"), { token, branchId });
 }
 
-export function getBankReconciliationsRequest(token: string, branchId: string) {
-  return apiRequest<BankReconciliationRow[]>(routePath("bank.reconciliations"), { token, branchId });
+/**
+ * `?bankAccountId=` is the ONLY query param either bank-statements or
+ * reconciliation accepts server-side — no status filter, no page size. The
+ * B5.1 dashboard card calls this with no id (every reconciliation); the B5.3
+ * workbench list may narrow it to one account.
+ */
+export function getBankReconciliationsRequest(token: string, branchId: string, bankAccountId?: string) {
+  const suffix = bankAccountId ? `?bankAccountId=${encodeURIComponent(bankAccountId)}` : "";
+  return apiRequest<BankReconciliationRow[]>(`${routePath("bank.reconciliations")}${suffix}`, { token, branchId });
+}
+
+export function getBankReconciliationRequest(token: string, branchId: string, id: string) {
+  return detailRequest<BankReconciliationDetail>("bank.reconciliation", token, branchId, id);
+}
+
+/**
+ * `GET /bank-statements` — bare array (PC-06), same shape as `bank-accounts`
+ * and `reconciliation` above. Track B5.3. Any status filter this module
+ * offers is applied CLIENT-side over the already-fetched complete result set
+ * — the backend has no server-side status filter or page size on this route.
+ */
+export function getBankStatementsRequest(token: string, branchId: string, bankAccountId?: string) {
+  const suffix = bankAccountId ? `?bankAccountId=${encodeURIComponent(bankAccountId)}` : "";
+  return apiRequest<BankStatementRow[]>(`${routePath("bank.statements")}${suffix}`, { token, branchId });
+}
+
+export function getBankStatementRequest(token: string, branchId: string, id: string) {
+  return detailRequest<BankStatementDetail>("bank.statement", token, branchId, id);
 }
 
 /** ORGANISATION data — `X-Branch-Id` is still sent, and the backend still ignores it. */

@@ -820,6 +820,45 @@ shared `detailRequest()` now checks for a literal `:id` in the path and replaces
 append-with-slash only for the one entry with no separate detail key (`ap.suppliers`). Any future
 accounting detail route must be added with this in mind.
 
+## 8g. Bare-array list patterns: client-side filter, record pager without a list pager (Track B5.3, 2026-08-21)
+
+B5.3 shipped the first three Manager Accounting list surfaces backed by genuinely **PC-06 bare-array**
+routes (`bank-accounts`, `bank-statements`, `reconciliation` — no envelope, no server `total`, no
+server-side status filter beyond an optional `?bankAccountId=`). This is a different shape from B5.2's
+nine `data-total` list surfaces and needed two new, narrow conventions rather than reusing
+`AccountingListScreen` (which requires a `pager` prop it would have no honest value for):
+
+### No server-total pager exists, so none is bound
+
+`BankAccountsScreen.tsx`, `BankStatementsScreen.tsx` and `ReconciliationScreen.tsx` compose
+`ManagerContentShell` + `ManagerControlPanel` + `ManagerListTable` directly (the same shape
+`AgedPayableScreen.tsx`/`AgedReceivableScreen.tsx` already established for B5.2's unpaged aging
+reports), omitting `ManagerControlPanel`'s `pager` prop entirely and rendering an
+`AccountingUnpaginatedNote` ("Showing all N …") instead. `toAccountingPager(` never appears in any of
+the three files — the B5 assertion script's `PAGER_ELIGIBLE_FILES` guard enforces this per file, not
+by a fragile substring-proximity guess.
+
+### A status filter on a route with no server-side filter runs entirely client-side
+
+Unlike B5.2's AR/AP filters (which forward a validated `?status=` to a real backend query param), the
+Bank statements and Reconciliation status filters narrow the ALREADY-FETCHED complete array in the
+browser — the two routes accept no `?status=` parameter at all. The filter value is still resolved
+through `readManagerEnum()`, same as every other accounting filter (an invalid or hand-edited value
+resolves to "no filter"), but applying it is a plain `Array.prototype.filter` over local state, and no
+network request follows the filter change. `e2e/manager-accounting/bank.spec.ts` proves this two ways:
+the captured-request count is unchanged after filtering, and no captured request URL ever carries
+`?status=`.
+
+### A detail view may carry a RECORD pager with no LIST pager on the same surface
+
+`BankStatementsScreen.tsx` and `ReconciliationScreen.tsx` both open a detail panel with a
+`ManagerBreadcrumbs` record pager (`1 / 2`, walking the already-fetched `pageRows`) even though their
+LIST view binds no pager at all — these are independent concerns. The B5 assertion script's
+`PAGER_ELIGIBLE_FILES` guard therefore lists these two files for the literal `pager={` substring (the
+record pager), while a SEPARATE check confirms neither file ever calls `toAccountingPager(` (the list
+pager). `BankAccountsScreen.tsx`, which has no detail view at all (no `bank.account` registry key
+exists), is correctly absent from that list — it binds no pager of either kind.
+
 ## 9. Known UI inconsistencies (recorded, not yet fixed)
 
 These are functional/architectural inconsistencies out of scope for a UI-polish

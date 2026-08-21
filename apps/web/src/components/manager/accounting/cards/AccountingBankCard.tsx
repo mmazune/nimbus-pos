@@ -25,11 +25,10 @@ import type { AccountingDashboardSnapshot } from "@/lib/manager/accounting-conte
  * CLIENT count, and B4-D1's rule stands that a page length is never dressed up
  * as a server total. The footnote says which kind of count this is, in words.
  *
- * **No balance is shown.** Odoo's card leads with a bank balance; Nimbus's
- * `BankAccount` rows were not verified to carry a reconciled balance on this
- * dataset (zero rows exist), so leading with one would be a figure this pass
- * cannot stand behind. B5.3 owns the workbench and can add it once real rows
- * exist to verify against.
+ * **No balance is shown.** Odoo's card leads with a bank balance; `BankAccount`
+ * carries no balance column at all (verified against the Prisma schema in
+ * Track B5.3 — there is no reconciled-balance figure to read, not merely an
+ * unverified one), so this card leads with counts instead, same as B5.1.
  */
 export function AccountingBankCard({ snapshot }: { snapshot: AccountingDashboardSnapshot }) {
   const { bankAccountsQuery, reconciliationsQuery } = snapshot;
@@ -55,7 +54,7 @@ export function AccountingBankCard({ snapshot }: { snapshot: AccountingDashboard
       isLoading={bankAccountsQuery.isLoading || reconciliationsQuery.isLoading}
       isError={bankAccountsQuery.isError || reconciliationsQuery.isError}
       isEmpty={isEmpty}
-      emptyMessage="No bank account is on file for this branch, so there is nothing to reconcile yet. The reconciliation workbench arrives in B5.3."
+      emptyMessage="No bank account is on file for this branch, so there is nothing to reconcile yet."
       actions={<AccountingRouteScopeNote routeKey="bank.reconciliations" />}
       footnote={
         <>

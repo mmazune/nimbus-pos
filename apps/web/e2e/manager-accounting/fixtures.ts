@@ -30,9 +30,20 @@ export const ACCOUNTING_ROUTES = {
   // Reporting (aging) — Track B5.2
   agedReceivable: "/manager/accounting/reporting/aged-receivable",
   agedPayable: "/manager/accounting/reporting/aged-payable",
+
+  // Bank — Track B5.3
+  bankAccounts: "/manager/accounting/bank/accounts",
+  bankStatements: "/manager/accounting/bank/statements",
+  bankReconciliation: "/manager/accounting/bank/reconciliation",
 } as const;
 
-/** The 12 B5.2 rows that are `available: true` in `lib/accounting/menu.ts`, in menu order. */
+/**
+ * The 15 rows that are `available: true` in `lib/accounting/menu.ts`, in DOM
+ * order. The Bank group sits BEFORE Reporting in the menu tree (Customers →
+ * Vendors → Bank → Accounting → Review → Reporting → Configuration), so the
+ * three B5.3 rows land between "Payment reminders" and "Aged receivable" —
+ * not appended at the end.
+ */
 export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-dashboard",
   "accounting-ar-invoices",
@@ -44,6 +55,9 @@ export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-ap-suppliers",
   "accounting-ap-recurring",
   "accounting-ap-reminders",
+  "accounting-bank-accounts",
+  "accounting-bank-statements",
+  "accounting-bank-reconciliation",
   "accounting-aged-receivable",
   "accounting-aged-payable",
 ] as const;
@@ -67,6 +81,12 @@ export const AP_BILL_STATUS_VALUES = [
   "OVERDUE",
   "CANCELLED",
 ] as const;
+
+/** `BankStatementStatus` — the values the Bank statements client-side status filter offers. */
+export const BANK_STATEMENT_STATUS_VALUES = ["PENDING", "IMPORTED", "RECONCILED", "VOIDED"] as const;
+
+/** `BankReconciliationStatus` — the values the Reconciliation client-side status filter offers. */
+export const BANK_RECONCILIATION_STATUS_VALUES = ["OPEN", "IN_PROGRESS", "COMPLETED", "DISPUTED"] as const;
 
 /** The five cards the B5.1 grid ships, in render order. */
 export const ACCOUNTING_CARDS = [

@@ -70,20 +70,110 @@ export type ArAgingResponse = {
   accounts?: ArAgingAccountRow[];
 };
 
-// ── Bank ────────────────────────────────────────────────────────────────────
+// ── Bank — Track B5.3 ───────────────────────────────────────────────────────
+// Live-verified against `bank-rec.service.ts` (raw Prisma `BankAccount` /
+// `BankStatement` / `BankStatementLine` / `BankReconciliation` models — none
+// of these routes apply a Prisma `select`, so every scalar column on the
+// model is on the wire). B5.1's `BankAccountRow` carried a `currentBalance`
+// field that does not exist anywhere in the schema — it was never rendered
+// (the card showed only a count), so the drift went unnoticed; corrected here
+// now that this pass actually reads the row.
+
+/** `BankStatementStatus` (Prisma enum). */
+export const BANK_STATEMENT_STATUSES = ["PENDING", "IMPORTED", "RECONCILED", "VOIDED"] as const;
+export type BankStatementStatus = (typeof BANK_STATEMENT_STATUSES)[number];
+
+/** `BankReconciliationStatus` (Prisma enum). */
+export const BANK_RECONCILIATION_STATUSES = ["OPEN", "IN_PROGRESS", "COMPLETED", "DISPUTED"] as const;
+export type BankReconciliationStatus = (typeof BANK_RECONCILIATION_STATUSES)[number];
+
+/** `BankStatementLineStatus` (Prisma enum). */
+export const BANK_STATEMENT_LINE_STATUSES = ["UNMATCHED", "MATCHED", "SKIPPED"] as const;
+export type BankStatementLineStatus = (typeof BANK_STATEMENT_LINE_STATUSES)[number];
+
+/** `JournalLineDirection` (Prisma enum) — reused for statement-line direction. */
+export const BANK_LINE_DIRECTIONS = ["DEBIT", "CREDIT"] as const;
+export type BankLineDirection = (typeof BANK_LINE_DIRECTIONS)[number];
+
+/** `GET /accounting/bank-accounts` row — raw `BankAccount`, no `include`. */
 export type BankAccountRow = {
   id: string;
-  name?: string | null;
-  accountNumber?: string | null;
+  name: string;
+  accountCode?: string | null;
+  bankName?: string | null;
   currencyCode?: string | null;
-  currentBalance?: AccountingDecimal;
+  glAccountId?: string | null;
+  isActive?: boolean | null;
+  notes?: string | null;
 };
 
+export type BankStatementLineRow = {
+  id: string;
+  txDate?: string | null;
+  description?: string | null;
+  amount?: AccountingDecimal;
+  direction?: string | null;
+  reference?: string | null;
+  status?: string | null;
+  matchedJournalLineId?: string | null;
+  matchedManualEntryId?: string | null;
+  matchedAt?: string | null;
+  matchedById?: string | null;
+};
+
+/** `GET /bank-statements` row — `include: { bankAccount, importedBy, _count.lines }`. */
+export type BankStatementRow = {
+  id: string;
+  statementDate?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  openingBalance?: AccountingDecimal;
+  closingBalance?: AccountingDecimal;
+  status?: string | null;
+  reference?: string | null;
+  notes?: string | null;
+  bankAccountId?: string | null;
+  bankAccount?: { id: string; name: string; accountCode?: string | null } | null;
+  importedBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+  _count?: { lines?: number };
+};
+
+/** `GET /bank-statements/:id` — the list include plus the full `lines[]`. */
+export type BankStatementDetail = BankStatementRow & {
+  lines?: BankStatementLineRow[];
+};
+
+/**
+ * `GET /reconciliation` row — `include: { bankAccount, bankStatement (narrow),
+ * fiscalPeriod, startedBy, completedBy }`. The list route does NOT compute
+ * `difference` (only `getReconciliation` does); a list row's own
+ * `statementBalance`/`matchedTotal` are still real, just not pre-subtracted.
+ */
 export type BankReconciliationRow = {
   id: string;
   status?: string | null;
   statementBalance?: AccountingDecimal;
   matchedTotal?: AccountingDecimal;
+  unmatchedCount?: number | null;
+  matchedCount?: number | null;
+  notes?: string | null;
+  createdAt?: string | null;
+  completedAt?: string | null;
+  bankAccount?: { id: string; name: string; accountCode?: string | null } | null;
+  bankStatement?: { id: string; reference?: string | null; closingBalance?: AccountingDecimal } | null;
+  fiscalPeriod?: { id: string; name?: string | null; startsAt?: string | null; endsAt?: string | null } | null;
+  startedBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+  completedBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+};
+
+/**
+ * `GET /reconciliation/:id` — the list include's `bankStatement` widens to the
+ * full statement + its `lines[]` (the per-line match state the workbench
+ * shows), and the service appends a computed `difference` string
+ * (`statementBalance - matchedTotal`, `toFixed(2)`) not present on the raw row.
+ */
+export type BankReconciliationDetail = BankReconciliationRow & {
+  bankStatement?: (BankStatementDetail & { reference?: string | null; closingBalance?: AccountingDecimal }) | null;
   difference?: AccountingDecimal;
 };
 

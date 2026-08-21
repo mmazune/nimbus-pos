@@ -4,6 +4,47 @@ This matrix documents the backend API endpoints exposed to the Manager role (`ro
 
 ---
 
+## 2026-08-21 — TRACK B5.3: Bank rows now CONSUMED by list/detail surfaces
+
+Track B5.3 (`ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md`) turns the three Bank
+menu rows B5.1 shipped as not-yet placeholders into real surfaces. Every route below was already
+present in the 38-route registry (B5.1 built it for exactly this purpose); B5.3 adds no new
+registry entries — it consumes the last three of the nine originally reserved for it.
+
+| Route | Permission | Scope | Envelope | Used for |
+| --- | --- | --- | --- | --- |
+| `GET /api/accounting/bank-accounts` | `pos:accounting:bank-accounts:read` | branch | **bare array** (PC-06) | Bank → Bank accounts list (list-only — no `bank.account` detail key exists) |
+| `GET /api/accounting/bank-statements?bankAccountId=` | `pos:accounting:bank-statements:read` | branch | **bare array** (PC-06) | Bank → Bank statements list |
+| `GET /api/accounting/bank-statements/:id` | `pos:accounting:bank-statements:read` | branch | object (list `include` + full `lines[]`) | Statement detail |
+| `GET /api/accounting/reconciliation?bankAccountId=` | `pos:accounting:reconciliation:read` | branch | **bare array** (PC-06) | Bank → Reconciliation list |
+| `GET /api/accounting/reconciliation/:id` | `pos:accounting:reconciliation:read` | branch | object (widens `bankStatement` to its full `lines[]`; adds a computed `difference` string) | Reconciliation detail |
+
+**Neither bare-array Bank list accepts a server-side status filter** — only the optional
+`?bankAccountId=` narrowing param. The status chip on Bank statements/Reconciliation therefore
+filters the already-fetched complete array CLIENT-side; it is never forwarded as a query parameter
+(proven by `e2e/manager-accounting/bank.spec.ts`: the captured-request count is unchanged after
+filtering, and no captured request URL ever carries `?status=`). The filter VALUE is still validated
+through `readManagerEnum()` before it reaches the browser-side filter, same discipline as every
+server-validated accounting filter.
+
+**No pager binds to any of the three lists** — all are PC-06 bare arrays with no `total` field.
+`BankStatementsScreen.tsx`/`ReconciliationScreen.tsx` still carry a `ManagerBreadcrumbs` RECORD
+pager on their detail panels (walking the already-fetched `pageRows`, the same legitimate exception
+B5.2 established), but neither calls `toAccountingPager(` — see `docs/UI_SYSTEM.md` §8g.
+
+**Live fixture note**: the demo dataset carries zero bank accounts/statements/reconciliations by
+default. Every row above was verified against fixtures created live via the API (Owner token —
+Manager holds no accounting write) on the isolated stack for this pass: 2 bank accounts, 2
+statements (5+1 lines), 2 reconciliations (one `IN_PROGRESS` with a live-proven UGX 6,350,000
+non-zero `difference`, one `COMPLETED` with a zero `difference`). No live shape drift was found on
+any of the five GET routes.
+
+**One stale B5.1 type fixed in this phase**: `BankAccountRow.currentBalance` did not exist on the
+`BankAccount` Prisma model at all (confirmed by reading `packages/db/prisma/schema.prisma`) — B5.1
+never caught it because the Bank dashboard card only ever rendered a count. Removed.
+
+---
+
 ## 2026-08-21 — TRACK B5.2: Customers + Vendors rows now CONSUMED by list/detail surfaces
 
 Track B5.2 (`ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`) turns nine of B5.1's
