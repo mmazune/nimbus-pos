@@ -764,7 +764,7 @@ assert(
 // 12. Navigation — the module tree points at real routes
 // ═══════════════════════════════════════════════════════════════════════════
 
-assert(managerRoutes.length === 6, "the locked six-surface nav is unchanged");
+assert(managerRoutes.length === 7, "the approved seven-surface nav is unchanged (six + Accounting, OD-3)");
 const operationsRoute = managerRoutes.find((route) => route.href === "/manager/operations");
 const staffRoute = managerRoutes.find((route) => route.href === "/manager/staff");
 assert(operationsRoute?.match("/manager/operations/orders"), "Operations stays highlighted on its sub-routes");
@@ -798,9 +798,12 @@ for (const item of [...operationsItems, ...staffItems].filter((entry) => entry.a
     `every live menu row points at a real B3 route (${item.key} → ${item.href})`,
   );
 }
+// ⚠️ INVERTED by Track B5.1 (2026-08-21): OD-3 was approved and Accounting is
+// now the seventh menu. Kept and flipped rather than deleted — see the same
+// note in manager-b1-assertions.ts.
 assert(
-  !managerTopNavMenus.some((menu) => /accounting/i.test(menu.label)),
-  "Accounting is still not a seventh menu (OD-3 stays open, gated on B5)",
+  managerTopNavMenus.some((menu) => /accounting/i.test(menu.label)),
+  "Accounting is the seventh menu since B5.1 (OD-3 approved 2026-08-21)",
 );
 
 // ═══════════════════════════════════════════════════════════════════════════

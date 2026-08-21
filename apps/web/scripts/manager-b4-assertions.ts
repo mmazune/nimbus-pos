@@ -513,12 +513,12 @@ assert(projected.branchId === "branch-a", "the run keeps its own branchId");
 assert(MANAGER_REPORTS_LANDING === MANAGER_REPORTS_ROUTES.catalog, "Reports lands on the catalog");
 
 const reportsRoute = managerRoutes.find((route) => route.href === "/manager/reports");
-assert(reportsRoute, "Reports is still one of the locked six surfaces");
+assert(reportsRoute, "Reports is still one of the approved Manager surfaces");
 assert(
   reportsRoute?.match("/manager/reports/runs") === true,
   "the Reports nav entry matches its whole module, so sub-routes keep it highlighted",
 );
-assert(managerRoutes.length === 6, "the locked six-surface nav is unchanged");
+assert(managerRoutes.length === 7, "the approved seven-surface nav is unchanged (six + Accounting, OD-3)");
 
 assert(
   reportsMenuItems.length === 2 && reportsMenuItems.every((item) => item.available),

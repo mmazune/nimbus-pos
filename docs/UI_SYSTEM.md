@@ -720,6 +720,47 @@ SALES_BY_HOUR, **whose export is 24 rows**. It is labelled *"Records aggregated"
 with a sentence saying it is not the export's line count, and no table may be
 derived from it.
 
+## 8e. Accounting module + card patterns (Track B5.1, 2026-08-21)
+
+Accounting is the **seventh Manager module** (OD-3, owner-approved). It is deliberately built as a
+**self-contained module** — `lib/accounting/*` is role-agnostic and knows nothing about Manager, and
+exactly one adapter (`lib/manager/accounting-context.ts`) wires it to the Manager branch context —
+so a future Accountant role can mount the same module behind its own allow-list (OD-2).
+
+### The primitives (`components/manager/accounting/shared/`)
+
+| Primitive | Owns |
+| --- | --- |
+| `AccountingPrimaryKpi` / `AccountingStatList` | Every figure. `kpiKey` is REQUIRED and resolved through `ACCOUNTING_KPI_BINDINGS`; an unregistered key **throws**. |
+| `AccountingAgingBars` | The five-bucket money bar mark. Hand-rolled SVG, tokens only, `role="img"` with `<title>`/`<desc>`, and the same numbers repeated as text. |
+| `AccountingPeriodStatusBadge` | `DRAFT → OPEN → CLOSED → LOCKED` (PC-07). An unrecognised status renders "Status unavailable", never a guess. |
+| `AccountingScopeNote` / `AccountingRouteScopeNote` | "This branch" vs "Organisation data", read **off the route registry** so a card cannot mislabel its own source. |
+| `AccountingReadOnlyNote` / `AccountingDeniedWritesPanel` | Names the actions this role cannot perform, instead of rendering a disabled control. |
+| `AccountingUnpaginatedNote` | The PC-06 disclosure for bare-array reads. |
+
+The card SHELL is `ManagerDashboardCard` — B2's, reused unforked. Only the figure primitives are new,
+because accounting needs its own KPI registry rather than a widened Manager one.
+
+### Rules for any future accounting surface
+
+1. **Every figure is registry-bound.** Add it to `ACCOUNTING_KPI_BINDINGS` with its route key, the
+   exact response field and a drill-in target — or a written reason there is none.
+2. **Every menu row cites a live-verified endpoint.** `assertAccountingMenuIsBacked()` runs at module
+   scope; a row citing an unknown endpoint, or one this role cannot read, fails the build. A surface
+   the role is 403 on is **ABSENT**, not a greyed-out row.
+3. **Label the scope.** Four accounting surfaces are organisation-level by design (`periods`,
+   `period-close-runs`, `posting-source-maps`, `tax-config`). Say so on the card; do not invent a
+   `branchId`.
+4. **No write affordance while the role holds no write.** Not a disabled button, not a hidden form —
+   name the action in prose and say who can perform it.
+5. **A bare array is a client count.** Label it *"Showing all N"*; never bind a pager to it and never
+   assign `.length` to a field called `total` (PC-06, and B4-D1's lesson).
+6. **A chart only over a series the backend computes.** The aging buckets qualify; a trend over time
+   does not — no bucketed time series exists anywhere (NG-05).
+7. **Fail closed, and name the RIGHT reason.** A missing figure is withheld, never zeroed — and the
+   copy explaining *why* must distinguish a failed read from a partial page (defect **B5-D2**, caught
+   by viewing the error-state screenshot rather than by a test).
+
 ## 9. Known UI inconsistencies (recorded, not yet fixed)
 
 These are functional/architectural inconsistencies out of scope for a UI-polish

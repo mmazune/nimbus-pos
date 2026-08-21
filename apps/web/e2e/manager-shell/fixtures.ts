@@ -16,7 +16,20 @@ export const MANAGER_CFG = {
   expectedBranchNames: ["Tapas Downtown", "Rooftop Bar", "Garden Cafe", "Events Kitchen"],
 };
 
-export const MANAGER_TABS = ["Overview", "Operations", "Staff", "Reports", "Settings", "Me"] as const;
+/**
+ * Track B5.1 (2026-08-21): Accounting joins as the seventh module (OD-3,
+ * owner-approved). The M-P1 six-tab lock governed the bottom-nav presentation,
+ * which D-MGRTOPNAV superseded.
+ */
+export const MANAGER_TABS = [
+  "Overview",
+  "Operations",
+  "Staff",
+  "Reports",
+  "Accounting",
+  "Settings",
+  "Me",
+] as const;
 
 export const MANAGER_BRANCH_STORAGE_KEY = "nimbus.managerBranchId";
 

@@ -1,11 +1,52 @@
 import type { OperationalTopNavGroup, OperationalTopNavMenu } from "@/components/pos-shell/OperationalTopNav";
 
+// RELATIVE imports on purpose: `managerTopNavMenus` is executed directly by the
+// B1/B3/B5 assertion scripts under `tsx`, which does not resolve the Next.js
+// `@/` alias at runtime. (The `OperationalTopNav` import above is type-only and
+// is erased, so it may keep the alias.)
+import { ACCOUNTING_MENU, assertAccountingMenuIsBacked } from "../accounting/menu";
+import { ACCOUNTING_LANDING } from "../accounting/routes";
+
 import { MANAGER_OPERATIONS_ROUTES } from "./operations-route";
 import { MANAGER_REPORTS_ROUTES } from "./reports-route";
 import { managerRoutes } from "./routes";
 import { MANAGER_STAFF_ROUTES } from "./staff-route";
 
 type ManagerMenuGroupsByKey = Record<string, readonly OperationalTopNavGroup[] | undefined>;
+
+/**
+ * The Accounting tree (Track B5.1) is owned by `lib/accounting/menu.ts`, not
+ * hand-written here, for two reasons the other four modules do not have:
+ *
+ * 1. Every row must cite a live-verified endpoint, and that check
+ *    (`assertAccountingMenuIsBacked`) has to run over the SAME data the nav
+ *    renders — not a parallel copy that could drift from it.
+ * 2. OD-2 asks that the accounting module stay self-contained so an Accountant
+ *    role can later mount it behind its own allow-list. This adapter is the only
+ *    Manager-shaped thing about it.
+ *
+ * The assertion runs at module scope: a menu row citing an unknown endpoint, or
+ * one a Manager token cannot read, fails the build rather than shipping.
+ */
+assertAccountingMenuIsBacked();
+
+const ACCOUNTING_TOP_NAV_GROUPS: readonly OperationalTopNavGroup[] = ACCOUNTING_MENU.map((group) => ({
+  heading: group.heading,
+  items: group.items.map((item) =>
+    item.available
+      ? { key: item.key, label: item.label, href: item.href, available: true as const }
+      : {
+          key: item.key,
+          label: item.label,
+          // A not-yet row is inert, so its href is never followed. It points at
+          // the module landing rather than at the unbuilt surface, so that even
+          // a mis-render cannot navigate somewhere that does not exist.
+          href: ACCOUNTING_LANDING,
+          available: false as const,
+          notYetNote: item.subphase,
+        },
+  ),
+}));
 
 /**
  * Grouped dropdown submenus per top-level Manager menu (Track B1,
@@ -127,6 +168,7 @@ const MANAGER_MENU_GROUPS: ManagerMenuGroupsByKey = {
       ],
     },
   ],
+  accounting: ACCOUNTING_TOP_NAV_GROUPS,
   settings: [
     {
       items: [{ key: "settings-dashboard", label: "Settings dashboard", href: "/manager/settings", available: true }],

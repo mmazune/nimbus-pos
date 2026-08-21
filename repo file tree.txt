@@ -2009,4 +2009,43 @@ apps/web/src/pages/manager/staff.tsx             (DELETED — replaced by the mo
 ai/
   ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md   (new — canonical B3 record)
   ENTERPRISE_B3_QA_EVIDENCE_INDEX.md             (new — B3 evidence)
+
+=== Track B5.1 — Manager ACCOUNTING module (2026-08-21) ===
+
+apps/web/src/lib/accounting/                     (new — ROLE-AGNOSTIC core, per OD-2:
+                                    an Accountant role can mount this module unchanged)
+  route-registry.ts  (38 live-verified GET routes + ACCOUNTING_DENIED_WRITES)
+  menu.ts            (tree + omissions + assertAccountingMenuIsBacked())
+  routes.ts  types.ts  model.ts  api.ts          (api.ts is READS ONLY, by assertion)
+
+apps/web/src/lib/manager/accounting-context.ts   (new — the ONLY Manager-shaped file:
+                                    9 bounded queries on ["manager","accounting-*",branchId])
+
+apps/web/src/components/manager/accounting/      (new — B5.1)
+  AccountingDashboard.tsx  index.ts
+  cards/  AccountingReceivableCard.tsx  AccountingPayableCard.tsx
+          AccountingLedgerCard.tsx  AccountingBankCard.tsx  AccountingPeriodCard.tsx
+  shared/ AccountingKpi.tsx  AccountingAgingBars.tsx  AccountingNotes.tsx  index.ts
+
+apps/web/src/pages/manager/accounting/           (new — module with redirect)
+  index.tsx (→ /manager/accounting/dashboard)  dashboard.tsx
+
+apps/web/e2e/manager-accounting/                 (new — B5.1)
+  fixtures.ts  dashboard.spec.ts  menu-and-read-only.spec.ts
+  branch-scope-and-failure.spec.ts  capture-evidence.spec.ts
+
+apps/web/scripts/manager-b5-assertions.ts        (new — B5.1)
+
+apps/web/src/lib/manager/routes.ts               (modified — Accounting is the SEVENTH module)
+apps/web/src/lib/manager/top-nav.ts              (modified — accounting tree adapter)
+apps/web/src/lib/manager/permissions.ts          (modified — accounting surface; the blanket
+                                    "accounting is excluded" entry replaced by "every accounting WRITE")
+apps/web/src/components/pos-shell/role-icon-config.ts + role-icons.ts  (modified — one glyph)
+apps/web/e2e/manager-shell/{fixtures.ts,navigation-and-landing.spec.ts}  (modified — seven tabs;
+                                    the "Accounting is absent" assertion INVERTED, not deleted)
+apps/web/scripts/{shell,manager-p1,manager-b1,manager-b3,manager-b4}-assertions.ts
+                                                 (modified — six → seven, still exact lists)
+
+ai/
+  ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md   (new — canonical B5.1 record)
 ```

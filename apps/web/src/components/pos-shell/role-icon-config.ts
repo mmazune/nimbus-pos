@@ -1,4 +1,8 @@
 export const operationalIconNames = {
+  // Track B5.1 (Manager Accounting module): the seventh module's nav glyph.
+  // Added HERE rather than imported ad hoc, per docs/UI_SYSTEM.md §4 — this file
+  // stays the only place a glyph is chosen.
+  accounting: "accounting",
   approvals: "approvals",
   back: "back",
   branch: "branch",

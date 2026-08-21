@@ -34,11 +34,14 @@ function labels(items: readonly OperationalNavItem[]) {
 
 const { manager, cashier, supervisor, waiter } = operationalRoleNavigation;
 
-// ── Navigation: exactly six items in the locked order ──────────────────────
-assert(manager.length === 6, "Manager nav has exactly six items");
+// ── Navigation: exactly seven items in the approved order ──────────────────
+// M-P1 locked six; Track B5.1 adds Accounting as the seventh under the
+// owner-approved OD-3 (2026-08-21). Still an exact list, still no More tab and
+// still no Approvals tab.
+assert(manager.length === 7, "Manager nav has exactly seven items");
 assert(
-  labels(manager) === "Overview,Operations,Staff,Reports,Settings,Me",
-  "Manager nav is exactly Overview, Operations, Staff, Reports, Settings, Me in that order",
+  labels(manager) === "Overview,Operations,Staff,Reports,Accounting,Settings,Me",
+  "Manager nav is exactly Overview, Operations, Staff, Reports, Accounting, Settings, Me in that order",
 );
 assert(!manager.some((item) => /^more$/i.test(item.label)), "There is no More tab");
 assert(
@@ -51,7 +54,16 @@ assert(
 );
 
 // ── Icons resolve through the canonical registry only ──────────────────────
-const expectedIcons = ["overview", "operations", "staff", "reports", "settings", "me"] as const;
+// Track B5.1 inserted "accounting" before "settings" (OD-3, 2026-08-21).
+const expectedIcons = [
+  "overview",
+  "operations",
+  "staff",
+  "reports",
+  "accounting",
+  "settings",
+  "me",
+] as const;
 manager.forEach((item, index) => {
   assert(
     item.icon === operationalIconNames[expectedIcons[index]],
@@ -117,6 +129,8 @@ for (const item of manager) {
     // Operations and Staff. The invariant this file protects is unchanged —
     // the locked surface must still resolve to a real page inside the shell.
     MANAGER_REPORTS_LANDING: "/manager/reports/catalog",
+    // Track B5.1 adds Accounting as the fourth module-with-redirect.
+    ACCOUNTING_LANDING: "/manager/accounting/dashboard",
   };
   const landing = landingConstants[destination as string] || (destination as string).replace(/["']/g, "");
   const landingPage = `apps/web/src/pages${landing}.tsx`;
@@ -176,10 +190,11 @@ assert(
   permissionsSource.includes("ALLOW-LIST") && permissionsSource.includes("WHY THIS IS NOT A PERMISSION CHECK"),
   "manager permissions module documents why it is an allow-list",
 );
-assert(managerSurfaces.length === 6, "the surface allow-list has exactly six surfaces");
+assert(managerSurfaces.length === 7, "the surface allow-list has exactly seven surfaces");
 assert(
-  managerSurfaces.map((surface) => surface.key).join(",") === "overview,operations,staff,reports,settings,me",
-  "allow-listed surfaces match the six nav tabs",
+  managerSurfaces.map((surface) => surface.key).join(",") ===
+    "overview,operations,staff,reports,accounting,settings,me",
+  "allow-listed surfaces match the seven nav tabs",
 );
 assert(isManagerSurfaceAllowed("overview") && isManagerSurfaceAllowed("me"), "nav surfaces are allowed");
 assert(
@@ -358,12 +373,15 @@ for (const token of ["UGX ", "0.00", "Sample", "Lorem", "placeholder data", "TOD
 // What remains true, and is what this check now proves: every surface that is
 // still NOT built renders the honest foundation screen rather than an empty page
 // or fabricated data. One is left — Settings (B6).
+// Track B5.1 (2026-08-21) adds Accounting to the built list. Settings (B6) is
+// still the one surface left on the foundation screen.
 const BUILT_MANAGER_SURFACES = [
   "/manager/me",
   "/manager/overview",
   "/manager/operations",
   "/manager/staff",
   "/manager/reports",
+  "/manager/accounting",
 ];
 const foundationRoutes = manager.filter((navItem) => !BUILT_MANAGER_SURFACES.includes(navItem.href));
 assert(foundationRoutes.length === 1, "one Manager surface still ships the honest foundation screen");
@@ -398,5 +416,5 @@ for (const chip of ["Tills", "Shifts"]) {
 }
 
 console.log(
-  "Manager M-P1 assertions passed: six-tab locked nav, registry icons, /manager→/manager/overview, six pages on the shared shell, manager-compatible login routing, surface allow-list (no permission lookup), branch-context resolution + narrow invalidation, header switcher through the optional shared slot, unchanged Waiter/Cashier/Supervisor nav and headers, manager role accent, and no fabricated data or unverified readiness chip.",
+  "Manager M-P1 assertions passed: seven-tab approved nav (six locked + Accounting, OD-3), registry icons, /manager→/manager/overview, seven surfaces on the shared shell, manager-compatible login routing, surface allow-list (no permission lookup), branch-context resolution + narrow invalidation, header switcher through the optional shared slot, unchanged Waiter/Cashier/Supervisor nav and headers, manager role accent, and no fabricated data or unverified readiness chip.",
 );

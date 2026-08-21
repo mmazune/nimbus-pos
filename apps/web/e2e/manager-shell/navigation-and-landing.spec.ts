@@ -3,8 +3,12 @@ import { test, expect } from "@playwright/test";
 import { MANAGER_TABS, isDesktopTopNavViewport, managerLogin } from "./fixtures";
 
 /**
- * Manager Track B1 (top-nav shell conversion) — login landing, the locked
- * six-menu module bar, dropdown navigation, and the /manager redirect.
+ * Manager Track B1 (top-nav shell conversion) — login landing, the approved
+ * seven-menu module bar, dropdown navigation, and the /manager redirect.
+ *
+ * Updated by Track B5.1 (2026-08-21): Accounting is now the seventh module
+ * (OD-3, owner-approved). B1 asserted its ABSENCE — that assertion was correct
+ * then and is inverted here, not deleted, so the change is visible in the diff.
  */
 test.describe("Manager top-nav navigation + landing", () => {
   test("manager login lands on /manager/overview", async ({ page }) => {
@@ -14,7 +18,7 @@ test.describe("Manager top-nav navigation + landing", () => {
     await expect(page.locator("body")).not.toContainText(/Cannot reach Nimbus API/i);
   });
 
-  test("the module bar is exactly Overview/Operations/Staff/Reports/Settings/Me", async ({ page }) => {
+  test("the module bar is exactly Overview/Operations/Staff/Reports/Accounting/Settings/Me", async ({ page }) => {
     await managerLogin(page);
     await page.waitForURL(/\/manager\/overview/);
     test.skip(!isDesktopTopNavViewport(page), "below xl the module bar collapses (OD-4) — proven in shell-parity.spec.ts");
@@ -23,10 +27,12 @@ test.describe("Manager top-nav navigation + landing", () => {
     for (const label of MANAGER_TABS) {
       await expect(menubar.getByRole("menuitem", { name: new RegExp(`^${label}$`, "i") })).toBeVisible();
     }
-    await expect(menubar.getByRole("menuitem")).toHaveCount(6);
+    await expect(menubar.getByRole("menuitem")).toHaveCount(7);
     await expect(menubar.getByRole("menuitem", { name: /^more$/i })).toHaveCount(0);
     await expect(menubar.getByRole("menuitem", { name: /^approvals$/i })).toHaveCount(0);
-    await expect(menubar.getByRole("menuitem", { name: /^accounting$/i })).toHaveCount(0);
+    // OD-3 approved 2026-08-21: Accounting IS a module now. B1 asserted the
+    // opposite; the inversion is deliberate and recorded in the docblock.
+    await expect(menubar.getByRole("menuitem", { name: /^accounting$/i })).toHaveCount(1);
   });
 
   test("Overview and Me navigate directly — no dropdown", async ({ page }) => {

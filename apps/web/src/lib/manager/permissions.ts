@@ -33,6 +33,7 @@ export type ManagerSurfaceKey =
   | "operations"
   | "staff"
   | "reports"
+  | "accounting"
   | "settings"
   | "me";
 
@@ -53,6 +54,11 @@ export type ManagerSurface = {
    * whose data has shipped.
    */
   liveFrom: "live" | "M-P1" | "B2" | "B3" | "B4" | "B6";
+  /**
+   * Set only where the surface's SCOPE is narrower than "everything this module
+   * covers" — rendered as honest disclosure rather than left implicit.
+   */
+  scopeNote?: string;
   summary: string;
   /** Documentation of the backing guards — never used as the gate. */
   permissions: readonly string[];
@@ -108,6 +114,46 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     ],
   },
   {
+    key: "accounting",
+    label: "Accounting",
+    route: "/manager/accounting",
+    status: "allowed",
+    liveFrom: "live",
+    summary:
+      "Read-only accounting overview: receivable and payable aging, ledger and posting health, bank reconciliation status, fiscal period state.",
+    scopeNote:
+      "READ-ONLY BY PERMISSION, not merely by product choice. The manager role holds 15 accounting read strings and zero writes (PC-01/PC-02), so no create, post, approve, match or close control renders anywhere in this module.",
+    // Documentation of the backing guards — never the gate. These are the exact
+    // strings the 2026-08-20 permissions cutover granted Manager, re-verified
+    // live on 2026-08-21 (26 accounting-family strings on the token, of which
+    // these are the ones this module reads through).
+    permissions: [
+      "accounting:ap:bill:read",
+      "accounting:ap:credit-note:read",
+      "accounting:ap:recurring:read",
+      "accounting:ap:reminder:read",
+      "accounting:ar:account:read",
+      "accounting:ar:aging:read",
+      "accounting:ar:credit-note:read",
+      "accounting:ar:invoice:read",
+      "finance:budget:read",
+      "finance:demand-calendar:read",
+      "franchise:forecast:read",
+      "pos:accounting:accounts:read",
+      "pos:accounting:bank-accounts:read",
+      "pos:accounting:bank-statements:read",
+      "pos:accounting:cost-centers:read",
+      "pos:accounting:journals:read",
+      "pos:accounting:period-close-runs:read",
+      "pos:accounting:periods:read",
+      "pos:accounting:posting-errors:read",
+      "pos:accounting:posting-runs:read",
+      "pos:accounting:posting-source-maps:read",
+      "pos:accounting:reconciliation:read",
+      "pos:accounting:tax-config:read",
+    ],
+  },
+  {
     key: "settings",
     label: "Settings",
     route: "/manager/settings",
@@ -156,9 +202,19 @@ export const managerExcludedSurfaces = [
     permissions: ["pos:receipt:read", "pos:receipt:reprint", "pos:receipt:send"],
   },
   {
-    label: "Owner, billing, accounting and developer surfaces",
+    label: "Owner, billing and developer surfaces",
     detail: "Owner dashboards (pos:dash:owner:read is NOT held — 403 verified) and SaaS billing are excluded.",
-    permissions: ["billing:*", "accounting:*", "developer:*"],
+    permissions: ["billing:*", "developer:*"],
+  },
+  {
+    // Track B5.1 replaces the blanket "accounting is excluded" entry above: the
+    // 2026-08-20 permissions cutover granted Manager 15 accounting READ strings
+    // and deliberately no writes, so accounting is now a live read-only module
+    // and it is the WRITES that are the honest exclusion.
+    label: "Every accounting write",
+    detail:
+      "Accounting is readable (Track B5) but not writable: creating or approving a bill, recording a payment, issuing an invoice or receipt, matching a bank reconciliation, posting or reversing a journal, opening/closing/locking a period and creating a budget are all 403 for this role (PC-01). Procurement suggestions are not even readable, because one permission string gates both the read and the review write (PC-02).",
+    permissions: ["accounting:*:write", "pos:accounting:*:create", "procurement:advisory:read"],
   },
 ] as const;
 

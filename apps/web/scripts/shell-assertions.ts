@@ -76,10 +76,17 @@ assertUniqueDestinations(cashier, "Cashier");
 assertUniqueDestinations(supervisor, "Supervisor");
 // Manager joined the shared shell in M-P1 (2026-08-20) as the fourth registry consumer.
 assertUniqueDestinations(manager, "Manager");
-assert(labels(manager) === "Overview,Operations,Staff,Reports,Settings,Me", "Manager has exactly six approved labels");
-assert(manager.length === 6, "Manager route count is six");
+// Track B5.1 (2026-08-21): Accounting joins as the SEVENTH module under the
+// owner-approved OD-3. The M-P1 "exactly six" lock governed the bottom-nav
+// PRESENTATION, which D-MGRTOPNAV superseded; the guard therefore pins the new
+// approved list exactly, rather than being relaxed to "at least six".
+assert(
+  labels(manager) === "Overview,Operations,Staff,Reports,Accounting,Settings,Me",
+  "Manager has exactly seven approved labels",
+);
+assert(manager.length === 7, "Manager route count is seven");
 assert(Object.keys(operationalRoleNavigation).length === 4, "the shared nav registry serves exactly four roles");
-assert(manager[5].icon === waiter[2].icon, "Manager Me shares the canonical me icon with the other roles");
+assert(manager[6].icon === waiter[2].icon, "Manager Me shares the canonical me icon with the other roles");
 
 assert(isOperationalRouteActive(waiter[0], "/waiter/floor"), "Waiter Floor is active on Floor");
 assert(isOperationalRouteActive(waiter[0], "/waiter/orders/order-1"), "Waiter contextual order routes keep Floor active");

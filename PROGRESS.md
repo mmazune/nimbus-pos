@@ -4,7 +4,78 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**BACKEND GAP BATCH 2 COMPLETE — PC-03 · PC-04 (2026-08-21) — A: COMPLETE / B5 GATE NOW 🟢 GO /
+**ENTERPRISE UI TRACK B5.1 COMPLETE — Manager ACCOUNTING module shell, menu tree and dashboard
+(2026-08-21) — A: B5.1 COMPLETE / B5.2…B5.6 GATED.** Frontend + docs only; **no backend / schema /
+migration / seed / permission / DTO / Postman change**. Accounting becomes the **seventh Manager
+module** (**OD-3 approved**), inserted before Settings, shipped as one more `MANAGER_MENU_GROUPS`
+entry over the shared `OperationalTopNav` — **never a fork**. New role-agnostic `lib/accounting/*`
+(OD-2: an Accountant role can later mount the same module) with exactly ONE Manager-shaped adapter,
+`lib/manager/accounting-context.ts`.
+**MANAGER ACCOUNTING IS READ-ONLY BY PERMISSION, not by product preference.** Manager holds 15
+accounting read strings and **zero writes** (PC-01/PC-02 — re-verified live: 5/5 representative
+writes → **403**), so **no write affordance renders anywhere, not even a disabled one**; the
+assertion script bans a write `method:`, `useMutation`, `<Button`, `onClick=` and `<form>` in the
+whole accounting tree, and the e2e proves zero non-GET requests and zero disabled buttons. Where an
+Odoo user would reach for `New` / `Upload` / `Post` / `Approve` / `Match`, a panel names the action
+and the route, and says an Owner or Accountant performs it.
+**MENU TREE: 24 rows, 1 live link, 23 honest phase-tagged not-yet rows**, grouped under Odoo's own
+headings (Customers · Vendors · Bank · Accounting · Review · Reporting · Configuration). Every row
+cites a live-verified endpoint in the new 38-route `ACCOUNTING_ROUTE_REGISTRY`, and
+`assertAccountingMenuIsBacked()` runs **at module scope** — a row citing an unknown endpoint, or one
+Manager cannot read, **fails the build**. Eleven Odoo item groups are **ABSENT with written
+reasons**, including the **eleven financial statements** (no endpoint exists — NG-07 → C-11),
+**Receipts** and **Manual entries** (⚠️ both **POST-only**; the roadmap's own menu table listed
+Receipts — corrected here) and **Procurement suggestions** (403 for Manager, PC-02).
+**FIVE CARDS, every figure registry-bound** through the 19-entry `ACCOUNTING_KPI_BINDINGS` (an
+unregistered key **throws**): Customers—receivable · Vendors—payable · General ledger · Bank ·
+Fiscal period. Live Tapas Downtown: **UGX 9,106,400** receivable / 5 open invoices, **UGX 1,282,400**
+payable / 3 open bills, **5** journals, **0** posting errors, **FY2026-Q3 Open**. Switching to
+Rooftop Bar re-scopes every branch figure (**2,454,600 / 3,263,500 / 8**) while the
+**organisation-level** fiscal period stays put — the visible proof batch 2's PC-03 fix reached the
+UI. **Budget-vs-actuals was OMITTED** though the brief listed it: `/finance/budgets` returns `[]` in
+**both** branches on a fully seeded + demo-imported database, so no figure could be verified live
+(same for demand calendar). **No charting dependency** — one hand-rolled SVG bucket-bar mark, honest
+because the aging buckets are a real categorical series the backend itself computes; no time trend
+exists (NG-05) so none is drawn. **PC-06 bare arrays ship as-is**, client-counted and labelled
+*"Showing all N … not a server total"*; no pager is bound and `.length` is never assigned to a
+`total`.
+⚠️ **SUB-PHASES RENUMBERED**: the dashboard moved from B5.6 to **B5.1** and everything else shifted
+by one — **B5.2** Customers+Vendors, **B5.3** Bank, **B5.4** Core+Review, **B5.5** Closing, **B5.6**
+Reporting+Configuration. The renumber lives in `lib/accounting/menu.ts`, so the on-screen phase tags
+and the roadmap agree.
+🔴 **TWO NEW BACKEND FINDINGS, recorded not implemented. B5-F1: `ar/aging.summary` aggregates the
+RETURNED PAGE, not the whole `where`** — live `?take=1` reported `total: 5` beside
+`summary.totalOutstanding: 599,800` where the branch figure is **9,106,400**, so a *bounded* read
+(which every Manager discipline rule demands) would have printed an understated receivable balance.
+B0 missed it because its probe used the default page size on a five-invoice dataset. The card now
+**withholds the balance** unless `Σ accounts[].invoices.length >= total`. **B5-F2:
+`GET /ar/invoices?status=<invalid>` returns 500**, not 400 — the status query is an unvalidated raw
+string. Also recorded: **B5-F3** B0's "pagination bound" column is an artefact of a combined
+`take`+`pageSize`+`limit` probe (there is **no** server maximum), **B5-F4** `/api/audit/timeline`
+ignores `X-Branch-Id` and pages with `pageSize`, **B5-F5** `ap/aging` is unbounded by design,
+**B5-F6** the 24-row dropdown is long.
+⚠️ **Two defects found and fixed IN this phase: B5-D1** a `<p>` nested inside the card footnote's
+`<p>` produced 64 React warnings per load (caught by the zero-console-error gate); **B5-D2** the
+receivable card explained a **failed read** with the *partial page* wording — specific, confident and
+wrong — **caught by viewing the error-state screenshot, not by a test**; both are now pinned by
+assertions. ⚠️ **Five assertions that pinned Accounting's ABSENCE were INVERTED, not deleted**, each
+naming OD-3 and the date; the "exactly six" nav guards became "exactly seven" — still exact lists,
+never relaxed.
+**Validated on an isolated local Docker stack (Postgres `:55435`, API `:4031`, web `:3120`) —
+shared Neon was never connected to or written** (the QA API held exactly one non-listening TCP
+connection, to `[::1]:55435`) and **neither `.env` was modified** (SHA-256 identical before and
+after): web typecheck / lint / production build pass; **17/17** assertion scripts incl. the new
+`manager-b5-assertions.ts`; Playwright `e2e/manager-accounting/` **90 passed / 10 skipped** across
+four viewports; regressions `manager-shell` **125 passed / 11 skipped** (matching the B1/B2 baseline
+exactly), `manager-dashboard` **84/84**, cashier cross-role **12/12**; **9** accounting requests and
+**≤14** total per dashboard load, all GET, all branch-scoped; **zero console errors**; 19 screenshots
+captured and **6 viewed** at 1440×900 + 1280×680; `/api/health` → ok; `git diff --check` clean; all
+five pre-existing dev servers verified healthy before and after, and the container removed.
+**B5.2 (Customers + Vendors lists) and every later B5 sub-phase, plus B6 and B7, are NOT started —
+do not begin any of them without explicit owner authorisation.** See
+`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`.
+
+**Prior milestone record (superseded above) — BACKEND GAP BATCH 2 COMPLETE — PC-03 · PC-04 (2026-08-21) — A: COMPLETE / B5 GATE NOW 🟢 GO /
 SHARED-NEON DEPLOY STILL GATED.** The second owner-authorized Track C batch clears the **two 🔴
 blocking conditions** on the B5 gate. Backend source + tests + docs only; **no Prisma schema change,
 no migration, no seed change, no permission change, no `demo-import.ts` change, no Postman collection

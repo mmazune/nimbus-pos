@@ -1,6 +1,7 @@
 import {
   ArrowClockwise,
   ArrowLeft,
+  Bank,
   CalendarCheck,
   CaretDown,
   CashRegister,
@@ -35,6 +36,7 @@ export {
 export type { OperationalIconName } from "./role-icon-config";
 
 export const operationalIcons = {
+  accounting: Bank,
   approvals: ShieldCheck,
   back: ArrowLeft,
   branch: Storefront,

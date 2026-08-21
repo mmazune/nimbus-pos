@@ -2,12 +2,20 @@ import { operationalIconNames } from "../../components/pos-shell/role-icon-confi
 import type { OperationalNavItem } from "../../components/pos-shell/types";
 
 /**
- * Manager visible navigation (M-P1).
+ * Manager visible navigation (M-P1, extended by Track B5.1).
  *
  * LOCKED by the 2026-08-20 owner approval (`MANAGER_APPROVAL_DECISIONS.md` §2):
- * exactly six items, in this order — Overview · Operations · Staff · Reports ·
- * Settings · Me. There is **no More tab** and **no Approvals tab**; approvals
- * surface as counts on Overview and as reviews inside Operations / Staff.
+ * Overview · Operations · Staff · Reports · Settings · Me. There is **no More
+ * tab** and **no Approvals tab**; approvals surface as counts on Overview and as
+ * reviews inside Operations / Staff.
+ *
+ * ⚠️ **SEVEN, not six, since 2026-08-21.** The owner approved **OD-3** —
+ * Accounting becomes a seventh top-level module, inserted before Settings. The
+ * "exactly six tabs" lock was a statement about the M-P1 **bottom-nav
+ * presentation**, which D-MGRTOPNAV superseded; it was never a cap on how many
+ * modules Manager may reach, and the roadmap recorded that distinction when it
+ * raised OD-3. Adding an eighth still requires an owner decision — the
+ * allow-list in `permissions.ts` remains the gate, not this file.
  *
  * Icons are referenced by NAME from the canonical registry
  * (`components/pos-shell/role-icon-config.ts`); never import Phosphor here.
@@ -43,6 +51,15 @@ export const managerRoutes = [
     // Track B4 gives Reports real sub-routes (`/catalog`, `/runs`), so — like
     // Operations and Staff before it — its nav entry matches the whole module.
     match: (pathname: string) => pathname.startsWith("/manager/reports"),
+  },
+  {
+    href: "/manager/accounting",
+    label: "Accounting",
+    icon: operationalIconNames.accounting,
+    // Track B5.1: Accounting is a MODULE (root redirects to /accounting/dashboard),
+    // so — like Operations, Staff and Reports before it — its nav entry matches
+    // the whole module rather than one exact path.
+    match: (pathname: string) => pathname.startsWith("/manager/accounting"),
   },
   {
     href: "/manager/settings",

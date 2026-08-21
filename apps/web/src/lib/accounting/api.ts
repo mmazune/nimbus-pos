@@ -1,0 +1,105 @@
+import { apiRequest } from "@/lib/api/client";
+
+import { AR_AGING_PAGE_SIZE } from "./model";
+import { getAccountingRoute } from "./route-registry";
+import type {
+  AccountingListEnvelope,
+  ApAgingResponse,
+  ArAgingResponse,
+  BankAccountRow,
+  BankReconciliationRow,
+  FiscalPeriodRow,
+  JournalRow,
+  PeriodCloseRunRow,
+} from "./types";
+
+/**
+ * Accounting request layer — Track B5.1.
+ *
+ * ⚠️ **READS ONLY. THERE IS NO WRITE FUNCTION IN THIS MODULE AND THERE MUST NOT BE
+ * ONE.** Manager holds 15 accounting read strings and zero writes (PC-01/PC-02),
+ * so a mutation helper here would either 403 at runtime or invite a disabled
+ * button in the UI — both are the "soft untruth" the standing rules forbid.
+ * `scripts/manager-b5-assertions.ts` greps this whole tree for
+ * `method: "POST" | "PATCH" | "PUT" | "DELETE"` and fails the build if one appears.
+ *
+ * Every request is branch-scoped through `apiRequest({ branchId })`, which sets
+ * `X-Branch-Id` (`lib/api/client.ts`). **No API-client change was needed** —
+ * exactly as none was needed for M-P1's branch switcher, B2's dashboard, or B4's
+ * reports.
+ *
+ * Bounded reads: every list that accepts a page size gets an EXPLICIT one
+ * (MP0-11 — several routes are unbounded server-side, and this pass measured no
+ * maximum on `take` at all, so the bound is the caller's responsibility). Count
+ * cards use `take=1` and read the server's own `total`, the B2 count-only
+ * pattern: bounding the page does not bound the count.
+ */
+
+/** Reads the path from the registry so a route can never be typed twice. */
+function routePath(key: string) {
+  return getAccountingRoute(key).path;
+}
+
+// ── Aging (the two money headlines) ─────────────────────────────────────────
+
+export function getArAgingRequest(token: string, branchId: string) {
+  return apiRequest<ArAgingResponse>(
+    `${routePath("ar.aging")}?take=${AR_AGING_PAGE_SIZE}`,
+    { token, branchId },
+  );
+}
+
+/**
+ * AP aging takes no page size — the service reads every open bill for the branch
+ * and its DTO accepts only `asOf`. That is why `buckets.total` needs no
+ * completeness guard while its AR counterpart does (B5-F1).
+ */
+export function getApAgingRequest(token: string, branchId: string) {
+  return apiRequest<ApAgingResponse>(routePath("ap.aging"), { token, branchId });
+}
+
+// ── Count-only reads (B2 pattern: take=1, read the server's own `total`) ─────
+
+async function countOnly(path: string, token: string, branchId: string) {
+  const payload = await apiRequest<AccountingListEnvelope<unknown>>(`${path}?take=1`, {
+    token,
+    branchId,
+  });
+  const total = payload?.total;
+  // Fails closed: an unreadable total is `null`, never `0`.
+  return typeof total === "number" && Number.isFinite(total) ? total : null;
+}
+
+export function getJournalCountRequest(token: string, branchId: string) {
+  return countOnly(routePath("accounting.journals"), token, branchId);
+}
+
+export function getPostingRunCountRequest(token: string, branchId: string) {
+  return countOnly(routePath("accounting.postingRuns"), token, branchId);
+}
+
+export function getPostingErrorCountRequest(token: string, branchId: string) {
+  return countOnly(routePath("accounting.postingErrors"), token, branchId);
+}
+
+// ── Bare-array reads (PC-06: no envelope, no total, no server pagination) ────
+
+export function getBankAccountsRequest(token: string, branchId: string) {
+  return apiRequest<BankAccountRow[]>(routePath("bank.accounts"), { token, branchId });
+}
+
+export function getBankReconciliationsRequest(token: string, branchId: string) {
+  return apiRequest<BankReconciliationRow[]>(routePath("bank.reconciliations"), { token, branchId });
+}
+
+/** ORGANISATION data — `X-Branch-Id` is still sent, and the backend still ignores it. */
+export function getFiscalPeriodsRequest(token: string, branchId: string) {
+  return apiRequest<FiscalPeriodRow[]>(routePath("accounting.periods"), { token, branchId });
+}
+
+/** ORGANISATION data — see `accounting.periodCloseRuns` in the registry. */
+export function getPeriodCloseRunsRequest(token: string, branchId: string) {
+  return apiRequest<PeriodCloseRunRow[]>(routePath("accounting.periodCloseRuns"), { token, branchId });
+}
+
+export type { JournalRow };

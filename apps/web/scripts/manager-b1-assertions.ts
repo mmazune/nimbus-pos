@@ -93,9 +93,13 @@ assert(topNavSharedSource.includes("xl:hidden"), "the module bar collapses to a 
 assert(topNavSharedSource.includes("hidden min-w-0 flex-1 items-center gap-1 xl:flex"), "the full module bar only shows at xl and up, keeping 1024x768 overflow-free");
 assert(!/data-operational-bottom-nav/.test(topNavSharedSource), "the collapsed control never falls back to the frontline OperationalBottomNav markup");
 
-// ── The menu tree is derived from the ONE locked six-surface list, not hand-duplicated ──
-assert(managerRoutes.length === 6, "managerRoutes still carries exactly six locked surfaces");
-assert(managerTopNavMenus.length === 6, "the top-nav menu tree has exactly six top-level menus");
+// ── The menu tree is derived from the ONE approved surface list, not hand-duplicated ──
+// Six at B1; SEVEN since Track B5.1 added Accounting under the owner-approved
+// OD-3 (2026-08-21). The invariant that matters — and the one this file was
+// written to protect — is that the tree is DERIVED from `managerRoutes`, which
+// the label/order comparison below still proves exactly.
+assert(managerRoutes.length === 7, "managerRoutes carries exactly seven approved surfaces");
+assert(managerTopNavMenus.length === 7, "the top-nav menu tree has exactly seven top-level menus");
 assert(
   managerTopNavMenus.map((menu) => menu.label).join(",") === managerRoutes.map((route) => route.label).join(","),
   "the top-nav menu labels/order match the locked managerRoutes exactly",
@@ -176,8 +180,14 @@ for (const key of dropdownMenuKeys) {
   );
 }
 
-// Accounting is explicitly NOT a seventh menu yet (OD-3 is B5-gated, not B1 scope).
-assert(!managerTopNavMenus.some((menu) => /accounting/i.test(menu.label)), "Accounting is not added as a menu in B1 (OD-3 is gated on B5)");
+// Accounting was explicitly NOT a seventh menu in B1 (OD-3 was B5-gated).
+// ⚠️ INVERTED by Track B5.1 (2026-08-21): the owner approved OD-3, so the menu
+// now exists. The assertion is kept and flipped rather than deleted, so the
+// change of contract is visible in this file's history rather than silent.
+assert(
+  managerTopNavMenus.some((menu) => /accounting/i.test(menu.label)),
+  "Accounting is the seventh menu since B5.1 (OD-3 approved 2026-08-21)",
+);
 
 // ── Not-yet rows render as inert content, never as a Link to a page they do not own ──
 assert(
@@ -265,7 +275,7 @@ console.log(
   "Manager B1 assertions passed: additive top|bottom shell variant (default bottom, frontline unchanged), " +
     "ManagerTopNav as a thin adapter over the shared OperationalTopNav, full keyboard operation on the shared " +
     "dropdown, roving-tabindex menubar, OD-4 responsive collapse, the six-menu tree derived from the locked " +
-    "managerRoutes with honest not-yet rows matching the roadmap B1(c) table, Accounting NOT added, chrome " +
+    "managerRoutes with honest not-yet rows matching the roadmap B1(c) table, Accounting added in B5.1 (OD-3), chrome " +
     "primitives present, a pager that can never be an array length, Favorites correctly localStorage-only, " +
     "breadcrumbs built-but-unmounted, and no hard-coded hex colour.",
 );

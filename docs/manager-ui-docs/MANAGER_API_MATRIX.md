@@ -4,6 +4,59 @@ This matrix documents the backend API endpoints exposed to the Manager role (`ro
 
 ---
 
+## 2026-08-21 — TRACK B5.1: the accounting rows are now CONSUMED by the UI
+
+Track B5.1 (`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`) mounts the Accounting module.
+Nine accounting reads are now called by the product, and every route the module references — 38 in
+all, including the ones later sub-phases will use — is recorded with its permission, its **real**
+scope and its **real** envelope in the executable registry
+[`apps/web/src/lib/accounting/route-registry.ts`](../../apps/web/src/lib/accounting/route-registry.ts).
+**That file is the canonical accounting contract for the frontend**; it is machine-checked by
+`scripts/manager-b5-assertions.ts`, so it cannot drift from what the UI actually calls.
+
+### Consumed by the B5.1 dashboard (9 reads, all live-verified 2026-08-21)
+
+| Route | Permission | Scope | Envelope | Used for |
+| --- | --- | --- | --- | --- |
+| `GET /api/accounting/ar/aging?take=100` | `accounting:ar:aging:read` | branch | `{asOf,total,skip,take,summary,accounts}` | Receivable card ⚠️ **B5-F1** |
+| `GET /api/accounting/ap/aging` | `accounting:ap:bill:read` | branch | `{asOf,buckets,bySupplier,billCount}` | Payable card (unpaged — true branch totals) |
+| `GET /api/accounting/journals?take=1` | `pos:accounting:journals:read` | branch | `{data,total,skip,take}` | Ledger card (server `total`) |
+| `GET /api/accounting/posting-runs?take=1` | `pos:accounting:posting-runs:read` | branch | `{data,total,skip,take}` | Ledger card |
+| `GET /api/accounting/posting-errors?take=1` | `pos:accounting:posting-errors:read` | branch | `{data,total,skip,take}` | Ledger card |
+| `GET /api/accounting/bank-accounts` | `pos:accounting:bank-accounts:read` | branch | **bare array** (PC-06) | Bank card |
+| `GET /api/accounting/reconciliation` | `pos:accounting:reconciliation:read` | branch | **bare array** (PC-06) | Bank card |
+| `GET /api/accounting/periods` | `pos:accounting:periods:read` | **organisation** | **bare array** (PC-06) | Fiscal period card |
+| `GET /api/accounting/period-close-runs` | `pos:accounting:period-close-runs:read` | **organisation** | **bare array** (PC-06) | Fiscal period card |
+
+### Corrections to earlier records
+
+- 🔴 **B5-F1 — `ar/aging.summary` is PAGE-scoped.** It aggregates only the returned page while
+  `total` counts the whole `where`. Live: `?take=1` → `total: 5` with `summary.totalOutstanding:
+  599,800` where the branch figure is **9,106,400**. Completeness test:
+  `Σ accounts[].invoices.length >= total`. **Do not present the summary as a branch total without it.**
+- 🔴 **B5-F2 — `GET /ar/invoices?status=<invalid>` returns 500**, not 400. `status` is an unvalidated
+  raw string. Valid: `DRAFT|ISSUED|PARTIALLY_PAID|PAID|CANCELLED|CREDIT_ADJUSTED`.
+- ⚠️ **B0's "pagination bound" column is unreliable.** It probed `take`+`pageSize`+`limit` together;
+  `limit` is not on those DTOs, so the whitelist 400 was misread as a bound. With `take` alone,
+  `ap/bills`, `ar/invoices`, `journals` and `ar/aging` all return **200 at `take=5000`** — there is
+  **no server maximum**.
+- ⚠️ **`GET /api/audit/timeline`** pages with **`pageSize`** (`?limit=` → 400) and narrows to a branch
+  only via an explicit **`?branchId=`** — it **ignores `X-Branch-Id`**.
+- ⚠️ **`ap/aging`** returns **`billCount`** (not `bills`), and **`/api/franchise/forecast`** is the
+  real forecast path (not `/api/finance/forecast`).
+- **`ar/receipts` and `manual-bank-entries` are POST-only** — there is no GET to list either.
+- **Manager writes re-verified 403** on a representative five (AP supplier, AR invoice, journal, bank
+  account, budget) — PC-01 stands. `finance/procurement-suggestions` is **403 to read** — PC-02 stands.
+
+### Empty on a fully seeded + demo-imported database (both probed branches)
+
+`bank-accounts`, `bank-statements`, `reconciliation`, `period-close-runs`, `finance/budgets`,
+`finance/demand-calendar`, `ap/credit-notes`, `ap/recurring-profiles`, `ap/reminders`,
+`ar/credit-notes`, `posting-runs`, `posting-errors` — all `[]` or `total: 0`. **B5.3 (bank) and
+B5.6 (budgets) need a fixture or a generator before those surfaces can be designed against real data.**
+
+---
+
 ## 2026-08-20 — PERMISSIONS CUTOVER + Track B0 verification (annotation; matrix not rewritten)
 
 Two things changed for the Manager role on this date. Canonical records:
