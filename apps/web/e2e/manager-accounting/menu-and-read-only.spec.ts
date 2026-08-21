@@ -19,10 +19,12 @@ import {
  * Customer accounts, Credit notes ×2, Bills, Payments, Suppliers, Recurring
  * profiles, Payment reminders, Aged receivable, Aged payable), joining the
  * B5.1 Dashboard for 12 available rows. B5.3 (same day) promoted the 3 Bank
- * rows (Bank accounts, Bank statements, Reconciliation) — **15 available rows
- * total**. The assertions below are UPDATED (not relaxed) to the new count,
- * and the "which rows are still inert" checks were re-picked from labels
- * B5.2/B5.3 did NOT touch.
+ * rows (Bank accounts, Bank statements, Reconciliation) — 15 total. B5.4
+ * (same day) promoted exactly the four rows `lib/accounting/menu.ts` already
+ * tagged "B5.4" since B5.1 — Journal entries, Posting runs, Posting errors,
+ * Audit trail — **19 available rows total**. The assertions below are
+ * UPDATED (not relaxed) to the new count, and the "which rows are still
+ * inert" checks were re-picked from labels B5.2/B5.3/B5.4 did NOT touch.
  */
 test.describe("Manager accounting menu tree", () => {
   test("the Accounting menu opens and its one live row navigates to the dashboard", async ({ page }) => {
@@ -46,7 +48,7 @@ test.describe("Manager accounting menu tree", () => {
     await page.waitForURL(/\/manager\/accounting\/dashboard/, { timeout: 30_000 });
   });
 
-  test("exactly fifteen rows are links; every other row is inert and phase-tagged", async ({ page }) => {
+  test("exactly nineteen rows are links; every other row is inert and phase-tagged", async ({ page }) => {
     await managerLogin(page);
     await page.goto("/manager/overview");
     test.skip(!isDesktopTopNavViewport(page), "the desktop dropdown only renders at xl and up");
@@ -57,7 +59,9 @@ test.describe("Manager accounting menu tree", () => {
 
     // B5.2 (2026-08-21) promoted 11 rows from not-yet to available, joining
     // the B5.1 Dashboard for 12; B5.3 (same day) promoted the 3 Bank rows —
-    // 15 total. Every one cites a live-verified endpoint in
+    // 15; B5.4 (same day) promoted the 4 rows the menu tree already tagged
+    // "B5.4" since B5.1 (Journal entries, Posting runs, Posting errors, Audit
+    // trail) — 19 total. Every one cites a live-verified endpoint in
     // `ACCOUNTING_ROUTE_REGISTRY` via `lib/accounting/menu.ts`.
     //
     // Matched on the ANCHOR, not on `getByRole("link")`: every row carries an
@@ -67,8 +71,9 @@ test.describe("Manager accounting menu tree", () => {
     await expect(links).toHaveCount(ACCOUNTING_AVAILABLE_MENU_KEYS.length);
     // In menu order — note "Credit notes" appears twice (Customers AND
     // Vendors each carry their own credit-note surface). The Bank group sits
-    // BEFORE Reporting in the tree, so Bank accounts/statements/Reconciliation
-    // land between "Payment reminders" and "Aged receivable", not at the end.
+    // BEFORE "Accounting"/"Review" in the tree, so Journal entries / Posting
+    // runs / Posting errors / Audit trail land between "Reconciliation" and
+    // "Aged receivable", not at the end.
     await expect(links).toHaveText([
       "Dashboard",
       "Invoices",
@@ -83,23 +88,28 @@ test.describe("Manager accounting menu tree", () => {
       "Bank accounts",
       "Bank statements",
       "Reconciliation",
+      "Journal entries",
+      "Posting runs",
+      "Posting errors",
+      "Audit trail",
       "Aged receivable",
       "Aged payable",
     ]);
 
     // Every not-yet row carries a real sub-phase tag, and none is an anchor.
-    // Re-picked from labels B5.2/B5.3 did NOT touch (Invoices/Bills/Suppliers/
-    // Bank accounts/Reconciliation etc. moved to the available list above, so
-    // they can no longer appear here).
-    for (const label of ["Journal entries", "Posting errors", "Chart of accounts", "Fiscal periods", "Cost centres"]) {
+    // Re-picked from labels B5.2/B5.3/B5.4 did NOT touch (Journal entries/
+    // Posting runs/Posting errors/Audit trail moved to the available list
+    // above, so they can no longer appear here).
+    for (const label of ["Fiscal periods", "Period close runs", "Chart of accounts", "Cost centres", "Tax configuration"]) {
       await expect(menu.getByText(label, { exact: true })).toBeVisible();
       await expect(menu.locator('a[role="menuitem"]', { hasText: new RegExp(`^${label}$`) })).toHaveCount(0);
     }
-    // Exactly 13 inert rows remain (28 total − 15 available), one tag each,
-    // and none is tagged B5.3 any more — the whole Bank sub-phase shipped.
-    const tags = await menu.getByText(/^B5\.[456]$/).count();
-    expect(tags).toBe(13);
+    // Exactly 9 inert rows remain (28 total − 19 available), one tag each,
+    // and none is tagged B5.3 or B5.4 any more — both sub-phases shipped.
+    const tags = await menu.getByText(/^B5\.[56]$/).count();
+    expect(tags).toBe(9);
     await expect(menu.getByText("B5.3", { exact: true })).toHaveCount(0);
+    await expect(menu.getByText("B5.4", { exact: true })).toHaveCount(0);
   });
 
   test("surfaces Nimbus cannot back are ABSENT, not greyed out", async ({ page }) => {

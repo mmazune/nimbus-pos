@@ -131,7 +131,7 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 | **Waiter** | **Floor · Reservations · Me** | Table-centric order entry (order builder behind Floor table selection) |
 | **Cashier** | **Floor · Till · Me** (Prompt C1–C3, default `/cashier/floor`; Queue/Receipts are hidden compatibility routes reachable by direct URL only, retire C4/C5) | Payment collection, receipts, till/close (C2 delivered table→bill resolution + the canonical settlement workspace + Find bill; **C3 delivered payment / partial / split / close execution inside that workspace**; receipts + refunds arrive C4) |
 | **Supervisor** | **Floor · Reservations · Approvals · Me** | Read-first oversight; table-control workspace behind Floor selection |
-| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**; **B5.3 turned 3 more live — Bank accounts (list-only), Bank statements and Reconciliation (list+detail) — same read-only guarantee, no Match/Skip/Complete control anywhere, for 15 of 28 rows live total**. Settings (B6) data is **NOT started** |
+| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**; **B5.3 turned 3 more live — Bank accounts (list-only), Bank statements and Reconciliation (list+detail) — same read-only guarantee, no Match/Skip/Complete control anywhere, for 15 of 28 rows live total**; **B5.4 turned 4 more live — Journal entries (list+detail), Posting runs (list-only), Posting errors (list+detail) and Audit trail (list-only) — same read-only guarantee, no post/reverse/replay/resolve control anywhere, for 19 of 28 rows live total**. Settings (B6) data is **NOT started** |
 
 ⚠️ **Cashier Floor-First reconstruction (locked target, C3 complete / C4 not started, 2026-08-20):**
 Cashier's Queue-first navigation above is **historically complete and demo-ready but superseded** as
@@ -161,7 +161,88 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**ENTERPRISE UI TRACK B5.3 COMPLETE — Manager Accounting Bank reconciliation surfaces (2026-08-21) —
+**ENTERPRISE UI TRACK B5.4 COMPLETE — Manager Accounting core (Journal entries) + Review surfaces
+(2026-08-21) — A: B5.4 COMPLETE / B5.5…B5.6 GATED.** Frontend + docs only; **no backend / schema /
+migration / seed / permission / DTO / Postman change**. The four Accounting/Review menu rows B5.1
+shipped as honest not-yet placeholders — Journal entries, Posting runs, Posting errors, Audit trail —
+are now real surfaces. **The Accounting menu goes from 15 live rows to 19** (of 28 total). Manager accounting stays **read-only by permission** — the same 15 read strings, zero
+writes (PC-01/OD-9, re-verified live: journal post/reverse and posting replay all 403 for Manager); the
+no-write-affordance guard was extended over the new tree, never relaxed.
+⚠️ **SCOPE CORRECTION, read before touching B5.5/B5.6:** an operator brief for this phase described
+fiscal periods (open/close/lock), period close runs, posting source maps and tax configuration as B5.4
+deliverables. They are not — `lib/accounting/menu.ts`'s own `ACCOUNTING_SUBPHASES` tags, set in B5.1
+and never changed since, assign Fiscal periods/Period close runs to **B5.5 (Closing)** and Chart of
+accounts/Cost centres/Posting source maps/Tax configuration to **B5.6 (Configuration)** — matching the
+roadmap's own B5.4/B5.5 table rows. Per CLAUDE.md §19, the tags won and neither surface was built in
+this phase; confirming the correctness of that call, **none of the four real B5.4 surfaces turned out
+to be organisation-level** (all four registry entries are `scope: "branch"`), so the org-level-labelling
+ruling this phase's brief anticipated never actually applied to anything built here.
+**Journal entries** — list + detail (`GET /accounting/journals` + `/:id`), a real server-total
+paginated list (status filter DRAFT/POSTED/REVERSED) and a detail view with **separate, unambiguous
+Debit and Credit columns** (never one signed amount), a **Balance tie-out card** showing two
+independently-computed figures (the journal's own stored totals, and a fresh client-side sum over its
+lines — live-proven to agree at UGX 620,000 on a manually-created fixture and at UGX 5,574,000 /
+UGX 8,223,600 across two branches' full 9-row / 8-row pages), and reversal linkage (`Reverses` /
+`Reversed by`, navigable both directions). **Posting runs** — list only (no detail route exists on this
+entity), a server-total paginated list with **no filter of any kind** — the endpoint accepts none, not
+even status. **Posting errors** — list + detail (status filter OPEN/RESOLVED/DISMISSED), the raised
+`code`/`message`/`details` JSON and its owning posting run. **Audit trail** — list only
+(`GET /api/audit/timeline`, the reused BG2 endpoint), scoped to three curated entity types verified
+against `ledger.service.ts`'s own source (`JournalEntry`, `PostingRun`, `PostingError`), not the
+org-wide feed every other domain also writes into.
+🔴 **Two new findings, both live-proven, neither implemented (out of scope for a frontend-only
+phase):** **C-25** — `getJournal` resolves by `{id, orgId}` alone, with **no branch predicate at all**,
+unlike every other accounting detail route and unlike `listJournals` itself; a journal id from one
+branch's list stays readable by the same id under a different branch's header. Mitigated client-side:
+`isJournalReadableInBranch()` compares the fetched journal's `branchId` against the active branch and
+refuses to render a mismatch (the same MP0-12 fail-safe Track B4 used for cross-branch report runs).
+**C-26** — `ledger.service.ts`'s six `audit.log(...)` calls (`JOURNAL_CREATED`, `JOURNAL_REVERSED`,
+`POSTING_RUN_STARTED`, `POSTING_RUN_FINISHED`, `POSTING_ERROR_CREATED`) stamp `metadata.orgId` but
+**never `metadata.branchId`** — batch 3's B5-F4 fix made the audit-timeline endpoint's default read
+unconditionally AND `metadata.branchId = X-Branch-Id`, so this rail can **structurally never** surface
+a ledger-domain event. Proven live: 8 fresh journal/reversal/posting-run/posting-error events were
+created via this phase's own fixtures, and every one of the resulting `AuditLog` rows' `branchId` is
+`NULL` (direct `psql` query against the isolated database — not stale seed data, events created minutes
+earlier through the live API). The Audit trail screen's empty state and footnote **name the C-26 gap
+explicitly** rather than reading as "nothing happened". Also disclosed: **B5.4-D1** — there is
+genuinely **no resolve/dismiss endpoint for `PostingError` anywhere in the API**, for any role
+(confirmed by grepping every controller — only `pos:accounting:posting-errors:read` is seeded, no
+`:resolve`/`:dismiss`/`:write` string exists at all), so the Posting errors detail states this plainly
+instead of reusing `AccountingReadOnlyCard`'s "an Owner or Accountant performs this" copy, which would
+be false here.
+The B5.1 dashboard's **General ledger card** — shipped in B5.1 with all three figures inert
+(`noDrillInReason: NOT_YET("B5.4", …)`) — now links for real: `ledger.journals`, `ledger.postingRuns`
+and `ledger.postingErrors` all gained a real `drillIn` in `ACCOUNTING_KPI_BINDINGS`. The **Fiscal
+period** card is correctly untouched — it stays `NOT_YET("B5.5", …)`, since wiring it now would be
+unauthorised B5.5 work.
+**Fixtures created live via the API (Owner token — Manager holds no accounting write) on the isolated
+stack**, on Tapas Downtown (which already carried 5 real journals from `db:demo:import`): 2 manual
+balanced journals (`JNL-000044`, and `JNL-000045` → reversed into `JNL-000046`), plus a
+`POST /accounting/posting/replay` pair (one with a real active `sourceKey` → SUCCEEDED run + an
+auto-created journal; one with an unknown `sourceKey` → FAILED run + one OPEN posting error). Final
+Tapas Downtown counts: **9** journals, **2** posting runs, **1** posting error. Rooftop Bar confirmed
+to carry its own unrelated **8** journals and **0** posting runs/errors, proving a branch switch
+re-scopes to genuinely different data.
+**Validated on an isolated local Docker stack** — Postgres `:55460` (`nimbus_b54_qa`), API `:4071`,
+web `:3160`; **shared Neon was never connected to or written**; `apps/api/.env` was never edited on
+disk (SHA-256 identical throughout); `packages/db/.env` was temporarily swapped for the three Prisma
+CLI steps only (the documented, unavoidable exception — the Prisma CLI resolves `DATABASE_URL` from
+the schema-adjacent `.env` regardless of an inline override or a `dotenv-cli -o` override, confirmed on
+this Prisma version) and restored immediately after, SHA-256 verified byte-identical to the baseline.
+Web typecheck + lint (no `--fix`) + production build all pass (4 new pages); **17/17** assertion
+scripts (`manager-b5-assertions.ts` extended with a new §14 of B5.4-specific checks — separate
+debit/credit columns, the balance tie-out helpers exercised against concrete vectors, the C-25 and C-26
+disclosures pinned by name, `audit.timeline`'s stale `scope: "organization"` INVERTED to `"branch"`);
+`e2e/manager-accounting/core-and-review.spec.ts` (new, 13 specs) and the updated
+`e2e/manager-accounting/menu-and-read-only.spec.ts` (15→19 row count) executed across all 4 viewports;
+`e2e/manager-shell/` regression executed; live manual QA toured all 8 new/changed pages/states across
+both Tapas Downtown (populated, incl. the C-26 audit-trail gap) and a branch switch to Rooftop Bar;
+zero console errors; `/api/health` → ok throughout; `git diff --check` clean. See
+`ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md` for the full validation table (exact
+pass/fail counts) and the tie-out figures. **B5.5 (Closing) and the remainder of B5.6 (Configuration)
+are NOT started — do not begin either without explicit owner authorisation.**
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.3 COMPLETE — Manager Accounting Bank reconciliation surfaces (2026-08-21) —
 A: B5.3 COMPLETE / B5.4…B5.6 GATED.** Frontend + docs only; **no backend / schema / migration /
 seed / permission / DTO / Postman change**. The three Bank menu rows B5.1 shipped as honest not-yet
 placeholders — Bank accounts, Bank statements, Reconciliation — are now real surfaces. **The
@@ -1260,9 +1341,9 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   tax-INCLUSIVE, `netSales = gross − tax`); B3 re-pointed the two sales KPI bindings and pinned them
   by assertion — **do not "fix" them back**.
   ~~**B5…B7 (and B0, B5's sub-phases) are NOT started**~~ — **B0, the permissions cutover, and B5.1 +
-  B5.2 + B5.3 (Accounting) are now COMPLETE**, plan any further sub-phase from
-  `ai/ENTERPRISE_UI_ROADMAP.md` Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. **B5.4,
-  B5.5, B5.6, B6 (Settings) and B7 remain NOT started — do not begin any of them without explicit
+  B5.2 + B5.3 + B5.4 (Accounting) are now COMPLETE**, plan any further sub-phase from
+  `ai/ENTERPRISE_UI_ROADMAP.md` Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. **B5.5,
+  B5.6, B6 (Settings) and B7 remain NOT started — do not begin any of them without explicit
   authorization.**
   Do not add a Manager More/Approvals tab, change the `/manager/overview` landing, turn
   `lib/manager/permissions.ts` into a
@@ -1367,12 +1448,36 @@ Full list with rationale/dates: `docs/DECISIONS.md`.
   The `PAGER_ELIGIBLE_FILES` guard in `manager-b5-assertions.ts` was extended to include
   `BankStatementsScreen.tsx` and `ReconciliationScreen.tsx` for their `ManagerBreadcrumbs` RECORD
   pager only (`pageRows.length`, never a server total) — do not read that inclusion as license to add
-  a LIST pager to either file. **B5.1, B5.2 and B5.3 are COMPLETE. B5.4 (Accounting core + Review),
-  B5.5 (Closing) and the remainder of B5.6 are NOT started — do not begin any of them without explicit
-  owner authorisation.** Note for whoever starts B5.4: **C-23** — the M33 GL Postman collection
-  cannot run (pre-existing, proven by backend gap batch 2), so the journals surface will ship without
-  Postman verification; do not silently "fix" the collection as part of B5.4 without separate
-  authorisation.
+  a LIST pager to either file. **B5.1, B5.2, B5.3 and B5.4 are COMPLETE. B5.5 (Closing) and the
+  remainder of B5.6 are NOT started — do not begin either without explicit owner authorisation.**
+- **Track B5.4 boundaries — do not cross without explicit authorization.** **Journal entries, Posting
+  runs, Posting errors and Audit trail are READ-ONLY** — no post/reverse/replay/resolve/dismiss
+  control anywhere, not even disabled; Manager holds `journals:read`/`posting-runs:read`/
+  `posting-errors:read`/`audit:read` but none of `journals:create`/`:reverse`, `posting:replay`
+  (re-verified live 403). Do not add fiscal periods, period close runs, posting source maps or tax
+  configuration as part of any future pass calling itself "B5.4" — the menu tree's own
+  `ACCOUNTING_SUBPHASES` tags (unchanged since B5.1) assign those to **B5.5**/**B5.6**, and B5.4's own
+  completion report records that an operator brief conflated them; do not repeat that conflation. Do
+  not build a trial balance, general ledger statement, or any other financial-statement surface — none
+  exists on this backend (NG-07 → C-11); "General ledger" in this app **is** the Journal entries list.
+  Do not relax the journal lines table to a single signed amount column — Debit and Credit are always
+  two separate columns. Do not remove the Balance tie-out card's independent line-sum computation
+  (`sumJournalLineAmounts`) in favour of only showing the journal's own stored total — the point is two
+  independently-computed figures, not one trusted field. Do not remove or weaken
+  `isJournalReadableInBranch()` on the journal detail screen — it is the C-25 fail-safe for a real,
+  live-proven backend gap (`getJournal` has no branch predicate at all); do not "fix" it by widening it
+  to accept any branch. Do not remove the C-26 disclosure from `AuditTrailScreen.tsx` or revert its
+  empty-state copy to the generic "no X match the current filter" wording — the rail is verified-empty
+  by a real backend defect (`ledger.service.ts`'s `audit.log` calls never stamp `metadata.branchId`),
+  not by an empty history, and the generic copy would be false. Do not add a status filter to Posting
+  runs — the endpoint accepts none, and a client-side filter over one page of a real paginated list
+  would misrepresent completeness (this is NOT the PC-06 bare-array precedent, where the array is
+  already the complete result set). Do not reuse `AccountingReadOnlyCard`'s "an Owner or Accountant
+  performs this" copy on the Posting errors detail — B5.4-D1 established that no role can resolve or
+  dismiss a posting error through this API, so that copy would be false there specifically. Note for
+  whoever starts B5.5: **C-23** — the M33 GL Postman collection cannot run (pre-existing, proven by
+  backend gap batch 2), so B5.4's journals surface shipped without Postman verification; do not
+  silently "fix" the collection as part of B5.5 without separate authorisation.
 - Cashier reconstruction Prompt **C3 is COMPLETE** (nav Floor/Till/Me, `/cashier/floor` default,
   shared-Floor consumer, table→bill resolution with zero/one/multiple handling, canonical
   `?tableId=&orderId=` URL state, ONE `CashierSettlementWorkspace` reusing the checkout primitives,

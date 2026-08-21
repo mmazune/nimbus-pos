@@ -59,6 +59,17 @@ import { getAccountingRoute } from "./route-registry";
  * lines), and Reconciliation (list + detail, the match/skip/complete
  * workbench rendered READ-ONLY — Manager holds no `reconciliation:match`/
  * `:create`, PC-01).
+ *
+ * B5.4 (2026-08-21) turns FOUR more rows live, and ONLY these four — the exact
+ * set `ACCOUNTING_SUBPHASES` already tagged "B5.4" since B5.1: Journal entries
+ * (under "Accounting"), and Posting runs / Posting errors / Audit trail (under
+ * "Review"). Fiscal periods and Period close runs stay tagged B5.5 (Closing);
+ * Chart of accounts, Cost centres, Posting source maps and Tax configuration
+ * stay tagged B5.6 (Configuration) — both untouched by this phase. (An
+ * operator brief for this phase described fiscal periods/posting-source-maps/
+ * tax-config as B5.4 deliverables; this file's own tags, unchanged since
+ * B5.1, say otherwise, and the roadmap's own B5.4/B5.5 table rows agree with
+ * the tags, not the brief — so the tags win, per CLAUDE.md §19.)
  */
 export const ACCOUNTING_SUBPHASES = ["B5.2", "B5.3", "B5.4", "B5.5", "B5.6"] as const;
 export type AccountingSubphase = (typeof ACCOUNTING_SUBPHASES)[number];
@@ -211,8 +222,8 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-journals",
         label: "Journal entries",
-        available: false,
-        subphase: "B5.4",
+        available: true,
+        href: ACCOUNTING_ROUTES.journals,
         routeKeys: ["accounting.journals", "accounting.journal"],
       },
       {
@@ -237,22 +248,22 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-posting-runs",
         label: "Posting runs",
-        available: false,
-        subphase: "B5.4",
+        available: true,
+        href: ACCOUNTING_ROUTES.postingRuns,
         routeKeys: ["accounting.postingRuns"],
       },
       {
         key: "accounting-posting-errors",
         label: "Posting errors",
-        available: false,
-        subphase: "B5.4",
+        available: true,
+        href: ACCOUNTING_ROUTES.postingErrors,
         routeKeys: ["accounting.postingErrors", "accounting.postingError"],
       },
       {
         key: "accounting-audit-trail",
         label: "Audit trail",
-        available: false,
-        subphase: "B5.4",
+        available: true,
+        href: ACCOUNTING_ROUTES.auditTrail,
         routeKeys: ["audit.timeline"],
       },
     ],

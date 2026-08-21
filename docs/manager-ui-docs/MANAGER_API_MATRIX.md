@@ -4,6 +4,49 @@ This matrix documents the backend API endpoints exposed to the Manager role (`ro
 
 ---
 
+## 2026-08-21 — TRACK B5.4: Accounting core (Journals) + Review rows now CONSUMED by surfaces
+
+Track B5.4 (`ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md`) turns the four rows
+`lib/accounting/menu.ts` tagged "B5.4" since B5.1 into real surfaces — and only those four. An
+operator brief for this phase described fiscal periods/posting-source-maps/tax-config as B5.4
+deliverables; the menu tree's own tags (unchanged since B5.1) say those are B5.5/B5.6, and this
+matrix follows the tags, not the brief (see the completion report §0).
+
+| Route | Permission | Scope | Envelope | Used for |
+| --- | --- | --- | --- | --- |
+| `GET /api/accounting/journals?status=&sourceKey=&from=&to=&skip=&take=` | `pos:accounting:journals:read` | branch (⚠️ BGB3-L3: strict equality on a nullable column, latent) | `{data,total,skip,take}`, real server total | Journal entries list |
+| `GET /api/accounting/journals/:id` | `pos:accounting:journals:read` | 🔴 **C-25**: no branch predicate at all — `{id, orgId}` only | object | Journal entries detail |
+| `GET /api/accounting/posting-runs?skip=&take=` | `pos:accounting:posting-runs:read` | branch | `{data,total,skip,take}`, real server total, **no filter of any kind** | Posting runs list (no detail route exists) |
+| `GET /api/accounting/posting-errors?status=&skip=&take=` | `pos:accounting:posting-errors:read` | branch (`branchOrOrgScope`) | `{data,total,skip,take}`, real server total | Posting errors list |
+| `GET /api/accounting/posting-errors/:id` | `pos:accounting:posting-errors:read` | branch (`branchOrOrgScope`) | object | Posting errors detail |
+| `GET /api/audit/timeline?entityType=&page=&pageSize=` | `audit:read` | branch (✅ fixed by batch 3's B5-F4; the B5.1-era registry note calling this "organisation" was stale, corrected this pass) | `{data,total,page,pageSize,filters}` — ⚠️ pages with `page`/`pageSize`, not `skip`/`take` like every other route in this table | Review → Audit trail, scoped to `entityType` ∈ {`JournalEntry`,`PostingRun`,`PostingError`} |
+
+**No trial balance or general-ledger-as-a-statement route exists anywhere in this API.** "General
+ledger" in the Manager UI **is** the Journal entries list — the same one the B5.1 dashboard card
+already counted.
+
+🔴 **Two new findings, both live-proven, neither fixed (out of scope for a frontend-only phase):**
+- **C-25** — `getJournal` has no branch predicate, so a journal id from one branch's list stays
+  readable under a different branch's header. Mitigated client-side (`isJournalReadableInBranch`).
+- **C-26** — `ledger.service.ts`'s six `audit.log(...)` calls never stamp `metadata.branchId`, so
+  `GET /api/audit/timeline`'s branch-scoped default (fixed by batch 3) can never surface a
+  journal/posting-run/posting-error event — proven by creating 8 fresh events via this phase's own
+  fixtures and finding every resulting `AuditLog` row's `branchId` NULL. The Audit trail screen's
+  empty state names this by disclosure rather than reading as "nothing happened".
+
+**B5.4-D1** (recorded, not a route defect): no endpoint exists anywhere in this API to resolve or
+dismiss a `PostingError`, for any role — only `pos:accounting:posting-errors:read` is seeded, no
+`:resolve`/`:dismiss`/`:write` string exists. The Posting errors detail screen states this plainly
+rather than implying it is a Manager-specific permission gap.
+
+**Live fixture note**: created live via the API (Owner token — Manager holds no accounting write) on
+Tapas Downtown: 2 manual balanced journals (one later reversed), 1 SUCCEEDED posting run (via
+`POST /accounting/posting/replay` with a real `sourceKey`), 1 FAILED posting run + 1 OPEN posting
+error (via replay with an unknown `sourceKey`). No live shape drift was found on any of the six GET
+routes.
+
+---
+
 ## 2026-08-21 — TRACK B5.3: Bank rows now CONSUMED by list/detail surfaces
 
 Track B5.3 (`ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md`) turns the three Bank

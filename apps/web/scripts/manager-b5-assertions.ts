@@ -26,10 +26,13 @@ import {
   getAccountingKpi,
   getAccountingKpiRoute,
   isArAgingComplete,
+  isJournalBalanced,
+  isJournalReadableInBranch,
   isReconciliationBalanced,
   overdueTotal,
   reconciliationPipelineIndex,
   RECONCILIATION_PIPELINE,
+  sumJournalLineAmounts,
   toAccountingAmount,
   toAccountingCount,
   toApAgingBuckets,
@@ -126,11 +129,12 @@ assert(
  * Track B5.2 (2026-08-21) added 11 real surfaces (3 Customers, 6 Vendors, 2
  * Reporting) to B5.1's 2 (index redirect + dashboard) — 13 total. Track B5.3
  * (2026-08-21) added 3 more (Bank accounts, Bank statements, Reconciliation)
- * — 16 total. Exact equality on purpose: a page appearing here with no
- * matching `available:true` menu row below (or vice versa) is exactly the
- * drift this gate exists to catch.
+ * — 16 total. Track B5.4 (2026-08-21) added 4 more (Journal entries, Posting
+ * runs, Posting errors, Audit trail) — 20 total. Exact equality on purpose: a
+ * page appearing here with no matching `available:true` menu row below (or
+ * vice versa) is exactly the drift this gate exists to catch.
  */
-assert(accountingPageFiles.length === 16, `Accounting ships 16 pages (found ${accountingPageFiles.length})`);
+assert(accountingPageFiles.length === 20, `Accounting ships 20 pages (found ${accountingPageFiles.length})`);
 assert(
   existsSync(join(process.cwd(), `${MANAGER_LIB_DIR}/accounting-context.ts`)),
   "the Manager-side React Query adapter exists",
@@ -365,6 +369,10 @@ const PAGER_ELIGIBLE_FILES = [
   "VendorsRemindersScreen.tsx",
   "BankStatementsScreen.tsx",
   "ReconciliationScreen.tsx",
+  "JournalsScreen.tsx",
+  "PostingRunsScreen.tsx",
+  "PostingErrorsScreen.tsx",
+  "AuditTrailScreen.tsx",
 ];
 for (const file of accountingComponentFiles) {
   const isEligible = PAGER_ELIGIBLE_FILES.some((name) => file.endsWith(`/${name}`));
@@ -406,11 +414,13 @@ const availableItems = menuItems.filter((item) => item.available);
  * B5.1 shipped 1 (the dashboard). B5.2 (2026-08-21) turned 9 Customers/Vendors
  * rows available plus pulled 2 Reporting rows (Aged receivable/payable)
  * forward from B5.6 — 12 total. B5.3 (2026-08-21) turned the 3 Bank rows
- * available — 15 total. Exact equality: a menu row available with no
- * matching page (or vice versa) is exactly the drift `accountingPageFiles`
+ * available — 15 total. B5.4 (2026-08-21) turned the 4 rows the menu tree
+ * already tagged "B5.4" since B5.1 — Journal entries, Posting runs, Posting
+ * errors, Audit trail — 19 total. Exact equality: a menu row available with
+ * no matching page (or vice versa) is exactly the drift `accountingPageFiles`
  * above also gates.
  */
-assert(availableItems.length === 15, `Accounting ships 15 live menu rows (found ${availableItems.length})`);
+assert(availableItems.length === 19, `Accounting ships 19 live menu rows (found ${availableItems.length})`);
 const dashboardMenuItem = availableItems.find((item) => item.key === "accounting-dashboard");
 assert(dashboardMenuItem, "the dashboard row is still present and available");
 assert(
@@ -432,12 +442,33 @@ const B52_AVAILABLE_KEYS = [
   "accounting-aged-payable",
 ];
 const B53_AVAILABLE_KEYS = ["accounting-bank-accounts", "accounting-bank-statements", "accounting-bank-reconciliation"];
-const ALL_AVAILABLE_KEYS = [...B52_AVAILABLE_KEYS, ...B53_AVAILABLE_KEYS];
+const B54_AVAILABLE_KEYS = [
+  "accounting-journals",
+  "accounting-posting-runs",
+  "accounting-posting-errors",
+  "accounting-audit-trail",
+];
+const ALL_AVAILABLE_KEYS = [...B52_AVAILABLE_KEYS, ...B53_AVAILABLE_KEYS, ...B54_AVAILABLE_KEYS];
 assert(
   new Set(availableItems.map((item) => item.key)).size === ALL_AVAILABLE_KEYS.length &&
     ALL_AVAILABLE_KEYS.every((key) => availableItems.some((item) => item.key === key)),
-  "exactly the 15 named rows are available — no undocumented row was made live, and none was missed",
+  "exactly the 19 named rows are available — no undocumented row was made live, and none was missed",
 );
+/** The two rows B5.4 deliberately did NOT touch stay tagged for their real sub-phase, not B5.4's. */
+assert(
+  menuItems.find((item) => item.key === "accounting-periods" && !item.available && item.subphase === "B5.5"),
+  "Fiscal periods stays a B5.5 not-yet row — it is Closing, not Accounting core (an operator brief for this phase described it as B5.4; the menu tree's own tags, unchanged since B5.1, say B5.5)",
+);
+assert(
+  menuItems.find((item) => item.key === "accounting-period-close-runs" && !item.available && item.subphase === "B5.5"),
+  "Period close runs stays a B5.5 not-yet row",
+);
+for (const key of ["accounting-chart-of-accounts", "accounting-posting-source-maps", "accounting-tax-config"]) {
+  assert(
+    menuItems.find((item) => item.key === key && !item.available && item.subphase === "B5.6"),
+    `${key} stays a B5.6 not-yet row — Configuration, not Accounting core`,
+  );
+}
 assert(ACCOUNTING_LANDING === ACCOUNTING_ROUTES.dashboard, "the module landing is the dashboard");
 assert(ACCOUNTING_ROOT === "/manager/accounting", "the module root is /manager/accounting");
 
@@ -965,4 +996,145 @@ for (const item of bankMenuItems) {
 const typesSource = codeOnly(`${ACCOUNTING_LIB_DIR}/types.ts`);
 assert(!/BankAccountRow[\s\S]{0,400}currentBalance/.test(typesSource), "BankAccountRow no longer declares a currentBalance field that does not exist on the Prisma schema");
 
-console.log("Manager B5.1 + B5.2 + B5.3 assertions: all checks passed.");
+// ═══════════════════════════════════════════════════════════════════════════
+// 14. TRACK B5.4 — ACCOUNTING CORE (JOURNALS) + REVIEW
+//     (server-total pagination, balance tie-out, the C-25 branch fail-safe,
+//     the B5.4-D1 honest "no resolve/dismiss endpoint" disclosure)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CORE_DIR_FILES = accountingComponentFiles.filter((file) => file.includes("/accounting/core/"));
+assert(CORE_DIR_FILES.length === 1, `B5.4 ships 1 Accounting-core screen (found ${CORE_DIR_FILES.length})`);
+const REVIEW_DIR_FILES = accountingComponentFiles.filter((file) => file.includes("/accounting/review/"));
+assert(REVIEW_DIR_FILES.length === 3, `B5.4 ships 3 Review screens (found ${REVIEW_DIR_FILES.length})`);
+const B54_DIR_FILES = [...CORE_DIR_FILES, ...REVIEW_DIR_FILES];
+
+/** All four B5.4 list routes genuinely carry a real server total — the pagers these screens bind are not fabricated. */
+for (const key of ["accounting.journals", "accounting.postingRuns", "accounting.postingErrors", "audit.timeline"]) {
+  const route = getAccountingRoute(key);
+  assert(route.envelope === "data-total" && route.serverTotal, `${key} carries a real server total the B5.4 pager may bind to`);
+}
+
+/**
+ * ✅ audit.timeline is INVERTED, not deleted, per house style: the B5.1-era
+ * registry entry said this route was ORGANISATION scope because it ignored
+ * X-Branch-Id — true THEN, stale now that backend gap batch 3 (B5-F4) fixed
+ * it. This pass (Track B5.4, 2026-08-21) corrected the registry to match.
+ */
+assert(
+  getAccountingRoute("audit.timeline").scope === "branch",
+  "INVERTED 2026-08-21 (Track B5.4): audit.timeline is branch-scoped now that B5-F4 (batch 3) made it honour X-Branch-Id by default — the B5.1-era 'organisation scope' note was stale, not a fact that changed by policy",
+);
+
+/** Enum-only filters (the B5-F2-shaped rule §12/§13 already apply): journal status and posting-error status both come from a validated closed set. */
+for (const file of [`${ACCOUNTING_COMPONENT_DIR}/core/JournalsScreen.tsx`, `${ACCOUNTING_COMPONENT_DIR}/review/PostingErrorsScreen.tsx`]) {
+  const code = codeOnly(file);
+  assert(code.includes("readManagerEnum("), `${file} reads its status filter through readManagerEnum, never a raw query string`);
+}
+/** The audit trail's entityType filter is not a backend-enforced enum, but it still comes from a closed, verified-against-source set, never a hand-typed string. */
+const auditTrailSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/review/AuditTrailScreen.tsx`);
+assert(
+  auditTrailSource.includes("AUDIT_ENTITY_TYPES") && auditTrailSource.includes("readAuditEntityType"),
+  "AuditTrailScreen validates entityType against a closed, verified set rather than forwarding router.query.entityType raw",
+);
+assert(
+  !/entityType:\s*router\.query\.entityType\b/.test(auditTrailSource),
+  "AuditTrailScreen never passes a raw router.query.entityType straight into the request",
+);
+
+/** Posting runs offers NO filter menu at all — the endpoint accepts no server-side filter, and a client-side one would misrepresent a single page as the whole branch (unlike PC-06's bare-array screens, this is a real paginated, serverTotal:true list). */
+const postingRunsSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/review/PostingRunsScreen.tsx`);
+assert(
+  !postingRunsSource.includes("ManagerSearchFilterMenu") && !postingRunsSource.includes("filterMenu:"),
+  "PostingRunsScreen offers no filter menu — the endpoint supports none, and a client-side filter over one page would misrepresent it as the whole branch",
+);
+
+/** The balance tie-out helpers behave correctly on concrete vectors. */
+assert(isJournalBalanced({ totalDebit: "150000.00", totalCredit: "150000.00" }) === true, "equal debit/credit reads as balanced");
+assert(isJournalBalanced({ totalDebit: "150000.00", totalCredit: "140000.00" }) === false, "unequal debit/credit reads as not balanced, never rounded away");
+assert(isJournalBalanced({ totalDebit: undefined, totalCredit: "140000.00" }) === null, "an unreadable side fails closed to null, never guessed balanced or not");
+assert(
+  sumJournalLineAmounts(
+    [
+      { id: "l1", direction: "DEBIT", amount: "100000.00" },
+      { id: "l2", direction: "DEBIT", amount: "50000.00" },
+      { id: "l3", direction: "CREDIT", amount: "150000.00" },
+    ],
+    "DEBIT",
+  ) === 150000,
+  "summing DEBIT lines ignores CREDIT lines and totals correctly",
+);
+assert(
+  sumJournalLineAmounts([{ id: "l1", direction: "DEBIT", amount: undefined }], "DEBIT") === null,
+  "an unreadable line amount fails the whole sum closed, never an understatement",
+);
+assert(sumJournalLineAmounts(undefined, "DEBIT") === null, "no lines at all fails closed to null");
+
+/** C-25 fail-safe: a journal with a DIFFERENT branchId than the active branch is refused, one with NO branchId (org-level) is not, and no branchId is never treated as a mismatch. */
+assert(isJournalReadableInBranch({ branchId: "branch-a" }, "branch-a") === true, "a matching branch reads as readable");
+assert(isJournalReadableInBranch({ branchId: "branch-a" }, "branch-b") === false, "a mismatched branch is refused — the C-25 fail-safe");
+assert(isJournalReadableInBranch({ branchId: null }, "branch-a") === true, "a journal with no branchId (org-level) is not treated as a cross-branch mismatch");
+assert(isJournalReadableInBranch(undefined, "branch-a") === false, "no journal at all is never readable");
+
+/** The registry itself documents C-25 by name — this is not a silent frontend mitigation with no paper trail. */
+assert(/C-25/.test(source(`${ACCOUNTING_LIB_DIR}/route-registry.ts`)), "the accounting.journal registry entry names the C-25 finding");
+assert(
+  codeOnly(`${ACCOUNTING_COMPONENT_DIR}/core/JournalsScreen.tsx`).includes("isJournalReadableInBranch"),
+  "JournalsScreen actually calls the C-25 fail-safe, not just imports it",
+);
+
+/** ACCOUNTING_DENIED_WRITES now names posting-run replay, the one B5.4-relevant write that was missing from the disclosure list. */
+assert(
+  ACCOUNTING_DENIED_WRITES.some((entry) => /replay/i.test(entry.label) && /posting\/replay/.test(entry.route)),
+  "the denied-write disclosure names posting-run replay, not only journal post/reverse",
+);
+
+/**
+ * B5.4-D1 (new finding, this pass): unlike every other Manager-cannot-write
+ * surface, there is genuinely no resolve/dismiss endpoint for PostingError at
+ * all — for any role. PostingErrorsScreen must therefore say so in its own
+ * words rather than reuse `AccountingReadOnlyCard`'s "an Owner or Accountant
+ * performs this" copy, which would be false here.
+ */
+const postingErrorsSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/review/PostingErrorsScreen.tsx`);
+assert(
+  !postingErrorsSource.includes("AccountingReadOnlyCard"),
+  "PostingErrorsScreen does not reuse AccountingReadOnlyCard's 'an Owner or Accountant performs this' copy — no role can resolve/dismiss a posting error through this API, so that claim would be false",
+);
+assert(
+  /no endpoint exists/i.test(postingErrorsSource) || /No role can act/i.test(postingErrorsSource),
+  "PostingErrorsScreen states the genuine backend gap in its own words",
+);
+assert(
+  !/\bresolvePostingError\b|\bdismissPostingError\b/.test(accountingSource),
+  "no resolve/dismiss function exists anywhere in the accounting tree — none is being called against a route that was never built",
+);
+
+/** Journal money never renders as a single signed column — Owner Ruling on money presentation: debit and credit are always two separate, unambiguous columns. */
+const journalsSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/core/JournalsScreen.tsx`);
+assert(
+  journalsSource.includes('key: "debit"') && journalsSource.includes('key: "credit"'),
+  "the journal lines table renders separate Debit and Credit columns, never one signed amount column",
+);
+
+/** Every B5.4 list route really does carry a server total — mirrors §12/§13's registry-hygiene sweep for the four new keys. */
+assert(getAccountingKpi("ledger.journals").drillIn === ACCOUNTING_ROUTES.journals, "the journals KPI now links into the real journals list instead of a 'not yet' note");
+assert(getAccountingKpi("ledger.postingRuns").drillIn === ACCOUNTING_ROUTES.postingRuns, "the posting-runs KPI now links into the real posting-runs list");
+assert(getAccountingKpi("ledger.postingErrors").drillIn === ACCOUNTING_ROUTES.postingErrors, "the posting-errors KPI now links into the real posting-errors list");
+
+for (const file of B54_DIR_FILES) {
+  assert(!codeOnly(file).includes("EventSource") && !codeOnly(file).includes("new WebSocket"), `${file} contains no streaming client`);
+}
+
+/**
+ * C-26 (new finding, this pass): `ledger.service.ts`'s six `audit.log(...)`
+ * calls never stamp `metadata.branchId`, live-proven by creating fresh
+ * journal/posting-run/posting-error events and finding every resulting row's
+ * branchId NULL. Because B5-F4 (batch 3) ANDs branch match unconditionally,
+ * the Audit trail rail can structurally never surface a ledger-domain event.
+ * Both the registry and the screen must name this — an empty result here
+ * must never read as "nothing happened".
+ */
+assert(/C-26/.test(source(`${ACCOUNTING_LIB_DIR}/route-registry.ts`)), "the audit.timeline registry entry names the C-26 finding");
+assert(/C-26/.test(auditTrailSource), "AuditTrailScreen discloses C-26 rather than implying an empty history");
+
+console.log("Manager B5.1 + B5.2 + B5.3 + B5.4 assertions: all checks passed.");

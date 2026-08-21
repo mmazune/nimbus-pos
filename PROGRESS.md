@@ -4,7 +4,58 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**ENTERPRISE UI TRACK B5.3 COMPLETE — Manager Accounting Bank reconciliation surfaces (2026-08-21) —
+**ENTERPRISE UI TRACK B5.4 COMPLETE — Manager Accounting core (Journal entries) + Review surfaces
+(2026-08-21) — A: B5.4 COMPLETE / B5.5…B5.6 GATED.** Frontend + docs only; **no backend/schema/
+migration/seed/permission/DTO/Postman change**. The four Accounting/Review menu rows B5.1 shipped as
+honest not-yet placeholders — Journal entries, Posting runs, Posting errors, Audit trail — are now real
+surfaces. **The Accounting menu goes from 15 live rows to 19** (of 28 total). Manager accounting stays
+**read-only by permission** — same 15 read strings, zero writes (PC-01/OD-9, re-verified live: journal
+post/reverse and posting replay all 403).
+⚠️ **Scope correction**: an operator brief for this phase described fiscal periods/posting-source-maps/
+tax-config as B5.4 work. The menu tree's own tags (unchanged since B5.1) say those are B5.5/B5.6 — the
+tags won, per CLAUDE.md §19, and neither was touched.
+**Journal entries** — list+detail, separate Debit/Credit columns (never one signed amount), a Balance
+tie-out card (the journal's own stored totals vs. a fresh client-side sum over its lines — live-proven
+to agree at UGX 620,000 on a fixture and UGX 5,574,000/UGX 8,223,600 across two branches' full pages),
+reversal linkage navigable both directions. **Posting runs** — list-only, no filter of any kind (the
+endpoint supports none). **Posting errors** — list+detail, status filter, the raised code/message/
+details JSON. **Audit trail** — list-only, scoped to three curated entity types verified against
+`ledger.service.ts`'s own source.
+🔴 **Two new findings, both live-proven, neither implemented**: **C-25** — `getJournal` has no branch
+predicate at all, unlike every other detail route; a journal id from one branch stays readable under a
+different branch's header — mitigated client-side (`isJournalReadableInBranch`). **C-26** —
+`ledger.service.ts`'s six `audit.log` calls never stamp `metadata.branchId`, so the Audit trail rail can
+structurally never surface a ledger-domain event — proven by creating 8 fresh events live and finding
+every resulting row's `branchId` NULL; the screen discloses this by name rather than reading as
+"nothing happened". Also disclosed: **B5.4-D1** — no posting-error resolve/dismiss endpoint exists for
+any role (confirmed by grepping every controller); the detail screen states this plainly instead of
+claiming an Owner/Accountant permission gap.
+The B5.1 dashboard's **General ledger card** — all three figures inert since B5.1 — is now wired for
+real: `ledger.journals`/`ledger.postingRuns`/`ledger.postingErrors` all gained a real `drillIn`.
+**Fixtures created live via the API (Owner token) on the isolated stack**, on Tapas Downtown (which
+already carried 5 real journals from `db:demo:import`): 2 manual balanced journals (one reversed) plus
+a SUCCEEDED/FAILED posting-run pair via `POST /accounting/posting/replay`. Final Tapas Downtown counts:
+9 journals, 2 posting runs, 1 posting error; Rooftop Bar confirmed to carry its own unrelated 8
+journals and 0 posting runs/errors.
+⚠️ **Disclosed: an unrelated host-level Docker Desktop instability interrupted Playwright TWICE**
+(confirmed via `docker info` both times, and confirmed both times to affect every other container on
+the host — not caused by this session's work; recurrence after the first recovery points to a
+pre-existing host issue). Recovered identically both times via `open -a Docker` + `docker start
+nimbus-b54-qa`; all QA fixture data survived Postgres crash-recovery intact both times (verified by
+direct row counts before each re-run). All numbers below are from the final, clean run.
+Validated on an isolated local Docker stack (Postgres `:55460`, API `:4071`, web `:3160`; shared Neon
+never connected to or written; `apps/api/.env` never edited on disk; `packages/db/.env` temporarily
+swapped for the three Prisma CLI steps only — the documented, unavoidable exception for the Prisma CLI
+— and restored byte-identical immediately after): typecheck+lint+build pass (4 new pages); **17/17**
+assertion scripts (`manager-b5-assertions.ts` extended with a new §14); `e2e/manager-accounting/
+core-and-review.spec.ts` (new, 13 specs) + updated `menu-and-read-only.spec.ts` **81 passed / 3 skipped
+/ 0 failed** across 4 viewports (the skips are the pre-existing "desktop dropdown only at `xl`" reason,
+unrelated to B5.4); live manual QA toured all 4 new pages + reversal linkage + branch-switch re-scope +
+the C-26 empty-state disclosure; zero console errors; `/api/health` → ok throughout. See
+`ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md`. **B5.5 (Closing) and the remainder of B5.6
+are NOT started — do not begin either without explicit owner authorisation.**
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.3 COMPLETE — Manager Accounting Bank reconciliation surfaces (2026-08-21) —
 A: B5.3 COMPLETE / B5.4…B5.6 GATED.** Frontend + docs only; **no backend/schema/migration/seed/
 permission/DTO/Postman change**. The three Bank menu rows B5.1 shipped as honest not-yet placeholders
 — Bank accounts (list-only), Bank statements (list+detail), Reconciliation (list+detail) — are now

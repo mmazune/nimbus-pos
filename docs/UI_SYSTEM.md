@@ -859,6 +859,51 @@ record pager), while a SEPARATE check confirms neither file ever calls `toAccoun
 pager). `BankAccountsScreen.tsx`, which has no detail view at all (no `bank.account` registry key
 exists), is correctly absent from that list — it binds no pager of either kind.
 
+## 8h. Debit/credit columns, independent balance tie-out, and disclosing a backend defect honestly (Track B5.4, 2026-08-21)
+
+B5.4 shipped Journal entries — the first Manager surface to render double-entry money — plus Posting
+runs/Posting errors/Audit trail. Three conventions worth reusing:
+
+### Debit and credit are always two separate columns, never one signed amount
+
+`JournalsScreen.tsx`'s line table renders a `Debit` column and a `Credit` column; each row shows an
+amount in exactly one of them (a dash in the other) based on `line.direction`. A single "Amount" column
+with a `+`/`-` sign, or a colour convention alone, was deliberately rejected — accounting convention
+expects two columns, and collapsing them would also violate the "status is never colour alone" rule
+already in force (§7). The B5 assertion script's §14 checks the literal `key: "debit"` / `key: "credit"`
+column definitions exist.
+
+### A tie-out proves itself by computing the SAME number two independent ways
+
+The journal detail's "Balance tie-out" card shows four figures: the journal's own stored
+`totalDebit`/`totalCredit` (written once, at `createJournal` time, by the backend) and a **freshly
+computed** sum over the currently-rendered `lines[]` (`sumJournalLineAmounts`, plain client-side
+reduction). Both numbers come from the SAME API response but via genuinely different code paths — one
+trusts a stored field, the other re-derives it — so their agreement is a real check, not two reads of
+one number. `isJournalBalanced()` additionally compares the two stored totals and renders a `Balanced`/
+`Not balanced` badge, failing closed (`null`, not `true`) when either side is unreadable. Apply this
+pattern anywhere a backend invariant (here: `createJournal` refuses to persist debits ≠ credits) is
+being SHOWN, not just assumed — showing the independent computation is worth more than a single
+"trust me" badge.
+
+### When a screen's own empty state is caused by a real backend defect, say so BY NAME
+
+The Audit trail surface (`GET /api/audit/timeline`) is architecturally correct — it renders, paginates,
+and filters like every other B5.4 list — but returns **zero rows** on every branch because
+`ledger.service.ts`'s `audit.log(...)` calls never stamp `metadata.branchId`, and the endpoint's own
+branch-scoping fix (batch 3, B5-F4) ANDs that field unconditionally (C-26, `ai/ENTERPRISE_B5_4_
+ACCOUNTING_CORE_COMPLETION_REPORT.md` §4). The generic empty-state copy every other B5 list uses ("No
+X match the current filter") would have been a plausible-sounding LIE here — it implies nothing
+happened, when in fact 8 real events were created and verified missing by direct database query minutes
+earlier. `AuditTrailScreen.tsx`'s empty state and footnote instead name the finding (`C-26`) and state
+plainly that it does not mean nothing happened, pointing the reader at the surfaces where the same
+activity IS visible (Journal entries, Posting runs, Posting errors). The same discipline applies to
+`PostingErrorsScreen.tsx`'s detail view: reusing `AccountingReadOnlyCard`'s "an Owner or Accountant
+performs this" copy would have been false (no resolve/dismiss endpoint exists for ANY role, B5.4-D1),
+so a distinct disclosure card states the real gap instead. Generic honest-empty-state copy is the
+default; when the emptiness has a KNOWN, PROVEN cause distinct from "no data exists yet," name the
+cause.
+
 ## 9. Known UI inconsistencies (recorded, not yet fixed)
 
 These are functional/architectural inconsistencies out of scope for a UI-polish

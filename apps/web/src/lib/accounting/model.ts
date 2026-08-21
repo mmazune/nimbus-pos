@@ -12,6 +12,8 @@ import type {
   BankReconciliationRow,
   FiscalPeriodRow,
   FiscalPeriodStatus,
+  JournalLineRow,
+  JournalRow,
 } from "./types";
 
 /**
@@ -369,6 +371,11 @@ const ACCOUNTING_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "w
   UNMATCHED: "warning",
   MATCHED: "success",
   SKIPPED: "neutral",
+  // Track B5.4 — journal / posting-run / posting-error statuses.
+  REVERSED: "warning",
+  SUCCEEDED: "success",
+  PARTIAL: "warning",
+  RESOLVED: "success",
 };
 
 export function accountingStatusTone(value: string | null | undefined): "neutral" | "info" | "success" | "warning" | "danger" {
@@ -403,6 +410,67 @@ export function toAccountingPager({
     hasPrevious: page > 1,
     hasNext: to < safeTotal,
   };
+}
+
+// ── Track B5.4: Journals — balance tie-out + the C-25 branch fail-safe ──────
+
+/**
+ * `createJournal` (`ledger.service.ts`) refuses to persist an unbalanced
+ * entry, so `totalDebit === totalCredit` is a genuine invariant, not merely
+ * a display convention — but a REVERSED journal's own stored totals swap
+ * which side is which relative to the original, and a malformed/partial
+ * response must not read as "balanced" just because both sides are missing.
+ * `null` when either side is unreadable.
+ */
+export function isJournalBalanced(journal: Pick<JournalRow, "totalDebit" | "totalCredit"> | undefined): boolean | null {
+  const debit = toAccountingAmount(journal?.totalDebit);
+  const credit = toAccountingAmount(journal?.totalCredit);
+  if (debit === null || credit === null) return null;
+  return debit === credit;
+}
+
+/**
+ * A second, independent tie-out: sums the LINES (not the journal's own stored
+ * `totalDebit`/`totalCredit`) for one direction, so a detail view can show
+ * "lines add up to the header total" as two separately-computed numbers
+ * rather than one field trusting itself. `null` when any line amount is
+ * unreadable — never an understated sum.
+ */
+export function sumJournalLineAmounts(
+  lines: readonly JournalLineRow[] | undefined,
+  direction: "DEBIT" | "CREDIT",
+): number | null {
+  if (!lines) return null;
+  let sum = 0;
+  for (const line of lines) {
+    if ((line.direction || "").toUpperCase() !== direction) continue;
+    const amount = toAccountingAmount(line.amount);
+    if (amount === null) return null;
+    sum += amount;
+  }
+  return sum;
+}
+
+/**
+ * 🔴 C-25 fail-safe (Track B5.4, found by this pass): `getJournal` resolves by
+ * `{id, orgId}` alone — no branch predicate — unlike every other accounting
+ * detail route in this registry. A journal id copied from one branch's list
+ * is still readable by id under a DIFFERENT branch's `X-Branch-Id` header.
+ * Rather than trust the backend to have already refused (it does not), the
+ * detail screen calls this after every fetch and renders "unavailable" on a
+ * mismatch — the same MP0-12 fail-safe B4 used for cross-branch report runs.
+ * A journal with no `branchId` at all (an org-level posting) is NOT treated
+ * as a mismatch — `null`/`undefined` means "not attributed to a branch",
+ * not "attributed to a different one".
+ */
+export function isJournalReadableInBranch(
+  journal: Pick<JournalRow, "branchId"> | undefined,
+  activeBranchId: string | null,
+): boolean {
+  if (!journal) return false;
+  if (!journal.branchId) return true;
+  if (!activeBranchId) return false;
+  return journal.branchId === activeBranchId;
 }
 
 // ── KPI → verified field → drill-in registry ────────────────────────────────
@@ -514,14 +582,13 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     drillIn: ACCOUNTING_ROUTES.agedPayable,
   },
 
-  // Ledger
+  // Ledger — Track B5.4 wired every one of these into a real surface.
   {
     key: "ledger.journals",
     label: "Journal entries in this branch",
     routeKey: "accounting.journals",
     field: "total",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.4", "Journal entries"),
+    drillIn: ACCOUNTING_ROUTES.journals,
     note: "Read-only for Manager: journals:create / reverse and posting:replay are 403 (B0 §3.4).",
   },
   {
@@ -529,16 +596,14 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     label: "Posting runs recorded",
     routeKey: "accounting.postingRuns",
     field: "total",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.4", "Posting runs"),
+    drillIn: ACCOUNTING_ROUTES.postingRuns,
   },
   {
     key: "ledger.postingErrors",
     label: "Posting errors outstanding",
     routeKey: "accounting.postingErrors",
     field: "total",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.4", "Posting errors"),
+    drillIn: ACCOUNTING_ROUTES.postingErrors,
   },
 
   // Bank — Track B5.3 wired every one of these into a real surface.

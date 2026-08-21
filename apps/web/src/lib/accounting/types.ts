@@ -195,14 +195,155 @@ export type PeriodCloseRunRow = {
   fiscalPeriod?: { id: string; name?: string | null } | null;
 };
 
-// ── Ledger ──────────────────────────────────────────────────────────────────
+// ── Ledger — Track B5.4 ──────────────────────────────────────────────────────
+// Live-verified against `ledger.service.ts` (raw `JournalEntry` / `JournalLine`
+// / `PostingRun` / `PostingError` models — none of these routes apply a Prisma
+// `select`, so every scalar column on the model is on the wire, matching the
+// Bank precedent in B5.3).
+
+/** `JournalStatus` (Prisma enum). Journals are always created POSTED by this API — DRAFT is a schema default never reached through `createJournal`. */
+export const JOURNAL_STATUSES = ["DRAFT", "POSTED", "REVERSED"] as const;
+export type JournalStatus = (typeof JOURNAL_STATUSES)[number];
+
+/** `PostingRunStatus` (Prisma enum). */
+export const POSTING_RUN_STATUSES = ["PENDING", "SUCCEEDED", "FAILED", "PARTIAL"] as const;
+export type PostingRunStatus = (typeof POSTING_RUN_STATUSES)[number];
+
+/** `PostingErrorStatus` (Prisma enum) — batch 3 `@IsEnum` on `posting-errors?status=`. */
+export const POSTING_ERROR_STATUSES = ["OPEN", "RESOLVED", "DISMISSED"] as const;
+export type PostingErrorStatus = (typeof POSTING_ERROR_STATUSES)[number];
+
+export type JournalLineRow = {
+  id: string;
+  accountId?: string | null;
+  costCenterId?: string | null;
+  direction?: string | null;
+  amount?: AccountingDecimal;
+  description?: string | null;
+  account?: { id: string; code?: string | null; name: string; accountType?: string | null } | null;
+  costCenter?: { id: string; code?: string | null; name: string } | null;
+};
+
+/** `GET /accounting/journals` row — `include: { lines: { account, costCenter } }`. */
 export type JournalRow = {
   id: string;
   journalNumber?: string | null;
+  journalDate?: string | null;
   status?: string | null;
+  sourceKey?: string | null;
+  sourceDocumentId?: string | null;
+  reference?: string | null;
+  description?: string | null;
+  fiscalPeriodId?: string | null;
+  /**
+   * ⚠️ C-25 (found by this pass, NOT in batch 2/3): `getJournal` resolves by
+   * `{id, orgId}` alone — no branch predicate at all, unlike every other
+   * accounting detail route. `listJournals` DOES filter by `branchId` (though
+   * with the BGB3-L3 strict-equality-on-nullable-column defect batch 3
+   * recorded and deliberately left unfixed), so a journal id copied from one
+   * branch's list is still readable by the SAME id when the active branch
+   * header names a different branch. The frontend fails safe: detail
+   * rendering compares this field against the active branch and refuses to
+   * show a mismatch (`isJournalReadableInBranch` in `model.ts`) rather than
+   * relying on the backend to have refused first.
+   */
+  branchId?: string | null;
   totalDebit?: AccountingDecimal;
   totalCredit?: AccountingDecimal;
+  postedAt?: string | null;
+  lines?: JournalLineRow[];
 };
+
+/**
+ * `GET /accounting/journals/:id` — adds the reversal linkage, who posted it,
+ * and the fiscal period it landed in.
+ */
+export type JournalDetail = JournalRow & {
+  reversedFrom?: { id: string; journalNumber?: string | null } | null;
+  reversalEntry?: { id: string; journalNumber?: string | null } | null;
+  postedBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+  fiscalPeriod?: { id: string; name?: string | null; status?: string | null } | null;
+};
+
+/** `GET /accounting/posting-runs` row — `include: { journalEntry }`. No detail route exists. */
+export type PostingRunRow = {
+  id: string;
+  sourceKey?: string | null;
+  sourceDocumentId?: string | null;
+  status?: string | null;
+  runKey?: string | null;
+  errorCount?: number | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  createdAt?: string | null;
+  journalEntry?: { id: string; journalNumber?: string | null; status?: string | null } | null;
+};
+
+/** `GET /accounting/posting-errors` row — `include: { postingRun (narrow) }`. */
+export type PostingErrorRow = {
+  id: string;
+  sourceKey?: string | null;
+  sourceDocumentId?: string | null;
+  status?: string | null;
+  code?: string | null;
+  message?: string | null;
+  createdAt?: string | null;
+  postingRun?: { id: string; sourceKey?: string | null; status?: string | null } | null;
+};
+
+/** `GET /accounting/posting-errors/:id` — the list include's `postingRun` widens to add `sourceDocumentId`/`runKey`, plus the full `details` JSON. */
+export type PostingErrorDetail = PostingErrorRow & {
+  details?: unknown;
+  postingRun?: {
+    id: string;
+    sourceKey?: string | null;
+    sourceDocumentId?: string | null;
+    status?: string | null;
+    runKey?: string | null;
+  } | null;
+};
+
+// ── Review: Audit trail — Track B5.4 ────────────────────────────────────────
+// `GET /api/audit/timeline` (BG2, reused). ⚠️ Different envelope shape from
+// every other accounting list: `page`/`pageSize`, not `skip`/`take`, and the
+// response has no `skip`/`take` fields at all.
+
+export type AuditTimelineItem = {
+  id: string;
+  timestamp?: string | null;
+  action?: string | null;
+  actorId?: string | null;
+  actorName?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  orgId?: string | null;
+  branchId?: string | null;
+  branchName?: string | null;
+  summary?: string | null;
+  sourceModule?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  metadataPreview?: Record<string, unknown>;
+};
+
+export type AuditTimelineResponse = {
+  data?: AuditTimelineItem[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
+};
+
+/**
+ * The audit endpoint's `entityType` filter is an unvalidated free string
+ * server-side (no `@IsEnum`) — these three are the exact literals
+ * `ledger.service.ts` writes (`entityType: 'JournalEntry' | 'PostingRun' |
+ * 'PostingError'`), verified by reading the source, not guessed. Offering a
+ * filter with any other value would be a hand-typed string with no verified
+ * backing — the same B5-F2-shaped risk an unvalidated filter always carries,
+ * even where the SERVER itself does not enforce an enum.
+ */
+export const AUDIT_ENTITY_TYPES = ["JournalEntry", "PostingRun", "PostingError"] as const;
+export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
 
 // ── Customers (AR) — Track B5.2 ─────────────────────────────────────────────
 // Live-verified against `accounts-receivable.service.ts` post backend gap

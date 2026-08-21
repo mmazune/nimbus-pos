@@ -7,11 +7,12 @@
  *
  * B5.2 adds the Customers (AR) and Vendors (AP) list/detail surfaces plus the
  * two Reporting aging views. B5.3 adds the Bank group (accounts, statements,
- * reconciliation). The paths for everything still gated (Journals, Closing,
- * Configuration, the rest of Reporting) are deliberately NOT declared here —
- * a route constant is a promise that something answers at that URL, and the
- * menu tree names those surfaces as honest not-yet rows instead (see
- * `menu.ts`).
+ * reconciliation). B5.4 adds Journal entries (the "Accounting" heading) plus
+ * the Review group (Posting runs, Posting errors, Audit trail). The paths for
+ * everything still gated (Closing, Configuration, the rest of Reporting) are
+ * deliberately NOT declared here — a route constant is a promise that
+ * something answers at that URL, and the menu tree names those surfaces as
+ * honest not-yet rows instead (see `menu.ts`).
  */
 export const ACCOUNTING_ROOT = "/manager/accounting";
 
@@ -39,6 +40,12 @@ export const ACCOUNTING_ROUTES = {
   bankAccounts: "/manager/accounting/bank/accounts",
   bankStatements: "/manager/accounting/bank/statements",
   bankReconciliation: "/manager/accounting/bank/reconciliation",
+
+  // Accounting core + Review — Track B5.4
+  journals: "/manager/accounting/journals",
+  postingRuns: "/manager/accounting/review/posting-runs",
+  postingErrors: "/manager/accounting/review/posting-errors",
+  auditTrail: "/manager/accounting/review/audit-trail",
 } as const;
 
 export const ACCOUNTING_LANDING = ACCOUNTING_ROUTES.dashboard;

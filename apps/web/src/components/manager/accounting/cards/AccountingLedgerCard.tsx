@@ -26,6 +26,10 @@ import type { AccountingDashboardSnapshot } from "@/lib/manager/accounting-conte
  *
  * Posting errors are the one figure here that is bad news when non-zero, so it
  * carries a danger tone only when it is.
+ *
+ * ✅ Track B5.4 (2026-08-21): all three figures now link into a real surface —
+ * Journal entries, Posting runs, Posting errors — replacing the B5.1 "arrives
+ * in B5.4" placeholders. Nothing else about the card changed.
  */
 export function AccountingLedgerCard({ snapshot }: { snapshot: AccountingDashboardSnapshot }) {
   const { journalCountQuery, postingErrorCountQuery, postingRunCountQuery } = snapshot;

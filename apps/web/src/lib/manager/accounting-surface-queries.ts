@@ -1,17 +1,21 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
+  AUDIT_TIMELINE_PAGE_SIZE,
   getApAgingRequest,
   getApBillRequest,
   getApSupplierRequest,
   getArAccountRequest,
   getArAgingRequest,
   getArInvoiceRequest,
+  getAuditTimelineRequest,
   getBankAccountsRequest,
   getBankReconciliationRequest,
   getBankReconciliationsRequest,
   getBankStatementRequest,
   getBankStatementsRequest,
+  getJournalRequest,
+  getPostingErrorRequest,
   listApBillsRequest,
   listApCreditNotesRequest,
   listApPaymentsRequest,
@@ -21,6 +25,10 @@ import {
   listArAccountsRequest,
   listArCreditNotesRequest,
   listArInvoicesRequest,
+  listJournalsRequest,
+  listPostingErrorsRequest,
+  listPostingRunsRequest,
+  type AuditTimelineParams,
   type ListApBillsParams,
   type ListApCreditNotesParams,
   type ListApPaymentsParams,
@@ -30,6 +38,9 @@ import {
   type ListArAccountsParams,
   type ListArCreditNotesParams,
   type ListArInvoicesParams,
+  type ListJournalsParams,
+  type ListPostingErrorsParams,
+  type ListPostingRunsParams,
 } from "@/lib/accounting/api";
 import type {
   AccountingListEnvelope,
@@ -48,11 +59,17 @@ import type {
   ArCreditNoteRow,
   ArInvoiceDetail,
   ArInvoiceRow,
+  AuditTimelineResponse,
   BankAccountRow,
   BankReconciliationDetail,
   BankReconciliationRow,
   BankStatementDetail,
   BankStatementRow,
+  JournalDetail,
+  JournalRow,
+  PostingErrorDetail,
+  PostingErrorRow,
+  PostingRunRow,
 } from "@/lib/accounting/types";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useManagerBranch } from "@/lib/manager/branch-context";
@@ -346,3 +363,80 @@ export function useBankReconciliationDetail(id: string | null): UseQueryResult<B
     queryFn: () => getBankReconciliationRequest(token, scope, id as string),
   });
 }
+
+// ── Accounting core + Review — Track B5.4 ───────────────────────────────────
+//
+// Journals and posting errors are real `data-total` paginated lists (same
+// shape as B5.2's AR/AP lists); posting runs is `data-total` with no
+// server-side filter at all; audit trail pages with `page`/`pageSize`, not
+// `skip`/`take`. Deliberately SEPARATE query keys from the B5.1 dashboard's
+// own `accounting-journal-count` / `accounting-posting-run-count` /
+// `accounting-posting-error-count` (which poll every 5 minutes as part of the
+// fixed 9-query snapshot and read `take=1` only) — these surface reads fetch
+// on demand, matching every other B5.2/B5.3 list precedent above.
+
+export function useJournalsList(params: ListJournalsParams): UseQueryResult<AccountingListEnvelope<JournalRow>> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-journals-list", branchId, params),
+    queryFn: () => listJournalsRequest(token, scope, params),
+  });
+}
+
+export function useJournalDetail(id: string | null): UseQueryResult<JournalDetail> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled: enabled && Boolean(id),
+    retry: 1,
+    queryKey: managerQueryKey("accounting-journal", branchId, id),
+    queryFn: () => getJournalRequest(token, scope, id as string),
+  });
+}
+
+export function usePostingRunsList(
+  params: ListPostingRunsParams,
+): UseQueryResult<AccountingListEnvelope<PostingRunRow>> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-posting-runs-list", branchId, params),
+    queryFn: () => listPostingRunsRequest(token, scope, params),
+  });
+}
+
+export function usePostingErrorsList(
+  params: ListPostingErrorsParams,
+): UseQueryResult<AccountingListEnvelope<PostingErrorRow>> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-posting-errors-list", branchId, params),
+    queryFn: () => listPostingErrorsRequest(token, scope, params),
+  });
+}
+
+export function usePostingErrorDetail(id: string | null): UseQueryResult<PostingErrorDetail> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled: enabled && Boolean(id),
+    retry: 1,
+    queryKey: managerQueryKey("accounting-posting-error", branchId, id),
+    queryFn: () => getPostingErrorRequest(token, scope, id as string),
+  });
+}
+
+export function useAuditTimeline(params: AuditTimelineParams): UseQueryResult<AuditTimelineResponse> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-audit-trail", branchId, params),
+    queryFn: () => getAuditTimelineRequest(token, scope, params),
+  });
+}
+
+export { AUDIT_TIMELINE_PAGE_SIZE };

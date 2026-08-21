@@ -19,14 +19,19 @@ import type {
   ArCreditNoteRow,
   ArInvoiceDetail,
   ArInvoiceRow,
+  AuditTimelineResponse,
   BankAccountRow,
   BankReconciliationDetail,
   BankReconciliationRow,
   BankStatementDetail,
   BankStatementRow,
   FiscalPeriodRow,
+  JournalDetail,
   JournalRow,
   PeriodCloseRunRow,
+  PostingErrorDetail,
+  PostingErrorRow,
+  PostingRunRow,
 } from "./types";
 
 /**
@@ -358,6 +363,82 @@ export function listApRemindersRequest(
     skip: params.skip ?? 0,
     take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
   });
+}
+
+// ── Track B5.4: Accounting core (Journals) + Review ──────────────────────────
+//
+// Same "reads only" rule as the rest of this file. Journals and posting errors
+// carry a real server `total` (`data-total`, `serverTotal: true`) — paginated
+// through `listRequest` exactly like the B5.2 AR/AP lists. Posting runs is the
+// same envelope with NO server-side filter at all (not even status). Audit
+// timeline is deliberately NOT run through `listRequest`/`listRequest`'s
+// skip/take contract — it pages with `page`/`pageSize`, a different param
+// pair, so it gets its own small query-string builder.
+
+export type ListJournalsParams = {
+  status?: string;
+  sourceKey?: string;
+  from?: string;
+  to?: string;
+  skip?: number;
+  take?: number;
+};
+
+export function listJournalsRequest(token: string, branchId: string, params: ListJournalsParams = {}) {
+  return listRequest<JournalRow>("accounting.journals", token, branchId, {
+    status: params.status,
+    sourceKey: params.sourceKey,
+    from: params.from,
+    to: params.to,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export function getJournalRequest(token: string, branchId: string, id: string) {
+  return detailRequest<JournalDetail>("accounting.journal", token, branchId, id);
+}
+
+export type ListPostingRunsParams = { skip?: number; take?: number };
+
+/** No server-side filter exists on this route at all — not even status. */
+export function listPostingRunsRequest(token: string, branchId: string, params: ListPostingRunsParams = {}) {
+  return listRequest<PostingRunRow>("accounting.postingRuns", token, branchId, {
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export type ListPostingErrorsParams = { status?: string; skip?: number; take?: number };
+
+export function listPostingErrorsRequest(token: string, branchId: string, params: ListPostingErrorsParams = {}) {
+  return listRequest<PostingErrorRow>("accounting.postingErrors", token, branchId, {
+    status: params.status,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export function getPostingErrorRequest(token: string, branchId: string, id: string) {
+  return detailRequest<PostingErrorDetail>("accounting.postingError", token, branchId, id);
+}
+
+/** The audit endpoint's own page-size ceiling (`AuditTimelineQueryDto.pageSize`) is 200, not the shared 100 accounting clamp — a distinct, smaller default is requested instead of reaching for the higher ceiling. */
+export const AUDIT_TIMELINE_PAGE_SIZE = 25;
+const AUDIT_TIMELINE_PAGE_SIZE_MAX = 200;
+
+export type AuditTimelineParams = { entityType?: string; page?: number; pageSize?: number };
+
+export function getAuditTimelineRequest(token: string, branchId: string, params: AuditTimelineParams = {}) {
+  const pageSize = Math.min(Math.max(Math.trunc(params.pageSize ?? AUDIT_TIMELINE_PAGE_SIZE) || 1, 1), AUDIT_TIMELINE_PAGE_SIZE_MAX);
+  return apiRequest<AuditTimelineResponse>(
+    `${routePath("audit.timeline")}${toQueryString({
+      entityType: params.entityType,
+      page: params.page ?? 1,
+      pageSize,
+    })}`,
+    { token, branchId },
+  );
 }
 
 export type { JournalRow };

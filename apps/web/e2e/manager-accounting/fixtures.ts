@@ -35,14 +35,21 @@ export const ACCOUNTING_ROUTES = {
   bankAccounts: "/manager/accounting/bank/accounts",
   bankStatements: "/manager/accounting/bank/statements",
   bankReconciliation: "/manager/accounting/bank/reconciliation",
+
+  // Accounting core + Review — Track B5.4
+  journals: "/manager/accounting/journals",
+  postingRuns: "/manager/accounting/review/posting-runs",
+  postingErrors: "/manager/accounting/review/posting-errors",
+  auditTrail: "/manager/accounting/review/audit-trail",
 } as const;
 
 /**
- * The 15 rows that are `available: true` in `lib/accounting/menu.ts`, in DOM
- * order. The Bank group sits BEFORE Reporting in the menu tree (Customers →
- * Vendors → Bank → Accounting → Review → Reporting → Configuration), so the
- * three B5.3 rows land between "Payment reminders" and "Aged receivable" —
- * not appended at the end.
+ * The 19 rows that are `available: true` in `lib/accounting/menu.ts`, in DOM
+ * order. The Bank group sits BEFORE "Accounting" and "Review" in the menu
+ * tree (Customers → Vendors → Bank → Accounting → Review → Reporting →
+ * Configuration), so B5.4's four rows (Journal entries under "Accounting";
+ * Posting runs/Posting errors/Audit trail under "Review") land between
+ * "Reconciliation" and "Aged receivable" — not appended at the end.
  */
 export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-dashboard",
@@ -58,9 +65,19 @@ export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-bank-accounts",
   "accounting-bank-statements",
   "accounting-bank-reconciliation",
+  "accounting-journals",
+  "accounting-posting-runs",
+  "accounting-posting-errors",
+  "accounting-audit-trail",
   "accounting-aged-receivable",
   "accounting-aged-payable",
 ] as const;
+
+/** `JournalStatus` — the values the Journal entries status filter offers. */
+export const JOURNAL_STATUS_VALUES = ["DRAFT", "POSTED", "REVERSED"] as const;
+
+/** `PostingErrorStatus` — the values the Posting errors status filter offers. */
+export const POSTING_ERROR_STATUS_VALUES = ["OPEN", "RESOLVED", "DISMISSED"] as const;
 
 /** `InvoiceStatus` — the only values `ar/invoices?status=` accepts (batch 3 `@IsEnum`). */
 export const AR_INVOICE_STATUS_VALUES = [

@@ -350,6 +350,8 @@ export const ACCOUNTING_ROUTE_REGISTRY: readonly AccountingRouteEntry[] = [
     envelope: "object",
     serverTotal: false,
     observed: "404 for a non-existent id — the permission passes (B0 matrix).",
+    note:
+      "🔴 C-25 (found by this pass, Track B5.4, NOT in B0/batch 2/batch 3): `getJournal` resolves by `{id, orgId}` alone — no branch predicate at all, list/detail-inconsistent with `listJournals`. A journal id from another branch's list is still readable by id under this branch's header. Backend fix out of scope for this frontend-only phase (Track C candidate). Mitigated client-side: the journal detail screen compares the returned `branchId` against the active branch and refuses to render a mismatch, the same MP0-12 fail-safe B4 used for report runs.",
   },
   {
     key: "accounting.postingRuns",
@@ -493,12 +495,14 @@ export const ACCOUNTING_ROUTE_REGISTRY: readonly AccountingRouteEntry[] = [
     path: "/api/audit/timeline",
     permission: "audit:read",
     manager: "allowed",
-    scope: "organization",
+    scope: "branch",
     envelope: "data-total",
     serverTotal: true,
-    observed: "200 {data: [], total: 0} on this dataset. Paged with `pageSize`; `?limit=` is rejected 400 by the DTO whitelist.",
+    observed:
+      "200 {data, total, page, pageSize, filters} — re-verified live 2026-08-21 on the isolated B5.4 stack. Paged with `page`/`pageSize` (NOT `skip`/`take` like every other data-total route in this registry — `toAccountingPager({page, pageSize, total})` still applies, only the request param names differ). `?limit=` is rejected 400 by the DTO whitelist.",
     note:
-      "⚠️ Reads metadata.orgId by default and narrows to a branch ONLY via an explicit ?branchId= query parameter — it does not honour X-Branch-Id. B5.4 must pass the branch explicitly or label the rail organisation-wide. Accountant cannot read it (403) but Manager can (B0 §10).",
+      "✅ B5-F4 FIXED (backend gap batch 3, 2026-08-21): this entry was written B5.1-era, before the fix, and said the endpoint ignored X-Branch-Id and was ORGANISATION scope — STALE, corrected here. `audit-timeline.service.ts` now unconditionally ANDs `metadata.branchId = X-Branch-Id`, mirroring the AR/AP 'header scopes it; an explicit ?branchId= narrows within that scope, and a disagreeing one returns nothing' precedent. Genuinely branch-scoped like every other B5.4 surface. Accountant cannot read it (403) but Manager can (B0 §10). " +
+      "🔴 C-26 (found by this pass, Track B5.4, NOT in B0/batch 2/batch 3): `ledger.service.ts`'s six `audit.log(...)` calls (JOURNAL_CREATED, JOURNAL_REVERSED, POSTING_RUN_STARTED, POSTING_RUN_FINISHED, POSTING_ERROR_CREATED) stamp `metadata.orgId` but NEVER `metadata.branchId` — live-proven: 8 fresh journal/posting-run/posting-error events were created via this pass's own fixtures (JOURNAL_CREATED ×3, JOURNAL_REVERSED ×1, POSTING_RUN_STARTED/FINISHED ×2 pairs, POSTING_ERROR_CREATED ×1), and every one of the resulting `AuditLog` rows has `metadata->>'branchId'` = NULL. Because B5-F4's fix ANDs branch match unconditionally, this endpoint can structurally never return a ledger-domain event through the default branch-scoped read — not a data-freshness gap, a metadata-shape gap. Backend fix (add `branchId` to those six call sites) is out of scope for this frontend-only phase; the Audit trail screen discloses the gap in its own copy rather than implying no ledger event has ever happened.",
   },
 ];
 
@@ -562,6 +566,12 @@ export const ACCOUNTING_DENIED_WRITES: readonly {
     route: "POST /api/accounting/journals · POST /api/accounting/journals/:id/reverse",
     permission: "pos:accounting:journals:create · pos:accounting:journals:reverse",
     finding: "OD-9 / B0 §3.4",
+  },
+  {
+    label: "Replay a posting run",
+    route: "POST /api/accounting/posting/replay",
+    permission: "pos:accounting:posting:replay",
+    finding: "OD-9 / B0 §3.4 — re-verified live 403 for Manager, Track B5.4",
   },
   {
     label: "Open, close or lock a fiscal period",
