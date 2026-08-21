@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui";
-import { FISCAL_PERIOD_STATUS_META } from "@/lib/accounting/model";
+import { FISCAL_PERIOD_STATUS_META, PERIOD_CLOSE_RUN_STATUS_META } from "@/lib/accounting/model";
 import { ACCOUNTING_DENIED_WRITES, getAccountingRoute } from "@/lib/accounting/route-registry";
-import type { FiscalPeriodStatus } from "@/lib/accounting/types";
+import type { FiscalPeriodStatus, PeriodCloseRunStatus } from "@/lib/accounting/types";
 
 /**
  * Shared accounting disclosure primitives — Track B5.1.
@@ -119,6 +119,30 @@ export function AccountingPeriodStatusBadge({ status }: { status: FiscalPeriodSt
   const meta = FISCAL_PERIOD_STATUS_META[status];
   return (
     <Badge variant={meta.tone} data-accounting-period-status={status}>
+      {meta.label}
+    </Badge>
+  );
+}
+
+/**
+ * Fail-closed the same way as `AccountingPeriodStatusBadge` — Track B5.5.
+ * `PeriodCloseRunStatus` has a `FAILED` member, so a malformed/unrecognised
+ * value must NEVER fall back to `COMPLETED`'s success styling; it renders the
+ * same neutral "Status unavailable" chip an unreadable period status gets,
+ * never a colour that could be mistaken for a real outcome.
+ */
+export function AccountingPeriodCloseRunStatusBadge({ status }: { status: PeriodCloseRunStatus | null }) {
+  if (!status) {
+    return (
+      <Badge variant="neutral" data-accounting-close-run-status="unknown">
+        Status unavailable
+      </Badge>
+    );
+  }
+
+  const meta = PERIOD_CLOSE_RUN_STATUS_META[status];
+  return (
+    <Badge variant={meta.tone} data-accounting-close-run-status={status}>
       {meta.label}
     </Badge>
   );

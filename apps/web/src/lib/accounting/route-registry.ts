@@ -313,8 +313,8 @@ export const ACCOUNTING_ROUTE_REGISTRY: readonly AccountingRouteEntry[] = [
     envelope: "bare-array",
     serverTotal: false,
     observed:
-      "200 [5] identical under both branch headers; no row carries a branchId field at all. FY2026-Q3 / FY2026-07 / FY2026-06 all OPEN.",
-    note: "ORG-LEVEL BY DESIGN (batch 2): FiscalPeriod has no branch_id column. PC-07: DRAFT → OPEN → CLOSED → LOCKED, LOCKED terminal, no unlock route.",
+      "200 [7] identical under both branch headers (Track B5.5 re-probe, 2026-08-21); no row carries a branchId field at all. All four FiscalPeriodStatus members observed live in one org: DRAFT ×2, OPEN ×2 (FY2026-Q3, FY2026-07), CLOSED ×2 (FY2026-05, FY2026-06), LOCKED ×1 (FY2026-04, via PATCH .../lock — confirmed terminal: PATCH .../unlock → 404, route does not exist).",
+    note: "ORG-LEVEL BY DESIGN (batch 2): FiscalPeriod has no branch_id column. PC-07: DRAFT → OPEN → CLOSED → LOCKED, LOCKED terminal, no unlock route. 🔴 C-27 (found by this pass, Track B5.5, NOT in B0/batch 2/batch 3/permissions cutover): Manager's own token additionally holds pos:accounting:periods:create (and accounts:create, cost-centers:create) — a pre-existing M28-era grant (seed.ts ~line 1105, comment reads 'Manager: read + create') that the 2026-08-20 permissions cutover never revoked, because C-21 only ADDED the 15 new AP/AR/bank-rec/finance read strings and never audited the OLDER M28/M29-era Manager grants for a stray write. Live-proven: Manager POST /accounting/periods → 201 (created a real DRAFT period on this isolated stack). PATCH .../open, .../close and .../lock are still genuinely 403 for Manager — only :create leaked. Every prior B5 phase's '5/5 representative writes → 403' spot-check never happened to probe periods:create, accounts:create or cost-centers:create, so this went undetected through B5.1–B5.4. NOT fixed here (a permission/seed change is out of scope for a frontend-only phase) — B5.5 ships zero write affordance for Fiscal periods regardless of what the token technically permits, per the same owner ruling every other B5 sub-phase already follows.",
   },
   {
     key: "accounting.periodCloseRuns",
@@ -325,8 +325,9 @@ export const ACCOUNTING_ROUTE_REGISTRY: readonly AccountingRouteEntry[] = [
     scope: "organization",
     envelope: "bare-array",
     serverTotal: false,
-    observed: "200 [] identical under both branch headers.",
-    note: "ORG-LEVEL BY DESIGN (batch 2): PeriodCloseRun.branchId is nullable and the close path never stamps it.",
+    observed:
+      "200 [1] identical under both branch headers (Track B5.5 re-probe, 2026-08-21) after a live close via Owner token produced one real COMPLETED run (retainedEarningsAmount -3,297,400 = incomeTotal 3,164,200 - expenseTotal 6,461,600, branchId null). A second close attempt on the same now-CLOSED period correctly 409'd with no second run created.",
+    note: "ORG-LEVEL BY DESIGN (batch 2): PeriodCloseRun.branchId is nullable and the close path never stamps it. B5.5-F1 (new finding, this pass): PeriodCloseRunStatus.FAILED and .PENDING are unreachable through the live API — closeFiscalPeriod()'s own transaction always creates the run COMPLETED, and a refused close throws before any run row exists at all, so no code path ever persists FAILED or PENDING.",
   },
   {
     key: "accounting.journals",

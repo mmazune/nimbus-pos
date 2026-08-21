@@ -14,7 +14,10 @@ import type {
   FiscalPeriodStatus,
   JournalLineRow,
   JournalRow,
+  PeriodCloseRunRow,
+  PeriodCloseRunStatus,
 } from "./types";
+import { PERIOD_CLOSE_RUN_STATUSES } from "./types";
 
 /**
  * Accounting pure model — Track B5.1.
@@ -249,6 +252,51 @@ export function countPeriodsByStatus(
 ) {
   if (!periods) return null;
   return periods.filter((period) => toFiscalPeriodStatus(period.status) === status).length;
+}
+
+/**
+ * The `ManagerStatusPipeline` position for a fiscal period — Track B5.5.
+ *
+ * `DRAFT → OPEN → CLOSED → LOCKED`, index 0..3. Unlike bank reconciliation's
+ * `DISPUTED` exit chip (a real side-branch a record can be diverted to),
+ * `FiscalPeriodStatus` has no such side-branch — the pipeline IS the complete
+ * lifecycle (PC-07). So `-1` here means only one thing: **the value is
+ * unreadable** (missing, or a string this UI does not recognise), and the
+ * caller renders that as an explicit "Status unavailable" exit chip rather
+ * than defaulting to stage 0 (which would be indistinguishable from a real,
+ * confirmed DRAFT period) or any other guessed stage. Fail closed.
+ */
+export function fiscalPeriodPipelineIndex(status: FiscalPeriodStatus | null): number {
+  if (!status) return -1;
+  return FISCAL_PERIOD_STATUSES.indexOf(status);
+}
+
+// ── Period close runs (Track B5.5) ──────────────────────────────────────────
+
+export const PERIOD_CLOSE_RUN_STATUS_META: Record<
+  PeriodCloseRunStatus,
+  { label: string; tone: "neutral" | "info" | "success" | "warning" | "danger" }
+> = {
+  PENDING: { label: "Pending", tone: "neutral" },
+  COMPLETED: { label: "Completed", tone: "success" },
+  FAILED: { label: "Failed", tone: "danger" },
+};
+
+/** Fails closed to `null` on any value outside the three-member enum — never guessed into a status that looks like success. */
+export function toPeriodCloseRunStatus(value: string | null | undefined): PeriodCloseRunStatus | null {
+  if (!value) return null;
+  const upper = value.toUpperCase();
+  return (PERIOD_CLOSE_RUN_STATUSES as readonly string[]).includes(upper)
+    ? (upper as PeriodCloseRunStatus)
+    : null;
+}
+
+export function countCloseRunsByStatus(
+  runs: readonly PeriodCloseRunRow[] | undefined,
+  status: PeriodCloseRunStatus,
+) {
+  if (!runs) return null;
+  return runs.filter((run) => toPeriodCloseRunStatus(run.status) === status).length;
 }
 
 // ── Bank reconciliation ─────────────────────────────────────────────────────
@@ -499,9 +547,15 @@ export type AccountingKpiBinding = {
   note?: string;
 };
 
-const NOT_YET = (subphase: string, surface: string) =>
-  `${surface} has not shipped yet — it arrives in ${subphase}. A link to a route that does not exist would be a fake affordance.`;
-
+/**
+ * Track B5.5 wired the last three `noDrillInReason` placeholders (the Fiscal
+ * period card's `period.current`/`period.open`/`period.closeRuns`) into real
+ * `drillIn` targets, so no binding below currently needs this shape. The
+ * `noDrillInReason` field on `AccountingKpiBinding` stays load-bearing — the
+ * assertion script still requires one whenever `drillIn` is `null` — a future
+ * B5.6 KPI (e.g. a Chart of accounts count) can reintroduce a helper like this
+ * one when it needs it; it is not recreated here just to sit unused.
+ */
 export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
   // Customers (AR) — Track B5.2 wired every one of these into a real surface.
   {
@@ -630,14 +684,13 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     drillIn: ACCOUNTING_ROUTES.bankAccounts,
   },
 
-  // Closing
+  // Closing — Track B5.5 wired both of these into real surfaces.
   {
     key: "period.current",
     label: "Current fiscal period",
     routeKey: "accounting.periods",
     field: "[] where startsAt <= now <= endsAt (narrowest window)",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.5", "Fiscal periods"),
+    drillIn: ACCOUNTING_ROUTES.fiscalPeriods,
     note: "ORGANISATION data — FiscalPeriod has no branch_id column (batch 2). PC-07: DRAFT → OPEN → CLOSED → LOCKED, LOCKED terminal.",
   },
   {
@@ -645,16 +698,14 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     label: "Periods open",
     routeKey: "accounting.periods",
     field: "[].status === OPEN",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.5", "Fiscal periods"),
+    drillIn: ACCOUNTING_ROUTES.fiscalPeriods,
   },
   {
     key: "period.closeRuns",
     label: "Period close runs recorded",
     routeKey: "accounting.periodCloseRuns",
     field: "[].length",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.5", "Period close runs"),
+    drillIn: ACCOUNTING_ROUTES.periodCloseRuns,
     note: "ORGANISATION data — PeriodCloseRun.branchId is nullable and the close path never stamps it (batch 2).",
   },
 ];

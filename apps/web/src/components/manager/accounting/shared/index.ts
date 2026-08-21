@@ -12,6 +12,7 @@ export { AccountingPrimaryKpi, AccountingStatList } from "./AccountingKpi";
 export type { AccountingStatRow } from "./AccountingKpi";
 export {
   AccountingDeniedWritesPanel,
+  AccountingPeriodCloseRunStatusBadge,
   AccountingPeriodStatusBadge,
   AccountingReadOnlyNote,
   AccountingRouteScopeNote,

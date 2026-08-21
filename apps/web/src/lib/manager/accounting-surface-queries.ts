@@ -14,7 +14,9 @@ import {
   getBankReconciliationsRequest,
   getBankStatementRequest,
   getBankStatementsRequest,
+  getFiscalPeriodsRequest,
   getJournalRequest,
+  getPeriodCloseRunsRequest,
   getPostingErrorRequest,
   listApBillsRequest,
   listApCreditNotesRequest,
@@ -65,8 +67,10 @@ import type {
   BankReconciliationRow,
   BankStatementDetail,
   BankStatementRow,
+  FiscalPeriodRow,
   JournalDetail,
   JournalRow,
+  PeriodCloseRunRow,
   PostingErrorDetail,
   PostingErrorRow,
   PostingRunRow,
@@ -440,3 +444,35 @@ export function useAuditTimeline(params: AuditTimelineParams): UseQueryResult<Au
 }
 
 export { AUDIT_TIMELINE_PAGE_SIZE };
+
+// ── Closing (Track B5.5) ─────────────────────────────────────────────────────
+//
+// Deliberately SEPARATE query keys from the B5.1 dashboard's own
+// `accounting-fiscal-periods` / `accounting-period-close-runs` (which poll
+// every 5 minutes as part of the fixed 9-query dashboard snapshot) — these
+// surface reads fetch on demand instead, the same split B5.3's Bank surfaces
+// already established for `accounting-bank-accounts` vs. `accounting-bank-
+// accounts-list`. Both routes are ORGANISATION data (batch 2) — `branchId`
+// is still part of the query key (so a branch switch still triggers a
+// refetch, matching every other accounting surface's cache-invalidation
+// contract) even though the response itself does not change with it.
+
+export function useFiscalPeriodsList(): UseQueryResult<FiscalPeriodRow[]> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-fiscal-periods-list", branchId),
+    queryFn: () => getFiscalPeriodsRequest(token, scope),
+  });
+}
+
+export function usePeriodCloseRunsList(fiscalPeriodId?: string): UseQueryResult<PeriodCloseRunRow[]> {
+  const { enabled, scope, token, branchId } = useAccountingAuth();
+  return useQuery({
+    enabled,
+    retry: 1,
+    queryKey: managerQueryKey("accounting-period-close-runs-list", branchId, fiscalPeriodId),
+    queryFn: () => getPeriodCloseRunsRequest(token, scope, fiscalPeriodId),
+  });
+}

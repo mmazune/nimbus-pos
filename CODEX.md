@@ -68,7 +68,7 @@ unless the task explicitly requires them and the relevant isolation rules are me
 | Testing / QA | `docs/TESTING_AND_QA.md` |
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C - supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward) |
 | Manager Operations + Staff (Track B3) | `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` (canonical B3 record, 2026-08-20) + `ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md` |
-| Manager Accounting (Track B5.1/B5.2/B5.3/B5.4) | `ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md` (canonical B5.1 record, 2026-08-21) + `ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md` (canonical B5.2 record, 2026-08-21) + `ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md` (canonical B5.3 record, 2026-08-21) + `ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md` (canonical B5.4 record, 2026-08-21) - the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
+| Manager Accounting (Track B5.1-B5.5) | `ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md` (canonical B5.1 record, 2026-08-21) + `ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md` (canonical B5.2 record, 2026-08-21) + `ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md` (canonical B5.3 record, 2026-08-21) + `ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md` (canonical B5.4 record, 2026-08-21) + `ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md` (canonical B5.5 record, 2026-08-21) - the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) - shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | **Backend gap batch 2 (PC-03, PC-04)** | **`ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md`** (canonical record, 2026-08-21) |
@@ -81,7 +81,83 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI Track B5.4 complete - Manager Accounting core (Journal entries) and Review
+**Enterprise UI Track B5.5 complete - Manager Accounting Closing surfaces (2026-08-21) - A:
+B5.5 COMPLETE / B5.6 gated.** Frontend and docs only; no backend, schema, migration, seed,
+permission, DTO or Postman change. The two Closing menu rows B5.1 shipped as honest not-yet
+placeholders - Fiscal periods, Period close runs - are now real surfaces. The Accounting menu
+goes from 19 live rows to 21 (of 28 total). Unlike every prior B5 phase, this one found a
+real permission-boundary leak rather than a data-shape defect.
+
+New finding, C-27: Manager's own token holds pos:accounting:periods:create (and
+accounts:create, cost-centers:create) - a pre-existing M28-era seed grant the 2026-08-20
+permissions cutover never audited or revoked (the cutover only added 15 new AP/AR/bank-rec/
+finance read strings and never swept the older M28/M29-era grants). Live-proven: Manager
+POST /accounting/periods returns 201, creating a real DRAFT period on the isolated stack.
+PATCH .../open, .../close and .../lock remain genuinely 403 for Manager - only :create leaked.
+Every prior B5 phase's "5/5 representative writes to 403" spot-check never happened to probe
+periods:create/accounts:create/cost-centers:create, so this went undetected through B5.1
+through B5.4. Not fixed here - a seed/permission change is out of scope for a frontend-only
+phase - but the Fiscal periods screen discloses the gap by name and ships zero create control
+regardless, matching every other B5 surface's read-first posture.
+
+Fiscal periods is list only (accounting.controller.ts declares no GET .../:id, the same "no
+detail route" shape B5.4 found for Posting runs), with a ManagerStatusPipeline per row
+rendering the real PC-07 lifecycle DRAFT to OPEN to CLOSED to LOCKED, LOCKED as a genuine
+terminal stage (not an exit chip - unlike bank reconciliation's DISPUTED, there is no real
+side-branch a fiscal period can be diverted to). An unrecognised status is the only thing
+that renders as an exit chip ("Status unavailable"), proven by a mocked malformed-response
+Playwright spec, not merely asserted. Period close runs is list only, showing the fiscal
+period, closed-by actor, and an income/expense/retained-earnings money tie-out - retained
+earnings correctly rendering negative (-UGX 3,297,400 on the live fixture) when expense
+exceeds income.
+
+New finding, B5.5-F1: PeriodCloseRunStatus.FAILED and .PENDING are unreachable through the
+live API. closeFiscalPeriod()'s own transaction always creates the run COMPLETED, or refuses
+the request before any row exists at all - proven live by closing an already-CLOSED period
+(409, and a re-read confirmed zero new rows). The screen discloses this in its own footnote.
+
+Both routes confirmed organisation-level, live, in the browser: switching Tapas Downtown to
+Rooftop Bar leaves both lists byte-identical. Both are PC-06 bare arrays with no server total,
+labelled "Showing all N", never a fabricated pager. PC-07 re-verified live: PATCH .../lock on
+a CLOSED period returns 200 LOCKED; a subsequent PATCH .../unlock returns 404 - the route
+genuinely does not exist.
+
+The B5.1 dashboard's Fiscal period card - all three figures inert since B5.1 - now links for
+real: period.current, period.open and period.closeRuns all gained a real drillIn. The card's
+own rendering logic was not rewritten, only the registry's drillIn changed.
+
+Fixtures were created live via the API on the isolated stack (Owner token as the intended
+actor, plus deliberately the Manager token for the one C-27 verification call), on Tapas
+Downtown (which already carried 5 fiscal periods and 0 close runs from db:demo:import): 1
+fresh DRAFT period (Owner); 1 previously-OPEN period closed live via PATCH .../close,
+producing the one real PeriodCloseRun (COMPLETED, incomeTotal UGX 3,164,200, expenseTotal
+UGX 6,461,600, retainedEarningsAmount -UGX 3,297,400, branchId null); a second close attempt
+on the same now-CLOSED period returned 409 with zero new rows; 1 previously-CLOSED period
+locked live via PATCH .../lock, confirmed terminal; 1 further DRAFT period created via the
+Manager token itself (the C-27 proof), with Manager PATCH .../open, .../close and .../lock on
+it all returning 403. Final Tapas Downtown counts: 7 fiscal periods (DRAFT x2, OPEN x2,
+CLOSED x2, LOCKED x1 - all four statuses live in one organisation), 1 period close run
+(COMPLETED). Rooftop Bar confirmed to render the byte-identical 7-period and 1-close-run
+lists, live in the browser and separately via curl.
+
+Validated on an isolated local Docker stack - Postgres :55470 (nimbus_b55_qa), API :4081, web
+:3170; shared Neon was never connected to or written; apps/api/.env was never edited on disk
+(SHA-256 identical throughout); packages/db/.env was temporarily swapped for the three Prisma
+CLI steps only and restored immediately after, SHA-256 verified byte-identical to the
+baseline. Web typecheck, lint (no --fix), and production build all pass (2 new pages); 17/17
+assertion scripts (manager-b5-assertions.ts extended with a new section 15 of B5.5-specific
+checks); e2e/manager-accounting/closing.spec.ts (new, 19 specs) 76/76 passed across all 4
+viewports; the updated menu-and-read-only.spec.ts (19 to 21 rows) 29 passed / 3 skipped (the
+pre-existing desktop-dropdown-only skip class); e2e/manager-accounting/ full regression and
+e2e/manager-shell/ regression both executed; live manual QA toured both new pages plus the
+dashboard's Fiscal period card at 1440x900 and a 1280x680-equivalent viewport, on both Tapas
+Downtown and a branch switch to Rooftop Bar; zero console errors; api/health to ok throughout.
+See ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md for the full validation table and the
+C-27/B5.5-F1 discovery narratives. B5.6 (the remainder of Reporting and Configuration) is NOT
+started - do not begin it without explicit owner authorization. A future backend batch will
+need to address C-25, C-26, B5.4-D1, C-27 and B5.5-F1 before B6 (Settings) can start.
+
+**Prior milestone record (superseded above) - Enterprise UI Track B5.4 complete - Manager Accounting core (Journal entries) and Review
 surfaces (2026-08-21) - A: B5.4 COMPLETE / B5.5 and B5.6 gated.** Frontend and docs only; no
 backend, schema, migration, seed, permission, DTO or Postman change. The four
 Accounting/Review menu rows B5.1 shipped as honest not-yet placeholders - Journal entries,
@@ -1208,8 +1284,14 @@ start without explicit authorization.
   batch 3 to the fourteen paginated accounting/finance list routes (B5-F3), and do
   not revert `audit/timeline` to ignoring `X-Branch-Id` (B5-F4, ⚠️ note the B5.4 pass
   corrected the frontend registry's stale copy of this note - see below). B5.1, B5.2,
-  B5.3 and B5.4 are COMPLETE. B5.5, B5.6, B6 and B7 are NOT started - do not begin any of
+  B5.3, B5.4 and B5.5 are COMPLETE. B5.6, B6 and B7 are NOT started - do not begin any of
   them without explicit owner authorisation.
+  Correction (Track B5.5, 2026-08-21): "Manager READ-ONLY, 15 strings" describes only the
+  C-21 cutover's own added scope. C-27 found a pre-existing, never-revoked
+  pos:accounting:periods:create grant (plus accounts:create/cost-centers:create) that
+  predates the cutover; Manager POST /accounting/periods returns 201 live. Do not treat
+  "Manager READ-ONLY" as literally true of every accounting string Manager holds - do not
+  fix C-27 without a separate, explicitly authorised seed change, same rule as C-21/C-22.
 - Manager Track B5.3 boundaries (2026-08-21): Reconciliation is READ-ONLY - do not add a
   Match, Skip, Reconcile, Validate or Complete control anywhere, not even disabled -
   `pos:accounting:reconciliation:match`/`:create` and the bank-account/statement-import/
@@ -1241,10 +1323,32 @@ start without explicit authorization.
   metadata.branchId), not by an empty history. Do not add a status filter to Posting runs -
   the endpoint accepts none. Do not reuse AccountingReadOnlyCard's "an Owner or Accountant
   performs this" copy on the Posting errors detail - B5.4-D1 established no role can
-  resolve or dismiss a posting error through this API. B5.5 (Closing) and the remainder of
-  B5.6 are NOT started. Note for B5.5: C-23 - the M33 GL Postman collection cannot run
-  (pre-existing, unrelated to B5.4), so B5.4's journals surface shipped without Postman
-  verification.
+  resolve or dismiss a posting error through this API. B5.5 (Closing) is COMPLETE; the
+  remainder of B5.6 is NOT started. Note for B5.6: C-23 - the M33 GL Postman collection
+  cannot run (pre-existing, unrelated to B5.4), so B5.4's journals surface shipped without
+  Postman verification.
+- Manager Track B5.5 boundaries (2026-08-21): Fiscal periods and Period close runs are
+  READ-ONLY for the actions the owner ruling covers - no open/close/lock control anywhere,
+  not even disabled; PATCH .../open, .../close and .../lock all re-verified 403 for
+  Manager. C-27: Manager's token additionally holds pos:accounting:periods:create (a
+  pre-existing, never-revoked write) - do not add a create control just because the
+  permission technically allows one; the owner's read-first ruling governs the UI
+  regardless of what one stray permission string permits, and fixing the permission itself
+  requires separate seed authorisation. Do not add fiscal-periods or period-close-runs
+  detail routes or ?periodId=/?runId= URL state - neither entity has a GET .../:id
+  endpoint (confirmed against accounting.controller.ts/bank-rec.controller.ts directly),
+  the same list-only shape B5.4 established for Posting runs. Do not build a period-close
+  readiness/checklist view - no endpoint backs one. Do not relax
+  fiscalPeriodPipelineIndex() to treat an unrecognised status as stage 0 (DRAFT) - an
+  unreadable value must render "Status unavailable", never a real stage. Do not remove the
+  B5.5-F1 disclosure from PeriodCloseRunsScreen.tsx - .../close always creates the run
+  COMPLETED or refuses before any row exists, so FAILED/PENDING have never actually been
+  produced by this backend. Do not bind a pager to either B5.5 route - both are PC-06 bare
+  arrays with no server total. Do not relabel either surface as branch data - both are
+  organisation-level by design (batch 2). B5.1 through B5.5 are COMPLETE. B5.6
+  (Configuration plus the remainder of Reporting) is NOT started - do not begin it without
+  explicit owner authorisation. A future backend batch will need to address C-25, C-26,
+  B5.4-D1, C-27 and B5.5-F1 before B6 (Settings) can start.
 - Manager Track B3 boundaries (2026-08-20): **Operations is strictly read-only** -
   do not add any mutation, `useMutation` hook, checkout/tender/order-builder
   control, order close/void/discount, or table-status write to

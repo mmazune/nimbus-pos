@@ -177,7 +177,12 @@ export type BankReconciliationDetail = BankReconciliationRow & {
   difference?: AccountingDecimal;
 };
 
-// ── Fiscal periods ──────────────────────────────────────────────────────────
+// ── Fiscal periods — Track B5.5 ─────────────────────────────────────────────
+// `AccountingService.listFiscalPeriods()` runs a plain `findMany({ where: { orgId } })`
+// with no `select` and no `include` — every scalar column on `FiscalPeriod` is on
+// the wire, but the `openedBy`/`closedBy`/`lockedBy` RELATIONS are never included,
+// so only the raw `*ById` ids are available, never a display name (live-verified
+// 2026-08-21 on the isolated B5.5 QA stack).
 export type FiscalPeriodStatus = "DRAFT" | "OPEN" | "CLOSED" | "LOCKED";
 
 export type FiscalPeriodRow = {
@@ -186,13 +191,34 @@ export type FiscalPeriodRow = {
   startsAt?: string | null;
   endsAt?: string | null;
   status?: string | null;
+  openedAt?: string | null;
+  openedById?: string | null;
+  closedAt?: string | null;
+  closedById?: string | null;
+  lockedAt?: string | null;
+  lockedById?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
+
+/** `PeriodCloseRunStatus` (Prisma enum). `FAILED` and `PENDING` are unreachable through the live
+ * API — see B5.5-F1 in `ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md`: `closeFiscalPeriod()`
+ * always creates the run as `COMPLETED` inside its own transaction, or throws BEFORE any run row
+ * is created at all — there is no code path that persists `PENDING` or `FAILED`. */
+export const PERIOD_CLOSE_RUN_STATUSES = ["PENDING", "COMPLETED", "FAILED"] as const;
+export type PeriodCloseRunStatus = (typeof PERIOD_CLOSE_RUN_STATUSES)[number];
 
 export type PeriodCloseRunRow = {
   id: string;
   status?: string | null;
   closedAt?: string | null;
-  fiscalPeriod?: { id: string; name?: string | null } | null;
+  retainedEarningsAmount?: AccountingDecimal;
+  incomeTotal?: AccountingDecimal;
+  expenseTotal?: AccountingDecimal;
+  failureReason?: string | null;
+  notes?: string | null;
+  closedBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+  fiscalPeriod?: { id: string; name?: string | null; startsAt?: string | null; endsAt?: string | null } | null;
 };
 
 // ── Ledger — Track B5.4 ──────────────────────────────────────────────────────

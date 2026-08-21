@@ -904,6 +904,37 @@ so a distinct disclosure card states the real gap instead. Generic honest-empty-
 default; when the emptiness has a KNOWN, PROVEN cause distinct from "no data exists yet," name the
 cause.
 
+## 8i. A genuine terminal pipeline stage, and shipping read-only despite a technically-permitted write (Track B5.5, 2026-08-21)
+
+B5.5 shipped Fiscal periods and Period close runs — the first Manager surfaces whose backend
+lifecycle has a real dead end. Two conventions worth reusing:
+
+### `ManagerStatusPipeline`'s exit chip can mean "unreadable value," not only "off pipeline"
+
+Every prior consumer of `ManagerStatusPipeline` (bank reconciliation's `DISPUTED`, §8g) used the
+`currentIndex: -1` exit chip for a real, named side-branch a record can be diverted to. Fiscal
+periods has no such side-branch — `DRAFT → OPEN → CLOSED → LOCKED` is the complete lifecycle
+(PC-07), and `LOCKED` is a genuine **terminal pipeline stage** (index 3), not an exit. So the exit
+chip is repurposed for the one thing that legitimately has no stage: a status value this UI does
+not recognise. `fiscalPeriodPipelineIndex()` returns `-1` ONLY when `toFiscalPeriodStatus()` itself
+already failed closed to `null` — never for a real, known status, however far along the lifecycle.
+Read the two call sites together before assuming an exit chip always means "left the workflow";
+here it means "we cannot confidently place this record anywhere."
+
+### Ship the owner's read-only ruling even when the token would technically allow more
+
+C-27 (`ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md` §1/§4) found that Manager's token holds a
+real, working `pos:accounting:periods:create` grant — a pre-existing permission the frontend did
+not create and cannot fix. The correct response was NOT to build a create form because the API
+would accept it, and NOT to silently omit any mention of the gap. `FiscalPeriodsScreen.tsx` ships
+zero create control (the owner's ruling for this module is read-first, independent of what one
+permission string happens to permit) AND names the finding in its own on-page copy
+(`data-accounting-finding="C-27"`), so a reader auditing the screen sees the true permission
+boundary rather than an implied "Manager cannot write here" that a `curl` would immediately
+contradict. Apply this pattern whenever a live permission probe finds a UI's actual write
+boundary is narrower than what the token allows: disclose the gap by name, and let the PRODUCT
+decision — not the permission accident — govern what renders.
+
 ## 9. Known UI inconsistencies (recorded, not yet fixed)
 
 These are functional/architectural inconsistencies out of scope for a UI-polish

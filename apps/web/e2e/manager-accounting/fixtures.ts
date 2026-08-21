@@ -41,15 +41,20 @@ export const ACCOUNTING_ROUTES = {
   postingRuns: "/manager/accounting/review/posting-runs",
   postingErrors: "/manager/accounting/review/posting-errors",
   auditTrail: "/manager/accounting/review/audit-trail",
+
+  // Closing — Track B5.5
+  fiscalPeriods: "/manager/accounting/closing/fiscal-periods",
+  periodCloseRuns: "/manager/accounting/closing/period-close-runs",
 } as const;
 
 /**
- * The 19 rows that are `available: true` in `lib/accounting/menu.ts`, in DOM
+ * The 21 rows that are `available: true` in `lib/accounting/menu.ts`, in DOM
  * order. The Bank group sits BEFORE "Accounting" and "Review" in the menu
  * tree (Customers → Vendors → Bank → Accounting → Review → Reporting →
- * Configuration), so B5.4's four rows (Journal entries under "Accounting";
- * Posting runs/Posting errors/Audit trail under "Review") land between
- * "Reconciliation" and "Aged receivable" — not appended at the end.
+ * Configuration). Within "Accounting", B5.5's two rows (Fiscal periods,
+ * Period close runs) sit AFTER Journal entries — menu.ts declares them in
+ * that order — so they land between "Journal entries" and "Posting runs",
+ * not appended at the end.
  */
 export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-dashboard",
@@ -66,6 +71,8 @@ export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-bank-statements",
   "accounting-bank-reconciliation",
   "accounting-journals",
+  "accounting-periods",
+  "accounting-period-close-runs",
   "accounting-posting-runs",
   "accounting-posting-errors",
   "accounting-audit-trail",

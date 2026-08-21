@@ -144,9 +144,20 @@ export function getFiscalPeriodsRequest(token: string, branchId: string) {
   return apiRequest<FiscalPeriodRow[]>(routePath("accounting.periods"), { token, branchId });
 }
 
-/** ORGANISATION data — see `accounting.periodCloseRuns` in the registry. */
-export function getPeriodCloseRunsRequest(token: string, branchId: string) {
-  return apiRequest<PeriodCloseRunRow[]>(routePath("accounting.periodCloseRuns"), { token, branchId });
+/**
+ * ORGANISATION data — see `accounting.periodCloseRuns` in the registry.
+ * `?fiscalPeriodId=` is a REAL server-side filter (`bank-rec.controller.ts`'s
+ * `listPeriodCloseRuns` reads `@Query('fiscalPeriodId')`) — unlike the status
+ * filters elsewhere in this module, this one is not a client-side narrowing
+ * of an already-fetched array. Still PC-06: even filtered, the response
+ * carries no `total`.
+ */
+export function getPeriodCloseRunsRequest(token: string, branchId: string, fiscalPeriodId?: string) {
+  const suffix = fiscalPeriodId ? `?fiscalPeriodId=${encodeURIComponent(fiscalPeriodId)}` : "";
+  return apiRequest<PeriodCloseRunRow[]>(`${routePath("accounting.periodCloseRuns")}${suffix}`, {
+    token,
+    branchId,
+  });
 }
 
 // ── Track B5.2: Customers (AR) + Vendors (AP) list/detail reads ─────────────

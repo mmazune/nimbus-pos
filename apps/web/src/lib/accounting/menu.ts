@@ -70,6 +70,14 @@ import { getAccountingRoute } from "./route-registry";
  * tax-config as B5.4 deliverables; this file's own tags, unchanged since
  * B5.1, say otherwise, and the roadmap's own B5.4/B5.5 table rows agree with
  * the tags, not the brief — so the tags win, per CLAUDE.md §19.)
+ *
+ * B5.5 (2026-08-21, Closing) turns the exact two rows this file already
+ * tagged "B5.5" live — Fiscal periods and Period close runs, both under the
+ * "Accounting" heading. Both ship LIST-ONLY: `accounting.controller.ts` /
+ * `bank-rec.controller.ts` declare no `GET .../:id` for either entity — the
+ * same "no detail route, so no detail page" shape B5.4 found for Posting
+ * runs. Chart of accounts, Cost centres, Posting source maps and Tax
+ * configuration stay tagged B5.6 (Configuration), untouched by this phase.
  */
 export const ACCOUNTING_SUBPHASES = ["B5.2", "B5.3", "B5.4", "B5.5", "B5.6"] as const;
 export type AccountingSubphase = (typeof ACCOUNTING_SUBPHASES)[number];
@@ -229,15 +237,15 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-periods",
         label: "Fiscal periods",
-        available: false,
-        subphase: "B5.5",
+        available: true,
+        href: ACCOUNTING_ROUTES.fiscalPeriods,
         routeKeys: ["accounting.periods"],
       },
       {
         key: "accounting-period-close-runs",
         label: "Period close runs",
-        available: false,
-        subphase: "B5.5",
+        available: true,
+        href: ACCOUNTING_ROUTES.periodCloseRuns,
         routeKeys: ["accounting.periodCloseRuns"],
       },
     ],

@@ -18,9 +18,11 @@ import {
   ACCOUNTING_KPI_BINDINGS,
   AR_AGING_PAGE_SIZE,
   countActiveReconciliations,
+  countCloseRunsByStatus,
   countPeriodsByStatus,
   currentFiscalPeriod,
   FISCAL_PERIOD_STATUSES,
+  fiscalPeriodPipelineIndex,
   formatAccountingCount,
   formatAccountingMoney,
   getAccountingKpi,
@@ -30,6 +32,7 @@ import {
   isJournalReadableInBranch,
   isReconciliationBalanced,
   overdueTotal,
+  PERIOD_CLOSE_RUN_STATUS_META,
   reconciliationPipelineIndex,
   RECONCILIATION_PIPELINE,
   sumJournalLineAmounts,
@@ -38,8 +41,10 @@ import {
   toApAgingBuckets,
   toArAgingBuckets,
   toFiscalPeriodStatus,
+  toPeriodCloseRunStatus,
   unpaginatedCountLabel,
 } from "../src/lib/accounting/model";
+import { PERIOD_CLOSE_RUN_STATUSES } from "../src/lib/accounting/types";
 import { managerRoutes } from "../src/lib/manager/routes";
 import { managerSurfaces } from "../src/lib/manager/permissions";
 import { managerTopNavMenus } from "../src/lib/manager/top-nav";
@@ -130,11 +135,12 @@ assert(
  * Reporting) to B5.1's 2 (index redirect + dashboard) — 13 total. Track B5.3
  * (2026-08-21) added 3 more (Bank accounts, Bank statements, Reconciliation)
  * — 16 total. Track B5.4 (2026-08-21) added 4 more (Journal entries, Posting
- * runs, Posting errors, Audit trail) — 20 total. Exact equality on purpose: a
- * page appearing here with no matching `available:true` menu row below (or
- * vice versa) is exactly the drift this gate exists to catch.
+ * runs, Posting errors, Audit trail) — 20 total. Track B5.5 (2026-08-21)
+ * added 2 more (Fiscal periods, Period close runs) — 22 total. Exact equality
+ * on purpose: a page appearing here with no matching `available:true` menu
+ * row below (or vice versa) is exactly the drift this gate exists to catch.
  */
-assert(accountingPageFiles.length === 20, `Accounting ships 20 pages (found ${accountingPageFiles.length})`);
+assert(accountingPageFiles.length === 22, `Accounting ships 22 pages (found ${accountingPageFiles.length})`);
 assert(
   existsSync(join(process.cwd(), `${MANAGER_LIB_DIR}/accounting-context.ts`)),
   "the Manager-side React Query adapter exists",
@@ -416,11 +422,12 @@ const availableItems = menuItems.filter((item) => item.available);
  * forward from B5.6 — 12 total. B5.3 (2026-08-21) turned the 3 Bank rows
  * available — 15 total. B5.4 (2026-08-21) turned the 4 rows the menu tree
  * already tagged "B5.4" since B5.1 — Journal entries, Posting runs, Posting
- * errors, Audit trail — 19 total. Exact equality: a menu row available with
- * no matching page (or vice versa) is exactly the drift `accountingPageFiles`
- * above also gates.
+ * errors, Audit trail — 19 total. B5.5 (2026-08-21) turned the 2 rows the
+ * menu tree already tagged "B5.5" — Fiscal periods, Period close runs — 21
+ * total. Exact equality: a menu row available with no matching page (or vice
+ * versa) is exactly the drift `accountingPageFiles` above also gates.
  */
-assert(availableItems.length === 19, `Accounting ships 19 live menu rows (found ${availableItems.length})`);
+assert(availableItems.length === 21, `Accounting ships 21 live menu rows (found ${availableItems.length})`);
 const dashboardMenuItem = availableItems.find((item) => item.key === "accounting-dashboard");
 assert(dashboardMenuItem, "the dashboard row is still present and available");
 assert(
@@ -448,20 +455,28 @@ const B54_AVAILABLE_KEYS = [
   "accounting-posting-errors",
   "accounting-audit-trail",
 ];
-const ALL_AVAILABLE_KEYS = [...B52_AVAILABLE_KEYS, ...B53_AVAILABLE_KEYS, ...B54_AVAILABLE_KEYS];
+const B55_AVAILABLE_KEYS = ["accounting-periods", "accounting-period-close-runs"];
+const ALL_AVAILABLE_KEYS = [
+  ...B52_AVAILABLE_KEYS,
+  ...B53_AVAILABLE_KEYS,
+  ...B54_AVAILABLE_KEYS,
+  ...B55_AVAILABLE_KEYS,
+];
 assert(
   new Set(availableItems.map((item) => item.key)).size === ALL_AVAILABLE_KEYS.length &&
     ALL_AVAILABLE_KEYS.every((key) => availableItems.some((item) => item.key === key)),
-  "exactly the 19 named rows are available — no undocumented row was made live, and none was missed",
+  "exactly the 21 named rows are available — no undocumented row was made live, and none was missed",
 );
-/** The two rows B5.4 deliberately did NOT touch stay tagged for their real sub-phase, not B5.4's. */
+/** The exact two rows this file's own tags already named "B5.5" are now the ones made live — no other row moved with them. */
 assert(
-  menuItems.find((item) => item.key === "accounting-periods" && !item.available && item.subphase === "B5.5"),
-  "Fiscal periods stays a B5.5 not-yet row — it is Closing, not Accounting core (an operator brief for this phase described it as B5.4; the menu tree's own tags, unchanged since B5.1, say B5.5)",
+  menuItems.find((item) => item.key === "accounting-periods" && item.available && item.href === ACCOUNTING_ROUTES.fiscalPeriods),
+  "Fiscal periods is now a real, available row (Track B5.5, Closing) linking to the Fiscal periods list",
 );
 assert(
-  menuItems.find((item) => item.key === "accounting-period-close-runs" && !item.available && item.subphase === "B5.5"),
-  "Period close runs stays a B5.5 not-yet row",
+  menuItems.find(
+    (item) => item.key === "accounting-period-close-runs" && item.available && item.href === ACCOUNTING_ROUTES.periodCloseRuns,
+  ),
+  "Period close runs is now a real, available row (Track B5.5, Closing)",
 );
 for (const key of ["accounting-chart-of-accounts", "accounting-posting-source-maps", "accounting-tax-config"]) {
   assert(
@@ -1137,4 +1152,147 @@ for (const file of B54_DIR_FILES) {
 assert(/C-26/.test(source(`${ACCOUNTING_LIB_DIR}/route-registry.ts`)), "the audit.timeline registry entry names the C-26 finding");
 assert(/C-26/.test(auditTrailSource), "AuditTrailScreen discloses C-26 rather than implying an empty history");
 
-console.log("Manager B5.1 + B5.2 + B5.3 + B5.4 assertions: all checks passed.");
+// ═══════════════════════════════════════════════════════════════════════════
+// 15. TRACK B5.5 — CLOSING (FISCAL PERIODS + PERIOD CLOSE RUNS)
+//     (read-only guard over the closing tree, org-level labelling, fail-closed
+//     status rendering, no fabricated list total on either bare array, the
+//     B5.5-F1 "FAILED/PENDING are unreachable" disclosure)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CLOSING_DIR_FILES = accountingComponentFiles.filter((file) => file.includes("/accounting/closing/"));
+assert(CLOSING_DIR_FILES.length === 2, `B5.5 ships 2 Closing screens (found ${CLOSING_DIR_FILES.length})`);
+
+/** Both B5.5 routes stay declared PC-06 bare arrays with no server total — list-only, same shape B5.4 found for Posting runs. */
+for (const key of ["accounting.periods", "accounting.periodCloseRuns"]) {
+  const route = getAccountingRoute(key);
+  assert(route.envelope === "bare-array" && !route.serverTotal, `${key} is declared PC-06 (bare array, no server total)`);
+}
+/** Neither B5.5 screen fabricates a list total. */
+for (const file of CLOSING_DIR_FILES) {
+  assert(
+    !codeOnly(file).includes("toAccountingPager(") && !codeOnly(file).includes("pager={"),
+    `${file} binds no server-total list pager — both Closing routes are PC-06 bare arrays`,
+  );
+}
+
+/** Both Closing routes stay declared ORGANISATION scope, per batch 2's ruling — re-checked here in case a future edit "fixes" the label instead of the underlying model. */
+for (const key of ["accounting.periods", "accounting.periodCloseRuns"]) {
+  assert(
+    getAccountingRoute(key).scope === "organization",
+    `${key} is declared organisation data — batch 2 ruled these org-level BY DESIGN, and B5.5 must not silently narrow that`,
+  );
+}
+const closingSource = CLOSING_DIR_FILES.map((file) => codeOnly(file)).join("\n");
+assert(
+  closingSource.includes("AccountingRouteScopeNote"),
+  "both Closing screens label their organisation scope through the shared scope note, not bespoke prose",
+);
+
+/** Neither entity has a detail route — no `?periodId=`/`?runId=` state, no `GET .../:id` call, matching the B5.4 Posting-runs precedent exactly. */
+for (const key of ["accounting.period", "accounting.periodCloseRun"]) {
+  assert(
+    ACCOUNTING_ROUTE_REGISTRY.every((entry) => entry.key !== key),
+    `${key} is not a registered route — neither Fiscal periods nor Period close runs has a detail endpoint`,
+  );
+}
+assert(
+  !/router\.query\.periodId\b|router\.query\.runId\b/.test(closingSource),
+  "neither Closing screen carries detail-view URL state for an entity with no detail route",
+);
+
+/** The fiscal-period lifecycle pipeline models exactly four linear stages, with no side-branch — unlike bank reconciliation, an unreadable status is the ONLY thing off the pipeline. */
+assert(FISCAL_PERIOD_STATUSES.join(",") === "DRAFT,OPEN,CLOSED,LOCKED", "the fiscal period pipeline has four stages in lifecycle order");
+assert(fiscalPeriodPipelineIndex("DRAFT") === 0, "DRAFT is stage 0");
+assert(fiscalPeriodPipelineIndex("LOCKED") === 3, "LOCKED is the terminal stage 3, not off the pipeline");
+assert(fiscalPeriodPipelineIndex(null) === -1, "an unreadable status is off the pipeline — the ONLY reason to be off it, since there is no real side-branch state");
+
+/** countPeriodsByStatus / countCloseRunsByStatus fail closed on missing data, never to 0 (which would look like a real, confirmed empty count). */
+assert(countPeriodsByStatus(undefined, "OPEN") === null, "an unread periods list fails closed to null, never 0");
+assert(
+  countPeriodsByStatus(
+    [
+      { id: "p1", name: "FY2026-Q3", status: "OPEN" },
+      { id: "p2", name: "FY2026-07", status: "OPEN" },
+      { id: "p3", name: "FY2026-06", status: "CLOSED" },
+    ],
+    "OPEN",
+  ) === 2,
+  "countPeriodsByStatus counts only the matching status",
+);
+assert(countCloseRunsByStatus(undefined, "COMPLETED") === null, "an unread close-runs list fails closed to null, never 0");
+assert(
+  countCloseRunsByStatus([{ id: "r1", status: "COMPLETED" }, { id: "r2", status: "COMPLETED" }], "COMPLETED") === 2,
+  "countCloseRunsByStatus counts only the matching status",
+);
+
+/** toFiscalPeriodStatus / toPeriodCloseRunStatus both fail closed to null on an unrecognised value — never guessed into a real status. */
+assert(toFiscalPeriodStatus("open") === "OPEN", "a lowercase status is normalised before matching");
+assert(toFiscalPeriodStatus("ARCHIVED") === null, "an unrecognised fiscal-period status is null, never guessed onto a real stage");
+assert(toFiscalPeriodStatus(undefined) === null, "a missing fiscal-period status is null");
+assert(toPeriodCloseRunStatus("completed") === "COMPLETED", "a lowercase close-run status is normalised before matching");
+assert(toPeriodCloseRunStatus("SUCCESS") === null, "an unrecognised close-run status is null, never guessed onto COMPLETED");
+assert(PERIOD_CLOSE_RUN_STATUSES.join(",") === "PENDING,COMPLETED,FAILED", "the close-run status enum has exactly three members");
+assert(PERIOD_CLOSE_RUN_STATUS_META.FAILED.tone === "danger", "a FAILED close run renders with danger tone, never success styling");
+
+/** Fail-closed status rendering: both status badges exist and neither ever falls back to a styled real status on a bad value — asserted by reading the component source for the exact null-guard shape the shared badges use. */
+const accountingNotesSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/shared/AccountingNotes.tsx`);
+assert(
+  accountingNotesSource.includes("AccountingPeriodCloseRunStatusBadge") &&
+    /AccountingPeriodCloseRunStatusBadge[\s\S]{0,200}if \(!status\)/.test(accountingNotesSource),
+  "AccountingPeriodCloseRunStatusBadge fails closed on a missing/unrecognised status before touching PERIOD_CLOSE_RUN_STATUS_META",
+);
+
+/** B5.5-F1 (new finding, this pass): FAILED and PENDING are unreachable through the live API — PeriodCloseRunsScreen must say so, not imply every enum member is equally attainable. */
+const periodCloseRunsSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/closing/PeriodCloseRunsScreen.tsx`);
+assert(/B5\.5-F1/.test(periodCloseRunsSource), "PeriodCloseRunsScreen discloses the B5.5-F1 finding by name");
+assert(
+  /FAILED/i.test(periodCloseRunsSource) === false || /never/i.test(periodCloseRunsSource),
+  "PeriodCloseRunsScreen's prose does not merely mention FAILED without disclosing it is unreachable",
+);
+assert(/B5\.5-F1/.test(source(`${ACCOUNTING_LIB_DIR}/types.ts`)), "the PeriodCloseRunRow/PERIOD_CLOSE_RUN_STATUSES doc comment names the B5.5-F1 finding");
+
+/**
+ * C-27 (new finding, this pass, NOT in B0/batch 2/batch 3/the permissions
+ * cutover): Manager's token holds `pos:accounting:periods:create` (and
+ * `accounts:create`, `cost-centers:create`) — a pre-existing M28-era seed
+ * grant the 2026-08-20 cutover never audited or revoked. Live-proven: Manager
+ * POST /accounting/periods → 201 on the isolated B5.5 QA stack. FiscalPeriodsScreen
+ * must disclose this by name rather than claim a blanket "read access only"
+ * that this specific grant falsifies — and must still render NO create
+ * control despite the token technically permitting one, matching every other
+ * B5 surface's read-first posture pending an explicit owner grant.
+ */
+const fiscalPeriodsSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/closing/FiscalPeriodsScreen.tsx`);
+assert(/C-27/.test(fiscalPeriodsSource), "FiscalPeriodsScreen discloses the C-27 finding by name");
+assert(/C-27/.test(source(`${ACCOUNTING_LIB_DIR}/route-registry.ts`)), "the accounting.periods registry entry names the C-27 finding");
+assert(
+  !/AccountingReadOnlyNote actions=\{\["Creating/.test(fiscalPeriodsSource),
+  "FiscalPeriodsScreen does not claim creating a period is Owner/Accountant-only — C-27 proves Manager's own token can create one",
+);
+
+/** No interactive control anywhere in the Closing tree either — the general §1 sweep already covers this by directory inclusion, re-asserted here by name for clarity. */
+for (const banned of ["<Button", "<IconButton", "onClick=", "type=\"submit\"", "useMutation", "matchLine", "skipLine", "completeReconciliation", "resolvePostingError", "dismissPostingError"]) {
+  assert(!closingSource.includes(banned), `no interactive control or write function (${banned}) renders in the Closing tree`);
+}
+
+/** Both period.* KPI placeholders on the B5.1 dashboard card are gone — every Closing KPI now links into a real B5.5 surface. */
+for (const key of ["period.current", "period.open", "period.closeRuns"]) {
+  const binding = getAccountingKpi(key);
+  assert(binding.drillIn !== null, `KPI ${key} now links into a real B5.5 surface instead of a "not yet" note`);
+}
+assert(getAccountingKpi("period.current").drillIn === ACCOUNTING_ROUTES.fiscalPeriods, "the current-period KPI links to the Fiscal periods list");
+assert(getAccountingKpi("period.open").drillIn === ACCOUNTING_ROUTES.fiscalPeriods, "the open-periods KPI links to the Fiscal periods list");
+assert(getAccountingKpi("period.closeRuns").drillIn === ACCOUNTING_ROUTES.periodCloseRuns, "the close-runs KPI links to the Period close runs list");
+
+/** The dashboard card itself was NOT rewritten — B5.1 already built it correctly (fail-closed status, org-level footnote, unpaginated-count label); only the registry's drillIn changed. */
+const periodCardSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/cards/AccountingPeriodCard.tsx`);
+assert(
+  periodCardSource.includes("currentFiscalPeriod") && periodCardSource.includes("AccountingPeriodStatusBadge"),
+  "AccountingPeriodCard still resolves the current period by date window and renders the fail-closed status badge",
+);
+
+for (const file of CLOSING_DIR_FILES) {
+  assert(!codeOnly(file).includes("EventSource") && !codeOnly(file).includes("new WebSocket"), `${file} contains no streaming client`);
+}
+
+console.log("Manager B5.1 + B5.2 + B5.3 + B5.4 + B5.5 assertions: all checks passed.");

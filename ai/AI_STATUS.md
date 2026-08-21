@@ -31,7 +31,104 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
-- **ENTERPRISE UI TRACK B5.4 COMPLETE — Manager Accounting core (Journal entries) + Review
+- **ENTERPRISE UI TRACK B5.5 COMPLETE — Manager Accounting Closing surfaces (2026-08-21) — A:
+  B5.5 COMPLETE / B5.6 GATED.** Frontend + docs only; **no backend / schema / migration / seed /
+  permission / DTO / Postman change**. The two Closing menu rows B5.1 shipped as honest not-yet
+  placeholders — Fiscal periods, Period close runs — are now real surfaces. **The Accounting
+  menu goes from 19 live rows to 21** (of 28 total). Unlike every prior B5 phase, this one found
+  a real permission-boundary leak, not a data-shape defect.
+  🔴 **New finding: C-27** — Manager's own token holds `pos:accounting:periods:create` (and
+  `accounts:create`, `cost-centers:create`) — a pre-existing M28-era seed grant the 2026-08-20
+  permissions cutover never audited or revoked (the cutover only ADDED 15 new AP/AR/bank-rec/
+  finance read strings and never swept the older M28/M29-era grants). Live-proven: Manager
+  `POST /accounting/periods` → **201**, creating a real DRAFT period on the isolated stack.
+  `PATCH .../open`, `.../close` and `.../lock` remain genuinely 403 for Manager — only `:create`
+  leaked. Every prior B5 phase's "5/5 representative writes → 403" spot-check never happened to
+  probe `periods:create`/`accounts:create`/`cost-centers:create`, so this went undetected
+  through B5.1–B5.4. Not fixed here (a seed/permission change is out of scope for a
+  frontend-only phase) — the Fiscal periods screen discloses the gap by name
+  (`data-accounting-finding="C-27"`) and ships zero create control regardless.
+  **Fiscal periods** — list-only (`accounting.controller.ts` declares no `GET .../:id`, the same
+  "no detail route" shape B5.4 found for Posting runs), a `ManagerStatusPipeline` per row
+  rendering the real PC-07 lifecycle DRAFT→OPEN→CLOSED→LOCKED with LOCKED a genuine terminal
+  stage — unlike bank reconciliation's `DISPUTED` exit chip, there is no real side-branch a
+  fiscal period can be diverted to, so the exit-chip mechanism is reused for exactly one thing:
+  an unrecognised status value, proven live by a mocked malformed-response Playwright spec, not
+  merely asserted. **Period close runs** — list-only, showing the fiscal period, closed-by actor
+  (resolved to a real name via the service's own `include`), and an income/expense/retained-
+  earnings money tie-out — retained earnings correctly rendering **negative** (−UGX 3,297,400 on
+  the live fixture) when expense exceeds income, never silently flipped or hidden.
+  🟡 **B5.5-F1** (new finding, this pass) — `PeriodCloseRunStatus.FAILED` and `.PENDING` are
+  **unreachable through the live API**: `BankRecService.closeFiscalPeriod()`'s own transaction
+  always creates the resulting run with `status: 'COMPLETED'`, and a refused close throws a
+  `ConflictException`/`NotFoundException` **before** any `PeriodCloseRun` row is created at all —
+  proven live by closing an already-CLOSED period (409, and a re-read confirmed zero new rows).
+  The status badge still renders all three enum members and fails closed on anything else, but
+  the screen's footnote discloses that FAILED/PENDING have never actually been produced by this
+  backend.
+  Both routes confirmed **organisation-level, live, in the browser** (not merely via curl):
+  switching the active branch from Tapas Downtown to Rooftop Bar leaves both the 7-row Fiscal
+  periods list and the 1-row Period close runs list **byte-identical**. Both are PC-06 bare
+  arrays with no server total — labelled "Showing all N", never a fabricated pager.
+  **PC-07 re-verified live, precisely**: `PATCH /accounting/periods/:id/lock` on a CLOSED period
+  → 200 `LOCKED`; a subsequent `PATCH .../unlock` → **404** — the route genuinely does not exist,
+  confirmed on the isolated stack rather than only documented as absent.
+  The B5.1 dashboard's **Fiscal period card** — all three figures inert since B5.1
+  (`noDrillInReason: NOT_YET("B5.5", …)`) — now links for real: `period.current`, `period.open`
+  and `period.closeRuns` all gained a real `drillIn` in `ACCOUNTING_KPI_BINDINGS`. The card's own
+  rendering logic (fail-closed status resolution by date window, the org-level footnote, the
+  unpaginated-count label) was **not** rewritten — B5.1 already built it correctly; only the
+  registry's `drillIn` changed, matching the pattern B5.4 used for the General ledger card.
+  **Fixtures created live via the API on the isolated stack** (mixing the Owner token for the
+  intended actor and, deliberately, the **Manager token** for the one C-27 verification call),
+  on Tapas Downtown (which already carried 5 fiscal periods — 3 OPEN, 2 CLOSED — and 0 close
+  runs from `db:demo:import`): 1 fresh DRAFT period (`FY2027-01`, Owner token); 1 previously-OPEN
+  period (`FY2026-06`) closed live via `PATCH .../close`, producing the **one real
+  `PeriodCloseRun`** (COMPLETED, incomeTotal UGX 3,164,200, expenseTotal UGX 6,461,600,
+  retainedEarningsAmount −UGX 3,297,400, `branchId: null`); a second close attempt on the same
+  now-CLOSED period → 409 with zero new rows (the live B5.5-F1 proof); 1 previously-CLOSED period
+  (`FY2026-04`) locked live via `PATCH .../lock`, confirmed terminal; 1 further DRAFT period
+  (`"x"`) created via the **Manager token itself**, the C-27 proof, followed by Manager
+  `PATCH .../open`/`.../close`/`.../lock` on it all returning 403 (confirming the leak is scoped
+  to `:create` alone). Final Tapas Downtown counts: **7** fiscal periods — DRAFT ×2, OPEN ×2
+  (`FY2026-Q3`, `FY2026-07`), CLOSED ×2 (`FY2026-05`, `FY2026-06`), LOCKED ×1 (`FY2026-04`) — all
+  four `FiscalPeriodStatus` members live in one organisation; **1** period close run
+  (COMPLETED). Rooftop Bar confirmed to render the byte-identical 7-period and 1-close-run lists,
+  live in the browser via the branch switcher and separately via `curl` under a different
+  `X-Branch-Id` header.
+  **Validated on an isolated local Docker stack** — Postgres `:55470` (`nimbus_b55_qa`), API
+  `:4081`, web `:3170`; **shared Neon was never connected to or written** (the isolated API held
+  exactly one established TCP connection, to its own local Postgres, verified via `lsof`);
+  `apps/api/.env` was never edited on disk (the isolated database target was supplied by an
+  explicitly constructed child-process environment — `env -u DATABASE_URL -u
+  DIRECT_DATABASE_URL DATABASE_URL=… node dist/main.js` — SHA-256 identical before and after);
+  `packages/db/.env` was temporarily swapped for the three Prisma CLI steps only (`migrate
+  deploy`/`db:seed` ×2/`db:demo:import`), restored immediately after, SHA-256 verified
+  byte-identical to the baseline. Web typecheck + lint (no `--fix`) + production build all pass
+  (2 new pages, `/manager/accounting/closing/fiscal-periods` 2.02 kB,
+  `/manager/accounting/closing/period-close-runs` 2.16 kB); **17/17** assertion scripts
+  (`manager-b5-assertions.ts` extended with a new §15 of B5.5-specific checks — no fabricated
+  pager on either bare-array route, both routes re-confirmed organisation scope, the fiscal-
+  period pipeline modelled as exactly four linear stages with no side-branch, fail-closed status
+  helpers exercised against concrete vectors including unrecognised values, the C-27 and
+  B5.5-F1 disclosures pinned by name in both the registry and the screens, no interactive
+  control or write-function name anywhere in the Closing tree); `e2e/manager-accounting/
+  closing.spec.ts` (new, 19 specs incl. two mocked-malformed-response fail-closed tests and two
+  mocked-500 tests) executed across all 4 viewport projects — **76/76 passed, 0 failed**; the
+  updated `e2e/manager-accounting/menu-and-read-only.spec.ts` (19→21 row count, DOM order with
+  Fiscal periods/Period close runs inserted after Journal entries, inert-row-count 9→7) — **29
+  passed / 3 skipped** across 4 viewports (the skips are the pre-existing "desktop dropdown only
+  at `xl`" reason every prior B5 menu spec already carries, not a B5.5 gap); live manual QA
+  toured both new pages plus the dashboard's Fiscal period card at 1440×900 and a
+  1280×680-equivalent viewport, on both Tapas Downtown (populated) and a live branch switch to
+  Rooftop Bar; zero console errors on every page/viewport; `/api/health` → ok throughout;
+  `git diff --check` clean. See `ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md` for the full
+  validation table and the C-27/B5.5-F1 discovery narratives. **B5.6 (the remainder of Reporting
+  + Configuration) is NOT started — do not begin it without explicit owner authorisation. A
+  future backend batch will need to address C-25, C-26, B5.4-D1, C-27 and B5.5-F1 before B6
+  (Settings) can start.**
+
+- **Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.4 COMPLETE — Manager Accounting core (Journal entries) + Review
   surfaces (2026-08-21) — A: B5.4 COMPLETE / B5.5…B5.6 GATED.** Frontend + docs only; **no
   backend / schema / migration / seed / permission / DTO / Postman change**. The four
   Accounting/Review menu rows B5.1 shipped as honest not-yet placeholders — Journal entries,

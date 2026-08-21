@@ -46,6 +46,13 @@ export const ACCOUNTING_ROUTES = {
   postingRuns: "/manager/accounting/review/posting-runs",
   postingErrors: "/manager/accounting/review/posting-errors",
   auditTrail: "/manager/accounting/review/audit-trail",
+
+  // Closing — Track B5.5. Both are list-only: `accounting.controller.ts` /
+  // `bank-rec.controller.ts` declare no `GET .../:id` for either entity, the
+  // same shape B5.4 found for Posting runs, so there is no detail route to
+  // promise here.
+  fiscalPeriods: "/manager/accounting/closing/fiscal-periods",
+  periodCloseRuns: "/manager/accounting/closing/period-close-runs",
 } as const;
 
 export const ACCOUNTING_LANDING = ACCOUNTING_ROUTES.dashboard;

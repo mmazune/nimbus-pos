@@ -4,6 +4,54 @@ This matrix documents the backend API endpoints exposed to the Manager role (`ro
 
 ---
 
+## 2026-08-21 — TRACK B5.5: Closing (Fiscal periods + Period close runs) rows now CONSUMED by surfaces
+
+Track B5.5 (`ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md`) turns the two rows
+`lib/accounting/menu.ts` tagged "B5.5" since B5.1 into real surfaces — and only those two.
+
+| Route | Permission | Scope | Envelope | Used for |
+| --- | --- | --- | --- | --- |
+| `GET /api/accounting/periods` | `pos:accounting:periods:read` | organisation (batch 2: `FiscalPeriod` has no `branch_id` column at all) | bare array, no server total (PC-06) | Fiscal periods list (no detail route exists — `accounting.controller.ts` declares no `GET periods/:id`) |
+| `GET /api/accounting/period-close-runs?fiscalPeriodId=` | `pos:accounting:period-close-runs:read` | organisation (batch 2: `PeriodCloseRun.branchId` is nullable and the close path never stamps it) | bare array, no server total (PC-06); `?fiscalPeriodId=` is a REAL server-side filter, unlike the client-side status chips elsewhere in this module | Period close runs list (no detail route exists) |
+
+🔴 **New finding, this pass: C-27 — Manager's token holds `pos:accounting:periods:create`
+(and `accounts:create`, `cost-centers:create`) — a pre-existing M28-era grant the 2026-08-20
+permissions cutover never revoked.** `packages/db/prisma/seed.ts` (~line 1105) seeds Manager with
+`// M28: Accounting Foundation (Manager: read + create, no tax-config:update)`, predating the
+2026-08-20 cutover (`ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md`), which only ADDED 15 new
+AP/AR/bank-rec/finance read strings and never audited the older M28/M29-era grants. Live-proven:
+Manager `POST /accounting/periods` → **201** on the isolated B5.5 QA stack (created a real DRAFT
+period). `PATCH .../open`, `.../close` and `.../lock` are still genuinely 403 for Manager — only
+`:create` leaked. Every prior B5 phase's "5/5 representative writes → 403" spot-check never
+happened to probe `periods:create`/`accounts:create`/`cost-centers:create`, so this went
+undetected through B5.1–B5.4. **Not fixed here** (a permission/seed change is out of scope for a
+frontend-only phase) — the Fiscal periods screen ships zero write affordance regardless, and
+discloses the gap by name (`data-accounting-finding="C-27"`).
+
+🟡 **B5.5-F1 (new finding, this pass): `PeriodCloseRunStatus.FAILED` and `.PENDING` are
+unreachable through the live API.** `BankRecService.closeFiscalPeriod()`'s own transaction always
+creates the run with `status: 'COMPLETED'` — no branch of that method persists `FAILED`, and no
+code anywhere writes `PENDING` (the Prisma `@default(PENDING)` is a schema default this create
+call always overrides). A close attempt that cannot proceed throws a `ConflictException` /
+`NotFoundException` BEFORE any `PeriodCloseRun` row exists — proven live: closing an already-CLOSED
+period 409'd with zero new rows created. The status badge still renders all three enum members and
+fails closed on anything unrecognised, but the screen discloses that FAILED/PENDING have never
+actually been produced.
+
+**PC-07 re-verified live**: `DRAFT → OPEN → CLOSED → LOCKED`, LOCKED terminal — `PATCH
+.../periods/:id/unlock` → **404** (route does not exist, confirmed on the isolated stack).
+
+**Live fixture note**: created live via the Owner token (Manager holds no accounting write beyond
+the C-27 leak) on Tapas Downtown: 1 DRAFT period created fresh (plus a second, created via the
+Manager token itself as C-27 verification), 1 period closed live via `PATCH .../close` (producing
+the one real `PeriodCloseRun`, COMPLETED, retainedEarningsAmount −UGX 3,297,400 = incomeTotal UGX
+3,164,200 − expenseTotal UGX 6,461,600), 1 period locked live via `PATCH .../lock`. Final counts: 7
+fiscal periods (DRAFT ×2, OPEN ×2, CLOSED ×2, LOCKED ×1), 1 period close run (COMPLETED). Both
+lists confirmed byte-identical under Tapas Downtown and Rooftop Bar branch headers, live in the
+browser (not just via curl).
+
+---
+
 ## 2026-08-21 — TRACK B5.4: Accounting core (Journals) + Review rows now CONSUMED by surfaces
 
 Track B5.4 (`ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md`) turns the four rows
