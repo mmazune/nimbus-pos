@@ -6,3 +6,6 @@ export * from './list-bills-query.dto';
 export * from './create-recurring-profile.dto';
 export * from './list-recurring-profiles-query.dto';
 export * from './list-reminders-query.dto';
+export * from './list-suppliers-query.dto';
+export * from './list-ap-payments-query.dto';
+export * from './list-ap-credit-notes-query.dto';

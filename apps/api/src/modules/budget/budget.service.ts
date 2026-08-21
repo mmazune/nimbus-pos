@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { CreateBudgetDto, ListBudgetsQueryDto, UpdateActualsDto } from './dto';
+import { ProcurementSuggestionStatus, ProcurementUrgency } from '@prisma/client';
 
 interface BranchContext {
   organizationId: string;
@@ -256,7 +257,11 @@ export class BudgetService {
 
   // ── Procurement Suggestions (review only — generation is in ForecastService) ──
 
-  async listProcurementSuggestions(ctx: BranchContext, urgency?: string, status?: string) {
+  async listProcurementSuggestions(
+    ctx: BranchContext,
+    urgency?: ProcurementUrgency,
+    status?: ProcurementSuggestionStatus,
+  ) {
     const where: Record<string, unknown> = {
       orgId: ctx.organizationId,
       branchId: ctx.branchId,

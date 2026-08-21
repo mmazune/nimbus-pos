@@ -524,6 +524,109 @@ describe('AccountsReceivableService', () => {
       expect(result.accounts).toHaveLength(0);
       expect(result.summary.totalOutstanding).toBe('0');
     });
+
+    // B5-F1 (backend gap batch 3): `summary.*` used to be reduced from the
+    // PAGINATED `openInvoices` fetch, so a bounded read understated the
+    // branch total. Live repro cited in
+    // ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md: on Tapas
+    // Downtown, `?take=1` returned `summary.totalOutstanding: 599,800`
+    // against a true branch figure of `9,106,400`. This test builds a
+    // five-invoice dataset that sums to the identical 9,106,400 and proves
+    // `summary` no longer depends on `take` while `accounts`/`total` still do.
+    it('B5-F1: summary is page-size independent — identical at take=1, take=3, and unpaginated', async () => {
+      const allInvoices = [
+        {
+          ...mockInvoiceIssued,
+          id: 'inv-a',
+          customerAccountId: 'acct-1',
+          outstandingBalance: new Prisma.Decimal('5000000'),
+          dueDate: new Date('2025-03-01'),
+          customerAccount: { id: 'acct-1', name: 'A', code: 'A', type: 'CORPORATE' },
+        },
+        {
+          ...mockInvoiceIssued,
+          id: 'inv-b',
+          customerAccountId: 'acct-2',
+          outstandingBalance: new Prisma.Decimal('2000000'),
+          dueDate: new Date('2025-02-01'),
+          customerAccount: { id: 'acct-2', name: 'B', code: 'B', type: 'CORPORATE' },
+        },
+        {
+          ...mockInvoiceIssued,
+          id: 'inv-c',
+          customerAccountId: 'acct-3',
+          outstandingBalance: new Prisma.Decimal('1500000'),
+          dueDate: new Date('2025-01-01'),
+          customerAccount: { id: 'acct-3', name: 'C', code: 'C', type: 'CORPORATE' },
+        },
+        {
+          ...mockInvoiceIssued,
+          id: 'inv-d',
+          customerAccountId: 'acct-4',
+          outstandingBalance: new Prisma.Decimal('500000'),
+          dueDate: new Date('2024-12-01'),
+          customerAccount: { id: 'acct-4', name: 'D', code: 'D', type: 'CORPORATE' },
+        },
+        {
+          ...mockInvoiceIssued,
+          id: 'inv-e',
+          customerAccountId: 'acct-5',
+          outstandingBalance: new Prisma.Decimal('106400'),
+          dueDate: new Date('2024-11-01'),
+          customerAccount: { id: 'acct-5', name: 'E', code: 'E', type: 'CORPORATE' },
+        },
+      ];
+      const trueTotal = '9106400'; // matches the live branch figure cited in B5-F1
+
+      prisma.invoice.findMany.mockImplementation((args: any) => {
+        // The full-set summary query selects minimal columns only (no
+        // `include`); the paginated display query includes `customerAccount`.
+        if (args?.select) {
+          return Promise.resolve(
+            allInvoices.map((inv) => ({
+              dueDate: inv.dueDate,
+              outstandingBalance: inv.outstandingBalance,
+            })),
+          );
+        }
+        const skip = args?.skip ?? 0;
+        const take = args?.take ?? allInvoices.length;
+        return Promise.resolve(allInvoices.slice(skip, skip + take));
+      });
+      prisma.invoice.count.mockResolvedValue(allInvoices.length);
+
+      const take1 = await service.getAgingSummary({
+        orgId: ORG,
+        branchId: BRANCH,
+        query: { asOf: '2025-04-01', take: 1 } as any,
+      });
+      const take3 = await service.getAgingSummary({
+        orgId: ORG,
+        branchId: BRANCH,
+        query: { asOf: '2025-04-01', take: 3 } as any,
+      });
+      const unpaginated = await service.getAgingSummary({
+        orgId: ORG,
+        branchId: BRANCH,
+        query: { asOf: '2025-04-01' } as any,
+      });
+
+      // The bug: summary used to shrink with `take`. The fix: it is identical
+      // regardless of page size.
+      expect(take1.summary.totalOutstanding).toBe(trueTotal);
+      expect(take3.summary.totalOutstanding).toBe(trueTotal);
+      expect(unpaginated.summary.totalOutstanding).toBe(trueTotal);
+
+      // `total` (the count) is also page-size independent, as before.
+      expect(take1.total).toBe(5);
+      expect(take3.total).toBe(5);
+
+      // The PAGE fed to `accounts` still varies with `take` — only the grand
+      // totals were the bug.
+      expect(take1.accounts).toHaveLength(1);
+      expect(take3.accounts).toHaveLength(3);
+      expect(unpaginated.accounts).toHaveLength(5);
+    });
   });
 
   // ── createArCreditNote ──
@@ -638,9 +741,9 @@ describe('AccountsReceivableService', () => {
     });
 
     it('is fail-closed when no branch is resolved', async () => {
-      await expect(
-        service.listArCreditNotes({ orgId: ORG } as any),
-      ).rejects.toThrow(/without a branch id/);
+      await expect(service.listArCreditNotes({ orgId: ORG } as any)).rejects.toThrow(
+        /without a branch id/,
+      );
     });
   });
 });

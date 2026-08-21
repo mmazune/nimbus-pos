@@ -498,7 +498,11 @@ assert(toAccountingCount(undefined) === null && formatAccountingCount(null) === 
 assert(formatAccountingCount(1198) === "1,198", "counts are grouped");
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 8. B5-F1 — THE AR AGING PARTIAL-PAGE GUARD ACTUALLY FAILS CLOSED
+// 8. B5-F1 — FIXED (backend gap batch 3, 2026-08-21): the AR aging summary is
+//    now correct regardless of page size, so `isArAgingComplete` is a
+//    well-formed-response guard only, not a page-completeness threshold.
+//    Two assertions below are INVERTED, not deleted, per house style — each
+//    names the date and the reason the contract changed.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const completePage = {
@@ -514,18 +518,25 @@ const completePage = {
 assert(isArAgingComplete(completePage), "a page carrying every matching invoice is complete");
 
 assert(
-  !isArAgingComplete({ ...completePage, total: 9 }),
-  "a page carrying fewer invoices than the server counted is INCOMPLETE — the B5-F1 defect",
+  isArAgingComplete({ ...completePage, total: 9 }),
+  "INVERTED 2026-08-21 (batch 3): the backend now aggregates `summary` from a separate " +
+    "unpaginated query, so a page reporting fewer invoices than `total` no longer means the " +
+    "MONEY is incomplete — only the display breakdown is. The B5-F1 defect this used to pin is fixed.",
 );
-assert(!isArAgingComplete({ ...completePage, skip: 1 }), "a page past the first is never treated as complete");
+assert(
+  isArAgingComplete({ ...completePage, skip: 1 }),
+  "INVERTED 2026-08-21 (batch 3): `skip` no longer affects `summary` correctness, so a page " +
+    "past the first is a normal paginated read, not an incomplete one.",
+);
 assert(!isArAgingComplete({ ...completePage, accounts: undefined }), "a missing accounts array fails closed");
 assert(!isArAgingComplete({ ...completePage, total: undefined }), "a missing total fails closed");
 assert(!isArAgingComplete(undefined), "no response at all fails closed");
 assert(
   accountingComponentSource.includes('data-accounting-partial="ar-aging"'),
-  "the receivable card renders a dedicated withheld state rather than an understated figure",
+  "the receivable card KEEPS the withheld-state markup as a malformed-response fallback, even " +
+    "though B5-F1 means it can no longer be reached by a large, well-formed branch",
 );
-assert(AR_AGING_PAGE_SIZE >= 100, "the aging read requests a page large enough to cover a realistic branch");
+assert(AR_AGING_PAGE_SIZE >= 100, "the aging read requests a page large enough for a realistic display breakdown");
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 9. MODEL BEHAVIOUR — BUCKETS, PERIODS, RECONCILIATIONS

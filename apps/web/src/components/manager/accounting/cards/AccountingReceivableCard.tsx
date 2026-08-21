@@ -20,16 +20,19 @@ import type { AccountingDashboardSnapshot } from "@/lib/manager/accounting-conte
  * (screenshots 02/16): title, a money headline, count rows, and a bucketed bar
  * mark. Odoo's `New` button is deliberately absent — see the module docblock.
  *
- * 🔴 **B5-F1, and the reason this card has a state the others do not.**
- * `GET /ar/aging` aggregates `summary` over the RETURNED PAGE, not over the
- * whole `where` clause. Measured live on 2026-08-21: `?take=1` reports
- * `total: 5` beside `summary.totalOutstanding: 599,800`, where the true branch
- * figure is `9,106,400`. So this card asks for a bounded page of
- * {@link AR_AGING_PAGE_SIZE}, then checks whether that page carried every
- * matching invoice. If it did not, **no money is shown at all** — an
- * understated receivable balance is worse than an admitted gap, and B4-D1's
- * lesson was precisely that a plausible wrong number survives review while a
- * missing one does not.
+ * ✅ **B5-F1 FIXED (backend gap batch 3, 2026-08-21).** `GET /ar/aging` used to
+ * aggregate `summary` over the RETURNED PAGE, not over the whole `where`
+ * clause. Measured live on 2026-08-21: `?take=1` reported `total: 5` beside
+ * `summary.totalOutstanding: 599,800`, where the true branch figure was
+ * `9,106,400`. The backend now computes `summary` from a separate unpaginated
+ * query, so it is a true branch total regardless of `take` — proven
+ * page-size-independent at `take=1`/`take=3`/unpaginated on an identical
+ * 9,106,400 dataset. This card still asks for a bounded page of
+ * {@link AR_AGING_PAGE_SIZE} (that bound still governs the `accounts[]`
+ * per-customer display breakdown, and paginating a display list is normal),
+ * but no longer withholds the headline money on a large branch — there is
+ * nothing left for the page to be incomplete about as far as the balance is
+ * concerned. `isArAgingComplete` is kept only as a malformed-response guard.
  *
  * Its AP counterpart needs no such guard: that endpoint is unpaged.
  */

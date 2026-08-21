@@ -4,7 +4,38 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**ENTERPRISE UI TRACK B5.1 COMPLETE — Manager ACCOUNTING module shell, menu tree and dashboard
+**BACKEND GAP BATCH 3 COMPLETE — accounting read-integrity fixes B5-F1…F4 (2026-08-21) — A: COMPLETE
+/ B5.2 UNBLOCKED ON READ INTEGRITY / NOT STARTED / SHARED-NEON DEPLOY STILL GATED.** Track B5.1
+surfaced four read-integrity findings once the dashboard actually consumed these routes; this batch
+(Track C **C-24**, owner-authorized) fixes all four at the source. **No Prisma schema/migration/
+seed/permission/DTO-shape change.** 🔴 **B5-F1 FIXED**: `ar/aging.summary` used to aggregate only
+the returned PAGE (a bounded `?take=1` read understated a branch's receivable balance, e.g.
+599,800 vs a true 9,106,400); now aggregates a separate unpaginated query, proven page-size
+independent both in a unit test and live — 120 invoices were created on the isolated stack (125
+total, true balance UGX 10,306,400) and the endpoint returns that identical figure at `take=1/3/100`
+where the pre-fix formula would have shown just UGX 10,000. The Manager dashboard Receivable card
+was live-screenshotted rendering the correct 10,306,400. 🔴 **B5-F2 FIXED**: `ar/invoices?status=
+<invalid>` 500'd instead of 400ing; `@IsEnum` validation added there and to six sibling routes
+(`ap/payments`, `ap/credit-notes`, `ar/credit-notes`, `ap/suppliers.counterpartyType`,
+`posting-errors`, `finance/procurement-suggestions.{status,urgency}`). ⚠️ **B5-F3 FIXED**: no route
+had a real server-side page-size maximum (B0's own combined `take`+`pageSize`+`limit` probe was the
+measurement bug); a shared `MAX_ACCOUNTING_LIST_PAGE_SIZE=100` + `clampTake()` now bounds all
+fourteen paginated accounting/finance list routes. ⚠️ **B5-F4 FIXED**: `GET /api/audit/timeline` now
+honours `X-Branch-Id` by default. **Frontend follow-through**: `isArAgingComplete()` simplified from
+a page-completeness gate to a well-formed-response guard (the backend fix made the old gate start
+incorrectly withholding correct money on any branch over 100 open invoices); two assertions
+inverted, not deleted, in `manager-b5-assertions.ts` and one in the Playwright suite. **One new
+finding recorded, not fixed: BGB3-L3** (`listJournals`/`listPostingRuns` still strict-equal a
+nullable `branchId`, the PC-03 class). Validated on an isolated local Docker stack; `.env` SHA-256
+identical before/after. Touched/new unit suites 237/237; full API unit 1165/1161/4 vs a `6e284e9`
+baseline of 1104/1100/4 — identical pre-existing failures, zero new; AP/AR/branch-scoping e2e
+122/122; full API e2e 1043 tests/922 passed/121 failed **both** before and after with a
+byte-identical failing-test-name set; newman M32/M34/M35/M36/M37/BG2 all 0 failed, M33 still
+pre-existing-broken (C-23); web typecheck+lint+build pass; 17/17 assertion scripts;
+`e2e/manager-accounting` 25/25, `e2e/manager-dashboard` regression 21/21. **B5.2 is unblocked on
+read integrity but remains NOT started.** See `ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md`.
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.1 COMPLETE — Manager ACCOUNTING module shell, menu tree and dashboard
 (2026-08-21) — A: B5.1 COMPLETE / B5.2…B5.6 GATED.** Frontend + docs only; **no backend / schema /
 migration / seed / permission / DTO / Postman change**. Accounting becomes the **seventh Manager
 module** (**OD-3 approved**), inserted before Settings, shipped as one more `MANAGER_MENU_GROUPS`

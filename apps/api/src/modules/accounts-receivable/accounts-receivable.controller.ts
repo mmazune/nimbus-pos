@@ -8,6 +8,8 @@ import {
   CreateArCreditNoteDto,
   ListAccountsQueryDto,
   AgingQueryDto,
+  ListInvoicesQueryDto,
+  ListArCreditNotesQueryDto,
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
@@ -24,7 +26,7 @@ export class AccountsReceivableController {
   constructor(
     private readonly arService: AccountsReceivableService,
     private readonly bg3: Bg3ReliabilityService,
-  ) { }
+  ) {}
 
   // ── Customer Accounts ──
 
@@ -72,22 +74,16 @@ export class AccountsReceivableController {
 
   @Get('invoices')
   @Permissions('accounting:ar:invoice:read')
-  async listInvoices(
-    @Request() req: any,
-    @Query('customerAccountId') customerAccountId?: string,
-    @Query('status') status?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  async listInvoices(@Request() req: any, @Query() query: ListInvoicesQueryDto) {
     const orgId = req.branchContext.organizationId;
     const branchId = req.branchContext.branchId;
     return this.arService.listInvoices({
       orgId,
       branchId,
-      customerAccountId,
-      status,
-      skip: skip ? Number(skip) : 0,
-      take: take ? Number(take) : 50,
+      customerAccountId: query.customerAccountId,
+      status: query.status,
+      skip: query.skip ?? 0,
+      take: query.take ?? 50,
     });
   }
 
@@ -153,22 +149,16 @@ export class AccountsReceivableController {
 
   @Get('credit-notes')
   @Permissions('accounting:ar:credit-note:read')
-  async listArCreditNotes(
-    @Request() req: any,
-    @Query('customerAccountId') customerAccountId?: string,
-    @Query('status') status?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  async listArCreditNotes(@Request() req: any, @Query() query: ListArCreditNotesQueryDto) {
     const orgId = req.branchContext.organizationId;
     const branchId = req.branchContext.branchId;
     return this.arService.listArCreditNotes({
       orgId,
       branchId,
-      customerAccountId,
-      status,
-      skip: skip ? Number(skip) : 0,
-      take: take ? Number(take) : 50,
+      customerAccountId: query.customerAccountId,
+      status: query.status,
+      skip: query.skip ?? 0,
+      take: query.take ?? 50,
     });
   }
 }

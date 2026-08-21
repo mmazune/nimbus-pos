@@ -7,8 +7,9 @@ import {
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { branchOrOrgScope } from '../../common/scope';
+import { clampTake } from '../../common/pagination';
 import { LedgerService } from '../ledger/ledger.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, VendorPaymentStatus, CreditNoteStatus } from '@prisma/client';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { CreateVendorBillDto } from './dto/create-vendor-bill.dto';
 import { CreateApPaymentDto } from './dto/create-ap-payment.dto';
@@ -170,7 +171,8 @@ export class AccountsPayableService {
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, activeOnly, counterpartyType, skip = 0, take = 50 } = params;
+    const { orgId, branchId, activeOnly, counterpartyType, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
     // PC-03: was `{ orgId }` alone, which returned every branch's suppliers
     // regardless of X-Branch-Id (41 rows spanning four branches, measured live
     // in B0 §6). Supplier.branchId is nullable, so org-level suppliers stay
@@ -228,7 +230,9 @@ export class AccountsPayableService {
     // Serialised (not Promise.all) to keep Prisma's connection pool
     // healthy on Neon's free-tier 25-connection limit when this endpoint
     // is hit concurrently from supplier list pages.
-    const billCount = await this.prisma.vendorBill.count({ where: { orgId, supplierId, ...scope } });
+    const billCount = await this.prisma.vendorBill.count({
+      where: { orgId, supplierId, ...scope },
+    });
     const openBillCount = await this.prisma.vendorBill.count({
       where: {
         orgId,
@@ -336,7 +340,12 @@ export class AccountsPayableService {
     // bill cannot be raised against another branch's supplier. Org-level
     // (NULL-branch) suppliers remain billable from anywhere.
     const supplier = await this.prisma.supplier.findFirst({
-      where: { id: dto.supplierId, orgId, isActive: true, ...branchOrOrgScope(branchId, 'supplier') },
+      where: {
+        id: dto.supplierId,
+        orgId,
+        isActive: true,
+        ...branchOrOrgScope(branchId, 'supplier'),
+      },
     });
     if (!supplier) {
       throw new NotFoundException('Supplier not found or inactive');
@@ -433,14 +442,17 @@ export class AccountsPayableService {
       openOnly,
       recurring,
       skip = 0,
-      take = 50,
     } = query;
+    const take = clampTake(query.take, 50);
 
     // PC-03: was `if (branchId) where.branchId = branchId` — strict equality on
     // a NULLABLE column, which hid every unattributed org-level bill from every
     // branch at once. The shared helper keeps branch isolation and stops
     // orphaning those rows.
-    const where: Prisma.VendorBillWhereInput = { orgId, ...branchOrOrgScope(branchId, 'vendor bill') };
+    const where: Prisma.VendorBillWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'vendor bill'),
+    };
     if (supplierId) where.supplierId = supplierId;
     if (status) where.status = status as any;
     if (sourceType) where.sourceType = sourceType as any;
@@ -844,11 +856,12 @@ export class AccountsPayableService {
     orgId: string;
     branchId?: string;
     supplierId?: string;
-    status?: string;
+    status?: VendorPaymentStatus;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, supplierId, status, skip = 0, take = 50 } = params;
+    const { orgId, branchId, supplierId, status, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
     // PC-03 (extension): `orgId` alone — payments made in one branch were
     // listed in all of them.
     const where: Prisma.VendorPaymentWhereInput = {
@@ -856,7 +869,7 @@ export class AccountsPayableService {
       ...branchOrOrgScope(branchId, 'AP payment'),
     };
     if (supplierId) where.supplierId = supplierId;
-    if (status) where.status = status as any;
+    if (status) where.status = status;
 
     const [data, total] = await Promise.all([
       this.prisma.vendorPayment.findMany({
@@ -945,11 +958,12 @@ export class AccountsPayableService {
     orgId: string;
     branchId?: string;
     supplierId?: string;
-    status?: string;
+    status?: CreditNoteStatus;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, supplierId, status, skip = 0, take = 50 } = params;
+    const { orgId, branchId, supplierId, status, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
     // PC-03: proven live — 1 row returned under X-Branch-Id=ROOFTOP, and it
     // belonged to TAPAS.
     const where: Prisma.CreditNoteWhereInput = {
@@ -957,7 +971,7 @@ export class AccountsPayableService {
       ...branchOrOrgScope(branchId, 'AP credit note'),
     };
     if (supplierId) where.supplierId = supplierId;
-    if (status) where.status = status as any;
+    if (status) where.status = status;
 
     const [data, total] = await Promise.all([
       this.prisma.creditNote.findMany({
@@ -1074,7 +1088,12 @@ export class AccountsPayableService {
     const { orgId, branchId, userId, dto } = params;
 
     const supplier = await this.prisma.supplier.findFirst({
-      where: { id: dto.supplierId, orgId, isActive: true, ...branchOrOrgScope(branchId, 'supplier') },
+      where: {
+        id: dto.supplierId,
+        orgId,
+        isActive: true,
+        ...branchOrOrgScope(branchId, 'supplier'),
+      },
     });
     if (!supplier) {
       throw new NotFoundException('Supplier not found or inactive');
@@ -1125,7 +1144,8 @@ export class AccountsPayableService {
     query: ListRecurringProfilesQueryDto;
   }) {
     const { orgId, branchId, query } = params;
-    const { supplierId, cadence, isActive, skip = 0, take = 50 } = query;
+    const { supplierId, cadence, isActive, skip = 0 } = query;
+    const take = clampTake(query.take, 50);
 
     // PC-03 (extension): `orgId` alone.
     const where: Prisma.RecurringBillProfileWhereInput = {
@@ -1458,7 +1478,8 @@ export class AccountsPayableService {
 
   async listReminders(params: { orgId: string; branchId?: string; query: ListRemindersQueryDto }) {
     const { orgId, branchId, query } = params;
-    const { supplierId, status, dueBefore, skip = 0, take = 50 } = query;
+    const { supplierId, status, dueBefore, skip = 0 } = query;
+    const take = clampTake(query.take, 50);
 
     const where: Prisma.PayableReminderWhereInput = {
       orgId,

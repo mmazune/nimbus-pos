@@ -139,30 +139,28 @@ export function overdueTotal(buckets: readonly AccountingAgingBucket[]): number 
 export const AR_AGING_PAGE_SIZE = 100;
 
 /**
- * 🔴 B5-F1. `GET /ar/aging` computes `summary` over the RETURNED PAGE, not over
- * the whole `where` clause. Measured live on 2026-08-21: `?take=1` reported
- * `total: 5` alongside `summary.totalOutstanding: 599,800`, where the true
- * branch figure is `9,106,400`. B0 never saw it because its probe used the
- * default page size on a five-invoice dataset.
+ * ✅ B5-F1 FIXED (backend gap batch 3, 2026-08-21). `GET /ar/aging` used to
+ * compute `summary` over the RETURNED PAGE, not over the whole `where` clause
+ * — live on 2026-08-21, `?take=1` reported `total: 5` alongside
+ * `summary.totalOutstanding: 599,800`, where the true branch figure was
+ * `9,106,400`. The backend now reduces `summary` from a SEPARATE, unpaginated
+ * query over the identical `where` (`accounts-receivable.service.ts`,
+ * `getAgingSummary`), so `summary` is correct regardless of `skip`/`take` —
+ * proven by a unit test that asserts identical totals at `take=1`, `take=3`
+ * and unpaginated. `accounts[]` (the per-customer display breakdown) is still
+ * genuinely page-limited; only the grand `summary` totals were ever wrong.
  *
- * `total` counts INVOICES while `accounts[]` groups them, so the only sound
- * completeness test is: did the page carry every matching invoice?
- *
- * Returns `false` when the answer is "no" or "cannot tell", so the caller
- * withholds the headline rather than printing an understatement.
+ * This function is kept only as a well-formed-response guard (a malformed or
+ * missing response still withholds the headline) — it no longer encodes a
+ * page-completeness requirement, because there is nothing left for the page
+ * to be incomplete *about* as far as the money is concerned.
  */
 export function isArAgingComplete(response: ArAgingResponse | undefined): boolean {
   if (!response) return false;
-  const total = toAccountingCount(response.total);
-  if (total === null) return false;
+  if (toAccountingCount(response.total) === null) return false;
+  if (!response.summary) return false;
   if (!Array.isArray(response.accounts)) return false;
-
-  const skip = toAccountingCount(response.skip) ?? 0;
-  const pagedInvoices = response.accounts.reduce(
-    (sum, account) => sum + (Array.isArray(account.invoices) ? account.invoices.length : 0),
-    0,
-  );
-  return skip === 0 && pagedInvoices >= total;
+  return true;
 }
 
 // ── Fiscal periods (PC-07: four states, LOCKED terminal, no unlock) ──────────

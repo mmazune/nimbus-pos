@@ -7,8 +7,9 @@
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { branchOrOrgScope } from '../../common/scope';
+import { clampTake } from '../../common/pagination';
 import { LedgerService } from '../ledger/ledger.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, InvoiceStatus, ArCreditNoteStatus } from '@prisma/client';
 import { CreateCustomerAccountDto } from './dto/create-customer-account.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
@@ -180,7 +181,8 @@ export class AccountsReceivableService {
     query: ListAccountsQueryDto;
   }) {
     const { orgId, branchId, query } = params;
-    const { status, type, branchId: branchIdFilter, skip = '0', take = '50' } = query;
+    const { status, type, branchId: branchIdFilter, skip = 0 } = query;
+    const take = clampTake(query.take, 50);
 
     // PC-03 (extension): this honoured only the OPTIONAL `?branchId=` query
     // param and ignored `X-Branch-Id` entirely, so the default read was
@@ -200,7 +202,7 @@ export class AccountsReceivableService {
         where,
         orderBy: { name: 'asc' },
         skip: Number(skip),
-        take: Number(take),
+        take,
         include: {
           _count: { select: { invoices: true } },
         },
@@ -337,14 +339,15 @@ export class AccountsReceivableService {
     orgId: string;
     branchId?: string;
     customerAccountId?: string;
-    status?: string;
+    status?: InvoiceStatus;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, customerAccountId, status, skip = 0, take = 50 } = params;
+    const { orgId, branchId, customerAccountId, status, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
     const where: Prisma.InvoiceWhereInput = { orgId, ...branchOrOrgScope(branchId, 'invoice') };
     if (customerAccountId) where.customerAccountId = customerAccountId;
-    if (status) where.status = status as any;
+    if (status) where.status = status;
 
     const [data, total] = await Promise.all([
       this.prisma.invoice.findMany({
@@ -674,12 +677,25 @@ export class AccountsReceivableService {
    * `GET /ar/invoices` returned one branch's, so the aging summary and the
    * invoice list beneath it could not be reconciled. Now computed over the
    * same scope as the list.
+   *
+   * B5-F1 (backend gap batch 3): `summary.*` used to be reduced from
+   * `openInvoices` — the paginated page fetched below for the `accounts`
+   * breakdown — while `total` came from a separate full-`where` count. A
+   * bounded read (`?take=1`) therefore printed an understated branch
+   * receivable balance: measured live at `43e1cf1` on Tapas Downtown,
+   * `?take=1` returned `total: 5` beside `summary.totalOutstanding: 599,800`,
+   * where the true branch figure is `9,106,400`. `summary` is now reduced
+   * from a SEPARATE, unpaginated, minimal-column query over the identical
+   * `where` — independent of `skip`/`take` — mirroring how `ap/aging`
+   * (which has no pagination at all) is already correct by construction.
+   * `accounts`/`invoices` stay paginated for display; only the grand totals
+   * are guaranteed page-size-independent.
    */
   async getAgingSummary(params: { orgId: string; branchId?: string; query: AgingQueryDto }) {
     const { orgId, branchId, query } = params;
     const asOf = query.asOf ? new Date(query.asOf) : new Date();
     const skip = Number(query.skip ?? 0);
-    const take = Number(query.take ?? 50);
+    const take = clampTake(query.take, 50);
 
     const where: Prisma.InvoiceWhereInput = {
       orgId,
@@ -691,17 +707,26 @@ export class AccountsReceivableService {
       where.customerAccountId = query.customerAccountId;
     }
 
-    const openInvoices = await this.prisma.invoice.findMany({
-      where,
-      include: {
-        customerAccount: { select: { id: true, name: true, code: true, type: true } },
-      },
-      orderBy: [{ customerAccountId: 'asc' }, { dueDate: 'asc' }],
-      skip,
-      take,
-    });
-
-    const total = await this.prisma.invoice.count({ where });
+    const [openInvoices, total, allOpenInvoicesForSummary] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where,
+        include: {
+          customerAccount: { select: { id: true, name: true, code: true, type: true } },
+        },
+        orderBy: [{ customerAccountId: 'asc' }, { dueDate: 'asc' }],
+        skip,
+        take,
+      }),
+      this.prisma.invoice.count({ where }),
+      // B5-F1: unpaginated — every open invoice in `where`, minimal columns
+      // only, used SOLELY to compute the grand-total buckets below. Never
+      // exposed row-by-row; the paginated `openInvoices` above still backs
+      // the `accounts`/`invoices` display breakdown.
+      this.prisma.invoice.findMany({
+        where,
+        select: { dueDate: true, outstandingBalance: true },
+      }),
+    ]);
 
     // Build per-account aging bucket summary
     const accountMap = new Map<
@@ -783,7 +808,21 @@ export class AccountsReceivableService {
       });
     }
 
-    // Compute overall totals
+    // Per-account rows for the CURRENT page only — display breakdown, not the
+    // source of the grand totals below (B5-F1).
+    const accounts = Array.from(accountMap.values()).map((a) => ({
+      ...a,
+      current: a.current.toString(),
+      bucket_1_30: a.bucket_1_30.toString(),
+      bucket_31_60: a.bucket_31_60.toString(),
+      bucket_61_90: a.bucket_61_90.toString(),
+      bucket_90_plus: a.bucket_90_plus.toString(),
+      totalOutstanding: a.totalOutstanding.toString(),
+    }));
+
+    // B5-F1: grand totals reduced from `allOpenInvoicesForSummary` — the
+    // UNPAGINATED fetch over the identical `where` — so `summary.*` is
+    // identical no matter what `skip`/`take` the caller asked for.
     let grandCurrent = new Prisma.Decimal(0);
     let grand1_30 = new Prisma.Decimal(0);
     let grand31_60 = new Prisma.Decimal(0);
@@ -791,24 +830,28 @@ export class AccountsReceivableService {
     let grand90Plus = new Prisma.Decimal(0);
     let grandTotal = new Prisma.Decimal(0);
 
-    const accounts = Array.from(accountMap.values()).map((a) => {
-      grandCurrent = grandCurrent.add(a.current);
-      grand1_30 = grand1_30.add(a.bucket_1_30);
-      grand31_60 = grand31_60.add(a.bucket_31_60);
-      grand61_90 = grand61_90.add(a.bucket_61_90);
-      grand90Plus = grand90Plus.add(a.bucket_90_plus);
-      grandTotal = grandTotal.add(a.totalOutstanding);
-
-      return {
-        ...a,
-        current: a.current.toString(),
-        bucket_1_30: a.bucket_1_30.toString(),
-        bucket_31_60: a.bucket_31_60.toString(),
-        bucket_61_90: a.bucket_61_90.toString(),
-        bucket_90_plus: a.bucket_90_plus.toString(),
-        totalOutstanding: a.totalOutstanding.toString(),
-      };
-    });
+    for (const inv of allOpenInvoicesForSummary) {
+      const bucket = this.computeAgingBucket(inv.dueDate, asOf);
+      const outstanding = inv.outstandingBalance;
+      grandTotal = grandTotal.add(outstanding);
+      switch (bucket) {
+        case 'current':
+          grandCurrent = grandCurrent.add(outstanding);
+          break;
+        case '1_30':
+          grand1_30 = grand1_30.add(outstanding);
+          break;
+        case '31_60':
+          grand31_60 = grand31_60.add(outstanding);
+          break;
+        case '61_90':
+          grand61_90 = grand61_90.add(outstanding);
+          break;
+        case '90_plus':
+          grand90Plus = grand90Plus.add(outstanding);
+          break;
+      }
+    }
 
     return {
       asOf: asOf.toISOString().split('T')[0],
@@ -919,11 +962,12 @@ export class AccountsReceivableService {
     orgId: string;
     branchId?: string;
     customerAccountId?: string;
-    status?: string;
+    status?: ArCreditNoteStatus;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, customerAccountId, status, skip = 0, take = 50 } = params;
+    const { orgId, branchId, customerAccountId, status, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
     // PC-03: proven live — 1 row returned under X-Branch-Id=ROOFTOP, and it
     // belonged to TAPAS.
     const where: Prisma.ArCreditNoteWhereInput = {
@@ -931,7 +975,7 @@ export class AccountsReceivableService {
       ...branchOrOrgScope(branchId, 'AR credit note'),
     };
     if (customerAccountId) where.customerAccountId = customerAccountId;
-    if (status) where.status = status as any;
+    if (status) where.status = status;
 
     const [data, total] = await Promise.all([
       this.prisma.arCreditNote.findMany({

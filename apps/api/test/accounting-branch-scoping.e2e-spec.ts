@@ -19,6 +19,12 @@ import { PrismaService } from '../src/common/prisma';
  * had none — the suite went green while proving nothing. Both branches and both
  * memberships are ASSERTED in `beforeAll`; if the dataset cannot support the
  * test, the suite fails loudly instead of passing vacuously.
+ *
+ * ⚠️ `take=100` (not the original `take=500`): backend gap batch 3 (B5-F3,
+ * `ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md`) added a genuine server-side
+ * maximum of 100 to every paginated accounting/finance list route — `take=500`
+ * now correctly 400s. This suite's fixtures are 1-3 rows per branch, so 100 is
+ * still "all of it" for these assertions.
  */
 describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
   let app: INestApplication;
@@ -133,13 +139,13 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
     });
 
     it('lists the supplier under its own branch', async () => {
-      const res = await get('/api/accounting/ap/suppliers?take=500', branchA);
+      const res = await get('/api/accounting/ap/suppliers?take=100', branchA);
       expect(res.status).toBe(200);
       expect(res.body.data.map((s: any) => s.id)).toContain(supplierAId);
     });
 
     it('does NOT list it under another branch (was the 41-row, four-branch leak)', async () => {
-      const res = await get('/api/accounting/ap/suppliers?take=500', branchB);
+      const res = await get('/api/accounting/ap/suppliers?take=100', branchB);
       expect(res.status).toBe(200);
       expect(res.body.data.map((s: any) => s.id)).not.toContain(supplierAId);
       // Nothing belonging to branch A may appear at all.
@@ -172,7 +178,7 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
       });
 
       for (const branch of [branchA, branchB]) {
-        const res = await get('/api/accounting/ap/suppliers?take=500', branch);
+        const res = await get('/api/accounting/ap/suppliers?take=100', branch);
         expect(res.status).toBe(200);
         expect(res.body.data.map((s: any) => s.id)).toContain(orgLevel.id);
       }
@@ -247,10 +253,10 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
     });
 
     it('is listed under its own branch only', async () => {
-      const own = await get('/api/accounting/ap/credit-notes?take=500', branchA);
+      const own = await get('/api/accounting/ap/credit-notes?take=100', branchA);
       expect(own.body.data.map((c: any) => c.id)).toContain(apCreditNoteAId);
 
-      const foreign = await get('/api/accounting/ap/credit-notes?take=500', branchB);
+      const foreign = await get('/api/accounting/ap/credit-notes?take=100', branchB);
       expect(foreign.status).toBe(200);
       expect(foreign.body.data.map((c: any) => c.id)).not.toContain(apCreditNoteAId);
     });
@@ -269,10 +275,10 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
       expect(res.status).toBe(201);
       recurringProfileAId = res.body.id;
 
-      const own = await get('/api/accounting/ap/recurring-profiles?take=500', branchA);
+      const own = await get('/api/accounting/ap/recurring-profiles?take=100', branchA);
       expect(own.body.data.map((p: any) => p.id)).toContain(recurringProfileAId);
 
-      const foreign = await get('/api/accounting/ap/recurring-profiles?take=500', branchB);
+      const foreign = await get('/api/accounting/ap/recurring-profiles?take=100', branchB);
       expect(foreign.body.data.map((p: any) => p.id)).not.toContain(recurringProfileAId);
     });
 
@@ -310,10 +316,10 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
     });
 
     it('is listed under its own branch only, with NO query param supplied', async () => {
-      const own = await get('/api/accounting/ar/accounts?take=500', branchA);
+      const own = await get('/api/accounting/ar/accounts?take=100', branchA);
       expect(own.body.data.map((a: any) => a.id)).toContain(customerAccountAId);
 
-      const foreign = await get('/api/accounting/ar/accounts?take=500', branchB);
+      const foreign = await get('/api/accounting/ar/accounts?take=100', branchB);
       expect(foreign.status).toBe(200);
       expect(foreign.body.data.map((a: any) => a.id)).not.toContain(customerAccountAId);
     });
@@ -321,7 +327,7 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
     it('cannot be reached by passing the other branch as ?branchId=', async () => {
       // The query filter narrows WITHIN the header scope; it can no longer be
       // used as an alternative scope.
-      const res = await get(`/api/accounting/ar/accounts?take=500&branchId=${branchA}`, branchB);
+      const res = await get(`/api/accounting/ar/accounts?take=100&branchId=${branchA}`, branchB);
       expect(res.status).toBe(200);
       expect(res.body.data.map((a: any) => a.id)).not.toContain(customerAccountAId);
     });
@@ -355,8 +361,8 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
     });
 
     it('ages only the acting branch’s open invoices', async () => {
-      const own = await get('/api/accounting/ar/aging?take=500', branchA);
-      const foreign = await get('/api/accounting/ar/aging?take=500', branchB);
+      const own = await get('/api/accounting/ar/aging?take=100', branchA);
+      const foreign = await get('/api/accounting/ar/aging?take=100', branchB);
       expect(own.status).toBe(200);
       expect(foreign.status).toBe(200);
 
@@ -381,10 +387,10 @@ describe('Accounting cross-branch scoping — PC-03 (e2e)', () => {
     });
 
     it('is listed under its own branch only', async () => {
-      const own = await get('/api/accounting/ar/credit-notes?take=500', branchA);
+      const own = await get('/api/accounting/ar/credit-notes?take=100', branchA);
       expect(own.body.data.map((c: any) => c.id)).toContain(arCreditNoteAId);
 
-      const foreign = await get('/api/accounting/ar/credit-notes?take=500', branchB);
+      const foreign = await get('/api/accounting/ar/credit-notes?take=100', branchB);
       expect(foreign.status).toBe(200);
       expect(foreign.body.data.map((c: any) => c.id)).not.toContain(arCreditNoteAId);
     });

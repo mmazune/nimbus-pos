@@ -8,6 +8,8 @@ import {
   ReverseJournalDto,
   ReplayPostingDto,
   ListJournalsQueryDto,
+  ListPostingRunsQueryDto,
+  ListPostingErrorsQueryDto,
 } from './dto';
 
 @Controller('accounting')
@@ -45,8 +47,8 @@ export class LedgerController {
       sourceKey: query.sourceKey,
       from: query.from,
       to: query.to,
-      skip: query.skip ? Number(query.skip) : undefined,
-      take: query.take ? Number(query.take) : undefined,
+      skip: query.skip,
+      take: query.take,
     });
   }
 
@@ -99,35 +101,26 @@ export class LedgerController {
 
   @Get('posting-runs')
   @Permissions('pos:accounting:posting-runs:read')
-  async listPostingRuns(
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-    @Req() req?: Request,
-  ) {
+  async listPostingRuns(@Query() query: ListPostingRunsQueryDto, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.ledgerService.listPostingRuns({
       orgId: ctx.organizationId,
       branchId: ctx.branchId,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: query.skip,
+      take: query.take,
     });
   }
 
   @Get('posting-errors')
   @Permissions('pos:accounting:posting-errors:read')
-  async listPostingErrors(
-    @Query('status') status?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-    @Req() req?: Request,
-  ) {
+  async listPostingErrors(@Query() query: ListPostingErrorsQueryDto, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.ledgerService.listPostingErrors({
       orgId: ctx.organizationId,
       branchId: ctx.branchId,
-      status,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      status: query.status,
+      skip: query.skip,
+      take: query.take,
     });
   }
 

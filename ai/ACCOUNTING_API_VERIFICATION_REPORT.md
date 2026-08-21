@@ -258,10 +258,10 @@ Measured live per route (`take=5000&pageSize=5000&limit=5000` probes the bound):
 | `ap/suppliers`, `ap/bills`, `ap/payments`, `ap/credit-notes`, `ap/recurring-profiles`, `ap/reminders` | `{data,total,skip,take}` | ✅ | mixed: bills / recurring / reminders **400** (bounded), others accept |
 | `ar/accounts`, `ar/invoices`, `ar/credit-notes` | `{data,total,skip,take}` | ✅ | accounts **400** (bounded) |
 | `ar/aging` | `{asOf,total,skip,take,summary,accounts}` | ✅ | **400** (bounded) |
-| `ap/aging` | `{asOf,buckets,bySupplier,bills…}` | ❌ | accepts |
+| ~~`ap/aging` \| `{asOf,buckets,bySupplier,bills…}` \| ❌ \| accepts~~ — **CORRECTED (batch 3):** the field is **`billCount`**, not `bills`. `ap/aging` has no `take`/`skip` at all — it is **intentionally unpaged**, not unbounded-by-omission; see §10. | | | |
 | `accounting/accounts` | `{data,total}` | ✅ (no skip/take) | **400** (bounded) |
 | `journals`, `posting-runs`, `posting-errors` | `{data,total,skip,take}` | ✅ | journals **400** (bounded) |
-| **`bank-accounts`, `bank-statements`, `reconciliation`, `period-close-runs`, `cost-centers`, `periods`, `posting-source-maps`, `finance/budgets`, `finance/demand-calendar`, `finance/procurement-suggestions`** | **bare array** | ❌ **none** | **no bound at all** |
+| **`bank-accounts`, `bank-statements`, `reconciliation`, `period-close-runs`, `cost-centers`, `periods`, `posting-source-maps`, `finance/budgets`, `finance/demand-calendar`, `finance/procurement-suggestions`** | **bare array** | ❌ **none** | **no bound at all — still true, PC-06 remains open (§10)** |
 | `tax-config`, `franchise/forecast` | single object | n/a | n/a |
 
 🔴 **Ten list routes return a bare JSON array with no `total` and no server-side pagination.**
@@ -271,6 +271,20 @@ forbids deriving a count from a page length. For those ten routes **there is no 
 to**. B5 must either ship them as explicitly unpaginated ("showing all N loaded") or gain a
 backend envelope first. **Do not synthesise a total from `array.length` and present it as a
 server count.**
+
+✅ **CORRECTED (batch 3, 2026-08-21) — the `take=5000` column above is now stale for the
+paginated routes.** §5's own probe methodology was the bug (B5-F3): it combined
+`take`+`pageSize`+`limit` in one request, so the DTO whitelist 400'd on the unknown `pageSize`/
+`limit` keys and every route was misread as "bounded" regardless of whether `take` itself had a
+ceiling. Re-probed with **`take` alone**: `ap/bills`, `ar/invoices`, `journals` and `ar/aging` all
+returned **200 at `take=5000`** — none had a real server maximum. Backend gap batch 3 added a
+shared `@Max(100)` DTO bound + a service-side `clampTake()` backstop
+(`apps/api/src/common/pagination/list-bounds.ts`) to **all fourteen** paginated accounting/finance
+list routes (`ap/suppliers`, `ap/bills`, `ap/payments`, `ap/credit-notes`, `ap/recurring-profiles`,
+`ap/reminders`, `ar/accounts`, `ar/invoices`, `ar/credit-notes`, `ar/aging`,
+`accounting/accounts`, `journals`, `posting-runs`, `posting-errors`) — see
+`ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md`. `ap/aging` and the ten PC-06 bare-array routes are
+unaffected by design (no `take` parameter exists to bound).
 
 ⚠️ **`ar/aging` renamed its totals block.** It returns `summary{current, bucket_1_30, bucket_31_60,
 bucket_61_90, bucket_90_plus, totalOutstanding}` — **not** `totals{grandTotal, grand_current,
@@ -336,6 +350,10 @@ seed change; the roadmap reserved `BV-*` for a docs-only B0.
 | **PC-05** | Low | **`ar/aging` totals were renamed** `totals.grand*` → `summary.*`. The e2e spec and the M35 Postman collection asserted the old names and could never have run. Both corrected. The **unit** spec still uses `result.totals` and fails to **compile** (pre-existing — see §8). | ✅ **CLOSED 2026-08-21 (batch 2).** The unit spec is repaired — its compile failure meant the whole AR unit suite was dead, so batch 2 could not add AR scoping tests without fixing it. Test-only change |
 | **PC-06** | Low | **Ten list routes return a bare array** with no `total` and no pagination bound (§5). B5's C4 list contract binds the pager to a server `total`. | **Recorded, not implemented** |
 | **PC-07** | Low | **Fiscal periods are created `DRAFT`, not `OPEN`**, and there is **no unlock route**. B5.4 must model `DRAFT → OPEN → CLOSED → LOCKED` and present `LOCKED` as terminal. | **Documented here** |
+| **B5-F1** | 🔴 High | **`ar/aging.summary` aggregates the returned PAGE, not the whole `where`.** Found by Track B5.1 once the dashboard actually paginated the endpoint (`?take=1` → `summary.totalOutstanding: 599,800` against a true branch figure of `9,106,400`). Not caught by this report because its own probes used the default `take=50` on a five-invoice dataset — the page happened to be the whole set. | ✅ **FIXED 2026-08-21 (batch 3).** `summary` is now reduced from a separate unpaginated, minimal-column query over the identical `where`; proven page-size independent at `take=1`/`take=3`/unpaginated on an identical five-invoice, 9,106,400 dataset. See `ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md` |
+| **B5-F2** | Medium | **`GET /ar/invoices?status=<invalid>` returns 500**, not 400 — `status` was a raw `@Query()` string handed to Prisma. Six sibling routes shared the same unvalidated-filter pattern. | ✅ **FIXED 2026-08-21 (batch 3).** `@IsEnum` DTOs added to `ar/invoices`, `ap/payments`, `ap/credit-notes`, `ar/credit-notes`, `ap/suppliers.counterpartyType`, `posting-errors`, `finance/procurement-suggestions.{status,urgency}` |
+| **B5-F3** | Low | **§5's `take=5000` column was unreliable** — it probed `take`+`pageSize`+`limit` together, so the DTO whitelist 400'd on the unknown extra keys and every route was misread as bounded. Re-probed with `take` alone, `ap/bills`/`ar/invoices`/`journals`/`ar/aging` all returned 200 — no route had a real server maximum. | ✅ **FIXED 2026-08-21 (batch 3).** Shared `@Max(100)` DTO bound + service-side `clampTake()` backstop applied to all fourteen paginated accounting/finance list routes |
+| **B5-F4** | Low | **`GET /api/audit/timeline` ignores `X-Branch-Id`** — branch scoping was only available via the optional `?branchId=` query param, so the default read mixed every branch in the org. | ✅ **FIXED 2026-08-21 (batch 3).** `X-Branch-Id` now scopes every read by default; an explicit `?branchId=` disagreeing with the acting branch returns nothing rather than leaking another branch's rows |
 
 ---
 
@@ -352,8 +370,25 @@ Honest gaps — these are **not** claimed as verified:
 
 ---
 
-## 9. Verdict for B5 — 🟢 GO (upgraded 2026-08-21)
+## 9. Verdict for B5 — 🟢 GO (upgraded 2026-08-21, batch 3 read-integrity fixes applied same day)
 
+> **Update — backend gap batch 3, 2026-08-21.** Track B5.1 (`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`)
+> surfaced four further read-integrity findings **B5-F1…F4** once the dashboard actually consumed
+> these routes; `ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md` is the record. All four are **FIXED**:
+> **B5-F1** (🔴 `ar/aging.summary` aggregated only the returned page — a bounded read understated the
+> branch receivable balance; now computed from a separate unpaginated full-`where` query, proven
+> page-size independent at `take=1`/`take=3`/unpaginated), **B5-F2** (🔴 `ar/invoices?status=<invalid>`
+> 500'd on an unvalidated raw string — now a proper `@IsEnum` DTO, swept across six sibling routes:
+> `ap/payments`, `ap/credit-notes`, `ar/credit-notes`, `ap/suppliers.counterpartyType`,
+> `posting-errors`, `finance/procurement-suggestions.{status,urgency}`), **B5-F3** (⚠️ no server
+> maximum on `take` — a shared `@Max(100)` + `clampTake()` bound now applies to all fourteen
+> paginated accounting/finance list routes; §5's own probe methodology, not the routes, was the
+> original defect), and **B5-F4** (⚠️ `GET /api/audit/timeline` ignored `X-Branch-Id` — it now scopes
+> every read to the acting branch by default, with `?branchId=` surviving only as a same-branch
+> narrowing filter, mirroring the AR/AP header-scopes-it precedent from batch 2). **No schema,
+> migration, seed, or permission change.** B5.2 (Customers + Vendors lists) is unblocked on read
+> integrity but **remains NOT started** without separate owner authorisation.
+>
 > **Update — backend gap batch 2, 2026-08-21.** Both 🔴 conditions below are **cleared**;
 > `ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md` is the record. **Condition 1 (PC-03)** and
 > **condition 2 (PC-04)** are fixed and covered by executable before/after evidence. **Conditions 3
@@ -420,7 +455,7 @@ Honest gaps — these are **not** claimed as verified:
 | `GET /api/alerts/digests` | `alerts:digest:read` | 200 | 200 | 200 | 403 | |
 | `GET /api/owner/live` | `owner:live:read` | **200** | 403 | **403** | 403 | **Owner-only** — B7, not B6. |
 | `GET /api/sync/jobs`, `/sync/jobs/:id`, `/sync/conflicts` | `sync:jobs:read` / `sync:conflicts:read` | 200 | 200 | 200 | 403 | |
-| `GET /api/audit/timeline` | `audit:read` | 200 | **403** | **200** | 403 | ⚠️ **Accountant cannot read the audit timeline** but Manager can. Relevant to B5.3's audit-trail rail. |
+| `GET /api/audit/timeline` | `audit:read` | 200 | **403** | **200** | 403 | ⚠️ **Accountant cannot read the audit timeline** but Manager can. Relevant to B5.3's audit-trail rail. ✅ **B5-F4 FIXED (batch 3):** now branch-scoped to `X-Branch-Id` by default — see `ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md`. |
 
 `settings` (14), `alerts` (15), `reliability` (7) and `audit-timeline` (1) total **37 routes**;
 the **17 GET routes** above are live-verified. Their **20 write routes were not exercised** —

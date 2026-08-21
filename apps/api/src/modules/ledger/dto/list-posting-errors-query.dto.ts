@@ -1,19 +1,16 @@
-import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PostingErrorStatus } from '@prisma/client';
 import { MAX_ACCOUNTING_LIST_PAGE_SIZE } from '../../../common/pagination';
 
-export class ListAccountsQueryDto {
+/**
+ * B5-F2 (backend gap batch 3): `status` was a raw `@Query()` string handed
+ * straight to Prisma — same unvalidated-enum-filter class as `ar/invoices`.
+ */
+export class ListPostingErrorsQueryDto {
   @IsOptional()
-  @IsEnum(['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'])
-  accountType?: string;
-
-  @IsOptional()
-  @IsEnum(['ACTIVE', 'INACTIVE', 'SYSTEM_LOCKED'])
-  status?: string;
-
-  @IsOptional()
-  @IsString()
-  parentAccountId?: string;
+  @IsEnum(PostingErrorStatus)
+  status?: PostingErrorStatus;
 
   @IsOptional()
   @Type(() => Number)

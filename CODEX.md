@@ -81,7 +81,100 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI Track B5.1 complete - Manager ACCOUNTING module shell, menu tree and
+**Backend gap batch 3 complete - accounting read-integrity fixes B5-F1 through F4
+(2026-08-21) - A: COMPLETE / B5.2 unblocked on read integrity / not started / shared-Neon
+deploy still gated.** Track B5.1 surfaced four read-integrity findings once the dashboard
+actually consumed these routes; this batch (Track C C-24, owner-authorized) fixes all four
+at the source and sweeps every sibling route with the same defect class. Backend source
+and tests and docs, plus a minimal explicitly-authorized frontend follow-through. No
+Prisma schema change, no migration, no seed change, no permission change, no DTO
+contract-shape change. Validated on an isolated local Docker stack; shared Neon was
+never connected to or written.
+
+B5-F1 FIXED - ar/aging.summary now aggregates the full where clause, not the returned
+page. AccountsReceivableService.getAgingSummary() used to reduce summary.* from the same
+paginated findMany page that backs the accounts[] display breakdown, while total came
+from a separate unpaginated count() - the two numbers were computed over different
+result sets. Fixed by adding a third query, unpaginated and minimal-column, over the
+identical where clause, and reducing summary from that instead. Unit-proven page-size
+independence: a synthetic five-invoice dataset (UGX 9,106,400, the historical repro
+figure) returns the identical summary.totalOutstanding at take=1, take=3, and
+unpaginated. Live-proven on a real dataset exceeding the page size: 120 additional
+invoices were created via the live API on the isolated stack's Tapas Downtown branch
+(125 open invoices total, SQL ground truth UGX 10,306,400); the live endpoint returns
+the identical 10,306,400 at take=1/3/100 - where the pre-fix formula would have shown
+just UGX 10,000 (the single invoice on a take=1 page), a ~99.9 percent understatement.
+The Manager dashboard's Receivable card, live-screenshotted against this 125-invoice
+branch, renders the full 10,306,400 with zero console errors.
+
+B5-F2 FIXED - unvalidated status/type filters swept across seven endpoints.
+GET /ar/invoices?status=<invalid> took status as a raw query string handed straight to
+Prisma, so an InvoiceStatus value that does not exist (e.g. OVERDUE, real on
+VendorBillStatus) threw and surfaced as a 500. The same pattern was swept and fixed on
+six sibling fields: ap/payments.status, ap/credit-notes.status, ar/credit-notes.status,
+ap/suppliers.counterpartyType, posting-errors.status, and
+finance/procurement-suggestions.status and .urgency - all now validate with IsEnum DTOs
+(five new DTO files), matching the pattern ap/bills already used.
+
+B5-F3 FIXED - a real server-side page-size maximum on all fourteen paginated
+accounting/finance list routes. The original "pagination bound" probe combined
+take+pageSize+limit in one request; the unrecognised extra keys 400'd and every route
+was misread as bounded. Re-probed with take alone, ap/bills, ar/invoices, journals and
+ar/aging all returned 200 at take=5000 - no real maximum existed. A shared
+MAX_ACCOUNTING_LIST_PAGE_SIZE=100 plus clampTake() helper
+(apps/api/src/common/pagination/, mirroring the pre-existing MAX_LEAVE_PAGE_SIZE
+precedent in attendance.service.ts) now bounds all fourteen routes. ap/aging
+(intentionally unpaged) and the ten PC-06 bare-array routes are unaffected by design.
+This surfaced a regression this same fix caused, and fixed: batch 2's
+accounting-branch-scoping.e2e-spec.ts used take=500 in fourteen places for its tiny
+fixtures - now correctly 400s; updated to take=100, no assertion weakened.
+
+B5-F4 FIXED - GET /api/audit/timeline now honors X-Branch-Id. It previously scoped a
+branch only via the optional ?branchId= query param and ignored the header entirely.
+It now unconditionally ANDs the acting branch from X-Branch-Id; a disagreeing
+?branchId= ANDs both clauses and correctly returns nothing rather than leaking. No
+consumer exists yet, so nothing depended on the old behavior.
+
+Frontend follow-through (minimal, required by the brief): isArAgingComplete() in
+lib/accounting/model.ts used to withhold the Receivable card's money whenever the
+returned page did not cover every matching invoice - the UI-side mitigation for B5-F1.
+Now that the backend guarantees summary correctness unconditionally, that gate would
+have incorrectly withheld a now-correct balance on any branch with more than 100 open
+invoices - proven by the 125-invoice live test above. Simplified to a well-formed-
+response guard; the withheld-state markup is kept as a malformed-response fallback, not
+removed. manager-b5-assertions.ts had two B5-F1 assertions inverted, not deleted.
+
+One new finding recorded, not implemented: BGB3-L3 - LedgerService.listJournals and
+listPostingRuns still use strict where.branchId = branchId on nullable
+JournalEntry.branchId / PostingRun.branchId columns, the same PC-03 defect class fixed
+elsewhere in batch 2. Out of this batch's authorised scope. PC-01/PC-02/PC-06/C-23
+remain open and unaffected by this batch.
+
+Validated on an isolated local Docker stack. apps/api/.env and packages/db/.env SHA-256
+identical before and after. Touched/new unit suites 237/237; full API unit suite
+1165/1161/4 (after) vs 1104/1100/4 (6e284e9 baseline, throwaway worktree) - identical 4
+pre-existing client-onboarding failures, zero new failures; AP/AR/branch-scoping e2e
+122/122; full API e2e suite 1043 tests, 922 passed, 121 failed both before and after,
+with a byte-identical failing test-name set; newman M32 17/34 0 failed, M34 23/46 0
+failed, M35 21/45 0 failed, M36 18/24 0 failed, M37 24/44 0 failed, BG2 22/48 0 failed,
+M33 20 assertions failed (pre-existing C-23, unaffected); web typecheck, lint and build
+all pass; 17/17 assertion scripts; e2e/manager-accounting Playwright 25/25 at
+vp-1440x900 against the pristine isolated stack; e2e/manager-dashboard regression 21/21
+(B2 untouched); /api/health -> ok throughout; all five pre-existing dev servers verified
+healthy before and after; git diff --check clean.
+
+Self-inflicted incident, caught and fully reverted before any test relied on it: the
+first pnpm lint invocation used the package's --fix script, which reformatted 193
+unrelated, untouched files across the API tree. Caught via git status immediately,
+every collateral file reverted to HEAD, verified by diffing the modified-file list
+until it matched this batch's own file change list exactly. All subsequent lint checks
+used targeted eslint with no --fix.
+
+B5.2 (Customers + Vendors lists) is unblocked on read integrity but remains NOT started -
+do not begin it, or any later B5 sub-phase, without explicit owner authorisation. See
+ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md.
+
+**Prior status record (superseded above) - Enterprise UI Track B5.1 complete - Manager ACCOUNTING module shell, menu tree and
 dashboard (2026-08-21) - A: B5.1 COMPLETE / B5.2 through B5.6 GATED.** Frontend and
 docs only. No backend, schema, migration, seed, permission, DTO or Postman change.
 
@@ -878,20 +971,27 @@ start without explicit authorization.
   (balance sheet, P&L, cash flow, trial balance, general or partner ledger, tax or
   fiscal report) - no endpoint exists (NG-07 to C-11). Do not add a Receipts or
   Manual entries row - both endpoints are POST-only. Do not render a figure absent
-  from `ACCOUNTING_KPI_BINDINGS` (it throws). Do not treat `ar/aging.summary` as a
+  from `ACCOUNTING_KPI_BINDINGS` (it throws). ~~Do not treat `ar/aging.summary` as a
   branch total without the completeness check - B5-F1: it aggregates only the
-  RETURNED PAGE, so a bounded read understates the balance; the card withholds the
-  figure unless `sum(accounts[].invoices.length) >= total`. Do not filter
-  `ar/invoices` by a status outside
-  `DRAFT|ISSUED|PARTIALLY_PAID|PAID|CANCELLED|CREDIT_ADJUSTED` - an invalid value
-  returns 500 (B5-F2). Do not relabel `periods`, `period-close-runs`,
+  RETURNED PAGE~~ - B5-F1 FIXED (backend gap batch 3, 2026-08-21): `summary` now
+  aggregates a separate unpaginated query, so it is a true branch total regardless
+  of page size; `isArAgingComplete()` is a well-formed-response guard only - do not
+  re-widen it into a page-completeness check. ~~Do not filter `ar/invoices` by a
+  status outside `DRAFT|ISSUED|PARTIALLY_PAID|PAID|CANCELLED|CREDIT_ADJUSTED` - an
+  invalid value returns 500 (B5-F2)~~ - B5-F2 FIXED (batch 3): an invalid `status`
+  now returns 400 via `@IsEnum` validation, on `ar/invoices` and six sibling
+  routes. Do not relabel `periods`, `period-close-runs`,
   `posting-source-maps` or `tax-config` as branch data - they are
   organisation-level by design. Do not bind a pager to, or fabricate a server
   `total` from, the bare-array routes (PC-06) - label them "Showing all N". Do not
   add a charting dependency or draw a time trend (no bucketed series exists -
   NG-05); the aging bucket bars are honest because the backend computes that series
-  itself. B5.2 (Customers + Vendors lists), B5.3, B5.4, B5.5, B5.6, B6 and B7 are
-  NOT started - do not begin any of them without explicit owner authorisation.
+  itself. Do not remove the `@Max(100)` bound or `clampTake()` backstop added by
+  batch 3 to the fourteen paginated accounting/finance list routes (B5-F3), and do
+  not revert `audit/timeline` to ignoring `X-Branch-Id` (B5-F4). B5.2 (Customers +
+  Vendors lists) is unblocked on read integrity but remains NOT started; B5.3,
+  B5.4, B5.5, B5.6, B6 and B7 are NOT started - do not begin any of them without
+  explicit owner authorisation.
 - Manager Track B3 boundaries (2026-08-20): **Operations is strictly read-only** -
   do not add any mutation, `useMutation` hook, checkout/tender/order-builder
   control, order close/void/discount, or table-status write to

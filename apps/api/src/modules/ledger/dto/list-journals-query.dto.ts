@@ -1,4 +1,6 @@
-import { IsOptional, IsString, IsEnum, IsNumberString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+import { MAX_ACCOUNTING_LIST_PAGE_SIZE } from '../../../common/pagination';
 
 enum JournalStatusFilter {
   DRAFT = 'DRAFT',
@@ -24,10 +26,16 @@ export class ListJournalsQueryDto {
   to?: string;
 
   @IsOptional()
-  @IsNumberString()
-  skip?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  skip?: number;
 
+  /** B5-F3 (backend gap batch 3): previously unbounded. */
   @IsOptional()
-  @IsNumberString()
-  take?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(MAX_ACCOUNTING_LIST_PAGE_SIZE)
+  take?: number;
 }

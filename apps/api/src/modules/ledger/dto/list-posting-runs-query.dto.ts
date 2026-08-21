@@ -1,20 +1,8 @@
-import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MAX_ACCOUNTING_LIST_PAGE_SIZE } from '../../../common/pagination';
 
-export class ListAccountsQueryDto {
-  @IsOptional()
-  @IsEnum(['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'])
-  accountType?: string;
-
-  @IsOptional()
-  @IsEnum(['ACTIVE', 'INACTIVE', 'SYSTEM_LOCKED'])
-  status?: string;
-
-  @IsOptional()
-  @IsString()
-  parentAccountId?: string;
-
+export class ListPostingRunsQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()

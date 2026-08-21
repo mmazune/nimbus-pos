@@ -26,6 +26,7 @@ import {
   UpdateDemandCalendarEntryDto,
   ListDemandCalendarQueryDto,
   ReviewProcurementSuggestionDto,
+  ListProcurementSuggestionsQueryDto,
 } from './dto';
 
 // ── Finance: Budget Endpoints  /finance/budgets/* ──
@@ -82,12 +83,11 @@ export class BudgetController {
   @Get('procurement-suggestions')
   @Permissions('procurement:advisory:read')
   async listProcurementSuggestions(
-    @Query('urgency') urgency: string | undefined,
-    @Query('status') status: string | undefined,
+    @Query() query: ListProcurementSuggestionsQueryDto,
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.budgetService.listProcurementSuggestions(ctx, urgency, status);
+    return this.budgetService.listProcurementSuggestions(ctx, query.urgency, query.status);
   }
 
   @Patch('procurement-suggestions/:id/review')

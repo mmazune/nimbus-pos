@@ -7,7 +7,8 @@ import {
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { branchOrOrgScope } from '../../common/scope';
-import { Prisma } from '@prisma/client';
+import { clampTake } from '../../common/pagination';
+import { Prisma, PostingErrorStatus } from '@prisma/client';
 
 @Injectable()
 export class LedgerService {
@@ -184,7 +185,8 @@ export class LedgerService {
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, status, sourceKey, from, to, skip = 0, take = 50 } = params;
+    const { orgId, branchId, status, sourceKey, from, to, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
 
     const where: Prisma.JournalEntryWhereInput = { orgId };
     if (branchId) where.branchId = branchId;
@@ -541,7 +543,8 @@ export class LedgerService {
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, skip = 0, take = 50 } = params;
+    const { orgId, branchId, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
 
     const where: Prisma.PostingRunWhereInput = { orgId };
     if (branchId) where.branchId = branchId;
@@ -567,11 +570,12 @@ export class LedgerService {
   async listPostingErrors(params: {
     orgId: string;
     branchId?: string;
-    status?: string;
+    status?: PostingErrorStatus;
     skip?: number;
     take?: number;
   }) {
-    const { orgId, branchId, status, skip = 0, take = 50 } = params;
+    const { orgId, branchId, status, skip = 0 } = params;
+    const take = clampTake(params.take, 50);
 
     // PC-03: was strict `where.branchId = branchId` on a NULLABLE column, which
     // hid every unattributed org-level posting error from every branch at once.
@@ -579,7 +583,7 @@ export class LedgerService {
       orgId,
       ...branchOrOrgScope(branchId, 'posting error'),
     };
-    if (status) where.status = status as any;
+    if (status) where.status = status;
 
     const [data, total] = await Promise.all([
       this.prisma.postingError.findMany({

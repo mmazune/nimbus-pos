@@ -112,6 +112,50 @@
 >   the Quick-PIN branch guard, **or the batch-2 branch scoping and duplicate-bill guard** — **has
 >   been deployed to shared Neon.** It is applied on the local
 >   isolated stack only and remains gated on an explicit per-cutover authorisation.
+
+> **Backend gap batch 3 (2026-08-21) — `ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md`.** Four
+> read-integrity findings B5.1 surfaced once the dashboard actually consumed these routes. No
+> schema/migration/seed/permission change; local isolated stack only, same deploy gate as above.
+>
+> **REMOVED**
+> - ~~🔴 **B5-F1 — `ar/aging.summary` aggregates the RETURNED PAGE, not the whole `where`.**~~
+>   **RESOLVED 2026-08-21 (batch 3).** `summary` now reduces from a separate, unpaginated,
+>   minimal-column query over the identical `where`, so it is a true branch total regardless of
+>   `skip`/`take`. Proven live on a 125-open-invoice dataset (true total 10,306,400): a `take=1`
+>   page would previously have shown just that one invoice's 10,000; it now shows 10,306,400 at
+>   `take=1`, `take=3` and `take=100` alike. The frontend's `isArAgingComplete()` completeness gate
+>   is simplified to a well-formed-response guard — it no longer withholds the balance on a branch
+>   with more invoices than one page.
+> - ~~🔴 **B5-F2 — `GET /ar/invoices?status=<invalid>` returns 500.**~~ **RESOLVED 2026-08-21
+>   (batch 3).** `@IsEnum` DTO validation added; an invalid value now returns 400. Five sibling
+>   routes with the identical unvalidated-raw-string pattern were swept and fixed too:
+>   `ap/payments`, `ap/credit-notes`, `ar/credit-notes`, `ap/suppliers.counterpartyType`,
+>   `posting-errors`, `finance/procurement-suggestions.{status,urgency}`.
+>
+> **NEW / RETAINED**
+> - **BGB3-L1 — the §5 "pagination bound" table in `ai/ACCOUNTING_API_VERIFICATION_REPORT.md` was
+>   itself the bug, not the routes.** It probed `take`+`pageSize`+`limit` together; the unknown
+>   extra keys 400'd and every route was misread as bounded. Re-probed with `take` alone,
+>   `ap/bills`/`ar/invoices`/`journals`/`ar/aging` all returned 200 at `take=5000` — **RESOLVED
+>   2026-08-21 (batch 3)**: a shared `@Max(100)` DTO bound + a service-side `clampTake()` backstop
+>   (`apps/api/src/common/pagination/list-bounds.ts`) now applies to all **fourteen** paginated
+>   accounting/finance list routes. `ap/aging` (intentionally unpaged) and the ten PC-06 bare-array
+>   routes are unaffected by design — PC-06 itself is **still open**, unchanged by this batch.
+> - ~~⚠️ **`GET /api/audit/timeline` ignores `X-Branch-Id`**~~ **RESOLVED 2026-08-21 (batch 3).**
+>   It now scopes every read to the acting branch by default; an explicit `?branchId=` disagreeing
+>   with the branch simply returns nothing rather than leaking. (Still pages with `pageSize`, not
+>   `take`/`limit` — unchanged.)
+> - **BGB3-L2 — `accounting-branch-scoping.e2e-spec.ts` (batch 2) used `take=500` throughout**,
+>   which the new server maximum correctly rejects. Updated to `take=100` (still "all of it" for the
+>   suite's 1–3-row fixtures), with a comment explaining why. No assertion weakened.
+> - **BGB3-L3 — a JournalEntry/PostingRun-branch-scoping observation, recorded not fixed.**
+>   `listJournals`/`listPostingRuns` still use strict `where.branchId = branchId` on a **nullable**
+>   `JournalEntry.branchId`/`PostingRun.branchId` column — the same class of bug PC-03 fixed
+>   elsewhere (it would orphan org-level rows from every branch). Out of this batch's authorised
+>   scope (B5-F1…F4 only); a future pass should apply `branchOrOrgScope` here too.
+> - **Deploy gate (unchanged):** batch 3 has **not** been deployed to shared Neon — same gate as
+>   batches 1 and 2 above.
+
 > - **BGB1-L5 — `/hr/employees` is still org-scoped** (`?branchId=` → 400, MP0-06 / C-09) and its
 >   `take` is still unbounded (C-12). Neither was in this batch's scope.
 

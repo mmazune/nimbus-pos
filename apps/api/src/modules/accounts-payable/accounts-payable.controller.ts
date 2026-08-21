@@ -23,6 +23,9 @@ import {
   UpdateRecurringProfileDto,
   ListRecurringProfilesQueryDto,
   ListRemindersQueryDto,
+  ListSuppliersQueryDto,
+  ListApPaymentsQueryDto,
+  ListApCreditNotesQueryDto,
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
@@ -38,7 +41,7 @@ export class AccountsPayableController {
   constructor(
     private readonly apService: AccountsPayableService,
     private readonly bg3: Bg3ReliabilityService,
-  ) { }
+  ) {}
 
   // ── Suppliers ──
 
@@ -56,32 +59,23 @@ export class AccountsPayableController {
 
   @Get('suppliers')
   @Permissions('accounting:ap:bill:read')
-  async listSuppliers(
-    @Request() req: any,
-    @Query('activeOnly') activeOnly?: string,
-    @Query('counterpartyType') counterpartyType?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  async listSuppliers(@Request() req: any, @Query() query: ListSuppliersQueryDto) {
     const orgId = req.branchContext.organizationId;
     const branchId = req.branchContext.branchId;
     return this.apService.listSuppliers({
       orgId,
       branchId,
-      activeOnly: activeOnly === 'true',
-      counterpartyType,
-      skip: skip ? Number(skip) : 0,
-      take: take ? Number(take) : 50,
+      activeOnly: query.activeOnly === true,
+      counterpartyType: query.counterpartyType,
+      skip: query.skip ?? 0,
+      take: query.take ?? 50,
     });
   }
 
   // BG6 — AP supplier detail (closes BG0 missing route).
   @Get('suppliers/:id')
   @Permissions('accounting:ap:bill:read')
-  async getSupplier(
-    @Request() req: any,
-    @Param('id') supplierId: string,
-  ) {
+  async getSupplier(@Request() req: any, @Param('id') supplierId: string) {
     const orgId = req.branchContext.organizationId;
     const branchId = req.branchContext.branchId;
     return this.apService.getSupplierDetail({ orgId, branchId, supplierId });
@@ -160,22 +154,16 @@ export class AccountsPayableController {
 
   @Get('payments')
   @Permissions('accounting:ap:bill:read')
-  async listApPayments(
-    @Request() req: any,
-    @Query('supplierId') supplierId?: string,
-    @Query('status') status?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  async listApPayments(@Request() req: any, @Query() query: ListApPaymentsQueryDto) {
     const orgId = req.branchContext.organizationId;
     const branchId = req.branchContext.branchId;
     return this.apService.listApPayments({
       orgId,
       branchId,
-      supplierId,
-      status,
-      skip: skip ? Number(skip) : 0,
-      take: take ? Number(take) : 50,
+      supplierId: query.supplierId,
+      status: query.status,
+      skip: query.skip ?? 0,
+      take: query.take ?? 50,
     });
   }
 
@@ -195,22 +183,16 @@ export class AccountsPayableController {
 
   @Get('credit-notes')
   @Permissions('accounting:ap:credit-note:read')
-  async listCreditNotes(
-    @Request() req: any,
-    @Query('supplierId') supplierId?: string,
-    @Query('status') status?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  async listCreditNotes(@Request() req: any, @Query() query: ListApCreditNotesQueryDto) {
     const orgId = req.branchContext.organizationId;
     const branchId = req.branchContext.branchId;
     return this.apService.listCreditNotes({
       orgId,
       branchId,
-      supplierId,
-      status,
-      skip: skip ? Number(skip) : 0,
-      take: take ? Number(take) : 50,
+      supplierId: query.supplierId,
+      status: query.status,
+      skip: query.skip ?? 0,
+      take: query.take ?? 50,
     });
   }
 

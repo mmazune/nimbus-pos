@@ -1,25 +1,20 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ArCreditNoteStatus } from '@prisma/client';
 import { MAX_ACCOUNTING_LIST_PAGE_SIZE } from '../../../common/pagination';
 
-export enum PayableReminderStatusDto {
-  PENDING = 'PENDING',
-  DISMISSED = 'DISMISSED',
-  AUTO_RESOLVED = 'AUTO_RESOLVED',
-}
-
-export class ListRemindersQueryDto {
+/**
+ * B5-F2 (backend gap batch 3): sibling of `ar/invoices` — `status` was a raw
+ * `@Query()` string handed to Prisma with no validation.
+ */
+export class ListArCreditNotesQueryDto {
   @IsOptional()
   @IsString()
-  supplierId?: string;
+  customerAccountId?: string;
 
   @IsOptional()
-  @IsEnum(PayableReminderStatusDto)
-  status?: PayableReminderStatusDto;
-
-  @IsOptional()
-  @IsDateString()
-  dueBefore?: string;
+  @IsEnum(ArCreditNoteStatus)
+  status?: ArCreditNoteStatus;
 
   @IsOptional()
   @Type(() => Number)

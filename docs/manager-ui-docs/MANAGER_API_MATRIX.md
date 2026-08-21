@@ -4,6 +4,29 @@ This matrix documents the backend API endpoints exposed to the Manager role (`ro
 
 ---
 
+## 2026-08-21 — BACKEND GAP BATCH 3: B5-F1…F4 read-integrity findings FIXED
+
+`ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md` is the record. The four findings the B5.1 pass below
+recorded are now fixed — **no schema/migration/seed/permission change**:
+
+- ✅ **B5-F1 fixed** — `ar/aging.summary` now aggregates a separate, unpaginated, minimal-column
+  query over the identical `where`, independent of `skip`/`take`. Proven page-size independent
+  (`take=1`/`take=3`/unpaginated all return the identical total on the same dataset). The
+  `Σ accounts[].invoices.length >= total` completeness check below is no longer required for
+  correctness, but the withheld-state UI code is harmless to keep.
+- ✅ **B5-F2 fixed** — `ar/invoices?status=` (and five sibling routes: `ap/payments`,
+  `ap/credit-notes`, `ar/credit-notes`, `ap/suppliers.counterpartyType`, `posting-errors`,
+  `finance/procurement-suggestions.{status,urgency}`) now validate via `@IsEnum` DTOs — an invalid
+  value is **400**, not 500.
+- ✅ **B5-F3 fixed** — every paginated accounting/finance list route (14 total, incl. `ap/bills`,
+  `ar/invoices`, `journals`, `ar/aging`) now rejects `take` above **100** (`@Max(100)` + a
+  service-side `clampTake()` backstop). `ap/aging` and the ten PC-06 bare-array routes are
+  unaffected by design — they have no `take` parameter to bound.
+- ✅ **B5-F4 fixed** — `GET /api/audit/timeline` now scopes every read to `X-Branch-Id` by default;
+  an explicit `?branchId=` disagreeing with the acting branch returns nothing instead of leaking.
+
+---
+
 ## 2026-08-21 — TRACK B5.1: the accounting rows are now CONSUMED by the UI
 
 Track B5.1 (`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`) mounts the Accounting module.
@@ -30,20 +53,20 @@ scope and its **real** envelope in the executable registry
 
 ### Corrections to earlier records
 
-- 🔴 **B5-F1 — `ar/aging.summary` is PAGE-scoped.** It aggregates only the returned page while
-  `total` counts the whole `where`. Live: `?take=1` → `total: 5` with `summary.totalOutstanding:
-  599,800` where the branch figure is **9,106,400**. Completeness test:
-  `Σ accounts[].invoices.length >= total`. **Do not present the summary as a branch total without it.**
-- 🔴 **B5-F2 — `GET /ar/invoices?status=<invalid>` returns 500**, not 400. `status` is an unvalidated
-  raw string. Valid: `DRAFT|ISSUED|PARTIALLY_PAID|PAID|CANCELLED|CREDIT_ADJUSTED`.
-- ⚠️ **B0's "pagination bound" column is unreliable.** It probed `take`+`pageSize`+`limit` together;
-  `limit` is not on those DTOs, so the whitelist 400 was misread as a bound. With `take` alone,
-  `ap/bills`, `ar/invoices`, `journals` and `ar/aging` all return **200 at `take=5000`** — there is
-  **no server maximum**.
-- ⚠️ **`GET /api/audit/timeline`** pages with **`pageSize`** (`?limit=` → 400) and narrows to a branch
-  only via an explicit **`?branchId=`** — it **ignores `X-Branch-Id`**.
+- ~~🔴 **B5-F1 — `ar/aging.summary` is PAGE-scoped.**~~ **FIXED 2026-08-21 (batch 3)** — `summary`
+  now aggregates a separate unpaginated query over the identical `where`, so it no longer depends
+  on `skip`/`take`. See the batch-3 section above.
+- ~~🔴 **B5-F2 — `GET /ar/invoices?status=<invalid>` returns 500.**~~ **FIXED 2026-08-21 (batch 3)**
+  — `@IsEnum` DTO validation added; an invalid value now returns 400.
+- ~~⚠️ **B0's "pagination bound" column is unreliable... no server maximum.**~~ **FIXED 2026-08-21
+  (batch 3)** — the probe methodology was the real defect (it combined `take`+`pageSize`+`limit`
+  and misread the resulting 400 as a bound); `take` alone now genuinely rejects above 100 on every
+  paginated accounting/finance list route.
+- ~~⚠️ **`GET /api/audit/timeline`**... **ignores `X-Branch-Id`**.~~ **FIXED 2026-08-21 (batch 3)** —
+  now scopes to `X-Branch-Id` by default.
 - ⚠️ **`ap/aging`** returns **`billCount`** (not `bills`), and **`/api/franchise/forecast`** is the
-  real forecast path (not `/api/finance/forecast`).
+  real forecast path (not `/api/finance/forecast`). *(Still true — `ap/aging` has no `take` at all,
+  by design; unaffected by the batch-3 pagination fix.)*
 - **`ar/receipts` and `manual-bank-entries` are POST-only** — there is no GET to list either.
 - **Manager writes re-verified 403** on a representative five (AP supplier, AR invoice, journal, bank
   account, budget) — PC-01 stands. `finance/procurement-suggestions` is **403 to read** — PC-02 stands.

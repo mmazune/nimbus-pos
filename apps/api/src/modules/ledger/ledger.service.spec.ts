@@ -651,6 +651,40 @@ describe('LedgerService', () => {
         }),
       );
     });
+
+    // B5-F3 (backend gap batch 3): the DTO already rejects take > 100, but the
+    // service clamps defensively too (mirrors MAX_LEAVE_PAGE_SIZE in
+    // attendance.service.ts) so no caller — validated or not — forces an
+    // unbounded read.
+    it('B5-F3: clamps an oversized take to the 100-row maximum', async () => {
+      prisma.postingError.findMany.mockResolvedValue([]);
+      prisma.postingError.count.mockResolvedValue(0);
+
+      await service.listPostingErrors({
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        take: 10000,
+      });
+
+      expect(prisma.postingError.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 100 }),
+      );
+    });
+
+    it('normal paging is unaffected by the clamp', async () => {
+      prisma.postingError.findMany.mockResolvedValue([]);
+      prisma.postingError.count.mockResolvedValue(0);
+
+      await service.listPostingErrors({
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        take: 25,
+      });
+
+      expect(prisma.postingError.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 25 }),
+      );
+    });
   });
 
   // ── getPostingError ──

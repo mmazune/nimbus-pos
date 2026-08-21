@@ -1,25 +1,20 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { VendorPaymentStatus } from '@prisma/client';
 import { MAX_ACCOUNTING_LIST_PAGE_SIZE } from '../../../common/pagination';
 
-export enum PayableReminderStatusDto {
-  PENDING = 'PENDING',
-  DISMISSED = 'DISMISSED',
-  AUTO_RESOLVED = 'AUTO_RESOLVED',
-}
-
-export class ListRemindersQueryDto {
+/**
+ * B5-F2 (backend gap batch 3): `status` was a raw `@Query()` string handed
+ * straight to Prisma — same unvalidated-enum-filter class as `ar/invoices`.
+ */
+export class ListApPaymentsQueryDto {
   @IsOptional()
   @IsString()
   supplierId?: string;
 
   @IsOptional()
-  @IsEnum(PayableReminderStatusDto)
-  status?: PayableReminderStatusDto;
-
-  @IsOptional()
-  @IsDateString()
-  dueBefore?: string;
+  @IsEnum(VendorPaymentStatus)
+  status?: VendorPaymentStatus;
 
   @IsOptional()
   @Type(() => Number)

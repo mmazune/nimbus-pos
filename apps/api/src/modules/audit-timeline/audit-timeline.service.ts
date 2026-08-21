@@ -70,7 +70,18 @@ export class AuditTimelineReadService {
 
         // metadata.orgId / metadata.branchId JSON-path filters.
         ANDs.push({ metadata: { path: ['orgId'], equals: resolvedOrgId } });
-        if (query.branchId) {
+
+        // B5-F4 (backend gap batch 3): this endpoint used to honour a branch
+        // only via the OPTIONAL `?branchId=` query param and ignored
+        // `X-Branch-Id` entirely, so the default read was every branch in the
+        // org mixed together — the same shape PC-03 fixed across accounting.
+        // `X-Branch-Id` now scopes every read by default, mirroring the
+        // AR/AP "header scopes it; the query param survives as a narrowing
+        // filter inside that scope" precedent. An explicit `?branchId=` that
+        // disagrees with the acting branch simply returns nothing — it can no
+        // longer be used to read another branch's audit trail.
+        ANDs.push({ metadata: { path: ['branchId'], equals: callerCtx.branchId } });
+        if (query.branchId && query.branchId !== callerCtx.branchId) {
             ANDs.push({ metadata: { path: ['branchId'], equals: query.branchId } });
         }
         if (ANDs.length) where.AND = ANDs;

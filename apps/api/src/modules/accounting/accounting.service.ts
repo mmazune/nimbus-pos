@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { clampTake } from '../../common/pagination';
 import {
   CreateAccountDto,
   ListAccountsQueryDto,
@@ -44,7 +45,7 @@ export class AccountingService {
       this.prisma.account.findMany({
         where,
         skip: query.skip ? Number(query.skip) : 0,
-        take: query.take ? Number(query.take) : 50,
+        take: clampTake(query.take, 50),
         orderBy: { code: 'asc' },
         include: { parentAccount: { select: { id: true, code: true, name: true } } },
       }),

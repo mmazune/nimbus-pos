@@ -105,12 +105,18 @@ test.describe("Accounting fails closed", () => {
     await expect(card(page, "accounting-ledger").locator('[data-manager-card-state="ready"]')).toBeVisible();
   });
 
-  test("a partial AR aging page withholds the balance instead of understating it (B5-F1)", async ({
+  test("INVERTED 2026-08-21 (backend gap batch 3): a page carrying fewer invoices than `total` still shows the real balance — B5-F1 is fixed", async ({
     page,
   }) => {
+    // This spec used to mock the PRE-FIX bug shape (a page carrying ONE invoice
+    // while the server counts NINE — exactly what the live `?take=1` probe
+    // produced) and assert the card WITHHELD the balance. Backend gap batch 3
+    // fixed `ar/aging.summary` to aggregate a separate unpaginated query, so
+    // `summary` is correct regardless of what page `accounts[]` carries — the
+    // frontend's completeness gate (`isArAgingComplete`) no longer treats a
+    // short page as a reason to withhold. This test is inverted, not deleted,
+    // to prove the money now RENDERS instead of vanishing.
     await managerLogin(page);
-    // A page that carries ONE invoice while the server counts NINE — exactly the
-    // shape the live `?take=1` probe produced.
     await page.route("**/api/accounting/ar/aging**", (route) =>
       route.fulfill({
         status: 200,
@@ -144,10 +150,12 @@ test.describe("Accounting fails closed", () => {
     await waitForAccountingSettled(page);
 
     const receivable = card(page, "accounting-receivable");
-    await expect(receivable.locator('[data-accounting-partial="ar-aging"]')).toBeVisible();
-    await expect(receivable).toContainText(/withheld/i);
-    // The page subtotal must NOT appear as the branch balance.
-    await expect(receivable).not.toContainText("599,800");
+    // No withheld state — the response is well-formed, so the balance renders.
+    await expect(receivable.locator('[data-accounting-partial="ar-aging"]')).toHaveCount(0);
+    await expect(receivable).not.toContainText(/withheld/i);
+    await expect(receivable.locator('[data-accounting-kpi="ar.outstanding"]')).toContainText(
+      "599,800",
+    );
   });
 
   test("an empty payable ledger renders the empty state, not UGX 0", async ({ page }) => {
