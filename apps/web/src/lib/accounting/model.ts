@@ -3,6 +3,7 @@
 // Next.js `@/` alias at runtime. Same precedent as `lib/manager/dashboard-model.ts`.
 import { formatWaiterMoney } from "../waiter/formatters";
 
+import { ACCOUNTING_ROUTES } from "./routes";
 import { getAccountingRoute } from "./route-registry";
 import type {
   AccountingDecimal,
@@ -59,6 +60,14 @@ export function toAccountingCount(value: number | null | undefined): number | nu
 export function formatAccountingCount(value: number | null | undefined, fallback = "Unavailable") {
   const count = toAccountingCount(value);
   return count === null ? fallback : new Intl.NumberFormat("en-US").format(count);
+}
+
+/** Document dates (invoiceDate, dueDate, billDate, …) — date-only, no time-of-day. */
+export function formatAccountingDate(value: string | null | undefined, fallback = "—") {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 // ── Aging buckets ───────────────────────────────────────────────────────────
@@ -269,6 +278,98 @@ export function unpaginatedCountLabel(count: number | null, noun: string) {
   return `Showing all ${new Intl.NumberFormat("en-US").format(count)} ${noun}`;
 }
 
+/**
+ * Sums a PAGE of money values, `null` if any value is unreadable — never a
+ * silent understatement. List routes like `ar.invoices`/`ap.bills` return a
+ * real server `total` for the ROW COUNT only, no money aggregate, so any
+ * column total computed from `rows` is honestly a page subtotal (same rule
+ * `sumManagerPageMoney` applies in `lib/manager/operations-model.ts`).
+ */
+export function sumAccountingPageMoney(values: readonly AccountingDecimal[]): number | null {
+  let sum = 0;
+  for (const value of values) {
+    const parsed = toAccountingAmount(value);
+    if (parsed === null) return null;
+    sum += parsed;
+  }
+  return sum;
+}
+
+// ── Track B5.2: status presentation ─────────────────────────────────────────
+
+/** `DRAFT` → `"Draft"`, `PARTIALLY_PAID` → `"Partially paid"`. Shared across every AR/AP status enum. */
+export function titleCaseAccountingStatus(value: string | null | undefined) {
+  if (!value) return "Unknown";
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * One tone mapping for every status enum this module renders (AR invoice, AR/AP
+ * credit note, AP bill, AP payment, AR account) — status vocabulary overlaps
+ * ("CANCELLED", "OPEN") across them, so one map is safer than five that could
+ * silently drift apart. Unknown values fail closed to `neutral`, never a guess.
+ */
+const ACCOUNTING_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "warning" | "danger"> = {
+  DRAFT: "neutral",
+  ACTIVE: "success",
+  APPROVED: "success",
+  PAID: "success",
+  POSTED: "success",
+  FULLY_APPLIED: "success",
+  ISSUED: "info",
+  OPEN: "info",
+  PARTIALLY_PAID: "info",
+  PARTIALLY_APPLIED: "info",
+  PENDING: "info",
+  CREDIT_ADJUSTED: "warning",
+  DISMISSED: "neutral",
+  AUTO_RESOLVED: "neutral",
+  OVERDUE: "danger",
+  FAILED: "danger",
+  CANCELLED: "danger",
+  VOID: "danger",
+  SUSPENDED: "danger",
+  INACTIVE: "danger",
+};
+
+export function accountingStatusTone(value: string | null | undefined): "neutral" | "info" | "success" | "warning" | "danger" {
+  if (!value) return "neutral";
+  return ACCOUNTING_STATUS_TONE[value.toUpperCase()] || "neutral";
+}
+
+// ── Track B5.2: server-total pagination ─────────────────────────────────────
+
+/**
+ * `ManagerControlPanelPager` from a route's own `total` — unlike Operations'
+ * `/pos/orders` (no aggregate, page-only totals), every AR/AP list route B5.2
+ * consumes is `data-total` with a REAL server total (route-registry
+ * `serverTotal: true`), so the pager may honestly bind to it.
+ */
+export function toAccountingPager({
+  page,
+  pageSize,
+  total,
+}: {
+  page: number;
+  pageSize: number;
+  total: number | null | undefined;
+}) {
+  const safeTotal = typeof total === "number" && Number.isFinite(total) ? Math.max(0, total) : 0;
+  const from = safeTotal === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, safeTotal);
+  return {
+    from,
+    to,
+    total: safeTotal,
+    hasPrevious: page > 1,
+    hasNext: to < safeTotal,
+  };
+}
+
 // ── KPI → verified field → drill-in registry ────────────────────────────────
 
 /**
@@ -299,23 +400,21 @@ const NOT_YET = (subphase: string, surface: string) =>
   `${surface} has not shipped yet — it arrives in ${subphase}. A link to a route that does not exist would be a fake affordance.`;
 
 export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
-  // Customers (AR)
+  // Customers (AR) — Track B5.2 wired every one of these into a real surface.
   {
     key: "ar.outstanding",
     label: "Owed by customers",
     routeKey: "ar.aging",
     field: "summary.totalOutstanding",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.6", "Aged receivable"),
-    note: "Withheld entirely when `isArAgingComplete()` is false — B5-F1: the summary covers the returned page, not the branch.",
+    drillIn: ACCOUNTING_ROUTES.agedReceivable,
+    note: "Withheld entirely when `isArAgingComplete()` is false (malformed-response guard only, post batch-3).",
   },
   {
     key: "ar.openInvoices",
     label: "Open invoices",
     routeKey: "ar.aging",
     field: "total",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.2", "Customer invoices"),
+    drillIn: ACCOUNTING_ROUTES.customerInvoices,
     note: "The endpoint's own count of ISSUED/PARTIALLY_PAID invoices with a positive balance — a server total, not a page length.",
   },
   {
@@ -323,8 +422,7 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     label: "Customers with a balance",
     routeKey: "ar.aging",
     field: "accounts[].length",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.2", "Customer accounts"),
+    drillIn: ACCOUNTING_ROUTES.customerAccounts,
     note: "A grouping of the returned page, so it is only shown when the page is complete.",
   },
   {
@@ -332,60 +430,53 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     label: "Overdue",
     routeKey: "ar.aging",
     field: "summary.bucket_1_30 + bucket_31_60 + bucket_61_90 + bucket_90_plus",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.6", "Aged receivable"),
+    drillIn: ACCOUNTING_ROUTES.agedReceivable,
   },
   {
     key: "ar.buckets",
     label: "Receivable aging",
     routeKey: "ar.aging",
     field: "summary.current / bucket_1_30 / bucket_31_60 / bucket_61_90 / bucket_90_plus",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.6", "Aged receivable"),
+    drillIn: ACCOUNTING_ROUTES.agedReceivable,
     note: "A real categorical series the endpoint itself computes — the one honest chart on this dashboard.",
   },
 
-  // Vendors (AP)
+  // Vendors (AP) — Track B5.2 wired every one of these into a real surface.
   {
     key: "ap.outstanding",
     label: "Owed to suppliers",
     routeKey: "ap.aging",
     field: "buckets.total",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.6", "Aged payable"),
-    note: "UNPAGED endpoint, so this is the branch total with no completeness caveat — unlike AR (B5-F1).",
+    drillIn: ACCOUNTING_ROUTES.agedPayable,
+    note: "UNPAGED endpoint, so this is the branch total with no completeness caveat — unlike AR (B5-F1, fixed batch 3).",
   },
   {
     key: "ap.openBills",
     label: "Open bills",
     routeKey: "ap.aging",
     field: "billCount",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.2", "Vendor bills"),
+    drillIn: ACCOUNTING_ROUTES.vendorBills,
   },
   {
     key: "ap.overdue",
     label: "Overdue",
     routeKey: "ap.aging",
     field: "buckets.days1to30 + days31to60 + days61to90 + days90plus",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.6", "Aged payable"),
+    drillIn: ACCOUNTING_ROUTES.agedPayable,
   },
   {
     key: "ap.topSupplier",
     label: "Largest supplier balance",
     routeKey: "ap.aging",
     field: "bySupplier[0].supplierName / bySupplier[0].total",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.2", "Suppliers"),
+    drillIn: ACCOUNTING_ROUTES.vendorSuppliers,
   },
   {
     key: "ap.buckets",
     label: "Payable aging",
     routeKey: "ap.aging",
     field: "buckets.current / days1to30 / days31to60 / days61to90 / days90plus",
-    drillIn: null,
-    noDrillInReason: NOT_YET("B5.6", "Aged payable"),
+    drillIn: ACCOUNTING_ROUTES.agedPayable,
   },
 
   // Ledger

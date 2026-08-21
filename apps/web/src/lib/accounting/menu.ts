@@ -44,6 +44,14 @@ import { getAccountingRoute } from "./route-registry";
  * | B5.4 | Accounting core + Review                  | B5.3          |
  * | B5.5 | Closing (fiscal periods)                  | B5.4          |
  * | B5.6 | Reporting + Configuration                 | B5.5          |
+ *
+ * B5.2 (2026-08-21) also pulled the two Reporting → "Aged receivable" / "Aged
+ * payable" rows forward out of B5.6: they cite the SAME `ar.aging`/`ap.aging`
+ * routes the B5.1 dashboard cards already read, and the B5.2 brief explicitly
+ * scopes "the AR aging view" / "the AP aging view" as deliverables. They stay
+ * in the Reporting group (Odoo's own placement) rather than moving under
+ * Customers/Vendors. The rest of Reporting (Budgets, Demand calendar,
+ * Forecast) is still B5.6.
  */
 export const ACCOUNTING_SUBPHASES = ["B5.2", "B5.3", "B5.4", "B5.5", "B5.6"] as const;
 export type AccountingSubphase = (typeof ACCOUNTING_SUBPHASES)[number];
@@ -91,22 +99,22 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-ar-invoices",
         label: "Invoices",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.customerInvoices,
         routeKeys: ["ar.invoices", "ar.invoice"],
       },
       {
         key: "accounting-ar-accounts",
         label: "Customer accounts",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.customerAccounts,
         routeKeys: ["ar.accounts", "ar.account"],
       },
       {
         key: "accounting-ar-credit-notes",
         label: "Credit notes",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.customerCreditNotes,
         routeKeys: ["ar.creditNotes"],
       },
     ],
@@ -117,43 +125,43 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-ap-bills",
         label: "Bills",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.vendorBills,
         routeKeys: ["ap.bills", "ap.bill"],
       },
       {
         key: "accounting-ap-payments",
         label: "Payments",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.vendorPayments,
         routeKeys: ["ap.payments"],
       },
       {
         key: "accounting-ap-credit-notes",
         label: "Credit notes",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.vendorCreditNotes,
         routeKeys: ["ap.creditNotes"],
       },
       {
         key: "accounting-ap-suppliers",
         label: "Suppliers",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.vendorSuppliers,
         routeKeys: ["ap.suppliers"],
       },
       {
         key: "accounting-ap-recurring",
         label: "Recurring profiles",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.vendorRecurringProfiles,
         routeKeys: ["ap.recurringProfiles"],
       },
       {
         key: "accounting-ap-reminders",
         label: "Payment reminders",
-        available: false,
-        subphase: "B5.2",
+        available: true,
+        href: ACCOUNTING_ROUTES.vendorReminders,
         routeKeys: ["ap.reminders"],
       },
     ],
@@ -248,15 +256,15 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-aged-receivable",
         label: "Aged receivable",
-        available: false,
-        subphase: "B5.6",
+        available: true,
+        href: ACCOUNTING_ROUTES.agedReceivable,
         routeKeys: ["ar.aging"],
       },
       {
         key: "accounting-aged-payable",
         label: "Aged payable",
-        available: false,
-        subphase: "B5.6",
+        available: true,
+        href: ACCOUNTING_ROUTES.agedPayable,
         routeKeys: ["ap.aging"],
       },
       {

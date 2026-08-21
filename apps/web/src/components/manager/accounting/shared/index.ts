@@ -6,6 +6,8 @@
  * read-only disclosure. The pattern is documented in `docs/UI_SYSTEM.md` §3e.
  */
 export { AccountingAgingBars } from "./AccountingAgingBars";
+export { AccountingBackLink, AccountingFieldRow, AccountingReadOnlyCard } from "./AccountingDetailPrimitives";
+export { AccountingListScreen } from "./AccountingListScreen";
 export { AccountingPrimaryKpi, AccountingStatList } from "./AccountingKpi";
 export type { AccountingStatRow } from "./AccountingKpi";
 export {

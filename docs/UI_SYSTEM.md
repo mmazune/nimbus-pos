@@ -761,6 +761,65 @@ because accounting needs its own KPI registry rather than a widened Manager one.
    copy explaining *why* must distinguish a failed read from a partial page (defect **B5-D2**, caught
    by viewing the error-state screenshot rather than by a test).
 
+## 8f. Accounting list/detail patterns (Track B5.2, 2026-08-21)
+
+B5.2 turned nine of B5.1's not-yet Customers/Vendors menu rows into real list surfaces (four of them
+with a detail view) plus the two aging reports, on top of the B5.1 shell and shared primitives —
+never a fork. New shared primitives live in the same
+`components/manager/accounting/shared/` barrel:
+
+| Primitive | Owns |
+| --- | --- |
+| `AccountingListScreen` | The generic list scaffold: `ManagerControlPanel` + `ManagerListTable` + a server-total pager, wrapped in `ManagerContentShell`. Every one of the nine B5.2 list surfaces composes from this rather than re-deriving the wiring — the same role `ManagerOrdersScreen` (B3) plays for Operations. |
+| `AccountingFieldRow` / `AccountingReadOnlyCard` / `AccountingBackLink` | Detail-view layout: a `<dl>` field row, the "This record is read-only" disclosure card (built from `AccountingReadOnlyNote` + the relevant `ACCOUNTING_DENIED_WRITES` entries), and a styled `<Link>` — never a `<button onClick=`  — for the error-state "back to list" affordance. |
+
+### The list+detail toggle is a query param, not a nested route
+
+Following `ManagerOrdersScreen`'s precedent: one page renders either the list (`AccountingListScreen`)
+or a detail panel, switched on a query-param id (`?invoiceId=`, `?accountId=`, `?billId=`,
+`?supplierId=`) — never a `[id].tsx` dynamic route. `ManagerBreadcrumbs`' record pager walks the
+CURRENT PAGE's rows (`pageRows`), so `total: pageRows.length` there is legitimate — it is not a
+fabricated server total, it is an honest count of an already-fetched array. The B5 assertion script's
+"`.length` never assigned to `total`" guard has a single named exception for exactly this pattern.
+
+### Every interactive element is a chrome-component callback prop, never local `onClick=`
+
+The B5.1 read-only assertion sweeps `components/manager/accounting/**` for `<Button`, `onClick=` and
+`type="submit"` — a blunt instrument that was fine when B5.1 had zero interactive surfaces. B5.2
+needed real interaction (row selection, pagination, filtering) without weakening that guard: every
+one of those affordances is implemented by passing a callback PROP into an already-built chrome
+component (`ManagerListTable`'s `onSelectRow`, `ManagerControlPanel`'s pager `onPrevious`/`onNext`,
+`ManagerSearchFilterMenu`'s `onToggleFilter`) — the literal `onClick=` string lives inside the chrome
+component, not inside any accounting-tree file. "Back to list" on an error state uses a real `<Link>`
+component instead. The result: the tree stays literally free of `onClick=`/`<Button` while still
+being fully interactive.
+
+### Filter values are read through a validating helper, never forwarded raw
+
+`lib/manager/accounting-route.ts`'s `readManagerEnum(value, allowedArray)` resolves a hand-edited
+`?status=NOT_REAL` to "no filter" rather than letting an invalid value reach the request — the same
+lesson B5-F2 (an unvalidated `?status=` 500ing) teaches at the frontend layer, independent of the
+backend's own `@IsEnum` validation added in batch 3.
+
+### Pagers bind to a REAL server total, but only where one exists
+
+`toAccountingPager({page, pageSize, total})` (`lib/accounting/model.ts`) builds a
+`ManagerControlPanelPager` from a route's own `total` — legitimate for all nine B5.2 list routes,
+which are `data-total` with `serverTotal: true` in the registry (unlike Operations' `/pos/orders`,
+which has no aggregate and is honestly labelled "This page"). The two Reporting screens
+(Aged receivable/payable) render NO pager at all — they are full-branch unpaginated reads, and the
+assertion script pins that no other file in the tree binds one.
+
+### Lesson from a live-QA-caught bug: a route-registry path with a literal `:id` is not a list path
+
+Three registry entries (`ar.invoice`, `ar.account`, `ap.bill`) declare their OWN detail key with a
+path that already contains `/:id` (documentation-style, matching the Nest route decorator). Blindly
+appending `/${id}` to that path produced a malformed double-id URL that 404'd — caught only by
+opening a real record in a browser against the isolated stack, not by any static check. `api.ts`'s
+shared `detailRequest()` now checks for a literal `:id` in the path and replaces it, falling back to
+append-with-slash only for the one entry with no separate detail key (`ap.suppliers`). Any future
+accounting detail route must be added with this in mind.
+
 ## 9. Known UI inconsistencies (recorded, not yet fixed)
 
 These are functional/architectural inconsistencies out of scope for a UI-polish

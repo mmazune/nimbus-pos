@@ -104,6 +104,8 @@ const accountingFiles = [
   ...accountingComponentFiles,
   ...accountingPageFiles,
   `${MANAGER_LIB_DIR}/accounting-context.ts`,
+  `${MANAGER_LIB_DIR}/accounting-surface-queries.ts`,
+  `${MANAGER_LIB_DIR}/accounting-route.ts`,
 ];
 
 const managerTreeFiles = [
@@ -117,10 +119,21 @@ assert(
   accountingComponentFiles.length >= 9,
   `components/manager/accounting ships cards + shared primitives (found ${accountingComponentFiles.length})`,
 );
-assert(accountingPageFiles.length === 2, `Accounting ships 2 pages (found ${accountingPageFiles.length})`);
+/**
+ * Track B5.2 (2026-08-21) added 11 real surfaces (3 Customers, 6 Vendors, 2
+ * Reporting) to B5.1's 2 (index redirect + dashboard) — 13 total. Exact
+ * equality on purpose: a page appearing here with no matching `available:true`
+ * menu row below (or vice versa) is exactly the drift this gate exists to
+ * catch.
+ */
+assert(accountingPageFiles.length === 13, `Accounting ships 13 pages (found ${accountingPageFiles.length})`);
 assert(
   existsSync(join(process.cwd(), `${MANAGER_LIB_DIR}/accounting-context.ts`)),
   "the Manager-side React Query adapter exists",
+);
+assert(
+  existsSync(join(process.cwd(), `${MANAGER_LIB_DIR}/accounting-surface-queries.ts`)),
+  "the Customers/Vendors list+detail React Query adapter exists (B5.2)",
 );
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -307,13 +320,59 @@ assert(
   accountingComponentSource.includes("AccountingUnpaginatedNote"),
   "every card fed by a bare array carries the unpaginated disclosure",
 );
+/**
+ * B5.1 shipped zero list surfaces, so "no pager anywhere" was a sound proxy
+ * for "no fabricated total". B5.2 ships nine real `data-total` list routes
+ * with genuine server totals (route-registry `serverTotal: true`), so binding
+ * a pager to them is correct, not a violation — `toAccountingPager` is the
+ * ONLY function in the tree allowed to build one, and it only ever reads a
+ * `total` field, never a `.length`. The narrower, still-real check: every
+ * `pager={` in the tree traces to `toAccountingPager(`, and no PC-06
+ * bare-array surface (`AccountingUnpaginatedNote`-labelled) also binds one.
+ */
+if (accountingComponentSource.includes("pager={")) {
+  assert(
+    accountingComponentSource.includes("toAccountingPager("),
+    "every bound pager is built by toAccountingPager, which only ever reads a real server `total`",
+  );
+}
+/**
+ * Per-FILE check (not a substring-proximity guess): a file that binds a pager
+ * must be one of the nine B5.2 `data-total` list screens, never a bare-array
+ * (PC-06) or aggregate (aging) surface. The aging report screens intentionally
+ * render a full unpaginated breakdown table instead.
+ */
+const PAGER_ELIGIBLE_FILES = [
+  "AccountingListScreen.tsx",
+  "CustomersInvoicesScreen.tsx",
+  "CustomersAccountsScreen.tsx",
+  "CustomersCreditNotesScreen.tsx",
+  "VendorsBillsScreen.tsx",
+  "VendorsSuppliersScreen.tsx",
+  "VendorsCreditNotesScreen.tsx",
+  "VendorsPaymentsScreen.tsx",
+  "VendorsRecurringScreen.tsx",
+  "VendorsRemindersScreen.tsx",
+];
+for (const file of accountingComponentFiles) {
+  const isEligible = PAGER_ELIGIBLE_FILES.some((name) => file.endsWith(`/${name}`));
+  if (isEligible) continue;
+  assert(
+    !codeOnly(file).includes("pager={"),
+    `${file} is not one of the nine B5.2 server-total list screens, so it binds no pager`,
+  );
+}
+/**
+ * `total: pageRows.length` is the one legitimate exception: it feeds
+ * `ManagerBreadcrumbsPager` — the "record N of M" walker over the CURRENT
+ * PAGE's already-fetched rows on a detail view (the same pattern
+ * `ManagerOrderDetailPanel.tsx` established outside this tree) — not a
+ * fabricated stand-in for a LIST's server total. Anything else assigning
+ * `.length` to a `total:` field is the real B4-D1 violation this guards.
+ */
 assert(
-  !accountingComponentSource.includes("pager={"),
-  "no accounting surface binds a pager — PC-06's bare arrays have no server total to bind one to",
-);
-assert(
-  !/total:\s*\w+\.length/.test(accountingSource),
-  "no `.length` is ever assigned to a field named `total`",
+  !/total:\s*(?!pageRows\.length\b)\w+\.length/.test(accountingSource),
+  "no `.length` is ever assigned to a field named `total`, except the record-pager's `pageRows.length`",
 );
 
 /** Every bare-array route in the registry declares that it has no server total. */
@@ -331,10 +390,38 @@ assert(assertAccountingMenuIsBacked(), "every menu item cites a live-verified en
 
 const menuItems = accountingMenuItems();
 const availableItems = menuItems.filter((item) => item.available);
-assert(availableItems.length === 1, `B5.1 ships exactly one live menu row (found ${availableItems.length})`);
+/**
+ * B5.1 shipped 1 (the dashboard). B5.2 (2026-08-21) turned 9 Customers/Vendors
+ * rows available plus pulled 2 Reporting rows (Aged receivable/payable)
+ * forward from B5.6 — 12 total. Exact equality: a menu row available with no
+ * matching page (or vice versa) is exactly the drift `accountingPageFiles`
+ * above also gates.
+ */
+assert(availableItems.length === 12, `Accounting ships 12 live menu rows (found ${availableItems.length})`);
+const dashboardMenuItem = availableItems.find((item) => item.key === "accounting-dashboard");
+assert(dashboardMenuItem, "the dashboard row is still present and available");
 assert(
-  availableItems[0].href === ACCOUNTING_ROUTES.dashboard,
-  "the one live row is the dashboard, which is also the module landing",
+  dashboardMenuItem!.href === ACCOUNTING_ROUTES.dashboard,
+  "the dashboard row's href is still the module landing",
+);
+const B52_AVAILABLE_KEYS = [
+  "accounting-dashboard",
+  "accounting-ar-invoices",
+  "accounting-ar-accounts",
+  "accounting-ar-credit-notes",
+  "accounting-ap-bills",
+  "accounting-ap-payments",
+  "accounting-ap-credit-notes",
+  "accounting-ap-suppliers",
+  "accounting-ap-recurring",
+  "accounting-ap-reminders",
+  "accounting-aged-receivable",
+  "accounting-aged-payable",
+];
+assert(
+  new Set(availableItems.map((item) => item.key)).size === B52_AVAILABLE_KEYS.length &&
+    B52_AVAILABLE_KEYS.every((key) => availableItems.some((item) => item.key === key)),
+  "exactly the 12 named rows are available — no undocumented row was made live, and none was missed",
 );
 assert(ACCOUNTING_LANDING === ACCOUNTING_ROUTES.dashboard, "the module landing is the dashboard");
 assert(ACCOUNTING_ROOT === "/manager/accounting", "the module root is /manager/accounting");
@@ -671,4 +758,100 @@ assert(
   "the accounting glyph is registered in the canonical icon registry",
 );
 
-console.log("Manager B5.1 assertions: all checks passed.");
+// ═══════════════════════════════════════════════════════════════════════════
+// 12. TRACK B5.2 — CUSTOMERS + VENDORS LIST/DETAIL SURFACES
+//     (server-total pagination, enum-only filters, clamp-aware paging)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const B52_LIST_SCREEN_FILES = accountingComponentFiles.filter((file) =>
+  /\/(customers|vendors)\/.*Screen\.tsx$/.test(file),
+);
+assert(B52_LIST_SCREEN_FILES.length === 9, `B5.2 ships 9 Customers/Vendors screens (found ${B52_LIST_SCREEN_FILES.length})`);
+
+const B52_REPORTING_FILES = accountingComponentFiles.filter((file) => file.includes("/reporting/"));
+assert(B52_REPORTING_FILES.length === 2, `B5.2 ships 2 Reporting (aging) screens (found ${B52_REPORTING_FILES.length})`);
+
+/**
+ * Enum-only filters: every status/type/counterparty filter value that reaches
+ * a list request must be validated against a real backend enum via
+ * `readManagerEnum`, never forwarded as a raw `router.query.*` string — that
+ * is precisely how B5-F2 (an unvalidated `?status=` 500ing) happened upstream.
+ * No B5.2 screen may read a filter value any other way.
+ */
+for (const file of B52_LIST_SCREEN_FILES) {
+  const code = codeOnly(file);
+  const hasFilter = /router\.query\.(status|type|counterpartyType|active)\b/.test(code);
+  if (!hasFilter) continue;
+  assert(
+    code.includes("readManagerEnum(") || code.includes("firstManagerQueryValue("),
+    `${file} reads its filter value through a validating helper, never a raw query string`,
+  );
+  assert(
+    !/(status|counterpartyType|type)\s*:\s*router\.query\./.test(code),
+    `${file} never passes a raw router.query value straight into a list request param`,
+  );
+}
+
+/** Clamp-aware paging: batch 3 made `take > 100` a 400, not a silent clamp — every B5.2 list request must stay under that server bound. */
+assert(
+  apiSource.includes("ACCOUNTING_LIST_PAGE_SIZE_MAX = 100"),
+  "the client-side take clamp mirrors the backend's MAX_ACCOUNTING_LIST_PAGE_SIZE (batch 3)",
+);
+assert(
+  apiSource.includes("clampAccountingTake"),
+  "every B5.2 list request clamps `take` client-side before it is ever sent",
+);
+for (const file of B52_LIST_SCREEN_FILES) {
+  assert(
+    codeOnly(file).includes("clampAccountingTake("),
+    `${file} clamps its page size through clampAccountingTake rather than sending a raw number`,
+  );
+}
+
+/** Every B5.2 list route really does carry a server total — a route the registry marks otherwise must never anchor one of these screens. */
+const B52_LIST_ROUTE_KEYS = [
+  "ar.invoices",
+  "ar.accounts",
+  "ar.creditNotes",
+  "ap.bills",
+  "ap.suppliers",
+  "ap.creditNotes",
+  "ap.payments",
+  "ap.recurringProfiles",
+  "ap.reminders",
+];
+for (const key of B52_LIST_ROUTE_KEYS) {
+  const route = getAccountingRoute(key);
+  assert(route.envelope === "data-total" && route.serverTotal, `${key} carries a real server total the B5.2 pager may bind to`);
+}
+
+/** The two Reporting screens read the aging aggregates and render no pager (asserted structurally above) — they must still be registry-bound. */
+assert(getAccountingRoute("ar.aging").manager === "allowed" && getAccountingRoute("ap.aging").manager === "allowed", "both aging reports read routes Manager can reach");
+
+/** No B5.2 detail view was fabricated — every `?xId=` query param screen resolves against a real registry detail/list key, never a made-up one. */
+assert(
+  accountingComponentSource.includes('routeKey="ar.invoices"') &&
+    accountingComponentSource.includes('routeKey="ar.accounts"') &&
+    accountingComponentSource.includes('routeKey="ap.bills"') &&
+    accountingComponentSource.includes('routeKey="ap.suppliers"'),
+  "the four detail-bearing list screens cite their real registry route keys",
+);
+
+/** Dashboard "arrives in B5.x" placeholders for AR/AP KPIs are gone — every one now has a real drillIn. */
+for (const key of [
+  "ar.outstanding",
+  "ar.openInvoices",
+  "ar.customers",
+  "ar.overdue",
+  "ar.buckets",
+  "ap.outstanding",
+  "ap.openBills",
+  "ap.overdue",
+  "ap.topSupplier",
+  "ap.buckets",
+]) {
+  const binding = getAccountingKpi(key);
+  assert(binding.drillIn !== null, `KPI ${key} now links into a real B5.2 surface instead of a "not yet" note`);
+}
+
+console.log("Manager B5.1 + B5.2 assertions: all checks passed.");

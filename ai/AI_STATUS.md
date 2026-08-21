@@ -31,7 +31,62 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
-- **BACKEND GAP BATCH 3 COMPLETE — accounting read-integrity fixes B5-F1…F4 (2026-08-21) — A: COMPLETE / B5.2 UNBLOCKED ON READ INTEGRITY / NOT STARTED / SHARED-NEON DEPLOY STILL GATED.** Track B5.1
+- **ENTERPRISE UI TRACK B5.2 COMPLETE — Manager Accounting Customers + Vendors surfaces (2026-08-21) — A: B5.2 COMPLETE / B5.3…B5.6 GATED.** Frontend + docs only; **no backend / schema / migration /
+  seed / permission / DTO / Postman change**. Nine of B5.1's not-yet Customers/Vendors menu rows are
+  now real surfaces, plus the two Reporting → Aged receivable/payable views pulled forward from
+  B5.6 (same `ar.aging`/`ap.aging` routes the B5.1 dashboard cards already read). **The Accounting
+  menu goes from 1 live row to 12** (of 28 total — B5.1's prose said 24, a miscount this pass
+  corrected by direct inspection of `ACCOUNTING_MENU`). Manager accounting stays **read-only by
+  permission** — same 15 read strings, zero writes; the B5.1 no-write-affordance guard was extended
+  over the entire new tree, never relaxed — every interactive element (row click, pagination,
+  filtering) is a callback PROP into an already-built chrome component, so the literal `onClick=`/
+  `<Button` ban the assertion script enforces over `components/manager/accounting/**` still holds
+  with zero exceptions.
+  **Customers (AR):** Invoices (list+detail), Customer accounts (list+detail), Credit notes
+  (list-only). **Vendors (AP):** Bills (list+detail), Suppliers (list+detail — the one non-flat
+  `{supplier,summary,recentBills,recentPayments}` detail shape in the module), Credit notes,
+  Payments, Recurring profiles, Payment reminders (list-only). **Reporting:** Aged receivable, Aged
+  payable — full-page unpaginated branch reports. All ten AR/AP dashboard KPIs whose "arrives in
+  B5.x" placeholder pointed at one of these now link there for real.
+  🔴 **One live-QA-caught frontend bug, found and fixed in this phase**: the shared
+  `detailRequest()` helper in `lib/accounting/api.ts` blindly appended `/${id}` to every detail
+  route's registry path. Three entries (`ar.invoice`, `ar.account`, `ap.bill`) already carry a path
+  with a literal `:id` placeholder, so the result was a malformed double-id URL that 404'd — every
+  invoice/account/bill detail rendered an honest-looking but WRONG "unavailable" screen for a
+  perfectly valid id, undetected by typecheck/lint/build/assertions (all passed with the bug
+  present). Caught only by opening a real record in the browser against the isolated stack and
+  cross-checking the same id with a direct `curl` (200). Fixed by having `detailRequest()` replace a
+  literal `:id` in the path when present, re-verified live for all four detail-bearing surfaces.
+  ⚠️ **A second, smaller defect found and fixed**: `scripts/manager-b3-assertions.ts`'s HR-employee-
+  PII sweep (written pre-Accounting, banning `taxId`/`bankAccount` anywhere in the Manager tree)
+  collided with the Vendors Supplier record's own, unrelated, non-PII `taxId`/`bankName` fields — the
+  sweep now excludes the accounting subtree (which has its own separate read-only guard) with a
+  written reason; the sweep's real target, employee PII, is unaffected everywhere else.
+  **Validated on an isolated local Docker stack** — Postgres `:55440` (`nimbus_b52_qa`), API `:4051`,
+  web `:3140`; **shared Neon was never connected to or written**; `apps/api/.env` and
+  `packages/db/.env` SHA-256 **identical before and after**; every process this pass started was
+  tracked by PID/container name and stopped individually at teardown, no other host process touched.
+  Web typecheck + lint (no `--fix`) + production build all pass (13 new/changed accounting pages);
+  **17/17** assertion scripts (`manager-b5-assertions.ts` extended with a new §12 of B5.2-specific
+  checks — enum-only filters, clamp-aware paging, per-file pager eligibility, real `drillIn` on every
+  AR/AP KPI; `manager-b3-assertions.ts` fixed for the cross-domain false positive above); **live
+  manual QA toured all 11 new pages** on the isolated stack (Manager demo login) — menu tree
+  confirmed exactly 12 live rows, dashboard KPI links confirmed clickable and correctly routed,
+  status filter confirmed to narrow results/tag the URL/never send an invalid value, branch switch
+  confirmed to re-scope Aged receivable, zero console errors and GET-only bounded (2–4 requests/page)
+  network traffic throughout; `e2e/manager-accounting/` (new customers/vendors/reporting specs +
+  updated menu-and-read-only + the full existing suite) **190 passed / 10 skipped / 0 failed** across
+  **4 viewports** (the 10 skips are the pre-existing 1280×680-only evidence pair, unrelated to
+  B5.2); `e2e/manager-shell/` regression **34/34** at `vp-1440x900` (includes the cross-role
+  boundary suite — waiter/cashier/supervisor cannot open Manager, Manager cannot open their
+  workspaces); aging cross-check (Tapas Downtown → Rooftop Bar) confirmed the dashboard card and the
+  new Aged report agree exactly for the same branch and change together on a branch switch; `/api/
+  health` → `ok` throughout; `git diff --check` clean. See
+  `ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`. **B5.3 (Bank reconciliation
+  workbench), B5.4, B5.5 and the remainder of B5.6 are NOT started — do not begin any of them
+  without explicit owner authorisation.**
+
+**Prior milestone record (superseded above) — BACKEND GAP BATCH 3 COMPLETE — accounting read-integrity fixes B5-F1…F4 (2026-08-21) — A: COMPLETE / B5.2 UNBLOCKED ON READ INTEGRITY / NOT STARTED / SHARED-NEON DEPLOY STILL GATED.** Track B5.1
   surfaced four read-integrity findings once the dashboard actually consumed these routes; this batch
   (Track C **C-24**, owner-authorized) fixes all four at the source and sweeps every sibling route
   with the same defect class. Backend source + tests + docs, plus a minimal explicitly-authorized

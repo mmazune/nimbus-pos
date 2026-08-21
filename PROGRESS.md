@@ -4,7 +4,30 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**BACKEND GAP BATCH 3 COMPLETE — accounting read-integrity fixes B5-F1…F4 (2026-08-21) — A: COMPLETE
+**ENTERPRISE UI TRACK B5.2 COMPLETE — Manager Accounting Customers + Vendors surfaces (2026-08-21) —
+A: B5.2 COMPLETE / B5.3…B5.6 GATED.** Frontend + docs only; **no backend/schema/migration/seed/
+permission/DTO/Postman change**. Nine of B5.1's not-yet Customers/Vendors menu rows are now real
+surfaces (Invoices, Customer accounts, Credit notes ×2, Bills, Suppliers, Payments, Recurring
+profiles, Payment reminders), plus the two Reporting → Aged receivable/payable views pulled forward
+from B5.6. **The Accounting menu goes from 1 live row to 12** (of 28 total). Manager accounting
+stays **read-only by permission** — every interactive element is a callback prop into an
+already-built chrome component, so the no-`onClick=`/`<Button` guard over the accounting tree still
+holds with zero exceptions. All ten AR/AP dashboard KPIs whose "arrives in B5.x" placeholder pointed
+at one of these now link there for real. 🔴 **One live-QA-caught frontend bug fixed**: a shared
+`detailRequest()` helper blindly appended `/${id}` to a registry path that, for three entries
+(`ar.invoice`, `ar.account`, `ap.bill`), already carried a literal `:id` placeholder — producing a
+malformed double-id URL that 404'd every invoice/account/bill detail view, undetected by
+typecheck/lint/build/assertions and caught only by opening a real record in a browser. Fixed and
+re-verified live for all four detail-bearing surfaces. Validated on an isolated local Docker stack
+(Postgres `:55440`, API `:4051`, web `:3140`; shared Neon never connected to or written; `.env`
+SHA-256 identical before/after): typecheck+lint+build pass; 17/17 assertion scripts; live manual QA
+toured all 11 new pages; `e2e/manager-accounting` **190 passed/10 skipped/0 failed** across 4
+viewports; `e2e/manager-shell` regression **34/34**; aging cross-check confirmed the dashboard card
+and the new Aged report agree exactly per branch. See
+`ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`. **B5.3 (Bank reconciliation
+workbench), B5.4, B5.5 and the remainder of B5.6 are NOT started.**
+
+**Prior milestone record (superseded above) — BACKEND GAP BATCH 3 COMPLETE — accounting read-integrity fixes B5-F1…F4 (2026-08-21) — A: COMPLETE
 / B5.2 UNBLOCKED ON READ INTEGRITY / NOT STARTED / SHARED-NEON DEPLOY STILL GATED.** Track B5.1
 surfaced four read-integrity findings once the dashboard actually consumed these routes; this batch
 (Track C **C-24**, owner-authorized) fixes all four at the source. **No Prisma schema/migration/

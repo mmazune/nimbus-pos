@@ -1,16 +1,26 @@
 import { test, expect } from "@playwright/test";
 
 import {
+  ACCOUNTING_AVAILABLE_MENU_KEYS,
   ACCOUNTING_ROUTES,
   accountingMenuTrigger,
   isDesktopTopNavViewport,
   managerLogin,
   waitForAccountingSettled,
+  waitForManagerListSettled,
 } from "./fixtures";
 
 /**
- * Track B5.1 — the menu tree opens and navigates, and the whole module is
- * read-only with no write affordance anywhere.
+ * Track B5.1 (menu shell) + B5.2 (Customers/Vendors/Reporting surfaces) — the
+ * menu tree opens and navigates, and the whole module is read-only with no
+ * write affordance anywhere.
+ *
+ * ⚠️ 2026-08-21: B5.2 promoted 11 rows from not-yet to available (Invoices,
+ * Customer accounts, Credit notes ×2, Bills, Payments, Suppliers, Recurring
+ * profiles, Payment reminders, Aged receivable, Aged payable), joining the
+ * B5.1 Dashboard for **12 available rows total** — the assertions below are
+ * UPDATED (not relaxed) to the new count, and the "which rows are still
+ * inert" checks were re-picked from labels B5.2 did NOT touch.
  */
 test.describe("Manager accounting menu tree", () => {
   test("the Accounting menu opens and its one live row navigates to the dashboard", async ({ page }) => {
@@ -34,7 +44,7 @@ test.describe("Manager accounting menu tree", () => {
     await page.waitForURL(/\/manager\/accounting\/dashboard/, { timeout: 30_000 });
   });
 
-  test("exactly one row is a link; every other row is inert and phase-tagged", async ({ page }) => {
+  test("exactly twelve rows are links; every other row is inert and phase-tagged", async ({ page }) => {
     await managerLogin(page);
     await page.goto("/manager/overview");
     test.skip(!isDesktopTopNavViewport(page), "the desktop dropdown only renders at xl and up");
@@ -43,22 +53,43 @@ test.describe("Manager accounting menu tree", () => {
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
 
-    // Dashboard is the only clickable row in B5.1.
+    // B5.2 (2026-08-21) promoted 11 rows from not-yet to available, joining
+    // the B5.1 Dashboard for 12 — every one cites a live-verified endpoint in
+    // `ACCOUNTING_ROUTE_REGISTRY` via `lib/accounting/menu.ts`.
     //
     // Matched on the ANCHOR, not on `getByRole("link")`: every row carries an
     // explicit `role="menuitem"`, which overrides the implicit link role, so a
     // role-based query would find nothing and prove nothing.
     const links = menu.locator('a[role="menuitem"]');
-    await expect(links).toHaveCount(1);
-    await expect(links).toHaveText(/^Dashboard$/);
+    await expect(links).toHaveCount(ACCOUNTING_AVAILABLE_MENU_KEYS.length);
+    // In menu order — note "Credit notes" appears twice (Customers AND
+    // Vendors each carry their own credit-note surface), which is why this is
+    // asserted as an ordered array rather than a set of unique labels.
+    await expect(links).toHaveText([
+      "Dashboard",
+      "Invoices",
+      "Customer accounts",
+      "Credit notes",
+      "Bills",
+      "Payments",
+      "Credit notes",
+      "Suppliers",
+      "Recurring profiles",
+      "Payment reminders",
+      "Aged receivable",
+      "Aged payable",
+    ]);
 
     // Every not-yet row carries a real sub-phase tag, and none is an anchor.
-    for (const label of ["Invoices", "Bills", "Reconciliation", "Journal entries", "Chart of accounts"]) {
+    // Re-picked from labels B5.2 did NOT touch (Invoices/Bills/Suppliers etc.
+    // moved to the available list above, so they can no longer appear here).
+    for (const label of ["Bank accounts", "Reconciliation", "Journal entries", "Posting errors", "Chart of accounts"]) {
       await expect(menu.getByText(label, { exact: true })).toBeVisible();
       await expect(menu.locator('a[role="menuitem"]', { hasText: new RegExp(`^${label}$`) })).toHaveCount(0);
     }
-    const tags = await menu.getByText(/^B5\.[23456]$/).count();
-    expect(tags).toBeGreaterThanOrEqual(20);
+    // Exactly 16 inert rows remain (28 total − 12 available), one tag each.
+    const tags = await menu.getByText(/^B5\.[3456]$/).count();
+    expect(tags).toBe(16);
   });
 
   test("surfaces Nimbus cannot back are ABSENT, not greyed out", async ({ page }) => {
@@ -129,6 +160,73 @@ test.describe("Manager accounting is read-only", () => {
     await page.goto(ACCOUNTING_ROUTES.dashboard);
     await waitForAccountingSettled(page);
     await page.waitForTimeout(1_000);
+
+    expect(methods.length).toBeGreaterThan(0);
+    expect(methods.every((method) => method === "GET")).toBe(true);
+  });
+});
+
+/**
+ * B5.2 (2026-08-21) — the same read-only guarantees, re-proven on the eleven
+ * new Customers/Vendors/Reporting surfaces, not just the B5.1 dashboard.
+ * These are ADDITIONAL tests, not a relaxation of the ones above: the
+ * dashboard's own "no write request" / "no forbidden control" specs are
+ * untouched.
+ */
+const B5_2_SURFACES = [
+  ACCOUNTING_ROUTES.customerInvoices,
+  ACCOUNTING_ROUTES.customerAccounts,
+  ACCOUNTING_ROUTES.customerCreditNotes,
+  ACCOUNTING_ROUTES.vendorBills,
+  ACCOUNTING_ROUTES.vendorSuppliers,
+  ACCOUNTING_ROUTES.vendorCreditNotes,
+  ACCOUNTING_ROUTES.vendorPayments,
+  ACCOUNTING_ROUTES.vendorRecurringProfiles,
+  ACCOUNTING_ROUTES.vendorReminders,
+  ACCOUNTING_ROUTES.agedReceivable,
+  ACCOUNTING_ROUTES.agedPayable,
+] as const;
+
+test.describe("Manager accounting is read-only on the B5.2 Customers/Vendors/Reporting surfaces", () => {
+  test("no create, post, approve or match control renders on any B5.2 list/report surface", async ({ page }) => {
+    await managerLogin(page);
+
+    for (const route of B5_2_SURFACES) {
+      await page.goto(route);
+      await waitForManagerListSettled(page);
+
+      const content = page.locator("main");
+      for (const label of [/^new$/i, /^create$/i, /^post$/i, /^approve$/i, /^match$/i, /^upload$/i, /^import$/i]) {
+        await expect(content.getByRole("button", { name: label })).toHaveCount(0);
+      }
+      await expect(content.locator("form")).toHaveCount(0);
+      // ⚠️ Deliberately NOT the dashboard test's blanket `button:disabled`
+      // count-0 check: these list surfaces legitimately render a disabled
+      // Previous-page pager button on page 1 (`hasPrevious: false`) and a
+      // disabled Next-page button when the whole dataset fits on one page —
+      // real navigational state, not a write affordance the owner's ruling
+      // bans. The forbidden-label loop above is the actual write-affordance
+      // check and it is NOT relaxed.
+    }
+  });
+
+  test("every B5.2 surface issues GET-only accounting-scoped requests", async ({ page }) => {
+    await managerLogin(page);
+    const methods: string[] = [];
+    page.on("request", (request) => {
+      const url = request.url();
+      // Same route-glob the dashboard spec above uses — already covers
+      // `/api/accounting/ar/*` and `/api/accounting/ap/*`, so no narrowing
+      // was needed, only broader page coverage.
+      if (!/\/api\/(accounting|finance|franchise)\//.test(url)) return;
+      methods.push(request.method());
+    });
+
+    for (const route of B5_2_SURFACES) {
+      await page.goto(route);
+      await waitForManagerListSettled(page);
+      await page.waitForTimeout(500);
+    }
 
     expect(methods.length).toBeGreaterThan(0);
     expect(methods.every((method) => method === "GET")).toBe(true);

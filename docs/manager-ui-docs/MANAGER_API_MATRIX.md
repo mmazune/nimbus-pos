@@ -4,6 +4,57 @@ This matrix documents the backend API endpoints exposed to the Manager role (`ro
 
 ---
 
+## 2026-08-21 — TRACK B5.2: Customers + Vendors rows now CONSUMED by list/detail surfaces
+
+Track B5.2 (`ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`) turns nine of B5.1's
+not-yet Customers/Vendors menu rows into real list (and, for four of them, detail) surfaces, plus
+pulls the Reporting group's "Aged receivable"/"Aged payable" rows forward from B5.6. Every route
+below was already present in the 38-route registry (B5.1 built it for exactly this purpose); B5.2
+adds no new registry entries — it consumes ones that already existed unconsumed.
+
+| Route | Permission | Scope | Envelope | Used for |
+| --- | --- | --- | --- | --- |
+| `GET /api/accounting/ar/invoices?status=&skip=&take=` | `accounting:ar:invoice:read` | branch | `{data,total,skip,take}` | Customers → Invoices list |
+| `GET /api/accounting/ar/invoices/:id` | `accounting:ar:invoice:read` | branch | object | Invoice detail (line items + `receiptAllocs[].receipt`) |
+| `GET /api/accounting/ar/accounts?status=&type=&skip=&take=` | `accounting:ar:account:read` | branch | `{data,total,skip,take}` | Customers → Customer accounts list |
+| `GET /api/accounting/ar/accounts/:id` | `accounting:ar:account:read` | branch | object | Account detail (`_count.invoices/receipts/creditNotes`) |
+| `GET /api/accounting/ar/credit-notes?status=&skip=&take=` | `accounting:ar:credit-note:read` | branch | `{data,total,skip,take}` | Customers → Credit notes list (list-only, `total:0` on the reference dataset) |
+| `GET /api/accounting/ap/bills?status=&skip=&take=` | `accounting:ap:bill:read` | branch | `{data,total,skip,take}` | Vendors → Bills list |
+| `GET /api/accounting/ap/bills/:id` | `accounting:ap:bill:read` | branch | object | Bill detail (line items + `paymentAllocs[].vendorPayment`) |
+| `GET /api/accounting/ap/suppliers?counterpartyType=&skip=&take=` | `accounting:ap:bill:read` | branch | `{data,total,skip,take}` | Vendors → Suppliers list |
+| `GET /api/accounting/ap/suppliers/:id` | `accounting:ap:bill:read` | branch | `{supplier,summary,recentBills,recentPayments}` — the one non-flat detail shape in the module | Supplier detail |
+| `GET /api/accounting/ap/credit-notes?status=&skip=&take=` | `accounting:ap:credit-note:read` | branch | `{data,total,skip,take}` | Vendors → Credit notes list (list-only, `total:0` on the reference dataset) |
+| `GET /api/accounting/ap/payments?status=&skip=&take=` | `accounting:ap:bill:read` | branch | `{data,total,skip,take}` | Vendors → Payments list (list-only, 12 rows on Tapas Downtown) |
+| `GET /api/accounting/ap/recurring-profiles?isActive=&skip=&take=` | `accounting:ap:recurring:read` | branch | `{data,total,skip,take}` | Vendors → Recurring profiles list (list-only, `total:0` on the reference dataset) |
+| `GET /api/accounting/ap/reminders?status=&skip=&take=` | `accounting:ap:reminder:read` | branch | `{data,total,skip,take}` | Vendors → Payment reminders list (list-only, `total:0` on the reference dataset) |
+| `GET /api/accounting/ar/aging?take=100` | `accounting:ar:aging:read` | branch | `{asOf,total,skip,take,summary,accounts}` | Reporting → Aged receivable (full-page; same route the B5.1 dashboard card already reads, separate query key) |
+| `GET /api/accounting/ap/aging` | `accounting:ap:bill:read` | branch | `{asOf,buckets,bySupplier,billCount}` | Reporting → Aged payable (full-page; unpaged, no completeness caveat) |
+
+**Status/type enum values are read-time validated, never forwarded raw**: every `status`/`type`/
+`counterpartyType` query param is built from a hard-coded const array matching the live Prisma enum
+(`AR_INVOICE_STATUSES`, `AR_ACCOUNT_STATUSES`/`AR_ACCOUNT_TYPES`, `AR_CREDIT_NOTE_STATUSES`,
+`AP_BILL_STATUSES`, `AP_COUNTERPARTY_TYPES`, `AP_CREDIT_NOTE_STATUSES`, `AP_PAYMENT_STATUSES`, plus
+a local reminder-status array) via `readManagerEnum()`, so a hand-edited URL with an invalid value
+resolves to "no filter" client-side rather than depending on the backend's post-batch-3 `@IsEnum`
+400 as the only guard.
+
+**`take` is clamped to 100 client-side** (`clampAccountingTake`, mirroring the backend's
+`MAX_ACCOUNTING_LIST_PAGE_SIZE` from batch 3) before every request — a list screen can never send a
+`take` that would 400.
+
+**One live-QA-caught frontend defect, fixed in this phase**: the shared `detailRequest()` helper in
+`lib/accounting/api.ts` blindly appended `/${id}` to every detail route's path. For `ar.invoice`,
+`ar.account` and `ap.bill` — whose registry `path` already carries a literal `:id` placeholder
+(`/api/accounting/ar/invoices/:id`) — this produced a malformed double-id URL
+(`.../invoices/:id/<realId>`), which 404'd and surfaced as an honest-looking "Invoice unavailable"
+screen for what was actually a perfectly good id. Caught by opening a real invoice in the browser
+against the isolated stack and cross-checking the same id with a direct `curl` (200). Fixed by
+having `detailRequest()` replace a literal `:id` in the path when present, and only append `/${id}`
+for the one registry entry that has no separate detail key (`ap.suppliers`). Re-verified live for
+all four detail-bearing surfaces after the fix.
+
+---
+
 ## 2026-08-21 — BACKEND GAP BATCH 3: B5-F1…F4 read-integrity findings FIXED
 
 `ai/BACKEND_GAP_BATCH3_COMPLETION_REPORT.md` is the record. The four findings the B5.1 pass below

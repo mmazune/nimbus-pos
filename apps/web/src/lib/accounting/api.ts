@@ -5,7 +5,20 @@ import { getAccountingRoute } from "./route-registry";
 import type {
   AccountingListEnvelope,
   ApAgingResponse,
+  ApBillDetail,
+  ApBillRow,
+  ApCreditNoteRow,
+  ApPaymentRow,
+  ApRecurringProfileRow,
+  ApReminderRow,
+  ApSupplierDetail,
+  ApSupplierRow,
+  ArAccountDetail,
+  ArAccountRow,
   ArAgingResponse,
+  ArCreditNoteRow,
+  ArInvoiceDetail,
+  ArInvoiceRow,
   BankAccountRow,
   BankReconciliationRow,
   FiscalPeriodRow,
@@ -100,6 +113,222 @@ export function getFiscalPeriodsRequest(token: string, branchId: string) {
 /** ORGANISATION data — see `accounting.periodCloseRuns` in the registry. */
 export function getPeriodCloseRunsRequest(token: string, branchId: string) {
   return apiRequest<PeriodCloseRunRow[]>(routePath("accounting.periodCloseRuns"), { token, branchId });
+}
+
+// ── Track B5.2: Customers (AR) + Vendors (AP) list/detail reads ─────────────
+//
+// Same "reads only" rule as the rest of this file — no write function exists
+// or may exist here. Every list route below returns `{data,total,skip,take}`
+// (`data-total`, `serverTotal: true` in the registry) and the backend now
+// CLAMPS `take` at 100 (backend gap batch 3, `MAX_ACCOUNTING_LIST_PAGE_SIZE`)
+// — `take > 100` is a 400, not a silent clamp, so `clampAccountingTake` bounds
+// every request client-side before it is sent.
+
+/** Mirrors the backend's own `MAX_ACCOUNTING_LIST_PAGE_SIZE` (batch 3). Sending more 400s. */
+export const ACCOUNTING_LIST_PAGE_SIZE_MAX = 100;
+
+/** The list page size these surfaces request — comfortably under the server clamp. */
+export const ACCOUNTING_LIST_PAGE_SIZE = 25;
+
+export function clampAccountingTake(take: number) {
+  return Math.min(Math.max(Math.trunc(take) || 1, 1), ACCOUNTING_LIST_PAGE_SIZE_MAX);
+}
+
+type AccountingListParams = Record<string, string | number | boolean | undefined | null>;
+
+function toQueryString(params: AccountingListParams) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    search.set(key, String(value));
+  }
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+function listRequest<T>(
+  routeKey: string,
+  token: string,
+  branchId: string,
+  params: AccountingListParams,
+) {
+  return apiRequest<AccountingListEnvelope<T>>(`${routePath(routeKey)}${toQueryString(params)}`, {
+    token,
+    branchId,
+  });
+}
+
+/**
+ * Some registry entries (`ar.invoice`, `ar.account`, `ap.bill`) are their OWN
+ * detail key with a path that already carries a literal `:id` placeholder
+ * (e.g. `/api/accounting/ar/invoices/:id`), documentation-style, matching how
+ * the Nest controller declares the route. Others (`ap.suppliers`) have no
+ * separate detail key — the list path has no placeholder, and the real id is
+ * simply appended. Blindly appending `/${id}` to a path that already ends in
+ * `:id` produced a malformed double-id URL (`.../invoices/:id/<realId>`),
+ * caught live: the API 404s appear as an "Invoice unavailable" screen state
+ * for what is otherwise a perfectly good id.
+ */
+function detailRequest<T>(routeKey: string, token: string, branchId: string, id: string) {
+  const path = routePath(routeKey);
+  const resolved = path.includes(":id") ? path.replace(":id", id) : `${path}/${id}`;
+  return apiRequest<T>(resolved, { token, branchId });
+}
+
+// ── Customers (AR) ───────────────────────────────────────────────────────────
+
+export type ListArInvoicesParams = {
+  status?: string;
+  customerAccountId?: string;
+  skip?: number;
+  take?: number;
+};
+
+export function listArInvoicesRequest(
+  token: string,
+  branchId: string,
+  params: ListArInvoicesParams = {},
+) {
+  return listRequest<ArInvoiceRow>("ar.invoices", token, branchId, {
+    status: params.status,
+    customerAccountId: params.customerAccountId,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export function getArInvoiceRequest(token: string, branchId: string, id: string) {
+  return detailRequest<ArInvoiceDetail>("ar.invoice", token, branchId, id);
+}
+
+export type ListArAccountsParams = { status?: string; type?: string; skip?: number; take?: number };
+
+export function listArAccountsRequest(
+  token: string,
+  branchId: string,
+  params: ListArAccountsParams = {},
+) {
+  return listRequest<ArAccountRow>("ar.accounts", token, branchId, {
+    status: params.status,
+    type: params.type,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export function getArAccountRequest(token: string, branchId: string, id: string) {
+  return detailRequest<ArAccountDetail>("ar.account", token, branchId, id);
+}
+
+export type ListArCreditNotesParams = { status?: string; customerAccountId?: string; skip?: number; take?: number };
+
+export function listArCreditNotesRequest(
+  token: string,
+  branchId: string,
+  params: ListArCreditNotesParams = {},
+) {
+  return listRequest<ArCreditNoteRow>("ar.creditNotes", token, branchId, {
+    status: params.status,
+    customerAccountId: params.customerAccountId,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+// ── Vendors (AP) ──────────────────────────────────────────────────────────────
+
+export type ListApBillsParams = { status?: string; supplierId?: string; skip?: number; take?: number };
+
+export function listApBillsRequest(token: string, branchId: string, params: ListApBillsParams = {}) {
+  return listRequest<ApBillRow>("ap.bills", token, branchId, {
+    status: params.status,
+    supplierId: params.supplierId,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export function getApBillRequest(token: string, branchId: string, id: string) {
+  return detailRequest<ApBillDetail>("ap.bill", token, branchId, id);
+}
+
+export type ListApSuppliersParams = { counterpartyType?: string; activeOnly?: boolean; skip?: number; take?: number };
+
+export function listApSuppliersRequest(
+  token: string,
+  branchId: string,
+  params: ListApSuppliersParams = {},
+) {
+  return listRequest<ApSupplierRow>("ap.suppliers", token, branchId, {
+    counterpartyType: params.counterpartyType,
+    activeOnly: params.activeOnly,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export function getApSupplierRequest(token: string, branchId: string, id: string) {
+  return detailRequest<ApSupplierDetail>("ap.suppliers", token, branchId, id);
+}
+
+export type ListApCreditNotesParams = { status?: string; supplierId?: string; skip?: number; take?: number };
+
+export function listApCreditNotesRequest(
+  token: string,
+  branchId: string,
+  params: ListApCreditNotesParams = {},
+) {
+  return listRequest<ApCreditNoteRow>("ap.creditNotes", token, branchId, {
+    status: params.status,
+    supplierId: params.supplierId,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export type ListApPaymentsParams = { status?: string; supplierId?: string; skip?: number; take?: number };
+
+export function listApPaymentsRequest(
+  token: string,
+  branchId: string,
+  params: ListApPaymentsParams = {},
+) {
+  return listRequest<ApPaymentRow>("ap.payments", token, branchId, {
+    status: params.status,
+    supplierId: params.supplierId,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export type ListApRecurringProfilesParams = { isActive?: boolean; supplierId?: string; skip?: number; take?: number };
+
+export function listApRecurringProfilesRequest(
+  token: string,
+  branchId: string,
+  params: ListApRecurringProfilesParams = {},
+) {
+  return listRequest<ApRecurringProfileRow>("ap.recurringProfiles", token, branchId, {
+    isActive: params.isActive,
+    supplierId: params.supplierId,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
+}
+
+export type ListApRemindersParams = { status?: string; supplierId?: string; skip?: number; take?: number };
+
+export function listApRemindersRequest(
+  token: string,
+  branchId: string,
+  params: ListApRemindersParams = {},
+) {
+  return listRequest<ApReminderRow>("ap.reminders", token, branchId, {
+    status: params.status,
+    supplierId: params.supplierId,
+    skip: params.skip ?? 0,
+    take: clampAccountingTake(params.take ?? ACCOUNTING_LIST_PAGE_SIZE),
+  });
 }
 
 export type { JournalRow };

@@ -220,7 +220,22 @@ const FORBIDDEN_IN_CODE = [
   "taxId",
 ] as const;
 
-for (const file of managerFiles) {
+/**
+ * Track B5 (2026-08-21) added Accounting as a sibling domain with its own
+ * verified AP `Supplier` fields — `taxId` (a business Tax ID) and
+ * `bankName`/`bankAccountNo` (where to pay a supplier) — that are legitimate,
+ * non-PII, non-employee data (see `ai/ACCOUNTING_API_VERIFICATION_REPORT.md`
+ * and `lib/accounting/types.ts`'s `ApSupplierDetail`), not a leak of this
+ * check's real target: an EMPLOYEE's `taxId`/`bankAccount` from
+ * `pos:hr:compensation:read`. The accounting tree has its own read-only guard
+ * (`scripts/manager-b5-assertions.ts`) and is excluded from this HR-specific
+ * sweep so the two do not collide on a shared English word.
+ */
+const filesForPiiSweep = managerFiles.filter(
+  (file) => !file.includes(`${MANAGER_COMPONENT_DIR}/accounting/`) && !file.includes(`${MANAGER_PAGES_DIR}/accounting/`),
+);
+
+for (const file of filesForPiiSweep) {
   const code = codeOnly(file);
   const isDisclosure = DISCLOSURE_FILES.has(file);
 
