@@ -1828,6 +1828,20 @@ const DEMO_USERS: DemoUser[] = [
     roleName: 'Accountant',
   },
   {
+    // B5.7-GAP: added so Supervisor — the role closest to Manager and
+    // therefore the likeliest to hold an accidental grant — is reliably
+    // available for cross-role testing without a separate demo-import step.
+    // Previously only Owner/Manager/Accountant/Cashier/Chef/Waiter were
+    // seeded here; this file already carried an acknowledging comment near
+    // DEMO_QUICK_PINS ("We don't seed a supervisor user in M2").
+    email: 'supervisor@demo.local',
+    password: 'Supervisor#123',
+    pin: '7890',
+    firstName: 'Demo',
+    lastName: 'Supervisor',
+    roleName: 'Supervisor',
+  },
+  {
     email: 'cashier@demo.local',
     password: 'Cashier#123',
     pin: '3456',
@@ -1947,6 +1961,15 @@ const MEMBERSHIP_SEED: {
     {
       email: 'accountant@demo.local',
       roleName: 'Accountant',
+      branchCodes: ['MAIN', 'DOWNTOWN'],
+      defaultBranch: 'MAIN',
+    },
+    {
+      // Same branch shape as Manager (both branches) — Supervisor is the
+      // role closest to Manager, so testing it against the same branch set
+      // is the more informative cross-role check.
+      email: 'supervisor@demo.local',
+      roleName: 'Supervisor',
       branchCodes: ['MAIN', 'DOWNTOWN'],
       defaultBranch: 'MAIN',
     },
@@ -2086,10 +2109,10 @@ const DEMO_QUICK_PINS: {
     { email: 'waiter@demo.local', pin: '123456', tier: 'LOW_6', pinLength: 6 },
     { email: 'cashier@demo.local', pin: '654321', tier: 'LOW_6', pinLength: 6 },
     { email: 'manager@demo.local', pin: '12345678', tier: 'HIGH_8', pinLength: 8 },
+    // B5.7-GAP: supervisor@demo.local is now seeded above (DEMO_USERS); same
+    // HIGH_8 tier as Manager, the role it sits closest to.
+    { email: 'supervisor@demo.local', pin: '87654321', tier: 'HIGH_8', pinLength: 8 },
   ];
-
-// Add supervisor seed if user exists
-// Note: We don't seed a supervisor user in M2, but we handle it gracefully
 
 function derivePinLookupHash(pepper: string, branchId: string, pin: string): string {
   return crypto.createHmac('sha256', pepper).update(`${branchId}:${pin}`).digest('hex');

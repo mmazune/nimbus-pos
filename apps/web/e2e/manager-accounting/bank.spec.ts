@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 
 import {
   ACCOUNTING_ROUTES,
+  apiCreateReconciliationFixture,
+  apiLoginManager,
   BANK_RECONCILIATION_STATUS_VALUES,
   BANK_STATEMENT_STATUS_VALUES,
   MANAGER_CFG,
@@ -21,10 +23,12 @@ import {
 
 /**
  * Track B5.3 — Manager Accounting → Bank: Bank accounts, Bank statements,
- * Reconciliation. Frontend-only, strictly READ-ONLY (PC-01) — Manager holds
- * `pos:accounting:{bank-accounts,bank-statements,reconciliation}:read` but
- * neither `:match` nor `:create`, so there is no match/skip/complete control
- * anywhere on this surface.
+ * Reconciliation. Bank accounts and Bank statements stay strictly READ-ONLY.
+ * **Reconciliation gained real Match/Skip/Complete controls in Track B5.7**
+ * (2026-08-22) — PERMS-2 resolved the `:match`/`:create` permissions B5.3
+ * found Manager lacked, and B5.7 built the workbench on top of them.
+ * Starting a NEW reconciliation (creating a bank account, importing a
+ * statement) remains deliberately undeferred — see `ACCOUNTING_DENIED_WRITES`.
  *
  * All three routes are PC-06 bare arrays with NO server-side status filter
  * (only `?bankAccountId=`) — the status chip filters the already-fetched
@@ -222,11 +226,17 @@ test.describe("Manager accounting — Reconciliation", () => {
     await expect(statusPipeline(page)).toBeVisible();
     await expect(page.getByRole("link", { name: "Reconciliation" })).toBeVisible();
     await expect(page.locator("main")).toContainText(/Difference/i);
-    // The completion precondition is stated in words — never a Match/Skip/
-    // Complete button, which the module-wide read-only sweep below also proves.
-    await expect(page.getByRole("button", { name: /^match$/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^skip$/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^complete$/i })).toHaveCount(0);
+    // INVERTED (Track B5.7): Match/Skip render on an UNMATCHED line while the
+    // reconciliation is OPEN/IN_PROGRESS; COMPLETED renders neither (see the
+    // dedicated write-lifecycle describe block below for a test that pins a
+    // specific fixture and exercises match/skip/complete for real). This
+    // test only asserts internal consistency: Match/Skip must never coexist
+    // with a rendered read-only disclosure card on the SAME record.
+    const hasLineActions =
+      (await page.getByRole("button", { name: /^match$/i }).count()) +
+      (await page.getByRole("button", { name: /^skip$/i }).count());
+    const hasReadOnlyDisclosure = await page.getByText(/Starting a new reconciliation/i).count();
+    expect(hasLineActions > 0 && hasReadOnlyDisclosure > 0).toBe(false);
   });
 
   test("a completed reconciliation's difference reads zero and an in-progress one's does not, when both exist", async ({
@@ -278,12 +288,16 @@ test.describe("Manager accounting — Reconciliation", () => {
 /**
  * The same read-only guarantee `menu-and-read-only.spec.ts` proves for the
  * B5.1 dashboard and B5.2 Customers/Vendors surfaces, re-proven here for all
- * three Bank surfaces.
+ * three Bank surfaces AT LIST LEVEL. Reconciliation's Match/Skip/Complete
+ * controls (Track B5.7) only render inside a selected reconciliation's
+ * detail, never on this list — so this sweep still holds; the dedicated
+ * write-lifecycle describe block below opens a record and positively
+ * asserts the controls exist there instead.
  */
 const BANK_SURFACES = [ACCOUNTING_ROUTES.bankAccounts, ACCOUNTING_ROUTES.bankStatements, ACCOUNTING_ROUTES.bankReconciliation] as const;
 
-test.describe("Manager accounting is read-only on the B5.3 Bank surfaces", () => {
-  test("no new/create/import/match/skip/complete control renders on any Bank surface", async ({ page }) => {
+test.describe("Manager accounting is read-only on the B5.3 Bank LIST views", () => {
+  test("no new/create/import/match/skip/complete control renders on any Bank list view", async ({ page }) => {
     await managerLogin(page);
 
     for (const route of BANK_SURFACES) {
@@ -350,5 +364,86 @@ test.describe("Manager accounting is read-only on the B5.3 Bank surfaces", () =>
     // on the isolated stack this pass seeded — the empty state is a real read
     // outcome, not a stuck loading state or a crash.
     await expect(page.getByRole("heading", { name: /unavailable/i })).toHaveCount(0);
+  });
+});
+
+/**
+ * Track B5.7 (2026-08-22) — Bank reconciliation write coverage. A bank
+ * account, a one-line statement, a matching manual entry and a fresh OPEN
+ * reconciliation are all created live via the API (self-contained QA data),
+ * then driven through match -> complete THROUGH THE REAL UI. Separately
+ * proves the backend's OPEN -> IN_PROGRESS auto-transition on first action —
+ * a real bug in the original B5.7 UI (gating Match/Skip on IN_PROGRESS only,
+ * making the very first action on a fresh OPEN reconciliation unreachable)
+ * was found and fixed because of this exact behaviour; this test is the
+ * regression guard for that fix.
+ */
+test.describe.serial("Manager accounting — Bank reconciliation write lifecycle (Track B5.7)", () => {
+  test("match a line on a freshly-OPEN reconciliation (not yet IN_PROGRESS) through the real UI, then complete it", async ({
+    page,
+  }) => {
+    const token = await apiLoginManager();
+    const fixture = await apiCreateReconciliationFixture(token, MANAGER_CFG.defaultBranchId);
+
+    await managerLogin(page);
+    await page.goto(`${ACCOUNTING_ROUTES.bankReconciliation}?reconciliationId=${fixture.reconciliationId}`);
+    await waitForManagerListSettled(page);
+
+    // Regression guard: the row must be actionable while still OPEN.
+    await expect(statusPipeline(page)).toContainText(/open/i);
+    const matchButton = page.getByRole("button", { name: /^match$/i });
+    await expect(matchButton).toBeVisible();
+
+    await matchButton.click();
+    const matchDialog = page.getByRole("dialog", { name: /match statement line/i });
+    await expect(matchDialog).toBeVisible();
+    await matchDialog.getByLabel(/^manual entry id/i).fill(fixture.manualEntryId);
+    await matchDialog.getByRole("button", { name: /^match$/i }).click();
+    await expect(matchDialog).toBeHidden();
+
+    // The backend auto-transitions OPEN -> IN_PROGRESS on this first action.
+    await expect(statusPipeline(page)).toContainText(/in progress/i);
+    await expect(page.getByText(/^matched$/i).first()).toBeVisible();
+
+    const completeButton = page.getByRole("button", { name: /^complete reconciliation$/i });
+    await expect(completeButton).toBeEnabled();
+    await completeButton.click();
+    const completeDialog = page.getByRole("dialog", { name: /complete reconciliation/i });
+    await expect(completeDialog).toBeVisible();
+    await completeDialog.getByRole("button", { name: /^complete$/i }).click();
+    await expect(completeDialog).toBeHidden();
+
+    await expect(statusPipeline(page)).toContainText(/completed/i);
+    // Terminal — no line action and no Complete control remain.
+    await expect(page.getByRole("button", { name: /^match$/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^complete reconciliation$/i })).toHaveCount(0);
+  });
+
+  test("skip a line, then Complete is refused (400) while the difference stays non-zero", async ({ page }) => {
+    const token = await apiLoginManager();
+    const fixture = await apiCreateReconciliationFixture(token, MANAGER_CFG.defaultBranchId);
+
+    await managerLogin(page);
+    await page.goto(`${ACCOUNTING_ROUTES.bankReconciliation}?reconciliationId=${fixture.reconciliationId}`);
+    await waitForManagerListSettled(page);
+
+    const skipButton = page.getByRole("button", { name: /^skip$/i });
+    await expect(skipButton).toBeVisible();
+    await skipButton.click();
+    const skipDialog = page.getByRole("dialog", { name: /skip statement line/i });
+    await expect(skipDialog).toBeVisible();
+    await skipDialog.getByRole("button", { name: /^skip$/i }).click();
+    await expect(skipDialog).toBeHidden();
+
+    await expect(page.getByText(/^skipped$/i).first()).toBeVisible();
+    // A SKIPPED line never counts toward matched — Complete stays disabled.
+    await expect(page.getByRole("button", { name: /^complete reconciliation$/i })).toBeDisabled();
+
+    const headers = { Authorization: `Bearer ${token}`, "X-Branch-Id": MANAGER_CFG.defaultBranchId };
+    const completeRes = await fetch(`${MANAGER_CFG.api}/api/accounting/reconciliation/${fixture.reconciliationId}/complete`, {
+      method: "POST",
+      headers,
+    });
+    expect(completeRes.status).toBe(400);
   });
 });

@@ -2,11 +2,14 @@ import { test, expect } from "@playwright/test";
 
 import {
   ACCOUNTING_ROUTES,
+  apiCreateFiscalPeriod,
+  apiLoginManager,
   branchSwitcher,
   captureConsoleErrors,
   card,
   kpi,
   managerLogin,
+  MANAGER_CFG,
   statusPipeline,
   waitForAccountingSettled,
   waitForManagerListSettled,
@@ -14,19 +17,18 @@ import {
 
 /**
  * Track B5.5 — Manager Accounting → Closing: Fiscal periods, Period close
- * runs. Frontend-only, strictly READ-ONLY (PC-01/OD-9) — Manager holds
- * `pos:accounting:periods:read` and `pos:accounting:period-close-runs:read`
- * but neither `:open`, `:close` nor `:lock`, so there is no lifecycle control
- * anywhere on either surface (re-verified live: PATCH .../open, .../close,
- * .../lock all 403).
+ * runs. List READS stay read-only (Period close runs has no write route at
+ * all); Fiscal periods gained real create/open/close/lock controls in
+ * **Track B5.7** (2026-08-22).
  *
- * 🔴 C-27 (new finding, this pass): Manager's token ADDITIONALLY holds
+ * 🟢 C-27 (found in Track B5.5, 2026-08-21): Manager's token held
  * `pos:accounting:periods:create` — a pre-existing M28-era grant the
- * 2026-08-20 permissions cutover never revoked. Live-proven: Manager
- * `POST /accounting/periods` → 201 on the isolated stack. This UI still
- * renders NO create control despite the token technically permitting one —
- * the Fiscal periods screen discloses this by name rather than claiming a
- * blanket "read access only" that this specific grant falsifies.
+ * 2026-08-20 permissions cutover never revoked. B5.5 disclosed the finding
+ * and deliberately rendered no create control despite the token technically
+ * permitting one. PERMS-2 (2026-08-21) made that grant deliberate (plus
+ * `:open`/`:close`/`:lock`), and Track B5.7 built the controls on top of it —
+ * this spec's own C-27 test is INVERTED below to assert the controls exist,
+ * not that they're absent.
  *
  * Both routes are PC-06 bare arrays with no server total and ORGANISATION
  * scope (batch 2: `FiscalPeriod` has no `branch_id` column at all;
@@ -67,7 +69,7 @@ test.describe("Manager accounting — Fiscal periods", () => {
     await expect(page.getByText(/organisation-wide/i)).toBeVisible();
   });
 
-  test("the C-27 finding is disclosed by name — Manager's token can create a period, but this screen offers no create control", async ({
+  test("INVERTED (Track B5.7) — the C-27 finding is still disclosed by name, and the screen now offers the real create control it grants", async ({
     page,
   }) => {
     await managerLogin(page);
@@ -76,10 +78,7 @@ test.describe("Manager accounting — Fiscal periods", () => {
 
     await expect(page.getByText(/C-27/).first()).toBeVisible();
     await expect(page.getByText(/pos:accounting:periods:create/)).toBeVisible();
-    const content = page.locator("main");
-    for (const label of [/^new$/i, /^create$/i, /^open$/i, /^close$/i, /^lock$/i]) {
-      await expect(content.getByRole("button", { name: label })).toHaveCount(0);
-    }
+    await expect(page.getByRole("button", { name: /^new period$/i })).toBeVisible();
   });
 
   test("every seeded lifecycle stage renders through the status pipeline, and LOCKED is never off-pipeline", async ({
@@ -284,17 +283,18 @@ test.describe("Manager accounting — Period close runs", () => {
 });
 
 /**
- * Read-only guarantees, re-proven on the two B5.5 surfaces — same shape as
- * the B5.2/B5.3/B5.4 sweeps elsewhere in this directory. Additional tests,
- * not a relaxation of the module-wide ones in `menu-and-read-only.spec.ts`.
+ * Read-only guarantee re-proven on Period close runs ONLY — Fiscal periods
+ * is write-enabled by Track B5.7 (below); Period close runs still has no
+ * write route at all (a close run is a byproduct of Close, not its own
+ * writeable surface), so it keeps the original ban.
  */
-const B5_5_SURFACES = [ACCOUNTING_ROUTES.fiscalPeriods, ACCOUNTING_ROUTES.periodCloseRuns] as const;
+const B5_5_READ_ONLY_SURFACES = [ACCOUNTING_ROUTES.periodCloseRuns] as const;
 
-test.describe("Manager accounting is read-only on the B5.5 Closing surfaces", () => {
-  test("no create, open, close or lock control renders on either B5.5 surface", async ({ page }) => {
+test.describe("Manager accounting is read-only on Period close runs (Fiscal periods is write-enabled — see the B5.7 describe block below)", () => {
+  test("no create, open, close or lock control renders on Period close runs", async ({ page }) => {
     await managerLogin(page);
 
-    for (const route of B5_5_SURFACES) {
+    for (const route of B5_5_READ_ONLY_SURFACES) {
       await page.goto(route);
       await waitForManagerListSettled(page);
 
@@ -315,7 +315,9 @@ test.describe("Manager accounting is read-only on the B5.5 Closing surfaces", ()
       methods.push(request.method());
     });
 
-    for (const route of B5_5_SURFACES) {
+    // Both routes, on mere navigation (no button clicked) — merely loading a
+    // write-enabled page must never itself issue a write.
+    for (const route of [ACCOUNTING_ROUTES.fiscalPeriods, ACCOUNTING_ROUTES.periodCloseRuns]) {
       await page.goto(route);
       await waitForManagerListSettled(page);
       await page.waitForTimeout(500);
@@ -323,6 +325,106 @@ test.describe("Manager accounting is read-only on the B5.5 Closing surfaces", ()
 
     expect(methods.length).toBeGreaterThan(0);
     expect(methods.every((method) => method === "GET")).toBe(true);
+  });
+});
+
+/**
+ * Track B5.7 (2026-08-22) — Fiscal periods write coverage. A fresh DRAFT
+ * period is created via the API (self-contained QA data, not committed
+ * seed rows), then driven through its full lifecycle THROUGH THE REAL UI —
+ * create is the only step exercised via API, so the spec proves the create
+ * dialog too without a lifecycle-mutation race against itself.
+ */
+test.describe.serial("Manager accounting — Fiscal periods write lifecycle (Track B5.7)", () => {
+  test("create a period through the real dialog, then open, close and lock it through the UI", async ({ page }) => {
+    await managerLogin(page);
+    await page.goto(ACCOUNTING_ROUTES.fiscalPeriods);
+    await waitForManagerListSettled(page);
+
+    const name = `B57GAP UI ${Date.now()}`;
+    // The backend refuses an overlapping fiscal-period window (a real
+    // business rule this spec found live, not previously documented in
+    // this file) — derive a window unique to this run rather than a fixed
+    // date range, so a repeat run against a stack still carrying an earlier
+    // run's fixture never collides.
+    // A narrow offset space collided with itself after enough accumulated
+    // runs against a reused isolated stack (found live — see
+    // apiCreateFiscalPeriod's own fix in fixtures.ts for the full story).
+    const dayOffset = Math.floor(Math.random() * 1_000_000);
+    const windowStart = new Date(Date.UTC(2031, 0, 1) + dayOffset * 86_400_000);
+    const windowEnd = new Date(windowStart.getTime() + 89 * 86_400_000);
+    const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+
+    await page.getByRole("button", { name: /^new period$/i }).click();
+    const createDialog = page.getByRole("dialog", { name: /new fiscal period/i });
+    await expect(createDialog).toBeVisible();
+    // Field labels carry a trailing required-asterisk span ("Name *"), so the
+    // matcher is start-anchored only, not exact.
+    await createDialog.getByLabel(/^name/i).fill(name);
+    await createDialog.getByLabel(/^starts/i).fill(isoDate(windowStart));
+    await createDialog.getByLabel(/^ends/i).fill(isoDate(windowEnd));
+    await createDialog.getByRole("button", { name: /^create period$/i }).click();
+    await expect(createDialog).toBeHidden();
+
+    const row = page.getByRole("row", { name: new RegExp(name) });
+    await expect(row).toBeVisible();
+
+    // DRAFT -> OPEN
+    await row.getByRole("button", { name: /^open$/i }).click();
+    const openDialog = page.getByRole("dialog", { name: /open fiscal period/i });
+    await expect(openDialog).toContainText(name);
+    await openDialog.getByRole("button", { name: /^open$/i }).click();
+    await expect(openDialog).toBeHidden();
+    await expect(row.getByRole("button", { name: /^close$/i })).toBeVisible();
+
+    // OPEN -> CLOSED
+    await row.getByRole("button", { name: /^close$/i }).click();
+    const closeDialog = page.getByRole("dialog", { name: /close fiscal period/i });
+    await expect(closeDialog).toContainText(name);
+    await closeDialog.getByRole("button", { name: /^close$/i }).click();
+    await expect(closeDialog).toBeHidden();
+    await expect(row.getByRole("button", { name: /^lock$/i })).toBeVisible();
+
+    // CLOSED -> LOCKED — the irreversible one. Confirm stays disabled until
+    // the exact period name is typed; a wrong value must not enable it.
+    await row.getByRole("button", { name: /^lock$/i }).click();
+    const lockDialog = page.getByRole("dialog", { name: /lock fiscal period/i });
+    await expect(lockDialog).toContainText(name);
+    await expect(lockDialog).toContainText(/cannot be undone/i);
+    const confirmButton = lockDialog.getByRole("button", { name: /^lock permanently$/i });
+    await expect(confirmButton).toBeDisabled();
+
+    await lockDialog.getByLabel(/type ".*" to confirm/i).fill("definitely the wrong name");
+    await expect(confirmButton).toBeDisabled();
+
+    await lockDialog.getByLabel(/type ".*" to confirm/i).fill(name);
+    await expect(confirmButton).toBeEnabled();
+    await confirmButton.click();
+    await expect(lockDialog).toBeHidden();
+
+    // Terminal: no action control remains on this row.
+    await expect(row.getByRole("button")).toHaveCount(0);
+    await expect(row.getByText(/locked/i).first()).toBeVisible();
+  });
+
+  test("a repeat lock attempt is refused (409) and the row stays LOCKED", async ({ page }) => {
+    await managerLogin(page);
+    const token = await apiLoginManager();
+    const period = await apiCreateFiscalPeriod(token, MANAGER_CFG.defaultBranchId);
+    // Drive it straight to LOCKED via the API so this test is self-contained.
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "X-Branch-Id": MANAGER_CFG.defaultBranchId };
+    await fetch(`${MANAGER_CFG.api}/api/accounting/periods/${period.id}/open`, { method: "PATCH", headers });
+    await fetch(`${MANAGER_CFG.api}/api/accounting/periods/${period.id}/close`, { method: "PATCH", headers });
+    const lockRes = await fetch(`${MANAGER_CFG.api}/api/accounting/periods/${period.id}/lock`, { method: "PATCH", headers });
+    expect(lockRes.status).toBe(200);
+    const repeatRes = await fetch(`${MANAGER_CFG.api}/api/accounting/periods/${period.id}/lock`, { method: "PATCH", headers });
+    expect(repeatRes.status).toBe(409);
+
+    await page.goto(ACCOUNTING_ROUTES.fiscalPeriods);
+    await waitForManagerListSettled(page);
+    const row = page.getByRole("row", { name: new RegExp(period.name) });
+    await expect(row).toBeVisible();
+    await expect(row.getByRole("button")).toHaveCount(0);
   });
 });
 

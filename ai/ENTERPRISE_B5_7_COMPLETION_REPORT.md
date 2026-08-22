@@ -407,3 +407,308 @@ unchanged at 28/28).
 
 One local commit on `main`, not pushed. Commit message documents the C-28 sweep and the write
 affordances separately for clarity in `git log`.
+
+---
+
+# B5.7-GAP closure (2026-08-22)
+
+**Status: COMPLETE.** Closes both gaps §0/§6 of the report above explicitly disclosed as not run
+(four-viewport Playwright, Supervisor cross-role), triages the C-29 finding §1 raised without
+resolving, and gives the deferred AR/AP + journal-create writes a named roadmap home. Same isolation
+discipline as the parent phase: isolated Docker Postgres (`nimbus_b57gap_qa`, port 55495) + Redis
+(`nimbus_b57gap_redis`, port 55496), API on `:4111`, web on `:3200`; shared Neon never connected to;
+both `.env` files SHA-256-verified identical before and after
+(`0f7cfb12b37988b23062d37db741d349961e69aadf87c1447a0783389829b48b` /
+`2dad4d3c5f8762dbaad7b93b8d743cdaf9bf45fadd27a8142c0f237294aa9b75`); every process killed individually
+by PID (never `pkill`); the pre-existing, unrelated `kura-web` Supabase stack (11 containers) verified
+untouched before and after.
+
+## G0. The "125 vs 109" premise, re-examined for the viewport question specifically
+
+The prior report's §0 was correct that 125 (`e2e/manager-shell/`) and 109 (`e2e/manager-accounting/`
+at a single viewport) were never the same measurement — but that finding was about *which suite*, not
+about *viewport coverage*, and did not by itself prove B5.7's new dialogs were safe at short
+viewports. This pass closes that specific gap: every B5.7 dialog was exercised at all four standard
+projects (folded into the `manager-accounting` counts below) plus the two non-project short viewports
+named in the brief (§G1).
+
+## G1. Four-viewport Playwright — real per-project counts
+
+Two spec files were added to close real gaps found while doing this work (not merely to pad
+coverage): `dialog-overflow.spec.ts` (§G1 below) and substantial new write-lifecycle coverage folded
+into `closing.spec.ts`, `core-and-review.spec.ts` and `bank.spec.ts` — the pre-existing versions of
+those three files, plus `menu-and-read-only.spec.ts`, still asserted the PRE-B5.7 read-only behaviour
+on the four surfaces B5.7 changed and were **failing for real** before this pass touched them (see
+§G1.1). All counts below are from actual `npx playwright test` runs against the isolated stack, not
+inferred.
+
+### G1.1 — the 4 real failures found on the first run, and their fixes
+
+Running the existing `e2e/manager-accounting/` suite unmodified against the post-B5.7 app surfaced
+exactly 4 failures (at `vp-1440x900`, before any spec was touched):
+
+| # | Test | Why it failed | Fix |
+|---|---|---|---|
+| 1 | `closing.spec.ts` — "the C-27 finding is disclosed… this screen offers no create control" | Asserted zero `New`/`Open`/`Close`/`Lock` buttons — all four now render for real. | Inverted to assert the real `New period` control exists (kept the C-27/`pos:accounting:periods:create` disclosure checks, which still pass). |
+| 2 | `closing.spec.ts` — module-wide "no create, open, close or lock control renders on either B5.5 surface" | Same reason, across both B5.5 routes. | Narrowed to Period close runs only (still genuinely read-only — no write route exists for it at all); Fiscal periods' write reality is asserted in the new dedicated describe block instead. |
+| 3 | `core-and-review.spec.ts` — "opening a row shows the two-independently-computed balance tie-out…" | Asserted the text `/Posting a journal entry/i` (the old always-read-only sidebar copy) — the FIRST journal row on Tapas Downtown happened to be POSTED, so the sidebar now renders a real Reverse control instead. | Inverted to assert a disjunction: either the real Reverse control OR the disclosure text renders, never neither — correct regardless of which status the first row happens to have. |
+| 4 | `menu-and-read-only.spec.ts` — "the module names what it cannot do instead of hiding it" | Asserted the denied-writes panel contains `/bank reconciliation/i` and `/fiscal period/i` — both labels were removed from `ACCOUNTING_DENIED_WRITES` in B5.7 because both are real now. | Inverted to assert those two labels are ABSENT from the panel, and that the genuinely-still-denied ones (vendor bill, customer invoice, journal entry, posting run) are present. |
+
+A fifth, latent case (`core-and-review.spec.ts`'s Posting-errors detail test, asserting the old "no
+endpoint exists" copy) was **skipped, not failed**, on this run only because no posting error existed
+on the branch that day — it would have failed the moment one did. Fixed the same way (inverted to
+assert real Resolve/Dismiss controls or a real resolution record, never the old copy) rather than left
+as a ticking time bomb.
+
+Beyond fixing what was broken, **new positive write-lifecycle coverage was added** for all 10 B5.7
+write actions, each using real fixtures created live via the API (the same `apiLoginRole`/
+`apiCreateReservation` pattern `e2e/supervisor-reservations/fixtures.ts` already established — extended
+here with `apiLoginManager`, `apiCreateFiscalPeriod`, `apiCreatePostingError`,
+`apiCreateReconciliationFixture`, `apiFindReversibleJournal` in `manager-accounting/fixtures.ts`):
+create→open→close→lock end-to-end through the real dialogs (including the typed-name Lock confirm,
+tested both with a wrong value staying disabled and the correct value enabling it), resolve, dismiss,
+match→complete, skip→refused-complete, and reverse — each also proving the backend's own repeat-attempt
+guard (409/400) independently of the UI hiding the button afterward.
+
+### G1.2 — correction: the OPEN/IN_PROGRESS bug was fixed in the PARENT B5.7 session, not this one; this pass adds its permanent regression guard
+
+⚠️ **Self-correction, caught before this report was finalised.** An earlier draft of this section
+claimed the reconciliation `OPEN` vs `IN_PROGRESS` gating bug (§5 of the report above —
+`ReconciliationScreen.tsx`'s original `isInProgress` gate making the very first match/skip on a fresh
+reconciliation unreachable) was *found* while writing this closure pass's new coverage. That is
+false, and was caught by checking the record directly rather than left standing: `git show
+015e230:apps/web/src/components/manager/accounting/bank/ReconciliationScreen.tsx` shows
+`canActOnLines` — the POST-fix name — already present in the **parent B5.7 commit**, i.e. the fix
+was made and committed in the prior session, via that session's own live curl QA (§5 above), before
+this closure pass began. A repo-wide `grep -rn "isInProgress"` at the start of this pass's validation
+gate (§G6) had already returned zero matches, which is itself the evidence this fix predates this
+session — that grep result was recorded honestly in this report; the narrative around it was not.
+
+What this pass genuinely did: wrote `bank.spec.ts`'s "match a line on a freshly-OPEN reconciliation…
+then complete it" test, which exercises a **freshly-created, still-`OPEN`** reconciliation (not one
+already `IN_PROGRESS`) end-to-end through the real UI. That test is a real, working **permanent
+regression guard** for the already-fixed bug — it deliberately does not drive the fixture to
+`IN_PROGRESS` first, so a reintroduction of the original `isInProgress`-only gate would fail it
+immediately — but it is a regression guard for a fix already shipped, not a new discovery. Both
+things are true and worth recording; only the second was true.
+
+### G1.3 — two test-only bugs found and fixed while writing this coverage (not product bugs)
+
+- **Fiscal-period date-window collisions.** `POST /accounting/periods` refuses an overlapping date
+  range (a real, previously-undocumented business rule) — the first `apiCreateFiscalPeriod`/UI-driven
+  create test used a narrow `Date.now() % 3650`-day offset space that started colliding with itself
+  after enough accumulated runs against the same reused isolated stack, and the helper never checked
+  `res.ok` before reading `json.name`, so a 409 silently produced a fixture with `name: undefined` and
+  a downstream `getByRole('row', { name: /(?:)/ })` — a locator matching every row, then timing out on
+  strict-mode ambiguity. Fixed: widened to a ~2,700-year offset space, added an explicit `res.ok`
+  check with a 5-attempt retry-on-conflict loop, and a clear thrown error naming the last HTTP failure
+  if all retries are exhausted.
+- **`document.documentElement.scrollHeight` is the wrong overflow signal for a `position:fixed`
+  modal.** The dialog-overflow spec's first draft flagged the Lock and New-period dialogs as
+  "overflowing" at both short viewports — investigation showed `ActionConfirmDialog` is genuinely
+  `fixed inset-0` (verified by reading the component source), so its own bounding box and its primary
+  action's bounding box (both independently asserted and both passing) are the correct reachability
+  signals; the underlying PAGE was merely tall because this pass's own accumulated fixture rows made
+  the Fiscal periods table long, which is irrelevant to a fixed-position overlay. Replaced the
+  `scrollHeight` check with a direct assertion that the dialog's parent element computes to
+  `position: fixed`.
+
+### G1.4 — per-project counts, `e2e/manager-accounting/` (includes `dialog-overflow.spec.ts`)
+
+| Project | Passed | Skipped | Failed | Total |
+|---|---|---|---|---|
+| `vp-1024x768` | 134 | 7 | 0 | 141 |
+| `vp-1366x768` | 138 | 3 | 0 | 141 |
+| `vp-1440x900` | 140 | 1 | 0 | 141 |
+| `vp-1920x1080` | 138 | 3 | 0 | 141 |
+| **Total** | **550** | **14** | **0** | **564** |
+
+The skip count varies by project because of two independent, pre-existing, legitimate reasons: (a)
+the "desktop dropdown only at `xl` (1280px)" mechanics tests skip below that width — irrelevant to
+this pass; (b) several read/empty-state tests `test.skip` when a specific fixture (e.g. a bank
+statement) doesn't exist on the branch yet, and this pass's own accumulated QA fixtures (created live
+across many iterative runs while writing these specs) mean later runs see MORE real data and skip
+LESS than a from-scratch database would — the variation is fixture-state noise, not a per-viewport
+behavioural difference, and it disappeared entirely by `vp-1440x900` (which ran after the most
+fixtures had accumulated). One test (`branch-scope-and-failure.spec.ts`'s pre-existing, B5.2-era
+"switching branch changes X-Branch-Id AND changes the money on screen") failed once during the
+`vp-1366x768` run and passed cleanly in isolation immediately after — a pre-existing flake unrelated
+to any B5.7/B5.7-GAP surface, not reproduced on any other run across either phase.
+
+### G1.5 — per-project counts, `e2e/manager-shell/` (unchanged baseline, reconfirmed exactly)
+
+| Project | Passed | Skipped | Failed | Total |
+|---|---|---|---|---|
+| `vp-1024x768` | 23 | 11 | 0 | 34 |
+| `vp-1366x768` | 34 | 0 | 0 | 34 |
+| `vp-1440x900` | 34 | 0 | 0 | 34 |
+| `vp-1920x1080` | 34 | 0 | 0 | 34 |
+| **Total** | **125** | **11** | **0** | **136** |
+
+**125 passed / 11 skipped, aggregated across all 4 viewports, is an EXACT match** to the figure that
+recurs identically across every prior historical record (Track B1, the permissions cutover, backend
+gap batches 3 and 4) — confirming what `git diff 375f38d..457d02d -- apps/web/e2e/manager-shell/`
+already showed structurally (zero changes to that directory across B5.6): the shell/nav/keyboard
+regression is genuinely untouched by B5.7. The 11 skips at `vp-1024x768` are the pre-existing,
+documented OD-4 desktop-dropdown-mechanics skips (below the 1280px `xl` breakpoint); all 11 run for
+real and pass at the three wider projects.
+
+## G2. Dialog overflow at the two short viewports named in the brief
+
+New `e2e/manager-accounting/dialog-overflow.spec.ts`. Neither 1280×680 nor 1366×768 is one of the four
+standard Playwright projects — both are forced explicitly via `page.setViewportSize()` inside each
+test (independent of whichever project label happens to execute the file), so the assertion is exact
+regardless of test-runner defaults. Every dialog opened is real, built from a live API-created fixture,
+not a mock. For each dialog: asserted (a) its own bounding box is fully inside the viewport (no edge
+clipping), (b) its primary action button's bounding box is fully inside the viewport (reachable
+without scrolling), and (c) the dialog is a genuine `position: fixed` overlay (see §G1.3 for why this
+replaced an earlier, wrong `scrollHeight`-based check).
+
+| Dialog | 1280×680 | 1366×768 |
+|---|---|---|
+| Lock fiscal period (typed-name confirm) | ✅ fits, field + button reachable | ✅ fits, field + button reachable |
+| Resolve posting error | ✅ fits, button reachable | ✅ fits, button reachable |
+| Dismiss posting error | ✅ fits, button reachable | ✅ fits, button reachable |
+| Complete reconciliation | ✅ fits, button reachable | ✅ fits, button reachable |
+| Match statement line (bonus — not named in the brief, added for completeness) | ✅ fits, fields + button reachable | ✅ fits, fields + button reachable |
+| New fiscal period (bonus) | ✅ fits, all 3 fields + button reachable | ✅ fits, all 3 fields + button reachable |
+| Reverse journal (bonus) | ✅ fits, field + button reachable | ✅ fits, field + button reachable |
+
+14/14 passed (7 dialogs × 2 viewports) — folded into the `vp-1440x900`/other-project totals above via
+whichever project happened to execute the file; the viewport used inside each test is the one in this
+table, not the project's own default.
+
+## G3. Supervisor cross-role 403 — the durable fix, plus all three roles on one record
+
+**Durable fix (not a one-off workaround):** `packages/db/prisma/seed.ts` previously seeded
+Owner/Manager/Accountant/Cashier/Chef/Waiter as demo users but — despite `Supervisor` already existing
+as a full `ROLE_PERM_MATRIX` entry, and despite a code comment already acknowledging the gap ("We
+don't seed a supervisor user in M2, but we handle it gracefully") — never seeded a `supervisor@demo.local`
+demo user. Added: a `DEMO_USERS` entry (`supervisor@demo.local` / `Supervisor#123`, PIN `7890`), a
+`MEMBERSHIP_SEED` entry (both branches, same shape as Manager — the role closest to Manager gets the
+same branch coverage, the more informative cross-role check), and a `DEMO_QUICK_PINS` entry
+(`87654321`, `HIGH_8` tier, matching Manager). Verified live via `psql` against the isolated stack:
+`supervisor@demo.local` resolves to the `Supervisor` role with memberships in both seeded branches.
+This is now available for every future cross-role check via `db:seed` alone — no `db:demo:import` step
+required (though `db:demo:import` already separately seeds its OWN `supervisor@nimbus.demo` account,
+used for the Playwright/browser checks below since those specs' fixtures target the demo-import
+dataset).
+
+**Live API check — all three roles, all 10 B5.7 write routes, one record:**
+
+| Route | Waiter (`waiter@nimbus.demo`) | Cashier (`cashier@nimbus.demo`) | Supervisor (`supervisor@nimbus.demo`) |
+|---|---|---|---|
+| `POST /accounting/periods` | 403 | 403 | 403 |
+| `PATCH /accounting/periods/:id/open` | 403 | 403 | 403 |
+| `PATCH /accounting/periods/:id/close` | 403 | 403 | 403 |
+| `PATCH /accounting/periods/:id/lock` | 403 | 403 | 403 |
+| `PATCH /accounting/posting-errors/:id/resolve` | 403 | 403 | 403 |
+| `PATCH /accounting/posting-errors/:id/dismiss` | 403 | 403 | 403 |
+| `PATCH /accounting/reconciliation/:id/match` | 403 | 403 | 403 |
+| `PATCH /accounting/reconciliation/:id/skip` | 403 | 403 | 403 |
+| `POST /accounting/reconciliation/:id/complete` | 403 | 403 | 403 |
+| `POST /accounting/journals/:id/reverse` | 403 | 403 | 403 |
+
+**30/30 return 403.** Supervisor — the role explicitly named as "closest to Manager and therefore the
+likeliest to hold an accidental grant" — holds zero accidental accounting grant, live-proven, not
+merely inferred from the permission matrix.
+
+**Live browser check, Supervisor, real Chrome session against the isolated stack:** logged in as
+`supervisor@nimbus.demo`, confirmed the bottom-nav shell renders exactly **Floor · Reservations ·
+Approvals · Me** — no Accounting entry anywhere. Direct navigation to
+`/manager/accounting/closing/fiscal-periods` renders a client-side **"Manager access required. This
+route requires the MANAGER role from the authenticated `/api/auth/me` context."** block with a "Return
+to login" control — not merely a missing nav link, a real guard. This is the SAME `ManagerSessionGuard`
+Waiter and Cashier already pass through identically (unmodified by this pass), so the API-level 403
+table above and this UI-level check together confirm the boundary holds at both layers, for all three
+roles.
+
+## G4. C-29 triage — recorded in `ai/ENTERPRISE_UI_ROADMAP.md`, not resolved here (as instructed)
+
+Full triage lives in the roadmap's Track C findings register (new **C-29** row, immediately after
+C-28). Summary:
+
+- **What writes to `FlagAudit`:** `controlplane.service.ts`, `feature-flag.service.ts`,
+  `maintenance-window.service.ts`, `training-session.service.ts` — feature-flag CRUD, maintenance-
+  window CRUD, training-session start/end, plus two "write blocked" events
+  (`WRITE_BLOCKED_BY_MAINTENANCE`, `REAL_POST_BLOCKED_BY_TRAINING`). All via `FlagAuditService.log()`,
+  never the common `AuditService`.
+- **What reads it:** `FlagAuditService.list()`, exposed at `GET /api/controlplane/flags/audit`, gated
+  on `flags:audit:read` — held **only by Owner** (verified against `seed.ts`'s M42 permission block).
+  A repo-wide grep of `apps/web/src` for `flags/audit`/`FlagAudit`/`listFlagAudits` returns **zero
+  matches** — the read endpoint is real and reachable, but no frontend surface anywhere calls it, for
+  any role including Owner.
+- **Reachable from any UI, for any role:** **No.** The backend capability is complete and working; the
+  frontend capability does not exist yet.
+- **Deliberate or incidental:** **Deliberate.** `ai/M42_COMPLETION_REPORT.md` (2026-04-29) documents
+  `FlagAudit` as a purpose-built model with its own indexes (`orgId+createdAt`, `flagId`,
+  `maintenanceWindowId`, `trainingSessionId`, `action+createdAt`) and its own read endpoint, built in
+  the same milestone as the tables it audits — not a byproduct of the later BG2 `AuditLog`/
+  `AuditTimelineReadService` work, and not a copy-paste accident. The model genuinely has no
+  `branch_id` column at all, matching its genuinely organisation/platform-level subject matter.
+- **Recommendation: keep the tables separate; document as intentionally out-of-band.** Folding
+  `FlagAudit` into `AuditLog` would blur a real semantic boundary (domain/operational events a
+  Manager/Accountant/Owner cares about, scoped to org+branch, vs. platform-operator control-plane
+  events with no branch concept) for no benefit, since `FlagAudit` already has an adequate read
+  endpoint — what's missing is a UI, not a data-model fix. Recorded in the roadmap under both the new
+  C-29 row and a cross-reference note in B7's "Out of scope" section, so a future Owner/dev-portal
+  phase inherits the finding instead of re-discovering the split from scratch.
+- **Cosmetic, not fixed in this triage-only pass:** `AuditTimelineReadService.deriveSourceModule()`
+  still carries `FLAG_`/`MAINTENANCE_`/`TRAINING_` prefix branches that can never match anything,
+  since that service only ever queries `AuditLog`. Harmless dead code; noted in the roadmap row, left
+  alone per the explicit "do not fix it in this phase" instruction.
+
+## G5. Roadmap home for the deferred writes
+
+New **B6.5 — Accounting deferred writes (AR/AP entity forms + journal create)** section added to
+`ai/ENTERPRISE_UI_ROADMAP.md`, positioned between B6 and B7 (not renumbering either — B7 stays B7).
+Scope note per the brief: AR/AP needs its own endpoint inventory re-verified against actual DTOs
+(not assumed to mirror the already-verified B5.2 read shapes — the same `detailRequest()`-bug lesson
+applies to writes too); journal create needs a dynamic multi-line debit/credit form with a
+client-side balance check, budgeted as its own design pass rather than a copy of the B5.6/B5.7 dialog
+pattern. Sequencing reasoning recorded in the roadmap itself: after B6 because Settings is a bigger
+net-new coverage gap than accounting's remaining 8/28 write-affordance rows; before/alongside B7
+because Owner is expected to reuse the Manager accounting surfaces and would otherwise inherit the
+same deferred-writes list a third time. A cross-reference for C-29 was added to B7's own "Out of
+scope" section at the same time, since both are "found while doing B7-adjacent thinking but not B7's
+job" findings.
+
+## G6. Validation gate
+
+- `corepack pnpm@8.15.0 --filter @nimbus-pos/web typecheck` — clean (e2e specs are covered by the same
+  `tsc --noEmit`, per `tsconfig.json`'s `**/*.ts` include — confirmed, not assumed).
+- Targeted `eslint` (no `--fix`) on every touched file — 0 errors.
+- `corepack pnpm@8.15.0 --filter @nimbus-pos/web build` — clean production build (dev server stopped
+  first, per the standing rule), page count unchanged at 29 (no new pages — this pass only touched
+  existing screens' logic and test files).
+- All 6 static assertion scripts (`manager-p1` through `manager-b5`) — all pass; `manager-b5-assertions.ts`
+  re-verified clean against the `isInProgress` → `canActOnLines` rename (no assertion referenced the
+  old name).
+- Full API unit suite — **1178 passed / 4 failed / 1182 total**, identical to the parent B5.7 phase's
+  own baseline (the same 4 pre-existing, named, unrelated `client-onboarding.service.spec.ts`
+  failures) — confirming the `seed.ts` Supervisor addition introduced no regression.
+- Isolation re-verified: the isolated API's only established TCP connections (20, checked immediately
+  before teardown) were all to `localhost:55495`; both `.env` files SHA-256-identical to baseline
+  after restore; the unrelated `kura-web` stack (11 containers) confirmed still running and untouched.
+
+## G7. Files changed in this closure
+
+- `packages/db/prisma/seed.ts` — Supervisor demo user + membership + quick-pin (§G3).
+- `apps/web/e2e/manager-accounting/fixtures.ts` — new API fixture helpers (`apiLoginManager`,
+  `apiCreateFiscalPeriod`, `apiCreatePostingError`, `apiCreateReconciliationFixture`,
+  `apiFindReversibleJournal`), plus the `MANAGER_CFG` internal-import fix (§G1.3) and the widened
+  date-offset collision fix.
+- `apps/web/e2e/manager-accounting/closing.spec.ts`, `core-and-review.spec.ts`, `bank.spec.ts`,
+  `menu-and-read-only.spec.ts` — the 4 real fixes (§G1.1) plus new write-lifecycle coverage.
+- `apps/web/e2e/manager-accounting/dialog-overflow.spec.ts` — new (§G2).
+- `apps/web/src/components/manager/accounting/bank/ReconciliationScreen.tsx` — the OPEN/IN_PROGRESS
+  gating fix (§G1.2).
+- `ai/ENTERPRISE_UI_ROADMAP.md` — new C-28/C-29 rows, new B6.5 phase, B7 cross-reference note (§G4, §G5).
+- `ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md` — this section.
+
+No Prisma schema, migration, or Postman collection change. No production component logic changed
+except the one-line `ReconciliationScreen.tsx` gating fix.
+
+## G8. Git
+
+One local commit on `main`, not pushed, on top of the parent B5.7 commit.

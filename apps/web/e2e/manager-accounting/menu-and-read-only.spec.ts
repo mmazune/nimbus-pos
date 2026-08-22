@@ -164,7 +164,9 @@ test.describe("Manager accounting is read-only", () => {
     await expect(content.locator("button:disabled")).toHaveCount(0);
   });
 
-  test("the module names what it cannot do instead of hiding it", async ({ page }) => {
+  test("INVERTED (Track B5.7) — the module names what it still cannot do; bank reconciliation and fiscal periods are no longer on that list, because they are real now", async ({
+    page,
+  }) => {
     await managerLogin(page);
     await page.goto(ACCOUNTING_ROUTES.dashboard);
     await waitForAccountingSettled(page);
@@ -172,9 +174,15 @@ test.describe("Manager accounting is read-only", () => {
     const panel = page.locator("[data-accounting-denied-writes]");
     await expect(panel).toBeVisible();
     await expect(panel).toContainText(/read/i);
-    await expect(panel).toContainText(/bank reconciliation/i);
+    // Still genuinely denied (B5.2 AR/AP writes, journal CREATE, posting replay).
+    await expect(panel).toContainText(/vendor bill/i);
+    await expect(panel).toContainText(/customer invoice/i);
     await expect(panel).toContainText(/journal entry/i);
-    await expect(panel).toContainText(/fiscal period/i);
+    await expect(panel).toContainText(/posting run/i);
+    // No longer denied — Track B5.7 surfaced both for real. Asserting their
+    // ABSENCE here is the inverse of the pre-B5.7 assertion, not a deletion.
+    await expect(panel).not.toContainText(/match, skip or complete a bank reconciliation/i);
+    await expect(panel).not.toContainText(/open, close or lock a fiscal period/i);
   });
 
   test("the page issues no write request at all", async ({ page }) => {

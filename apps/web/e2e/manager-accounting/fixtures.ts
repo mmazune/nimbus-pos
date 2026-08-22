@@ -1,5 +1,7 @@
 import { expect, Page } from "@playwright/test";
 
+import { MANAGER_CFG } from "../manager-shell/fixtures";
+
 export {
   MANAGER_CFG,
   MANAGER_BRANCH_STORAGE_KEY,
@@ -277,4 +279,174 @@ export function listFilterTrigger(page: Page, ariaLabel: string) {
 
 export function listFilterOption(page: Page, label: string) {
   return page.getByRole("menuitemcheckbox", { name: label });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// B5.7-GAP (2026-08-22) — API fixture helpers for the write-enabled surfaces.
+// Same pattern as `e2e/supervisor-reservations/fixtures.ts`'s
+// `apiLoginRole`/`apiCreateReservation`: self-contained QA data created live
+// via the API, not committed seed rows, so these specs never depend on a
+// specific stack's exact fixture state beyond what demo-import already
+// guarantees (branches, a handful of POSTED journals).
+// ═══════════════════════════════════════════════════════════════════════════
+
+function accountingHeaders(token: string, branchId: string) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+    "X-Branch-Id": branchId,
+  };
+}
+
+/** Logs in as the seeded demo Manager via the API and returns an access token. */
+export async function apiLoginManager(): Promise<string> {
+  const res = await fetch(`${MANAGER_CFG.api}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: MANAGER_CFG.email, password: MANAGER_CFG.password }),
+  });
+  const json = await res.json();
+  return json.accessToken as string;
+}
+
+/**
+ * `POST /accounting/periods` — a fresh DRAFT fiscal period, uniquely named
+ * AND uniquely windowed per call (the backend refuses an overlapping
+ * fiscal-period date range — a real business rule found live while writing
+ * this spec, not previously documented).
+ */
+export async function apiCreateFiscalPeriod(
+  token: string,
+  branchId: string,
+): Promise<{ id: string; name: string }> {
+  // A narrow day-offset space (originally `Date.now() % 3650`, ~10 years)
+  // started colliding with itself after enough accumulated runs against a
+  // reused isolated stack — a real flake found live while writing this spec
+  // (`POST /accounting/periods` 409s on an overlapping window, and the
+  // caller must check `res.ok`, not just assume `json.name` is present).
+  // Widened to ~2,700 years of distinct days and retried a few times with a
+  // fresh random offset on a 409, rather than trusting one shot.
+  let lastError = "";
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const name = `B57GAP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const dayOffset = Math.floor(Math.random() * 1_000_000);
+    const startsAt = new Date(Date.UTC(2035, 0, 1) + dayOffset * 86_400_000);
+    const endsAt = new Date(startsAt.getTime() + 89 * 86_400_000);
+    const res = await fetch(`${MANAGER_CFG.api}/api/accounting/periods`, {
+      method: "POST",
+      headers: accountingHeaders(token, branchId),
+      body: JSON.stringify({
+        name,
+        startsAt: startsAt.toISOString().slice(0, 10),
+        endsAt: endsAt.toISOString().slice(0, 10),
+      }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      return { id: json.id as string, name: json.name as string };
+    }
+    lastError = `${res.status} ${await res.text()}`;
+  }
+  throw new Error(`apiCreateFiscalPeriod: exhausted retries — last error: ${lastError}`);
+}
+
+/** `POST /accounting/posting/replay` with an unknown sourceKey — the documented way to raise a real PostingError. */
+export async function apiCreatePostingError(token: string, branchId: string): Promise<{ id: string; errorId: string }> {
+  const sourceKey = `B57GAP_QA_${Date.now()}`;
+  const res = await fetch(`${MANAGER_CFG.api}/api/accounting/posting/replay`, {
+    method: "POST",
+    headers: accountingHeaders(token, branchId),
+    body: JSON.stringify({ sourceKey, sourceDocumentId: `b57gap-${Date.now()}` }),
+  });
+  const json = await res.json();
+  return { id: json.postingRun.id as string, errorId: json.error.id as string };
+}
+
+export type BankReconciliationFixture = {
+  reconciliationId: string;
+  bankAccountId: string;
+  statementLineId: string;
+  manualEntryId: string;
+};
+
+/**
+ * Creates a bank account, imports a one-line statement, records a matching
+ * manual entry, and starts a reconciliation — everything `match` needs,
+ * left UNMATCHED so the spec itself drives the Match action through the UI.
+ */
+export async function apiCreateReconciliationFixture(
+  token: string,
+  branchId: string,
+): Promise<BankReconciliationFixture> {
+  const stamp = Date.now();
+  const headers = accountingHeaders(token, branchId);
+
+  const bankAccountRes = await fetch(`${MANAGER_CFG.api}/api/accounting/bank-accounts`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ name: `B57GAP Bank ${stamp}`, accountCode: `Q${stamp}`, bankName: "QA Bank", currencyCode: "UGX" }),
+  });
+  const bankAccount = await bankAccountRes.json();
+
+  const statementRes = await fetch(`${MANAGER_CFG.api}/api/accounting/bank-statements/import`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      bankAccountId: bankAccount.id,
+      statementDate: "2026-08-22",
+      periodStart: "2026-08-01",
+      periodEnd: "2026-08-22",
+      openingBalance: 0,
+      closingBalance: 42000,
+      lines: [{ txDate: "2026-08-10", description: `B57GAP deposit ${stamp}`, amount: 42000, direction: "CREDIT" }],
+    }),
+  });
+  const statement = await statementRes.json();
+
+  const manualEntryRes = await fetch(`${MANAGER_CFG.api}/api/accounting/manual-bank-entries`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      bankAccountId: bankAccount.id,
+      txDate: "2026-08-10",
+      amount: 42000,
+      direction: "CREDIT",
+      description: `B57GAP manual entry ${stamp}`,
+      entryType: "MISCELLANEOUS",
+    }),
+  });
+  const manualEntry = await manualEntryRes.json();
+
+  const reconciliationRes = await fetch(`${MANAGER_CFG.api}/api/accounting/reconciliation`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ bankAccountId: bankAccount.id, bankStatementId: statement.id }),
+  });
+  const reconciliation = await reconciliationRes.json();
+
+  return {
+    reconciliationId: reconciliation.id as string,
+    bankAccountId: bankAccount.id as string,
+    statementLineId: statement.lines[0].id as string,
+    manualEntryId: manualEntry.id as string,
+  };
+}
+
+/**
+ * Returns the id of a POSTED journal on the active branch, preferring the
+ * highest-numbered row (the freshest — least likely to have been reversed by
+ * an earlier run of this same spec against a reused stack). `status=POSTED`
+ * alone already excludes REVERSED journals (a reversed journal's own status
+ * transitions to REVERSED, per `ledger.service.ts`'s `reverseJournal`), so no
+ * further filtering is needed. Demo-import seeds several on Tapas Downtown.
+ */
+export async function apiFindReversibleJournal(token: string, branchId: string): Promise<string | null> {
+  const res = await fetch(`${MANAGER_CFG.api}/api/accounting/journals?status=POSTED&take=20`, {
+    headers: accountingHeaders(token, branchId),
+  });
+  const json = await res.json();
+  const rows = (json.data as Array<{ id: string; journalNumber?: string | null }>) || [];
+  if (!rows.length) return null;
+  const sorted = [...rows].sort((a, b) => (b.journalNumber || "").localeCompare(a.journalNumber || ""));
+  return sorted[0].id;
 }

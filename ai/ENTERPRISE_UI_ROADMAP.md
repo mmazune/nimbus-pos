@@ -821,6 +821,92 @@ Owner/billing/franchise/developer surfaces of any kind.
 
 ---
 
+## B6.5 — Accounting deferred writes (AR/AP entity forms + journal create)
+
+**Type:** frontend implementation (+ a possible small backend endpoint-inventory pass for AR/AP).
+**Sizing: L.** **Status: NOT STARTED — added to this roadmap by the B5.7-GAP closure pass
+(2026-08-22); previously homeless (correctly disclosed by name in `ACCOUNTING_DENIED_WRITES` at the
+end of both B5.7 and this pass, but with no roadmap phase to land in).**
+
+**Why this exists:** Track B5.7 (2026-08-22) retrofitted write affordances onto 4 of the 21
+still-read-only B5.1–B5.5 accounting rows (Posting errors resolve/dismiss, Fiscal periods
+create/open/close/lock, Bank reconciliation match/skip/complete, Journal reverse). Two categories of
+write were explicitly time-boxed OUT of that phase and disclosed, not silently dropped: **B5.2's
+AR/AP entity writes** (Customers → Invoices/Customer accounts/Credit notes; Vendors → Bills/
+Suppliers/Credit notes/Payments/Recurring profiles/Payment reminders — 8+ distinct `POST`/`PATCH`
+routes, each its own entity shape) and **journal CREATE** (`POST /accounting/journals` — a dynamic,
+client-balanced multi-line debit/credit form, materially more UI surface than the single-click
+Reverse B5.7 built). Both are already permission-unblocked (PERMS-2 granted Manager the full
+36-string accounting write set on 2026-08-21) — this phase is pure UI/UX work, not a permissions
+cutover.
+
+### Sequencing — why after B6, before/alongside B7 (not immediately after B5.7)
+
+**Not immediately after B5.7:** B6 (Settings) is the next module the roadmap already committed to
+opening — Manager currently has zero Settings surface beyond the honest not-yet placeholder, a bigger
+coverage gap than "the accounting module's write affordances are 11/28 instead of 19/28." Delaying a
+whole new module to polish an already-substantially-built one is the wrong trade.
+
+**Before or alongside B7, not after:** B7 (Owner dashboard variant) is expected to reuse or extend the
+Manager accounting surfaces Owner already has full permission for (Owner holds the same 36-string
+accounting set as Accountant). Building B7's own accounting-adjacent views on top of a Manager
+accounting module that is still missing 8 entity-write forms and journal create would mean either
+duplicating that work inside B7 or leaving Owner with the same gaps Manager has today. Landing B6.5
+first (or in parallel, if resourced separately) means B7 inherits a materially more complete
+accounting module instead of re-discovering the same deferred-writes list a third time.
+
+### Scope
+
+- **AR/AP entity writes** — for each of the 8+ routes, build the create/edit form matching that
+  route's actual DTO shape (do not assume a shared shape across entities — B5.2's own read surfaces
+  already show Invoices/Bills/Suppliers/Credit notes/Payments/Recurring profiles/Reminders are NOT
+  structurally identical). Reuse the B5.6/B5.7 `ActionConfirmDialog` + `AccountingTextField`/
+  `AccountingSelectField`/`AccountingCheckboxField` chrome — no new form primitive.
+- **Journal create** — a dynamic line-item form (add/remove debit or credit lines, an account picker
+  per line, a live running-balance indicator client-side mirroring the backend's own
+  debits-must-equal-credits refusal) posting to `POST /accounting/journals`. This is the one item in
+  this phase that is NOT a small extension of the B5.6/B5.7 pattern — budget it as its own design
+  pass, not a copy of the Lock/Create-period dialog shape.
+- **Endpoint inventory first, for AR/AP specifically** — B5.2 verified the AR/AP *read* shapes
+  live; this phase must NOT assume the create/edit DTOs mirror the read shapes without re-verifying
+  each one against the actual controller/DTO source, the same discipline B5.2's own `detailRequest()`
+  bug (a double-`:id` URL, caught only by opening a real record in the browser) exists to prevent.
+
+### Out of scope
+
+Posting-run replay (no natural entry point — Posting runs has no detail route, a pre-existing B5.4
+constraint; a future phase would need to design one first). Any B5.1–B5.5 surface not named above.
+Any backend permission/seed change (already resolved by PERMS-2).
+
+### Dependencies
+
+**B5.7** (the write-UI conventions — `ActionConfirmDialog`, the write-route registry pattern, the
+`accounting-transitions-queries.ts`-style narrow-invalidation mutation hooks — all carry forward
+unchanged). **B0** re-verification of the exact AR/AP write DTO shapes before building against them.
+
+### Acceptance gates
+
+- typecheck / lint / build pass.
+- Every new write route cited through the same `ACCOUNTING_WRITE_ROUTE_REGISTRY` discipline B5.6/B5.7
+  established — no hand-typed accounting path outside `write-api.ts`.
+- `ACCOUNTING_DENIED_WRITES` updated in the same commit as each write ships (inverted, not deleted —
+  the B5.7 precedent).
+- Confirm-before-destroy on every write; the journal-create form's client-side balance check must
+  fail closed (never let an unbalanced submission reach the API believing it will succeed).
+- Live QA in a real browser (not just a green static-assertion suite) for every new write path —
+  the B5.2 `detailRequest()` lesson and the B5.7 reconciliation OPEN/IN_PROGRESS lesson both apply.
+- Cross-role 403 re-verified for Waiter, Cashier and Supervisor (Supervisor now seeded by the base
+  `db:seed` script as of B5.7-GAP — no `db:demo:import` step required for this check going forward).
+- Playwright across all four viewport projects; the B5.7-GAP-established dialog-overflow check
+  (1280×680, 1366×768) extended to every new dialog this phase adds.
+
+### Completion report
+
+`ai/ENTERPRISE_B6_5_ACCOUNTING_DEFERRED_WRITES_COMPLETION_REPORT.md` (file name reserved; phase not
+started).
+
+---
+
 ## B7 — Owner dashboard variant
 
 **Type:** frontend implementation. **Sizing: M.**
@@ -847,6 +933,11 @@ Owner/billing/franchise/developer surfaces of any kind.
 ### Out of scope
 
 SaaS billing. Developer portal. Any Owner-only write not verified. Any KPI without a verified field.
+**C-29** (control-plane feature-flag/maintenance-window/training-session audit trail, `FlagAudit`) is
+also out of scope here — it is a genuinely separate, purpose-built table (M42) with a working,
+Owner-gated read endpoint (`GET /api/controlplane/flags/audit`) but zero UI consumer anywhere; it
+belongs to a future developer-portal/control-plane phase, not this one, and should not be folded into
+the Owner Overview dashboard above.
 
 ### Dependencies
 
@@ -903,6 +994,8 @@ under the standing rule.
 | **B5.4-D1** | **No posting-error resolve/dismiss endpoint exists for any role** | Found by Track B5.4 (2026-08-21). `PostingErrorStatus` is a real three-state enum (`OPEN → RESOLVED | DISMISSED`) but grepping every controller in `apps/api/src/modules` finds no mutation on `PostingError` at all — only `pos:accounting:posting-errors:read` is seeded, no `:resolve`/`:dismiss`/`:write` string exists. `OPEN` is therefore effectively terminal for Owner and Accountant too, not only Manager. The Posting errors detail screen states this plainly rather than reusing the "an Owner or Accountant performs this" read-only copy, which would be false here. | Backend | — | S | Recorded, **not implemented** |
 | **C-27** | **Manager's token holds a stray, pre-existing accounting WRITE the 2026-08-20 cutover never revoked** | Found by Track B5.5 (2026-08-21). `packages/db/prisma/seed.ts` (~line 1105) seeds Manager with `pos:accounting:periods:create` (and `accounts:create`, `cost-centers:create`) under a M28-era comment reading "Manager: read + create" — this PREDATES the 2026-08-20 permissions cutover (`ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md`), which only ADDED 15 new AP/AR/bank-rec/finance read strings and never audited the older M28/M29-era grants for a stray write. Live-proven: Manager `POST /accounting/periods` → **201** on the isolated B5.5 QA stack, creating a real DRAFT period. `PATCH .../open`, `.../close` and `.../lock` remain genuinely 403 — only `:create` leaked. Every prior B5 phase's "5/5 representative writes → 403" spot-check never happened to probe `periods:create`/`accounts:create`/`cost-centers:create`, so this went undetected through B5.1–B5.4. The Fiscal periods screen discloses this by name (`data-accounting-finding="C-27"`) and ships zero create control regardless — the owner's read-first posture for Manager accounting is honored at the UI layer even though the permission grant itself is out of this phase's authority to change. | Backend (seed) | Fiscal periods (disclosed, not exploited) | S | ✅ **RESOLVED (backend gap batch 4, PERMS-2, 2026-08-21)** — no longer a stray leak: the owner decided Manager has full accounting access, so this grant (plus `open`/`close`/`lock`, now also granted) is deliberate and commented as such in the seed. The Fiscal periods screen's `data-accounting-finding="C-27"` disclosure is now a historical footnote, not a live gap — B5.7 will add the create control. |
 | **B5.5-F1** | **`PeriodCloseRunStatus.FAILED`/`.PENDING` are unreachable through the live API** | Found by Track B5.5 (2026-08-21). `BankRecService.closeFiscalPeriod()`'s own transaction always creates the resulting `PeriodCloseRun` with `status: 'COMPLETED'` — no branch of that method ever persists `FAILED`, and no code anywhere writes `PENDING` (the Prisma `@default(PENDING)` is a schema default this create call always overrides). A close attempt that cannot proceed throws a `ConflictException`/`NotFoundException` BEFORE any `PeriodCloseRun` row is created at all, proven live: closing an already-CLOSED period returned 409 with zero new rows. The Period close runs screen discloses this rather than implying every enum member is equally attainable. | Backend | Period close runs | S | **Investigated further, backend gap batch 4 (2026-08-21)**: confirmed genuinely dead (case a) — a repo-wide grep found zero `@Cron` decorators, zero BullMQ/queue processors touching `PeriodCloseRun`, and zero other `.update()`/`.create()` calls against the model anywhere in `apps/api`. `closeFiscalPeriod` is the ONLY write path and is fully synchronous. Recorded, **not implemented** — a future batch may propose removing the two dead enum members rather than making them reachable. |
+| **C-28** ✅ | **Repo-wide `audit.log` calls never stamped `metadata.branchId` — not an accounting-only defect** | Found by Track B5.7 (2026-08-22). C-26/B5.4-D1/B5.6's own audit-metadata fix each found this class only in files already in scope for that phase's own work. A systematic repo-wide grep of `apps/api/src` found **318** `audit.log`/`this.audit.log` call sites across **57** service files spanning every domain (auth, HR, inventory, orders, payments, billing, franchise, reservations, alerts, public-commerce, reliability, tenancy — not just accounting). | Backend | Every domain that writes an audit event | M | ✅ **DONE (Track B5.7, 2026-08-22)** — 106 sites fixed (branchId now stamped, citing "C-28"); 73 documented exempt with a `// C-28-EXEMPT: <reason>` comment (org-level entities verified against `schema.prisma`, or a signature/lookup change judged out of this batch's scope). A new permanent regression guard (`apps/api/src/common/audit/audit-branchid-guard.spec.ts`, runs in the default `pnpm test` suite) fails the build if a future call site regresses without an explicit exemption — this class should not be findable a fifth time by hand. See `ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md` §1. |
+| **C-29** | **`FlagAudit` (control-plane audit trail) is a deliberately separate table with zero UI consumers, for any role** | Triaged by the B5.7-GAP closure pass (2026-08-22), after C-28 found `controlplane/*.service.ts`'s 8 `audit.log` sites actually call `FlagAuditService.log()`, not the common `AuditService` — writing to a dedicated `FlagAudit` table `AuditTimelineReadService` (the branch-scoped "Audit trail" rail every accounting/HR/ops screen reads) never queries. **Investigated, not assumed:** `FlagAudit` (`packages/db/prisma/schema.prisma:7011`) was purpose-built in **M42** (2026-04-29, `ai/M42_COMPLETION_REPORT.md`) with its own indexes (`orgId+createdAt`, `flagId`, `maintenanceWindowId`, `trainingSessionId`, `action+createdAt`) and its own read endpoint (`GET /api/controlplane/flags/audit`, `FlagAuditService.list()`), gated on `flags:audit:read` — held **only by Owner** (`seed.ts` M42 block). The model genuinely has **no `branch_id` column at all**, so it is organisation/platform-level by design, not by omission. A repo-wide grep of `apps/web/src` for `flags/audit`/`FlagAudit`/`listFlagAudits` returns **zero matches** — the backend capability is real and working (confirmed via a direct route/permission read), but **no frontend surface anywhere calls it**, for any role including Owner. A separate, cosmetic finding: `AuditTimelineReadService.deriveSourceModule()` still carries `FLAG_`/`MAINTENANCE_`/`TRAINING_` prefix branches that can never match anything, since that service only ever queries `AuditLog`, never `FlagAudit` — harmless dead code, not fixed in this triage pass. | Backend (verified working) + Frontend (missing) | A future Owner/dev-portal control-plane UI phase (not yet named — see below) | Triage only | **Recommendation: keep the tables SEPARATE (document as intentionally out-of-band), do not fold into `AuditLog`.** Domain audit events (`AuditLog`) and control-plane events (`FlagAudit`) are semantically different classes — one records what happened to a restaurant's operational/financial data, scoped to an org+branch a Manager/Accountant/Owner cares about; the other records changes to the platform's own feature-flag/maintenance/training-mode machinery, which is Owner/platform-operator-only by nature and has no branch concept. Merging them would blur that boundary (and would need a schema migration + backfill) for no real benefit, since `FlagAudit` already has an adequate purpose-built read endpoint — what is actually missing is a **UI**, not a data-model fix. Recorded here so a future Owner/dev-portal phase inherits the finding instead of re-discovering the split from scratch; see the roadmap note added under B7 below. |
 
 ## Track C-P — Cashier reconstruction (independent, parallel, unchanged scope)
 
