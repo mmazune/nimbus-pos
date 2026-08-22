@@ -68,7 +68,7 @@ unless the task explicitly requires them and the relevant isolation rules are me
 | Testing / QA | `docs/TESTING_AND_QA.md` |
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C - supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward) |
 | Manager Operations + Staff (Track B3) | `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` (canonical B3 record, 2026-08-20) + `ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md` |
-| Manager Accounting (Track B5.1-B5.5) | `ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md` (canonical B5.1 record, 2026-08-21) + `ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md` (canonical B5.2 record, 2026-08-21) + `ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md` (canonical B5.3 record, 2026-08-21) + `ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md` (canonical B5.4 record, 2026-08-21) + `ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md` (canonical B5.5 record, 2026-08-21) - the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
+| Manager Accounting (Track B5.1-B5.6) | `ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md` (canonical B5.1 record, 2026-08-21) + `ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md` (canonical B5.2 record, 2026-08-21) + `ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md` (canonical B5.3 record, 2026-08-21) + `ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md` (canonical B5.4 record, 2026-08-21) + `ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md` (canonical B5.5 record, 2026-08-21) + `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md` (canonical B5.6 record, write-enabled, 2026-08-22) - the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) - shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | **Backend gap batch 2 (PC-03, PC-04)** | **`ai/BACKEND_GAP_BATCH2_COMPLETION_REPORT.md`** (canonical record, 2026-08-21) |
@@ -81,7 +81,64 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Backend gap batch 4 complete - PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) - A:
+**Enterprise UI Track B5.6 complete - Manager Accounting Configuration + Reporting, WRITE-ENABLED
+(2026-08-22) - A: COMPLETE / B5.7, B6, B7 still gated.** The Accounting menu goes from 21 of 28 live
+rows to 28 of 28 - every row in the tree. The seven rows menu.ts already tagged "B5.6" ship as real
+surfaces: Budgets vs actuals (list + create with dynamic line items + Refresh actuals, disabled when
+ARCHIVED), Demand calendar (full list/create/edit/Archive, confirm-gated, never a hard DELETE),
+Forecast (cached-run view + a Refresh action that is a GET ?refresh=true, not a POST), Chart of
+accounts (org-level list + Create only, no edit/archive route exists), Cost centres (org-level list
++ Create only, no edit/deactivate route exists), Posting source maps (org-level list + Edit only -
+rows are seed/system-created, no create route), Tax configuration (org-level singleton view with an
+honest 404-if-unconfigured state + Edit, which upserts).
+
+Unlike every prior B5 sub-phase, this one is write-enabled from the start: PERMS-2 (2026-08-21,
+`dbb5e25`) already resolved PC-01/PC-02 - Manager holds the full 36-string
+C21_ACCOUNTING_FINANCE_ALL set plus the widened 18-string M28/M29 block (54 total, reconciled
+string-by-string in `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md` section 0, confirmed absent of
+pos:hr:compensation:read). B5.1-B5.5 stay exactly as read-only as they shipped - the write-affordance
+ban in `scripts/manager-b5-assertions.ts` was narrowed, not lifted, to an explicit nine-file
+allow-list (the 7 new screens plus `lib/accounting/write-api.ts` and
+`lib/manager/accounting-configuration-queries.ts`).
+
+A real C-26-class gap was found and FIXED, not merely disclosed this time: none of the 13
+pre-existing audit.log calls in budget.service.ts, demand-calendar.service.ts, forecast.service.ts
+or accounting.service.ts stamped metadata.branchId - the identical defect class Track B5.4 found in
+ledger.service.ts and left disclosed-but-unfixed (C-26). Nine actions now stamp branchId
+(ACCOUNT_CREATED, COST_CENTER_CREATED, DEMAND_CALENDAR_CREATED/UPDATED, BUDGET_CREATED,
+BUDGET_ACTUALS_REFRESHED, FORECAST_RUN_CREATED directly via ctx.branchId; POSTING_SOURCE_MAP_UPDATED
+and TAX_LEDGER_CONFIG_UPDATED via a new actingBranchId parameter threaded from the controller, since
+those two services never received a branch context at all). Live-proven via psql against
+audit_logs on the isolated stack; two pre-fix FORECAST_RUN_CREATED rows correctly still show NULL,
+not backfilled.
+
+Every detail/edit-capable route was manually loaded in a real Chrome browser (not inferred from a
+green test suite - the explicit lesson from B5.2's detailRequest() double-id bug) - all 18 observed
+GET/POST/PATCH calls returned the expected status, zero console errors observed. No new backend
+endpoint was needed anywhere - every route these seven surfaces call already existed and was already
+reachable by Manager post-PERMS-2; the only backend change is the nine audit-metadata fixes (source +
+unit tests only, no schema/migration/seed/permission/DTO/Postman-contract change).
+
+Validated on an isolated local Docker stack - Postgres :55480 (nimbus_b56_qa), API :4091, web :3180;
+shared Neon never connected to or written; apps/api/.env never edited on disk (child-process env var
+isolation, SHA-256 identical throughout); packages/db/.env temporarily swapped for the three Prisma
+CLI steps only, restored and SHA-256-verified byte-identical after. Web typecheck + lint (no --fix)
++ production build all pass (7 new pages); API typecheck clean; API unit suite 1177/1181 (the 4
+failures named and proven pre-existing, all in client-onboarding.service.spec.ts - a stale test mock
+missing an `invitation` model, unrelated to this phase); all 17 apps/web/scripts/*-assertions.ts
+scripts pass, including manager-b5-assertions.ts's new section 16. New
+e2e/manager-accounting/configuration-and-reporting.spec.ts (22 specs) plus the updated
+menu-and-read-only.spec.ts (28-row count) - 117 passed / 3 skipped / 0 failed across all 4 viewports;
+full e2e/manager-accounting/ regression at vp-1440x900 - 109 passed / 11 skipped / 0 failed
+(B5.1-B5.5 untouched); e2e/manager-shell/ cross-role + keyboard + navigation regression - 34/34.
+Cross-role re-verified both ways (API 403 plus client-side "Manager access required" block on direct
+navigation for Waiter/Cashier/Supervisor). git diff --check clean; isolated stack fully torn down.
+See `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md` for the full validation table, the 54-string
+permission reconciliation, and the per-route live statuses. Track B5.7 (the write-UI pass for
+B5.1-B5.5's still-read-only surfaces), B6 (Settings) and B7 remain NOT started - do not begin any
+of them without explicit owner authorisation.
+
+**Prior milestone record (superseded above) - Backend gap batch 4 complete - PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) - A:
 COMPLETE / B5.6, B5.7, B6, B7 still gated.** Backend + schema (one new migration) + seed + docs. No
 frontend file touched - the Manager accounting UI still renders zero write affordances; that is now
 a deliberate build-order gate (Track B5.7, not started), not a permission gate.
@@ -1269,6 +1326,14 @@ fail-safe and the Audit trail C-26 disclosure copy stay in place as defense-in-d
 (posting-error resolve/dismiss) is FIXED - a real endpoint exists now, gated on new permission
 pos:accounting:posting-errors:resolve (Owner/Manager/Accountant only). See
 ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md for full detail.
+
+Track B5.6 (2026-08-22) is the first phase to ACT on PERMS-2: it built exactly seven write-enabled
+surfaces (Budgets, Demand calendar, Forecast, Chart of accounts, Cost centres, Posting source maps,
+Tax configuration) with real create/edit/Archive affordances. Every OTHER accounting surface named
+in the boundary text below (Customers/Vendors, Bank, Journals/Posting/Audit, Fiscal periods/Period
+close runs) is UNCHANGED by B5.6 and stays exactly as read-only as it shipped - the
+no-write-affordance rule below still applies to all of them in full, pending Track B5.7. See
+ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md.
 
 - Waiter: Floor / Reservations / Me. No Orders tab. No payment collection or
   order close.

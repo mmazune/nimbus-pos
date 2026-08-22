@@ -655,3 +655,222 @@ export type ApReminderRow = {
   supplier?: { id: string; name: string } | null;
   vendorBill?: { id: string; billNumber?: string | null; totalAmount?: AccountingDecimal; outstandingAmount?: AccountingDecimal } | null;
 };
+
+// ── Configuration + Reporting — Track B5.6 (write-enabled) ──────────────────
+// Live-verified against `budget.service.ts` / `demand-calendar.service.ts` /
+// `forecast.service.ts` / `accounting.service.ts`. Unlike every B5.1–B5.5
+// surface, this module IS permitted to write — PERMS-2 (2026-08-21) granted
+// Manager the full 36-string `C21_ACCOUNTING_FINANCE_ALL` set plus the widened
+// M28/M29 block, matching Accountant/Owner. See `write-api.ts` for the
+// mutations; this file stays reads-only in SHAPE (it declares no method).
+
+export const BUDGET_STATUSES = ["DRAFT", "ACTIVE", "FINALIZED", "ARCHIVED"] as const;
+export type BudgetStatus = (typeof BUDGET_STATUSES)[number];
+
+export const BUDGET_TYPES = ["OPERATIONAL", "FINANCIAL"] as const;
+export type BudgetType = (typeof BUDGET_TYPES)[number];
+
+export type BudgetLineRow = {
+  id: string;
+  category: string;
+  dimension?: string | null;
+  accountId?: string | null;
+  costCenterId?: string | null;
+  budgetAmount?: AccountingDecimal;
+  actualAmount?: AccountingDecimal;
+  varianceAmount?: AccountingDecimal;
+  variancePct?: AccountingDecimal;
+  actualsUpdatedAt?: string | null;
+};
+
+/**
+ * `GET /finance/budgets` row — a PC-06 bare array (`budget.service.ts`'s
+ * `listBudgets` is a plain `findMany`, no `{data,total}` wrapper), `include:
+ * {fiscalPeriod, createdBy, lines}`. There is no `GET /finance/budgets/:id`
+ * response shape distinct from this — `getBudget` returns the identical
+ * include, just for one row.
+ */
+export type BudgetRow = {
+  id: string;
+  name: string;
+  budgetType?: string | null;
+  status?: string | null;
+  version?: number | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  totalBudget?: AccountingDecimal;
+  notes?: string | null;
+  fiscalPeriodId?: string | null;
+  fiscalPeriod?: { id: string; name?: string | null; startsAt?: string | null; endsAt?: string | null } | null;
+  createdBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+  lines?: BudgetLineRow[];
+};
+
+export const DEMAND_CALENDAR_TYPES = [
+  "BRUNCH",
+  "SPORTS_NIGHT",
+  "DJ_NIGHT",
+  "PRIVATE_EVENT",
+  "HOLIDAY_RUSH",
+  "PROMOTION",
+  "LARGE_RESERVATION",
+  "CUSTOM",
+] as const;
+export type DemandCalendarType = (typeof DEMAND_CALENDAR_TYPES)[number];
+
+export const DAYPART_TYPES = ["BREAKFAST", "LUNCH", "AFTERNOON", "DINNER", "LATE_NIGHT", "ALL_DAY"] as const;
+export type DaypartType = (typeof DAYPART_TYPES)[number];
+
+/** `GET /finance/demand-calendar` row — a PC-06 bare array, `include: {event, createdBy}`. */
+export type DemandCalendarEntryRow = {
+  id: string;
+  calendarType?: string | null;
+  daypart?: string | null;
+  title: string;
+  dateStart?: string | null;
+  dateEnd?: string | null;
+  expectedCovers?: number | null;
+  demandMultiplier?: AccountingDecimal;
+  revenueUpliftPct?: AccountingDecimal;
+  itemNotes?: string | null;
+  notes?: string | null;
+  isActive?: boolean | null;
+  eventId?: string | null;
+  event?: { id: string; title?: string | null; startsAt?: string | null; endsAt?: string | null } | null;
+  createdBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+  updatedBy?: { id: string; firstName?: string | null; lastName?: string | null } | null;
+};
+
+export const FORECAST_TYPES = ["BRANCH", "ROLLUP", "FRANCHISE"] as const;
+export type ForecastType = (typeof FORECAST_TYPES)[number];
+
+export const FORECAST_HORIZONS = ["TODAY", "THREE_DAY", "SEVEN_DAY"] as const;
+export type ForecastHorizon = (typeof FORECAST_HORIZONS)[number];
+
+/** `ForecastRunStatus` (Prisma enum). */
+export const FORECAST_RUN_STATUSES = ["PENDING", "RUNNING", "COMPLETED", "FAILED"] as const;
+export type ForecastRunStatus = (typeof FORECAST_RUN_STATUSES)[number];
+
+/** A `ProcurementSuggestion` row embedded on a `ForecastRun` (`take: 50`, `status: PENDING` only). No nested `inventoryItem` include on this path — only the scalar columns are on the wire. */
+export type ForecastProcurementSuggestionRow = {
+  id: string;
+  inventoryItemId?: string | null;
+  demandCalendarEntryId?: string | null;
+  supplierId?: string | null;
+  status?: string | null;
+  urgency?: string | null;
+  daypart?: string | null;
+  suggestedQty?: AccountingDecimal;
+  projectedUsage?: AccountingDecimal;
+  currentStock?: AccountingDecimal;
+  inboundStock?: AccountingDecimal;
+  safetyStock?: AccountingDecimal;
+  leadTimeDays?: number | null;
+  estimatedUnitCost?: AccountingDecimal;
+  estimatedTotalCost?: AccountingDecimal;
+  priority?: number | null;
+  rationale?: string | null;
+  suggestedAction?: string | null;
+};
+
+/**
+ * `GET /franchise/forecast` — a single `ForecastRun` object (never a bare
+ * array or `{data,total}`). `assumptions`/`demandSignals`/`daypartSummaries`/
+ * `outputs` are free-form `Json` columns the service computes — rendered as a
+ * structured but generically-typed dump rather than guessed field-by-field,
+ * since no DTO governs their internal shape.
+ */
+export type ForecastRunRow = {
+  id: string;
+  orgId?: string | null;
+  branchId?: string | null;
+  fiscalPeriodId?: string | null;
+  forecastType?: string | null;
+  status?: string | null;
+  forecastHorizonStart?: string | null;
+  forecastHorizonEnd?: string | null;
+  sourceWindowStart?: string | null;
+  sourceWindowEnd?: string | null;
+  assumptions?: Record<string, unknown> | null;
+  demandSignals?: unknown[] | null;
+  daypartSummaries?: unknown[] | null;
+  outputs?: Record<string, unknown> | null;
+  errorMessage?: string | null;
+  completedAt?: string | null;
+  createdAt?: string | null;
+  procurementSuggestions?: ForecastProcurementSuggestionRow[];
+};
+
+/** `AccountType` (Prisma enum) — the chart of accounts. */
+export const CHART_ACCOUNT_TYPES = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"] as const;
+export type ChartAccountType = (typeof CHART_ACCOUNT_TYPES)[number];
+
+/** `AccountStatus` (Prisma enum). No API route ever transitions this — every account created through `POST /accounting/accounts` is stuck at the DB default `ACTIVE`. */
+export const CHART_ACCOUNT_STATUSES = ["ACTIVE", "INACTIVE", "SYSTEM_LOCKED"] as const;
+export type ChartAccountStatus = (typeof CHART_ACCOUNT_STATUSES)[number];
+
+/**
+ * `GET /accounting/accounts` row — `{data, total}` (`data-total-unpaged`:
+ * a real server total, no `skip`/`take` echoed back). ORGANISATION data:
+ * `listAccounts` filters on `orgId` alone, though `branchId` is still stamped
+ * on create.
+ */
+export type ChartAccountRow = {
+  id: string;
+  code: string;
+  name: string;
+  accountType?: string | null;
+  status?: string | null;
+  parentAccountId?: string | null;
+  systemManaged?: boolean | null;
+  allowManualPosting?: boolean | null;
+  taxRelevant?: boolean | null;
+  notes?: string | null;
+};
+
+/** `GET /accounting/cost-centers` row — a PC-06 bare array, `where: {active: true}` only, no pagination. ORGANISATION data. */
+export type CostCenterRow = {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  active?: boolean | null;
+};
+
+/**
+ * `GET /accounting/posting-source-maps` row — a PC-06 bare array,
+ * `include: {debitAccount, creditAccount}`. ORGANISATION data. `sourceKey`
+ * is the immutable identity of the row — never part of the update DTO, and
+ * there is no create route at all (rows are seed/system-created).
+ */
+export type PostingSourceMapRow = {
+  id: string;
+  sourceKey: string;
+  debitAccountId?: string | null;
+  creditAccountId?: string | null;
+  debitAccount?: { id: string; code?: string | null; name: string } | null;
+  creditAccount?: { id: string; code?: string | null; name: string } | null;
+  costCenterRequired?: boolean | null;
+  active?: boolean | null;
+  notes?: string | null;
+};
+
+/**
+ * `GET /accounting/tax-config` — a SINGLETON object, 404 if none configured
+ * yet (never an empty array). `PATCH` upserts: updates the existing
+ * `active: true` row if one exists, else creates one. ORGANISATION data.
+ */
+export type TaxLedgerConfigRow = {
+  id: string;
+  outputTaxAccountId?: string | null;
+  inputTaxAccountId?: string | null;
+  discountAccountId?: string | null;
+  depositLiabilityAccountId?: string | null;
+  payrollPayableAccountId?: string | null;
+  active?: boolean | null;
+  outputTaxAccount?: { id: string; code?: string | null; name: string } | null;
+  inputTaxAccount?: { id: string; code?: string | null; name: string } | null;
+  discountAccount?: { id: string; code?: string | null; name: string } | null;
+  depositLiabilityAccount?: { id: string; code?: string | null; name: string } | null;
+  payrollPayableAccount?: { id: string; code?: string | null; name: string } | null;
+};

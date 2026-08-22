@@ -19,11 +19,23 @@
  * The B0 report (`ai/ACCOUNTING_API_VERIFICATION_REPORT.md`) is the reference;
  * where this pass measured something different, the `note` says so.
  *
- * NO WRITES. Manager holds **15 accounting read strings and zero writes**
- * (PC-01/PC-02, re-verified live: 5/5 representative writes → 403). This registry
- * therefore contains **only GET routes**. The writes an Odoo user would expect are
- * listed separately in `ACCOUNTING_DENIED_WRITES` so the UI can *name* what it
- * cannot do instead of rendering a disabled button for it.
+ * NO WRITES (B5.1–B5.5 ONLY). Manager held 15 accounting read strings and zero
+ * writes when B5.1–B5.5 shipped (PC-01/PC-02, re-verified live: 5/5 representative
+ * writes → 403). This registry therefore contains **only GET routes**, and every
+ * B5.1–B5.5 surface still renders zero write affordances (Track B5.7 gates that).
+ * The writes an Odoo user would expect from those surfaces are listed separately
+ * in `ACCOUNTING_DENIED_WRITES` so the UI can *name* what it cannot do instead of
+ * rendering a disabled button for it.
+ *
+ * ⚠️ **PERMS-2 (2026-08-21) changed the permission story, and Track B5.6
+ * (2026-08-22) is the first surface to act on it.** Manager now holds the full
+ * 36-string `C21_ACCOUNTING_FINANCE_ALL` set plus the widened M28/M29 block —
+ * matching Accountant/Owner — so PC-01/PC-02 are resolved. B5.6 builds exactly
+ * seven WRITE-ENABLED surfaces (Budgets, Demand calendar, Forecast, Chart of
+ * accounts, Cost centres, Posting source maps, Tax configuration). Their write
+ * routes live in the separate `ACCOUNTING_WRITE_ROUTE_REGISTRY` below — this
+ * array (`ACCOUNTING_ROUTE_REGISTRY`) stays GET-only by construction, so the
+ * B5.1–B5.5 "no write route in the read registry" invariant keeps holding.
  *
  * RELATIVE IMPORTS on purpose: this module is executed directly by the assertion
  * script under `tsx`, which does not resolve the Next.js `@/` alias at runtime.
@@ -453,6 +465,18 @@ export const ACCOUNTING_ROUTE_REGISTRY: readonly AccountingRouteEntry[] = [
     note: "PC-06: bare array. Strict branch equality (orgId + branchId) in listBudgets.",
   },
   {
+    key: "finance.budget",
+    method: "GET",
+    path: "/api/finance/budgets/:id",
+    permission: "finance:budget:read",
+    manager: "allowed",
+    scope: "branch",
+    envelope: "object",
+    serverTotal: false,
+    observed: "Track B5.6, 2026-08-22: 404 for a non-existent id on the isolated stack — the permission passes.",
+    note: "Same include shape as the list row (fiscalPeriod, createdBy, lines), just for one budget.",
+  },
+  {
     key: "finance.demandCalendar",
     method: "GET",
     path: "/api/finance/demand-calendar",
@@ -463,6 +487,17 @@ export const ACCOUNTING_ROUTE_REGISTRY: readonly AccountingRouteEntry[] = [
     serverTotal: false,
     observed: "200 [] on this dataset, both branches.",
     note: "PC-06: bare array.",
+  },
+  {
+    key: "finance.demandCalendarEntry",
+    method: "GET",
+    path: "/api/finance/demand-calendar/:id",
+    permission: "finance:demand-calendar:read",
+    manager: "allowed",
+    scope: "branch",
+    envelope: "object",
+    serverTotal: false,
+    observed: "Track B5.6, 2026-08-22: 404 for a non-existent id on the isolated stack — the permission passes.",
   },
   {
     key: "franchise.forecast",
@@ -481,12 +516,13 @@ export const ACCOUNTING_ROUTE_REGISTRY: readonly AccountingRouteEntry[] = [
     method: "GET",
     path: "/api/finance/procurement-suggestions",
     permission: "procurement:advisory:read",
-    manager: "forbidden",
+    manager: "allowed",
     scope: "branch",
     envelope: "bare-array",
     serverTotal: false,
-    observed: "403 for Manager — re-verified live on this stack.",
-    note: "PC-02: the SAME string gates the mutation PATCH /finance/procurement-suggestions/:id/review, so granting the read would grant a write. Deliberately withheld. This surface is therefore ABSENT from the menu, not a not-yet row.",
+    observed:
+      "INVERTED 2026-08-22 (Track B5.6): 200 for Manager on the isolated stack — PERMS-2 (2026-08-21) granted the full C21_ACCOUNTING_FINANCE_ALL set, including procurement:advisory:read. Previously recorded 403; that was true when B5.1 wrote this entry and is stale now.",
+    note: "PC-02 SUPERSEDED: the same string also gates PATCH /finance/procurement-suggestions/:id/review, so the read grant is a write grant too. Still ABSENT from the menu — not because Manager is forbidden any more, but because Track B5.6 (2026-08-22) deliberately built only the seven rows menu.ts tags B5.6, and this is not one of them. A future phase may add it.",
   },
 
   // ── Review ────────────────────────────────────────────────────────────────
@@ -580,16 +616,144 @@ export const ACCOUNTING_DENIED_WRITES: readonly {
     permission: "pos:accounting:periods:open · :close · :lock",
     finding: "PC-01 / PC-07",
   },
-  {
-    label: "Create a budget or refresh its actuals",
-    route: "POST /api/finance/budgets · POST /api/finance/budgets/:id/update-actuals",
-    permission: "finance:budget:write · finance:budget:update-actuals",
-    finding: "PC-01",
-  },
+  // ⚠️ "Create a budget or refresh its actuals" was removed from this list in
+  // Track B5.6 (2026-08-22, NOT deleted silently — see the git history of this
+  // file): PERMS-2 resolved PC-01 for `finance:budget:write` /
+  // `finance:budget:update-actuals`, and B5.6 built the Budgets surface with a
+  // real create form and a real "Refresh actuals" action. It is no longer a
+  // denied write; do not re-add it here.
   {
     label: "Review a procurement suggestion",
     route: "PATCH /api/finance/procurement-suggestions/:id/review",
     permission: "procurement:advisory:read",
-    finding: "PC-02 — one string gates both the read and this write, so Manager holds neither.",
+    finding:
+      "PC-02 SUPERSEDED by PERMS-2 (2026-08-21): Manager now holds procurement:advisory:read, so this is no longer a permission gap. It stays here because Track B5.6 (2026-08-22) deliberately built only the seven rows menu.ts tags B5.6 — Procurement suggestions is not one of them (ACCOUNTING_OMITTED_ITEMS still records it ABSENT) — so the review action has no UI surface yet, a build-order gate, not a permission one. A future phase may add it as an eighth row.",
   },
 ];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Track B5.6 — the WRITE route registry.
+//
+// Deliberately a SEPARATE array from `ACCOUNTING_ROUTE_REGISTRY` (which stays
+// GET-only by construction — see the module docblock) rather than widening
+// that type to allow a write method: every B5.1–B5.5 assertion that loops over
+// `ACCOUNTING_ROUTE_REGISTRY` and asserts `entry.method === "GET"` keeps
+// meaning exactly what it always meant. A write route Manager can reach lives
+// here instead, named plainly as a write.
+//
+// All nine entries were live-verified reachable for a Manager token on the
+// isolated B5.6 QA stack (see `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md`) —
+// PERMS-2 (2026-08-21) already put every one of these permission strings on
+// Manager's token; B5.6 is the first phase to build a UI that calls them.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type AccountingWriteRouteEntry = {
+  key: string;
+  /** `GET` covers exactly one case: the forecast `?refresh=true` read-with-a-persisted-side-effect — never a bare read. */
+  method: "GET" | "POST" | "PATCH" | "DELETE";
+  path: string;
+  permission: string;
+  manager: "allowed" | "forbidden";
+  /** True for the one GET route in this registry — a side-effecting read, not a pure write. */
+  sideEffect?: boolean;
+  observed: string;
+  note?: string;
+};
+
+export const ACCOUNTING_WRITE_ROUTE_REGISTRY: readonly AccountingWriteRouteEntry[] = [
+  {
+    key: "finance.budgets.create",
+    method: "POST",
+    path: "/api/finance/budgets",
+    permission: "finance:budget:write",
+    manager: "allowed",
+    observed: "201 on the isolated B5.6 stack — a balanced-lines budget is created DRAFT with a real totalBudget.",
+    note: "Unique (orgId, branchId, fiscalPeriodId, budgetType, version) — a repeat submission 409s.",
+  },
+  {
+    key: "finance.budget.updateActuals",
+    method: "POST",
+    path: "/api/finance/budgets/:id/update-actuals",
+    permission: "finance:budget:update-actuals",
+    manager: "allowed",
+    observed: "200 on the isolated B5.6 stack — pulls POSTED journal-line sums per line's accountId and recomputes variance.",
+    note: "400 if the budget is ARCHIVED — the form disables the action rather than letting the request fail.",
+  },
+  {
+    key: "finance.demandCalendar.create",
+    method: "POST",
+    path: "/api/finance/demand-calendar",
+    permission: "finance:demand-calendar:write",
+    manager: "allowed",
+    observed: "201 on the isolated B5.6 stack.",
+    note: "400 if dateEnd < dateStart, or if eventId does not resolve in this org+branch.",
+  },
+  {
+    key: "finance.demandCalendarEntry.update",
+    method: "PATCH",
+    path: "/api/finance/demand-calendar/:id",
+    permission: "finance:demand-calendar:write",
+    manager: "allowed",
+    observed: "200 on the isolated B5.6 stack. Also used for Archive (`isActive: false`) — there is no separate archive route.",
+    note: "A partial dateStart/dateEnd PATCH is validated against the OTHER field's stored value, not just the payload.",
+  },
+  {
+    key: "franchise.forecast.refresh",
+    method: "GET",
+    path: "/api/franchise/forecast?refresh=true",
+    permission: "franchise:forecast:read",
+    manager: "allowed",
+    sideEffect: true,
+    observed:
+      "200 on the isolated B5.6 stack — persists a new ForecastRun and bulk-creates ProcurementSuggestion rows as a side effect of a GET. No separate write permission exists for this action; the read permission gates it.",
+    note: "The UI's 'Refresh forecast' button re-issues this same GET with refresh=true — it is not a POST anywhere in this tree.",
+  },
+  {
+    key: "accounting.accounts.create",
+    method: "POST",
+    path: "/api/accounting/accounts",
+    permission: "pos:accounting:accounts:create",
+    manager: "allowed",
+    observed: "201 on the isolated B5.6 stack.",
+    note: "Unique (orgId, code) — a repeat code 409s. No edit/archive route exists for accounts at all.",
+  },
+  {
+    key: "accounting.costCenters.create",
+    method: "POST",
+    path: "/api/accounting/cost-centers",
+    permission: "pos:accounting:cost-centers:create",
+    manager: "allowed",
+    observed: "201 on the isolated B5.6 stack.",
+    note: "Unique (orgId, code) — a repeat code 409s. No edit/deactivate route exists for cost centres at all.",
+  },
+  {
+    key: "accounting.postingSourceMaps.update",
+    method: "PATCH",
+    path: "/api/accounting/posting-source-maps/:id",
+    permission: "pos:accounting:posting-source-maps:update",
+    manager: "allowed",
+    observed: "200 on the isolated B5.6 stack.",
+    note: "No create route — rows are seed/system-created; sourceKey is immutable. The service does not itself reject debitAccountId === creditAccountId, so the form guards it client-side.",
+  },
+  {
+    key: "accounting.taxConfig.update",
+    method: "PATCH",
+    path: "/api/accounting/tax-config",
+    permission: "pos:accounting:tax-config:update",
+    manager: "allowed",
+    observed: "200 on the isolated B5.6 stack — updates the existing active row, or creates one if none exists.",
+    note: "Omitting `active` from the PATCH body silently forces it to true (dto.active ?? true) — the form always sends it explicitly, never omits it.",
+  },
+];
+
+const writeRegistryByKey = new Map(ACCOUNTING_WRITE_ROUTE_REGISTRY.map((entry) => [entry.key, entry]));
+
+export function getAccountingWriteRoute(key: string): AccountingWriteRouteEntry {
+  const entry = writeRegistryByKey.get(key);
+  if (!entry) {
+    throw new Error(
+      `Accounting write route "${key}" is not in ACCOUNTING_WRITE_ROUTE_REGISTRY — every write function must cite a live-verified endpoint.`,
+    );
+  }
+  return entry;
+}

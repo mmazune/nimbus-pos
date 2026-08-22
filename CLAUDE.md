@@ -93,7 +93,7 @@ for the full document catalog with provenance.
 | Capability matrix | `docs/ROLE_CAPABILITY_MATRIX.md` |
 | **Enterprise UI plan (canonical)** | **`ai/ENTERPRISE_UI_ROADMAP.md`** (new 2026-08-20; Tracks A/B/C — **supersedes `ai/MANAGER_RECONSTRUCTION_ROADMAP.md` from M-P2 onward**) |
 | Manager Operations + Staff (Track B3) | `ai/ENTERPRISE_B3_OPS_STAFF_COMPLETION_REPORT.md` (canonical B3 record, 2026-08-20) + `ai/ENTERPRISE_B3_QA_EVIDENCE_INDEX.md` |
-| **Manager Accounting (Track B5.1–B5.5)** | **`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`** (canonical B5.1 record, 2026-08-21) + **`ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`** (canonical B5.2 record, 2026-08-21) + **`ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md`** (canonical B5.3 record, 2026-08-21) + **`ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md`** (canonical B5.4 record, 2026-08-21) + **`ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md`** (canonical B5.5 record, 2026-08-21) — the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` |
+| **Manager Accounting (Track B5.1–B5.6)** | **`ai/ENTERPRISE_B5_1_ACCOUNTING_SHELL_COMPLETION_REPORT.md`** (canonical B5.1 record, 2026-08-21) + **`ai/ENTERPRISE_B5_2_CUSTOMERS_VENDORS_COMPLETION_REPORT.md`** (canonical B5.2 record, 2026-08-21) + **`ai/ENTERPRISE_B5_3_BANK_RECONCILIATION_COMPLETION_REPORT.md`** (canonical B5.3 record, 2026-08-21) + **`ai/ENTERPRISE_B5_4_ACCOUNTING_CORE_COMPLETION_REPORT.md`** (canonical B5.4 record, 2026-08-21) + **`ai/ENTERPRISE_B5_5_CLOSING_COMPLETION_REPORT.md`** (canonical B5.5 record, 2026-08-21) + **`ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md`** (canonical B5.6 record, write-enabled, 2026-08-22) — the frontend accounting contract is the executable registry `apps/web/src/lib/accounting/route-registry.ts` (+ `route-registry.ts`'s companion `ACCOUNTING_WRITE_ROUTE_REGISTRY` for B5.6's write routes) |
 | Manager dashboard (Track B2) | `ai/ENTERPRISE_B2_DASHBOARD_COMPLETION_REPORT.md` (canonical B2 record, 2026-08-20) — shell record: `ai/ENTERPRISE_B1_TOPNAV_COMPLETION_REPORT.md` |
 | Odoo reference + gap analysis | `ai/ODOO_REFERENCE_RESEARCH.md` (+ `ai/odoo-reference-screenshots/`), `ai/NIMBUS_VS_ODOO_GAP_ANALYSIS.md` |
 | Track C backend gap batch 1 (C-02/MP0-10/MP0-09/C-01) | `ai/BACKEND_GAP_BATCH1_COMPLETION_REPORT.md` (canonical record, 2026-08-20) |
@@ -131,7 +131,7 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 | **Waiter** | **Floor · Reservations · Me** | Table-centric order entry (order builder behind Floor table selection) |
 | **Cashier** | **Floor · Till · Me** (Prompt C1–C3, default `/cashier/floor`; Queue/Receipts are hidden compatibility routes reachable by direct URL only, retire C4/C5) | Payment collection, receipts, till/close (C2 delivered table→bill resolution + the canonical settlement workspace + Find bill; **C3 delivered payment / partial / split / close execution inside that workspace**; receipts + refunds arrive C4) |
 | **Supervisor** | **Floor · Reservations · Approvals · Me** | Read-first oversight; table-control workspace behind Floor selection |
-| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**; **B5.3 turned 3 more live — Bank accounts (list-only), Bank statements and Reconciliation (list+detail) — same read-only guarantee, no Match/Skip/Complete control anywhere, for 15 of 28 rows live total**; **B5.4 turned 4 more live — Journal entries (list+detail), Posting runs (list-only), Posting errors (list+detail) and Audit trail (list-only) — same read-only guarantee, no post/reverse/replay/resolve control anywhere, for 19 of 28 rows live total**; **B5.5 turned 2 more live — Fiscal periods (list-only, four-stage lifecycle pipeline) and Period close runs (list-only) — same read-only guarantee for the actions the owner ruling covers (open/close/lock all re-verified 403), though C-27 found Manager's token additionally holds a pre-existing, never-revoked `periods:create` write the UI still does not expose, for 21 of 28 rows live total**. ⚠️ **PERMS-2 (backend gap batch 4, 2026-08-21): every "READ-ONLY BY PERMISSION" / "zero writes" claim above described the permission state at the time each phase shipped, not current state — the owner has since decided Manager has full accounting read+write (matching Accountant), resolving C-27. The UI itself is UNCHANGED: it still renders zero write affordances, now as a deliberate build-order gate (Track B5.7, not started) rather than a permission gate.** Settings (B6) data is **NOT started** |
+| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**; **B5.3 turned 3 more live — Bank accounts (list-only), Bank statements and Reconciliation (list+detail) — same read-only guarantee, no Match/Skip/Complete control anywhere, for 15 of 28 rows live total**; **B5.4 turned 4 more live — Journal entries (list+detail), Posting runs (list-only), Posting errors (list+detail) and Audit trail (list-only) — same read-only guarantee, no post/reverse/replay/resolve control anywhere, for 19 of 28 rows live total**; **B5.5 turned 2 more live — Fiscal periods (list-only, four-stage lifecycle pipeline) and Period close runs (list-only) — same read-only guarantee for the actions the owner ruling covers (open/close/lock all re-verified 403), though C-27 found Manager's token additionally holds a pre-existing, never-revoked `periods:create` write the UI still does not expose, for 21 of 28 rows live total**. ⚠️ **PERMS-2 (backend gap batch 4, 2026-08-21): every "READ-ONLY BY PERMISSION" / "zero writes" claim above described the permission state at the time each phase shipped, not current state — the owner has since decided Manager has full accounting read+write (matching Accountant), resolving C-27.** **B5.6 (2026-08-22) turned the LAST 7 rows live — Budgets vs actuals, Demand calendar, Forecast (Reporting) and Chart of accounts, Cost centres, Posting source maps, Tax configuration (Configuration), for 28 of 28 rows live total — and unlike every prior sub-phase, these 7 are genuinely WRITE-ENABLED (create/edit/Archive), because PERMS-2 already resolved PC-01/PC-02 before this phase began.** Every B5.1–B5.5 surface (Customers/Vendors, Bank, Journals/Posting/Audit, Fiscal periods/Period close runs — 21 of the 28 rows) still renders zero write affordances — that remains a deliberate build-order gate (Track B5.7, not started), not a permission gate. Settings (B6) data is **NOT started** |
 
 ⚠️ **Cashier Floor-First reconstruction (locked target, C3 complete / C4 not started, 2026-08-20):**
 Cashier's Queue-first navigation above is **historically complete and demo-ready but superseded** as
@@ -161,7 +161,84 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) — A:
+**ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
+(2026-08-22) — A: COMPLETE / B5.7 · B6 · B7 STILL GATED.** The Accounting menu goes from **21 of 28**
+live rows to **28 of 28 — every row in the tree.** The seven rows this file's own `menu.ts` tags
+"B5.6" ship as real surfaces: **Budgets vs actuals** (list + create with dynamic line items +
+Refresh actuals, disabled when ARCHIVED), **Demand calendar** (full list/create/edit/Archive —
+confirm-gated, never a hard `DELETE`), **Forecast** (cached-run view + a Refresh action that is a
+`GET ?refresh=true`, not a POST — there is no separate write route for it), **Chart of accounts**
+(org-level list + Create, no edit/archive route exists), **Cost centres** (org-level list + Create,
+no edit/deactivate route exists), **Posting source maps** (org-level list + Edit only — rows are
+seed/system-created, no create route), **Tax configuration** (org-level singleton view with an
+honest 404-if-unconfigured empty state + Edit, which upserts).
+⚠️ **Unlike every prior B5 sub-phase, this one is WRITE-ENABLED FROM THE START, by design.**
+PERMS-2 (2026-08-21, commit `dbb5e25`) already resolved PC-01/PC-02 — Manager holds the full
+36-string `C21_ACCOUNTING_FINANCE_ALL` set plus the widened 18-string M28/M29 block (**54 total**,
+reconciled string-by-string in `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md` §0, confirmed absent of
+`pos:hr:compensation:read`) — B5.6 is simply the first phase authorised to build a UI on top of it.
+**B5.1–B5.5 stay exactly as read-only as they shipped** — the write-affordance ban in
+`scripts/manager-b5-assertions.ts` was narrowed, not lifted, to an explicit nine-file allow-list
+(the 7 new screens + `lib/accounting/write-api.ts` + `lib/manager/accounting-configuration-queries.ts`),
+re-verified to still forbid a write method/mutation/interactive control everywhere else in the
+module.
+🔴 **A real C-26-class gap was found and FIXED, not merely disclosed this time**: none of the 13
+pre-existing `audit.log(...)` calls in `budget.service.ts`, `demand-calendar.service.ts`,
+`forecast.service.ts` or `accounting.service.ts` stamped `metadata.branchId` — the identical defect
+class Track B5.4 found in `ledger.service.ts` and left disclosed-but-unfixed (C-26). Because these
+nine actions are genuinely write-enabled by this phase, the fix was mandatory: `ACCOUNT_CREATED`,
+`COST_CENTER_CREATED`, `DEMAND_CALENDAR_CREATED/UPDATED`, `BUDGET_CREATED`,
+`BUDGET_ACTUALS_REFRESHED` and `FORECAST_RUN_CREATED` now stamp `ctx.branchId` directly;
+`POSTING_SOURCE_MAP_UPDATED` and `TAX_LEDGER_CONFIG_UPDATED` — whose services never received a
+branch context at all (`PostingSourceMap`/`TaxLedgerConfig` are genuinely org-level, no
+`branch_id` column) — gained a new `actingBranchId` parameter threaded from the controller's own
+`branchContext.branchId`, recording which branch the acting Manager was in without touching the
+org-level `where` clause. **Live-proven** on the isolated stack via direct `psql` query against
+`audit_logs`: all nine actions, freshly created through the live API, show the real branch id in
+`metadata->>'branchId'`; two `FORECAST_RUN_CREATED` rows created *before* that specific fix (earlier
+in the same session) correctly still show `NULL` — not backfilled, matching the B5-F4/C-26
+precedent of never rewriting history. Six of the nine actions also gained a
+`metadata: expect.objectContaining({branchId})` unit-test assertion; `BUDGET_ACTUALS_REFRESHED` and
+`FORECAST_RUN_CREATED` are proven live only (no pre-existing mock fixture covered either code path,
+and building one for the latter's many-Prisma-call `generateForecast()` was judged not worth the
+time against the live proof already in hand — disclosed, not silently skipped).
+**Every detail/edit-capable route was manually loaded in a real Chrome browser** (not inferred from
+a green test suite — the explicit lesson from B5.2's `detailRequest()` double-id bug) — all 18
+observed GET/POST/PATCH calls returned the expected status (200/201/200), the demand-calendar edit
+dialog correctly prefilled every field from the fetched record before any edit, and zero console
+errors were observed across the whole session.
+**No new backend endpoint was needed anywhere** — every read and write route these seven surfaces
+call already existed and was already reachable by Manager post-PERMS-2; the only backend change is
+the nine audit-metadata fixes above (source + unit tests only, no schema/migration/seed/permission/
+DTO/Postman-contract change).
+**Validated on an isolated local Docker stack** — Postgres `:55480` (`nimbus_b56_qa`), API `:4091`,
+web `:3180`; **shared Neon was never connected to or written** (the isolated API held its only
+established TCP connections to `localhost:55480`, verified via `lsof`); `apps/api/.env` was **never
+edited on disk** (isolation via explicit child-process env vars — SHA-256 identical throughout,
+`0f7cfb1…`); `packages/db/.env` was temporarily swapped for the three Prisma CLI steps only and
+restored immediately after (SHA-256 verified byte-identical, `2dad4d3…`). Web typecheck + lint (no
+`--fix`) + production build all pass (7 new pages); API typecheck clean; targeted `eslint` (no
+`--fix`) 0 errors on every touched file; API unit suite **1177/1181** (the 4 failures **named and
+proven pre-existing** — all in `client-onboarding.service.spec.ts`, a stale test-mock missing an
+`invitation` model, unrelated to this phase — see the completion report §6); all 17
+`apps/web/scripts/*-assertions.ts` scripts pass, including `manager-b5-assertions.ts`'s new §16 (write
+registry hygiene, the exact 7-screen/2-lib-file write-enabled allow-list, model-helper unit
+assertions, no-hard-DELETE sweep, confirm-before-destroy sweep, 28/28 menu-row assertion). New
+`e2e/manager-accounting/configuration-and-reporting.spec.ts` (22 specs) + the updated
+`menu-and-read-only.spec.ts` (28-row count) — **117 passed / 3 skipped / 0 failed** across all 4
+viewports; full `e2e/manager-accounting/` regression at `vp-1440x900` — **109 passed / 11 skipped /
+0 failed** (B5.1–B5.5 untouched); `e2e/manager-shell/` cross-role + keyboard + navigation regression
+— **34/34**. Cross-role re-verified both ways: Waiter/Cashier/Supervisor tokens are **403** on every
+one of the 7 new GET routes and on a representative write (live `curl`), and Supervisor's browser
+session shows no Accounting nav entry at all plus a client-side "Manager access required" block on
+direct navigation. `git diff --check` clean; isolated stack fully torn down; the pre-existing `:3001`
+dev API verified healthy before and after. See `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md` for the
+full validation table, the 54-string permission reconciliation, and the per-route live statuses.
+**Track B5.7 (the write-UI pass for B5.1–B5.5's still-read-only surfaces: journals, bank
+reconciliation, fiscal periods, posting errors), B6 (Settings) and B7 remain NOT started — do not
+begin any of them without explicit owner authorisation.**
+
+**Prior milestone record (superseded above) — BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) — A:
 COMPLETE / B5.6 · B5.7 · B6 · B7 STILL GATED.** Backend + schema (one new migration) + seed + docs.
 **No frontend file touched** — the Manager accounting UI still renders zero write affordances; that
 is now a deliberate build-order gate (Track **B5.7**, not started), not a permission gate.
@@ -1517,10 +1594,10 @@ the frontend still renders no such control until B5.7. See
   tax-INCLUSIVE, `netSales = gross − tax`); B3 re-pointed the two sales KPI bindings and pinned them
   by assertion — **do not "fix" them back**.
   ~~**B5…B7 (and B0, B5's sub-phases) are NOT started**~~ — **B0, the permissions cutover, and B5.1 +
-  B5.2 + B5.3 + B5.4 + B5.5 (Accounting) are now COMPLETE**, plan any further sub-phase from
-  `ai/ENTERPRISE_UI_ROADMAP.md` Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. **B5.6,
-  B6 (Settings) and B7 remain NOT started — do not begin any of them without explicit
-  authorization.**
+  B5.2 + B5.3 + B5.4 + B5.5 + B5.6 (Accounting) are now COMPLETE**, plan any further sub-phase from
+  `ai/ENTERPRISE_UI_ROADMAP.md` Track B, not from `ai/MANAGER_RECONSTRUCTION_ROADMAP.md`. **Track
+  B5.7 (the write-UI pass for B5.1–B5.5's still-read-only surfaces), B6 (Settings) and B7 remain NOT
+  started — do not begin any of them without explicit authorization.**
   Do not add a Manager More/Approvals tab, change the `/manager/overview` landing, turn
   `lib/manager/permissions.ts` into a
   `hasPermission()` check, add tills/shifts chips or lists (those routes do not exist), offer a PDF
@@ -1604,9 +1681,9 @@ the frontend still renders no such control until B5.7. See
   exclusion or widen the accounting tree's own field vocabulary to reintroduce the collision**; a
   Supplier's `taxId`/`bankName` are legitimate non-PII business fields, not an employee-data leak.
   Do not add a charting dependency or draw a time trend (no bucketed series exists — NG-05); the
-  aging bucket bars are honest because the backend computes that series itself. **B5.1, B5.2 and B5.3
-  are COMPLETE. B5.4, B5.5, B5.6, B6 and B7 are NOT started — do not begin any of them without
-  explicit owner authorisation.**
+  aging bucket bars are honest because the backend computes that series itself. **B5.1–B5.6 are
+  COMPLETE. Track B5.7, B6 and B7 are NOT started — do not begin any of them without explicit
+  owner authorisation.**
 - **Track B5.3 boundaries — do not cross without explicit authorization.** **Reconciliation is
   READ-ONLY**: do not add a Match, Skip, Reconcile, Validate or Complete control anywhere, not even
   disabled — `pos:accounting:reconciliation:match`/`:create` and `pos:accounting:bank-accounts:create`/
@@ -1624,9 +1701,8 @@ the frontend still renders no such control until B5.7. See
   The `PAGER_ELIGIBLE_FILES` guard in `manager-b5-assertions.ts` was extended to include
   `BankStatementsScreen.tsx` and `ReconciliationScreen.tsx` for their `ManagerBreadcrumbs` RECORD
   pager only (`pageRows.length`, never a server total) — do not read that inclusion as license to add
-  a LIST pager to either file. **B5.1, B5.2, B5.3, B5.4 and B5.5 are COMPLETE. B5.6 (Configuration
-  + the remainder of Reporting) is NOT started — do not begin it without explicit owner
-  authorisation.**
+  a LIST pager to either file. **B5.1–B5.6 are COMPLETE. Track B5.7, B6 and B7 are NOT started —
+  do not begin any of them without explicit owner authorisation.**
 - **Track B5.4 boundaries — do not cross without explicit authorization.** **Journal entries, Posting
   runs, Posting errors and Audit trail are READ-ONLY** — no post/reverse/replay/resolve/dismiss
   control anywhere, not even disabled; Manager holds `journals:read`/`posting-runs:read`/
@@ -1675,9 +1751,34 @@ the frontend still renders no such control until B5.7. See
   a pager to either B5.5 route — both are PC-06 bare arrays with no server total. Do not relabel
   either surface as branch data — both are organisation-level by design (batch 2): `FiscalPeriod`
   has no `branch_id` column at all, and `PeriodCloseRun.branchId` is nullable and never stamped by
-  the close path. **B5.1–B5.5 are COMPLETE. B5.6 (Configuration + the remainder of Reporting) is
-  NOT started — do not begin it without explicit owner authorisation. A future backend batch will
-  need to address C-25, C-26, B5.4-D1, C-27 and B5.5-F1 before B6 (Settings) can start.**
+  the close path. **B5.1–B5.6 are COMPLETE. Track B5.7, B6 and B7 are NOT started — do not begin
+  any of them without explicit owner authorisation. A future backend batch will need to address
+  C-25, C-26, B5.4-D1 and C-27 before B6 (Settings) can start** (B5.5-F1 is unaffected by anything
+  B5.6 touched).
+- **Track B5.6 boundaries — do not cross without explicit authorization.** B5.6 is WRITE-ENABLED
+  by design (PERMS-2 resolved PC-01/PC-02), but its write-enabled scope is EXACTLY the seven named
+  surfaces (Budgets, Demand calendar, Forecast, Chart of accounts, Cost centres, Posting source
+  maps, Tax configuration) — do not use "the permission exists" as a reason to add a write
+  affordance to any B5.1–B5.5 surface (Journals, Bank reconciliation, Fiscal periods, Posting
+  errors, …); that is Track B5.7's job, not started, and `manager-b5-assertions.ts`'s write ban
+  still forbids a write method/mutation/interactive control in every file outside the explicit
+  nine-file B5.6 allow-list. Do not add a hard `DELETE` to the Demand calendar screen — the route
+  exists at the API layer but is deliberately never called (a deleted entry can leave a dangling id
+  inside a persisted `ForecastRun.assumptions.calendarEntriesUsed` JSON blob); Archive
+  (`PATCH {isActive:false}`) is the only destructive affordance. Do not add a create/edit/archive
+  route to Chart of accounts, Cost centres or Posting source maps beyond what this phase built —
+  none of the three has an edit/archive endpoint at the API layer (accounts and cost centres have no
+  edit/archive route at all; posting source maps has no create route, rows are seed/system-created)
+  — inventing a client-side-only "soft delete" for any of them would be fabricated state with
+  nothing on the backend to back it. Do not omit `active`/`costCenterRequired` from a posting-source-
+  map or tax-config PATCH body — the service treats an omitted `costCenterRequired`/`active` as
+  "don't touch this field" on posting-source-maps but **defaults `active` to `true`** on tax-config
+  when omitted (`dto.active ?? true`) — always send both explicitly, never rely on the two services'
+  differing omission behaviour. Do not backfill `branchId` on the two pre-fix `FORECAST_RUN_CREATED`
+  audit rows created during this phase's own QA before the `forecast.service.ts` fix landed — matching
+  the B5-F4/C-26 precedent, history is disclosed, not rewritten. **B5.1–B5.6 are COMPLETE. Track
+  B5.7, B6 and B7 are NOT started — do not begin any of them without explicit owner authorisation.**
+  See `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md`.
 - Cashier reconstruction Prompt **C3 is COMPLETE** (nav Floor/Till/Me, `/cashier/floor` default,
   shared-Floor consumer, table→bill resolution with zero/one/multiple handling, canonical
   `?tableId=&orderId=` URL state, ONE `CashierSettlementWorkspace` reusing the checkout primitives,

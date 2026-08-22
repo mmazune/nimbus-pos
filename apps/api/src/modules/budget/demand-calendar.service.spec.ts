@@ -119,7 +119,10 @@ describe('DemandCalendarService', () => {
       const result = await service.create(USER, CTX, dto as any, META);
       expect(result).toEqual(mockEntry);
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'DEMAND_CALENDAR_CREATED' }),
+        expect.objectContaining({
+          action: 'DEMAND_CALENDAR_CREATED',
+          metadata: expect.objectContaining({ branchId: BRANCH }),
+        }),
       );
     });
 

@@ -119,10 +119,17 @@ export class AccountingController {
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.accountingService.updatePostingSourceMap(user.id, ctx.organizationId, id, dto, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.accountingService.updatePostingSourceMap(
+      user.id,
+      ctx.organizationId,
+      ctx.branchId ?? null,
+      id,
+      dto,
+      {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    );
   }
 
   // ── Tax Ledger Config ──
@@ -142,9 +149,15 @@ export class AccountingController {
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.accountingService.updateTaxLedgerConfig(user.id, ctx.organizationId, dto, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.accountingService.updateTaxLedgerConfig(
+      user.id,
+      ctx.organizationId,
+      ctx.branchId ?? null,
+      dto,
+      {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    );
   }
 }

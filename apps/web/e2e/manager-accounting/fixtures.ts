@@ -45,16 +45,27 @@ export const ACCOUNTING_ROUTES = {
   // Closing — Track B5.5
   fiscalPeriods: "/manager/accounting/closing/fiscal-periods",
   periodCloseRuns: "/manager/accounting/closing/period-close-runs",
+
+  // Reporting (Budgets/Demand calendar/Forecast) + Configuration — Track B5.6 (write-enabled)
+  budgets: "/manager/accounting/reporting/budgets",
+  demandCalendar: "/manager/accounting/reporting/demand-calendar",
+  forecast: "/manager/accounting/reporting/forecast",
+  chartOfAccounts: "/manager/accounting/configuration/chart-of-accounts",
+  costCentres: "/manager/accounting/configuration/cost-centres",
+  postingSourceMaps: "/manager/accounting/configuration/posting-source-maps",
+  taxConfig: "/manager/accounting/configuration/tax-config",
 } as const;
 
 /**
- * The 21 rows that are `available: true` in `lib/accounting/menu.ts`, in DOM
- * order. The Bank group sits BEFORE "Accounting" and "Review" in the menu
- * tree (Customers → Vendors → Bank → Accounting → Review → Reporting →
- * Configuration). Within "Accounting", B5.5's two rows (Fiscal periods,
- * Period close runs) sit AFTER Journal entries — menu.ts declares them in
- * that order — so they land between "Journal entries" and "Posting runs",
- * not appended at the end.
+ * The 28 rows that are `available: true` in `lib/accounting/menu.ts` — ALL of
+ * them, as of Track B5.6 (2026-08-22) — in DOM order. The Bank group sits
+ * BEFORE "Accounting" and "Review" in the menu tree (Customers → Vendors →
+ * Bank → Accounting → Review → Reporting → Configuration). Within
+ * "Accounting", Fiscal periods/Period close runs sit AFTER Journal entries.
+ * B5.6 appended its three Reporting rows (Budgets vs actuals, Demand
+ * calendar, Forecast) AFTER Aged payable, and its four Configuration rows
+ * (Chart of accounts, Cost centres, Posting source maps, Tax configuration)
+ * at the very end — menu.ts's own row order, not appended arbitrarily.
  */
 export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-dashboard",
@@ -78,6 +89,13 @@ export const ACCOUNTING_AVAILABLE_MENU_KEYS = [
   "accounting-audit-trail",
   "accounting-aged-receivable",
   "accounting-aged-payable",
+  "accounting-budgets",
+  "accounting-demand-calendar",
+  "accounting-forecast",
+  "accounting-chart-of-accounts",
+  "accounting-cost-centres",
+  "accounting-posting-source-maps",
+  "accounting-tax-config",
 ] as const;
 
 /** `JournalStatus` — the values the Journal entries status filter offers. */

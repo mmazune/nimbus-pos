@@ -94,7 +94,12 @@ export class AccountingService {
       actorUserId: userId,
       entityType: 'Account',
       entityId: account.id,
-      metadata: { code: dto.code, name: dto.name, accountType: dto.accountType },
+      metadata: {
+        branchId: ctx.branchId,
+        code: dto.code,
+        name: dto.name,
+        accountType: dto.accountType,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -141,7 +146,7 @@ export class AccountingService {
       actorUserId: userId,
       entityType: 'CostCenter',
       entityId: costCenter.id,
-      metadata: { code: dto.code, name: dto.name },
+      metadata: { branchId: ctx.branchId, code: dto.code, name: dto.name },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -257,6 +262,7 @@ export class AccountingService {
   async updatePostingSourceMap(
     userId: string,
     orgId: string,
+    actingBranchId: string | null,
     mapId: string,
     dto: UpdatePostingSourceMapDto,
     meta: AuditMeta,
@@ -303,6 +309,7 @@ export class AccountingService {
       entityType: 'PostingSourceMap',
       entityId: mapId,
       metadata: {
+        branchId: actingBranchId,
         sourceKey: existing.sourceKey,
         oldDebitAccountId: existing.debitAccountId,
         newDebitAccountId: dto.debitAccountId,
@@ -338,6 +345,7 @@ export class AccountingService {
   async updateTaxLedgerConfig(
     userId: string,
     orgId: string,
+    actingBranchId: string | null,
     dto: UpdateTaxLedgerConfigDto,
     meta: AuditMeta,
   ) {
@@ -400,6 +408,7 @@ export class AccountingService {
       entityType: 'TaxLedgerConfig',
       entityId: config.id,
       metadata: {
+        branchId: actingBranchId,
         outputTaxAccountId: dto.outputTaxAccountId,
         inputTaxAccountId: dto.inputTaxAccountId,
         discountAccountId: dto.discountAccountId,

@@ -31,7 +31,59 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
-- **BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) —
+- **ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
+  (2026-08-22) — A: COMPLETE / B5.7 · B6 · B7 still gated.** The Accounting menu goes from **21 of
+  28** live rows to **28 of 28 — every row in the tree.** Frontend + a small, targeted backend fix
+  (audit metadata only — no schema/migration/seed/permission/DTO/Postman-contract change). The
+  seven rows `menu.ts` already tagged "B5.6" ship as real surfaces: **Budgets vs actuals** (list +
+  create with dynamic line items + Refresh actuals, disabled when ARCHIVED), **Demand calendar**
+  (full list/create/edit/Archive, confirm-gated, never a hard `DELETE`), **Forecast** (cached-run
+  view + a Refresh action that is a `GET ?refresh=true`, not a POST — no separate write route
+  exists), **Chart of accounts** (org-level list + Create only, no edit/archive route exists),
+  **Cost centres** (org-level list + Create only, no edit/deactivate route exists), **Posting
+  source maps** (org-level list + Edit only — rows are seed/system-created, no create route),
+  **Tax configuration** (org-level singleton view with an honest 404-if-unconfigured state + Edit,
+  which upserts).
+  ⚠️ **Unlike every prior B5 sub-phase, this one is WRITE-ENABLED FROM THE START, by design.**
+  PERMS-2 (2026-08-21) already resolved PC-01/PC-02 — Manager holds the full 36-string
+  `C21_ACCOUNTING_FINANCE_ALL` set plus the widened 18-string M28/M29 block (**54 total**,
+  reconciled string-by-string in `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md` §0, confirmed absent of
+  `pos:hr:compensation:read`) — B5.6 is the first phase authorised to build a UI on it. **B5.1–B5.5
+  stay exactly as read-only as they shipped** — the write-affordance ban in
+  `scripts/manager-b5-assertions.ts` was narrowed, not lifted, to an explicit nine-file allow-list.
+  🔴 **A real C-26-class gap was found and FIXED, not merely disclosed**: none of 13 pre-existing
+  `audit.log` calls across `budget.service.ts`/`demand-calendar.service.ts`/`forecast.service.ts`/
+  `accounting.service.ts` stamped `metadata.branchId`. Nine actions now do
+  (`ACCOUNT_CREATED`/`COST_CENTER_CREATED`/`DEMAND_CALENDAR_CREATED`/`_UPDATED`/`BUDGET_CREATED`/
+  `BUDGET_ACTUALS_REFRESHED`/`FORECAST_RUN_CREATED` via `ctx.branchId` directly;
+  `POSTING_SOURCE_MAP_UPDATED`/`TAX_LEDGER_CONFIG_UPDATED` via a new `actingBranchId` param threaded
+  from the controller, since those two services never received a branch context at all) —
+  live-proven via `psql` against `audit_logs` on the isolated stack; two pre-fix
+  `FORECAST_RUN_CREATED` rows correctly still show `NULL`, not backfilled (B5-F4/C-26 precedent).
+  **No new backend endpoint was needed anywhere** — every route these seven surfaces call already
+  existed and was already reachable by Manager post-PERMS-2. Every detail/edit-capable route was
+  manually loaded in a **real Chrome browser** (the explicit B5.2 `detailRequest()`-bug lesson) —
+  all 18 observed GET/POST/PATCH calls returned the expected status, zero console errors observed.
+  Validated on an isolated local Docker stack (Postgres `:55480`, API `:4091`, web `:3180`; shared
+  Neon never connected to or written; `apps/api/.env` never edited on disk, SHA-256 identical
+  throughout; `packages/db/.env` temporarily swapped for the Prisma CLI steps only, restored and
+  SHA-256-verified byte-identical): web typecheck/lint/build all pass (7 new pages); API typecheck
+  clean; API unit suite **1177/1181** (the 4 failures **named and proven pre-existing**, all in
+  `client-onboarding.service.spec.ts` — a stale test mock missing an `invitation` model, unrelated
+  to this phase); all 17 `apps/web/scripts/*-assertions.ts` scripts pass, incl.
+  `manager-b5-assertions.ts`'s new §16; new `e2e/manager-accounting/configuration-and-reporting.spec.ts`
+  (22 specs) + updated `menu-and-read-only.spec.ts` (28-row count) — **117 passed / 3 skipped / 0
+  failed** across all 4 viewports; full `e2e/manager-accounting/` regression at `vp-1440x900` —
+  **109 passed / 11 skipped / 0 failed** (B5.1–B5.5 untouched); `e2e/manager-shell/` cross-role +
+  keyboard + navigation regression — **34/34**. Cross-role re-verified both ways (API 403 + a
+  client-side "Manager access required" block on direct navigation) for Waiter/Cashier/Supervisor.
+  `git diff --check` clean; isolated stack fully torn down; the pre-existing `:3001` dev API
+  verified healthy before and after. See `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md` for the full
+  validation table, the 54-string permission reconciliation, and the per-route live statuses.
+  **Track B5.7 (the write-UI pass for B5.1–B5.5's still-read-only surfaces), B6 (Settings) and B7
+  remain NOT started — do not begin any of them without explicit owner authorisation.**
+
+- **Prior state (superseded above) — BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) —
   A: COMPLETE / B5.6 · B5.7 · B6 · B7 still gated.** Backend + schema (one new migration) + seed +
   docs; **no frontend file touched**. The owner decided Manager has full access to everything it
   is responsible for — PERMS-2 grants Manager the full 36-string C-21 accounting/finance set plus

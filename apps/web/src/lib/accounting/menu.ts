@@ -78,6 +78,18 @@ import { getAccountingRoute } from "./route-registry";
  * same "no detail route, so no detail page" shape B5.4 found for Posting
  * runs. Chart of accounts, Cost centres, Posting source maps and Tax
  * configuration stay tagged B5.6 (Configuration), untouched by this phase.
+ *
+ * B5.6 (2026-08-22, Reporting + Configuration) turns the LAST seven "B5.6"
+ * rows live — Budgets vs actuals, Demand calendar, Forecast (Reporting) and
+ * Chart of accounts, Cost centres, Posting source maps, Tax configuration
+ * (Configuration) — taking the menu to **28 of 28 rows live**. Unlike every
+ * prior sub-phase, this one is WRITE-ENABLED: PERMS-2 (2026-08-21, commit
+ * `dbb5e25`) granted Manager the full 36-string `C21_ACCOUNTING_FINANCE_ALL`
+ * set plus the widened M28/M29 block — matching Accountant/Owner — resolving
+ * PC-01 and PC-02. These seven surfaces carry real create/edit/archive
+ * affordances; every earlier surface (B5.1–B5.5) stays exactly as read-only
+ * as it shipped — see `scripts/manager-b5-assertions.ts` for the write ban's
+ * updated (narrower) scope.
  */
 export const ACCOUNTING_SUBPHASES = ["B5.2", "B5.3", "B5.4", "B5.5", "B5.6"] as const;
 export type AccountingSubphase = (typeof ACCOUNTING_SUBPHASES)[number];
@@ -296,22 +308,22 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-budgets",
         label: "Budgets vs actuals",
-        available: false,
-        subphase: "B5.6",
-        routeKeys: ["finance.budgets"],
+        available: true,
+        href: ACCOUNTING_ROUTES.budgets,
+        routeKeys: ["finance.budgets", "finance.budget"],
       },
       {
         key: "accounting-demand-calendar",
         label: "Demand calendar",
-        available: false,
-        subphase: "B5.6",
-        routeKeys: ["finance.demandCalendar"],
+        available: true,
+        href: ACCOUNTING_ROUTES.demandCalendar,
+        routeKeys: ["finance.demandCalendar", "finance.demandCalendarEntry"],
       },
       {
         key: "accounting-forecast",
         label: "Forecast",
-        available: false,
-        subphase: "B5.6",
+        available: true,
+        href: ACCOUNTING_ROUTES.forecast,
         routeKeys: ["franchise.forecast"],
       },
     ],
@@ -322,29 +334,29 @@ export const ACCOUNTING_MENU: readonly AccountingMenuGroup[] = [
       {
         key: "accounting-chart-of-accounts",
         label: "Chart of accounts",
-        available: false,
-        subphase: "B5.6",
+        available: true,
+        href: ACCOUNTING_ROUTES.chartOfAccounts,
         routeKeys: ["accounting.chartOfAccounts"],
       },
       {
         key: "accounting-cost-centres",
         label: "Cost centres",
-        available: false,
-        subphase: "B5.6",
+        available: true,
+        href: ACCOUNTING_ROUTES.costCentres,
         routeKeys: ["accounting.costCenters"],
       },
       {
         key: "accounting-posting-source-maps",
         label: "Posting source maps",
-        available: false,
-        subphase: "B5.6",
+        available: true,
+        href: ACCOUNTING_ROUTES.postingSourceMaps,
         routeKeys: ["accounting.postingSourceMaps"],
       },
       {
         key: "accounting-tax-config",
         label: "Tax configuration",
-        available: false,
-        subphase: "B5.6",
+        available: true,
+        href: ACCOUNTING_ROUTES.taxConfig,
         routeKeys: ["accounting.taxConfig"],
       },
     ],
@@ -380,7 +392,7 @@ export const ACCOUNTING_OMITTED_ITEMS: readonly {
   {
     odooItem: "Reporting → Procurement suggestions",
     reason:
-      "Live-verified 403 for Manager. PC-02: `procurement:advisory:read` gates the read AND the mutation `PATCH /procurement-suggestions/:id/review`, so the cutover deliberately granted Manager neither. A not-yet row would promise a surface this role cannot open.",
+      "INVERTED 2026-08-22 (Track B5.6): PERMS-2 (2026-08-21) granted Manager `procurement:advisory:read`, which also gates the mutation `PATCH /procurement-suggestions/:id/review` (PC-02 is now a write grant, not a gap). This row is STILL absent — not because Manager is forbidden any more, but because Track B5.6 deliberately built only the seven rows menu.ts tags B5.6, and Procurement suggestions is not one of them. A future phase may add it as an eighth row.",
   },
   {
     odooItem: "Configuration → Currencies · Rounding · Tax matrix · Exchange rates",

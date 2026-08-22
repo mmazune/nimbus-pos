@@ -191,7 +191,10 @@ describe('AccountingService', () => {
         }),
       );
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'ACCOUNT_CREATED' }),
+        expect.objectContaining({
+          action: 'ACCOUNT_CREATED',
+          metadata: expect.objectContaining({ branchId: 'branch-1' }),
+        }),
       );
     });
 
@@ -253,7 +256,10 @@ describe('AccountingService', () => {
       const result = await service.createCostCenter('user-1', ctx, dto, meta);
       expect(result).toEqual(mockCostCenter);
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'COST_CENTER_CREATED' }),
+        expect.objectContaining({
+          action: 'COST_CENTER_CREATED',
+          metadata: expect.objectContaining({ branchId: 'branch-1' }),
+        }),
       );
     });
 
@@ -377,10 +383,20 @@ describe('AccountingService', () => {
         debitAccountId: 'acct-new',
       });
 
-      const result = await service.updatePostingSourceMap('user-1', 'org-1', 'psm-1', dto, meta);
+      const result = await service.updatePostingSourceMap(
+        'user-1',
+        'org-1',
+        'branch-1',
+        'psm-1',
+        dto,
+        meta,
+      );
       expect(result.debitAccountId).toBe('acct-new');
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'POSTING_SOURCE_MAP_UPDATED' }),
+        expect.objectContaining({
+          action: 'POSTING_SOURCE_MAP_UPDATED',
+          metadata: expect.objectContaining({ branchId: 'branch-1' }),
+        }),
       );
     });
 
@@ -388,7 +404,7 @@ describe('AccountingService', () => {
       prisma.postingSourceMap.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updatePostingSourceMap('user-1', 'org-1', 'bad-id', dto, meta),
+        service.updatePostingSourceMap('user-1', 'org-1', 'branch-1', 'bad-id', dto, meta),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -397,7 +413,7 @@ describe('AccountingService', () => {
       prisma.account.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updatePostingSourceMap('user-1', 'org-1', 'psm-1', dto, meta),
+        service.updatePostingSourceMap('user-1', 'org-1', 'branch-1', 'psm-1', dto, meta),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -432,10 +448,13 @@ describe('AccountingService', () => {
       prisma.account.findMany.mockResolvedValue([{ id: 'acct-tax-out' }, { id: 'acct-tax-in' }]);
       prisma.taxLedgerConfig.update.mockResolvedValue(mockTaxConfig);
 
-      const result = await service.updateTaxLedgerConfig('user-1', 'org-1', dto, meta);
+      const result = await service.updateTaxLedgerConfig('user-1', 'org-1', 'branch-1', dto, meta);
       expect(result).toEqual(mockTaxConfig);
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'TAX_LEDGER_CONFIG_UPDATED' }),
+        expect.objectContaining({
+          action: 'TAX_LEDGER_CONFIG_UPDATED',
+          metadata: expect.objectContaining({ branchId: 'branch-1' }),
+        }),
       );
     });
 
@@ -446,7 +465,7 @@ describe('AccountingService', () => {
       prisma.account.findMany.mockResolvedValue([{ id: 'acct-tax-out' }, { id: 'acct-tax-in' }]);
       prisma.taxLedgerConfig.create.mockResolvedValue(mockTaxConfig);
 
-      const result = await service.updateTaxLedgerConfig('user-1', 'org-1', dto, meta);
+      const result = await service.updateTaxLedgerConfig('user-1', 'org-1', 'branch-1', dto, meta);
       expect(result).toEqual(mockTaxConfig);
       expect(prisma.taxLedgerConfig.create).toHaveBeenCalled();
     });
@@ -455,9 +474,9 @@ describe('AccountingService', () => {
       prisma.taxLedgerConfig.findFirst.mockResolvedValue(mockTaxConfig);
       prisma.account.findMany.mockResolvedValue([]);
 
-      await expect(service.updateTaxLedgerConfig('user-1', 'org-1', dto, meta)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.updateTaxLedgerConfig('user-1', 'org-1', 'branch-1', dto, meta),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

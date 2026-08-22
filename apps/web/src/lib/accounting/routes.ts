@@ -53,6 +53,18 @@ export const ACCOUNTING_ROUTES = {
   // promise here.
   fiscalPeriods: "/manager/accounting/closing/fiscal-periods",
   periodCloseRuns: "/manager/accounting/closing/period-close-runs",
+
+  // Reporting (Budgets/Demand calendar/Forecast) + Configuration — Track B5.6.
+  // WRITE-ENABLED: PERMS-2 (2026-08-21) granted Manager the full accounting
+  // read+write permission set, resolving PC-01/PC-02. These four routes carry
+  // real create/edit affordances, unlike every route declared above.
+  budgets: "/manager/accounting/reporting/budgets",
+  demandCalendar: "/manager/accounting/reporting/demand-calendar",
+  forecast: "/manager/accounting/reporting/forecast",
+  chartOfAccounts: "/manager/accounting/configuration/chart-of-accounts",
+  costCentres: "/manager/accounting/configuration/cost-centres",
+  postingSourceMaps: "/manager/accounting/configuration/posting-source-maps",
+  taxConfig: "/manager/accounting/configuration/tax-config",
 } as const;
 
 export const ACCOUNTING_LANDING = ACCOUNTING_ROUTES.dashboard;

@@ -144,6 +144,7 @@ export class BudgetService {
       entityType: 'Budget',
       entityId: budget.id,
       metadata: {
+        branchId: ctx.branchId,
         name: dto.name,
         budgetType,
         version,
@@ -243,6 +244,7 @@ export class BudgetService {
       entityType: 'Budget',
       entityId: budgetId,
       metadata: {
+        branchId: ctx.branchId,
         windowStart,
         windowEnd,
         accountsRefreshed: accountIds.length,

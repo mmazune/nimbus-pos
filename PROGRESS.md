@@ -4,7 +4,25 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) —
+**ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
+(2026-08-22) — A: COMPLETE / B5.7 · B6 · B7 still gated.** The Accounting menu goes from 21 of 28
+live rows to **28 of 28 — every row in the tree.** The seven B5.6-tagged rows ship as real
+surfaces — Budgets vs actuals, Demand calendar, Forecast (Reporting) and Chart of accounts, Cost
+centres, Posting source maps, Tax configuration (Configuration) — and unlike every prior B5
+sub-phase, these are genuinely **write-enabled** (create/edit/Archive), because PERMS-2 already
+resolved PC-01/PC-02 before this phase began. Every B5.1–B5.5 surface stays exactly as read-only as
+it shipped. A real C-26-class gap (none of 13 pre-existing `audit.log` calls across
+`budget.service.ts`/`demand-calendar.service.ts`/`forecast.service.ts`/`accounting.service.ts`
+stamped `metadata.branchId`) was found and **fixed** across 9 audit actions — live-proven via
+`psql` on the isolated stack. No new backend endpoint was needed anywhere. Validated on an isolated
+local Docker stack (Postgres `:55480`, API `:4091`, web `:3180`; shared Neon never touched); web
+typecheck/lint/build pass; API unit suite 1177/1181 (4 pre-existing, named); 18 write-enabled scripts
+pass incl. `manager-b5-assertions.ts` §16; Playwright 117/3-skipped/0-failed (new specs, 4 viewports)
++ 109/11-skipped/0-failed (full regression) + 34/34 (manager-shell cross-role). Every detail/edit
+route manually loaded in a real browser per the B5.2-lesson discipline. See
+`ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md`. Track B5.7, B6 and B7 remain NOT started.
+
+**Prior entry (superseded above) — BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) —
 A: COMPLETE / B5.6 · B5.7 · B6 · B7 still gated.** Backend + schema (one migration) + seed + docs;
 no frontend file touched. The owner decided Manager has full access to everything it is
 responsible for — Manager now holds the full 54-string accounting/finance permission set (matching

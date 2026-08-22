@@ -198,7 +198,12 @@ describe('BudgetService', () => {
       prisma.budget.findFirst.mockResolvedValueOnce({ ...mockBudget, lines: [] }); // getBudget
       await service.createBudget(USER, CTX, dto, META);
       expect(prisma.$transaction).toHaveBeenCalled();
-      expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'BUDGET_CREATED' }));
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'BUDGET_CREATED',
+          metadata: expect.objectContaining({ branchId: BRANCH }),
+        }),
+      );
     });
 
     it('throws ConflictException if budget already exists', async () => {

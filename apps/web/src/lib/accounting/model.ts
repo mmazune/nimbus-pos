@@ -424,6 +424,10 @@ const ACCOUNTING_STATUS_TONE: Record<string, "neutral" | "info" | "success" | "w
   SUCCEEDED: "success",
   PARTIAL: "warning",
   RESOLVED: "success",
+  // Track B5.6 — budget / forecast-run statuses.
+  FINALIZED: "success",
+  ARCHIVED: "neutral",
+  RUNNING: "info",
 };
 
 export function accountingStatusTone(value: string | null | undefined): "neutral" | "info" | "success" | "warning" | "danger" {
@@ -709,6 +713,72 @@ export const ACCOUNTING_KPI_BINDINGS: readonly AccountingKpiBinding[] = [
     note: "ORGANISATION data — PeriodCloseRun.branchId is nullable and the close path never stamps it (batch 2).",
   },
 ];
+
+// ── Track B5.6: Budgets / Demand calendar / Forecast / Configuration ────────
+
+/**
+ * `updateActuals` (`budget.service.ts`) 400s on an ARCHIVED budget — the
+ * "Refresh actuals" action disables itself before the request rather than
+ * letting it fail. `null` (unreadable status) is treated as NOT archived —
+ * failing this closed the other way (blocking the action) would hide a
+ * legitimate refresh behind a rendering glitch.
+ */
+export function isBudgetArchived(status: string | null | undefined): boolean {
+  return (status || "").toUpperCase() === "ARCHIVED";
+}
+
+/**
+ * The backend's own invariant: `dateEnd` must be `>= dateStart`. Mirrored
+ * client-side so the create/edit form can disable Save instead of round-
+ * tripping a 400. `null` for either input means "not yet fillable to judge".
+ */
+export function isDemandCalendarWindowValid(dateStart: string, dateEnd: string): boolean | null {
+  if (!dateStart || !dateEnd) return null;
+  const start = new Date(dateStart).getTime();
+  const end = new Date(dateEnd).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+  return end >= start;
+}
+
+/**
+ * `updatePostingSourceMap` (`accounting.service.ts`) does NOT itself reject
+ * `debitAccountId === creditAccountId` — a same-account map would be a real
+ * bookkeeping error (a source that debits and credits the same GL account
+ * nets to nothing), so the form guards it client-side even though the API
+ * would accept it. `null` when either side is not yet chosen.
+ */
+export function isPostingSourceMapValid(
+  debitAccountId: string | null | undefined,
+  creditAccountId: string | null | undefined,
+): boolean | null {
+  if (!debitAccountId || !creditAccountId) return null;
+  return debitAccountId !== creditAccountId;
+}
+
+/**
+ * `updateTaxLedgerConfig` defaults `active` to `true` when the field is
+ * OMITTED from the PATCH body (`dto.active ?? true`) — unlike
+ * `updatePostingSourceMap`, where an omitted boolean is inert. The write
+ * payload builder always includes `active` explicitly so this default can
+ * never silently reactivate a config the form shows as inactive.
+ */
+export function buildTaxConfigWritePayload(fields: {
+  outputTaxAccountId?: string | null;
+  inputTaxAccountId?: string | null;
+  discountAccountId?: string | null;
+  depositLiabilityAccountId?: string | null;
+  payrollPayableAccountId?: string | null;
+  active: boolean;
+}) {
+  return {
+    outputTaxAccountId: fields.outputTaxAccountId || undefined,
+    inputTaxAccountId: fields.inputTaxAccountId || undefined,
+    discountAccountId: fields.discountAccountId || undefined,
+    depositLiabilityAccountId: fields.depositLiabilityAccountId || undefined,
+    payrollPayableAccountId: fields.payrollPayableAccountId || undefined,
+    active: fields.active,
+  };
+}
 
 const kpiByKey = new Map(ACCOUNTING_KPI_BINDINGS.map((binding) => [binding.key, binding]));
 

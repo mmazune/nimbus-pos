@@ -106,6 +106,7 @@ export class DemandCalendarService {
       entityType: 'DemandCalendarEntry',
       entityId: entry.id,
       metadata: {
+        branchId: ctx.branchId,
         calendarType: dto.calendarType,
         daypart: dto.daypart ?? 'ALL_DAY',
         title: dto.title,
@@ -173,7 +174,7 @@ export class DemandCalendarService {
       actorUserId: userId,
       entityType: 'DemandCalendarEntry',
       entityId: id,
-      metadata: { changes: Object.keys(dto) },
+      metadata: { branchId: ctx.branchId, changes: Object.keys(dto) },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -194,7 +195,11 @@ export class DemandCalendarService {
       actorUserId: userId,
       entityType: 'DemandCalendarEntry',
       entityId: id,
-      metadata: { title: existing.title, calendarType: existing.calendarType },
+      metadata: {
+        branchId: ctx.branchId,
+        title: existing.title,
+        calendarType: existing.calendarType,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

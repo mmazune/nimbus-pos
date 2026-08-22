@@ -4,19 +4,21 @@ import { join } from "path";
 import {
   ACCOUNTING_MENU,
   ACCOUNTING_OMITTED_ITEMS,
-  ACCOUNTING_SUBPHASES,
   accountingMenuItems,
   assertAccountingMenuIsBacked,
 } from "../src/lib/accounting/menu";
 import {
   ACCOUNTING_DENIED_WRITES,
   ACCOUNTING_ROUTE_REGISTRY,
+  ACCOUNTING_WRITE_ROUTE_REGISTRY,
   getAccountingRoute,
+  getAccountingWriteRoute,
 } from "../src/lib/accounting/route-registry";
 import { ACCOUNTING_LANDING, ACCOUNTING_ROOT, ACCOUNTING_ROUTES } from "../src/lib/accounting/routes";
 import {
   ACCOUNTING_KPI_BINDINGS,
   AR_AGING_PAGE_SIZE,
+  buildTaxConfigWritePayload,
   countActiveReconciliations,
   countCloseRunsByStatus,
   countPeriodsByStatus,
@@ -28,8 +30,11 @@ import {
   getAccountingKpi,
   getAccountingKpiRoute,
   isArAgingComplete,
+  isBudgetArchived,
+  isDemandCalendarWindowValid,
   isJournalBalanced,
   isJournalReadableInBranch,
+  isPostingSourceMapValid,
   isReconciliationBalanced,
   overdueTotal,
   PERIOD_CLOSE_RUN_STATUS_META,
@@ -44,7 +49,7 @@ import {
   toPeriodCloseRunStatus,
   unpaginatedCountLabel,
 } from "../src/lib/accounting/model";
-import { PERIOD_CLOSE_RUN_STATUSES } from "../src/lib/accounting/types";
+import { BUDGET_TYPES, DEMAND_CALENDAR_TYPES, PERIOD_CLOSE_RUN_STATUSES } from "../src/lib/accounting/types";
 import { managerRoutes } from "../src/lib/manager/routes";
 import { managerSurfaces } from "../src/lib/manager/permissions";
 import { managerTopNavMenus } from "../src/lib/manager/top-nav";
@@ -136,11 +141,14 @@ assert(
  * (2026-08-21) added 3 more (Bank accounts, Bank statements, Reconciliation)
  * — 16 total. Track B5.4 (2026-08-21) added 4 more (Journal entries, Posting
  * runs, Posting errors, Audit trail) — 20 total. Track B5.5 (2026-08-21)
- * added 2 more (Fiscal periods, Period close runs) — 22 total. Exact equality
- * on purpose: a page appearing here with no matching `available:true` menu
- * row below (or vice versa) is exactly the drift this gate exists to catch.
+ * added 2 more (Fiscal periods, Period close runs) — 22 total. Track B5.6
+ * (2026-08-22) added the LAST 7 (Budgets, Demand calendar, Forecast, Chart of
+ * accounts, Cost centres, Posting source maps, Tax configuration) — 29 total,
+ * the full 28-row menu tree plus the index redirect. Exact equality on
+ * purpose: a page appearing here with no matching `available:true` menu row
+ * below (or vice versa) is exactly the drift this gate exists to catch.
  */
-assert(accountingPageFiles.length === 22, `Accounting ships 22 pages (found ${accountingPageFiles.length})`);
+assert(accountingPageFiles.length === 29, `Accounting ships 29 pages (found ${accountingPageFiles.length})`);
 assert(
   existsSync(join(process.cwd(), `${MANAGER_LIB_DIR}/accounting-context.ts`)),
   "the Manager-side React Query adapter exists",
@@ -151,22 +159,47 @@ assert(
 );
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 1. RULING 2 — MANAGER ACCOUNTING IS READ-ONLY. NO WRITE AFFORDANCE AT ALL.
+// 1. RULING 2 — MANAGER ACCOUNTING WAS READ-ONLY THROUGH B5.1–B5.5. NO WRITE
+//    AFFORDANCE AT ALL ANYWHERE EXCEPT THE SEVEN TRACK B5.6 SURFACES.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const WRITE_METHODS = /method:\s*["'](POST|PATCH|PUT|DELETE)["']/;
 
+/**
+ * ⚠️ PERMS-2 (2026-08-21) resolved PC-01/PC-02 — Manager now holds the full
+ * accounting read+write permission set. Track B5.6 (2026-08-22) is the first
+ * phase authorised to act on it, and it builds EXACTLY seven write-enabled
+ * surfaces. Every file below is allow-listed for a write method / mutation /
+ * interactive control; every other file in `accountingFiles` and
+ * `managerTreeFiles` must stay exactly as write-free as it was through B5.5 —
+ * the loops below still enforce that for everything NOT in this list.
+ */
+const B56_WRITE_ENABLED_FILES = [
+  `${ACCOUNTING_LIB_DIR}/write-api.ts`,
+  `${ACCOUNTING_LIB_DIR}/route-registry.ts`,
+  `${MANAGER_LIB_DIR}/accounting-configuration-queries.ts`,
+  `${ACCOUNTING_COMPONENT_DIR}/reporting/BudgetsScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/reporting/DemandCalendarScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/reporting/ForecastScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/configuration/ChartOfAccountsScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/configuration/CostCentresScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/configuration/PostingSourceMapsScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/configuration/TaxConfigScreen.tsx`,
+];
+
 for (const file of accountingFiles) {
+  if (B56_WRITE_ENABLED_FILES.includes(file)) continue;
   const code = codeOnly(file);
-  assert(!WRITE_METHODS.test(code), `${file} issues no write request (Manager holds zero accounting writes — PC-01)`);
+  assert(!WRITE_METHODS.test(code), `${file} issues no write request (this file is not one of the seven Track B5.6 write-enabled surfaces)`);
   assert(!/useMutation/.test(code), `${file} mounts no mutation hook`);
 }
 
 /**
  * The whole-tree sweep: no mutation ANYWHERE under `components/manager` or
- * `lib/manager` may target an accounting route. B3 established that a Manager
- * mutation must be individually allow-listed; this narrows it further for the
- * accounting block, where the allowed count is zero.
+ * `lib/manager` may target an accounting route UNLESS the file is one of the
+ * nine allow-listed above. B3 established that a Manager mutation must be
+ * individually allow-listed; this narrows it further for the accounting
+ * block, where the allowed set is now exactly these nine files.
  */
 const ACCOUNTING_PATH_FRAGMENTS = [
   "/api/accounting",
@@ -175,24 +208,42 @@ const ACCOUNTING_PATH_FRAGMENTS = [
 ];
 
 for (const file of managerTreeFiles) {
+  if (B56_WRITE_ENABLED_FILES.includes(file)) continue;
   const code = codeOnly(file);
   if (!WRITE_METHODS.test(code)) continue;
   for (const fragment of ACCOUNTING_PATH_FRAGMENTS) {
     assert(
       !code.includes(fragment),
-      `${file} contains a write AND an accounting path (${fragment}) — Manager holds no accounting write`,
+      `${file} contains a write AND an accounting path (${fragment}) — only the nine B5.6 write-enabled files may do this`,
     );
   }
 }
 
-/** No disabled-button escape hatch either: the ruling forbids even a greyed-out control. */
-const accountingComponentSource = accountingComponentFiles.map((file) => codeOnly(file)).join("\n");
+/**
+ * Positive proof, not just an absence: every one of the nine allow-listed
+ * files actually DOES write something — an allow-list entry that never
+ * exercises its allowance would be silent scope creep waiting to happen.
+ */
+for (const file of B56_WRITE_ENABLED_FILES) {
+  const code = codeOnly(file);
+  const writesOrMutates =
+    WRITE_METHODS.test(code) || /useMutation/.test(code) || /use(Create|Update|Refresh)[A-Za-z]*\(/.test(code);
+  assert(writesOrMutates, `${file} is allow-listed as write-enabled but contains no write method, mutation hook, or mutation-hook call — remove it from the allow-list if it no longer needs one`);
+}
+
+/** No disabled-button escape hatch either, EXCEPT inside the nine B5.6 write-enabled files, which are permitted real interactive controls. */
+const accountingComponentSource = accountingComponentFiles
+  .filter((file) => !B56_WRITE_ENABLED_FILES.includes(file))
+  .map((file) => codeOnly(file))
+  .join("\n");
 for (const banned of ["<Button", "<IconButton", "onClick=", "type=\"submit\""]) {
   assert(
     !accountingComponentSource.includes(banned),
-    `no interactive control (${banned}) renders in the accounting tree — where an Odoo user expects an action, B5.1 shows an honest note instead`,
+    `no interactive control (${banned}) renders in a non-B5.6 accounting file — where an Odoo user expects an action on those surfaces, an honest note is shown instead`,
   );
 }
+/** The full component source, INCLUDING the B5.6 write-enabled files — used by every check below that is not specifically about the write ban. */
+const accountingComponentSourceAll = accountingComponentFiles.map((file) => codeOnly(file)).join("\n");
 
 assert(
   ACCOUNTING_DENIED_WRITES.length >= 8,
@@ -424,10 +475,18 @@ const availableItems = menuItems.filter((item) => item.available);
  * already tagged "B5.4" since B5.1 — Journal entries, Posting runs, Posting
  * errors, Audit trail — 19 total. B5.5 (2026-08-21) turned the 2 rows the
  * menu tree already tagged "B5.5" — Fiscal periods, Period close runs — 21
- * total. Exact equality: a menu row available with no matching page (or vice
- * versa) is exactly the drift `accountingPageFiles` above also gates.
+ * total. B5.6 (2026-08-22) turned the LAST 7 rows the menu tree already
+ * tagged "B5.6" — Budgets vs actuals, Demand calendar, Forecast, Chart of
+ * accounts, Cost centres, Posting source maps, Tax configuration — 28 total,
+ * every row in `ACCOUNTING_MENU`. Exact equality: a menu row available with
+ * no matching page (or vice versa) is exactly the drift `accountingPageFiles`
+ * above also gates.
  */
-assert(availableItems.length === 21, `Accounting ships 21 live menu rows (found ${availableItems.length})`);
+assert(availableItems.length === 28, `Accounting ships 28 live menu rows (found ${availableItems.length})`);
+assert(
+  menuItems.every((item) => item.available),
+  "every row in ACCOUNTING_MENU is now available — B5.6 was the last sub-phase, so no not-yet row remains",
+);
 const dashboardMenuItem = availableItems.find((item) => item.key === "accounting-dashboard");
 assert(dashboardMenuItem, "the dashboard row is still present and available");
 assert(
@@ -456,17 +515,30 @@ const B54_AVAILABLE_KEYS = [
   "accounting-audit-trail",
 ];
 const B55_AVAILABLE_KEYS = ["accounting-periods", "accounting-period-close-runs"];
+const B56_AVAILABLE_KEYS = [
+  "accounting-budgets",
+  "accounting-demand-calendar",
+  "accounting-forecast",
+  "accounting-chart-of-accounts",
+  "accounting-cost-centres",
+  "accounting-posting-source-maps",
+  "accounting-tax-config",
+];
 const ALL_AVAILABLE_KEYS = [
   ...B52_AVAILABLE_KEYS,
   ...B53_AVAILABLE_KEYS,
   ...B54_AVAILABLE_KEYS,
   ...B55_AVAILABLE_KEYS,
+  ...B56_AVAILABLE_KEYS,
 ];
 assert(
   new Set(availableItems.map((item) => item.key)).size === ALL_AVAILABLE_KEYS.length &&
     ALL_AVAILABLE_KEYS.every((key) => availableItems.some((item) => item.key === key)),
-  "exactly the 21 named rows are available — no undocumented row was made live, and none was missed",
+  "exactly the 28 named rows are available — no undocumented row was made live, and none was missed",
 );
+for (const key of B56_AVAILABLE_KEYS) {
+  assert(menuItems.find((item) => item.key === key && item.available), `${key} is available (Track B5.6)`);
+}
 /** The exact two rows this file's own tags already named "B5.5" are now the ones made live — no other row moved with them. */
 assert(
   menuItems.find((item) => item.key === "accounting-periods" && item.available && item.href === ACCOUNTING_ROUTES.fiscalPeriods),
@@ -478,32 +550,44 @@ assert(
   ),
   "Period close runs is now a real, available row (Track B5.5, Closing)",
 );
+// INVERTED 2026-08-22 (Track B5.6): these three rows are no longer not-yet —
+// B5.6 turned them live, along with the other four B5.6-tagged rows. The
+// `menuItems.every((item) => item.available)` assertion above already covers
+// this; this loop is kept, inverted, to re-check by name rather than delete
+// the historical marker outright.
 for (const key of ["accounting-chart-of-accounts", "accounting-posting-source-maps", "accounting-tax-config"]) {
   assert(
-    menuItems.find((item) => item.key === key && !item.available && item.subphase === "B5.6"),
-    `${key} stays a B5.6 not-yet row — Configuration, not Accounting core`,
+    menuItems.find((item) => item.key === key && item.available),
+    `${key} is now a real, available row (Track B5.6, Configuration)`,
   );
 }
 assert(ACCOUNTING_LANDING === ACCOUNTING_ROUTES.dashboard, "the module landing is the dashboard");
 assert(ACCOUNTING_ROOT === "/manager/accounting", "the module root is /manager/accounting");
 
-for (const item of menuItems) {
-  if (item.available) continue;
-  assert(
-    (ACCOUNTING_SUBPHASES as readonly string[]).includes(item.subphase),
-    `not-yet row "${item.key}" is tagged with a real sub-phase (found ${item.subphase})`,
-  );
-}
+// A per-row "not-yet rows are tagged with a real sub-phase" loop lived here
+// through B5.1–B5.5. B5.6 (2026-08-22) made every row available — see the
+// `menuItems.every((item) => item.available)` assertion above — so there is
+// no `available: false` row left to check; the loop (and its now-unused
+// ACCOUNTING_SUBPHASES import) is retired, not deleted silently.
 
-/** A route Manager cannot read must be ABSENT, not a not-yet row. */
+/** A route Manager cannot read must be ABSENT, not a not-yet row. Procurement suggestions is a special case — see below. */
 const menuRouteKeys = new Set(menuItems.flatMap((item) => item.routeKeys));
 assert(
   !menuRouteKeys.has("finance.procurementSuggestions"),
-  "procurement suggestions are ABSENT from the menu — Manager is 403 on them (PC-02)",
+  "procurement suggestions are ABSENT from the menu — Track B5.6 deliberately built only its 7 named rows, not this one",
 );
+/**
+ * INVERTED 2026-08-22 (Track B5.6): PERMS-2 (2026-08-21) granted Manager
+ * `procurement:advisory:read`, so this route is no longer forbidden — the
+ * B5.1-era assertion that it must read "forbidden" is now stale and is
+ * corrected here, not silently deleted. The row stays ABSENT from the menu
+ * anyway (checked above), now for a build-order reason (B5.6 built exactly
+ * seven named rows) rather than a permission one — see the route-registry.ts
+ * entry's own note for the full explanation.
+ */
 assert(
-  getAccountingRoute("finance.procurementSuggestions").manager === "forbidden",
-  "the registry records the procurement 403 rather than leaving it implicit",
+  getAccountingRoute("finance.procurementSuggestions").manager === "allowed",
+  "INVERTED 2026-08-22: Manager can now read procurement suggestions (PERMS-2) — the row's continued absence from the menu is a build-order choice, not a permission gap",
 );
 
 // No financial statement is offered anywhere in the tree — NG-07 → C-11.
@@ -829,7 +913,16 @@ const B52_LIST_SCREEN_FILES = accountingComponentFiles.filter((file) =>
 );
 assert(B52_LIST_SCREEN_FILES.length === 9, `B5.2 ships 9 Customers/Vendors screens (found ${B52_LIST_SCREEN_FILES.length})`);
 
-const B52_REPORTING_FILES = accountingComponentFiles.filter((file) => file.includes("/reporting/"));
+/**
+ * Narrowed to the two AGING screens specifically (not a bare `/reporting/`
+ * substring match) — Track B5.6 (2026-08-22) added three MORE files to this
+ * same directory (BudgetsScreen.tsx, DemandCalendarScreen.tsx,
+ * ForecastScreen.tsx), so a directory-wide filter would over-count from here
+ * on. Those three are checked separately in §16 below.
+ */
+const B52_REPORTING_FILES = accountingComponentFiles.filter(
+  (file) => file.includes("/reporting/") && (file.endsWith("AgedReceivableScreen.tsx") || file.endsWith("AgedPayableScreen.tsx")),
+);
 assert(B52_REPORTING_FILES.length === 2, `B5.2 ships 2 Reporting (aging) screens (found ${B52_REPORTING_FILES.length})`);
 
 /**
@@ -1295,4 +1388,137 @@ for (const file of CLOSING_DIR_FILES) {
   assert(!codeOnly(file).includes("EventSource") && !codeOnly(file).includes("new WebSocket"), `${file} contains no streaming client`);
 }
 
-console.log("Manager B5.1 + B5.2 + B5.3 + B5.4 + B5.5 assertions: all checks passed.");
+// ═══════════════════════════════════════════════════════════════════════════
+// 16. TRACK B5.6 — CONFIGURATION + REPORTING, WRITE-ENABLED
+//     (the write route registry, confirm-before-destroy, the always-explicit
+//     boolean footguns, model-helper correctness, no hard delete anywhere,
+//     and the seven-file write-affordance allow-list closes exactly here)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const B56_REPORTING_FILES = [
+  `${ACCOUNTING_COMPONENT_DIR}/reporting/BudgetsScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/reporting/DemandCalendarScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/reporting/ForecastScreen.tsx`,
+];
+const B56_CONFIGURATION_FILES = accountingComponentFiles.filter((file) => file.includes("/accounting/configuration/"));
+assert(B56_CONFIGURATION_FILES.length === 4, `B5.6 ships 4 Configuration screens (found ${B56_CONFIGURATION_FILES.length})`);
+for (const file of B56_REPORTING_FILES) {
+  assert(existsSync(join(process.cwd(), file)), `${file} exists`);
+}
+const B56_ALL_SCREEN_FILES = [...B56_REPORTING_FILES, ...B56_CONFIGURATION_FILES];
+
+/** Every one of the seven screens is on the write-enabled allow-list from §1 — the allow-list and the actual file set cannot drift apart. */
+for (const file of B56_ALL_SCREEN_FILES) {
+  assert(B56_WRITE_ENABLED_FILES.includes(file), `${file} is on the §1 write-enabled allow-list`);
+}
+assert(
+  B56_WRITE_ENABLED_FILES.length === B56_ALL_SCREEN_FILES.length + 3,
+  "the write-enabled allow-list is exactly the 7 screens plus write-api.ts, route-registry.ts and accounting-configuration-queries.ts — nothing extra snuck in",
+);
+
+/** Every entry in the write registry is reachable by Manager and cites a real /api/ path. */
+for (const entry of ACCOUNTING_WRITE_ROUTE_REGISTRY) {
+  assert(entry.manager === "allowed", `${entry.key} is reachable by Manager (PERMS-2)`);
+  assert(entry.path.startsWith("/api/"), `${entry.key} declares a real API path`);
+  assert(entry.observed.length > 20, `${entry.key} records what the live probe actually observed`);
+}
+assert(ACCOUNTING_WRITE_ROUTE_REGISTRY.length === 9, `the write registry carries exactly 9 entries (found ${ACCOUNTING_WRITE_ROUTE_REGISTRY.length})`);
+let threwOnUnknownWriteKey = false;
+try {
+  getAccountingWriteRoute("totally.made.up.write");
+} catch {
+  threwOnUnknownWriteKey = true;
+}
+assert(threwOnUnknownWriteKey, "an unregistered write route key throws rather than being called");
+
+/** write-api.ts issues every write through the registry lookups, never a hand-typed path for a write route. */
+const writeApiSource = codeOnly(`${ACCOUNTING_LIB_DIR}/write-api.ts`);
+assert(writeApiSource.includes("getAccountingWriteRoute("), "write-api.ts resolves write paths through the write registry");
+assert(
+  writeApiSource.includes("function writePath") && writeApiSource.includes("writePath("),
+  "write-api.ts funnels every non-parameterised write path through one writePath() helper (itself backed by getAccountingWriteRoute), rather than resolving the registry inline at each call site",
+);
+
+/** The one GET-with-a-side-effect route is explicitly flagged, not silently indistinguishable from a pure write. */
+const forecastRefreshEntry = getAccountingWriteRoute("franchise.forecast.refresh");
+assert(forecastRefreshEntry.method === "GET" && forecastRefreshEntry.sideEffect === true, "the forecast refresh route is flagged as a side-effecting GET, not a POST");
+assert(
+  ACCOUNTING_WRITE_ROUTE_REGISTRY.filter((entry) => entry.method === "GET").length === 1,
+  "exactly one write-registry entry is a GET (the forecast refresh) — every other B5.6 write is a real POST/PATCH",
+);
+
+/** No hard DELETE is ever issued anywhere in the accounting tree — the demand-calendar DELETE route exists at the API layer but this module deliberately never calls it (the dangling-ForecastRun-reference footgun). */
+assert(
+  !accountingSource.includes('method: "DELETE"') && !accountingSource.includes("method: 'DELETE'"),
+  "no accounting write ever uses method: DELETE — Archive (PATCH isActive:false) is the only destructive affordance offered",
+);
+assert(
+  !ACCOUNTING_WRITE_ROUTE_REGISTRY.some((entry) => entry.method === "DELETE"),
+  "the write registry itself carries no DELETE entry — it was deliberately never added, matching the screen-level ban",
+);
+
+/** Confirm-before-destroy: every one of the 7 screens that mounts a mutation also mounts the shared confirm dialog — no mutation fires straight off a click. */
+for (const file of B56_ALL_SCREEN_FILES) {
+  const code = codeOnly(file);
+  if (!/useMutation|Mutation\(\)/.test(code) && !/use(Create|Update|Refresh)/.test(code)) continue;
+  assert(code.includes("ActionConfirmDialog"), `${file} confirms every write through the shared ActionConfirmDialog`);
+}
+
+/** Model-helper correctness: isBudgetArchived. */
+assert(isBudgetArchived("ARCHIVED") === true, "an ARCHIVED budget is recognised");
+assert(isBudgetArchived("ACTIVE") === false, "an ACTIVE budget is not archived");
+assert(isBudgetArchived(null) === false, "an unreadable status is treated as NOT archived — refresh actuals stays available rather than hiding behind a rendering glitch");
+
+/** Model-helper correctness: isDemandCalendarWindowValid mirrors the backend's dateEnd >= dateStart invariant. */
+assert(isDemandCalendarWindowValid("2026-01-05", "2026-03-29") === true, "dateEnd after dateStart is valid");
+assert(isDemandCalendarWindowValid("2026-03-29", "2026-01-05") === false, "dateEnd before dateStart is invalid");
+assert(isDemandCalendarWindowValid("2026-01-05", "2026-01-05") === true, "an identical dateStart/dateEnd is valid (>=, not >)");
+assert(isDemandCalendarWindowValid("", "2026-01-05") === null, "an incomplete window is null, not a guessed validity");
+assert(isDemandCalendarWindowValid("not-a-date", "2026-01-05") === null, "an unparseable date fails closed to null, never true");
+
+/** Model-helper correctness: isPostingSourceMapValid guards the same-account footgun the backend does NOT itself reject. */
+assert(isPostingSourceMapValid("acct-a", "acct-b") === true, "distinct debit/credit accounts are valid");
+assert(isPostingSourceMapValid("acct-a", "acct-a") === false, "an identical debit/credit account is invalid — the backend accepts it, so the form must refuse it");
+assert(isPostingSourceMapValid(null, "acct-b") === null, "an incomplete selection is null, not a guessed validity");
+
+/** Model-helper correctness: buildTaxConfigWritePayload ALWAYS includes `active` explicitly — the omission footgun this exists to prevent. */
+const inactivePayload = buildTaxConfigWritePayload({ active: false });
+assert(
+  Object.prototype.hasOwnProperty.call(inactivePayload, "active") && inactivePayload.active === false,
+  "buildTaxConfigWritePayload always includes `active` explicitly — omitting it would silently reactivate the config (dto.active ?? true)",
+);
+const activePayload = buildTaxConfigWritePayload({ outputTaxAccountId: "acct-out", active: true });
+assert(activePayload.outputTaxAccountId === "acct-out" && activePayload.active === true, "buildTaxConfigWritePayload passes through a supplied account id");
+assert(activePayload.inputTaxAccountId === undefined, "buildTaxConfigWritePayload omits an unsupplied account id as undefined, not an empty string (Prisma/DTO treat undefined as 'no change')");
+
+/** The posting-source-maps screen always sends costCenterRequired/active explicitly — never omits the two booleans the service treats as "don't touch this field" when absent. */
+const postingSourceMapsScreenSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/configuration/PostingSourceMapsScreen.tsx`);
+assert(
+  postingSourceMapsScreenSource.includes("costCenterRequired,") && postingSourceMapsScreenSource.includes("active,"),
+  "PostingSourceMapsScreen always sends costCenterRequired and active as explicit values in the PATCH payload",
+);
+
+/** Budget/demand-calendar/account/cost-centre enums are real, closed sets — not hand-typed strings. */
+assert(BUDGET_TYPES.join(",") === "OPERATIONAL,FINANCIAL", "the budget type enum has exactly two members");
+assert(DEMAND_CALENDAR_TYPES.length === 8, "the demand calendar type enum has exactly 8 members, matching DemandCalendarType in schema.prisma");
+
+/** The seven B5.6 pages exist at the routes menu.ts cites, and ACCOUNTING_ROUTES declares no stray extra path. */
+for (const key of ["budgets", "demandCalendar", "forecast", "chartOfAccounts", "costCentres", "postingSourceMaps", "taxConfig"] as const) {
+  assert(typeof ACCOUNTING_ROUTES[key] === "string" && ACCOUNTING_ROUTES[key].startsWith("/manager/accounting/"), `ACCOUNTING_ROUTES.${key} is declared`);
+}
+
+/** Every B5.6 screen reuses the B1 chrome primitives — no forked list/control-panel/dialog component. */
+const b56Source = B56_ALL_SCREEN_FILES.map((file) => codeOnly(file)).join("\n");
+assert(b56Source.includes("ManagerContentShell") && b56Source.includes("ManagerControlPanel"), "the B5.6 screens compose the shared B1 chrome primitives");
+assert(b56Source.includes("ManagerListTable"), "the B5.6 list surfaces reuse ManagerListTable rather than a hand-rolled table");
+assert(!b56Source.includes("@phosphor-icons/react"), "no B5.6 screen imports an icon library directly");
+assert(!b56Source.includes("new Blob("), "no B5.6 screen synthesises a file client-side");
+assert(!b56Source.includes("recharts") && !b56Source.includes("chart.js"), "no B5.6 screen adds a charting dependency");
+
+/** The write-enabled surfaces are visibly labelled "Read + write" (or the Forecast-specific "Read + refresh") — never silently indistinguishable from a read-only B5.1–B5.5 surface. */
+for (const file of B56_ALL_SCREEN_FILES) {
+  const code = codeOnly(file);
+  assert(/Read \+ (write|refresh)/.test(code), `${file} visibly labels itself as write-enabled, distinct from the read-only badge every earlier surface carries`);
+}
+
+console.log("Manager B5.1 + B5.2 + B5.3 + B5.4 + B5.5 + B5.6 assertions: all checks passed.");

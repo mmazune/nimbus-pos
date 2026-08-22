@@ -290,6 +290,7 @@ export class ForecastService {
       entityType: 'ForecastRun',
       entityId: run.id,
       metadata: {
+        branchId: forecastType !== 'FRANCHISE' ? ctx.branchId : null,
         forecastType,
         horizonDays,
         calendarEntriesUsed: calendarEntries.length,

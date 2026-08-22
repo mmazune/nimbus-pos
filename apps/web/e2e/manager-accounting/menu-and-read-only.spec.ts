@@ -50,7 +50,7 @@ test.describe("Manager accounting menu tree", () => {
     await page.waitForURL(/\/manager\/accounting\/dashboard/, { timeout: 30_000 });
   });
 
-  test("exactly twenty-one rows are links; every other row is inert and phase-tagged", async ({ page }) => {
+  test("all twenty-eight rows are links; the menu tree has no inert row left", async ({ page }) => {
     await managerLogin(page);
     await page.goto("/manager/overview");
     test.skip(!isDesktopTopNavViewport(page), "the desktop dropdown only renders at xl and up");
@@ -64,9 +64,12 @@ test.describe("Manager accounting menu tree", () => {
     // 15; B5.4 (same day) promoted the 4 rows the menu tree already tagged
     // "B5.4" since B5.1 (Journal entries, Posting runs, Posting errors, Audit
     // trail) — 19; B5.5 (same day) promoted the 2 rows the menu tree already
-    // tagged "B5.5" (Fiscal periods, Period close runs) — 21 total. Every one
-    // cites a live-verified endpoint in `ACCOUNTING_ROUTE_REGISTRY` via
-    // `lib/accounting/menu.ts`.
+    // tagged "B5.5" (Fiscal periods, Period close runs) — 21; B5.6
+    // (2026-08-22) promoted the LAST 7 rows the menu tree already tagged
+    // "B5.6" (Budgets vs actuals, Demand calendar, Forecast, Chart of
+    // accounts, Cost centres, Posting source maps, Tax configuration) — **28
+    // total, every row in the tree**. Every one cites a live-verified
+    // endpoint in `ACCOUNTING_ROUTE_REGISTRY` via `lib/accounting/menu.ts`.
     //
     // Matched on the ANCHOR, not on `getByRole("link")`: every row carries an
     // explicit `role="menuitem"`, which overrides the implicit link role, so a
@@ -77,7 +80,9 @@ test.describe("Manager accounting menu tree", () => {
     // Vendors each carry their own credit-note surface). The Bank group sits
     // BEFORE "Accounting"/"Review" in the tree, and within "Accounting",
     // Fiscal periods / Period close runs land AFTER Journal entries and
-    // BEFORE Posting runs — menu.ts's own row order, not appended at the end.
+    // BEFORE Posting runs. B5.6's three Reporting rows land AFTER Aged
+    // payable; its four Configuration rows are last — menu.ts's own row
+    // order, not appended arbitrarily.
     await expect(links).toHaveText([
       "Dashboard",
       "Invoices",
@@ -100,23 +105,20 @@ test.describe("Manager accounting menu tree", () => {
       "Audit trail",
       "Aged receivable",
       "Aged payable",
+      "Budgets vs actuals",
+      "Demand calendar",
+      "Forecast",
+      "Chart of accounts",
+      "Cost centres",
+      "Posting source maps",
+      "Tax configuration",
     ]);
 
-    // Every not-yet row carries a real sub-phase tag, and none is an anchor.
-    // Re-picked from labels B5.2/B5.3/B5.4/B5.5 did NOT touch (Fiscal periods/
-    // Period close runs moved to the available list above, so they can no
-    // longer appear here).
-    for (const label of ["Chart of accounts", "Cost centres", "Tax configuration"]) {
-      await expect(menu.getByText(label, { exact: true })).toBeVisible();
-      await expect(menu.locator('a[role="menuitem"]', { hasText: new RegExp(`^${label}$`) })).toHaveCount(0);
-    }
-    // Exactly 7 inert rows remain (28 total − 21 available), one tag each,
-    // and none is tagged B5.3/B5.4/B5.5 any more — all three sub-phases shipped.
-    const tags = await menu.getByText(/^B5\.6$/).count();
-    expect(tags).toBe(7);
-    await expect(menu.getByText("B5.3", { exact: true })).toHaveCount(0);
-    await expect(menu.getByText("B5.4", { exact: true })).toHaveCount(0);
-    await expect(menu.getByText("B5.5", { exact: true })).toHaveCount(0);
+    // INVERTED 2026-08-22 (Track B5.6): the tree had 7 inert B5.6-tagged rows
+    // through B5.5; B5.6 promoted every one of them, so there is nothing left
+    // to be tagged with any sub-phase — a "not-yet" row here would now be the
+    // drift this gate exists to catch.
+    await expect(menu.getByText(/^B5\.\d$/)).toHaveCount(0);
   });
 
   test("surfaces Nimbus cannot back are ABSENT, not greyed out", async ({ page }) => {
