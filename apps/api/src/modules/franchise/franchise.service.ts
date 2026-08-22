@@ -611,6 +611,13 @@ export class FranchiseService {
                 toBranchId: dto.toBranchId,
                 urgency: transfer.urgency,
                 transferNumber,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`). InterBranchTransfer has no single
+                // branchId column (it spans fromBranchId/toBranchId) — the source branch is
+                // stamped as the acting branch, matching the fromBranchId/toBranchId fallback
+                // convention already used in unified-approvals.service.ts's toListItem().
+                branchId: dto.fromBranchId,
             },
             ipAddress: meta.ipAddress,
             userAgent: meta.userAgent,
@@ -713,6 +720,11 @@ export class FranchiseService {
                 fromStatus: transfer.status,
                 toStatus: dto.status,
                 rejectionReason: dto.rejectionReason,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`). Same source-branch convention as the
+                // INTER_BRANCH_TRANSFER_CREATED stamp above.
+                branchId: transfer.fromBranchId,
             },
             ipAddress: meta.ipAddress,
             userAgent: meta.userAgent,
@@ -757,6 +769,7 @@ export class FranchiseService {
                 },
             });
 
+            // C-28-EXEMPT: HQ_DIGEST_SUBSCRIPTION_UPDATED — HqDigestSubscription has no branch_id column; org+user scoped digest preference.
             await this.audit.log({
                 actorUserId: userId,
                 action: 'HQ_DIGEST_SUBSCRIPTION_UPDATED',
@@ -782,6 +795,7 @@ export class FranchiseService {
             },
         });
 
+        // C-28-EXEMPT: HQ_DIGEST_SUBSCRIPTION_CREATED — same entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'HQ_DIGEST_SUBSCRIPTION_CREATED',
@@ -823,6 +837,7 @@ export class FranchiseService {
             },
         });
 
+        // C-28-EXEMPT: HQ_DIGEST_SUBSCRIPTION_UPDATED — same entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'HQ_DIGEST_SUBSCRIPTION_UPDATED',

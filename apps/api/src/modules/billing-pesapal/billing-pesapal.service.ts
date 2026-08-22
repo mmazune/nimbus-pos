@@ -210,6 +210,7 @@ export class BillingPesapalService {
             });
         }
 
+        // C-28-EXEMPT: SAAS_CHECKOUT_SESSION_CREATED — PesapalTransaction has no branch_id column; SaaS subscription payment is org-level.
         await this.audit.log({
             actorUserId: userId,
             action: 'SAAS_CHECKOUT_SESSION_CREATED',
@@ -360,6 +361,7 @@ export class BillingPesapalService {
                     data: { subscriptionPaid: 'COMPLETED' },
                 });
 
+                // C-28-EXEMPT: SAAS_PAYMENT_CONFIRMED — writes to Subscription, same org-level reasoning.
                 await this.audit.log({
                     action: 'SAAS_PAYMENT_CONFIRMED',
                     entityType: 'Subscription',
@@ -374,6 +376,7 @@ export class BillingPesapalService {
         }
 
         if (newStatus === 'FAILED') {
+            // C-28-EXEMPT: SAAS_PAYMENT_FAILED — PesapalTransaction, same reasoning.
             await this.audit.log({
                 action: 'SAAS_PAYMENT_FAILED',
                 entityType: 'PesapalTransaction',
@@ -394,6 +397,7 @@ export class BillingPesapalService {
     async reconcileStatus(dto: ReconcileStatusDto, userId: string) {
         const result = await this.reconcileTransactionStatus(dto.orderTrackingId);
 
+        // C-28-EXEMPT: SAAS_PAYMENT_RECONCILED — PesapalTransaction, same reasoning.
         await this.audit.log({
             actorUserId: userId,
             action: 'SAAS_PAYMENT_RECONCILED',

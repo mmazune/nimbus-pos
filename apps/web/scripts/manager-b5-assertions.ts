@@ -160,7 +160,8 @@ assert(
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. RULING 2 — MANAGER ACCOUNTING WAS READ-ONLY THROUGH B5.1–B5.5. NO WRITE
-//    AFFORDANCE AT ALL ANYWHERE EXCEPT THE SEVEN TRACK B5.6 SURFACES.
+//    AFFORDANCE ANYWHERE EXCEPT THE SEVEN TRACK B5.6 SURFACES PLUS THE EIGHT
+//    TRACK B5.7 RETROFIT SURFACES (2026-08-22) — see the B57 allow-list below.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const WRITE_METHODS = /method:\s*["'](POST|PATCH|PUT|DELETE)["']/;
@@ -187,19 +188,42 @@ const B56_WRITE_ENABLED_FILES = [
   `${ACCOUNTING_COMPONENT_DIR}/configuration/TaxConfigScreen.tsx`,
 ];
 
+/**
+ * Track B5.7 (2026-08-22) — the retrofit write pass over B5.1–B5.5's
+ * surfaces. `write-api.ts` and `route-registry.ts` are already on the B56
+ * list above (both files gained B5.7 additions but stay listed once, not
+ * duplicated); this list adds the one new mutation-hook file plus the four
+ * screens B5.7 turned write-enabled: posting-error resolve/dismiss, fiscal
+ * period create/open/close/lock, bank reconciliation match/skip/complete,
+ * and journal reverse. Every other B5.1–B5.5 surface (AR/AP, Bank accounts,
+ * Bank statements, journal CREATE, posting-run replay, Posting runs, Audit
+ * trail) stays exactly as read-only as it shipped — see
+ * `ACCOUNTING_DENIED_WRITES` for what remains deliberately undone.
+ */
+const B57_WRITE_ENABLED_FILES = [
+  `${MANAGER_LIB_DIR}/accounting-transitions-queries.ts`,
+  `${ACCOUNTING_COMPONENT_DIR}/review/PostingErrorsScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/closing/FiscalPeriodsScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/bank/ReconciliationScreen.tsx`,
+  `${ACCOUNTING_COMPONENT_DIR}/core/JournalsScreen.tsx`,
+];
+
+const WRITE_ENABLED_FILES = [...B56_WRITE_ENABLED_FILES, ...B57_WRITE_ENABLED_FILES];
+
 for (const file of accountingFiles) {
-  if (B56_WRITE_ENABLED_FILES.includes(file)) continue;
+  if (WRITE_ENABLED_FILES.includes(file)) continue;
   const code = codeOnly(file);
-  assert(!WRITE_METHODS.test(code), `${file} issues no write request (this file is not one of the seven Track B5.6 write-enabled surfaces)`);
+  assert(!WRITE_METHODS.test(code), `${file} issues no write request (this file is not one of the write-enabled Track B5.6/B5.7 surfaces)`);
   assert(!/useMutation/.test(code), `${file} mounts no mutation hook`);
 }
 
 /**
  * The whole-tree sweep: no mutation ANYWHERE under `components/manager` or
- * `lib/manager` may target an accounting route UNLESS the file is one of the
- * nine allow-listed above. B3 established that a Manager mutation must be
- * individually allow-listed; this narrows it further for the accounting
- * block, where the allowed set is now exactly these nine files.
+ * `lib/manager` may target an accounting route UNLESS the file is allow-
+ * listed above. B3 established that a Manager mutation must be individually
+ * allow-listed; this narrows it further for the accounting block, where the
+ * allowed set is now exactly these fifteen files (ten from B5.6, five from
+ * B5.7 — `write-api.ts`/`route-registry.ts` counted once each).
  */
 const ACCOUNTING_PATH_FRAGMENTS = [
   "/api/accounting",
@@ -208,46 +232,46 @@ const ACCOUNTING_PATH_FRAGMENTS = [
 ];
 
 for (const file of managerTreeFiles) {
-  if (B56_WRITE_ENABLED_FILES.includes(file)) continue;
+  if (WRITE_ENABLED_FILES.includes(file)) continue;
   const code = codeOnly(file);
   if (!WRITE_METHODS.test(code)) continue;
   for (const fragment of ACCOUNTING_PATH_FRAGMENTS) {
     assert(
       !code.includes(fragment),
-      `${file} contains a write AND an accounting path (${fragment}) — only the nine B5.6 write-enabled files may do this`,
+      `${file} contains a write AND an accounting path (${fragment}) — only the B5.6/B5.7 write-enabled files may do this`,
     );
   }
 }
 
 /**
- * Positive proof, not just an absence: every one of the nine allow-listed
- * files actually DOES write something — an allow-list entry that never
- * exercises its allowance would be silent scope creep waiting to happen.
+ * Positive proof, not just an absence: every one of the allow-listed files
+ * actually DOES write something — an allow-list entry that never exercises
+ * its allowance would be silent scope creep waiting to happen.
  */
-for (const file of B56_WRITE_ENABLED_FILES) {
+for (const file of WRITE_ENABLED_FILES) {
   const code = codeOnly(file);
   const writesOrMutates =
-    WRITE_METHODS.test(code) || /useMutation/.test(code) || /use(Create|Update|Refresh)[A-Za-z]*\(/.test(code);
+    WRITE_METHODS.test(code) || /useMutation/.test(code) || /use(Create|Update|Refresh|Resolve|Dismiss|Open|Close|Lock|Match|Skip|Complete|Reverse)[A-Za-z]*\(/.test(code);
   assert(writesOrMutates, `${file} is allow-listed as write-enabled but contains no write method, mutation hook, or mutation-hook call — remove it from the allow-list if it no longer needs one`);
 }
 
-/** No disabled-button escape hatch either, EXCEPT inside the nine B5.6 write-enabled files, which are permitted real interactive controls. */
+/** No disabled-button escape hatch either, EXCEPT inside the write-enabled files, which are permitted real interactive controls. */
 const accountingComponentSource = accountingComponentFiles
-  .filter((file) => !B56_WRITE_ENABLED_FILES.includes(file))
+  .filter((file) => !WRITE_ENABLED_FILES.includes(file))
   .map((file) => codeOnly(file))
   .join("\n");
 for (const banned of ["<Button", "<IconButton", "onClick=", "type=\"submit\""]) {
   assert(
     !accountingComponentSource.includes(banned),
-    `no interactive control (${banned}) renders in a non-B5.6 accounting file — where an Odoo user expects an action on those surfaces, an honest note is shown instead`,
+    `no interactive control (${banned}) renders in a non-write-enabled accounting file — where an Odoo user expects an action on those surfaces, an honest note is shown instead`,
   );
 }
-/** The full component source, INCLUDING the B5.6 write-enabled files — used by every check below that is not specifically about the write ban. */
+/** The full component source, INCLUDING the write-enabled files — used by every check below that is not specifically about the write ban. */
 const accountingComponentSourceAll = accountingComponentFiles.map((file) => codeOnly(file)).join("\n");
 
 assert(
-  ACCOUNTING_DENIED_WRITES.length >= 8,
-  "the denied-write disclosure names every action an accounting workspace normally offers",
+  ACCOUNTING_DENIED_WRITES.length >= 6,
+  "the denied-write disclosure names every action an accounting workspace normally offers that Manager still cannot do through this UI (down from 8 as of Track B5.7, which surfaced bank-reconciliation match/skip/complete and fiscal-period open/close/lock for real)",
 );
 assert(
   ACCOUNTING_DENIED_WRITES.some((entry) => /procurement/i.test(entry.label) && /PC-02/.test(entry.finding)),
@@ -871,9 +895,16 @@ for (const group of accountingMenu!.groups || []) {
 const accountingSurface = managerSurfaces.find((surface) => surface.key === "accounting");
 assert(accountingSurface, "Accounting is on the surface allow-list");
 assert(accountingSurface!.status === "allowed" && accountingSurface!.liveFrom === "live", "the surface is live");
+/**
+ * INVERTED 2026-08-22 (Track B5.7): the original scopeNote's unqualified
+ * "READ-ONLY BY PERMISSION... zero writes" claim was ALREADY false the day
+ * Track B5.6 shipped (2026-08-22) and nobody corrected it — a real finding
+ * this pass caught and fixed. It now carries a SUPERSEDED banner (§19 style,
+ * matching CLAUDE.md's own pattern) rather than being silently rewritten.
+ */
 assert(
-  /READ-ONLY BY PERMISSION/.test(accountingSurface!.scopeNote || ""),
-  "the allow-list records that read-only is a permission fact, not merely a product choice",
+  /SUPERSEDED/.test(accountingSurface!.scopeNote || "") && /PERMS-2/.test(accountingSurface!.scopeNote || ""),
+  "the allow-list's accounting scopeNote carries a SUPERSEDED banner correcting its stale 'READ-ONLY BY PERMISSION, zero writes' claim, dated and reasoned like every other correction in this codebase",
 );
 assert(
   !codeOnly(`${MANAGER_LIB_DIR}/permissions.ts`).includes("hasPermission("),
@@ -1070,15 +1101,30 @@ assert(isReconciliationBalanced("0") === true, "a zero difference reads as balan
 assert(isReconciliationBalanced("200000.00") === false, "a non-zero difference reads as not balanced, never rounded away");
 assert(isReconciliationBalanced(undefined) === null, "an unreadable difference is null, never guessed into balanced or not");
 
-/** No match/skip/complete affordance anywhere in the bank tree — Manager holds the read permission only (PC-01). */
-for (const file of BANK_DIR_FILES) {
+/**
+ * INVERTED 2026-08-21 → 2026-08-22 (Track B5.7): match/skip/complete were
+ * denied through B5.3–B5.6 (PC-01) and are real now — PERMS-2 resolved the
+ * permission and B5.7 built the workbench. The ban now applies only to the
+ * two bank screens that stayed read-only (Bank accounts, Bank statements —
+ * neither gained a create/import control in this pass); ReconciliationScreen
+ * is asserted to actually call the write hooks instead.
+ */
+const BANK_READ_ONLY_DIR_FILES = BANK_DIR_FILES.filter((file) => !file.endsWith("/ReconciliationScreen.tsx"));
+for (const file of BANK_READ_ONLY_DIR_FILES) {
   const code = codeOnly(file);
   assert(!/\bmatchLine\b|\bskipLine\b|\bcompleteReconciliation\b/.test(code), `${file} calls no match/skip/complete function`);
 }
+const reconciliationScreenSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/bank/ReconciliationScreen.tsx`);
+assert(
+  /useMatchReconciliationLine|matchReconciliationLineRequest/.test(reconciliationScreenSource) &&
+    /useSkipReconciliationLine|skipReconciliationLineRequest/.test(reconciliationScreenSource) &&
+    /useCompleteReconciliation|completeReconciliationRequest/.test(reconciliationScreenSource),
+  "ReconciliationScreen calls real match, skip AND complete write functions (Track B5.7)",
+);
 assert(
   accountingComponentSource.includes("AccountingReadOnlyCard") &&
-    BANK_DIR_FILES.some((file) => codeOnly(file).includes("AccountingReadOnlyCard")),
-  "the bank screens disclose the denied match/skip/complete actions in words",
+    BANK_READ_ONLY_DIR_FILES.some((file) => codeOnly(file).includes("AccountingReadOnlyCard")),
+  "the two still-read-only bank screens disclose their denied write actions in words",
 );
 
 /** The registry's two Bank dashboard-card KPI placeholders are gone — every bank KPI now links into a real B5.3 surface. */
@@ -1106,8 +1152,9 @@ assert(!/BankAccountRow[\s\S]{0,400}currentBalance/.test(typesSource), "BankAcco
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 14. TRACK B5.4 — ACCOUNTING CORE (JOURNALS) + REVIEW
-//     (server-total pagination, balance tie-out, the C-25 branch fail-safe,
-//     the B5.4-D1 honest "no resolve/dismiss endpoint" disclosure)
+//     (server-total pagination, balance tie-out, the C-25 branch fail-safe;
+//     B5.4-D1's "no resolve/dismiss endpoint" gap was FIXED at the backend in
+//     batch 4 and BUILT ON by Track B5.7 — see the inverted checks below)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CORE_DIR_FILES = accountingComponentFiles.filter((file) => file.includes("/accounting/core/"));
@@ -1197,24 +1244,26 @@ assert(
 );
 
 /**
- * B5.4-D1 (new finding, this pass): unlike every other Manager-cannot-write
- * surface, there is genuinely no resolve/dismiss endpoint for PostingError at
- * all — for any role. PostingErrorsScreen must therefore say so in its own
- * words rather than reuse `AccountingReadOnlyCard`'s "an Owner or Accountant
- * performs this" copy, which would be false here.
+ * INVERTED 2026-08-21 → 2026-08-22: B5.4-D1 found there was genuinely no
+ * resolve/dismiss endpoint for PostingError, for any role. Backend gap batch
+ * 4 (2026-08-21) fixed that at the API layer; Track B5.7 (2026-08-22) is the
+ * first phase to build UI on top of the fix. PostingErrorsScreen now calls
+ * the real resolve/dismiss write functions and no longer claims the gap is
+ * unfixable.
  */
 const postingErrorsSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/review/PostingErrorsScreen.tsx`);
 assert(
-  !postingErrorsSource.includes("AccountingReadOnlyCard"),
-  "PostingErrorsScreen does not reuse AccountingReadOnlyCard's 'an Owner or Accountant performs this' copy — no role can resolve/dismiss a posting error through this API, so that claim would be false",
+  /useResolvePostingError|resolvePostingErrorRequest/.test(postingErrorsSource) &&
+    /useDismissPostingError|dismissPostingErrorRequest/.test(postingErrorsSource),
+  "PostingErrorsScreen calls real resolve AND dismiss write functions (Track B5.7)",
 );
 assert(
-  /no endpoint exists/i.test(postingErrorsSource) || /No role can act/i.test(postingErrorsSource),
-  "PostingErrorsScreen states the genuine backend gap in its own words",
+  !/no endpoint exists/i.test(postingErrorsSource) && !/^No role can act/im.test(postingErrorsSource),
+  "PostingErrorsScreen no longer claims the resolve/dismiss gap is unfixable — it was fixed at the backend and built on here",
 );
 assert(
-  !/\bresolvePostingError\b|\bdismissPostingError\b/.test(accountingSource),
-  "no resolve/dismiss function exists anywhere in the accounting tree — none is being called against a route that was never built",
+  /\buseResolvePostingError\b|\buseDismissPostingError\b/.test(accountingSource),
+  "a resolve/dismiss function is actually called somewhere in the accounting tree, matching the real route B5.7 built on",
 );
 
 /** Journal money never renders as a single signed column — Owner Ruling on money presentation: debit and credit are always two separate, unambiguous columns. */
@@ -1345,27 +1394,49 @@ assert(
 assert(/B5\.5-F1/.test(source(`${ACCOUNTING_LIB_DIR}/types.ts`)), "the PeriodCloseRunRow/PERIOD_CLOSE_RUN_STATUSES doc comment names the B5.5-F1 finding");
 
 /**
- * C-27 (new finding, this pass, NOT in B0/batch 2/batch 3/the permissions
- * cutover): Manager's token holds `pos:accounting:periods:create` (and
+ * C-27 was found in Track B5.5 (NOT in B0/batch 2/batch 3/the permissions
+ * cutover): Manager's token held `pos:accounting:periods:create` (and
  * `accounts:create`, `cost-centers:create`) — a pre-existing M28-era seed
- * grant the 2026-08-20 cutover never audited or revoked. Live-proven: Manager
- * POST /accounting/periods → 201 on the isolated B5.5 QA stack. FiscalPeriodsScreen
- * must disclose this by name rather than claim a blanket "read access only"
- * that this specific grant falsifies — and must still render NO create
- * control despite the token technically permitting one, matching every other
- * B5 surface's read-first posture pending an explicit owner grant.
+ * grant the 2026-08-20 cutover never audited or revoked. B5.5 disclosed the
+ * finding and deliberately rendered NO create control despite the token
+ * technically permitting one, matching every other B5 surface's read-first
+ * posture pending an explicit owner grant. PERMS-2 (2026-08-21) turned that
+ * stray grant into a deliberate full one (open/close/lock too), and Track
+ * B5.7 (2026-08-22) is the first phase authorised to build on it — the
+ * finding stays named for history, but the "render no control" half of the
+ * ruling is INVERTED here: a real create control now exists.
  */
 const fiscalPeriodsSource = codeOnly(`${ACCOUNTING_COMPONENT_DIR}/closing/FiscalPeriodsScreen.tsx`);
 assert(/C-27/.test(fiscalPeriodsSource), "FiscalPeriodsScreen discloses the C-27 finding by name");
 assert(/C-27/.test(source(`${ACCOUNTING_LIB_DIR}/route-registry.ts`)), "the accounting.periods registry entry names the C-27 finding");
 assert(
-  !/AccountingReadOnlyNote actions=\{\["Creating/.test(fiscalPeriodsSource),
-  "FiscalPeriodsScreen does not claim creating a period is Owner/Accountant-only — C-27 proves Manager's own token can create one",
+  /useCreateFiscalPeriod|createFiscalPeriodRequest/.test(fiscalPeriodsSource),
+  "INVERTED (Track B5.7): FiscalPeriodsScreen now renders a real create control — C-27's grant was made deliberate by PERMS-2 and B5.7 built on it",
+);
+assert(
+  /useOpenFiscalPeriod|openFiscalPeriodRequest/.test(fiscalPeriodsSource) &&
+    /useCloseFiscalPeriod|closeFiscalPeriodRequest/.test(fiscalPeriodsSource) &&
+    /useLockFiscalPeriod|lockFiscalPeriodRequest/.test(fiscalPeriodsSource),
+  "FiscalPeriodsScreen calls real open, close AND lock write functions (Track B5.7)",
+);
+/** Lock is irreversible (PC-07: no unlock route) — the dialog requires the period's own name to be typed before it enables, not a generic confirm. */
+assert(
+  /Type ".*" to confirm/.test(fiscalPeriodsSource) || /lockConfirmName/.test(fiscalPeriodsSource),
+  "FiscalPeriodsScreen's Lock action requires the acting Manager to name the period before it enables, not a generic 'Are you sure?'",
 );
 
-/** No interactive control anywhere in the Closing tree either — the general §1 sweep already covers this by directory inclusion, re-asserted here by name for clarity. */
-for (const banned of ["<Button", "<IconButton", "onClick=", "type=\"submit\"", "useMutation", "matchLine", "skipLine", "completeReconciliation", "resolvePostingError", "dismissPostingError"]) {
-  assert(!closingSource.includes(banned), `no interactive control or write function (${banned}) renders in the Closing tree`);
+/**
+ * No interactive control anywhere in the REST of the Closing tree —
+ * PeriodCloseRunsScreen stays list-only/read-only through B5.7 (period close
+ * runs are a byproduct of Close, not a surface with their own writes).
+ * FiscalPeriodsScreen is excluded from this ban now that it is B5.7
+ * write-enabled — its writes are positively asserted above instead.
+ */
+const periodCloseRunsOnlySource = CLOSING_DIR_FILES.filter((file) => !file.endsWith("/FiscalPeriodsScreen.tsx"))
+  .map((file) => codeOnly(file))
+  .join("\n");
+for (const banned of ["<Button", "<IconButton", "onClick=", "type=\"submit\"", "useMutation"]) {
+  assert(!periodCloseRunsOnlySource.includes(banned), `no interactive control or write function (${banned}) renders in PeriodCloseRunsScreen`);
 }
 
 /** Both period.* KPI placeholders on the B5.1 dashboard card are gone — every Closing KPI now links into a real B5.5 surface. */
@@ -1422,7 +1493,14 @@ for (const entry of ACCOUNTING_WRITE_ROUTE_REGISTRY) {
   assert(entry.path.startsWith("/api/"), `${entry.key} declares a real API path`);
   assert(entry.observed.length > 20, `${entry.key} records what the live probe actually observed`);
 }
-assert(ACCOUNTING_WRITE_ROUTE_REGISTRY.length === 9, `the write registry carries exactly 9 entries (found ${ACCOUNTING_WRITE_ROUTE_REGISTRY.length})`);
+/**
+ * INVERTED 2026-08-22 (Track B5.7): this was "exactly 9" through B5.6. B5.7
+ * added 10 more entries to the SAME registry array (posting-error resolve +
+ * dismiss, fiscal period create/open/close/lock, reconciliation match/skip/
+ * complete, journal reverse) — 19 total. The exact-count discipline is kept,
+ * just re-pointed at the new total, so a stray 20th entry still fails loud.
+ */
+assert(ACCOUNTING_WRITE_ROUTE_REGISTRY.length === 19, `the write registry carries exactly 19 entries — 9 from Track B5.6 + 10 from Track B5.7 (found ${ACCOUNTING_WRITE_ROUTE_REGISTRY.length})`);
 let threwOnUnknownWriteKey = false;
 try {
   getAccountingWriteRoute("totally.made.up.write");
@@ -1521,4 +1599,66 @@ for (const file of B56_ALL_SCREEN_FILES) {
   assert(/Read \+ (write|refresh)/.test(code), `${file} visibly labels itself as write-enabled, distinct from the read-only badge every earlier surface carries`);
 }
 
-console.log("Manager B5.1 + B5.2 + B5.3 + B5.4 + B5.5 + B5.6 assertions: all checks passed.");
+// ═══════════════════════════════════════════════════════════════════════════
+// 17. TRACK B5.7 — RETROFIT WRITES OVER B5.1–B5.5
+//     (posting-error resolve/dismiss, fiscal period create/open/close/lock,
+//     bank reconciliation match/skip/complete, journal reverse — confirm-
+//     before-destroy, the Lock-requires-typed-name friction, C-28 audit
+//     branch-stamping already verified at the backend layer in the API suite)
+// ═══════════════════════════════════════════════════════════════════════════
+
+assert(existsSync(join(process.cwd(), `${MANAGER_LIB_DIR}/accounting-transitions-queries.ts`)), "the B5.7 mutation-hook file exists");
+
+/** Every one of the five B5.7 screen/hook files is on the §1 write-enabled allow-list — the allow-list and the actual file set cannot drift apart, mirroring the B5.6 §16 check above. */
+for (const file of B57_WRITE_ENABLED_FILES) {
+  assert(WRITE_ENABLED_FILES.includes(file), `${file} is on the §1 write-enabled allow-list`);
+}
+
+/** Confirm-before-destroy: every B5.7 screen that mounts a mutation also mounts the shared confirm dialog — no mutation fires straight off a click. */
+const B57_SCREEN_FILES = B57_WRITE_ENABLED_FILES.filter((file) => file.endsWith(".tsx"));
+for (const file of B57_SCREEN_FILES) {
+  const code = codeOnly(file);
+  assert(code.includes("ActionConfirmDialog"), `${file} confirms every write through the shared ActionConfirmDialog`);
+}
+
+/** Lock is irreversible (PC-07: no unlock route anywhere in this API) — re-checked here by name, not only inside §15's C-27 block. */
+assert(
+  /confirmDisabled=\{!lockConfirmMatches\}/.test(codeOnly(`${ACCOUNTING_COMPONENT_DIR}/closing/FiscalPeriodsScreen.tsx`)),
+  "FiscalPeriodsScreen's Lock confirm button stays disabled until the typed period name matches — a generic tone/confirm-label alone is not enough friction for a one-way door",
+);
+
+/** Every B5.7 write function funnels through the write registry, same discipline as B5.6 — no hand-typed accounting path outside write-api.ts. */
+assert(writeApiSource.includes("resolvePostingErrorRequest") && writeApiSource.includes("dismissPostingErrorRequest"), "write-api.ts exports the B5.7 posting-error write functions");
+assert(
+  writeApiSource.includes("createFiscalPeriodRequest") &&
+    writeApiSource.includes("openFiscalPeriodRequest") &&
+    writeApiSource.includes("closeFiscalPeriodRequest") &&
+    writeApiSource.includes("lockFiscalPeriodRequest"),
+  "write-api.ts exports all four B5.7 fiscal-period write functions",
+);
+assert(
+  writeApiSource.includes("matchReconciliationLineRequest") &&
+    writeApiSource.includes("skipReconciliationLineRequest") &&
+    writeApiSource.includes("completeReconciliationRequest"),
+  "write-api.ts exports all three B5.7 bank-reconciliation write functions",
+);
+assert(writeApiSource.includes("reverseJournalRequest"), "write-api.ts exports the B5.7 journal-reverse write function");
+
+/** No B5.7 write mutation invalidates a blanket ["manager"] cache sweep (CLAUDE.md §15) — every hook narrows to its own surface's query-key prefix. */
+const transitionsQueriesSource = codeOnly(`${MANAGER_LIB_DIR}/accounting-transitions-queries.ts`);
+assert(
+  !/invalidateQueries\(\{\s*queryKey:\s*\["manager"\]\s*\}\)/.test(transitionsQueriesSource),
+  "accounting-transitions-queries.ts never invalidates a blanket [\"manager\"] cache sweep",
+);
+assert(
+  (transitionsQueriesSource.match(/invalidateQueries/g) || []).length >= 8,
+  "every one of the eight B5.7 mutations narrowly invalidates its own surface's query-key prefix",
+);
+
+/** Journal reverse is only offered on a POSTED journal — DRAFT/REVERSED render no Reverse control, matching the backend's own 409 guard. */
+assert(
+  /canReverse\s*=\s*\(journal\?\.status[\s\S]{0,40}===\s*"POSTED"/.test(journalsSource),
+  "JournalsScreen gates the Reverse control on status === POSTED, not rendered unconditionally",
+);
+
+console.log("Manager B5.1 + B5.2 + B5.3 + B5.4 + B5.5 + B5.6 + B5.7 assertions: all checks passed.");

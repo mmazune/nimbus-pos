@@ -77,6 +77,7 @@ export class MaintenanceWindowService {
             },
         });
 
+        // C-28-EXEMPT: MAINTENANCE_WINDOW_CREATED — writes to FlagAudit via FlagAuditService, a separate table never read by the branch-scoped audit-timeline endpoint. Not in scope for this defect class.
         await this.audit.log({
             orgId,
             action: 'MAINTENANCE_WINDOW_CREATED',
@@ -153,6 +154,7 @@ export class MaintenanceWindowService {
         if (becameActive) action = 'MAINTENANCE_WINDOW_ACTIVATED';
         else if (becameInactive) action = 'MAINTENANCE_WINDOW_DEACTIVATED';
 
+        // C-28-EXEMPT: MAINTENANCE_WINDOW_UPDATED/ACTIVATED/DEACTIVATED — same FlagAuditService sink, same reason.
         await this.audit.log({
             orgId,
             action,

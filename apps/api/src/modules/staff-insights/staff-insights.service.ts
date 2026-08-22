@@ -63,6 +63,7 @@ export class StaffInsightsService {
       },
     });
 
+    // C-28-EXEMPT: STAFF_INSIGHT_WEIGHTS_UPDATED — writes OrgSettings, which has no branch_id column at all; genuinely org-level scoring-weight config.
     await this.audit.log({
       action: 'STAFF_INSIGHT_WEIGHTS_UPDATED',
       actorUserId: userId,
@@ -648,6 +649,10 @@ export class StaffInsightsService {
         decisionNotes: dto.decisionNotes,
         employeeId: suggestion.employeeId,
         orgId,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: suggestion.branchId,
         ...auditMeta,
       },
       ipAddress: auditMeta?.ipAddress,

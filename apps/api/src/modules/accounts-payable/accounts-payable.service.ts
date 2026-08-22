@@ -157,7 +157,13 @@ export class AccountsPayableService {
       actorUserId: userId,
       entityType: 'Supplier',
       entityId: supplier.id,
-      metadata: { orgId, name: supplier.name, code: supplier.code },
+      metadata: {
+        orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
+        name: supplier.name,
+        code: supplier.code,
+      },
     });
 
     return supplier;
@@ -417,6 +423,8 @@ export class AccountsPayableService {
       entityId: bill.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         billNumber,
         supplierId: dto.supplierId,
         supplierName: supplier.name,
@@ -582,6 +590,8 @@ export class AccountsPayableService {
       entityId: bill.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         billNumber: bill.billNumber,
         totalAmount: bill.totalAmount.toString(),
         supplierId: bill.supplierId,
@@ -752,6 +762,8 @@ export class AccountsPayableService {
         entityId: payment.id,
         metadata: {
           orgId,
+          // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+          branchId: branchId || null,
           paymentNumber,
           error: glErr?.message || 'Unknown GL posting error',
         },
@@ -777,6 +789,8 @@ export class AccountsPayableService {
       entityId: payment.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         paymentNumber,
         supplierId: dto.supplierId,
         supplierName: supplier.name,
@@ -945,6 +959,8 @@ export class AccountsPayableService {
       entityId: cn.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         creditNoteNumber,
         supplierId: dto.supplierId,
         totalAmount: totalAmount.toString(),
@@ -1128,6 +1144,8 @@ export class AccountsPayableService {
       entityId: profile.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         profileName: profile.profileName,
         cadence: dto.cadence,
         supplierId: dto.supplierId,
@@ -1212,7 +1230,12 @@ export class AccountsPayableService {
       actorUserId: userId,
       entityType: 'RecurringBillProfile',
       entityId: profileId,
-      metadata: { orgId, changes: dto },
+      metadata: {
+        orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
+        changes: dto,
+      },
     });
 
     return updated;
@@ -1370,6 +1393,8 @@ export class AccountsPayableService {
       entityId: bill.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || profile.branchId || null,
         billNumber,
         profileId,
         profileName: profile.profileName,
@@ -1540,7 +1565,12 @@ export class AccountsPayableService {
       actorUserId: userId,
       entityType: 'PayableReminder',
       entityId: reminderId,
-      metadata: { orgId, vendorBillId: reminder.vendorBillId },
+      metadata: {
+        orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: reminder.branchId || branchId || null,
+        vendorBillId: reminder.vendorBillId,
+      },
     });
 
     return dismissed;

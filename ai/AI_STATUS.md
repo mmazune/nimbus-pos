@@ -31,7 +31,21 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
-- **ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
+- **ENTERPRISE UI TRACK B5.7 COMPLETE — Accounting write pass + C-28 repo-wide audit branch-stamp
+  sweep (2026-08-22).** Full detail in `ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md`. Summary: (1) a
+  systematic repo-wide sweep (318 `audit.log` call sites, 57 files, not accounting-only) fixed 106
+  sites missing `metadata.branchId`, documented 73 as legitimately exempt, and added a permanent Jest
+  regression guard; (2) write affordances added to 4 of B5.1–B5.5's still-read-only rows — Posting
+  errors (resolve/dismiss), Fiscal periods (create/open/close/lock), Bank reconciliation
+  (match/skip/complete), Journals (reverse only); (3) a real bug (reconciliation OPEN vs IN_PROGRESS
+  UI gating) was found via live QA and fixed, not just disclosed; (4) all 10 write actions
+  live-verified via curl and a real Chrome browser on an isolated Docker stack, zero console errors;
+  (5) a pre-existing stale scopeNote in `lib/manager/permissions.ts` (claiming zero accounting writes
+  since before B5.6 shipped) was found and corrected. **Playwright was not run this pass** — disclosed
+  explicitly, see the report §0/§6. B5.2 AR/AP writes, journal create, posting-run replay, and B6/B7
+  remain NOT started.
+
+- **Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
   (2026-08-22) — A: COMPLETE / B5.7 · B6 · B7 still gated.** The Accounting menu goes from **21 of
   28** live rows to **28 of 28 — every row in the tree.** Frontend + a small, targeted backend fix
   (audit metadata only — no schema/migration/seed/permission/DTO/Postman-contract change). The

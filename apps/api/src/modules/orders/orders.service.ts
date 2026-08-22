@@ -523,6 +523,10 @@ export class OrdersService {
       entityId: item.id,
       metadata: {
         orderId,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         menuItemId: dto.menuItemId,
         quantity,
         price: pricing.price.toString(),
@@ -602,6 +606,10 @@ export class OrdersService {
       entityId: itemId,
       metadata: {
         orderId,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         quantity,
         price: pricing.price.toString(),
         subtotal: pricing.subtotal.toString(),
@@ -646,7 +654,13 @@ export class OrdersService {
       action: 'ORDER_ITEM_REMOVED',
       entityType: 'orderItem',
       entityId: itemId,
-      metadata: { orderId },
+      metadata: {
+        orderId,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

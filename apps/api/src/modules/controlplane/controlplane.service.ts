@@ -88,6 +88,7 @@ export class ControlPlaneService {
         const session = await this.training.findActiveForActor(orgId, actorUserId, sessionId);
         if (!session) return null;
 
+        // C-28-EXEMPT: REAL_POST_BLOCKED_BY_TRAINING — writes via FlagAuditService to the separate FlagAudit table (this.audit here is FlagAuditService, not the common AuditService), which is never read by the branch-scoped audit-timeline endpoint (that endpoint only queries the AuditLog table). Not in scope for this defect class.
         await this.audit.log({
             orgId,
             action: 'REAL_POST_BLOCKED_BY_TRAINING',

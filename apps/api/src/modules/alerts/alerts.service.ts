@@ -96,7 +96,15 @@ export class AlertsService {
             action: 'ALERT_RULE_CREATED',
             entityType: 'AlertRule',
             entityId: rule.id,
-            metadata: { code: rule.code, type: rule.type, severity: rule.severity },
+            metadata: {
+                code: rule.code,
+                type: rule.type,
+                severity: rule.severity,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: rule.branchId ?? null,
+            },
         });
         return rule;
     }
@@ -139,7 +147,12 @@ export class AlertsService {
                 dto.status === 'DISABLED' ? 'ALERT_RULE_DISABLED' : 'ALERT_RULE_UPDATED',
             entityType: 'AlertRule',
             entityId: updated.id,
-            metadata: { code: updated.code, status: updated.status },
+            metadata: {
+                code: updated.code,
+                status: updated.status,
+                // C-28: see ALERT_RULE_CREATED above.
+                branchId: updated.branchId ?? null,
+            },
         });
         return updated;
     }
@@ -172,6 +185,7 @@ export class AlertsService {
                 config: (dto.config ?? {}) as any,
             },
         });
+        // C-28-EXEMPT: ALERT_CHANNEL_CREATED — AlertChannel has no branch_id column; org-wide dispatch destination (email/SMS/webhook config).
         await this.audit.log({
             actorUserId: userId,
             action: 'ALERT_CHANNEL_CREATED',
@@ -205,6 +219,7 @@ export class AlertsService {
                 updatedAt: new Date(),
             },
         });
+        // C-28-EXEMPT: ALERT_CHANNEL_UPDATED/DISABLED — same AlertChannel entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action:
@@ -307,6 +322,10 @@ export class AlertsService {
                 ruleCode: dto.ruleCode ?? null,
                 channelCodes: dto.channelCodes,
                 count: results.length,
+                // C-28: AlertDelivery itself has no branchId column, but the rule this
+                // test was dispatched against (when one was named) does — stamp it so a
+                // branch-scoped test dispatch is reachable from the audit-timeline endpoint.
+                branchId: rule?.branchId ?? null,
             },
         });
 
@@ -352,6 +371,7 @@ export class AlertsService {
                 where: { id: deliveryId },
                 data: { status: 'RETRY_EXHAUSTED' as any, updatedAt: new Date() },
             });
+            // C-28-EXEMPT: ALERT_DELIVERY_RETRY_EXHAUSTED — AlertDelivery has no own branch_id column; the loaded `delivery` has no `rule` relation included. Deferred: needs an extra AlertRule lookup by delivery.ruleId.
             await this.audit.log({
                 actorUserId: userId,
                 action: 'ALERT_DELIVERY_RETRY_EXHAUSTED',
@@ -389,6 +409,7 @@ export class AlertsService {
             },
         });
 
+        // C-28-EXEMPT: ALERT_DELIVERY_RETRIED — same as ALERT_DELIVERY_RETRY_EXHAUSTED above. Deferred.
         await this.audit.log({
             actorUserId: userId,
             action: 'ALERT_DELIVERY_RETRIED',

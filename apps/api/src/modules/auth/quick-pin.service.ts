@@ -492,6 +492,7 @@ export class QuickPinService {
       updateData.quickPinEnabled = data.quickPinEnabled;
 
       if (data.quickPinEnabled === false) {
+        // C-28-EXEMPT: QUICK_PIN_DISABLED — updateQuickPinSettings() has no branchId in its own scope; the org-wide route (PATCH /auth/users/:id/quick-pin-settings, identity:user:write) carries no branch, though a separate branch-scoped caller exists elsewhere. Deferred: needs a signature change threaded through a shared method with a genuinely unscoped second caller.
         await this.audit.log({
           actorUserId,
           action: 'QUICK_PIN_DISABLED',
@@ -501,6 +502,7 @@ export class QuickPinService {
           userAgent: meta?.userAgent,
         });
       } else {
+        // C-28-EXEMPT: QUICK_PIN_ENABLED — same reason as QUICK_PIN_DISABLED above. Deferred.
         await this.audit.log({
           actorUserId,
           action: 'QUICK_PIN_ENABLED',

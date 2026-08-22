@@ -53,6 +53,7 @@ export class PasswordLifecycleService {
         };
 
         if (!user || !user.isActive) {
+            // C-28-EXEMPT: PASSWORD_RESET_REQUESTED_UNKNOWN — User model has no branch_id column; no membership loaded.
             await this.audit.log({
                 action: 'PASSWORD_RESET_REQUESTED_UNKNOWN',
                 entityType: 'auth',
@@ -89,6 +90,7 @@ export class PasswordLifecycleService {
             },
         });
 
+        // C-28-EXEMPT: PASSWORD_RESET_REQUESTED — same reason.
         await this.audit.log({
             actorUserId: user.id,
             action: 'PASSWORD_RESET_REQUESTED',
@@ -165,6 +167,7 @@ export class PasswordLifecycleService {
             }),
         ]);
 
+        // C-28-EXEMPT: PASSWORD_RESET_COMPLETED — same reason.
         await this.audit.log({
             actorUserId: user.id,
             action: 'PASSWORD_RESET_COMPLETED',
@@ -200,6 +203,7 @@ export class PasswordLifecycleService {
 
         const ok = await bcrypt.compare(dto.currentPassword, user.passwordHash);
         if (!ok) {
+            // C-28-EXEMPT: FORCE_PASSWORD_CHANGE_FAILED — same reason.
             await this.audit.log({
                 actorUserId: user.id,
                 action: 'FORCE_PASSWORD_CHANGE_FAILED',
@@ -223,6 +227,7 @@ export class PasswordLifecycleService {
             data: { passwordHash, mustChangePassword: false },
         });
 
+        // C-28-EXEMPT: FORCE_PASSWORD_CHANGE_COMPLETED — same reason.
         await this.audit.log({
             actorUserId: user.id,
             action: 'FORCE_PASSWORD_CHANGE_COMPLETED',

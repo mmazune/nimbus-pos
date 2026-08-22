@@ -198,6 +198,7 @@ export class AccountingService {
       },
     });
 
+    // C-28-EXEMPT: FISCAL_PERIOD_CREATED — FiscalPeriod has no branch_id column; controller holds ctx.branchId but the service signature does not thread it through (unlike the actingBranchId pattern used for POSTING_SOURCE_MAP_UPDATED/TAX_LEDGER_CONFIG_UPDATED elsewhere in this file). Deferred: needs a signature change, out of C-28 scope.
     await this.audit.log({
       action: 'FISCAL_PERIOD_CREATED',
       actorUserId: userId,
@@ -233,6 +234,7 @@ export class AccountingService {
       },
     });
 
+    // C-28-EXEMPT: FISCAL_PERIOD_OPENED — same signature-threading gap as FISCAL_PERIOD_CREATED above. Deferred.
     await this.audit.log({
       action: 'FISCAL_PERIOD_OPENED',
       actorUserId: userId,

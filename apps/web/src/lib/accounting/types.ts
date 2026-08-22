@@ -314,6 +314,10 @@ export type PostingErrorRow = {
   code?: string | null;
   message?: string | null;
   createdAt?: string | null;
+  /** Backend gap batch 4 (B5.4-D1) columns — stamped by EITHER a resolve or a dismiss action; the specific outcome is `status`. Surfaced by Track B5.7. */
+  resolvedById?: string | null;
+  resolvedAt?: string | null;
+  resolutionNotes?: string | null;
   postingRun?: { id: string; sourceKey?: string | null; status?: string | null } | null;
 };
 

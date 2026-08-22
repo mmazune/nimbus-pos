@@ -89,7 +89,12 @@ export class BankRecService {
       actorUserId: userId,
       entityType: 'BankAccount',
       entityId: account.id,
-      metadata: { accountCode: dto.accountCode, bankName: dto.bankName },
+      metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
+        accountCode: dto.accountCode,
+        bankName: dto.bankName,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -206,6 +211,8 @@ export class BankRecService {
       entityType: 'BankStatement',
       entityId: statement.id,
       metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
         bankAccountId: dto.bankAccountId,
         statementDate: dto.statementDate,
         lineCount: dto.lines.length,
@@ -333,6 +340,8 @@ export class BankRecService {
       entityType: 'BankReconciliation',
       entityId: rec.id,
       metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
         bankAccountId: dto.bankAccountId,
         fiscalPeriodId: dto.fiscalPeriodId,
         bankStatementId: dto.bankStatementId,
@@ -473,6 +482,8 @@ export class BankRecService {
       entityType: 'BankStatementLine',
       entityId: dto.bankStatementLineId,
       metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
         reconciliationId,
         journalLineId: dto.journalLineId,
         manualEntryId: dto.manualEntryId,
@@ -552,7 +563,12 @@ export class BankRecService {
       actorUserId: userId,
       entityType: 'BankStatementLine',
       entityId: dto.bankStatementLineId,
-      metadata: { reconciliationId, notes: dto.notes },
+      metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
+        reconciliationId,
+        notes: dto.notes,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -609,6 +625,8 @@ export class BankRecService {
       entityType: 'ManualBankEntry',
       entityId: entry.id,
       metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
         bankAccountId: dto.bankAccountId,
         amount: String(dto.amount),
         direction: dto.direction,
@@ -670,6 +688,8 @@ export class BankRecService {
       entityType: 'BankReconciliation',
       entityId: reconciliationId,
       metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
         bankAccountId: rec.bankAccountId,
         fiscalPeriodId: rec.fiscalPeriodId,
         matchedCount: rec.matchedCount,
@@ -782,6 +802,7 @@ export class BankRecService {
       return [fp, run];
     });
 
+    // C-28-EXEMPT: FISCAL_PERIOD_CLOSED — same fiscal-period signature-threading gap as accounting.service.ts's FISCAL_PERIOD_CREATED/OPENED. Deferred.
     await this.audit.log({
       action: 'FISCAL_PERIOD_CLOSED',
       actorUserId: userId,
@@ -818,6 +839,7 @@ export class BankRecService {
       data: { status: 'LOCKED', lockedAt: new Date(), lockedById: userId },
     });
 
+    // C-28-EXEMPT: FISCAL_PERIOD_LOCKED — same reason as FISCAL_PERIOD_CLOSED above. Deferred.
     await this.audit.log({
       action: 'FISCAL_PERIOD_LOCKED',
       actorUserId: userId,

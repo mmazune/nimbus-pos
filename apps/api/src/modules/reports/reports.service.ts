@@ -142,7 +142,14 @@ export class ReportsService {
         action: 'REPORT_RUN_COMPLETED',
         entityType: 'ReportRun',
         entityId: run.id,
-        metadata: { reportType, reportWindow },
+        metadata: {
+          reportType,
+          reportWindow,
+          // C-28: this used to omit branchId entirely, making the event structurally
+          // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+          // ANDs `metadata.branchId = X-Branch-Id`).
+          branchId,
+        },
       });
 
       return updated;
@@ -156,7 +163,12 @@ export class ReportsService {
         action: 'REPORT_RUN_FAILED',
         entityType: 'ReportRun',
         entityId: run.id,
-        metadata: { reportType, error: (err as Error).message },
+        metadata: {
+          reportType,
+          error: (err as Error).message,
+          // C-28: see REPORT_RUN_COMPLETED above.
+          branchId,
+        },
       });
       throw err;
     }
@@ -2071,7 +2083,14 @@ export class ReportsService {
       action: 'EXPORT_ARTIFACT_CREATED',
       entityType: 'ExportArtifact',
       entityId: artifact.id,
-      metadata: { reportRunId, format },
+      metadata: {
+        reportRunId,
+        format,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: artifact.branchId ?? null,
+      },
     });
 
     try {
@@ -2090,7 +2109,12 @@ export class ReportsService {
         action: 'EXPORT_ARTIFACT_READY',
         entityType: 'ExportArtifact',
         entityId: artifact.id,
-        metadata: { fileName, fileSizeBytes: stats.size },
+        metadata: {
+          fileName,
+          fileSizeBytes: stats.size,
+          // C-28: see EXPORT_ARTIFACT_CREATED above.
+          branchId: artifact.branchId ?? null,
+        },
       });
 
       return updated;

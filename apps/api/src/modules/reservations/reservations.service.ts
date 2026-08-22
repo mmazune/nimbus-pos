@@ -162,7 +162,15 @@ export class ReservationsService {
       action: 'RESERVATION_CREATED',
       entityType: 'Reservation',
       entityId: reservation.id,
-      metadata: { reservationNumber, customerName: dto.customerName, partySize: dto.partySize },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        reservationNumber,
+        customerName: dto.customerName,
+        partySize: dto.partySize,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -210,7 +218,13 @@ export class ReservationsService {
       action: 'RESERVATION_CONFIRMED',
       entityType: 'Reservation',
       entityId: id,
-      metadata: { reservationNumber: reservation.reservationNumber },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        reservationNumber: reservation.reservationNumber,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -300,6 +314,10 @@ export class ReservationsService {
       entityType: 'Reservation',
       entityId: id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         reservationNumber: reservation.reservationNumber,
         tableId: seatTableId,
         seatedOrderId,
@@ -362,6 +380,10 @@ export class ReservationsService {
       entityType: 'Reservation',
       entityId: id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         reservationNumber: reservation.reservationNumber,
         reason: dto.reason,
         depositOutcome: dto.depositOutcome,
@@ -424,6 +446,10 @@ export class ReservationsService {
       entityType: 'Reservation',
       entityId: id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         reservationNumber: reservation.reservationNumber,
         depositOutcome: dto.depositOutcome,
       },
@@ -484,6 +510,10 @@ export class ReservationsService {
       entityType: 'Reservation',
       entityId: id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         reservationNumber: reservation.reservationNumber,
         source: 'manual',
         seatedOrderId: reservation.seatedOrderId ?? null,
@@ -553,6 +583,10 @@ export class ReservationsService {
       entityType: 'Reservation',
       entityId: reservation.id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         reservationNumber: reservation.reservationNumber,
         source: 'order-close',
         orderId,
@@ -614,7 +648,15 @@ export class ReservationsService {
       action: 'RESERVATION_DEPOSIT_RECORDED',
       entityType: 'ReservationDeposit',
       entityId: deposit.id,
-      metadata: { reservationId, amount: dto.amount, method: dto.method },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        reservationId,
+        amount: dto.amount,
+        method: dto.method,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -678,7 +720,14 @@ export class ReservationsService {
       action: 'RESERVATION_TABLE_ASSIGNED',
       entityType: 'Reservation',
       entityId: id,
-      metadata: { reservationNumber: reservation.reservationNumber, tableId: dto.tableId },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        reservationNumber: reservation.reservationNumber,
+        tableId: dto.tableId,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

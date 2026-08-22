@@ -120,9 +120,9 @@ export const managerSurfaces: readonly ManagerSurface[] = [
     status: "allowed",
     liveFrom: "live",
     summary:
-      "Read-only accounting overview: receivable and payable aging, ledger and posting health, bank reconciliation status, fiscal period state.",
+      "Accounting: receivable and payable aging, ledger and posting health, bank reconciliation, fiscal period state, budgets, demand/forecast and configuration — read across the whole module, with write controls on the surfaces PERMS-2 + Track B5.6/B5.7 built.",
     scopeNote:
-      "READ-ONLY BY PERMISSION, not merely by product choice. The manager role holds 15 accounting read strings and zero writes (PC-01/PC-02), so no create, post, approve, match or close control renders anywhere in this module.",
+      "⚠️ SUPERSEDED (2026-08-22): this note originally read 'READ-ONLY BY PERMISSION, not merely by product choice... 15 accounting read strings and zero writes (PC-01/PC-02)' — true when Track B5.1 wrote it (2026-08-21), false since Track B5.6 (2026-08-22) shipped 7 write-enabled surfaces and false again since Track B5.7 (2026-08-22) added 8 more (posting-error resolve/dismiss, fiscal period create/open/close/lock, bank reconciliation match/skip/complete, journal reverse). PERMS-2 (2026-08-21) resolved PC-01/PC-02 — Manager now holds the full accounting read+write permission set (54 strings). Every remaining Odoo-shaped write this module still does not offer (AP/AR entity create/edit, journal create, posting-run replay) is a deliberate BUILD-ORDER gate, not a permission gate — see ACCOUNTING_DENIED_WRITES in route-registry.ts for the current, accurate list.",
     // Documentation of the backing guards — never the gate. These are the exact
     // strings the 2026-08-20 permissions cutover granted Manager, re-verified
     // live on 2026-08-21 (26 accounting-family strings on the token, of which

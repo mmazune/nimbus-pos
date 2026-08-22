@@ -193,6 +193,7 @@ export class BillingService {
                 include: { plan: true },
             });
 
+            // C-28-EXEMPT: SUBSCRIPTION_PLAN_CHANGED — Subscription has no branch_id column; an org pays for its subscription, not a branch.
             await this.audit.log({
                 actorUserId: userId,
                 action: 'SUBSCRIPTION_PLAN_CHANGED',
@@ -240,6 +241,7 @@ export class BillingService {
                 include: { plan: true },
             });
 
+            // C-28-EXEMPT: SUBSCRIPTION_STATUS_CHANGED — same Subscription entity, same reason.
             await this.audit.log({
                 actorUserId: userId,
                 action: 'SUBSCRIPTION_STATUS_CHANGED',
@@ -331,6 +333,7 @@ export class BillingService {
             if (count >= plan.maxBranches) {
                 const recommendedNextPlan =
                     plan.code === 'solo' ? 'growth' : plan.code === 'growth' ? 'franchise' : null;
+                // C-28-EXEMPT: PLAN_LIMIT_ENFORCED — aggregate branch COUNT vs. plan cap, not a single branch.
                 await this.audit.log({
                     actorUserId: userId,
                     action: 'PLAN_LIMIT_ENFORCED',
@@ -495,6 +498,7 @@ export class BillingService {
             });
         }
 
+        // C-28-EXEMPT: USAGE_METERS_REFRESHED — UsageMeter has no branch_id column; org-wide metering snapshot.
         await this.audit.log({
             actorUserId: userId,
             action: 'USAGE_METERS_REFRESHED',
@@ -609,7 +613,15 @@ export class BillingService {
             action: 'API_KEY_REVOKED',
             entityType: 'ApiKey',
             entityId: keyId,
-            metadata: { name: key.name, keyPrefix: key.keyPrefix },
+            metadata: {
+                name: key.name,
+                keyPrefix: key.keyPrefix,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`). ApiKey.branchId is genuinely nullable
+                // (an org-wide key has none) — mirrors the API_KEY_CREATED stamp above.
+                branchId: key.branchId,
+            },
         });
 
         return {
@@ -640,6 +652,7 @@ export class BillingService {
             },
         });
 
+        // C-28-EXEMPT: WEBHOOK_CREATED — WebhookEndpoint has no branch_id column.
         await this.audit.log({
             actorUserId: userId,
             action: 'WEBHOOK_CREATED',
@@ -698,6 +711,7 @@ export class BillingService {
             data,
         });
 
+        // C-28-EXEMPT: WEBHOOK_UPDATED — same WebhookEndpoint entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'WEBHOOK_UPDATED',
@@ -752,6 +766,7 @@ export class BillingService {
             },
         });
 
+        // C-28-EXEMPT: SUPPORT_SESSION_OPENED — SupportSession has no branch_id column.
         await this.audit.log({
             actorUserId: userId,
             action: 'SUPPORT_SESSION_OPENED',
@@ -791,6 +806,7 @@ export class BillingService {
             },
         });
 
+        // C-28-EXEMPT: SUPPORT_SESSION_CLOSED — same SupportSession entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'SUPPORT_SESSION_CLOSED',

@@ -75,6 +75,10 @@ export class DocumentsService {
         entityType: 'Document',
         entityId: existing.id,
         metadata: {
+          // C-28: this used to omit branchId entirely, making the event structurally
+          // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+          // ANDs `metadata.branchId = X-Branch-Id`).
+          branchId: existing.branchId ?? null,
           checksum,
           originalFileName: file.originalname,
           ...auditMeta,
@@ -116,6 +120,10 @@ export class DocumentsService {
       entityType: 'Document',
       entityId: document.id,
       metadata: {
+        // C-28: branchId was missing, making this event invisible to the
+        // branch-scoped audit-timeline endpoint (unconditionally ANDs
+        // `metadata.branchId = X-Branch-Id`).
+        branchId: document.branchId ?? null,
         fileName: file.originalname,
         mimeType: file.mimetype,
         fileSizeBytes: file.size,
@@ -201,7 +209,15 @@ export class DocumentsService {
         actorUserId: userId,
         entityType: 'Document',
         entityId: id,
-        metadata: { reason: 'not_found_or_deleted', ...auditMeta },
+        metadata: {
+          // C-28: branchId was missing, making this event invisible to the
+          // branch-scoped audit-timeline endpoint (unconditionally ANDs
+          // `metadata.branchId = X-Branch-Id`). The document lookup failed,
+          // so the acting caller's branch is the best available identifier.
+          branchId: ctx.branchId ?? null,
+          reason: 'not_found_or_deleted',
+          ...auditMeta,
+        },
       });
       throw new NotFoundException('Document not found');
     }
@@ -217,6 +233,10 @@ export class DocumentsService {
       entityType: 'Document',
       entityId: document.id,
       metadata: {
+        // C-28: branchId was missing, making this event invisible to the
+        // branch-scoped audit-timeline endpoint (unconditionally ANDs
+        // `metadata.branchId = X-Branch-Id`).
+        branchId: document.branchId ?? null,
         fileName: document.originalFileName,
         ...auditMeta,
       },
@@ -260,6 +280,10 @@ export class DocumentsService {
       entityType: 'Document',
       entityId: document.id,
       metadata: {
+        // C-28: branchId was missing, making this event invisible to the
+        // branch-scoped audit-timeline endpoint (unconditionally ANDs
+        // `metadata.branchId = X-Branch-Id`).
+        branchId: document.branchId ?? null,
         fileName: document.originalFileName,
         ...auditMeta,
       },
@@ -326,6 +350,10 @@ export class DocumentsService {
       entityType: 'DocumentLink',
       entityId: link.id,
       metadata: {
+        // C-28: branchId was missing, making this event invisible to the
+        // branch-scoped audit-timeline endpoint (unconditionally ANDs
+        // `metadata.branchId = X-Branch-Id`).
+        branchId: link.branchId ?? null,
         documentId,
         linkType: dto.linkType,
         linkedRecordId: dto.linkedRecordId,
@@ -381,7 +409,13 @@ export class DocumentsService {
       actorUserId: userId,
       entityType: 'Document',
       entityId: id,
-      metadata: { ...auditMeta },
+      metadata: {
+        // C-28: branchId was missing, making this event invisible to the
+        // branch-scoped audit-timeline endpoint (unconditionally ANDs
+        // `metadata.branchId = X-Branch-Id`).
+        branchId: document.branchId ?? null,
+        ...auditMeta,
+      },
     });
 
     return updated;
@@ -428,6 +462,7 @@ export class DocumentsService {
       },
     });
 
+    // C-28-EXEMPT: STORAGE_CONFIG_UPDATED — StorageProviderConfig has no branch_id column at all (unique on [orgId, providerType]); ctx type here is {organizationId} only, no branch.
     await this.audit.log({
       action: 'STORAGE_CONFIG_UPDATED',
       actorUserId: userId,

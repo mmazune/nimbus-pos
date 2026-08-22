@@ -275,6 +275,10 @@ export class PaymentsService {
         entityId: payment.id,
         metadata: {
           orderId,
+          // C-28: this used to omit branchId entirely, making the event structurally
+          // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+          // ANDs `metadata.branchId = X-Branch-Id`).
+          branchId: ctx.branchId,
           method: payment.method,
           amount: payment.amount.toString(),
           status: payment.status,
@@ -402,6 +406,10 @@ export class PaymentsService {
           entityType: 'paymentIntent',
           entityId: intent.id,
           metadata: {
+            // C-28: this used to omit branchId entirely, making the event structurally
+            // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+            // ANDs `metadata.branchId = X-Branch-Id`).
+            branchId: ctx.branchId,
             provider: 'MTN',
             externalId,
             success: result.success,
@@ -560,6 +568,7 @@ export class PaymentsService {
       },
     });
 
+    // C-28-EXEMPT: PAYMENT_WEBHOOK_RECEIVED — raw webhook receipt before any order/intent resolution; method has no ctx/branch param at all. Deferred: needs a new lookup.
     await this.audit.log({
       action: 'PAYMENT_WEBHOOK_RECEIVED',
       entityType: 'webhookEvent',
@@ -628,7 +637,16 @@ export class PaymentsService {
               action: 'PAYMENT_WEBHOOK_VERIFIED',
               entityType: 'paymentIntent',
               entityId: intent.id,
-              metadata: { provider, normalizedStatus, externalId, providerTransactionId },
+              metadata: {
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: intent.branchId,
+                provider,
+                normalizedStatus,
+                externalId,
+                providerTransactionId,
+              },
             });
 
             if (normalizedStatus === 'SUCCEEDED') {
@@ -662,6 +680,10 @@ export class PaymentsService {
                   entityId: payment.id,
                   metadata: {
                     orderId: intent.orderId,
+                    // C-28: this used to omit branchId entirely, making the event structurally
+                    // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                    // ANDs `metadata.branchId = X-Branch-Id`).
+                    branchId: intent.branchId,
                     method: 'MOMO',
                     amount: payment.amount.toString(),
                     trigger: 'webhook',
@@ -804,6 +826,10 @@ export class PaymentsService {
       entityId: payment.id,
       metadata: {
         orderId: dto.orderId,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         method: dto.method,
         amount: dto.amount.toString(),
         externalTransactionId: dto.externalTransactionId,

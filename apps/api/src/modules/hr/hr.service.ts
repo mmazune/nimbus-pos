@@ -140,6 +140,10 @@ export class HrService {
       entityType: 'Employee',
       entityId: employee.id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId,
         employeeCode: employee.employeeCode,
         employmentType: employee.employmentType,
         hasUserId: !!employee.userId,
@@ -222,6 +226,10 @@ export class HrService {
       entityType: 'Employee',
       entityId: updated.id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: employee.branchId,
         updatedFields: Object.keys(data),
         statusChange:
           dto.status && dto.status !== employee.status
@@ -370,6 +378,10 @@ export class HrService {
       entityType: 'EmploymentContract',
       entityId: contract.id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: contract.branchId,
         contractNumber: contract.contractNumber,
         employeeId: contract.employeeId,
         salaryBasis: contract.salaryBasis,
@@ -447,7 +459,15 @@ export class HrService {
       actorUserId: userId,
       entityType: 'Position',
       entityId: position.id,
-      metadata: { code: position.code, title: position.title, ...auditMeta },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: position.branchId,
+        code: position.code,
+        title: position.title,
+        ...auditMeta,
+      },
     });
 
     return position;
@@ -501,6 +521,10 @@ export class HrService {
       entityType: 'CompensationProfile',
       entityId: profile.id,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: profile.branchId,
         code: profile.code,
         salaryBasis: profile.salaryBasis,
         ...auditMeta,

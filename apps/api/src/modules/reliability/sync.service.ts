@@ -89,6 +89,7 @@ export class SyncService {
             }
         }
 
+        // C-28-EXEMPT: SYNC_REPLAY_SUBMITTED — ReplayJobItemDto.branchId is per-job optional, so one batch can legitimately span multiple branches; no single value represents the whole batch without fabricating one.
         await this.audit.log({
             actorUserId: userId,
             action: 'SYNC_REPLAY_SUBMITTED',
@@ -245,6 +246,10 @@ export class SyncService {
                 entityType: 'SyncJob',
                 entityId: job.id,
                 metadata: {
+                    // C-28: branchId was missing, making this event invisible to the
+                    // branch-scoped audit-timeline endpoint (unconditionally ANDs
+                    // `metadata.branchId = X-Branch-Id`).
+                    branchId: job.branchId ?? null,
                     type: job.type,
                     attemptNo,
                     resultRef: outcome.resultRef ?? null,
@@ -293,6 +298,11 @@ export class SyncService {
                 entityType: 'SyncConflict',
                 entityId: conflict.id,
                 metadata: {
+                    // C-28: branchId was missing, making this event invisible to the
+                    // branch-scoped audit-timeline endpoint (unconditionally ANDs
+                    // `metadata.branchId = X-Branch-Id`). SyncConflict itself has no
+                    // branch_id column; the owning SyncJob's branchId is used instead.
+                    branchId: job.branchId ?? null,
                     jobId: job.id,
                     type: job.type,
                     reason: conflict.reason,
@@ -401,6 +411,10 @@ export class SyncService {
             entityType: 'SyncJob',
             entityId: job.id,
             metadata: {
+                // C-28: branchId was missing, making this event invisible to the
+                // branch-scoped audit-timeline endpoint (unconditionally ANDs
+                // `metadata.branchId = X-Branch-Id`).
+                branchId: job.branchId ?? null,
                 type: job.type,
                 fromStatus: job.status,
                 resultStatus: result.status,
@@ -453,6 +467,7 @@ export class SyncService {
             },
         });
 
+        // C-28-EXEMPT: SYNC_CONFLICT_RESOLVED — SyncConflict has no branch_id column; only conflict.jobId is available without an extra SyncJob lookup. Deferred.
         await this.audit.log({
             actorUserId,
             action: 'SYNC_CONFLICT_RESOLVED',

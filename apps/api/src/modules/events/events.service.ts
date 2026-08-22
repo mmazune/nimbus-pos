@@ -159,7 +159,14 @@ export class EventsService {
       action: 'EVENT_CREATED',
       entityType: 'Event',
       entityId: event.id,
-      metadata: { eventNumber, title: dto.title },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventNumber,
+        title: dto.title,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -213,7 +220,13 @@ export class EventsService {
       action: 'EVENT_UPDATED',
       entityType: 'Event',
       entityId: id,
-      metadata: { eventNumber: event.eventNumber },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventNumber: event.eventNumber,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -268,7 +281,14 @@ export class EventsService {
       action: 'EVENT_PUBLISHED',
       entityType: 'Event',
       entityId: id,
-      metadata: { eventNumber: event.eventNumber, portalKey },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventNumber: event.eventNumber,
+        portalKey,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -312,7 +332,13 @@ export class EventsService {
       action: 'EVENT_OPENED',
       entityType: 'Event',
       entityId: id,
-      metadata: { eventNumber: event.eventNumber },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventNumber: event.eventNumber,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -357,7 +383,14 @@ export class EventsService {
       action: 'EVENT_CLOSED',
       entityType: 'Event',
       entityId: id,
-      metadata: { eventNumber: event.eventNumber, reason: dto.reason },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventNumber: event.eventNumber,
+        reason: dto.reason,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -417,7 +450,16 @@ export class EventsService {
       action: 'EVENT_TICKET_CLASS_CREATED',
       entityType: 'EventTicketClass',
       entityId: ticketClass.id,
-      metadata: { eventId, name: dto.name, capacity: dto.capacity, price: dto.price },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventId,
+        name: dto.name,
+        capacity: dto.capacity,
+        price: dto.price,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -535,7 +577,15 @@ export class EventsService {
       action: 'EVENT_BOOKING_CREATED',
       entityType: 'EventBooking',
       entityId: booking.id,
-      metadata: { eventId, bookingNumber, quantity: dto.quantity },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventId,
+        bookingNumber,
+        quantity: dto.quantity,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -602,6 +652,10 @@ export class EventsService {
       entityType: 'EventBooking',
       entityId: bookingId,
       metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
         eventId: booking.eventId,
         bookingNumber: booking.bookingNumber,
         reason: dto.reason,
@@ -688,7 +742,15 @@ export class EventsService {
       action: 'EVENT_TICKETS_ISSUED',
       entityType: 'EventBooking',
       entityId: bookingId,
-      metadata: { eventId: booking.eventId, count: remaining, ticketIds: tickets.map((t) => t.id) },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventId: booking.eventId,
+        count: remaining,
+        ticketIds: tickets.map((t) => t.id),
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -809,7 +871,14 @@ export class EventsService {
       action: 'EVENT_TICKET_CHECKED_IN',
       entityType: 'EventTicket',
       entityId: ticketId,
-      metadata: { eventId: ticket.eventId, ticketNumber: ticket.ticketNumber },
+      metadata: {
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+        eventId: ticket.eventId,
+        ticketNumber: ticket.ticketNumber,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

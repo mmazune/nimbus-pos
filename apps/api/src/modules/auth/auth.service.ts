@@ -80,6 +80,7 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
+      // C-28-EXEMPT: LOGIN_FAILED (no user) — no membership/branch resolved at this point.
       await this.audit.log({
         action: 'LOGIN_FAILED',
         entityType: 'auth',
@@ -92,6 +93,7 @@ export class AuthService {
 
     const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordValid) {
+      // C-28-EXEMPT: LOGIN_FAILED (bad password) — login has no branch context yet; branch is selected via X-Branch-Id on later requests.
       await this.audit.log({
         actorUserId: user.id,
         action: 'LOGIN_FAILED',
@@ -107,6 +109,7 @@ export class AuthService {
     const platform = dto.platform || SessionPlatform.WEB_BACKOFFICE;
     const result = await this.createSessionAndTokens(user, platform, SessionSource.PASSWORD, meta);
 
+    // C-28-EXEMPT: LOGIN_SUCCESS — same reason as above.
     await this.audit.log({
       actorUserId: user.id,
       action: 'LOGIN_SUCCESS',
@@ -141,6 +144,7 @@ export class AuthService {
     });
 
     if (!user || !user.isActive || !user.pinHash) {
+      // C-28-EXEMPT: PIN_LOGIN_FAILED (no user) — org-level PIN login, no branch resolved.
       await this.audit.log({
         action: 'PIN_LOGIN_FAILED',
         entityType: 'auth',
@@ -156,6 +160,7 @@ export class AuthService {
 
     const pinValid = await bcrypt.compare(dto.pin, user.pinHash);
     if (!pinValid) {
+      // C-28-EXEMPT: PIN_LOGIN_FAILED (bad pin) — same reason.
       await this.audit.log({
         actorUserId: user.id,
         action: 'PIN_LOGIN_FAILED',
@@ -171,6 +176,7 @@ export class AuthService {
     const platform = dto.platform || SessionPlatform.POS_DESKTOP;
     const result = await this.createSessionAndTokens(user, platform, SessionSource.PIN, meta);
 
+    // C-28-EXEMPT: PIN_LOGIN_SUCCESS — same reason.
     await this.audit.log({
       actorUserId: user.id,
       action: 'PIN_LOGIN_SUCCESS',
@@ -282,6 +288,7 @@ export class AuthService {
       data: { lastActivityAt: new Date() },
     });
 
+    // C-28-EXEMPT: TOKEN_REFRESH — session-level action, no branch resolved in this method.
     await this.audit.log({
       actorUserId: storedToken.userId,
       action: 'TOKEN_REFRESH',
@@ -316,6 +323,7 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
+    // C-28-EXEMPT: LOGOUT — session-level, no branch resolved.
     await this.audit.log({
       actorUserId: userId,
       action: 'LOGOUT',
@@ -349,6 +357,7 @@ export class AuthService {
       data: { revokedAt: now },
     });
 
+    // C-28-EXEMPT: LOGOUT_ALL — account-wide action across all sessions/branches; no single branch applies.
     await this.audit.log({
       actorUserId: userId,
       action: 'LOGOUT_ALL',

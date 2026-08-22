@@ -143,6 +143,7 @@ export class MerchantPaymentsService {
             },
         });
 
+        // C-28-EXEMPT: MERCHANT_PAYMENT_CONNECT_INITIATED — MerchantPaymentConfig.orgId is @unique, no branch_id column exists on the model.
         await this.audit.log({
             actorUserId: userId,
             action: 'MERCHANT_PAYMENT_CONNECT_INITIATED',
@@ -178,6 +179,7 @@ export class MerchantPaymentsService {
             },
         });
 
+        // C-28-EXEMPT: MERCHANT_PAYMENT_CONFIG_UPDATED — same entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'MERCHANT_PAYMENT_CONFIG_UPDATED',

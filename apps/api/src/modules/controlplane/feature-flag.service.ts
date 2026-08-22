@@ -86,6 +86,7 @@ export class FeatureFlagService {
             },
         });
 
+        // C-28-EXEMPT: FLAG_CREATED — writes to FlagAudit via FlagAuditService, a separate table never read by the branch-scoped audit-timeline endpoint. Not in scope for this defect class.
         await this.audit.log({
             orgId: targetOrgId,
             action: 'FLAG_CREATED',
@@ -146,6 +147,7 @@ export class FeatureFlagService {
             else if (dto.status === 'ARCHIVED') action = 'FLAG_ARCHIVED';
         }
 
+        // C-28-EXEMPT: FLAG_UPDATED/ENABLED/DISABLED/ARCHIVED — same FlagAuditService sink, same reason.
         await this.audit.log({
             orgId: flag.orgId ?? null,
             action,

@@ -2,11 +2,15 @@ import { apiRequest } from "@/lib/api/client";
 
 import { getAccountingRoute, getAccountingWriteRoute } from "./route-registry";
 import type {
+  BankReconciliationDetail,
   BudgetRow,
   ChartAccountRow,
   CostCenterRow,
   DemandCalendarEntryRow,
+  FiscalPeriodRow,
   ForecastRunRow,
+  JournalDetail,
+  PostingErrorDetail,
   PostingSourceMapRow,
   TaxLedgerConfigRow,
 } from "./types";
@@ -394,4 +398,149 @@ export function updateTaxConfigRequest(token: string, branchId: string, payload:
     token,
     branchId,
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Track B5.7 (2026-08-22) — retrofit writes over B5.1–B5.5's surfaces.
+// Same discipline as the B5.6 block above: every call cites its route through
+// `getAccountingWriteRoute`, so it can never target an unverified endpoint.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Posting errors (B5.4) ────────────────────────────────────────────────────
+
+export type ResolvePostingErrorPayload = { resolutionNotes?: string };
+
+/** `PATCH /accounting/posting-errors/:id/resolve` — 200, `pos:accounting:posting-errors:resolve`. OPEN → RESOLVED; a repeat 409s. */
+export function resolvePostingErrorRequest(
+  token: string,
+  branchId: string,
+  id: string,
+  payload: ResolvePostingErrorPayload = {},
+) {
+  return apiRequest<PostingErrorDetail>(
+    getAccountingWriteRoute("accounting.postingError.resolve").path.replace(":id", id),
+    { method: "PATCH", body: payload, token, branchId },
+  );
+}
+
+export type DismissPostingErrorPayload = { resolutionNotes?: string };
+
+/** `PATCH /accounting/posting-errors/:id/dismiss` — 200, `pos:accounting:posting-errors:resolve`. OPEN → DISMISSED; a repeat 409s. */
+export function dismissPostingErrorRequest(
+  token: string,
+  branchId: string,
+  id: string,
+  payload: DismissPostingErrorPayload = {},
+) {
+  return apiRequest<PostingErrorDetail>(
+    getAccountingWriteRoute("accounting.postingError.dismiss").path.replace(":id", id),
+    { method: "PATCH", body: payload, token, branchId },
+  );
+}
+
+// ── Fiscal periods (B5.5) ────────────────────────────────────────────────────
+
+export type CreateFiscalPeriodPayload = { name: string; startsAt: string; endsAt: string };
+
+/** `POST /accounting/periods` — 201, `pos:accounting:periods:create` (the C-27 grant). Creates a DRAFT period. */
+export function createFiscalPeriodRequest(token: string, branchId: string, payload: CreateFiscalPeriodPayload) {
+  return apiRequest<FiscalPeriodRow>(writePath("accounting.periods.create"), {
+    method: "POST",
+    body: payload,
+    token,
+    branchId,
+  });
+}
+
+/** `PATCH /accounting/periods/:id/open` — 200, `pos:accounting:periods:open`. DRAFT → OPEN. */
+export function openFiscalPeriodRequest(token: string, branchId: string, id: string) {
+  return apiRequest<FiscalPeriodRow>(
+    getAccountingWriteRoute("accounting.periods.open").path.replace(":id", id),
+    { method: "PATCH", token, branchId },
+  );
+}
+
+export type CloseFiscalPeriodPayload = { notes?: string; retainedEarningsAccountId?: string };
+
+/** `PATCH /accounting/periods/:id/close` — 200, `pos:accounting:periods:close`. OPEN → CLOSED, creates a PeriodCloseRun. */
+export function closeFiscalPeriodRequest(
+  token: string,
+  branchId: string,
+  id: string,
+  payload: CloseFiscalPeriodPayload = {},
+) {
+  return apiRequest<FiscalPeriodRow>(
+    getAccountingWriteRoute("accounting.periods.close").path.replace(":id", id),
+    { method: "PATCH", body: payload, token, branchId },
+  );
+}
+
+/** `PATCH /accounting/periods/:id/lock` — 200, `pos:accounting:periods:lock`. CLOSED → LOCKED, terminal (PC-07: no unlock route). */
+export function lockFiscalPeriodRequest(token: string, branchId: string, id: string) {
+  return apiRequest<FiscalPeriodRow>(
+    getAccountingWriteRoute("accounting.periods.lock").path.replace(":id", id),
+    { method: "PATCH", token, branchId },
+  );
+}
+
+// ── Bank reconciliation (B5.3) ───────────────────────────────────────────────
+
+export type MatchReconciliationLinePayload = {
+  bankStatementLineId: string;
+  journalLineId?: string;
+  manualEntryId?: string;
+  notes?: string;
+};
+
+/** `PATCH /accounting/reconciliation/:id/match` — 200, `pos:accounting:reconciliation:match`. An UNMATCHED line → MATCHED. */
+export function matchReconciliationLineRequest(
+  token: string,
+  branchId: string,
+  id: string,
+  payload: MatchReconciliationLinePayload,
+) {
+  return apiRequest<BankReconciliationDetail>(
+    getAccountingWriteRoute("accounting.reconciliation.match").path.replace(":id", id),
+    { method: "PATCH", body: payload, token, branchId },
+  );
+}
+
+export type SkipReconciliationLinePayload = { bankStatementLineId: string; notes?: string };
+
+/** `PATCH /accounting/reconciliation/:id/skip` — 200, `pos:accounting:reconciliation:match`. An UNMATCHED line → SKIPPED. */
+export function skipReconciliationLineRequest(
+  token: string,
+  branchId: string,
+  id: string,
+  payload: SkipReconciliationLinePayload,
+) {
+  return apiRequest<BankReconciliationDetail>(
+    getAccountingWriteRoute("accounting.reconciliation.skip").path.replace(":id", id),
+    { method: "PATCH", body: payload, token, branchId },
+  );
+}
+
+/** `POST /accounting/reconciliation/:id/complete` — 200 if balanced, 400 if a non-zero difference remains (by design). `pos:accounting:reconciliation:create`. */
+export function completeReconciliationRequest(token: string, branchId: string, id: string) {
+  return apiRequest<BankReconciliationDetail>(
+    getAccountingWriteRoute("accounting.reconciliation.complete").path.replace(":id", id),
+    { method: "POST", token, branchId },
+  );
+}
+
+// ── Journals (B5.4 core) ─────────────────────────────────────────────────────
+
+export type ReverseJournalPayload = { reason?: string };
+
+/** `POST /accounting/journals/:id/reverse` — 201, `pos:accounting:journals:reverse`. POSTED → REVERSED, creates a mirrored new journal. A repeat 409s. */
+export function reverseJournalRequest(
+  token: string,
+  branchId: string,
+  id: string,
+  payload: ReverseJournalPayload = {},
+) {
+  return apiRequest<JournalDetail>(
+    getAccountingWriteRoute("accounting.journal.reverse").path.replace(":id", id),
+    { method: "POST", body: payload, token, branchId },
+  );
 }

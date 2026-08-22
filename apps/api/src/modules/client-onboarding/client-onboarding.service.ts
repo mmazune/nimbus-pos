@@ -107,6 +107,7 @@ export class ClientOnboardingService {
             create: { orgId, organizationCreated: 'COMPLETED' },
         });
 
+        // C-28-EXEMPT: ONBOARDING_ORG_CREATED — fires before any branch exists (org creation precedes first branch creation).
         await this.audit.log({
             actorUserId: userId,
             action: 'ONBOARDING_ORG_CREATED',
@@ -157,7 +158,13 @@ export class ClientOnboardingService {
             action: 'ONBOARDING_BRANCH_CREATED',
             entityType: 'Branch',
             entityId: branch.id,
-            metadata: { name: dto.name },
+            metadata: {
+                name: dto.name,
+                // C-28: this used to omit branchId entirely, making the event
+                // structurally invisible to the branch-scoped audit-timeline
+                // endpoint (which unconditionally ANDs metadata.branchId = X-Branch-Id).
+                branchId: branch.id,
+            },
         });
 
         await this.checkAutoComplete(orgId);
@@ -172,6 +179,7 @@ export class ClientOnboardingService {
             create: { orgId, businessProfileDone: 'COMPLETED' },
         });
 
+        // C-28-EXEMPT: ONBOARDING_BUSINESS_PROFILE_UPDATED — org-level settings; Organization has no branch_id column.
         await this.audit.log({
             actorUserId: userId,
             action: 'ONBOARDING_BUSINESS_PROFILE_UPDATED',
@@ -192,6 +200,7 @@ export class ClientOnboardingService {
             create: { orgId, coreSettingsDone: 'COMPLETED' },
         });
 
+        // C-28-EXEMPT: ONBOARDING_SETTINGS_UPDATED — same reason as ONBOARDING_BUSINESS_PROFILE_UPDATED above.
         await this.audit.log({
             actorUserId: userId,
             action: 'ONBOARDING_SETTINGS_UPDATED',
@@ -266,6 +275,11 @@ export class ClientOnboardingService {
             metadata: {
                 invitationCount: dto.invitations.length,
                 invitedEmails: dto.invitations.map((i) => i.email),
+                // C-28: this used to omit branchId entirely, making the event
+                // structurally invisible to the branch-scoped audit-timeline
+                // endpoint (which unconditionally ANDs metadata.branchId = X-Branch-Id).
+                // targetBranch is already resolved above in this same method.
+                branchId: targetBranch.id,
             },
         });
 
@@ -459,7 +473,16 @@ export class ClientOnboardingService {
             action: 'ONBOARDING_INVITATION_RESENT',
             entityType: 'Invitation',
             entityId: invitationId,
-            metadata: { email: inv.email, resendCount: updated.resendCount },
+            metadata: {
+                email: inv.email,
+                resendCount: updated.resendCount,
+                // C-28: this used to omit branchId entirely, making the event
+                // structurally invisible to the branch-scoped audit-timeline
+                // endpoint (which unconditionally ANDs metadata.branchId = X-Branch-Id).
+                // inv is already loaded above in this same method (Invitation.branchId
+                // is a required, non-null column).
+                branchId: inv.branchId,
+            },
         });
 
         return {
@@ -516,7 +539,16 @@ export class ClientOnboardingService {
             action: 'ONBOARDING_INVITATION_REVOKED',
             entityType: 'Invitation',
             entityId: invitationId,
-            metadata: { email: inv.email, reason: reason ?? null },
+            metadata: {
+                email: inv.email,
+                reason: reason ?? null,
+                // C-28: this used to omit branchId entirely, making the event
+                // structurally invisible to the branch-scoped audit-timeline
+                // endpoint (which unconditionally ANDs metadata.branchId = X-Branch-Id).
+                // inv is already loaded above in this same method (Invitation.branchId
+                // is a required, non-null column).
+                branchId: inv.branchId,
+            },
         });
 
         return {

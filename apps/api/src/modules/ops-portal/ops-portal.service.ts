@@ -149,6 +149,7 @@ export class OpsPortalService {
             },
         });
 
+        // C-28-EXEMPT: SUPPORT_SESSION_OPENED — SupportSession has no branch_id column; cross-tenant ops surface scoped only to orgId.
         await this.audit.log({
             actorUserId: userId,
             action: 'SUPPORT_SESSION_OPENED',
@@ -180,6 +181,7 @@ export class OpsPortalService {
             },
         });
 
+        // C-28-EXEMPT: SUPPORT_SESSION_CLOSED — same entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'SUPPORT_SESSION_CLOSED',
@@ -293,6 +295,7 @@ export class OpsPortalService {
             },
         });
 
+        // C-28-EXEMPT: OPS_PLAN_CREATED — Plan is a global Nimbus SaaS catalog entity with no orgId/branchId at all; platform-level, spans all tenants.
         await this.audit.log({
             actorUserId: userId,
             action: 'OPS_PLAN_CREATED',
@@ -368,6 +371,7 @@ export class OpsPortalService {
             data,
         });
 
+        // C-28-EXEMPT: OPS_PLAN_UPDATED — same Plan entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'OPS_PLAN_UPDATED',
@@ -408,6 +412,7 @@ export class OpsPortalService {
             data: { status: dto.status },
         });
 
+        // C-28-EXEMPT: OPS_PLAN_STATUS_CHANGED — same Plan entity, same reason.
         await this.audit.log({
             actorUserId: userId,
             action: 'OPS_PLAN_STATUS_CHANGED',

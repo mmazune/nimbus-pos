@@ -61,6 +61,7 @@ export class TrainingSessionService {
             },
         });
 
+        // C-28-EXEMPT: TRAINING_SESSION_STARTED — writes to FlagAudit via FlagAuditService, a separate table never read by the branch-scoped audit-timeline endpoint. Not in scope for this defect class.
         await this.audit.log({
             orgId,
             action: 'TRAINING_SESSION_STARTED',
@@ -93,6 +94,7 @@ export class TrainingSessionService {
             },
         });
 
+        // C-28-EXEMPT: TRAINING_SESSION_ENDED — same FlagAuditService sink, same reason.
         await this.audit.log({
             orgId,
             action: 'TRAINING_SESSION_ENDED',

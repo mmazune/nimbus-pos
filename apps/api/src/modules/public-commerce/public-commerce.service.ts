@@ -72,6 +72,13 @@ export class PublicCommerceService {
             action: 'PUBLIC_PROFILE_UPDATED',
             entityType: 'PublicProfile',
             entityId: profile.id,
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: branchId || null,
+            },
         });
 
         return profile;
@@ -96,6 +103,13 @@ export class PublicCommerceService {
             action: 'PUBLIC_PROFILE_PUBLISHED',
             entityType: 'PublicProfile',
             entityId: profile.id,
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: branchId || null,
+            },
         });
 
         return updated;
@@ -129,7 +143,14 @@ export class PublicCommerceService {
             action: 'PUBLIC_EVENT_CREATED',
             entityType: 'PublicEvent',
             entityId: event.id,
-            metadata: { title: dto.title },
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: branchId || null,
+                title: dto.title,
+            },
         });
 
         return event;
@@ -158,6 +179,13 @@ export class PublicCommerceService {
             action: 'PUBLIC_EVENT_UPDATED',
             entityType: 'PublicEvent',
             entityId: eventId,
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: event.branchId || null,
+            },
         });
 
         return updated;
@@ -179,6 +207,13 @@ export class PublicCommerceService {
             action: 'PUBLIC_EVENT_PUBLISHED',
             entityType: 'PublicEvent',
             entityId: eventId,
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: event.branchId || null,
+            },
         });
 
         return updated;
@@ -206,7 +241,15 @@ export class PublicCommerceService {
             action: 'PUBLIC_EVENT_CAPACITY_UPDATED',
             entityType: 'PublicEvent',
             entityId: eventId,
-            metadata: { from: event.capacity, to: dto.capacity },
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: event.branchId || null,
+                from: event.capacity,
+                to: dto.capacity,
+            },
         });
 
         return updated;
@@ -240,7 +283,14 @@ export class PublicCommerceService {
             action: 'PUBLIC_EVENT_PRICING_UPDATED',
             entityType: 'PublicEvent',
             entityId: eventId,
-            metadata: dto as unknown as Record<string, unknown>,
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: event.branchId || null,
+                ...(dto as unknown as Record<string, unknown>),
+            },
         });
 
         return updated;
@@ -275,7 +325,14 @@ export class PublicCommerceService {
             action: 'MERCHANT_BOOKING_SETTINGS_UPDATED',
             entityType: 'PublicProfile',
             entityId: profile.id,
-            metadata: settings as Record<string, unknown>,
+            metadata: {
+                orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: branchId || null,
+                ...(settings as Record<string, unknown>),
+            },
         });
 
         return {
@@ -413,6 +470,11 @@ export class PublicCommerceService {
             entityType: 'ReservationHold',
             entityId: hold.id,
             metadata: {
+                orgId: profile.orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: profile.branchId || null,
                 restaurantSlug: dto.restaurantSlug,
                 partySize: dto.partySize,
                 expiresAt: hold.expiresAt,
@@ -445,6 +507,13 @@ export class PublicCommerceService {
                 action: 'PUBLIC_RESERVATION_HOLD_EXPIRED',
                 entityType: 'ReservationHold',
                 entityId: hold.id,
+                metadata: {
+                    orgId: hold.orgId,
+                    // C-28: this used to omit branchId entirely, making the event structurally
+                    // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                    // ANDs `metadata.branchId = X-Branch-Id`).
+                    branchId: hold.branchId || null,
+                },
             });
             throw new ConflictException('Reservation hold has expired');
         }
@@ -458,6 +527,13 @@ export class PublicCommerceService {
             action: 'PUBLIC_RESERVATION_CONFIRMED',
             entityType: 'ReservationHold',
             entityId: updated.id,
+            metadata: {
+                orgId: updated.orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: updated.branchId || null,
+            },
         });
 
         return { holdId: updated.id, status: 'CONFIRMED', confirmedAt: updated.confirmedAt };
@@ -499,6 +575,11 @@ export class PublicCommerceService {
             entityType: 'EventBookingHold',
             entityId: hold.id,
             metadata: {
+                orgId: event.orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: event.branchId || null,
                 eventSlug: dto.eventSlug,
                 ticketCount,
                 expiresAt: hold.expiresAt,
@@ -533,6 +614,13 @@ export class PublicCommerceService {
                 action: 'PUBLIC_EVENT_BOOKING_HOLD_EXPIRED',
                 entityType: 'EventBookingHold',
                 entityId: hold.id,
+                metadata: {
+                    orgId: hold.orgId,
+                    // C-28: this used to omit branchId entirely, making the event structurally
+                    // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                    // ANDs `metadata.branchId = X-Branch-Id`).
+                    branchId: hold.branchId || null,
+                },
             });
             throw new ConflictException('Event booking hold has expired');
         }
@@ -562,7 +650,15 @@ export class PublicCommerceService {
             action: 'PUBLIC_EVENT_BOOKING_CONFIRMED',
             entityType: 'EventBookingHold',
             entityId: updated.id,
-            metadata: { ticketCount: hold.ticketCount, eventId: hold.publicEventId },
+            metadata: {
+                orgId: hold.orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: hold.branchId || null,
+                ticketCount: hold.ticketCount,
+                eventId: hold.publicEventId,
+            },
         });
 
         return { holdId: updated.id, status: 'CONFIRMED', confirmedAt: updated.confirmedAt };

@@ -1,10 +1,11 @@
 import { useRouter } from "next/router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AccountingBackLink,
   AccountingFieldRow,
   AccountingListScreen,
+  AccountingTextField,
 } from "@/components/manager/accounting/shared";
 import {
   ManagerBreadcrumbs,
@@ -12,7 +13,8 @@ import {
   ManagerSearchFilterMenu,
   type ManagerListColumn,
 } from "@/components/manager/chrome";
-import { Badge, Card, ErrorState, LoadingState } from "@/components/ui";
+import { ActionConfirmDialog } from "@/components/pos-shell/ActionConfirmDialog";
+import { Badge, Button, Card, ErrorState, LoadingState } from "@/components/ui";
 import { ACCOUNTING_LIST_PAGE_SIZE, clampAccountingTake } from "@/lib/accounting/api";
 import {
   accountingStatusTone,
@@ -29,6 +31,7 @@ import {
   readManagerEnum,
   readManagerPage,
 } from "@/lib/manager/accounting-route";
+import { useDismissPostingError, useResolvePostingError } from "@/lib/manager/accounting-transitions-queries";
 
 /** A truncated, safely-stringified rendering of a `Json?` field — never assumes shape. */
 function formatDetailsJson(details: unknown): string {
@@ -42,18 +45,20 @@ function formatDetailsJson(details: unknown): string {
 }
 
 /**
- * Review → Posting errors — Track B5.4. `GET /accounting/posting-errors` +
- * `GET /accounting/posting-errors/:id`.
+ * Review → Posting errors — Track B5.4 (list+detail), **write-enabled by
+ * Track B5.7** (2026-08-22). `GET /accounting/posting-errors` +
+ * `GET /accounting/posting-errors/:id` +
+ * `PATCH .../:id/resolve` + `PATCH .../:id/dismiss`.
  *
- * 🔴 **New finding (B5.4-D1), disclosed rather than hidden:** unlike every
- * other "Manager cannot write" surface in this module, there is genuinely NO
- * resolve/dismiss endpoint anywhere in the API for `PostingError` — grepping
- * every controller in `apps/api/src/modules` for a mutation on this entity
- * finds none. `PostingErrorStatus` (`OPEN → RESOLVED | DISMISSED`) is a real
- * enum with no write path to reach either terminal state through this API,
- * for ANY role, not just Manager. So this screen does NOT render
- * `AccountingReadOnlyCard` (whose copy claims "an Owner or Accountant
- * performs this" — false here) — it states the gap plainly instead.
+ * 🟢 **B5.4-D1 was fixed at the backend in backend gap batch 4 (2026-08-21)**
+ * — `PATCH /accounting/posting-errors/:id/resolve` and `.../dismiss` are real
+ * routes now, gated on `pos:accounting:posting-errors:resolve` (Owner,
+ * Manager, Accountant). B5.4 shipped before that fix landed and correctly
+ * disclosed the gap as it stood at the time; this phase is the first
+ * authorised to build UI on top of the fix. Both actions are status-guarded
+ * (only an OPEN error may transition) — a repeat attempt on an already
+ * RESOLVED/DISMISSED error 409s, so the form disables both actions outside
+ * OPEN rather than letting the request fail.
  */
 export function PostingErrorsScreen() {
   const router = useRouter();
@@ -133,7 +138,7 @@ export function PostingErrorsScreen() {
       emptyMessage="No posting error in this branch matches the current filter — a healthy sign, not a missing feature."
       pager={{ ...pager, onPrevious: () => patchQuery({ page: Math.max(1, page - 1) }), onNext: () => patchQuery({ page: page + 1 }) }}
       totalsLabel="This page"
-      footnote="A posting error is raised when a posting-run replay fails. No endpoint exists to resolve or dismiss one — OPEN is effectively terminal through this API for every role, not only Manager."
+      footnote="A posting error is raised when a posting-run replay fails. Open a row to resolve or dismiss it."
     />
   );
 }
@@ -150,6 +155,41 @@ function PostingErrorDetailPanel({
   const detailQuery = usePostingErrorDetail(errorId);
   const error = detailQuery.data;
   const position = pageRows.findIndex((row) => row.id === errorId);
+
+  const resolveMutation = useResolvePostingError();
+  const dismissMutation = useDismissPostingError();
+  const [dialog, setDialog] = useState<"resolve" | "dismiss" | null>(null);
+  const [notes, setNotes] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const isOpen = error?.status === "OPEN";
+  const activeMutation = dialog === "resolve" ? resolveMutation : dismissMutation;
+
+  function openDialog(kind: "resolve" | "dismiss") {
+    setNotes("");
+    setFormError(null);
+    setDialog(kind);
+  }
+
+  async function submitDecision() {
+    if (!error || !dialog) return;
+    setFormError(null);
+    try {
+      const payload = { resolutionNotes: notes.trim() || undefined };
+      if (dialog === "resolve") {
+        await resolveMutation.mutateAsync({ id: error.id, payload });
+      } else {
+        await dismissMutation.mutateAsync({ id: error.id, payload });
+      }
+      setDialog(null);
+    } catch (err) {
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : `The posting error could not be ${dialog === "resolve" ? "resolved" : "dismissed"}. Retry.`,
+      );
+    }
+  }
 
   return (
     <>
@@ -214,20 +254,61 @@ function PostingErrorDetailPanel({
             </div>
 
             <div className="flex min-w-0 flex-col gap-5">
-              <Card className="min-w-0 bg-status-warning-surface">
-                <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-status-warning">
-                  No role can act on this record
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  This is not a permission boundary — it is a genuine gap in this API. No endpoint exists anywhere
-                  to resolve or dismiss a posting error, for any role. <code>OPEN</code> is effectively terminal
-                  until a resolve/dismiss route is added.
-                </p>
-              </Card>
+              {isOpen ? (
+                <Card className="min-w-0">
+                  <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-text-muted">Resolution</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">
+                    Resolve if the underlying issue was fixed and the run should be treated as handled. Dismiss if
+                    it does not need action (e.g. a duplicate or a benign one-off). Both are final — a second
+                    attempt on this same error is refused.
+                  </p>
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Button variant="primary" size="compact" onClick={() => openDialog("resolve")}>
+                      Resolve
+                    </Button>
+                    <Button variant="secondary" size="compact" onClick={() => openDialog("dismiss")}>
+                      Dismiss
+                    </Button>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="min-w-0">
+                  <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-text-muted">Resolution</h3>
+                  <dl className="mt-3 grid gap-x-8">
+                    <AccountingFieldRow label="Outcome">{titleCaseAccountingStatus(error.status)}</AccountingFieldRow>
+                    <AccountingFieldRow label="Resolved">{formatAccountingDate(error.resolvedAt)}</AccountingFieldRow>
+                    <AccountingFieldRow label="Notes">{error.resolutionNotes || "—"}</AccountingFieldRow>
+                  </dl>
+                </Card>
+              )}
             </div>
           </div>
         </>
       )}
+
+      <ActionConfirmDialog
+        open={dialog !== null}
+        title={dialog === "resolve" ? "Resolve posting error" : "Dismiss posting error"}
+        consequence={
+          dialog === "resolve"
+            ? "Marks this posting error RESOLVED. This cannot be undone through this API."
+            : "Marks this posting error DISMISSED. This cannot be undone through this API."
+        }
+        tone={dialog === "resolve" ? "info" : "warning"}
+        confirmLabel={dialog === "resolve" ? "Resolve" : "Dismiss"}
+        pending={activeMutation.isPending}
+        error={formError}
+        onCancel={() => setDialog(null)}
+        onConfirm={() => void submitDecision()}
+      >
+        <AccountingTextField
+          label="Notes"
+          hint="Optional — recorded on the error for later reference."
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          disabled={activeMutation.isPending}
+        />
+      </ActionConfirmDialog>
     </>
   );
 }

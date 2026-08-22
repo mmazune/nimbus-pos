@@ -41,6 +41,7 @@ export class TenancyService {
       },
     });
 
+    // C-28-EXEMPT: ORG_CREATED — the Organization entity is being created; no branch exists yet at this point in the flow.
     await this.audit.log({
       actorUserId,
       action: 'ORG_CREATED',
@@ -157,7 +158,16 @@ export class TenancyService {
       action: 'BRANCH_CREATED',
       entityType: 'branch',
       entityId: branch.id,
-      metadata: { orgId, name: branch.name, code: branch.code },
+      metadata: {
+        orgId,
+        name: branch.name,
+        code: branch.code,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`). The branch just created is trivially
+        // its own branch context.
+        branchId: branch.id,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

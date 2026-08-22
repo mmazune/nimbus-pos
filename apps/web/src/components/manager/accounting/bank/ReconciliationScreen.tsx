@@ -1,11 +1,12 @@
 import { useRouter } from "next/router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AccountingBackLink,
   AccountingFieldRow,
   AccountingReadOnlyCard,
   AccountingRouteScopeNote,
+  AccountingTextField,
   AccountingUnpaginatedNote,
 } from "@/components/manager/accounting/shared";
 import {
@@ -18,7 +19,8 @@ import {
   ManagerStatusPipeline,
   type ManagerListColumn,
 } from "@/components/manager/chrome";
-import { Badge, ErrorState, LoadingState } from "@/components/ui";
+import { ActionConfirmDialog } from "@/components/pos-shell/ActionConfirmDialog";
+import { Badge, Button, ErrorState, LoadingState } from "@/components/ui";
 import {
   accountingStatusTone,
   formatAccountingCount,
@@ -39,17 +41,33 @@ import {
 import { useBankReconciliationDetail, useBankReconciliationsList } from "@/lib/manager/accounting-surface-queries";
 import { useManagerBranch } from "@/lib/manager/branch-context";
 import { buildManagerListQuery, firstManagerQueryValue, readManagerEnum } from "@/lib/manager/accounting-route";
+import {
+  useCompleteReconciliation,
+  useMatchReconciliationLine,
+  useSkipReconciliationLine,
+} from "@/lib/manager/accounting-transitions-queries";
 
 const RECONCILIATION_PIPELINE_LABELS = RECONCILIATION_PIPELINE.map(titleCaseAccountingStatus);
 
 /**
- * Bank → Reconciliation — Track B5.3. `GET /accounting/reconciliation` +
- * `GET /accounting/reconciliation/:id`. Nimbus's honest analogue of Odoo's
- * match/skip/complete workbench, rendered entirely READ-ONLY: Manager holds
- * `pos:accounting:reconciliation:read` but neither `:match` nor `:create`
- * (PC-01), so there is no Match / Skip / Complete control anywhere on this
- * surface — `AccountingReadOnlyCard` names those three actions instead of
- * showing a disabled button for any of them.
+ * Bank → Reconciliation — Track B5.3 (list+detail read), **write-enabled by
+ * Track B5.7** (2026-08-22). `GET /accounting/reconciliation` +
+ * `GET /accounting/reconciliation/:id` + `PATCH .../:id/match` +
+ * `PATCH .../:id/skip` + `POST .../:id/complete`.
+ *
+ * Nimbus's honest analogue of Odoo's match/skip/complete workbench — B5.3
+ * shipped it read-only because Manager held `:read` but neither `:match` nor
+ * `:create` (PC-01); PERMS-2 (2026-08-21) resolved that, and this phase is
+ * the first authorised to build the workbench for real. Match/Skip act on an
+ * individual UNMATCHED statement line; Complete acts on the whole
+ * reconciliation and is disabled client-side while the balance difference is
+ * non-zero (the backend 400s on a non-zero-difference complete — the form
+ * disables rather than lets that happen).
+ *
+ * ⚠️ Match asks for a journal-line id or a manual-entry id directly — there
+ * is no "browse available lines to match against" picker in this phase (no
+ * such list endpoint was in scope); a Manager matching a line needs to
+ * already know which journal line or manual entry it corresponds to.
  *
  * PC-06 applies to the list the same way it does to bank-statements: a bare
  * array, no server total, no server-side status filter — the status chip
@@ -172,9 +190,7 @@ export function ReconciliationScreen() {
           : null}
       </p>
 
-      <AccountingReadOnlyCard
-        actions={["Starting a reconciliation", "matching or skipping a statement line", "completing a reconciliation"]}
-      />
+      <AccountingReadOnlyCard actions={["Starting a new reconciliation"]} />
     </ManagerContentShell>
   );
 }
@@ -195,6 +211,77 @@ function ReconciliationDetailPanel({
   const pipelineIndex = reconciliationPipelineIndex(rec?.status);
   const balanced = isReconciliationBalanced(rec?.difference);
   const lines = rec?.bankStatement?.lines || [];
+  // B5.7 live QA finding: the backend auto-transitions OPEN → IN_PROGRESS on
+  // the FIRST match/skip call — a fresh reconciliation is created OPEN, not
+  // IN_PROGRESS. Gating line actions on IN_PROGRESS alone made the very first
+  // match/skip on any reconciliation unreachable through this UI. Both
+  // pre-COMPLETED statuses accept line actions; only COMPLETED/DISPUTED do not.
+  const canActOnLines = ["OPEN", "IN_PROGRESS"].includes((rec?.status || "").toUpperCase());
+
+  const matchMutation = useMatchReconciliationLine();
+  const skipMutation = useSkipReconciliationLine();
+  const completeMutation = useCompleteReconciliation();
+
+  const [lineDialog, setLineDialog] = useState<{ kind: "match" | "skip"; line: BankStatementLineRow } | null>(null);
+  const [journalLineId, setJournalLineId] = useState("");
+  const [manualEntryId, setManualEntryId] = useState("");
+  const [lineNotes, setLineNotes] = useState("");
+  const [lineError, setLineError] = useState<string | null>(null);
+
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+
+  function openLineDialog(kind: "match" | "skip", line: BankStatementLineRow) {
+    setJournalLineId("");
+    setManualEntryId("");
+    setLineNotes("");
+    setLineError(null);
+    setLineDialog({ kind, line });
+  }
+
+  const lineMutation = lineDialog?.kind === "match" ? matchMutation : skipMutation;
+  const matchFormValid = lineDialog?.kind !== "match" || journalLineId.trim().length > 0 || manualEntryId.trim().length > 0;
+
+  async function submitLineDecision() {
+    if (!lineDialog || !rec) return;
+    setLineError(null);
+    try {
+      if (lineDialog.kind === "match") {
+        await matchMutation.mutateAsync({
+          id: rec.id,
+          payload: {
+            bankStatementLineId: lineDialog.line.id,
+            journalLineId: journalLineId.trim() || undefined,
+            manualEntryId: manualEntryId.trim() || undefined,
+            notes: lineNotes.trim() || undefined,
+          },
+        });
+      } else {
+        await skipMutation.mutateAsync({
+          id: rec.id,
+          payload: { bankStatementLineId: lineDialog.line.id, notes: lineNotes.trim() || undefined },
+        });
+      }
+      setLineDialog(null);
+    } catch (error) {
+      setLineError(
+        error instanceof Error ? error.message : `The line could not be ${lineDialog.kind}ed. Retry.`,
+      );
+    }
+  }
+
+  async function submitComplete() {
+    if (!rec) return;
+    setCompleteError(null);
+    try {
+      await completeMutation.mutateAsync(rec.id);
+      setCompleteOpen(false);
+    } catch (error) {
+      setCompleteError(
+        error instanceof Error ? error.message : "This reconciliation could not be completed. Retry.",
+      );
+    }
+  }
 
   const lineColumns: ManagerListColumn<BankStatementLineRow>[] = [
     { key: "txDate", header: "Date", render: (line) => formatAccountingDate(line.txDate) },
@@ -220,6 +307,25 @@ function ReconciliationDetailPanel({
       key: "status",
       header: "State",
       render: (line) => <Badge variant={accountingStatusTone(line.status)}>{titleCaseAccountingStatus(line.status)}</Badge>,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (line) => {
+        if (!canActOnLines || (line.status || "").toUpperCase() !== "UNMATCHED") {
+          return <span className="text-xs text-text-muted">—</span>;
+        }
+        return (
+          <div className="flex gap-2">
+            <Button variant="secondary" size="compact" onClick={() => openLineDialog("match", line)}>
+              Match
+            </Button>
+            <Button variant="secondary" size="compact" onClick={() => openLineDialog("skip", line)}>
+              Skip
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -337,13 +443,87 @@ function ReconciliationDetailPanel({
                 ) : null}
               </div>
 
-              <AccountingReadOnlyCard
-                actions={["Matching or skipping a statement line", "completing this reconciliation"]}
-              />
+              {canActOnLines ? (
+                <div className="min-w-0 rounded-lg bg-surface p-5 shadow-subtle">
+                  <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-text-muted">Complete</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">
+                    Requires every line to be matched or skipped and the difference to be exactly zero.
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="compact"
+                    className="mt-3"
+                    disabled={balanced !== true}
+                    onClick={() => {
+                      setCompleteError(null);
+                      setCompleteOpen(true);
+                    }}
+                  >
+                    Complete reconciliation
+                  </Button>
+                </div>
+              ) : (
+                <AccountingReadOnlyCard actions={["Starting a new reconciliation"]} />
+              )}
             </div>
           </div>
         </>
       )}
+
+      <ActionConfirmDialog
+        open={lineDialog !== null}
+        title={lineDialog?.kind === "match" ? "Match statement line" : "Skip statement line"}
+        consequence={
+          lineDialog?.kind === "match"
+            ? "Marks this statement line MATCHED against the journal line or manual entry you name below."
+            : "Marks this statement line SKIPPED — it will not count toward the matched total."
+        }
+        tone="info"
+        confirmLabel={lineDialog?.kind === "match" ? "Match" : "Skip"}
+        pending={lineMutation.isPending}
+        confirmDisabled={!matchFormValid}
+        error={lineError}
+        onCancel={() => setLineDialog(null)}
+        onConfirm={() => void submitLineDecision()}
+      >
+        {lineDialog?.kind === "match" ? (
+          <>
+            <AccountingTextField
+              label="Journal line ID"
+              hint="Provide this OR a manual-entry ID."
+              value={journalLineId}
+              onChange={(event) => setJournalLineId(event.target.value)}
+              disabled={matchMutation.isPending}
+            />
+            <AccountingTextField
+              label="Manual entry ID"
+              hint="Provide this OR a journal-line ID."
+              value={manualEntryId}
+              onChange={(event) => setManualEntryId(event.target.value)}
+              disabled={matchMutation.isPending}
+            />
+          </>
+        ) : null}
+        <AccountingTextField
+          label="Notes"
+          hint="Optional."
+          value={lineNotes}
+          onChange={(event) => setLineNotes(event.target.value)}
+          disabled={lineMutation.isPending}
+        />
+      </ActionConfirmDialog>
+
+      <ActionConfirmDialog
+        open={completeOpen}
+        title="Complete reconciliation"
+        consequence={`Marks this reconciliation COMPLETED. ${rec?.bankAccount?.name || ""}`.trim()}
+        tone="info"
+        confirmLabel="Complete"
+        pending={completeMutation.isPending}
+        error={completeError}
+        onCancel={() => setCompleteOpen(false)}
+        onConfirm={() => void submitComplete()}
+      />
     </>
   );
 }

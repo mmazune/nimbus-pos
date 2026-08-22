@@ -84,7 +84,14 @@ export class AnalyticsService {
       action: 'anomaly-rule.create',
       entityType: 'AnomalyRule',
       entityId: rule.id,
-      metadata: { code: dto.code, type: dto.type },
+      metadata: {
+        code: dto.code,
+        type: dto.type,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -127,7 +134,11 @@ export class AnalyticsService {
       action: 'anomaly-rule.update',
       entityType: 'AnomalyRule',
       entityId: ruleId,
-      metadata: { changes: Object.keys(dto) },
+      metadata: {
+        changes: Object.keys(dto),
+        // C-28: see anomaly-rule.create above.
+        branchId: rule.branchId ?? null,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -256,7 +267,13 @@ export class AnalyticsService {
       action: 'anomaly-event.acknowledge',
       entityType: 'AnomalyEvent',
       entityId: anomalyId,
-      metadata: { previousStatus: anomaly.status },
+      metadata: {
+        previousStatus: anomaly.status,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -309,7 +326,11 @@ export class AnalyticsService {
       action: 'anomaly-event.resolve',
       entityType: 'AnomalyEvent',
       entityId: anomalyId,
-      metadata: { previousStatus: anomaly.status },
+      metadata: {
+        previousStatus: anomaly.status,
+        // C-28: see anomaly-event.acknowledge above.
+        branchId: ctx.branchId,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -462,7 +483,14 @@ export class AnalyticsService {
       action: 'risk-threshold.update',
       entityType: 'RiskThreshold',
       entityId: thresholdId,
-      metadata: { key: threshold.key, changes: Object.keys(dto) },
+      metadata: {
+        key: threshold.key,
+        changes: Object.keys(dto),
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: threshold.branchId ?? null,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -516,7 +544,14 @@ export class AnalyticsService {
       action: 'anomaly.recalculate',
       entityType: 'AnomalyEvent',
       entityId: ctx.branchId,
-      metadata: { rulesEvaluated: rules.length, results },
+      metadata: {
+        rulesEvaluated: rules.length,
+        results,
+        // C-28: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: ctx.branchId,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

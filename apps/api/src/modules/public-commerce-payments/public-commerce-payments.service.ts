@@ -66,6 +66,13 @@ export class PublicCommercePaymentsService {
             entityType: 'PendingPaymentIntent',
             entityId: intent.id,
             metadata: {
+                orgId: hold.orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`). PendingPaymentIntent itself has no
+                // branchId column (org-level by schema), but the reservation hold it references
+                // is branch-scoped, so the branch is recorded here for timeline reachability.
+                branchId: hold.branchId || null,
                 paymentType: 'RESERVATION',
                 holdId: dto.holdId,
                 provider: PENDING_RESPONSE.provider,
@@ -100,6 +107,13 @@ export class PublicCommercePaymentsService {
             entityType: 'PendingPaymentIntent',
             entityId: intent.id,
             metadata: {
+                orgId: hold.orgId,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`). PendingPaymentIntent itself has no
+                // branchId column (org-level by schema), but the event-booking hold it references
+                // is branch-scoped, so the branch is recorded here for timeline reachability.
+                branchId: hold.branchId || null,
                 paymentType: 'EVENT_BOOKING',
                 holdId: dto.holdId,
                 provider: PENDING_RESPONSE.provider,

@@ -169,7 +169,14 @@ export class AccountsReceivableService {
       actorUserId: userId,
       entityType: 'CustomerAccount',
       entityId: account.id,
-      metadata: { orgId, name: account.name, code: account.code, type: account.type },
+      metadata: {
+        orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
+        name: account.name,
+        code: account.code,
+        type: account.type,
+      },
     });
 
     return account;
@@ -325,6 +332,8 @@ export class AccountsReceivableService {
       entityId: invoice.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         invoiceNumber,
         customerAccountId: dto.customerAccountId,
         totalAmount: totalAmount.toString(),
@@ -566,6 +575,8 @@ export class AccountsReceivableService {
         entityId: receipt.id,
         metadata: {
           orgId,
+          // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+          branchId: branchId || null,
           receiptNumber,
           error: glErr?.message || String(glErr),
         },
@@ -579,6 +590,8 @@ export class AccountsReceivableService {
       entityId: receipt.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         receiptNumber,
         customerAccountId: dto.customerAccountId,
         amount: totalReceipt.toString(),
@@ -948,6 +961,8 @@ export class AccountsReceivableService {
       entityId: creditNote.id,
       metadata: {
         orgId,
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: branchId || null,
         creditNoteNumber,
         customerAccountId: dto.customerAccountId,
         amount: amount.toString(),

@@ -102,6 +102,7 @@ export class SettingsService {
       data,
     });
 
+    // C-28-EXEMPT: ORG_SETTINGS_UPDATED — OrgSettings has no branch_id column; a true org-wide singleton (VAT %, currency, rounding, thresholds, platform access).
     await this.audit.log({
       actorUserId: userId,
       action: 'ORG_SETTINGS_UPDATED',
@@ -139,6 +140,7 @@ export class SettingsService {
       },
     });
 
+    // C-28-EXEMPT: CURRENCY_UPDATED — same OrgSettings entity, same reason.
     await this.audit.log({
       actorUserId: userId,
       action: 'CURRENCY_UPDATED',
@@ -178,6 +180,7 @@ export class SettingsService {
       },
     });
 
+    // C-28-EXEMPT: TAX_MATRIX_UPDATED — same OrgSettings entity, same reason.
     await this.audit.log({
       actorUserId: userId,
       action: 'TAX_MATRIX_UPDATED',
@@ -215,6 +218,7 @@ export class SettingsService {
       data: { rounding: roundingJson as unknown as Prisma.InputJsonValue },
     });
 
+    // C-28-EXEMPT: ROUNDING_UPDATED — same OrgSettings entity, same reason.
     await this.audit.log({
       actorUserId: userId,
       action: 'ROUNDING_UPDATED',
@@ -264,6 +268,7 @@ export class SettingsService {
       data,
     });
 
+    // C-28-EXEMPT: THRESHOLDS_UPDATED — same OrgSettings entity, same reason.
     await this.audit.log({
       actorUserId: userId,
       action: 'THRESHOLDS_UPDATED',
@@ -300,6 +305,7 @@ export class SettingsService {
       data: { platformAccess: platformJson as unknown as Prisma.InputJsonValue },
     });
 
+    // C-28-EXEMPT: PLATFORM_ACCESS_UPDATED — same OrgSettings entity, same reason.
     await this.audit.log({
       actorUserId: userId,
       action: 'PLATFORM_ACCESS_UPDATED',
@@ -329,6 +335,7 @@ export class SettingsService {
       },
     });
 
+    // C-28-EXEMPT: EXCHANGE_RATE_CREATED — ExchangeRate has no branch_id column; org-wide currency pair rate.
     await this.audit.log({
       actorUserId: userId,
       action: 'EXCHANGE_RATE_CREATED',

@@ -1,11 +1,12 @@
 import { useRouter } from "next/router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AccountingBackLink,
   AccountingFieldRow,
   AccountingListScreen,
   AccountingReadOnlyCard,
+  AccountingTextField,
 } from "@/components/manager/accounting/shared";
 import {
   ManagerBreadcrumbs,
@@ -14,7 +15,8 @@ import {
   ManagerSearchFilterMenu,
   type ManagerListColumn,
 } from "@/components/manager/chrome";
-import { Badge, Card, ErrorState, LoadingState } from "@/components/ui";
+import { ActionConfirmDialog } from "@/components/pos-shell/ActionConfirmDialog";
+import { Badge, Button, Card, ErrorState, LoadingState } from "@/components/ui";
 import { ACCOUNTING_LIST_PAGE_SIZE, clampAccountingTake } from "@/lib/accounting/api";
 import {
   accountingStatusTone,
@@ -37,19 +39,30 @@ import {
   readManagerEnum,
   readManagerPage,
 } from "@/lib/manager/accounting-route";
+import { useReverseJournal } from "@/lib/manager/accounting-transitions-queries";
 
 /**
- * Accounting → Journal entries — Track B5.4. `GET /accounting/journals` +
- * `GET /accounting/journals/:id`, Nimbus's "General ledger" surface (there is
- * no separate general-ledger or trial-balance endpoint anywhere in the API —
- * `ACCOUNTING_OMITTED_ITEMS` already records why: NG-07 → C-11. This list
- * IS what the B5.1 dashboard's "General ledger" card counts).
+ * Accounting → Journal entries — Track B5.4 (list+detail read), **reverse
+ * write-enabled by Track B5.7** (2026-08-22). `GET /accounting/journals` +
+ * `GET /accounting/journals/:id` + `POST .../:id/reverse`. Nimbus's "General
+ * ledger" surface (there is no separate general-ledger or trial-balance
+ * endpoint anywhere in the API — `ACCOUNTING_OMITTED_ITEMS` already records
+ * why: NG-07 → C-11. This list IS what the B5.1 dashboard's "General ledger"
+ * card counts).
  *
  * `createJournal` refuses to persist an unbalanced entry (`ledger.service.ts`
  * throws `debits ≠ credits` before it ever reaches Postgres), so every row
  * this screen can show is balanced by construction — the detail view still
  * proves it two independent ways (the journal's own stored totals, and a
  * fresh sum over its lines) rather than trusting that invariant blindly.
+ *
+ * ⚠️ **Reverse is built here; creating a new journal is not.** Journal
+ * creation needs a dynamic, client-balanced multi-line debit/credit form —
+ * materially more scope than a single-click reversal on an existing POSTED
+ * journal — and was deliberately deferred to a future pass (see
+ * `ACCOUNTING_DENIED_WRITES`, "Post a new journal entry"). Reverse is only
+ * offered on a POSTED journal; a DRAFT/REVERSED journal shows no Reverse
+ * control at all.
  */
 export function JournalsScreen() {
   const router = useRouter();
@@ -159,7 +172,7 @@ export function JournalsScreen() {
       emptyMessage="No journal entry in this branch matches the current filter."
       pager={{ ...pager, onPrevious: () => patchQuery({ page: Math.max(1, page - 1) }), onNext: () => patchQuery({ page: page + 1 }) }}
       totalsLabel="This page"
-      footnote="Every entry here was posted balanced — createJournal refuses to persist debits ≠ credits. Journal posting, reversal and posting-run replay are performed by an Owner or Accountant; the manager role holds accounting read access only."
+      footnote="Every entry here was posted balanced — createJournal refuses to persist debits ≠ credits. Open a POSTED journal to reverse it. Posting a new journal and replaying a posting run are not built yet — see the denied-writes note on each surface."
     />
   );
 }
@@ -206,6 +219,23 @@ function JournalDetailPanel({
   const balanced = journal ? isJournalBalanced(journal) : null;
   const lineDebitSum = journal ? sumJournalLineAmounts(journal.lines, "DEBIT") : null;
   const lineCreditSum = journal ? sumJournalLineAmounts(journal.lines, "CREDIT") : null;
+  const canReverse = (journal?.status || "").toUpperCase() === "POSTED";
+
+  const reverseMutation = useReverseJournal();
+  const [reverseOpen, setReverseOpen] = useState(false);
+  const [reverseReason, setReverseReason] = useState("");
+  const [reverseError, setReverseError] = useState<string | null>(null);
+
+  async function submitReverse() {
+    if (!journal) return;
+    setReverseError(null);
+    try {
+      await reverseMutation.mutateAsync({ id: journal.id, payload: { reason: reverseReason.trim() || undefined } });
+      setReverseOpen(false);
+    } catch (error) {
+      setReverseError(error instanceof Error ? error.message : "This journal could not be reversed. Retry.");
+    }
+  }
 
   return (
     <>
@@ -336,13 +366,55 @@ function JournalDetailPanel({
                 </dl>
               </Card>
 
-              <AccountingReadOnlyCard
-                actions={["Posting a journal entry", "reversing one", "replaying a posting run"]}
-              />
+              {canReverse ? (
+                <Card className="min-w-0">
+                  <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-text-muted">Reverse</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">
+                    Creates a new journal with mirrored debit/credit lines and links it against this one. This
+                    journal transitions to REVERSED.
+                  </p>
+                  <Button
+                    variant="danger"
+                    size="compact"
+                    className="mt-3"
+                    onClick={() => {
+                      setReverseReason("");
+                      setReverseError(null);
+                      setReverseOpen(true);
+                    }}
+                  >
+                    Reverse journal
+                  </Button>
+                </Card>
+              ) : (
+                <AccountingReadOnlyCard
+                  actions={["Posting a new journal entry", "replaying a posting run"]}
+                />
+              )}
             </div>
           </div>
         </>
       )}
+
+      <ActionConfirmDialog
+        open={reverseOpen}
+        title="Reverse journal"
+        consequence={`Reverses "${journal?.journalNumber || journal?.id}" — creates a mirrored new journal entry and marks this one REVERSED. This cannot be undone.`}
+        tone="danger"
+        confirmLabel="Reverse"
+        pending={reverseMutation.isPending}
+        error={reverseError}
+        onCancel={() => setReverseOpen(false)}
+        onConfirm={() => void submitReverse()}
+      >
+        <AccountingTextField
+          label="Reason"
+          hint="Optional — recorded on the reversal."
+          value={reverseReason}
+          onChange={(event) => setReverseReason(event.target.value)}
+          disabled={reverseMutation.isPending}
+        />
+      </ActionConfirmDialog>
     </>
   );
 }

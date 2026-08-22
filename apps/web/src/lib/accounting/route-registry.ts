@@ -578,50 +578,48 @@ export const ACCOUNTING_DENIED_WRITES: readonly {
     label: "Create or approve a vendor bill",
     route: "POST /api/accounting/ap/bills · POST /api/accounting/ap/bills/:id/approve",
     permission: "accounting:ap:bill:write · accounting:ap:bill:approve",
-    finding: "PC-01",
+    finding:
+      "PC-01 SUPERSEDED by PERMS-2: Manager holds these strings now. Still no UI — Track B5.7 (2026-08-22) time-boxed to the fiscal-period/posting-error/bank-reconciliation/journal-reverse surfaces named highest-value in its brief; the full AR/AP module (8 distinct create/edit entity forms across Customers+Vendors) is deliberately deferred to a future B5.7b pass, not silently dropped.",
   },
   {
     label: "Record a supplier payment",
     route: "POST /api/accounting/ap/payments",
     permission: "accounting:ap:payment:write",
-    finding: "PC-01",
+    finding: "PC-01 SUPERSEDED by PERMS-2 — deferred to B5.7b, same reason as the vendor-bill row above.",
   },
   {
     label: "Issue a customer invoice or receipt",
     route: "POST /api/accounting/ar/invoices · POST /api/accounting/ar/receipts",
     permission: "accounting:ar:invoice:write · accounting:ar:receipt:write",
-    finding: "PC-01",
+    finding: "PC-01 SUPERSEDED by PERMS-2 — deferred to B5.7b, same reason as the vendor-bill row above.",
   },
+  // ⚠️ "Match, skip or complete a bank reconciliation" was removed from this
+  // list in Track B5.7 (2026-08-22, NOT deleted silently — see the git
+  // history of this file): PERMS-2 resolved PC-01 for
+  // `pos:accounting:reconciliation:match`/`:create`, and B5.7 built the
+  // Reconciliation detail screen with real Match/Skip/Complete controls. It
+  // is no longer a denied write; do not re-add it here.
   {
-    label: "Match, skip or complete a bank reconciliation",
-    route: "PATCH /api/accounting/reconciliation/:id/match · /skip · POST /:id/complete",
-    permission: "pos:accounting:reconciliation:match · pos:accounting:reconciliation:create",
-    finding: "PC-01",
-  },
-  {
-    label: "Post or reverse a journal entry",
-    route: "POST /api/accounting/journals · POST /api/accounting/journals/:id/reverse",
-    permission: "pos:accounting:journals:create · pos:accounting:journals:reverse",
-    finding: "OD-9 / B0 §3.4",
+    label: "Post a new journal entry",
+    route: "POST /api/accounting/journals",
+    permission: "pos:accounting:journals:create",
+    finding:
+      "OD-9 / B0 §3.4 SUPERSEDED by PERMS-2 (Manager holds journals:create now) but still undeferred: journal creation needs a dynamic, client-balanced multi-line debit/credit form, materially more complex than a resolve/dismiss or open/close/lock action — Track B5.7 built journal REVERSE (a single-click action on an existing POSTED journal) but deliberately deferred CREATE to B5.7b alongside the AR/AP module above.",
   },
   {
     label: "Replay a posting run",
     route: "POST /api/accounting/posting/replay",
     permission: "pos:accounting:posting:replay",
-    finding: "OD-9 / B0 §3.4 — re-verified live 403 for Manager, Track B5.4",
+    finding:
+      "OD-9 / B0 §3.4 SUPERSEDED by PERMS-2 (Manager holds posting:replay now) but still undeferred: the Posting runs screen is list-only with no detail route (an existing, pre-B5.7 constraint — see the B5.4 completion report), so there is no natural per-row entry point for a 'replay this run' action without first designing one; deferred to B5.7b.",
   },
-  {
-    label: "Open, close or lock a fiscal period",
-    route: "PATCH /api/accounting/periods/:id/open · /close · /lock",
-    permission: "pos:accounting:periods:open · :close · :lock",
-    finding: "PC-01 / PC-07",
-  },
-  // ⚠️ "Create a budget or refresh its actuals" was removed from this list in
-  // Track B5.6 (2026-08-22, NOT deleted silently — see the git history of this
-  // file): PERMS-2 resolved PC-01 for `finance:budget:write` /
-  // `finance:budget:update-actuals`, and B5.6 built the Budgets surface with a
-  // real create form and a real "Refresh actuals" action. It is no longer a
-  // denied write; do not re-add it here.
+  // ⚠️ "Open, close or lock a fiscal period" was removed from this list in
+  // Track B5.7 (2026-08-22, NOT deleted silently): PERMS-2 resolved PC-01 for
+  // `pos:accounting:periods:open`/`:close`/`:lock` (and `:create` was already
+  // a live, C-27-disclosed stray grant), and B5.7 built the Fiscal periods
+  // screen with a real Create control and real Open/Close/Lock transitions
+  // (Lock gated behind an explicit named-period confirm, being irreversible).
+  // It is no longer a denied write; do not re-add it here.
   {
     label: "Review a procurement suggestion",
     route: "PATCH /api/finance/procurement-suggestions/:id/review",
@@ -743,6 +741,102 @@ export const ACCOUNTING_WRITE_ROUTE_REGISTRY: readonly AccountingWriteRouteEntry
     manager: "allowed",
     observed: "200 on the isolated B5.6 stack — updates the existing active row, or creates one if none exists.",
     note: "Omitting `active` from the PATCH body silently forces it to true (dto.active ?? true) — the form always sends it explicitly, never omits it.",
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Track B5.7 (2026-08-22) — the retrofit write pass over B5.1–B5.5's
+  // surfaces. Every string below was already on Manager's token as of
+  // PERMS-2 (2026-08-21); B5.7 is the first phase authorised to build UI on
+  // top of these specific eight. Live-verified reachable on the isolated
+  // B5.7 QA stack — see `ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md`.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    key: "accounting.postingError.resolve",
+    method: "PATCH",
+    path: "/api/accounting/posting-errors/:id/resolve",
+    permission: "pos:accounting:posting-errors:resolve",
+    manager: "allowed",
+    observed: "200 on the isolated B5.7 stack — an OPEN posting error transitions to RESOLVED, stamping resolvedById/resolvedAt.",
+    note: "Batch 4 (B5.4-D1) endpoint. Status-guarded: only an OPEN error may transition; a repeat attempt on the same error 409s.",
+  },
+  {
+    key: "accounting.postingError.dismiss",
+    method: "PATCH",
+    path: "/api/accounting/posting-errors/:id/dismiss",
+    permission: "pos:accounting:posting-errors:resolve",
+    manager: "allowed",
+    observed: "200 on the isolated B5.7 stack — an OPEN posting error transitions to DISMISSED, same resolution columns stamped.",
+    note: "Same permission string and same status guard as resolve — one permission gates both outcomes, same as discount Approve/Reject in the Supervisor precedent.",
+  },
+  {
+    key: "accounting.periods.create",
+    method: "POST",
+    path: "/api/accounting/periods",
+    permission: "pos:accounting:periods:create",
+    manager: "allowed",
+    observed: "201 on the isolated B5.7 stack — creates a DRAFT fiscal period.",
+    note: "This is the C-27 grant (a pre-existing M28-era permission every B5.1–B5.5 phase deliberately declined to build UI for). B5.7 is the first phase authorised to surface it — see the C-27 note on the accounting.periods READ entry above for the full history; do not read that historical note as still describing current UI state.",
+  },
+  {
+    key: "accounting.periods.open",
+    method: "PATCH",
+    path: "/api/accounting/periods/:id/open",
+    permission: "pos:accounting:periods:open",
+    manager: "allowed",
+    observed: "200 on the isolated B5.7 stack — DRAFT → OPEN.",
+  },
+  {
+    key: "accounting.periods.close",
+    method: "PATCH",
+    path: "/api/accounting/periods/:id/close",
+    permission: "pos:accounting:periods:close",
+    manager: "allowed",
+    observed: "200 on the isolated B5.7 stack — OPEN → CLOSED, creates a real PeriodCloseRun (COMPLETED) in the same transaction.",
+    note: "A period not in OPEN status 400s — the form disables the action outside that status rather than letting the request fail.",
+  },
+  {
+    key: "accounting.periods.lock",
+    method: "PATCH",
+    path: "/api/accounting/periods/:id/lock",
+    permission: "pos:accounting:periods:lock",
+    manager: "allowed",
+    observed: "200 on the isolated B5.7 stack — CLOSED → LOCKED, the terminal PC-07 stage. No unlock route exists.",
+    note: "Irreversible (PC-07: no unlock route) — the UI requires the acting Manager to type or explicitly confirm the period's own name before this fires, not a generic 'Are you sure?'.",
+  },
+  {
+    key: "accounting.reconciliation.match",
+    method: "PATCH",
+    path: "/api/accounting/reconciliation/:id/match",
+    permission: "pos:accounting:reconciliation:match",
+    manager: "allowed",
+    observed: "200 on the isolated B5.7 stack — an UNMATCHED statement line transitions to MATCHED against a chosen journal line or manual entry.",
+  },
+  {
+    key: "accounting.reconciliation.skip",
+    method: "PATCH",
+    path: "/api/accounting/reconciliation/:id/skip",
+    permission: "pos:accounting:reconciliation:match",
+    manager: "allowed",
+    observed: "200 on the isolated B5.7 stack — an UNMATCHED statement line transitions to SKIPPED.",
+  },
+  {
+    key: "accounting.reconciliation.complete",
+    method: "POST",
+    path: "/api/accounting/reconciliation/:id/complete",
+    permission: "pos:accounting:reconciliation:create",
+    manager: "allowed",
+    observed:
+      "200 on the isolated B5.7 stack with a fully matched, zero-difference line; 400 ('Cannot complete a reconciliation with no matched lines — start matching first') when every line is SKIPPED/UNMATCHED and none is MATCHED — by design, not a defect, matching ai/ACCOUNTING_API_VERIFICATION_REPORT.md's documented behaviour.",
+    note: "OPEN/IN_PROGRESS → COMPLETED (live-proven: the backend auto-transitions OPEN → IN_PROGRESS on the FIRST match/skip call, so a reconciliation is reachable for Complete from either status). The form surfaces the live difference figure and disables Complete while it is non-zero, rather than letting the request 400.",
+  },
+  {
+    key: "accounting.journal.reverse",
+    method: "POST",
+    path: "/api/accounting/journals/:id/reverse",
+    permission: "pos:accounting:journals:reverse",
+    manager: "allowed",
+    observed: "201 on the isolated B5.7 stack — creates a new REVERSED-linked journal entry with mirrored debit/credit lines; the original transitions to REVERSED.",
+    note: "A journal not in POSTED status, or one already reversed, 409s — the form disables Reverse outside POSTED status.",
   },
 ];
 

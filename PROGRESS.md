@@ -4,7 +4,32 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
+**ENTERPRISE UI TRACK B5.7 COMPLETE — Accounting write pass + C-28 repo-wide audit branch-stamp sweep
+(2026-08-22).** C-28: a systematic repo-wide grep found 318 `audit.log` call sites across 57 API
+service files (not just accounting); 106 were fixed (branchId now stamped, citing "C-28"), 73 are
+documented exempt (org-level, or a signature/lookup change out of scope), and a new Jest guard
+(`audit-branchid-guard.spec.ts`) fails the build if a future call site regresses without an explicit
+exemption comment. Write affordances retrofitted onto 4 of the 21 still-read-only B5.1–B5.5 rows:
+Posting errors (resolve/dismiss), Fiscal periods (create/open/close/lock, Lock requires typing the
+period's own name), Bank reconciliation (match/skip/complete), Journals (reverse only — create
+deferred). AR/AP (B5.2) and journal-create/posting-replay stay deliberately deferred, disclosed by
+name in `ACCOUNTING_DENIED_WRITES`, not silently dropped. A real bug was found live (not merely
+disclosed) and fixed: the backend auto-transitions a reconciliation OPEN → IN_PROGRESS on the first
+match/skip, but the UI originally gated those buttons on IN_PROGRESS only, making the very first
+action on any fresh reconciliation unreachable — fixed to gate on OPEN or IN_PROGRESS. All 10 new
+write actions were live-verified via curl AND in a real Chrome browser against an isolated Docker
+stack (zero console errors); Waiter/Cashier confirmed 403 on 4 representative routes each; a
+pre-existing, unrelated staleness bug in `lib/manager/permissions.ts`'s accounting scopeNote (claiming
+"zero writes" since before B5.6 shipped writes) was found and corrected with a SUPERSEDED banner.
+**Four-viewport Playwright was NOT run this pass** (disclosed, not fabricated) — see
+`ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md` §0 for why the brief's "125 vs 109" figures were never
+comparable in the first place (two different test suites), and §6 for exactly what a future Playwright
+pass still needs to do. Web typecheck/lint/build clean; API unit suite 1178/1182 (4 pre-existing,
+unrelated, named); all 6 static assertion scripts pass. See
+`ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md` for full detail. **Track B5.7's own remaining scope
+(B5.2 AR/AP writes, journal create, posting-run replay, Playwright) plus B6/B7 are NOT started.**
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
 (2026-08-22) — A: COMPLETE / B5.7 · B6 · B7 still gated.** The Accounting menu goes from 21 of 28
 live rows to **28 of 28 — every row in the tree.** The seven B5.6-tagged rows ship as real
 surfaces — Budgets vs actuals, Demand calendar, Forecast (Reporting) and Chart of accounts, Cost

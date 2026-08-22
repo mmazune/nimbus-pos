@@ -319,7 +319,12 @@ export class BudgetService {
       actorUserId: userId,
       entityType: 'ProcurementSuggestion',
       entityId: suggestionId,
-      metadata: { status, reviewNotes },
+      metadata: {
+        // C-28: audit event previously never stamped branchId — see the C-26 defect class.
+        branchId: ctx.branchId,
+        status,
+        reviewNotes,
+      },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

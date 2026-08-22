@@ -431,6 +431,7 @@ export class FranchiseAnalyticsService {
         },
       });
 
+      // C-28-EXEMPT: FRANCHISE_CONSOLIDATION_GENERATED — FranchiseConsolidationRun aggregates across many branches in one run; no branch column, genuinely portfolio-wide.
       await this.audit.log({
         actorUserId: userId,
         action: 'FRANCHISE_CONSOLIDATION_GENERATED',
@@ -839,6 +840,7 @@ export class FranchiseAnalyticsService {
       });
     }
 
+    // C-28-EXEMPT: FRANCHISE_WASTE_BENCHMARK_GENERATED — writes one WasteBenchmarkSnapshot per branch in a single call; entityId is orgId, not a branch.
     await this.audit.log({
       actorUserId: userId,
       action: 'FRANCHISE_WASTE_BENCHMARK_GENERATED',
@@ -1097,6 +1099,7 @@ export class FranchiseAnalyticsService {
       }
     }
 
+    // C-28-EXEMPT: FRANCHISE_SCORECARDS_GENERATED — writes BranchPerformanceScorecard rows for a variable-length branch set in one call; no stable single branch in scope.
     await this.audit.log({
       actorUserId: userId,
       action: 'FRANCHISE_SCORECARDS_GENERATED',
@@ -1279,6 +1282,7 @@ export class FranchiseAnalyticsService {
       total += ranked.length;
     }
 
+    // C-28-EXEMPT: FRANCHISE_DEEP_RANKINGS_GENERATED — writes FranchiseRanking rows for every org branch in one call; entityId is orgId.
     await this.audit.log({
       actorUserId: userId,
       action: 'FRANCHISE_DEEP_RANKINGS_GENERATED',

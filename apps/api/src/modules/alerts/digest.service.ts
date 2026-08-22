@@ -91,6 +91,10 @@ export class DigestService {
                 code: created.code,
                 frequency: created.frequency,
                 digestType: created.digestType,
+                // C-28: this used to omit branchId entirely, making the event structurally
+                // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+                // ANDs `metadata.branchId = X-Branch-Id`).
+                branchId: created.branchId ?? null,
             },
         });
         return created;
@@ -130,7 +134,12 @@ export class DigestService {
                     : 'DIGEST_SCHEDULE_UPDATED',
             entityType: 'DigestSchedule',
             entityId: updated.id,
-            metadata: { code: updated.code, status: updated.status },
+            metadata: {
+                code: updated.code,
+                status: updated.status,
+                // C-28: see DIGEST_SCHEDULE_CREATED above.
+                branchId: updated.branchId ?? null,
+            },
         });
         return updated;
     }
@@ -209,6 +218,8 @@ export class DigestService {
                 code: schedule.code,
                 digestType: schedule.digestType,
                 deliveries: deliveries.length,
+                // C-28: see DIGEST_SCHEDULE_CREATED above.
+                branchId: schedule.branchId ?? null,
             },
         });
 
