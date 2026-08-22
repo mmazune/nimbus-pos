@@ -344,4 +344,61 @@ export function managerLeaveDayCount(startsAt: string | null, endsAt: string | n
   return Math.round((end - start) / 86_400_000) + 1;
 }
 
+// ── Employee status transitions (Track B6) ─────────────────────────────────
+
+/**
+ * `PATCH /hr/employees/:id {status}` has NO state machine at the API layer —
+ * live-proven on an isolated stack: `TERMINATED → ACTIVE` returns 200 with no
+ * guard (`docs/manager-settings-docs/STAFF_LIFECYCLE.md` §5). This UI still
+ * offers a curated, sensible set of NEXT actions per current status — not
+ * because the backend enforces them, but so the action list reads as a real
+ * workflow rather than "any status from any status."
+ */
+export type ManagerEmployeeStatusAction = {
+  key: "SUSPENDED" | "ACTIVE" | "TERMINATED";
+  label: string;
+  tone: "warning" | "success" | "danger";
+};
+
+export function managerEmployeeStatusActions(currentStatus: string): ManagerEmployeeStatusAction[] {
+  const status = currentStatus.toUpperCase();
+  if (status === "SUSPENDED") {
+    return [
+      { key: "ACTIVE", label: "Reactivate", tone: "success" },
+      { key: "TERMINATED", label: "Offboard", tone: "danger" },
+    ];
+  }
+  if (status === "TERMINATED") {
+    return [{ key: "ACTIVE", label: "Reactivate", tone: "success" }];
+  }
+  // ACTIVE or ON_LEAVE
+  return [
+    { key: "SUSPENDED", label: "Suspend", tone: "warning" },
+    { key: "TERMINATED", label: "Offboard", tone: "danger" },
+  ];
+}
+
+/**
+ * The consequence copy for the confirm dialog. Deliberately says what this
+ * action does NOT do — no cascade to login, sessions, PIN, or open orders/shifts
+ * exists on this backend (`STAFF_LIFECYCLE.md` §5) — rather than implying a
+ * security boundary that is not real.
+ */
+export function managerEmployeeStatusConsequence(
+  action: ManagerEmployeeStatusAction["key"],
+  displayName: string,
+  hasLinkedUser: boolean,
+): string {
+  const who = displayName || "this person";
+  if (action === "ACTIVE") {
+    return `${who}'s HR record returns to Active. This does not change or restore any login access on its own.`;
+  }
+  const verb = action === "SUSPENDED" ? "suspended" : "offboarded";
+  const base = `${who}'s HR record is marked ${verb}. This changes the HR status only`;
+  if (hasLinkedUser) {
+    return `${base} — it does NOT disable their login, PIN, or active sessions, and does not affect any open order, shift, or till they are on. To also stop them signing in, disable their Quick PIN separately.`;
+  }
+  return `${base}. This employee has no linked login account, so there is nothing else this action could affect.`;
+}
+
 export { titleCaseManagerStatus };

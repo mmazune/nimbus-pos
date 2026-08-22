@@ -372,9 +372,14 @@ for (const token of ["UGX ", "0.00", "Sample", "Lorem", "placeholder data", "TOD
 //
 // What remains true, and is what this check now proves: every surface that is
 // still NOT built renders the honest foundation screen rather than an empty page
-// or fabricated data. One is left — Settings (B6).
-// Track B5.1 (2026-08-21) adds Accounting to the built list. Settings (B6) is
-// still the one surface left on the foundation screen.
+// or fabricated data.
+// Track B5.1 (2026-08-21) added Accounting to the built list.
+// ⚠️ INVERTED, not deleted (Track B6, 2026-08-22): Settings graduated off the
+// foundation screen into the real ManagerSettingsScreen — see
+// `pages/manager/settings.tsx` and `docs/manager-settings-docs/
+// MANAGER_SETTINGS_API_MATRIX.md`. Zero Manager top-level surfaces still render
+// the foundation screen; the loop below is kept (not deleted) so a future
+// surface added without a real screen is caught the same way this one was.
 const BUILT_MANAGER_SURFACES = [
   "/manager/me",
   "/manager/overview",
@@ -382,13 +387,18 @@ const BUILT_MANAGER_SURFACES = [
   "/manager/staff",
   "/manager/reports",
   "/manager/accounting",
+  "/manager/settings",
 ];
 const foundationRoutes = manager.filter((navItem) => !BUILT_MANAGER_SURFACES.includes(navItem.href));
-assert(foundationRoutes.length === 1, "one Manager surface still ships the honest foundation screen");
+assert(foundationRoutes.length === 0, "zero Manager surfaces still ship the honest foundation screen");
 for (const item of foundationRoutes) {
   const page = source(`apps/web/src/pages${item.href}.tsx`);
   assert(page.includes("ManagerFoundationScreen"), `${item.href} renders the honest foundation screen`);
 }
+assert(
+  source("apps/web/src/pages/manager/settings.tsx").includes("ManagerSettingsScreen"),
+  "/manager/settings renders the Track B6 settings screen",
+);
 assert(
   source("apps/web/src/pages/manager/overview.tsx").includes("ManagerOverviewDashboard"),
   "/manager/overview renders the Track B2 dashboard",

@@ -27,6 +27,13 @@ function makePrisma() {
         user: { findUnique: jest.fn(), create: jest.fn() },
         userRole: { create: jest.fn() },
         role: { findFirst: jest.fn() },
+        invitation: {
+            updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+            create: jest.fn(),
+            findUnique: jest.fn(),
+            update: jest.fn(),
+            findMany: jest.fn(),
+        },
     };
 }
 
@@ -224,6 +231,10 @@ describe('ClientOnboardingService', () => {
             prisma.membership.create.mockImplementation(({ data }: any) =>
                 Promise.resolve({ id: `m-${data.userId}`, ...data }),
             );
+            prisma.invitation.updateMany.mockResolvedValue({ count: 0 });
+            prisma.invitation.create.mockImplementation(({ data }: any) =>
+                Promise.resolve({ id: `inv-${data.email}`, ...data }),
+            );
             prisma.onboardingProgress.upsert.mockResolvedValue({});
             prisma.onboardingProgress.findUnique.mockResolvedValue(PROGRESS_FRESH);
         }
@@ -323,6 +334,8 @@ describe('ClientOnboardingService', () => {
             prisma.userRole.create.mockResolvedValue({});
             prisma.membership.findUnique.mockResolvedValue(null);
             prisma.membership.create.mockResolvedValue({ id: 'm1', userId: 'u1', branchId: 'branch-1' });
+            prisma.invitation.updateMany.mockResolvedValue({ count: 0 });
+            prisma.invitation.create.mockResolvedValue({ id: 'inv-1' });
             prisma.onboardingProgress.upsert.mockResolvedValue({});
         }
 
@@ -401,6 +414,34 @@ describe('ClientOnboardingService', () => {
 
             await service.createBranch(ORG, dto as any, USER);
             expect(billing.checkPlanLimit).not.toHaveBeenCalled();
+        });
+    });
+
+    // ── B6: List invitations ──
+    describe('listInvitations', () => {
+        it('queries by organizationId, orders by createdAt desc, and never returns tokenHash', async () => {
+            const rows = [
+                { id: 'inv-1', organizationId: ORG, email: 'a@b.com', status: 'PENDING' },
+            ];
+            prisma.invitation.findMany.mockResolvedValue(rows);
+
+            const result = await service.listInvitations(ORG);
+
+            expect(prisma.invitation.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { organizationId: ORG },
+                    orderBy: { createdAt: 'desc' },
+                }),
+            );
+            const selectArg = prisma.invitation.findMany.mock.calls[0][0].select;
+            expect(selectArg.tokenHash).toBeUndefined();
+            expect(result).toBe(rows);
+        });
+
+        it('returns an empty array when no invitations exist', async () => {
+            prisma.invitation.findMany.mockResolvedValue([]);
+            const result = await service.listInvitations(ORG);
+            expect(result).toEqual([]);
         });
     });
 });

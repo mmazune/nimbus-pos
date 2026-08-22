@@ -31,12 +31,19 @@ type ManagerOneTimeSecretPanelProps = {
   subject: string;
   onDismiss: () => void;
   dismissLabel?: string;
+  /**
+   * B6 reuses this panel for the onboarding-invitation temporary password —
+   * defaults to "PIN" so every pre-existing B3 caller (Quick PIN reset,
+   * frontline onboarding) is unchanged.
+   */
+  secretLabel?: string;
 };
 
 export function ManagerOneTimeSecretPanel({
   dismissLabel = "I have shared it",
   onDismiss,
   secret,
+  secretLabel = "PIN",
   subject,
   title,
 }: ManagerOneTimeSecretPanelProps) {
@@ -56,7 +63,7 @@ export function ManagerOneTimeSecretPanel({
       </div>
 
       <p className="mt-2 text-sm leading-6 text-text-secondary">
-        This is the only time {subject}&apos;s PIN can be read. It is stored as a hash, so it cannot be
+        This is the only time {subject}&apos;s {secretLabel} can be read. It is stored as a hash, so it cannot be
         looked up later — if it is lost, issue a new one, which invalidates this one immediately.
       </p>
 
@@ -87,7 +94,7 @@ export function ManagerOneTimeSecretPanel({
       </div>
 
       <p className="mt-3 text-xs leading-5 text-text-muted">
-        {secret.length ? `${secret.length}-digit PIN` : "PIN"}
+        {secret.length ? `${secret.length}-digit ${secretLabel}` : secretLabel}
         {secret.tier ? ` · ${secret.tier.replace(/_/g, " ").toLowerCase()} tier` : ""} · {secret.note}
       </p>
 

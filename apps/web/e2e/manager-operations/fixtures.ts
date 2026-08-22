@@ -18,6 +18,7 @@ export const MANAGER_OPERATIONS_ROUTES = {
 export const MANAGER_STAFF_ROUTES = {
   directory: "/manager/staff/directory",
   onboarding: "/manager/staff/onboarding",
+  invitations: "/manager/staff/invitations", // Track B6
   quickPin: "/manager/staff/quick-pin",
   leave: "/manager/staff/leave",
   shiftSwaps: "/manager/staff/shift-swaps",

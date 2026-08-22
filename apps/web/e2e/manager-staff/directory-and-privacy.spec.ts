@@ -163,7 +163,17 @@ test.describe("Manager Staff — directory", () => {
     await waitForApiRequest(requests, /\/api\/hr\/employees.*search=a/);
   });
 
-  test("the employee record is read-only, and never calls /hr/employees/:id", async ({ page }) => {
+  // ⚠️ INVERTED, not deleted (Track B6, 2026-08-22): the record's PROFILE
+  // fields (name/phone/position/hire date/etc.) stay read-only — that part of
+  // the original claim survives. What changed is the employment-status field:
+  // B6 added real Suspend/Reactivate/Offboard actions
+  // (`ManagerEmployeeStatusAction`), so "the employee record is read-only" is
+  // no longer literally true of the whole panel. This test now asserts BOTH
+  // halves precisely: no profile-field edit control, AND the status actions
+  // exist. `/hr/employees/:id` (GET, detail read) is still never called — B6's
+  // new write is a PATCH to that same URL, asserted as present, not absent,
+  // in the sibling spec below.
+  test("the employee record's PROFILE fields are read-only, status actions exist, and GET /hr/employees/:id is never called", async ({ page }) => {
     const requests = captureApiRequests(page);
     await managerLogin(page);
     await page.goto(MANAGER_STAFF_ROUTES.directory);
@@ -173,17 +183,22 @@ test.describe("Manager Staff — directory", () => {
     const detail = page.locator("[data-manager-employee-detail]");
     await expect(detail).toBeVisible();
     await expect(detail.locator("[data-manager-status-pipeline]")).toBeVisible();
-    await expect(detail.getByText(/Read-only\./)).toBeVisible();
+    await expect(detail.getByText(/Editing a staff profile.*outside this workspace/)).toBeVisible();
 
-    // No edit control anywhere on the record.
-    for (const banned of [/^edit$/i, /^save$/i, /archive/i, /terminate/i, /change pay/i, /contract/i]) {
+    // No PROFILE edit control anywhere on the record.
+    for (const banned of [/^edit$/i, /^save$/i, /archive/i, /change pay/i, /contract/i]) {
       await expect(detail.getByRole("button", { name: banned })).toHaveCount(0);
     }
 
+    // The B6 status actions DO exist — this employee starts ACTIVE, so
+    // Suspend/Offboard are offered (Reactivate is not, until suspended).
+    await expect(detail.getByRole("button", { name: /^suspend$/i })).toBeVisible();
+    await expect(detail.getByRole("button", { name: /^offboard$/i })).toBeVisible();
+
     await page.waitForTimeout(800);
     expect(
-      requests.filter((request) => /\/api\/hr\/employees\/[^?]+$/.test(request.url)),
-      "the detail route is never used — the list row suffices (MP0-01)",
+      requests.filter((request) => /\/api\/hr\/employees\/[^?]+$/.test(request.url) && request.method === "GET"),
+      "the GET detail route is never used — the list row suffices (MP0-01); PATCH is the B6 status write, not this route",
     ).toHaveLength(0);
   });
 

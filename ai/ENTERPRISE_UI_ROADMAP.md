@@ -771,6 +771,21 @@ endpoint→surface table and the explicit list of Odoo items deliberately **not*
 
 ## B6 — Settings
 
+⚠️ **Supersession note (2026-08-22):** the B6 session that actually ran was scoped by an
+explicit, more specific owner prompt — "MANAGER SETTINGS, STAFF ONBOARDING, AND
+CREDENTIAL MANAGEMENT" — which narrowed this section's original scope to **Org
+settings** (Currency, Tax & VAT, Rounding, Approval thresholds, Reservations &
+receipts, Attendance & inventory, Exchange rates — real, write-enabled, live-proven)
+plus a full staff-lifecycle research/documentation pass (`docs/manager-settings-docs/`)
+and a Staff onboarding/management UI pass. **Branch profile, Devices, Printers,
+Terminals, Alerts and Sync/reliability — everything else this section originally
+scoped — were NOT built in that session.** See `ai/ENTERPRISE_B6_COMPLETION_REPORT.md`
+for what shipped and why the narrower scope was the right call given the owner's
+literal prompt. The leftover scope is carried forward as **B6.6** (added below, after
+B6.5) rather than silently left attached to a "B6" that has now already happened —
+do not read `notYetNote: "B6"` anywhere in the menu tree as still meaning "next," it
+now means "B6.6."
+
 **Type:** frontend implementation. **Sizing: M.**
 
 **Odoo pattern cloned:** **C11** two-pane settings (screenshot `07`) — an **icon sidebar of scopes**
@@ -903,6 +918,41 @@ unchanged). **B0** re-verification of the exact AR/AP write DTO shapes before bu
 ### Completion report
 
 `ai/ENTERPRISE_B6_5_ACCOUNTING_DEFERRED_WRITES_COMPLETION_REPORT.md` (file name reserved; phase not
+started).
+
+---
+
+## B6.6 — Settings: Branch profile, Devices, Printers, Terminals, Alerts, Sync
+
+**Type:** frontend implementation. **Sizing: M. Status: NOT STARTED.**
+
+**Why this exists:** the original **B6 — Settings** section above scoped six sub-surfaces. The B6
+session that actually ran (2026-08-22) was redirected by a more specific owner prompt to Org settings
++ Staff onboarding/credentials only (see the supersession note at the top of B6). The other six
+sub-surfaces this section originally planned were never built and had no other roadmap home, so they
+move here rather than staying silently attached to a "B6" that has already happened.
+
+**Scope — unchanged from the original B6 table, carried forward verbatim:**
+
+| Scope | Backed by | Constraint |
+| --- | --- | --- |
+| **Branch profile** | `GET /api/branches` | 🔴 **READ-ONLY.** `PATCH /api/branches/:id` does not exist (404, MP0-04/C-10). No edit form. |
+| **Devices** | `GET /api/devices`, `POST /devices/activate`, `GET /devices/:id/history`, `GET /devices/:id/status` | A genuine Nimbus differentiator with no Odoo reference (NG-16). |
+| **Printers** | `POST /devices/printers/routes` | Metadata-only, with copy that says so. No print-driver invocation. |
+| **Terminals** | `POST /devices/terminals/pair`, `POST /devices/terminals/:id/unpair` | Stub-only, labelled as a stub. No acquirer/card-terminal traffic. |
+| **Alerts** | `GET /api/alerts`, `/alerts/rules`, `/alerts/channels`, `/alerts/deliveries` (+`:id/retry`), `/alerts/digests` (+`:id/run`), `POST /alerts/test` | Rules read-only by locked owner decision; deliveries/channels/digests are real read surfaces. |
+| **Sync / reliability** | `GET /sync/jobs`, `/sync/jobs/:id`, `POST /sync/jobs/:id/retry`, `GET /sync/conflicts` | Jobs + conflicts list ship read-only; conflict diff deferred by locked decision. |
+
+`docs/manager-settings-docs/MANAGER_SETTINGS_API_MATRIX.md` §1 (from the actual B6 session) already
+confirms Manager holds full `devices:*` access with zero UI, so B6.6 is permission-unblocked whenever
+it starts — no separate permissions pass needed, matching B6.5's own note about PERMS-2.
+
+**Out of scope (unchanged):** alert rule authoring, sync conflict diff/resolution UI, branch edit
+form, any live hardware traffic.
+
+### Completion report
+
+`ai/ENTERPRISE_B6_6_SETTINGS_DEVICES_ALERTS_SYNC_COMPLETION_REPORT.md` (file name reserved; phase not
 started).
 
 ---

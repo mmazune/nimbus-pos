@@ -319,15 +319,33 @@ assert(
   "findForbiddenStaffKeys walks nested arrays and objects",
 );
 
-// `/hr/employees/:id` is never called — the list row suffices and the detail
-// route returns a contracts array the owner decision excludes.
+// `GET /hr/employees/:id` is never called — the list row suffices and the
+// detail route returns a contracts array the owner decision excludes.
+//
+// ⚠️ INVERTED, not deleted (Track B6, 2026-08-22): this used to ban the whole
+// `hr/employees/${…}` URL pattern outright. B6 adds a genuine, narrowly-scoped
+// PATCH to that same URL (`updateManagerEmployeeStatus` — status field only,
+// see `staff-api.ts`), which is a different, explicitly-authorised write, not
+// the forbidden GET detail read. The guard now checks the METHOD, not just the
+// URL: the pattern may appear in exactly one file (`staff-api.ts`), and every
+// occurrence there must be paired with a PATCH, never a GET.
+const HR_EMPLOYEE_DETAIL_PATTERN = /hr\/employees\/\$\{[^}]*\}/g;
 for (const file of managerFiles) {
   const code = codeOnly(file);
-  assert(
-    !/hr\/employees\/\$\{/.test(code) && !/hr\/employees\/["'`]?\s*\+/.test(code),
-    `no manager file calls GET /hr/employees/:id (${file})`,
-  );
+  const isStaffApi = file.endsWith("lib/manager/staff-api.ts");
+  const matches = code.match(HR_EMPLOYEE_DETAIL_PATTERN) || [];
+  if (matches.length === 0) continue;
+  assert(isStaffApi, `hr/employees/:id is referenced only from staff-api.ts, not ${file}`);
 }
+const staffApiCode = codeOnly(`${MANAGER_LIB_DIR}/staff-api.ts`);
+assert(
+  (staffApiCode.match(HR_EMPLOYEE_DETAIL_PATTERN) || []).length === 1,
+  "hr/employees/:id is referenced exactly once in staff-api.ts (the B6 status PATCH)",
+);
+assert(
+  /hr\/employees\/\$\{[^}]*\}`,\s*\{[\s\S]{0,80}method:\s*["']PATCH["']/.test(staffApiCode),
+  "the one hr/employees/:id call is a PATCH, never a GET",
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. HARD GUARD — no roster mutation, and shift-swap is REJECT ONLY
@@ -425,8 +443,18 @@ assert(
  *   8. `POST /api/reports/{generator}` — run a report
  *   9. `POST /api/reports/export`      — create the CSV artifact to download
  *
- * The download itself is a GET. Operations remains at zero. Staff remains at the
- * same four writes, and shift swaps still have no Approve control.
+ * The download itself is a GET. Operations remains at zero.
+ *
+ * **Track B6 (2026-08-22) added exactly ten**, across three files, all
+ * authorised by the owner's explicit B6 prompt ("MANAGER SETTINGS, STAFF
+ * ONBOARDING, AND CREDENTIAL MANAGEMENT"):
+ *
+ *   10. `PATCH /api/hr/employees/:id` (status only)       — staff-api.ts
+ *   11-13. `POST/PATCH /api/onboarding/invitations...` (create, resend, revoke) — invitations-api.ts
+ *   14-19. `PUT/PATCH/POST /api/settings*`, `/api/thresholds` (6 routes) — settings-api.ts
+ *
+ * See `docs/manager-settings-docs/MANAGER_SETTINGS_API_MATRIX.md` for the full
+ * per-route census and live-verified status codes.
  */
 const ALLOWED_MUTATION_PATHS = [
   "/api/hr/frontline-staff/onboard",
@@ -438,6 +466,10 @@ const ALLOWED_MUTATION_PATHS = [
   "/api/dash/kpi/refresh", // pre-existing (B2)
   "/api/reports/export", // B4
   "/api/reports/${encodeURIComponent(generatorPath)}", // B4
+  "/api/hr/employees/", // B6 — employee status
+  "/api/onboarding/invitations", // B6 — create/resend/revoke
+  "/api/settings", // B6 — currency/tax-matrix/rounding/general
+  "/api/thresholds", // B6
 ];
 
 const mutationRegex = /method:\s*["'](POST|PATCH|PUT|DELETE)["']/g;
@@ -453,8 +485,8 @@ for (const file of managerFiles) {
   );
 }
 assert(
-  managerMutationCount === 9,
-  `exactly 9 manager mutations exist — B3's 7 plus B4's generate and export (found ${managerMutationCount})`,
+  managerMutationCount === 19,
+  `exactly 19 manager mutations exist — B3's 7 + B4's 2 + B6's 10 (found ${managerMutationCount})`,
 );
 
 /**
@@ -796,9 +828,11 @@ assert(
   operationsItems.filter((item) => item.available).length === 3,
   "three Operations surfaces are live",
 );
+// ⚠️ 5 → 6 (Track B6, 2026-08-22): "Invitations" (staff-invitations) joins
+// Directory/Onboard frontline staff/Quick PIN/Leave requests/Shift swaps.
 assert(
-  staffItems.filter((item) => item.available).length === 5,
-  "five Staff surfaces are live",
+  staffItems.filter((item) => item.available).length === 6,
+  "six Staff surfaces are live",
 );
 for (const item of [...operationsItems, ...staffItems].filter((entry) => !entry.available)) {
   assert(item.notYetNote, `every not-yet row states why it is not yet (${item.key})`);

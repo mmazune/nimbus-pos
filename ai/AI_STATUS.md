@@ -31,6 +31,46 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
+- **ENTERPRISE UI TRACK B6 COMPLETE — Manager Settings, Staff Onboarding, and Credential Management
+  (2026-08-22).** Full detail in `ai/ENTERPRISE_B6_COMPLETION_REPORT.md`. Scoped by an explicit
+  owner prompt narrower than the roadmap's original "B6 — Settings" (Branch profile/Devices/
+  Printers/Terminals/Alerts/Sync are NOT built here — moved to new roadmap section **B6.6**).
+  Precondition fix: the 4 stale `client-onboarding.service.spec.ts` failures (mock missing the
+  `invitation` model) — API unit suite now 1184/1184 (1182 + 2 new tests). Research produced three
+  live-proven findings: **C-30** — shared Neon still leaks `pos:hr:compensation:read` to Manager
+  (FU-1 never re-seeded there; disclosed, not fixed, needs its own gate); **C-31** — the concrete
+  manifestation of C-22's `onboarding:*` bucket, `onboarding:read`/`onboarding:write` were never
+  seeded to any role, so the whole client-onboarding create-wizard 403'd for everyone including Owner
+  — **fixed** this phase (seeded to Owner + Manager only, per item 6's explicit authorization); no
+  Manager-initiated password reset exists anywhere in the API (`FORCE_RESET_BY_ADMIN` is schema-ready,
+  never wired) — disclosed, not built around. New docs: `docs/manager-settings-docs/
+  {MANAGER_SETTINGS_API_MATRIX,STAFF_LIFECYCLE,CREDENTIALS}.md`. New backend: `GET /api/onboarding/
+  invitations` (read-only, reuses the existing `onboarding:invitation:write` permission — no new
+  permission string). New Manager UI: `/manager/settings` (7 real, write-enabled sections — Currency/
+  Tax & VAT/Rounding/Approval thresholds/Reservations & receipts/Attendance & inventory/Exchange
+  rates — replacing the M-P1 foundation screen, with a real dirty-state save-bar + navigation guard)
+  and `/manager/staff/invitations` (invite Manager/Accountant by email, list/resend/revoke — no
+  branch picker, since the backend always assigns the org's oldest branch regardless of
+  `X-Branch-Id`, disclosed not hidden), plus Suspend/Reactivate/Offboard on the existing B3 employee
+  detail panel (`PATCH /hr/employees/:id`, status field only — confirm dialogs name the person and
+  disclose the live-proven finding that this has NO cascade to login/PIN/sessions/orders). A real
+  live-QA-caught bug (not found by any static check) — `ManagerOneTimeSecretPanel`'s hard-coded "PIN"
+  wording under a reused password-reveal panel — found and fixed. Validated on an isolated local
+  Docker Postgres stack (`nimbus_b6_qa`, port 55491) — shared Neon read-only-probed once (the C-30
+  discovery) and never written; both `.env` files byte-identical throughout; the one temporary
+  `next.config.mjs` edit (isolated build `distDir`) fully reverted, confirmed via empty `git diff`.
+  Web typecheck/lint/build clean; API unit 1184/1184; **18 static assertion scripts** pass (17
+  pre-existing incl. `manager-b3-assertions.ts` inverted for the new mutation count 9→19, plus new
+  `manager-b6-assertions.ts` for the compensation-leak/credential-boundary checks item 5 asked for);
+  `e2e/manager-staff/` **29 passed / 8 skipped / 0 failed** at `vp-1440x900` (one test inverted, not
+  deleted, for the new status actions) plus new `dialog-overflow.spec.ts` **4/4** at 1280×680 and
+  1366×768; live curl cross-role matrix — Manager 200/201, Waiter/Cashier/Supervisor 403 — on every
+  new write route; live Chrome QA of every major write action with real observed HTTP statuses and
+  zero console errors. **Not run this phase (disclosed):** the full 4-viewport `e2e/manager-staff/`
+  regression (only 1440×900 run) and `e2e/manager-shell/` (no shared shell/nav code changed beyond
+  one menu row). See `ai/ENTERPRISE_B6_COMPLETION_REPORT.md` for the full validation table and
+  findings register. **Track B6.6, B5.7's own remaining scope, and B7 remain NOT started.**
+
 - **ENTERPRISE UI TRACK B5.7 COMPLETE — Accounting write pass + C-28 repo-wide audit branch-stamp
   sweep (2026-08-22).** Full detail in `ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md`. Summary: (1) a
   systematic repo-wide sweep (318 `audit.log` call sites, 57 files, not accounting-only) fixed 106

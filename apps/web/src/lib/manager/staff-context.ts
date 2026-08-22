@@ -15,6 +15,7 @@ import {
   rejectManagerShiftSwap,
   resetManagerQuickPin,
   reviewManagerLeave,
+  updateManagerEmployeeStatus,
   type ManagerDirectoryQuery,
 } from "@/lib/manager/staff-api";
 import type { ManagerOnboardPayload } from "@/lib/manager/staff-model";
@@ -98,6 +99,52 @@ export function useManagerDirectory(query: ManagerDirectoryQuery): ManagerDirect
     branchName: session.branchName,
     isEnabled: session.isEnabled,
     listQuery,
+  };
+}
+
+// ── Employee status (Track B6) ──────────────────────────────────────────────
+
+export type ManagerEmployeeStatusSnapshot = {
+  isEnabled: boolean;
+  run: (employeeId: string, status: "ACTIVE" | "SUSPENDED" | "TERMINATED") => void;
+  isPending: boolean;
+  error: unknown;
+  resetError: () => void;
+  lastEmployeeId: string | null;
+};
+
+export function useManagerEmployeeStatus(): ManagerEmployeeStatusSnapshot {
+  const session = useManagerStaffSession();
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (input: { employeeId: string; status: "ACTIVE" | "SUSPENDED" | "TERMINATED" }) =>
+      updateManagerEmployeeStatus(
+        session.accessToken as string,
+        session.branchId as string,
+        input.employeeId,
+        input.status,
+      ),
+    onSuccess: async () => {
+      // Narrow: the directory is the one surface this changes.
+      await queryClient.invalidateQueries({
+        queryKey: managerQueryKey("staff-directory", session.branchId),
+      });
+    },
+  });
+
+  useAuthErrorGuard(session.clearSession, [mutation.error]);
+
+  return {
+    isEnabled: session.isEnabled,
+    run: (employeeId, status) => {
+      if (!session.isEnabled || mutation.isPending) return;
+      mutation.mutate({ employeeId, status });
+    },
+    isPending: mutation.isPending,
+    error: mutation.error,
+    resetError: () => mutation.reset(),
+    lastEmployeeId: mutation.variables?.employeeId ?? null,
   };
 }
 

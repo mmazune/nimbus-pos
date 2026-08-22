@@ -81,7 +81,56 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI Track B5.6 complete - Manager Accounting Configuration + Reporting, WRITE-ENABLED
+**Enterprise UI Track B6 complete - Manager Settings, Staff Onboarding, and Credential Management
+(2026-08-22) - A: COMPLETE / B6.6, B7 still gated.** Note: the entries below this one predate Track
+B5.7 (commit `139f1de`, "B5.7-GAP closure"), which landed before this B6 session began -
+`ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md` is the canonical B5.7 record; reconciling the stale
+"B5.7 not started" language in the older entries below was out of scope for this pass.
+
+Scoped by an explicit owner prompt narrower than "Settings" implied elsewhere in this file - Branch
+profile, Devices, Printers, Terminals, Alerts and Sync are NOT built here; that scope now lives in
+`ai/ENTERPRISE_UI_ROADMAP.md`'s new B6.6 section.
+
+Fixed the 4 stale `client-onboarding.service.spec.ts` failures (mock missing the `invitation`
+model) - API unit suite now 1184/1184. Two live-proven permission-layer findings: C-30 - shared Neon
+still lets a Manager token read compensation data via `GET /hr/compensation-profiles` (the FU-1
+revocation exists correctly in `seed.ts` source but was never re-seeded onto shared Neon) - disclosed,
+not fixed, needs its own authorization gate. C-31 (the concrete manifestation of C-22's
+`onboarding:*` bucket) - `onboarding:read`/`onboarding:write` were never seeded to any role, so the
+whole client-onboarding create-wizard 403'd for every role including Owner - fixed this phase,
+seeded to Owner and Manager only. Also disclosed, not built around: no Manager-initiated
+password-reset route exists anywhere in the API (`FORCE_RESET_BY_ADMIN` is schema-ready, never
+wired); `Employee.status` has no state machine and no cascade to login/PIN/sessions/orders.
+
+New docs: `docs/manager-settings-docs/{MANAGER_SETTINGS_API_MATRIX,STAFF_LIFECYCLE,CREDENTIALS}.md`.
+New backend: `GET /api/onboarding/invitations` (read-only, reuses the existing
+`onboarding:invitation:write` permission, no new permission string). New Manager UI:
+`/manager/settings` (7 write-enabled sections - Currency, Tax and VAT, Rounding, Approval
+thresholds, Reservations and receipts, Attendance and inventory, Exchange rates - replacing the
+M-P1 foundation screen, with a real dirty-state save-bar and navigation guard) and
+`/manager/staff/invitations` (invite a Manager/Accountant by email, list/resend/revoke - no branch
+picker, since the backend always assigns the org's oldest branch regardless of `X-Branch-Id`), plus
+Suspend/Reactivate/Offboard on the existing B3 employee detail panel (`PATCH /hr/employees/:id`,
+status field only - every confirm dialog names the person and discloses the no-cascade finding
+above). A live-QA-caught bug (not found by any static check) - `ManagerOneTimeSecretPanel`'s
+hard-coded "PIN" wording under a reused password-reveal panel - found and fixed with a
+backward-compatible `secretLabel` prop.
+
+Validated on an isolated local Docker Postgres stack (port 55491) - shared Neon read-only-probed
+once (the C-30 discovery) and never written; both `.env` files byte-identical throughout; the one
+temporary `next.config.mjs` edit (isolated build distDir) fully reverted before this entry was
+written. Web typecheck/lint/build clean; API unit 1184/1184; 18 static assertion scripts pass (17
+pre-existing, several inverted not deleted for the new mutation count and guard scope, plus a new
+`manager-b6-assertions.ts` for the compensation-leak/credential-boundary checks); `e2e/manager-staff/`
+29 passed / 8 skipped / 0 failed at vp-1440x900 plus a new dialog-overflow spec 4/4 at the two short
+viewports; full live curl cross-role matrix (Manager 200/201, Waiter/Cashier/Supervisor 403 on every
+new write route); live Chrome QA of every major write action with real observed statuses and zero
+console errors. Not run this phase: the full 4-viewport `e2e/manager-staff/` regression (only
+1440x900 run) and `e2e/manager-shell/` (no shared shell/nav code changed beyond one menu row). See
+`ai/ENTERPRISE_B6_COMPLETION_REPORT.md`. Track B6.6, B5.7's own remaining scope, and B7 remain NOT
+started.
+
+**Prior milestone record (superseded above) - Enterprise UI Track B5.6 complete - Manager Accounting Configuration + Reporting, WRITE-ENABLED
 (2026-08-22) - A: COMPLETE / B5.7, B6, B7 still gated.** The Accounting menu goes from 21 of 28 live
 rows to 28 of 28 - every row in the tree. The seven rows menu.ts already tagged "B5.6" ship as real
 surfaces: Budgets vs actuals (list + create with dynamic line items + Refresh actuals, disabled when

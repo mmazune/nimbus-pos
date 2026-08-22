@@ -347,6 +347,30 @@ export async function enableManagerQuickPin(token: string, branchId: string, emp
   );
 }
 
+// ── Employee status (Track B6) ──────────────────────────────────────────────
+
+/**
+ * `PATCH /hr/employees/:id` — `pos:hr:employees:update`, status-only write.
+ *
+ * The endpoint accepts other fields (name, phone, position, etc.) — this
+ * function sends ONLY `status`, so a status change can never accidentally
+ * overwrite an unrelated field.
+ */
+export async function updateManagerEmployeeStatus(
+  token: string,
+  branchId: string,
+  employeeId: string,
+  status: "ACTIVE" | "SUSPENDED" | "TERMINATED",
+): Promise<ManagerSafeEmployee> {
+  const raw = await apiRequest<Record<string, unknown>>(`/api/hr/employees/${encodeURIComponent(employeeId)}`, {
+    method: "PATCH",
+    body: { status },
+    token,
+    branchId,
+  });
+  return projectManagerEmployee(raw);
+}
+
 // ── Frontline onboarding ────────────────────────────────────────────────────
 
 /**

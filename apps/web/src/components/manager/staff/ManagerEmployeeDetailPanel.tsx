@@ -11,9 +11,12 @@ import {
 import { MANAGER_STAFF_ROUTES } from "@/lib/manager/staff-route";
 import type { ManagerEmployeeRow } from "@/lib/manager/staff-types";
 
+import { ManagerEmployeeStatusAction } from "./ManagerEmployeeStatusAction";
+
 /**
- * The employee record (Track B3) — the Odoo **C5 form view** with a **C14
- * statusbar pipeline**, read-only.
+ * The employee record (Track B3, status actions added Track B6) — the Odoo **C5
+ * form view** with a **C14 statusbar pipeline**. Every field is read-only except
+ * the status transition buttons `ManagerEmployeeStatusAction` adds below.
  *
  * ## Why this does NOT call `GET /hr/employees/:id`
  *
@@ -114,9 +117,11 @@ export function ManagerEmployeeDetailPanel({
         </p>
       )}
 
+      <ManagerEmployeeStatusAction employee={employee} />
+
       <p className="mt-4 text-xs leading-5 text-text-muted">
-        Read-only. Editing a staff profile, changing employment terms and everything to do with pay
-        are outside this workspace.
+        Suspend / Reactivate / Offboard change the HR status field only (Track B6). Editing a staff
+        profile, changing employment terms and everything to do with pay are outside this workspace.
       </p>
     </Card>
   );

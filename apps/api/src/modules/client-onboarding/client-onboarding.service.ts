@@ -558,6 +558,47 @@ export class ClientOnboardingService {
         };
     }
 
+    /**
+     * GET /api/onboarding/invitations
+     *
+     * B6 — added because Manager holds `onboarding:invitation:write` (resend/revoke)
+     * but had no way to discover an invitation's id: there was no list endpoint, and
+     * Manager cannot call `POST /onboarding/invitations` (gated on `onboarding:write`,
+     * Owner-only), so it never sees a creation response either. Read-only, org-scoped
+     * (Invitation has no detail route, matching the PC-06 bare-array precedent used
+     * elsewhere in this codebase for list-only entities) — never returns `tokenHash`.
+     */
+    async listInvitations(orgId: string) {
+        const rows = await this.prisma.invitation.findMany({
+            where: { organizationId: orgId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                organizationId: true,
+                branchId: true,
+                roleId: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                status: true,
+                expiresAt: true,
+                acceptedAt: true,
+                acceptedById: true,
+                revokedAt: true,
+                revokedById: true,
+                revokedReason: true,
+                resendCount: true,
+                lastResentAt: true,
+                invitedById: true,
+                membershipId: true,
+                userId: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
+        return rows;
+    }
+
     private async checkAutoComplete(orgId: string) {
         const progress = await this.prisma.onboardingProgress.findUnique({ where: { orgId } });
         if (!progress) return;

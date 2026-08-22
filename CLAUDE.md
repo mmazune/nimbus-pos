@@ -131,7 +131,7 @@ authoritative state of the project. GitHub / the last commit are **stale**.
 | **Waiter** | **Floor · Reservations · Me** | Table-centric order entry (order builder behind Floor table selection) |
 | **Cashier** | **Floor · Till · Me** (Prompt C1–C3, default `/cashier/floor`; Queue/Receipts are hidden compatibility routes reachable by direct URL only, retire C4/C5) | Payment collection, receipts, till/close (C2 delivered table→bill resolution + the canonical settlement workspace + Find bill; **C3 delivered payment / partial / split / close execution inside that workspace**; receipts + refunds arrive C4) |
 | **Supervisor** | **Floor · Reservations · Approvals · Me** | Read-first oversight; table-control workspace behind Floor selection |
-| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**; **B5.3 turned 3 more live — Bank accounts (list-only), Bank statements and Reconciliation (list+detail) — same read-only guarantee, no Match/Skip/Complete control anywhere, for 15 of 28 rows live total**; **B5.4 turned 4 more live — Journal entries (list+detail), Posting runs (list-only), Posting errors (list+detail) and Audit trail (list-only) — same read-only guarantee, no post/reverse/replay/resolve control anywhere, for 19 of 28 rows live total**; **B5.5 turned 2 more live — Fiscal periods (list-only, four-stage lifecycle pipeline) and Period close runs (list-only) — same read-only guarantee for the actions the owner ruling covers (open/close/lock all re-verified 403), though C-27 found Manager's token additionally holds a pre-existing, never-revoked `periods:create` write the UI still does not expose, for 21 of 28 rows live total**. ⚠️ **PERMS-2 (backend gap batch 4, 2026-08-21): every "READ-ONLY BY PERMISSION" / "zero writes" claim above described the permission state at the time each phase shipped, not current state — the owner has since decided Manager has full accounting read+write (matching Accountant), resolving C-27.** **B5.6 (2026-08-22) turned the LAST 7 rows live — Budgets vs actuals, Demand calendar, Forecast (Reporting) and Chart of accounts, Cost centres, Posting source maps, Tax configuration (Configuration), for 28 of 28 rows live total — and unlike every prior sub-phase, these 7 are genuinely WRITE-ENABLED (create/edit/Archive), because PERMS-2 already resolved PC-01/PC-02 before this phase began.** Every B5.1–B5.5 surface (Customers/Vendors, Bank, Journals/Posting/Audit, Fiscal periods/Period close runs — 21 of the 28 rows) still renders zero write affordances — that remains a deliberate build-order gate (Track B5.7, not started), not a permission gate. Settings (B6) data is **NOT started** |
+| **Manager** | **Overview · Operations · Staff · Reports · Accounting · Settings · Me** as an Odoo-style TOP NAV BAR module bar (Track B1, 2026-08-20; landing `/manager/overview`; owner-approved `docs/DECISIONS.md` D-MGRTOPNAV — supersedes the M-P1 bottom-nav presentation). ⚠️ **SEVEN, not six, since 2026-08-21** — **OD-3 approved** and Accounting was inserted before Settings in Track B5.1; the "exactly six tabs" lock governed the BOTTOM-NAV presentation D-MGRTOPNAV superseded, never the number of modules. Overview/Me are direct links; **Operations, Staff, Reports and Accounting are MODULES** whose root redirects into real sub-routes (`/operations/{orders,tables,reservations}`, `/staff/{directory,onboarding,quick-pin,leave,shift-swaps}`, `/reports/{catalog,runs}`, `/accounting/dashboard`); only Settings still hosts one real link + an honest not-yet tree. | Branch-level oversight. M-P1 shipped shell/nav/guard/**branch switcher** + a real Me; B1 the top-nav shell + chrome primitives; **B2 the live Overview dashboard**; **B3 the eight Operations + Staff surfaces — Operations strictly READ-ONLY, Staff writing only onboarding / Quick-PIN / leave review / shift-swap REJECTION (Outcome C, no Approve control)**; **B4 the two Reports surfaces**; **B5.1 the Accounting module — a 28-row grouped menu tree and a five-card dashboard**; **B5.2 turned 12 of those 28 rows live — Customers (Invoices, Customer accounts, Credit notes) and Vendors (Bills, Suppliers, Credit notes, Payments, Recurring profiles, Payment reminders) list/detail surfaces plus Reporting → Aged receivable/payable — all READ-ONLY BY PERMISSION with no write affordance anywhere, not even disabled**; **B5.3 turned 3 more live — Bank accounts (list-only), Bank statements and Reconciliation (list+detail) — same read-only guarantee, no Match/Skip/Complete control anywhere, for 15 of 28 rows live total**; **B5.4 turned 4 more live — Journal entries (list+detail), Posting runs (list-only), Posting errors (list+detail) and Audit trail (list-only) — same read-only guarantee, no post/reverse/replay/resolve control anywhere, for 19 of 28 rows live total**; **B5.5 turned 2 more live — Fiscal periods (list-only, four-stage lifecycle pipeline) and Period close runs (list-only) — same read-only guarantee for the actions the owner ruling covers (open/close/lock all re-verified 403), though C-27 found Manager's token additionally holds a pre-existing, never-revoked `periods:create` write the UI still does not expose, for 21 of 28 rows live total**. ⚠️ **PERMS-2 (backend gap batch 4, 2026-08-21): every "READ-ONLY BY PERMISSION" / "zero writes" claim above described the permission state at the time each phase shipped, not current state — the owner has since decided Manager has full accounting read+write (matching Accountant), resolving C-27.** **B5.6 (2026-08-22) turned the LAST 7 rows live — Budgets vs actuals, Demand calendar, Forecast (Reporting) and Chart of accounts, Cost centres, Posting source maps, Tax configuration (Configuration), for 28 of 28 rows live total — and unlike every prior sub-phase, these 7 are genuinely WRITE-ENABLED (create/edit/Archive), because PERMS-2 already resolved PC-01/PC-02 before this phase began.** Every B5.1–B5.5 surface (Customers/Vendors, Bank, Journals/Posting/Audit, Fiscal periods/Period close runs — 21 of the 28 rows) still renders zero write affordances — that remains a deliberate build-order gate (Track B5.7, not started), not a permission gate. **Settings — B6 (2026-08-22) turned 7 real, write-enabled sections live (Currency, Tax & VAT, Rounding, Approval thresholds, Reservations & receipts, Attendance & inventory, Exchange rates); Branch profile/Devices/Printers/Terminals/Alerts/Sync remain not-yet, tracked as Track B6.6.** |
 
 ⚠️ **Cashier Floor-First reconstruction (locked target, C3 complete / C4 not started, 2026-08-20):**
 Cashier's Queue-first navigation above is **historically complete and demo-ready but superseded** as
@@ -161,7 +161,75 @@ rewritten — see `docs/cashier-ui-docs/AGENTS.md`.
 
 ## 10. Current implementation milestone
 
-**ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
+**ENTERPRISE UI TRACK B6 COMPLETE — Manager Settings, Staff Onboarding, and Credential Management
+(2026-08-22) — A: COMPLETE / B6.6 · B7 STILL GATED.** ⚠️ Note on doc staleness: this file's body
+below (starting at the next paragraph) predates Track **B5.7**, which landed at commit `139f1de`
+("B5.7-GAP closure") before this B6 session began — `ai/ENTERPRISE_B5_7_COMPLETION_REPORT.md` is the
+canonical B5.7 record; the "B5.7 not started"-style language scattered through the older entries
+below is stale and was out of scope to backfill in this pass (a future pass should reconcile it).
+Scoped by an explicit owner prompt narrower than this file's own §10 history implied "B6" would
+cover — Branch profile/Devices/Printers/Terminals/Alerts/Sync are **NOT** built here; that leftover
+scope now lives in `ai/ENTERPRISE_UI_ROADMAP.md`'s new **B6.6** section.
+Fixed the 4 stale `client-onboarding.service.spec.ts` failures (mock missing the `invitation` model)
+— API unit suite now **1184/1184**. Two live-proven permission-layer findings: 🔴 **C-30** — shared
+Neon still lets a Manager token read compensation/salary data via `GET /hr/compensation-profiles`
+(the FU-1 revocation exists correctly in `seed.ts` source but was never re-seeded onto shared Neon,
+consistent with every prior phase's "shared-Neon deploy still gated" pattern) — **disclosed, not
+fixed**, needs its own authorisation gate; this phase's own UI never calls that endpoint or
+`?view=full`. 🟢 **C-31** (the concrete manifestation of C-22's `onboarding:* (2)` bucket) —
+`onboarding:read`/`onboarding:write` were referenced in code since BG1 but never seeded as
+`Permission` rows at all, so the entire client-onboarding create-wizard 403'd for **every** role
+including Owner — **fixed**, both strings seeded to Owner and Manager only, per item 6's explicit
+authorisation to close exactly what a B6 surface needs. Also disclosed, not built around: no
+Manager-initiated password-reset route exists anywhere in the API (the schema's
+`FORCE_RESET_BY_ADMIN` enum value is ready but unwired); `Employee.status` has no state machine and
+no cascade to login/PIN/sessions/orders.
+**New:** `docs/manager-settings-docs/{MANAGER_SETTINGS_API_MATRIX,STAFF_LIFECYCLE,CREDENTIALS}.md`
+(live-verified endpoint census + the staff lifecycle + credential handling, written before any UI per
+the owner's standing rule); `GET /api/onboarding/invitations` (new backend route, read-only, reuses
+the existing `onboarding:invitation:write` permission — no new permission string); a real
+`/manager/settings` (7 write-enabled sections — Currency, Tax & VAT, Rounding, Approval thresholds,
+Reservations & receipts, Attendance & inventory, Exchange rates — replacing the M-P1 foundation
+screen, with a real dirty-state save-bar + navigation guard); `/manager/staff/invitations` (invite a
+Manager/Accountant by email, list/resend/revoke — **no branch picker**, because the backend always
+assigns the organisation's oldest active branch regardless of `X-Branch-Id`, disclosed on-screen
+rather than hidden); Suspend/Reactivate/Offboard on the existing B3 employee detail panel (`PATCH
+/hr/employees/:id`, status field only — every confirm dialog names the person and states plainly that
+this has no cascade to login/PIN/sessions/open orders, per the live-proven finding above).
+🐛 **Live-QA-caught bug, found in real Chrome, not by any static check**: `ManagerOneTimeSecretPanel`
+(B3) hard-coded the word "PIN" in its copy; reusing it for the new invitation temp password rendered
+a wrong label under a correct value. Fixed with a backward-compatible `secretLabel` prop (default
+`"PIN"`, every B3 caller unchanged); re-verified live after the fix.
+**Validated on an isolated local Docker Postgres stack** (`nimbus_b6_qa`, port `55491`) — shared Neon
+was **read-only-probed exactly once** (the C-30 discovery: one `GET /hr/compensation-profiles`, one
+`GET /auth/me`) and **never written to**; both `.env` files verified byte-identical throughout; the
+one temporary `apps/web/next.config.mjs` edit (an env-gated `distDir` override so a build-only check
+would not corrupt the pre-existing shared `next-server` on `:3000`) was fully reverted before this
+entry was written, confirmed via an empty `git diff` on that file. Web typecheck/lint/production
+build all pass; API unit **1184/1184**; **18 static assertion scripts pass** (17 pre-existing,
+including `manager-b3-assertions.ts` and `manager-b4-assertions.ts` both inverted — not deleted —
+for the mutation-count invariant going 9→19 and the `hr/employees/:id` guard narrowed from a blanket
+URL ban to method-aware [GET still banned, the new PATCH allow-listed], plus `manager-p1-assertions.ts`
+inverted for Settings graduating off the foundation screen; new **`manager-b6-assertions.ts`** proves
+zero compensation/PII references, zero plaintext-secret logging/caching, every destructive dialog
+names the person, Platform access/Booking policies/Franchise weights/free-form parameters are never
+rendered, Invitations offers no branch picker, Settings has a real dirty-state guard);
+`e2e/manager-staff/` **29 passed / 8 skipped (pre-existing) / 0 failed** at `vp-1440x900` (one test
+inverted for the new status actions, not deleted) plus new `e2e/manager-staff/dialog-overflow.spec.ts`
+**4/4** at the two short viewports (1280×680, 1366×768) for the two new confirm dialogs; a full live
+`curl` cross-role matrix on every new/changed write route (Manager 200/201; Waiter, Cashier,
+Supervisor individually re-verified 403 on every one, never assumed from one role's result); live
+Chrome QA of every major write action (Settings save, invitation create/resend/revoke, employee
+Suspend/Reactivate) with real observed HTTP statuses read from the DevTools network panel and **zero
+console errors** observed across the session. ⚠️ **Not run this phase, disclosed not fabricated:**
+the full 4-viewport `e2e/manager-staff/` regression (only 1440×900 was run) and `e2e/manager-shell/`
+(not run — no shared shell/nav code changed beyond one new menu row + one new route, already covered
+statically by `manager-p1-assertions.ts`'s six/seven-surface nav checks). See
+`ai/ENTERPRISE_B6_COMPLETION_REPORT.md` for the full validation table and findings register.
+**Track B6.6 (Branch profile/Devices/Printers/Terminals/Alerts/Sync), B5.7's own remaining scope, and
+B7 remain NOT started — do not begin any of them without explicit owner authorisation.**
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.6 COMPLETE — Manager Accounting Configuration + Reporting, WRITE-ENABLED
 (2026-08-22) — A: COMPLETE / B5.7 · B6 · B7 STILL GATED.** The Accounting menu goes from **21 of 28**
 live rows to **28 of 28 — every row in the tree.** The seven rows this file's own `menu.ts` tags
 "B5.6" ship as real surfaces: **Budgets vs actuals** (list + create with dynamic line items +
@@ -1779,6 +1847,37 @@ the frontend still renders no such control until B5.7. See
   the B5-F4/C-26 precedent, history is disclosed, not rewritten. **B5.1–B5.6 are COMPLETE. Track
   B5.7, B6 and B7 are NOT started — do not begin any of them without explicit owner authorisation.**
   See `ai/ENTERPRISE_B5_6_COMPLETION_REPORT.md`.
+- **Track B6 boundaries — do not cross without explicit authorization.** B6's Settings scope is
+  EXACTLY the seven sections it built (Currency, Tax & VAT, Rounding, Approval thresholds,
+  Reservations & receipts, Attendance & inventory, Exchange rates) — do not add Platform access
+  (`useRoleDefaults`/`overrides` is stored but has ZERO consumers anywhere in `apps/api/src`,
+  confirmed by grep; a UI would visually imply an enforcement that does not exist), Booking policies
+  (no consumer, no defined shape), or Franchise weights (real and consumed, but gated on
+  `pos:staff:weights:update`, which Manager does not hold — editing it via the general `/settings`
+  PATCH would bypass that domain's own permission gate) without first wiring a real consumer/grant.
+  Do not add Branch profile, Devices, Printers, Terminals, Alerts or Sync to `/manager/settings` —
+  that is Track **B6.6**, not started (see `ai/ENTERPRISE_UI_ROADMAP.md`'s B6.6 section for the exact
+  scope carried forward from the original roadmap B6 table). Do not add a branch picker to the
+  Invitations create form — `client-onboarding.service.ts`'s `createInvitations()` always resolves
+  the organisation's OLDEST active branch (`orderBy: createdAt asc`), ignoring `X-Branch-Id`
+  entirely; a picker would imply a choice the backend does not honour. Do not widen invitation
+  creation beyond `Manager`/`Accountant` — the backend hard-codes
+  `INVITABLE_ROLES_DURING_ONBOARDING` and 400s on anything else. Do not build a Manager-facing
+  "reset password" button for anyone but the caller's own account — no admin-initiated password-reset
+  route exists anywhere in the API (`FORCE_RESET_BY_ADMIN` is a schema-ready `PasswordResetPurpose`
+  enum value with zero controllers ever creating a token of that purpose); Quick-PIN reset (B3,
+  reused unchanged) is the only real Manager-initiated credential action. Do not imply that Suspend/
+  Offboard revokes a person's login — `PATCH /hr/employees/:id {status}` has no cascade to
+  `User.isActive`, sessions, or Quick-PIN anywhere in the codebase (live-proven:
+  `TERMINATED → ACTIVE` returns 200 with no guard); the confirm-dialog copy in
+  `ManagerEmployeeStatusAction` says so and must keep saying so. Do not seed any of the 35 remaining
+  C-22 deferred-module permissions (`franchise:*`, `ops:*`, `dev:*`, `merchant:*`, `billing:*`,
+  `support:*`) — only `onboarding:read`/`onboarding:write` (Owner + Manager) were authorised and
+  seeded this phase. Do not reseed shared Neon to close **C-30** (the live compensation-read leak)
+  without a separate, explicit authorisation gate — matching the C-21/C-22/C-27 precedent; do not
+  treat "the permission exists in seed.ts source" as proof it is absent on shared Neon. **B6 is
+  COMPLETE. Track B6.6, B5.7's own remaining scope, and B7 are NOT started — do not begin any of
+  them without explicit owner authorisation.** See `ai/ENTERPRISE_B6_COMPLETION_REPORT.md`.
 - Cashier reconstruction Prompt **C3 is COMPLETE** (nav Floor/Till/Me, `/cashier/floor` default,
   shared-Floor consumer, table→bill resolution with zero/one/multiple handling, canonical
   `?tableId=&orderId=` URL state, ONE `CashierSettlementWorkspace` reusing the checkout primitives,

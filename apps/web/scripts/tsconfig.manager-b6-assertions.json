@@ -1,0 +1,20 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../next-env.d.ts",
+    "manager-b6-assertions.ts",
+    "../src/lib/manager/top-nav.ts",
+    "../src/lib/manager/staff-model.ts",
+    "../src/lib/manager/staff-projection.ts",
+    "../src/lib/manager/staff-route.ts",
+    "../src/lib/manager/settings-model.ts",
+    "../src/lib/manager/invitations-model.ts"
+  ]
+}

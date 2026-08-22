@@ -83,6 +83,16 @@ export class ClientOnboardingController {
 
     // ── BG1: Resend / Revoke ──
 
+    // B6 — read-only list, org-scoped, gated on the same permission as
+    // resend/revoke (no new permission string). See client-onboarding.service.ts
+    // listInvitations() docblock for why this was added.
+    @Get('invitations')
+    @Permissions('onboarding:invitation:write')
+    async listInvitations(@CurrentUser() user: { id: string }) {
+        const ctx = await this.onboardingService.resolveOrgContext(user.id);
+        return this.onboardingService.listInvitations(ctx.organizationId);
+    }
+
     @Post('invitations/:id/resend')
     @Permissions('onboarding:invitation:write')
     async resendInvitation(

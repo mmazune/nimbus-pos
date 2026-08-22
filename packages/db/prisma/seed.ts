@@ -437,6 +437,16 @@ const PERMISSIONS_DATA = [
   { action: 'training:session:start', description: 'Start a training (sandbox) session' },
   { action: 'training:session:read', description: 'List and inspect training sessions' },
   { action: 'training:session:end', description: 'End or cancel a training (sandbox) session' },
+  // B6 — C-22 closure (partial): 'onboarding:read'/'onboarding:write' were referenced
+  // by client-onboarding.controller.ts since BG1 but never seeded as Permission rows,
+  // so /onboarding/status and /onboarding/organization|branches|business-profile|
+  // settings|invitations(create) 403'd for every role including Owner (finding C-31,
+  // itself the concrete manifestation of C-22's "onboarding:* (2)" bucket — see
+  // docs/manager-settings-docs/MANAGER_SETTINGS_API_MATRIX.md §3/§5). Seeded here,
+  // to Owner and Manager only (where 'onboarding:invitation:write' below already
+  // sits), because B6 needs a working invitation-CREATE path for its Staff UI.
+  { action: 'onboarding:read', description: 'Read client-onboarding wizard progress/status' },
+  { action: 'onboarding:write', description: 'Create org/branch during onboarding; update business profile/settings; create invitations' },
   // BG1 — Invitation Acceptance + Password Lifecycle + Frontline Staff Onboarding
   { action: 'onboarding:invitation:write', description: 'Resend or revoke org invitations' },
   { action: 'hr:frontline-staff:create', description: 'One-call frontline staff onboarding (User+Membership+Employee+QuickPIN)' },
@@ -899,6 +909,10 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'training:session:read',
     'training:session:end',
     // BG1: Invitation lifecycle + Frontline staff onboard (Owner: full)
+    // B6/C-22: onboarding:read/write closes the C-31 gap — Owner can now actually
+    // run the onboarding wizard (org/branch/business-profile/settings/invite-create).
+    'onboarding:read',
+    'onboarding:write',
     'onboarding:invitation:write',
     'hr:frontline-staff:create',
     // BG1.1: Frontline Quick PIN admin (Owner: full)
@@ -1167,6 +1181,11 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'training:session:read',
     'training:session:end',
     // BG1: Manager can resend/revoke invites and onboard frontline staff
+    // B6/C-22: onboarding:read/write closes the C-31 gap for Manager too — the B6
+    // Staff UI's "invite staff" action needs a real create path (see
+    // docs/manager-settings-docs/STAFF_LIFECYCLE.md, Path B).
+    'onboarding:read',
+    'onboarding:write',
     'onboarding:invitation:write',
     'hr:frontline-staff:create',
     // BG1.1: Manager can inspect + reset + enable/disable frontline Quick PINs

@@ -4,7 +4,28 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**ENTERPRISE UI TRACK B5.7 COMPLETE — Accounting write pass + C-28 repo-wide audit branch-stamp sweep
+**ENTERPRISE UI TRACK B6 COMPLETE — Manager Settings, Staff Onboarding, and Credential Management
+(2026-08-22).** Scoped by an explicit owner prompt narrower than the roadmap's original "B6 —
+Settings" (Devices/Printers/Terminals/Alerts/Sync/Branch-profile moved to new roadmap section
+**B6.6**, not built here). Fixed the 4 stale `client-onboarding` test failures (API unit suite now
+1184/1184). Two real permission-layer findings, both live-proven: **C-30** — shared Neon still lets
+Manager read compensation data (FU-1's revocation was never re-seeded there; disclosed, not fixed);
+**C-31** — `onboarding:read`/`onboarding:write` were never seeded to any role, 403ing the entire
+onboarding wizard for everyone including Owner (this is C-22's `onboarding:*` bucket) — **fixed**,
+seeded to Owner + Manager only. New docs `docs/manager-settings-docs/*`. New backend: `GET
+/onboarding/invitations` (reuses an existing permission, no new one). New Manager UI: a real
+`/manager/settings` (7 write-enabled sections, dirty-state save bar) and
+`/manager/staff/invitations` (invite/resend/revoke, no branch picker — the backend always assigns
+the org's oldest branch), plus Suspend/Reactivate/Offboard on the staff detail panel (HR-status-only,
+disclosed as having no cascade to login/sessions). A live-QA-caught UI bug (reused component's
+hard-coded "PIN" label under a password value) found and fixed. Validated on an isolated Docker
+stack; shared Neon read-only-probed once, never written. Web typecheck/lint/build clean; API unit
+1184/1184; 18 static assertion scripts pass; `e2e/manager-staff/` 29/8-skipped/0-failed plus a new
+4/4 dialog-overflow spec at the two short viewports; full live curl cross-role matrix and live Chrome
+QA with real observed statuses, zero console errors. See `ai/ENTERPRISE_B6_COMPLETION_REPORT.md`.
+**Track B6.6, B5.7's own remaining scope, and B7 are NOT started.**
+
+**Prior milestone record (superseded above) — ENTERPRISE UI TRACK B5.7 COMPLETE — Accounting write pass + C-28 repo-wide audit branch-stamp sweep
 (2026-08-22).** C-28: a systematic repo-wide grep found 318 `audit.log` call sites across 57 API
 service files (not just accounting); 106 were fixed (branchId now stamped, citing "C-28"), 73 are
 documented exempt (org-level, or a signature/lookup change out of scope), and a new Jest guard

@@ -113,6 +113,14 @@ const MANAGER_MENU_GROUPS: ManagerMenuGroupsByKey = {
           available: true,
         },
         {
+          // Track B6 — invite Manager/Accountant-tier staff by email + temp
+          // password (closes C-31/C-22's onboarding:read/write gap).
+          key: "staff-invitations",
+          label: "Invitations",
+          href: MANAGER_STAFF_ROUTES.invitations,
+          available: true,
+        },
+        {
           key: "staff-quick-pin",
           label: "Quick PIN administration",
           href: MANAGER_STAFF_ROUTES.quickPin,
@@ -174,6 +182,13 @@ const MANAGER_MENU_GROUPS: ManagerMenuGroupsByKey = {
       items: [{ key: "settings-dashboard", label: "Settings dashboard", href: "/manager/settings", available: true }],
     },
     {
+      // B6 (2026-08-22) built org settings (Currency/Tax/Rounding/Thresholds/
+      // Reservations & receipts/Attendance & inventory/Exchange rates) as sections
+      // inside the one "Settings dashboard" row above — it did not add separate
+      // menu rows for them, matching the section-rail pattern
+      // ManagerSettingsScreen uses. The six rows below were the REST of the
+      // original roadmap's B6 scope, redirected to B6.6 — see the B6
+      // supersession note in ai/ENTERPRISE_UI_ROADMAP.md.
       heading: "Configuration",
       items: [
         {
@@ -181,19 +196,19 @@ const MANAGER_MENU_GROUPS: ManagerMenuGroupsByKey = {
           label: "Branch profile",
           href: "/manager/settings",
           available: false,
-          notYetNote: "B6",
+          notYetNote: "B6.6",
         },
-        { key: "settings-devices", label: "Devices", href: "/manager/settings", available: false, notYetNote: "B6" },
-        { key: "settings-printers", label: "Printers", href: "/manager/settings", available: false, notYetNote: "B6" },
+        { key: "settings-devices", label: "Devices", href: "/manager/settings", available: false, notYetNote: "B6.6" },
+        { key: "settings-printers", label: "Printers", href: "/manager/settings", available: false, notYetNote: "B6.6" },
         {
           key: "settings-terminals",
           label: "Terminals",
           href: "/manager/settings",
           available: false,
-          notYetNote: "B6",
+          notYetNote: "B6.6",
         },
-        { key: "settings-alerts", label: "Alerts", href: "/manager/settings", available: false, notYetNote: "B6" },
-        { key: "settings-sync", label: "Sync", href: "/manager/settings", available: false, notYetNote: "B6" },
+        { key: "settings-alerts", label: "Alerts", href: "/manager/settings", available: false, notYetNote: "B6.6" },
+        { key: "settings-sync", label: "Sync", href: "/manager/settings", available: false, notYetNote: "B6.6" },
       ],
     },
   ],

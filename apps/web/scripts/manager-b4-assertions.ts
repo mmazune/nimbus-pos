@@ -606,6 +606,10 @@ assert(
  *   9. `POST /api/reports/export`      — create the CSV artifact
  *
  * The download is a GET. Nothing else in Reports writes.
+ *
+ * ⚠️ Updated, not deleted (Track B6, 2026-08-22): B6 added 10 more (employee
+ * status, invitation create/resend/revoke, six settings routes) — see the
+ * fuller comment in `manager-b3-assertions.ts`'s copy of this same gate.
  */
 const ALLOWED_MUTATION_PATHS = [
   "/api/hr/frontline-staff/onboard",
@@ -617,6 +621,10 @@ const ALLOWED_MUTATION_PATHS = [
   "/api/dash/kpi/refresh", // pre-existing (B2)
   "/api/reports/export", // B4
   "/api/reports/${encodeURIComponent(generatorPath)}", // B4
+  "/api/hr/employees/", // B6 — employee status
+  "/api/onboarding/invitations", // B6 — create/resend/revoke
+  "/api/settings", // B6 — currency/tax-matrix/rounding/general
+  "/api/thresholds", // B6
 ];
 
 const mutationRegex = /method:\s*["'](POST|PATCH|PUT|DELETE)["']/g;
@@ -632,8 +640,8 @@ for (const file of managerFiles) {
   );
 }
 assert(
-  managerMutationCount === 9,
-  `exactly 9 manager mutations exist — 7 from B3 plus B4's generate and export (found ${managerMutationCount})`,
+  managerMutationCount === 19,
+  `exactly 19 manager mutations exist — B3's 7 + B4's 2 + B6's 10 (found ${managerMutationCount})`,
 );
 
 // Reports owns exactly two of them.

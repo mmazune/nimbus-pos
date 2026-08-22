@@ -19,12 +19,18 @@ import { Prisma } from '@prisma/client';
  *     `pos:hr:compensation:read` (the existing compensation-grade permission that already
  *     gates `GET /api/hr/compensation-profiles`). No new permission was invented or seeded.
  *
- * ⚠️ Recorded honestly: the seeded role matrix grants `pos:hr:compensation:read` to
- * Owner, Manager AND Accountant (`packages/db/prisma/seed.ts`). So a Manager token can
- * still opt in explicitly. What this module guarantees is that the DEFAULT wire payload
- * — the one a Staff directory fetches — carries no compensation and no personal PII for
- * anybody. Narrowing the Manager role's grant is a seed/role change and was NOT
- * authorised in this batch; it is recorded as a follow-up.
+ * ⚠️ Updated 2026-08-22 (Track B6): the note this docblock originally carried — "the
+ * seeded role matrix grants `pos:hr:compensation:read` to Owner, Manager AND
+ * Accountant" — is now stale on the CURRENT seed.ts source. FU-1 (the 2026-08-20
+ * permissions cutover) removed `pos:hr:compensation:read` from Manager via
+ * `REVOKED_ROLE_PERMISSIONS`; `?view=full` now correctly 403s for Manager on a freshly
+ * seeded database (live-verified, Track B6). What this module guarantees is unchanged:
+ * the DEFAULT wire payload — the one a Staff directory fetches — carries no
+ * compensation and no personal PII for anybody, regardless of role or grant.
+ * ⚠️ Separately, and NOT fixed by source or by this comment: the shared-Neon database
+ * has never had the FU-1 revocation re-seeded, so a Manager token there still holds
+ * `pos:hr:compensation:read` and can reach `?view=full` today — see finding C-30 in
+ * `docs/manager-settings-docs/MANAGER_SETTINGS_API_MATRIX.md` §5.
  */
 
 export const COMPENSATION_READ_PERMISSION = 'pos:hr:compensation:read';
