@@ -31,7 +31,34 @@ From M34 onward, ROADMAP numbers and migration names are aligned. No more offset
 
 ## Current State
 
-- **ENTERPRISE UI TRACK B5.5 COMPLETE — Manager Accounting Closing surfaces (2026-08-21) — A:
+- **BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) —
+  A: COMPLETE / B5.6 · B5.7 · B6 · B7 still gated.** Backend + schema (one new migration) + seed +
+  docs; **no frontend file touched**. The owner decided Manager has full access to everything it
+  is responsible for — PERMS-2 grants Manager the full 36-string C-21 accounting/finance set plus
+  the full M28/M29 set (54 strings total), matching Accountant/Owner, resolving **C-27**, **PC-01**
+  and **PC-02**. `pos:hr:compensation:read` was explicitly NOT granted (verified). Waiter, Cashier
+  and Supervisor gained zero accounting/finance/procurement strings (verified via direct SQL and
+  live 403s). **C-25** (`getJournal` had no branch predicate) and the sibling **BGB3-L3**
+  (`listJournals`/`listPostingRuns` strict-equality-on-nullable-column) are FIXED. **C-26** (six
+  ledger `audit.log` calls never stamped `metadata.branchId`) is FIXED, plus the same fix applied
+  to two new B5.4-D1 events. **B5.4-D1** (no posting-error resolve/dismiss endpoint) is FIXED — new
+  migration, new `pos:accounting:posting-errors:resolve` permission, new
+  `PATCH .../posting-errors/:id/{resolve,dismiss}` routes. **B5.5-F1** investigated further and
+  confirmed genuinely dead (no async worker path exists anywhere in `apps/api`) — not implemented.
+  Every "Manager performs zero accounting writes" claim across the B5.1–B5.5 completion reports,
+  the roadmap, the API verification report and the permissions cutover report now carries a dated
+  supersession banner. New roadmap phase **B5.7 (accounting write pass)** added, NOT started.
+  Validated on an isolated local Docker stack (Postgres `:55480`, API `:4091`, web `:3180`) — shared
+  Neon never touched; both `.env` files SHA-256-identical before/after. API unit **1177/1181** (4
+  pre-existing `client-onboarding` failures); ledger unit+DTO **53/53**; new e2e
+  (`accounting-branch-scoping.e2e-spec.ts`) **43/43**; web typecheck/lint/build clean; **17/17**
+  assertion scripts; Playwright `manager-accounting` **145 passed/15 skipped** and `manager-shell`
+  **125/11 skipped**, both matching documented baselines; direct API cross-role check confirms
+  Waiter/Cashier/Supervisor still 403, Manager now 200. See
+  `ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md` for full detail. **B5.6, B5.7, B6 and B7 remain NOT
+  started.**
+
+**Prior status (superseded above) — ENTERPRISE UI TRACK B5.5 COMPLETE — Manager Accounting Closing surfaces (2026-08-21) — A:
   B5.5 COMPLETE / B5.6 GATED.** Frontend + docs only; **no backend / schema / migration / seed /
   permission / DTO / Postman change**. The two Closing menu rows B5.1 shipped as honest not-yet
   placeholders — Fiscal periods, Period close runs — are now real surfaces. **The Accounting

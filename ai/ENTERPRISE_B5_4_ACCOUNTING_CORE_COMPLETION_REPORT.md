@@ -1,5 +1,21 @@
 # Enterprise UI Track B5.4 — Manager Accounting core (Journal entries) + Review surfaces
 
+> ⚠️ **PARTIALLY SUPERSEDED 2026-08-21 (backend gap batch 4 — PERMS-2 / C-25 / C-26 / C-27 /
+> B5.4-D1).** This report's "Manager stays read-only, zero writes" claims, and its "C-25"/"C-26"/
+> "B5.4-D1" findings recorded as open, described state **at the time this phase shipped**. They no
+> longer describe current state: (1) the owner has since decided Manager has full access to
+> everything it is responsible for — PERMS-2 granted Manager the full 36-string C-21 set plus the
+> full M28/M29 set (matching Accountant), also resolving **C-27**; (2) **C-25** (`getJournal` had no
+> branch predicate) and the **BGB3-L3** `listJournals`/`listPostingRuns` defect are FIXED — all three
+> now use `branchOrOrgScope`; (3) **C-26** (ledger audit events never stamped `metadata.branchId`) is
+> FIXED — all six original events plus two new ones stamp it; (4) **B5.4-D1** (no posting-error
+> resolve/dismiss endpoint) is FIXED — `PATCH /accounting/posting-errors/:id/{resolve,dismiss}` now
+> exists. The **frontend** described below is UNCHANGED and still correctly renders zero write
+> affordances and the C-25/C-26 disclosures (now stale but still a true statement about the frontend
+> code as shipped) — the write UI is a deliberate build-order gate (Track **B5.7**, not started), not
+> a permission gate. See `ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md` and CLAUDE.md's corrections.
+> History below is preserved, not rewritten.
+
 **Date:** 2026-08-21
 **Phase:** `ai/ENTERPRISE_UI_ROADMAP.md` Track **B5.4** (Accounting core + Review), owner-approved.
 **Status:** **COMPLETE**

@@ -406,6 +406,10 @@ const PERMISSIONS_DATA = [
   { action: 'pos:accounting:posting:replay', description: 'Replay posting from source documents' },
   { action: 'pos:accounting:posting-runs:read', description: 'List posting runs' },
   { action: 'pos:accounting:posting-errors:read', description: 'List and view posting errors' },
+  // Backend gap batch 4 — B5.4-D1: posting-error resolution (2026-08-21). Gates BOTH
+  // PATCH /api/accounting/posting-errors/:id/resolve and .../dismiss, mirroring the
+  // pos:discount:approve pattern of one permission gating a paired accept/reject action.
+  { action: 'pos:accounting:posting-errors:resolve', description: 'Resolve or dismiss an open posting error — PATCH /api/accounting/posting-errors/:id/{resolve,dismiss}' },
   // ── M40: Alerts + Digests + Real-Time Owner Views ──
   { action: 'alerts:read', description: 'List alert rules, channels, and recent deliveries' },
   { action: 'alerts:rule:write', description: 'Create or update alert rules (and enable/disable)' },
@@ -531,9 +535,11 @@ const PERMISSIONS_DATA = [
   { action: 'franchise:forecast:read', description: 'Read the finance forecast — GET /api/finance/forecast. Named for the franchise family but referenced ONLY by the budget controller' },
   // ⚠️ `procurement:advisory:read` gates BOTH `GET /api/finance/procurement-suggestions`
   // AND the mutation `PATCH /api/finance/procurement-suggestions/:id/review`. A single
-  // string spanning a read and a write is why it is NOT granted to Manager under the
-  // read-only policy below — granting the read would silently grant the review write.
-  // Recorded as finding PC-02; splitting it is a backend change, not a seed change.
+  // string spanning a read and a write meant it was NOT granted to Manager under the
+  // original C-21 read-only policy (finding PC-02). PERMS-2 (2026-08-21) resolves PC-02
+  // under the owner's full-access decision: Manager now holds this string deliberately,
+  // including the review write it carries — splitting the string remains a backend
+  // change nobody has requested.
   { action: 'procurement:advisory:read', description: 'Read procurement suggestions AND review (accept/reject) them — GET /api/finance/procurement-suggestions, PATCH /api/finance/procurement-suggestions/:id/review. NOTE: one string gates both a read and a write (finding PC-02)' },
 ];
 
@@ -562,16 +568,21 @@ async function seedPermissions(): Promise<{ created: number; skipped: number }> 
 // OD-9's recommendation is "read-first … ship the operationally-necessary writes only
 // where B0 proves the permission is held". That condition could not be satisfied as
 // written: B0 can only observe what this file grants, so "does Manager hold it?" is
-// decided here, not discovered by B0. Applying the owner's stated default instead:
+// decided here, not discovered by B0. Applying the owner's stated default at the time:
 //
 //   Owner       → FULL (all 36 strings)
 //   Accountant  → FULL (all 36 strings) — accounting is its primary domain
 //   Manager     → READ-ONLY (15 strings); every write deferred to a later, explicit grant
 //   everyone else (Supervisor, Cashier, Waiter, Chef, Bartender, Procurement, …) → NONE
 //
-// The operationally-necessary writes OD-9 names (AP bill approve, reconciliation
-// match/skip/complete, period close/lock, budget update-actuals) are deliberately NOT
-// granted to Manager here. B5 must request them explicitly — see finding PC-01.
+// ⚠️ SUPERSEDED 2026-08-21 by PERMS-2 (backend gap batch 4) — the owner has since
+// decided the Manager role has full access to everything it is responsible for. This
+// reverses the "Manager → READ-ONLY" line above: Manager now holds the full 36-string
+// `C21_ACCOUNTING_FINANCE_ALL` set, matching Accountant, INCLUDING
+// `procurement:advisory:read` (which also gates the review mutation — PC-02 is
+// therefore resolved by this grant, not worked around). Owner/Accountant/everyone-else
+// rows above are unchanged. See CLAUDE.md's C-27 correction note and
+// ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md. History kept, not deleted, per CLAUDE.md §19.
 
 /** Every C-21 string, in route order. Owner and Accountant hold all of these. */
 const C21_ACCOUNTING_FINANCE_ALL: string[] = [
@@ -618,13 +629,17 @@ const C21_ACCOUNTING_FINANCE_ALL: string[] = [
 ];
 
 /**
- * Manager's C-21 slice: reads only.
+ * HISTORICAL — Manager's original C-21 slice (read-only, 15 strings), superseded
+ * 2026-08-21 by PERMS-2. No longer referenced by `ROLE_PERM_MATRIX.Manager`, which now
+ * spreads `C21_ACCOUNTING_FINANCE_ALL` in full. Retained for the historical record only
+ * — do not reintroduce this as Manager's grant without a fresh, explicit owner decision
+ * reversing PERMS-2.
  *
- * `procurement:advisory:read` is deliberately EXCLUDED even though its name reads like a
- * read: the same string also gates the mutation
+ * `procurement:advisory:read` was deliberately EXCLUDED here even though its name reads
+ * like a read: the same string also gates the mutation
  * `PATCH /api/finance/procurement-suggestions/:id/review`, so granting it to Manager
- * would silently hand Manager a write and break this list's only promise (finding PC-02).
- * Every string below gates GET routes exclusively — verified against the controllers.
+ * would have silently handed Manager a write (finding PC-02). PERMS-2 resolves PC-02 by
+ * granting the full string deliberately, not by working around it.
  */
 const C21_ACCOUNTING_FINANCE_MANAGER_READ: string[] = [
   'accounting:ap:bill:read',
@@ -855,6 +870,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:posting:replay',
     'pos:accounting:posting-runs:read',
     'pos:accounting:posting-errors:read',
+    'pos:accounting:posting-errors:resolve',
     // M40: Alerts + Digests + Real-Time Owner Views (Owner: full)
     'alerts:read',
     'alerts:rule:write',
@@ -1102,19 +1118,33 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:staff:promotions:generate',
     'pos:staff:promotions:decide',
     'pos:staff:weights:read',
-    // M28: Accounting Foundation (Manager: read + create, no tax-config:update)
+    // M28: Accounting Foundation (Manager: full access — see PERMS-2, 2026-08-21)
+    //
+    // The `:create`/`:periods:create` trio here predates C-21 (M28-era) and was the
+    // subject of finding C-27 — an un-audited grant the 2026-08-20 cutover never
+    // reviewed. Batch 4 (PERMS-2) resolves C-27 by owner decision: Manager has full
+    // access to everything it is responsible for, so this M28/M29 block is widened to
+    // match Accountant's full grant rather than narrowed. See CLAUDE.md C-27 correction
+    // note and ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md.
     'pos:accounting:accounts:read',
     'pos:accounting:accounts:create',
     'pos:accounting:cost-centers:read',
     'pos:accounting:cost-centers:create',
     'pos:accounting:periods:read',
     'pos:accounting:periods:create',
+    'pos:accounting:periods:open',
     'pos:accounting:posting-source-maps:read',
+    'pos:accounting:posting-source-maps:update',
     'pos:accounting:tax-config:read',
-    // M29: General Ledger (Manager: read-only)
+    'pos:accounting:tax-config:update',
+    // M29: General Ledger (Manager: full access — see PERMS-2, 2026-08-21)
     'pos:accounting:journals:read',
+    'pos:accounting:journals:create',
+    'pos:accounting:journals:reverse',
+    'pos:accounting:posting:replay',
     'pos:accounting:posting-runs:read',
     'pos:accounting:posting-errors:read',
+    'pos:accounting:posting-errors:resolve',
     // M40: Alerts + Digests + Real-Time Owner Views (Manager: ops-day-to-day)
     'alerts:read',
     'alerts:rule:write',
@@ -1165,10 +1195,13 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'exports:read',
     'exports:write',
     'exports:download',
-    // C-21 permissions cutover (2026-08-20) — Manager: READ-ONLY on the accounting/
-    // finance surface, per the OD-9 resolution recorded above. No AP/AR write, no bill
-    // approve, no reconciliation match, no period close/lock, no budget write.
-    ...C21_ACCOUNTING_FINANCE_MANAGER_READ,
+    // PERMS-2 (backend gap batch 4, 2026-08-21) — SUPERSEDES the C-21 (2026-08-20)
+    // read-only OD-9 resolution below. The owner has decided Manager has full access
+    // to everything it is responsible for, which includes accounting: Manager now
+    // holds every one of the 36 C-21 strings, matching Accountant. The former
+    // `C21_ACCOUNTING_FINANCE_MANAGER_READ` (15-string) constant is retained in this
+    // file for historical reference only — it is no longer referenced by any role.
+    ...C21_ACCOUNTING_FINANCE_ALL,
   ],
   Accountant: [
     'identity:user:read',
@@ -1246,6 +1279,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:accounting:posting:replay',
     'pos:accounting:posting-runs:read',
     'pos:accounting:posting-errors:read',
+    'pos:accounting:posting-errors:resolve',
     // M40: Alerts + Digests + Real-Time Owner Views (Accountant: read-focused)
     'alerts:read',
     'alerts:channel:read',

@@ -81,7 +81,70 @@ unless the task explicitly requires them and the relevant isolation rules are me
 
 ## 5. Current implementation status
 
-**Enterprise UI Track B5.5 complete - Manager Accounting Closing surfaces (2026-08-21) - A:
+**Backend gap batch 4 complete - PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) - A:
+COMPLETE / B5.6, B5.7, B6, B7 still gated.** Backend + schema (one new migration) + seed + docs. No
+frontend file touched - the Manager accounting UI still renders zero write affordances; that is now
+a deliberate build-order gate (Track B5.7, not started), not a permission gate.
+
+PERMS-2: the owner decided Manager has full access to everything it is responsible for. This
+reverses the 2026-08-20 C-21 cutover's OD-9 read-only resolution for Manager. seed.ts's
+ROLE_PERM_MATRIX.Manager now spreads C21_ACCOUNTING_FINANCE_ALL (36 strings, matching Accountant)
+instead of the retired 15-string C21_ACCOUNTING_FINANCE_MANAGER_READ, plus the full M28/M29 set
+(periods:open, posting-source-maps:update, tax-config:update, journals:create/reverse,
+posting:replay) it previously held only in part. pos:hr:compensation:read was explicitly NOT
+granted - verified empty on the isolated QA stack. Waiter, Cashier and Supervisor gained zero
+accounting/finance/procurement strings - verified via direct SQL and seed idempotence (54/54/54
+accounting+finance permission rows for Owner/Manager/Accountant after a second seed run, 0
+duplicates).
+
+C-25 fixed: LedgerService.getJournal resolved by {id, orgId} alone with no branch predicate at all;
+now uses branchOrOrgScope, matching listPostingErrors/getPostingError. Live e2e-proven: a journal
+id from branch A now 404s under branch B's header. BGB3-L3 fixed in the same pass:
+listJournals/listPostingRuns used strict where.branchId= on nullable columns; now the same
+OR:[{branchId},{branchId:null}] predicate.
+
+C-26 fixed: all six pre-existing ledger.service.ts audit.log calls (JOURNAL_CREATED,
+JOURNAL_REVERSED, POSTING_RUN_STARTED, POSTING_RUN_FINISHED x2, POSTING_ERROR_CREATED) now stamp
+metadata.branchId, so ledger-domain events are finally reachable through the branch-scoped
+audit-timeline endpoint (B5-F4). Historical rows created before this fix still lack branchId - this
+batch never touched shared Neon, so the production count could not be measured and was not
+backfilled.
+
+C-27 legitimised, not fixed-as-a-bug: the pre-existing, un-audited M28-era Manager grant
+(pos:accounting:periods:create/accounts:create/cost-centers:create) is now correct under PERMS-2
+and is seeded as an explicit, commented entry. Live e2e-proven: Manager POST /accounting/periods
+returns 201 with a resolvable audit row, and PATCH .../open, .../close, .../lock now all return 200
+for Manager (previously 403). Every "Manager performs zero accounting writes" claim across the
+ai/ENTERPRISE_B5_1...5 completion reports, ai/ENTERPRISE_UI_ROADMAP.md,
+ai/ACCOUNTING_API_VERIFICATION_REPORT.md and ai/PERMISSIONS_CUTOVER_COMPLETION_REPORT.md is now
+dated by a supersession banner added to the top of each file - history preserved, not rewritten.
+
+B5.4-D1 fixed: PostingError had no resolve/dismiss write path for any role. New migration
+20260821200636_b5_4_d1_posting_error_resolution adds resolvedById/resolvedAt/resolutionNotes
+columns; new PATCH /api/accounting/posting-errors/:id/resolve and .../dismiss routes, gated on new
+permission pos:accounting:posting-errors:resolve (Owner, Manager, Accountant only), status-guarded
+(only OPEN may transition; repeat attempt returns 409), stamping a C-26-correct branch-scoped audit
+event. The migration is hand-written, not prisma migrate dev's raw diff, because that diff also
+contained a large amount of pre-existing, unrelated schema drift (FK drop/recreate cycles, index
+renames) that predates this batch - only the posting_errors columns and FK are in the committed
+migration.
+
+B5.5-F1 investigated further, confirmed genuinely dead, not implemented:
+PeriodCloseRunStatus.FAILED/.PENDING remain structurally unreachable - closeFiscalPeriod() is the
+only write path, fully synchronous inside one transaction, and a repo-wide grep found zero @Cron
+decorators and zero queue processors anywhere in apps/api referencing PeriodCloseRun.
+
+Validated on an isolated local Docker stack - Postgres :55480 (nimbus_b4_qa); shared Neon never
+connected to or written. packages/db/.env was temporarily swapped for the Prisma CLI steps only and
+restored immediately after, SHA-256 verified identical; apps/api/.env was never edited on disk
+(isolation via exported DATABASE_URL/DIRECT_DATABASE_URL into the spawning shell). API typecheck
+clean; targeted eslint (no --fix) clean on every touched file. Ledger unit suite 53/53; extended
+accounting-branch-scoping.e2e-spec.ts 43/43 passing live, covering C-25, BGB3-L3, C-26, B5.4-D1, and
+PERMS-2 Manager writes. See ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md for the full validation
+table. B5.6, B5.7 and B7 remain NOT started - do not begin any of them without explicit owner
+authorization.
+
+**Prior milestone record (superseded above) - Enterprise UI Track B5.5 complete - Manager Accounting Closing surfaces (2026-08-21) - A:
 B5.5 COMPLETE / B5.6 gated.** Frontend and docs only; no backend, schema, migration, seed,
 permission, DTO or Postman change. The two Closing menu rows B5.1 shipped as honest not-yet
 placeholders - Fiscal periods, Period close runs - are now real surfaces. The Accounting menu
@@ -1190,6 +1253,23 @@ start without explicit authorization.
 
 ## 6. Locked role boundaries
 
+PERMS-2 correction, read before touching any Track B5.1-B5.5 boundary text below (backend gap
+batch 4, 2026-08-21): every claim below that Manager accounting is READ-ONLY BY PERMISSION, holds
+zero writes, or is "5/5 representative writes to 403" described the permission state as it existed
+when that phase shipped. It no longer describes current permission state - the owner has since
+decided Manager has full access to everything it is responsible for, and PERMS-2 granted Manager
+the full 36-string C21_ACCOUNTING_FINANCE_ALL set plus the full M28/M29 set, matching
+Accountant/Owner (also resolving C-27, PC-01, and PC-02). The FRONTEND no-write-affordance rules
+below remain in force exactly as written - do not add a write control anywhere in the Manager
+accounting tree without explicit authorization for Track B5.7 (the new "accounting write pass"
+phase, not started; see ai/ENTERPRISE_UI_ROADMAP.md). The gate on the frontend is now a deliberate
+build-order decision, not a permission gate. C-25 (getJournal branch scoping) and C-26 (ledger
+audit branchId stamping) are FIXED at the backend; the frontend's isJournalReadableInBranch()
+fail-safe and the Audit trail C-26 disclosure copy stay in place as defense-in-depth. B5.4-D1
+(posting-error resolve/dismiss) is FIXED - a real endpoint exists now, gated on new permission
+pos:accounting:posting-errors:resolve (Owner/Manager/Accountant only). See
+ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md for full detail.
+
 - Waiter: Floor / Reservations / Me. No Orders tab. No payment collection or
   order close.
 - Cashier: Floor / Till / Me. Owns payment collection, till, close, and (later)
@@ -1406,12 +1486,13 @@ files live in `apps/web/public/brand/`; see `docs/BRAND_IDENTITY.md`.
   `procurement:advisory:read` rows. Do not re-derive the gap with a PREFIX match -
   that is exactly how the original count missed bank-rec's 11 strings and
   under-reported 36 as 23.
-- Do not grant Manager ANY accounting write. The OD-9 resolution is Owner FULL,
+- ~~Do not grant Manager ANY accounting write. The OD-9 resolution is Owner FULL,
   Accountant FULL, Manager READ-ONLY (15 strings). B5 must request the five OD-9
-  writes explicitly (PC-01).
-- Do not grant Manager `procurement:advisory:read` - it also gates the mutation
-  `PATCH /finance/procurement-suggestions/:id/review` (PC-02), so it would hand
-  Manager a write.
+  writes explicitly (PC-01).~~ ~~Do not grant Manager `procurement:advisory:read` -
+  it also gates the mutation `PATCH /finance/procurement-suggestions/:id/review`
+  (PC-02), so it would hand Manager a write.~~ SUPERSEDED by PERMS-2 (backend gap
+  batch 4, 2026-08-21): the owner reversed OD-9 - Manager now holds the full
+  36-string set, including `procurement:advisory:read` with its write half.
 - Do not restore `pos:hr:compensation:read` to Manager (FU-1). Owner and
   Accountant keep it.
 - Do not relax the Quick-PIN branch guard (B3-F1): cross-branch is 404, and a
@@ -1461,9 +1542,13 @@ files live in `apps/web/public/brand/`; see `docs/BRAND_IDENTITY.md`.
 - Do not bind a C4 pager to a fabricated total on the ten list routes that return
   a bare array with no server `total` (PC-06, still open). Ship them as explicitly
   unpaginated instead.
-- Manager still holds NO accounting write (PC-01), and is deliberately denied
+- ~~Manager still holds NO accounting write (PC-01), and is deliberately denied
   `procurement:advisory:read` because that string also gates a mutation (PC-02).
-  B5 must request those explicitly.
+  B5 must request those explicitly.~~ SUPERSEDED by PERMS-2 (backend gap batch 4,
+  2026-08-21): Manager now holds full journal create/reverse/replay and
+  `procurement:advisory:read` at the backend - PC-01 and PC-02 are resolved by
+  owner decision. The frontend journals surface is still deliberately read-only
+  (Track B5.7, not started).
 - Do not call `/api/finance/forecast` - the route is `/api/franchise/forecast`.
 - Do not read AR aging totals from `totals.grand*` - they are under `summary`
   (PC-05; the endpoint shape is unchanged).

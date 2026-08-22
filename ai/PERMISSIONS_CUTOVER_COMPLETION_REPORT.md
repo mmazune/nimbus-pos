@@ -1,5 +1,18 @@
 # Permissions Cutover — Completion Report
 
+> ⚠️ **SUPERSEDED IN PART 2026-08-21 (backend gap batch 4 — PERMS-2 / C-27).** This report's OD-9
+> resolution ("Owner FULL / Accountant FULL / Manager READ-ONLY, 15 strings") described the owner's
+> decision **at the time of the 2026-08-20 cutover**. The owner has since reversed it: Manager now
+> has full access to everything it is responsible for. PERMS-2 (2026-08-21) granted Manager the full
+> 36-string `C21_ACCOUNTING_FINANCE_ALL` set, matching Accountant, superseding
+> `C21_ACCOUNTING_FINANCE_MANAGER_READ` (retained in `seed.ts` only as a historical record). This
+> report also **missed a pre-existing gap**: Manager already held a stray, un-audited M28-era write
+> (`pos:accounting:periods:create`/`accounts:create`/`cost-centers:create`) that this cutover never
+> reviewed — found later as **C-27** (Track B5.5) and legitimised by PERMS-2. The `pos:hr:compensation:read`
+> revocation (FU-1) and the Quick-PIN branch guard (B3-F1) described below are UNCHANGED and remain
+> in force. See `ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md` and CLAUDE.md's C-27 correction note.
+> History below is preserved, not rewritten.
+
 **Milestone:** Track C **C-21** + **FU-1** + **B3-F1**, with Track **B0** (API verification) folded in
 **Date:** 2026-08-20
 **Type:** Backend + **seed data**. **No Prisma schema change. No migration.**

@@ -163,6 +163,10 @@ export class LedgerService {
       entityId: journal.id,
       metadata: {
         orgId,
+        // C-26: this used to omit branchId entirely, making the event structurally
+        // invisible to the branch-scoped audit-timeline endpoint (which unconditionally
+        // ANDs `metadata.branchId = X-Branch-Id`).
+        branchId: branchId || null,
         journalNumber,
         totalDebit: totalDebit.toString(),
         totalCredit: totalCredit.toString(),
@@ -188,8 +192,13 @@ export class LedgerService {
     const { orgId, branchId, status, sourceKey, from, to, skip = 0 } = params;
     const take = clampTake(params.take, 50);
 
-    const where: Prisma.JournalEntryWhereInput = { orgId };
-    if (branchId) where.branchId = branchId;
+    // BGB3-L3 / PC-03: was strict `where.branchId = branchId` on a NULLABLE column,
+    // which hid every unattributed org-level journal from every branch at once —
+    // the same defect class already fixed on listPostingErrors.
+    const where: Prisma.JournalEntryWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'journal entry'),
+    };
     if (status) where.status = status as any;
     if (sourceKey) where.sourceKey = sourceKey;
     if (from || to) {
@@ -221,9 +230,17 @@ export class LedgerService {
 
   // ── Get Journal By ID ──
 
-  async getJournal(params: { orgId: string; journalId: string }) {
+  async getJournal(params: { orgId: string; branchId?: string; journalId: string }) {
+    // C-25: this used to resolve by `{id, orgId}` alone with NO branch predicate at
+    // all — a journal id from one branch's list stayed readable by the same id under
+    // a different branch's header. Now uses the same nullable-column scope as
+    // listJournals/getPostingError.
     const journal = await this.prisma.journalEntry.findFirst({
-      where: { id: params.journalId, orgId: params.orgId },
+      where: {
+        id: params.journalId,
+        orgId: params.orgId,
+        ...branchOrOrgScope(params.branchId, 'journal entry'),
+      },
       include: {
         lines: {
           include: {
@@ -337,6 +354,9 @@ export class LedgerService {
       entityId: result.id,
       metadata: {
         orgId,
+        // C-26: stamp the original journal's branchId (may itself be null for an
+        // org-level journal) rather than omitting the key entirely.
+        branchId: original.branchId,
         originalJournalId: original.id,
         originalJournalNumber: original.journalNumber,
         reversalJournalNumber: result.journalNumber,
@@ -380,7 +400,7 @@ export class LedgerService {
       actorUserId: userId,
       entityType: 'PostingRun',
       entityId: 'pending',
-      metadata: { orgId, sourceKey, sourceDocumentId, runKey },
+      metadata: { orgId, branchId: branchId || null, sourceKey, sourceDocumentId, runKey },
     });
 
     // Create the posting run
@@ -478,6 +498,7 @@ export class LedgerService {
         entityId: postingRun.id,
         metadata: {
           orgId,
+          branchId: branchId || null,
           status: 'SUCCEEDED',
           journalId: journal.id,
           journalNumber: journal.journalNumber,
@@ -513,6 +534,7 @@ export class LedgerService {
         entityId: postingError.id,
         metadata: {
           orgId,
+          branchId: branchId || null,
           postingRunId: postingRun.id,
           code: 'POSTING_FAILED',
           message: err.message,
@@ -524,7 +546,7 @@ export class LedgerService {
         actorUserId: userId,
         entityType: 'PostingRun',
         entityId: postingRun.id,
-        metadata: { orgId, status: 'FAILED', errorId: postingError.id },
+        metadata: { orgId, branchId: branchId || null, status: 'FAILED', errorId: postingError.id },
       });
 
       return {
@@ -546,8 +568,12 @@ export class LedgerService {
     const { orgId, branchId, skip = 0 } = params;
     const take = clampTake(params.take, 50);
 
-    const where: Prisma.PostingRunWhereInput = { orgId };
-    if (branchId) where.branchId = branchId;
+    // BGB3-L3 / PC-03: was strict `where.branchId = branchId` on a NULLABLE column —
+    // the same defect class already fixed on listPostingErrors.
+    const where: Prisma.PostingRunWhereInput = {
+      orgId,
+      ...branchOrOrgScope(branchId, 'posting run'),
+    };
 
     const [data, total] = await Promise.all([
       this.prisma.postingRun.findMany({
@@ -632,5 +658,92 @@ export class LedgerService {
     }
 
     return error;
+  }
+
+  // ── Resolve / Dismiss Posting Error (B5.4-D1, backend gap batch 4) ──
+
+  private async transitionPostingError(params: {
+    orgId: string;
+    branchId?: string;
+    errorId: string;
+    userId: string;
+    resolutionNotes?: string;
+    targetStatus: PostingErrorStatus;
+    auditAction: 'POSTING_ERROR_RESOLVED' | 'POSTING_ERROR_DISMISSED';
+  }) {
+    const { orgId, branchId, errorId, userId, resolutionNotes, targetStatus, auditAction } = params;
+
+    const error = await this.prisma.postingError.findFirst({
+      where: {
+        id: errorId,
+        orgId,
+        ...branchOrOrgScope(branchId, 'posting error'),
+      },
+    });
+
+    if (!error) {
+      throw new NotFoundException('Posting error not found');
+    }
+
+    if (error.status !== PostingErrorStatus.OPEN) {
+      throw new ConflictException(
+        `Posting error is already ${error.status.toLowerCase()} — only an OPEN posting error can be resolved or dismissed`,
+      );
+    }
+
+    const updated = await this.prisma.postingError.update({
+      where: { id: errorId },
+      data: {
+        status: targetStatus,
+        resolvedById: userId,
+        resolvedAt: new Date(),
+        resolutionNotes: resolutionNotes || null,
+      },
+    });
+
+    await this.audit.log({
+      action: auditAction,
+      actorUserId: userId,
+      entityType: 'PostingError',
+      entityId: errorId,
+      metadata: {
+        orgId,
+        // C-26: same fix applied to the two new audit events this batch adds.
+        branchId: error.branchId,
+        oldStatus: error.status,
+        newStatus: targetStatus,
+        resolutionNotes: resolutionNotes || null,
+      },
+    });
+
+    return updated;
+  }
+
+  async resolvePostingError(params: {
+    orgId: string;
+    branchId?: string;
+    errorId: string;
+    userId: string;
+    resolutionNotes?: string;
+  }) {
+    return this.transitionPostingError({
+      ...params,
+      targetStatus: PostingErrorStatus.RESOLVED,
+      auditAction: 'POSTING_ERROR_RESOLVED',
+    });
+  }
+
+  async dismissPostingError(params: {
+    orgId: string;
+    branchId?: string;
+    errorId: string;
+    userId: string;
+    resolutionNotes?: string;
+  }) {
+    return this.transitionPostingError({
+      ...params,
+      targetStatus: PostingErrorStatus.DISMISSED,
+      auditAction: 'POSTING_ERROR_DISMISSED',
+    });
   }
 }

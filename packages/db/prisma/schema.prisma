@@ -251,6 +251,8 @@ model User {
     fiscalPeriodsLocked            FiscalPeriod[]              @relation("FiscalPeriodLockedBy")
     // M29 — General Ledger + Journal Entries + Posting Engine
     journalEntriesPosted           JournalEntry[]              @relation("JournalPostedBy")
+    // Backend gap batch 4 — B5.4-D1: posting-error resolve/dismiss
+    postingErrorsResolved          PostingError[]              @relation("PostingErrorResolvedBy")
     // M34 — Accounts Payable
     vendorBillsApproved            VendorBill[]                @relation("VendorBillApprovedBy")
     vendorPaymentsMade             VendorPayment[]             @relation("VendorPaymentPaidBy")
@@ -4244,12 +4246,20 @@ model PostingError {
     code             String
     message          String
     details          Json?
+    // Backend gap batch 4 — B5.4-D1 (2026-08-21): there was no resolve/dismiss endpoint
+    // for this model at all. `resolvedById`/`resolvedAt` are stamped by EITHER a
+    // resolve or a dismiss action (mirrors Feedback's resolvedBy pattern); the specific
+    // outcome is recorded in `status` (RESOLVED vs DISMISSED).
+    resolvedById     String?            @map("resolved_by_id")
+    resolvedAt       DateTime?          @map("resolved_at")
+    resolutionNotes  String?            @map("resolution_notes")
     createdAt        DateTime           @default(now()) @map("created_at")
     updatedAt        DateTime           @updatedAt @map("updated_at")
 
     organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
     branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
     postingRun   PostingRun?  @relation(fields: [postingRunId], references: [id], onDelete: SetNull)
+    resolvedBy   User?        @relation("PostingErrorResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
 
     @@index([orgId])
     @@index([branchId])

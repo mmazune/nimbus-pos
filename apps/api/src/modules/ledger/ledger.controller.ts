@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
@@ -10,6 +10,8 @@ import {
   ListJournalsQueryDto,
   ListPostingRunsQueryDto,
   ListPostingErrorsQueryDto,
+  ResolvePostingErrorDto,
+  DismissPostingErrorDto,
 } from './dto';
 
 @Controller('accounting')
@@ -58,6 +60,7 @@ export class LedgerController {
     const ctx = (req as any).branchContext;
     return this.ledgerService.getJournal({
       orgId: ctx.organizationId,
+      branchId: ctx.branchId,
       journalId: id,
     });
   }
@@ -132,6 +135,44 @@ export class LedgerController {
       orgId: ctx.organizationId,
       branchId: ctx.branchId,
       errorId: id,
+    });
+  }
+
+  // B5.4-D1 (backend gap batch 4): there was previously no resolve/dismiss endpoint
+  // for a PostingError anywhere in the API, for any role.
+  @Patch('posting-errors/:id/resolve')
+  @Permissions('pos:accounting:posting-errors:resolve')
+  async resolvePostingError(
+    @Param('id') id: string,
+    @Body() dto: ResolvePostingErrorDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.ledgerService.resolvePostingError({
+      orgId: ctx.organizationId,
+      branchId: ctx.branchId,
+      errorId: id,
+      userId: user.id,
+      resolutionNotes: dto.resolutionNotes,
+    });
+  }
+
+  @Patch('posting-errors/:id/dismiss')
+  @Permissions('pos:accounting:posting-errors:resolve')
+  async dismissPostingError(
+    @Param('id') id: string,
+    @Body() dto: DismissPostingErrorDto,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.ledgerService.dismissPostingError({
+      orgId: ctx.organizationId,
+      branchId: ctx.branchId,
+      errorId: id,
+      userId: user.id,
+      resolutionNotes: dto.resolutionNotes,
     });
   }
 }

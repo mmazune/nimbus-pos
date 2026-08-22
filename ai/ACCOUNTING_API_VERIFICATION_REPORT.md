@@ -1,5 +1,15 @@
 # Accounting / Finance API Verification Report — Track B0
 
+> ⚠️ **SUPERSEDED IN PART 2026-08-21 (backend gap batch 4 — PERMS-2).** This report's **PC-01**
+> finding ("Manager holds NO accounting write") and its "Manager READ-ONLY" framing described the
+> owner's OD-9 read-first decision **at the time this report shipped**. The owner has since reversed
+> that decision: Manager now has full access to everything it is responsible for, and PERMS-2
+> granted Manager the full 36-string C-21 set plus the full M28/M29 set, matching Accountant/Owner.
+> **PC-02** (`procurement:advisory:read` withheld because it also gates a write) is resolved the same
+> way — Manager now holds it deliberately, write included. See
+> `ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md` and CLAUDE.md's C-27 correction note. History below is
+> preserved, not rewritten.
+
 **Date:** 2026-08-20
 **Phase:** Track B **B0** (API verification extension, M-P0 pass #2), executed as part of the
 **permissions cutover** milestone (Track C: C-21 · FU-1 · B3-F1).

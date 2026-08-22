@@ -1,5 +1,19 @@
 # Enterprise UI Track B5.5 — Manager Accounting Closing surfaces
 
+> ⚠️ **PARTIALLY SUPERSEDED 2026-08-21 (backend gap batch 4 — PERMS-2 / C-27 / B5.5-F1).** This
+> report's **C-27** finding (an un-audited, pre-existing `periods:create` write grant) is now
+> RESOLVED, not merely disclosed: the owner has since decided Manager has full access to everything
+> it is responsible for, and PERMS-2 granted Manager the full 36-string C-21 accounting/finance set
+> plus the full M28/M29 set (matching Accountant) — `open`/`close`/`lock` are now genuinely permitted
+> for Manager too, not just the stray `:create`. **B5.5-F1** (`FAILED`/`PENDING` period-close-run
+> statuses unreachable) was investigated further in batch 4 and confirmed to be case (a) — genuinely
+> dead enum members, not a bug — and was NOT changed; see
+> `ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md` for the evidence. The **frontend** described below is
+> UNCHANGED and still correctly renders zero write affordances and the C-27/B5.5-F1 disclosures (now
+> describing a resolved-but-not-yet-exposed backend state) — the write UI is a deliberate build-order
+> gate (Track **B5.7**, not started), not a permission gate. History below is preserved, not
+> rewritten.
+
 **Date:** 2026-08-21
 **Phase:** `ai/ENTERPRISE_UI_ROADMAP.md` Track **B5.5** (Closing), owner-approved.
 **Status:** **COMPLETE**

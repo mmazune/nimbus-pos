@@ -586,7 +586,14 @@
                                 "exec": [
                                     "pm.test('status 201', () => pm.response.to.have.status(201));",
                                     "const body = pm.response.json();",
-                                    "pm.test('status is FAILED', () => pm.expect(body.status).to.eql('FAILED'));"
+                                    "pm.test('status is FAILED', () => pm.expect(body.status).to.eql('FAILED'));",
+                                    "// Backend gap batch 4 (B5.4-D1): capture the produced posting error so the",
+                                    "// Resolve/Dismiss requests below have a real OPEN row to act on (R10).",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "if (body.error && body.error.id) {",
+                                    "    pm.collectionVariables.set('postingErrorId', body.error.id);",
+                                    "    if (envActive) pm.environment.set('postingErrorId', body.error.id);",
+                                    "}"
                                 ],
                                 "type": "text/javascript"
                             }
@@ -854,6 +861,213 @@
                                 "accounting",
                                 "posting-errors",
                                 "00000000-0000-0000-0000-000000000000"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Resolve Posting Error",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Backend gap batch 4 (B5.4-D1): PATCH .../resolve did not exist before this batch.",
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is RESOLVED', () => pm.expect(body.status).to.eql('RESOLVED'));",
+                                    "pm.test('resolvedById is set', () => pm.expect(body.resolvedById).to.be.a('string'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"resolutionNotes\": \"Resolved via Postman collection run\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/posting-errors/{{postingErrorId}}/resolve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "posting-errors",
+                                "{{postingErrorId}}",
+                                "resolve"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Resolve Posting Error — Already Resolved (409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('status 409', () => pm.response.to.have.status(409));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/posting-errors/{{postingErrorId}}/resolve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "posting-errors",
+                                "{{postingErrorId}}",
+                                "resolve"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Replay Posting (Unknown Key — For Dismiss)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// A second, independent posting error so Dismiss has its own OPEN row",
+                                    "// (Resolve above already consumed the first one).",
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('postingRun status is FAILED', () => pm.expect(body.postingRun.status).to.eql('FAILED'));",
+                                    "const envActive = pm.environment && pm.environment.name;",
+                                    "if (body.error && body.error.id) {",
+                                    "    pm.collectionVariables.set('postingErrorIdForDismiss', body.error.id);",
+                                    "    if (envActive) pm.environment.set('postingErrorIdForDismiss', body.error.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"sourceKey\": \"NONEXISTENT_KEY_FOR_DISMISS\",\n    \"sourceDocumentId\": \"pm-test-missing-2\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/posting/replay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "posting",
+                                "replay"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Dismiss Posting Error",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Backend gap batch 4 (B5.4-D1): PATCH .../dismiss did not exist before this batch.",
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('status is DISMISSED', () => pm.expect(body.status).to.eql('DISMISSED'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "x-branch-id",
+                                "value": "{{branchId}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"resolutionNotes\": \"Not actionable — dismissed via Postman collection run\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/accounting/posting-errors/{{postingErrorIdForDismiss}}/dismiss",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "accounting",
+                                "posting-errors",
+                                "{{postingErrorIdForDismiss}}",
+                                "dismiss"
                             ]
                         }
                     }

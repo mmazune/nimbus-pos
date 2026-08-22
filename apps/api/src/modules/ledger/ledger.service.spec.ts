@@ -131,6 +131,7 @@ describe('LedgerService', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
         count: jest.fn(),
       },
       postingSourceMap: {
@@ -192,7 +193,12 @@ describe('LedgerService', () => {
       expect(result).toEqual(mockJournal);
       expect(prisma.journalEntry.create).toHaveBeenCalled();
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'JOURNAL_CREATED' }),
+        expect.objectContaining({
+          action: 'JOURNAL_CREATED',
+          // C-26: this event used to omit branchId entirely, making it structurally
+          // invisible to the branch-scoped audit-timeline endpoint.
+          metadata: expect.objectContaining({ branchId: ctx.branchId }),
+        }),
       );
     });
 
@@ -326,6 +332,7 @@ describe('LedgerService', () => {
 
       await service.listJournals({
         orgId: ctx.organizationId,
+        branchId: ctx.branchId,
         status: 'POSTED',
         sourceKey: 'ORDER_REVENUE',
       });
@@ -347,6 +354,7 @@ describe('LedgerService', () => {
 
       await service.listJournals({
         orgId: ctx.organizationId,
+        branchId: ctx.branchId,
         from: '2024-01-01',
         to: '2024-03-31',
       });
@@ -363,6 +371,28 @@ describe('LedgerService', () => {
         }),
       );
     });
+
+    // BGB3-L3 / PC-03: JournalEntry.branchId is nullable — the predicate must be
+    // `OR: [{branchId}, {branchId: null}]`, never strict equality (which would
+    // orphan every org-level journal from every branch at once), and must be
+    // fail-closed when no branch is resolved (matches listPostingErrors).
+    describe('PC-03 branch scoping', () => {
+      it('applies the OR-nullable predicate, not strict equality', async () => {
+        prisma.journalEntry.findMany.mockResolvedValue([]);
+        prisma.journalEntry.count.mockResolvedValue(0);
+
+        await service.listJournals({ orgId: ctx.organizationId, branchId: ctx.branchId });
+
+        const where = prisma.journalEntry.findMany.mock.calls[0][0].where;
+        expect(where.OR).toEqual([{ branchId: ctx.branchId }, { branchId: null }]);
+      });
+
+      it('is fail-closed when no branch is resolved', async () => {
+        await expect(service.listJournals({ orgId: ctx.organizationId } as any)).rejects.toThrow(
+          /without a branch id/,
+        );
+      });
+    });
   });
 
   // ── getJournal ──
@@ -373,6 +403,7 @@ describe('LedgerService', () => {
 
       const result = await service.getJournal({
         orgId: ctx.organizationId,
+        branchId: ctx.branchId,
         journalId: 'journal-1',
       });
 
@@ -385,9 +416,51 @@ describe('LedgerService', () => {
       await expect(
         service.getJournal({
           orgId: ctx.organizationId,
+          branchId: ctx.branchId,
           journalId: 'nonexistent',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    // C-25: getJournal used to resolve by `{id, orgId}` alone with NO branch
+    // predicate at all — a journal id from one branch's list stayed readable by
+    // the same id under a different branch's header.
+    describe('C-25 branch scoping', () => {
+      it('applies the same OR-nullable predicate as listJournals', async () => {
+        prisma.journalEntry.findFirst.mockResolvedValue(mockJournal);
+
+        await service.getJournal({
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          journalId: 'journal-1',
+        });
+
+        const where = prisma.journalEntry.findFirst.mock.calls[0][0].where;
+        expect(where.OR).toEqual([{ branchId: ctx.branchId }, { branchId: null }]);
+      });
+
+      it('is fail-closed when no branch is resolved', async () => {
+        await expect(
+          service.getJournal({ orgId: ctx.organizationId, journalId: 'journal-1' } as any),
+        ).rejects.toThrow(/without a branch id/);
+      });
+
+      it('refuses a journal belonging to a different branch (returns 404, not the row)', async () => {
+        // Simulates the fail-closed Prisma predicate excluding a cross-branch row —
+        // findFirst returns null because the branch-B journal never matches branch-A's scope.
+        prisma.journalEntry.findFirst.mockResolvedValue(null);
+
+        await expect(
+          service.getJournal({
+            orgId: ctx.organizationId,
+            branchId: 'branch-A',
+            journalId: 'journal-owned-by-branch-B',
+          }),
+        ).rejects.toThrow(NotFoundException);
+
+        const where = prisma.journalEntry.findFirst.mock.calls[0][0].where;
+        expect(where.OR).toEqual([{ branchId: 'branch-A' }, { branchId: null }]);
+      });
     });
   });
 
@@ -426,7 +499,11 @@ describe('LedgerService', () => {
       expect(prisma.journalEntry.create).toHaveBeenCalled();
       expect(prisma.journalEntry.update).toHaveBeenCalled();
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'JOURNAL_REVERSED' }),
+        expect.objectContaining({
+          action: 'JOURNAL_REVERSED',
+          // C-26: stamps the original journal's own branchId.
+          metadata: expect.objectContaining({ branchId: postedJournal.branchId }),
+        }),
       );
     });
 
@@ -532,6 +609,20 @@ describe('LedgerService', () => {
           data: expect.objectContaining({ status: 'SUCCEEDED' }),
         }),
       );
+      // C-26: POSTING_RUN_STARTED and the success-path POSTING_RUN_FINISHED both
+      // used to omit branchId entirely.
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'POSTING_RUN_STARTED',
+          metadata: expect.objectContaining({ branchId: ctx.branchId }),
+        }),
+      );
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'POSTING_RUN_FINISHED',
+          metadata: expect.objectContaining({ branchId: ctx.branchId, status: 'SUCCEEDED' }),
+        }),
+      );
     });
 
     it('should return existing run for idempotent replay', async () => {
@@ -597,6 +688,20 @@ describe('LedgerService', () => {
           data: expect.objectContaining({ status: 'FAILED' }),
         }),
       );
+      // C-26: POSTING_ERROR_CREATED and the failure-path POSTING_RUN_FINISHED both
+      // used to omit branchId entirely.
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'POSTING_ERROR_CREATED',
+          metadata: expect.objectContaining({ branchId: ctx.branchId }),
+        }),
+      );
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'POSTING_RUN_FINISHED',
+          metadata: expect.objectContaining({ branchId: ctx.branchId, status: 'FAILED' }),
+        }),
+      );
     });
   });
 
@@ -615,6 +720,26 @@ describe('LedgerService', () => {
 
       expect(result.data).toEqual([mockRun]);
       expect(result.total).toBe(1);
+    });
+
+    // BGB3-L3: PostingRun.branchId is nullable and was strictly filtered — same
+    // defect class as journals, fixed the same way.
+    describe('PC-03 branch scoping', () => {
+      it('applies the OR-nullable predicate, not strict equality', async () => {
+        prisma.postingRun.findMany.mockResolvedValue([]);
+        prisma.postingRun.count.mockResolvedValue(0);
+
+        await service.listPostingRuns({ orgId: ctx.organizationId, branchId: ctx.branchId });
+
+        const where = prisma.postingRun.findMany.mock.calls[0][0].where;
+        expect(where.OR).toEqual([{ branchId: ctx.branchId }, { branchId: null }]);
+      });
+
+      it('is fail-closed when no branch is resolved', async () => {
+        await expect(service.listPostingRuns({ orgId: ctx.organizationId } as any)).rejects.toThrow(
+          /without a branch id/,
+        );
+      });
     });
   });
 
@@ -753,6 +878,126 @@ describe('LedgerService', () => {
     it('is fail-closed when no branch is resolved', async () => {
       await expect(
         service.getPostingError({ orgId: ctx.organizationId, errorId: 'err-1' } as any),
+      ).rejects.toThrow(/without a branch id/);
+    });
+  });
+
+  // ── resolvePostingError / dismissPostingError (B5.4-D1, backend gap batch 4) ──
+
+  describe('resolvePostingError / dismissPostingError', () => {
+    const openError = {
+      id: 'err-1',
+      orgId: 'org-1',
+      branchId: 'branch-1',
+      status: 'OPEN',
+      code: 'POSTING_FAILED',
+      message: 'boom',
+    };
+
+    it('resolves an OPEN posting error and stamps a branch-scoped audit event', async () => {
+      prisma.postingError.findFirst.mockResolvedValue(openError);
+      prisma.postingError.update.mockResolvedValue({ ...openError, status: 'RESOLVED' });
+
+      const result = await service.resolvePostingError({
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        errorId: 'err-1',
+        userId: 'user-1',
+        resolutionNotes: 'Fixed the source map',
+      });
+
+      expect(result.status).toBe('RESOLVED');
+      expect(prisma.postingError.update).toHaveBeenCalledWith({
+        where: { id: 'err-1' },
+        data: {
+          status: 'RESOLVED',
+          resolvedById: 'user-1',
+          resolvedAt: expect.any(Date),
+          resolutionNotes: 'Fixed the source map',
+        },
+      });
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'POSTING_ERROR_RESOLVED',
+          metadata: expect.objectContaining({
+            branchId: openError.branchId,
+            oldStatus: 'OPEN',
+            newStatus: 'RESOLVED',
+          }),
+        }),
+      );
+    });
+
+    it('dismisses an OPEN posting error and stamps a branch-scoped audit event', async () => {
+      prisma.postingError.findFirst.mockResolvedValue(openError);
+      prisma.postingError.update.mockResolvedValue({ ...openError, status: 'DISMISSED' });
+
+      const result = await service.dismissPostingError({
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        errorId: 'err-1',
+        userId: 'user-1',
+      });
+
+      expect(result.status).toBe('DISMISSED');
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'POSTING_ERROR_DISMISSED',
+          metadata: expect.objectContaining({
+            branchId: openError.branchId,
+            newStatus: 'DISMISSED',
+          }),
+        }),
+      );
+    });
+
+    it('rejects resolving an already-RESOLVED posting error', async () => {
+      prisma.postingError.findFirst.mockResolvedValue({ ...openError, status: 'RESOLVED' });
+
+      await expect(
+        service.resolvePostingError({
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          errorId: 'err-1',
+          userId: 'user-1',
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.postingError.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects dismissing an already-DISMISSED posting error', async () => {
+      prisma.postingError.findFirst.mockResolvedValue({ ...openError, status: 'DISMISSED' });
+
+      await expect(
+        service.dismissPostingError({
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          errorId: 'err-1',
+          userId: 'user-1',
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws NotFoundException for a cross-branch/unknown posting error', async () => {
+      prisma.postingError.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.resolvePostingError({
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          errorId: 'nonexistent',
+          userId: 'user-1',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('is fail-closed when no branch is resolved', async () => {
+      await expect(
+        service.resolvePostingError({
+          orgId: ctx.organizationId,
+          errorId: 'err-1',
+          userId: 'user-1',
+        } as any),
       ).rejects.toThrow(/without a branch id/);
     });
   });

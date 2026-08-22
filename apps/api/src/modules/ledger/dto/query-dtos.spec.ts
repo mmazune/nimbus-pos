@@ -5,6 +5,8 @@ import { validateSync } from 'class-validator';
 import { ListJournalsQueryDto } from './list-journals-query.dto';
 import { ListPostingRunsQueryDto } from './list-posting-runs-query.dto';
 import { ListPostingErrorsQueryDto } from './list-posting-errors-query.dto';
+import { ResolvePostingErrorDto } from './resolve-posting-error.dto';
+import { DismissPostingErrorDto } from './dismiss-posting-error.dto';
 
 /** Backend gap batch 3 — B5-F2 / B5-F3 sweep across the ledger list routes. */
 describe('ListJournalsQueryDto (GET /accounting/journals)', () => {
@@ -58,5 +60,25 @@ describe('ListPostingErrorsQueryDto (GET /accounting/posting-errors)', () => {
 
   it('B5-F3: rejects take above the max', () => {
     expect(validateSync(build({ take: 5000 })).length).toBeGreaterThan(0);
+  });
+});
+
+/** Backend gap batch 4 — B5.4-D1. */
+describe('ResolvePostingErrorDto / DismissPostingErrorDto (PATCH .../{resolve,dismiss})', () => {
+  it('accepts an empty body — resolutionNotes is optional', () => {
+    expect(validateSync(plainToInstance(ResolvePostingErrorDto, {}))).toHaveLength(0);
+    expect(validateSync(plainToInstance(DismissPostingErrorDto, {}))).toHaveLength(0);
+  });
+
+  it('accepts a string resolutionNotes', () => {
+    const dto = plainToInstance(ResolvePostingErrorDto, { resolutionNotes: 'Fixed the map' });
+    expect(validateSync(dto)).toHaveLength(0);
+    expect(dto.resolutionNotes).toBe('Fixed the map');
+  });
+
+  it('rejects a non-string resolutionNotes', () => {
+    expect(
+      validateSync(plainToInstance(ResolvePostingErrorDto, { resolutionNotes: 123 })).length,
+    ).toBeGreaterThan(0);
   });
 });

@@ -4,7 +4,17 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
-**ENTERPRISE UI TRACK B5.5 COMPLETE — Manager Accounting Closing surfaces (2026-08-21) — A: B5.5
+**BACKEND GAP BATCH 4 COMPLETE — PERMS-2 + C-25 + C-26 + C-27 + B5.4-D1 + B5.5-F1 (2026-08-21) —
+A: COMPLETE / B5.6 · B5.7 · B6 · B7 still gated.** Backend + schema (one migration) + seed + docs;
+no frontend file touched. The owner decided Manager has full access to everything it is
+responsible for — Manager now holds the full 54-string accounting/finance permission set (matching
+Accountant/Owner), resolving C-27/PC-01/PC-02, while `pos:hr:compensation:read` stays revoked and
+Waiter/Cashier/Supervisor gained nothing. C-25 (journal branch scoping), C-26 (ledger audit
+branchId stamping) and B5.4-D1 (posting-error resolve/dismiss) are fixed at the backend; B5.5-F1
+was investigated and confirmed a genuinely dead enum pair, not implemented. New roadmap phase B5.7
+(accounting write pass) added, not started. See `ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md`.
+
+**Prior entry (superseded above) — ENTERPRISE UI TRACK B5.5 COMPLETE — Manager Accounting Closing surfaces (2026-08-21) — A: B5.5
 COMPLETE / B5.6 GATED.** Frontend + docs only; **no backend/schema/migration/seed/permission/DTO/
 Postman change**. The two Closing menu rows B5.1 shipped as honest not-yet placeholders — Fiscal
 periods, Period close runs — are now real surfaces. **The Accounting menu goes from 19 live rows to

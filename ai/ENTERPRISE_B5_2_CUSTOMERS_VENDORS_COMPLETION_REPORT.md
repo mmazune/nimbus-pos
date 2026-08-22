@@ -1,5 +1,17 @@
 # Enterprise UI Track B5.2 — Manager Accounting Customers + Vendors surfaces
 
+> ⚠️ **PARTIALLY SUPERSEDED 2026-08-21 (backend gap batch 4 — PERMS-2 / C-27).** This report's
+> "Manager is READ-ONLY BY PERMISSION" claims described the permission state **at the time this
+> phase shipped** and remain historically accurate for that date. They no longer describe current
+> permission state: the owner has since decided Manager has full access to everything it is
+> responsible for, and PERMS-2 granted Manager the full 36-string C-21 accounting/finance set plus
+> the full M28/M29 set (matching Accountant), resolving finding **C-27** (a pre-existing, un-audited
+> `periods:create`/`accounts:create`/`cost-centers:create` write grant this phase never caught). The
+> **frontend** described below is UNCHANGED and still correctly renders zero write affordances —
+> that is now a deliberate build-order gate (Track **B5.7**, not started), not a permission gate. See
+> `ai/BACKEND_GAP_BATCH4_COMPLETION_REPORT.md` and CLAUDE.md's C-27 correction note for the current
+> state. History below is preserved, not rewritten.
+
 **Date:** 2026-08-21
 **Phase:** `ai/ENTERPRISE_UI_ROADMAP.md` Track **B5.2** (Accounting suite — Customers + Vendors list
 and detail surfaces, plus the two Reporting aging views), owner-approved.
