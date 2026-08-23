@@ -1,10 +1,11 @@
-import { apiRequest } from "@/lib/api/client";
+import { apiRequest, ApiError } from "@/lib/api/client";
 import {
   projectManagerEmployee,
   projectManagerStaffIdentity,
   type ManagerSafeEmployee,
 } from "@/lib/manager/staff-projection";
 import type {
+  ManagerCredentialResetStatus,
   ManagerDirectoryPage,
   ManagerLeavePage,
   ManagerLeaveRow,
@@ -369,6 +370,68 @@ export async function updateManagerEmployeeStatus(
     branchId,
   });
   return projectManagerEmployee(raw);
+}
+
+// ── Credential (password) reset — Track B6.7 ────────────────────────────────
+// See docs/manager-settings-docs/CREDENTIAL_RESET.md. Never a Manager-set
+// secret — the server generates a one-time token and never returns it to this
+// caller. `_devOnlyDeliveryPreview` (a QA-only field, gated by the API's own
+// NIMBUS_EXPOSE_RESET_TOKENS + non-production check) is deliberately never
+// read here — the assertion script greps this whole tree for that field name.
+
+function projectCredentialResetStatus(raw: unknown): ManagerCredentialResetStatus {
+  const source = (raw || {}) as Record<string, unknown>;
+  return {
+    userId: str(source.userId),
+    pending: bool(source.pending),
+    expiresAt: str(source.expiresAt),
+    triggeredAt: str(source.triggeredAt),
+    eligible: true,
+  };
+}
+
+/**
+ * `GET /api/hr/employees/:id/credential-reset` — `auth:credential-reset:read`.
+ * A PIN-only (no password login) employee 400s; that is surfaced here as
+ * `{ eligible: false }` rather than thrown, so the panel can render a plain
+ * "use Quick-PIN reset instead" state rather than an error banner.
+ */
+export async function getManagerCredentialResetStatus(
+  token: string,
+  branchId: string,
+  employeeId: string,
+): Promise<ManagerCredentialResetStatus> {
+  try {
+    const raw = await apiRequest<Record<string, unknown>>(
+      `/api/hr/employees/${encodeURIComponent(employeeId)}/credential-reset`,
+      { token, branchId },
+    );
+    return projectCredentialResetStatus(raw);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 400) {
+      return { userId: null, pending: false, expiresAt: null, triggeredAt: null, eligible: false };
+    }
+    throw error;
+  }
+}
+
+/**
+ * `POST /api/hr/employees/:id/credential-reset` — `auth:credential-reset:write`.
+ * Returns only `{ expiresAt }` — the response's `_devOnlyDeliveryPreview` field
+ * (present only against a non-production API started with
+ * NIMBUS_EXPOSE_RESET_TOKENS=true) is intentionally dropped here, never
+ * threaded into any component state.
+ */
+export async function triggerManagerCredentialReset(
+  token: string,
+  branchId: string,
+  employeeId: string,
+): Promise<{ expiresAt: string | null }> {
+  const raw = await apiRequest<Record<string, unknown>>(
+    `/api/hr/employees/${encodeURIComponent(employeeId)}/credential-reset`,
+    { method: "POST", body: {}, token, branchId },
+  );
+  return { expiresAt: str(raw.expiresAt) };
 }
 
 // ── Frontline onboarding ────────────────────────────────────────────────────

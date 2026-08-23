@@ -14,6 +14,7 @@ import { Request } from 'express';
 import { HrService } from './hr.service';
 import { FrontlineStaffOnboardingService } from './frontline-staff-onboarding.service';
 import { FrontlineStaffQuickPinService } from './frontline-staff-quick-pin.service';
+import { EmployeeCredentialResetService } from './employee-credential-reset.service';
 import {
   CreateEmployeeDto,
   UpdateEmployeeDto,
@@ -37,6 +38,7 @@ export class HrController {
     private readonly hrService: HrService,
     private readonly frontlineOnboarding: FrontlineStaffOnboardingService,
     private readonly frontlineQuickPin: FrontlineStaffQuickPinService,
+    private readonly employeeCredentialReset: EmployeeCredentialResetService,
   ) {}
 
   // ── Employees ──
@@ -242,6 +244,33 @@ export class HrController {
   ) {
     const ctx = (req as any).branchContext;
     return this.frontlineQuickPin.enable(user.id, ctx, employeeId, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  // ── B6.7: Manager-facing credential (password) reset ──
+  // See docs/manager-settings-docs/CREDENTIAL_RESET.md. Password-login accounts
+  // only (Manager/Accountant, or any staff with a real email login) — PIN-only
+  // staff are rejected with a 400 pointing at Quick-PIN reset above.
+
+  @Get('employees/:id/credential-reset')
+  @Permissions('auth:credential-reset:read')
+  async employeeCredentialResetStatus(@Param('id') employeeId: string, @Req() req: Request) {
+    const ctx = (req as any).branchContext;
+    return this.employeeCredentialReset.getStatus(ctx, employeeId);
+  }
+
+  @Post('employees/:id/credential-reset')
+  @Permissions('auth:credential-reset:write')
+  @HttpCode(200)
+  async employeeCredentialResetTrigger(
+    @Param('id') employeeId: string,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.employeeCredentialReset.trigger(user.id, ctx, employeeId, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });

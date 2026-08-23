@@ -610,6 +610,13 @@ assert(
  * ⚠️ Updated, not deleted (Track B6, 2026-08-22): B6 added 10 more (employee
  * status, invitation create/resend/revoke, six settings routes) — see the
  * fuller comment in `manager-b3-assertions.ts`'s copy of this same gate.
+ *
+ * ⚠️ Updated a second time (Track B6.7, 2026-08-22): B6.7 adds exactly 1 more —
+ *
+ *   20. `POST /api/hr/employees/:id/credential-reset` — trigger a one-time
+ *       credential-reset token (never a Manager-chosen secret; see
+ *       docs/manager-settings-docs/CREDENTIAL_RESET.md). The status read is a
+ *       GET and is not counted here.
  */
 const ALLOWED_MUTATION_PATHS = [
   "/api/hr/frontline-staff/onboard",
@@ -621,7 +628,7 @@ const ALLOWED_MUTATION_PATHS = [
   "/api/dash/kpi/refresh", // pre-existing (B2)
   "/api/reports/export", // B4
   "/api/reports/${encodeURIComponent(generatorPath)}", // B4
-  "/api/hr/employees/", // B6 — employee status
+  "/api/hr/employees/", // B6 — employee status; B6.7 — credential-reset trigger
   "/api/onboarding/invitations", // B6 — create/resend/revoke
   "/api/settings", // B6 — currency/tax-matrix/rounding/general
   "/api/thresholds", // B6
@@ -640,8 +647,8 @@ for (const file of managerFiles) {
   );
 }
 assert(
-  managerMutationCount === 19,
-  `exactly 19 manager mutations exist — B3's 7 + B4's 2 + B6's 10 (found ${managerMutationCount})`,
+  managerMutationCount === 20,
+  `exactly 20 manager mutations exist — B3's 7 + B4's 2 + B6's 10 + B6.7's 1 (found ${managerMutationCount})`,
 );
 
 // Reports owns exactly two of them.

@@ -7,6 +7,7 @@ import { useManagerBranch } from "@/lib/manager/branch-context";
 import {
   disableManagerQuickPin,
   enableManagerQuickPin,
+  getManagerCredentialResetStatus,
   getManagerQuickPinStatus,
   listManagerEmployees,
   listManagerLeave,
@@ -15,11 +16,13 @@ import {
   rejectManagerShiftSwap,
   resetManagerQuickPin,
   reviewManagerLeave,
+  triggerManagerCredentialReset,
   updateManagerEmployeeStatus,
   type ManagerDirectoryQuery,
 } from "@/lib/manager/staff-api";
 import type { ManagerOnboardPayload } from "@/lib/manager/staff-model";
 import type {
+  ManagerCredentialResetStatus,
   ManagerDirectoryPage,
   ManagerLeavePage,
   ManagerOnboardResult,
@@ -145,6 +148,73 @@ export function useManagerEmployeeStatus(): ManagerEmployeeStatusSnapshot {
     error: mutation.error,
     resetError: () => mutation.reset(),
     lastEmployeeId: mutation.variables?.employeeId ?? null,
+  };
+}
+
+// ── Credential (password) reset — Track B6.7 ────────────────────────────────
+// See docs/manager-settings-docs/CREDENTIAL_RESET.md. The trigger mutation's
+// result is read for `expiresAt` ONLY — its raw response may carry a QA-only
+// `_devOnlyDeliveryPreview` field on a non-production API, and
+// `triggerManagerCredentialReset` in staff-api.ts already drops it before it
+// reaches this hook. Nothing here ever holds, threads, or renders a token.
+
+export type ManagerCredentialResetSnapshot = {
+  statusQuery: UseQueryResult<ManagerCredentialResetStatus>;
+  trigger: () => void;
+  isTriggering: boolean;
+  triggerError: unknown;
+  /** True only once the trigger mutation has actually resolved — never optimistic. */
+  isTriggerSuccess: boolean;
+  resetTriggerError: () => void;
+  lastExpiresAt: string | null;
+};
+
+export function useManagerCredentialReset(employeeId: string | null): ManagerCredentialResetSnapshot {
+  const session = useManagerStaffSession();
+  const queryClient = useQueryClient();
+
+  const statusQuery = useQuery({
+    queryKey: managerQueryKey("staff-credential-reset", session.branchId, employeeId || ""),
+    enabled: session.isEnabled && Boolean(employeeId),
+    staleTime: 0,
+    retry: 1,
+    queryFn: () =>
+      getManagerCredentialResetStatus(
+        session.accessToken as string,
+        session.branchId as string,
+        employeeId as string,
+      ),
+  });
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      triggerManagerCredentialReset(
+        session.accessToken as string,
+        session.branchId as string,
+        employeeId as string,
+      ),
+    onSuccess: async () => {
+      // Narrow: re-read this one employee's reset status from the server —
+      // never an optimistic guess (the C3 settlement precedent).
+      await queryClient.invalidateQueries({
+        queryKey: managerQueryKey("staff-credential-reset", session.branchId, employeeId || ""),
+      });
+    },
+  });
+
+  useAuthErrorGuard(session.clearSession, [statusQuery.error, mutation.error]);
+
+  return {
+    statusQuery,
+    trigger: () => {
+      if (!session.isEnabled || !employeeId || mutation.isPending) return;
+      mutation.mutate();
+    },
+    isTriggering: mutation.isPending,
+    triggerError: mutation.error,
+    isTriggerSuccess: mutation.isSuccess,
+    resetTriggerError: () => mutation.reset(),
+    lastExpiresAt: mutation.data?.expiresAt ?? null,
   };
 }
 

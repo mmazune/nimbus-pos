@@ -116,3 +116,17 @@ export type ManagerOnboardResult = {
   quickPin: ManagerOneTimeSecret | null;
   instructions: readonly string[];
 };
+
+/**
+ * Credential (password) reset — Track B6.7. Never carries a token value; the
+ * plaintext exists for exactly one instant server-side and is never returned
+ * to any Manager-facing response. See docs/manager-settings-docs/CREDENTIAL_RESET.md.
+ */
+export type ManagerCredentialResetStatus = {
+  userId: string | null;
+  pending: boolean;
+  expiresAt: string | null;
+  triggeredAt: string | null;
+  /** false only when the read itself 400'd because this account is PIN-only. */
+  eligible: boolean;
+};

@@ -4,6 +4,8 @@ import {
     UnauthorizedException,
     NotFoundException,
     ConflictException,
+    HttpException,
+    HttpStatus,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -16,11 +18,21 @@ import { ForgotPasswordDto, ResetPasswordDto, ForcePasswordChangeDto } from './d
  *  - forgotPassword (public)  → issues a single-use reset token
  *  - resetPassword (public)   → consumes a reset token + sets new password
  *  - forcePasswordChange (auth) → for must_change_password=true users on first login
+ *
+ * B6.7 — adminForceReset / getForceResetStatus (auth) → Manager/Owner-triggered
+ * credential reset. See docs/manager-settings-docs/CREDENTIAL_RESET.md for the
+ * full design rationale (reuse of PasswordResetToken/FORCE_RESET_BY_ADMIN, the
+ * delivery-channel gap, rate limits, session-invalidation timing).
  */
 @Injectable()
 export class PasswordLifecycleService {
     private readonly SALT_ROUNDS = 12;
     private readonly RESET_TTL_MINUTES = 60;
+    private readonly FORCE_RESET_TTL_MINUTES = 30;
+    private readonly FORCE_RESET_SUBJECT_LIMIT = 3;
+    private readonly FORCE_RESET_SUBJECT_WINDOW_MS = 60 * 60 * 1000;
+    private readonly FORCE_RESET_ACTOR_LIMIT = 20;
+    private readonly FORCE_RESET_ACTOR_WINDOW_MS = 60 * 60 * 1000;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -238,5 +250,180 @@ export class PasswordLifecycleService {
         });
 
         return { ok: true, userId: user.id, mustChangePassword: false };
+    }
+
+    /**
+     * B6.7 — Manager/Owner-triggered credential reset (CREDENTIAL_RESET.md).
+     *
+     * Generates a single-use PasswordResetToken (purpose=FORCE_RESET_BY_ADMIN,
+     * 30-minute TTL), invalidates any previous live token for the same subject,
+     * immediately revokes the subject's active sessions/refresh tokens (defense
+     * against a suspected-compromised live session — consume() revokes them again
+     * as defense-in-depth), and rate-limits per subject and per actor.
+     *
+     * The plaintext token is NEVER included in the return value in production —
+     * `_devOnlyDeliveryPreview` exists only when NIMBUS_EXPOSE_RESET_TOKENS=true
+     * AND NODE_ENV !== 'production', mirroring forgotPassword()'s own dev-only
+     * echo. There is no email/SMS transport in this codebase (disclosed gap,
+     * see CREDENTIAL_RESET.md §4) — this is the only place the plaintext can be
+     * observed at all, and only for QA tooling, never for the Manager UI.
+     */
+    async adminForceReset(
+        subjectUserId: string,
+        actor: { id: string; branchId?: string | null },
+        meta: { ipAddress?: string; userAgent?: string; employeeId?: string } = {},
+    ): Promise<{
+        ok: true;
+        userId: string;
+        expiresAt: Date;
+        _devOnlyDeliveryPreview?: string;
+    }> {
+        const subject = await this.prisma.user.findUnique({ where: { id: subjectUserId } });
+        if (!subject || !subject.isActive) {
+            throw new NotFoundException('Staff member not found or inactive');
+        }
+
+        const now = new Date();
+        const subjectWindowStart = new Date(now.getTime() - this.FORCE_RESET_SUBJECT_WINDOW_MS);
+        const actorWindowStart = new Date(now.getTime() - this.FORCE_RESET_ACTOR_WINDOW_MS);
+
+        const subjectCount = await this.prisma.passwordResetToken.count({
+            where: {
+                userId: subjectUserId,
+                purpose: 'FORCE_RESET_BY_ADMIN',
+                createdAt: { gte: subjectWindowStart },
+            },
+        });
+        if (subjectCount >= this.FORCE_RESET_SUBJECT_LIMIT) {
+            await this.auditRateLimited(actor, subjectUserId, meta, 'subject');
+            throw new HttpException(
+                'Too many resets requested for this staff member — try again later',
+                HttpStatus.TOO_MANY_REQUESTS,
+            );
+        }
+
+        const actorCount = await this.prisma.passwordResetToken.count({
+            where: {
+                purpose: 'FORCE_RESET_BY_ADMIN',
+                createdAt: { gte: actorWindowStart },
+                metadata: { path: ['triggeredByUserId'], equals: actor.id },
+            },
+        });
+        if (actorCount >= this.FORCE_RESET_ACTOR_LIMIT) {
+            await this.auditRateLimited(actor, subjectUserId, meta, 'actor');
+            throw new HttpException(
+                'Too many resets triggered by this account — try again later',
+                HttpStatus.TOO_MANY_REQUESTS,
+            );
+        }
+
+        // Invalidate any previous unconsumed FORCE_RESET_BY_ADMIN token for this subject.
+        await this.prisma.passwordResetToken.updateMany({
+            where: {
+                userId: subjectUserId,
+                purpose: 'FORCE_RESET_BY_ADMIN',
+                consumedAt: null,
+                invalidatedAt: null,
+            },
+            data: { invalidatedAt: now },
+        });
+
+        const plaintext = `far_${crypto.randomBytes(24).toString('hex')}`;
+        const tokenHash = this.hashToken(plaintext);
+        const expiresAt = new Date(now.getTime() + this.FORCE_RESET_TTL_MINUTES * 60 * 1000);
+
+        await this.prisma.passwordResetToken.create({
+            data: {
+                userId: subjectUserId,
+                tokenHash,
+                purpose: 'FORCE_RESET_BY_ADMIN',
+                expiresAt,
+                ipAddress: meta.ipAddress ?? null,
+                userAgent: meta.userAgent ?? null,
+                metadata: {
+                    triggeredByUserId: actor.id,
+                    triggeredByBranchId: actor.branchId ?? null,
+                },
+            },
+        });
+
+        // Immediate session kill — defense against a suspected-compromised live
+        // session (resetPassword() repeats this at consume time; see
+        // CREDENTIAL_RESET.md §6 for the disclosed old-password-still-works caveat).
+        await this.prisma.session.updateMany({
+            where: { userId: subjectUserId, revokedAt: null },
+            data: { revokedAt: now },
+        });
+        await this.prisma.refreshToken.updateMany({
+            where: { userId: subjectUserId, revokedAt: null },
+            data: { revokedAt: now },
+        });
+
+        await this.audit.log({
+            actorUserId: actor.id,
+            action: 'CREDENTIAL_RESET_TRIGGERED',
+            entityType: 'User',
+            entityId: subjectUserId,
+            metadata: {
+                employeeId: meta.employeeId ?? null,
+                branchId: actor.branchId ?? null,
+                expiresAt: expiresAt.toISOString(),
+            },
+            ipAddress: meta.ipAddress,
+            userAgent: meta.userAgent,
+        });
+
+        const exposeForDev =
+            process.env.NIMBUS_EXPOSE_RESET_TOKENS === 'true' &&
+            process.env.NODE_ENV !== 'production';
+
+        return {
+            ok: true,
+            userId: subjectUserId,
+            expiresAt,
+            ...(exposeForDev ? { _devOnlyDeliveryPreview: plaintext } : {}),
+        };
+    }
+
+    /**
+     * B6.7 — GET .../credential-reset status. Never returns a token value (there
+     * is none to return — see adminForceReset's docblock).
+     */
+    async getForceResetStatus(subjectUserId: string) {
+        const live = await this.prisma.passwordResetToken.findFirst({
+            where: {
+                userId: subjectUserId,
+                purpose: 'FORCE_RESET_BY_ADMIN',
+                consumedAt: null,
+                invalidatedAt: null,
+                expiresAt: { gt: new Date() },
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { expiresAt: true, createdAt: true },
+        });
+
+        return {
+            userId: subjectUserId,
+            pending: !!live,
+            expiresAt: live?.expiresAt ?? null,
+            triggeredAt: live?.createdAt ?? null,
+        };
+    }
+
+    private async auditRateLimited(
+        actor: { id: string; branchId?: string | null },
+        subjectUserId: string,
+        meta: { ipAddress?: string; userAgent?: string },
+        scope: 'subject' | 'actor',
+    ) {
+        await this.audit.log({
+            actorUserId: actor.id,
+            action: 'CREDENTIAL_RESET_RATE_LIMITED',
+            entityType: 'User',
+            entityId: subjectUserId,
+            metadata: { branchId: actor.branchId ?? null, scope },
+            ipAddress: meta.ipAddress,
+            userAgent: meta.userAgent,
+        });
     }
 }

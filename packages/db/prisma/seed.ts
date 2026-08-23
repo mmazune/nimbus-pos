@@ -453,6 +453,9 @@ const PERMISSIONS_DATA = [
   // BG1.1 — Frontline Quick PIN Admin (manager-facing)
   { action: 'auth:quick-pin:read', description: 'Read Quick PIN status for a frontline staff member (no PIN value returned)' },
   { action: 'auth:quick-pin:write', description: 'Reset / regenerate / enable / disable Quick PIN for a frontline staff member' },
+  // B6.7 — Manager-facing credential (password) reset (docs/manager-settings-docs/CREDENTIAL_RESET.md)
+  { action: 'auth:credential-reset:read', description: 'Read whether a credential-reset token is currently pending for a staff member (never the token value)' },
+  { action: 'auth:credential-reset:write', description: 'Trigger a one-time credential-reset token for a password-login staff member; the token is never returned to the caller' },
   // BG2 — Unified Approvals Inbox + Global Audit Timeline
   { action: 'approvals:read', description: 'Read the unified cross-domain approvals inbox' },
   { action: 'approvals:decide', description: 'Approve or reject items in the unified approvals inbox (delegates to underlying domain service)' },
@@ -918,6 +921,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     // BG1.1: Frontline Quick PIN admin (Owner: full)
     'auth:quick-pin:read',
     'auth:quick-pin:write',
+    // B6.7: Manager-facing credential reset (Owner: full — docs/manager-settings-docs/CREDENTIAL_RESET.md)
+    'auth:credential-reset:read',
+    'auth:credential-reset:write',
     // BG2: Unified Approvals Inbox + Global Audit Timeline (Owner: full)
     'approvals:read',
     'approvals:decide',
@@ -1191,6 +1197,9 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     // BG1.1: Manager can inspect + reset + enable/disable frontline Quick PINs
     'auth:quick-pin:read',
     'auth:quick-pin:write',
+    // B6.7: Manager-facing credential reset (docs/manager-settings-docs/CREDENTIAL_RESET.md)
+    'auth:credential-reset:read',
+    'auth:credential-reset:write',
     // BG2: Unified Approvals Inbox + Global Audit Timeline (Manager: full)
     'approvals:read',
     'approvals:decide',

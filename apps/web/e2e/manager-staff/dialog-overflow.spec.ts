@@ -104,5 +104,75 @@ for (const viewport of SHORT_VIEWPORTS) {
       await assertDialogFitsViewport(page, dialog, confirmButton);
       await dialog.getByRole("button", { name: /^cancel$/i }).click();
     });
+
+    // Track B6.7 (2026-08-22) — the new credential-reset confirm dialog.
+    //
+    // ⚠️ Does NOT rely on directory ordering or loop through cards. The demo
+    // org accumulates a ZZQA-tagged fixture employee from every onboarding
+    // spec run (PIN-only by default), so "click the first card, fall back
+    // through the rest" degrades badly as the directory grows — after
+    // repeated runs it holds 100+ people, most PIN-only, and a scan loop
+    // both risks the 60s test timeout and can misread a still-loading
+    // (visible-but-disabled) button as ineligible. Instead this test creates
+    // its OWN password-login fixture via the API (same pattern as "Revoke
+    // invitation confirm dialog" above) and reaches it through the search
+    // box — a bounded, single API round trip instead of an unbounded scan.
+    test("Reset credential confirm dialog fits, with the Reset credential button reachable", async ({
+      page,
+    }) => {
+      const token = await (async () => {
+        const res = await fetch(`${MANAGER_CFG.api}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: MANAGER_CFG.email, password: MANAGER_CFG.password }),
+        });
+        const json = await res.json();
+        return json.accessToken as string;
+      })();
+
+      const uniqueName = `ZZQA-B67-Dialog-${Date.now()}`;
+      const onboardRes = await fetch(`${MANAGER_CFG.api}/api/hr/frontline-staff/onboard`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-Branch-Id": MANAGER_CFG.defaultBranchId,
+        },
+        body: JSON.stringify({
+          email: `zzqa.dialog.${Date.now()}@example-b6qa.test`,
+          firstName: uniqueName,
+          lastName: "DialogFixture",
+          phone: `+2507${String(Date.now()).slice(-8)}`,
+          roleName: "Cashier",
+          enablePasswordLogin: true,
+          temporaryPassword: "ZZQA-Dialog#Strong2026",
+          issueQuickPin: false,
+          employee: { hireDate: "2026-08-01", employmentType: "PERMANENT" },
+        }),
+      });
+      test.skip(!onboardRes.ok, "frontline onboarding is unavailable in this environment");
+
+      await managerLogin(page);
+      await page.goto(MANAGER_STAFF_ROUTES.directory);
+      await page.getByPlaceholder("Search name, code or email…").fill(uniqueName);
+
+      const card = page.locator("[data-manager-employee-card]", { hasText: uniqueName });
+      await expect(card).toBeVisible({ timeout: 30_000 });
+      await card.click();
+
+      const trigger = page.locator("[data-manager-credential-reset-action]").getByRole("button", {
+        name: /reset credential|send a new reset/i,
+      });
+      await expect(trigger).toBeEnabled({ timeout: 30_000 });
+      await trigger.click();
+
+      const dialog = page.getByRole("dialog", { name: /reset credential for/i });
+      await expect(dialog).toBeVisible();
+      const confirmButton = dialog.getByRole("button", { name: /reset credential|send a new reset/i });
+      await assertDialogFitsViewport(page, dialog, confirmButton);
+      // Never a Manager-set secret — no password/PIN input anywhere in this dialog.
+      await expect(dialog.locator('input[type="password"]')).toHaveCount(0);
+      await dialog.getByRole("button", { name: /^cancel$/i }).click();
+    });
   });
 }

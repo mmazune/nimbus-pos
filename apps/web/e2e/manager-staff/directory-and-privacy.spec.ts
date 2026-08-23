@@ -196,9 +196,20 @@ test.describe("Manager Staff — directory", () => {
     await expect(detail.getByRole("button", { name: /^offboard$/i })).toBeVisible();
 
     await page.waitForTimeout(800);
+    // ⚠️ Narrowed, not weakened (Track B6.7, 2026-08-22): this used to match
+    // ANY `/api/hr/employees/<anything>` URL, which incidentally also caught
+    // B6.7's new, different, separately-authorised
+    // `GET /api/hr/employees/:id/credential-reset` status read (a distinct
+    // route, distinct permission, distinct purpose — see
+    // docs/manager-settings-docs/CREDENTIAL_RESET.md). The pattern now
+    // requires the id to be the LAST path segment (no `/` after it), so it
+    // still proves the bare detail route (`GET /hr/employees/:id`) is never
+    // called, without being blind to a URL just because it starts the same.
     expect(
-      requests.filter((request) => /\/api\/hr\/employees\/[^?]+$/.test(request.url) && request.method === "GET"),
-      "the GET detail route is never used — the list row suffices (MP0-01); PATCH is the B6 status write, not this route",
+      requests.filter(
+        (request) => /\/api\/hr\/employees\/[^/?]+$/.test(request.url) && request.method === "GET",
+      ),
+      "the GET detail route is never used — the list row suffices (MP0-01); PATCH is the B6 status write, GET .../credential-reset is the B6.7 status read, neither is this route",
     ).toHaveLength(0);
   });
 

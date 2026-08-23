@@ -329,7 +329,19 @@ assert(
 // the forbidden GET detail read. The guard now checks the METHOD, not just the
 // URL: the pattern may appear in exactly one file (`staff-api.ts`), and every
 // occurrence there must be paired with a PATCH, never a GET.
-const HR_EMPLOYEE_DETAIL_PATTERN = /hr\/employees\/\$\{[^}]*\}/g;
+//
+// ⚠️ INVERTED A SECOND TIME (Track B6.7, 2026-08-22): B6.7 adds
+// `GET/POST hr/employees/:id/credential-reset` — a distinct sub-route, a
+// distinct permission (`auth:credential-reset:read|write`, never
+// `pos:hr:employees:update`), and a distinct purpose (see
+// docs/manager-settings-docs/CREDENTIAL_RESET.md). The bare-URL PATTERN below
+// is matched with a negative lookahead so it still counts ONLY the literal
+// bare `hr/employees/${id}` occurrence (the B6 status PATCH); the
+// `/credential-reset` sub-route is asserted separately, below, so this guard
+// keeps proving exactly what it always proved — no OTHER file, and no GET on
+// the bare URL — without being blind to a URL just because it starts the same.
+const HR_EMPLOYEE_DETAIL_PATTERN = /hr\/employees\/\$\{[^}]*\}(?!\/credential-reset)/g;
+const HR_EMPLOYEE_CREDENTIAL_RESET_PATTERN = /hr\/employees\/\$\{[^}]*\}\/credential-reset/g;
 for (const file of managerFiles) {
   const code = codeOnly(file);
   const isStaffApi = file.endsWith("lib/manager/staff-api.ts");
@@ -340,12 +352,23 @@ for (const file of managerFiles) {
 const staffApiCode = codeOnly(`${MANAGER_LIB_DIR}/staff-api.ts`);
 assert(
   (staffApiCode.match(HR_EMPLOYEE_DETAIL_PATTERN) || []).length === 1,
-  "hr/employees/:id is referenced exactly once in staff-api.ts (the B6 status PATCH)",
+  "hr/employees/:id (bare) is referenced exactly once in staff-api.ts (the B6 status PATCH)",
 );
 assert(
   /hr\/employees\/\$\{[^}]*\}`,\s*\{[\s\S]{0,80}method:\s*["']PATCH["']/.test(staffApiCode),
-  "the one hr/employees/:id call is a PATCH, never a GET",
+  "the one bare hr/employees/:id call is a PATCH, never a GET",
 );
+assert(
+  (staffApiCode.match(HR_EMPLOYEE_CREDENTIAL_RESET_PATTERN) || []).length === 2,
+  "hr/employees/:id/credential-reset is referenced exactly twice in staff-api.ts (B6.7 status GET + trigger POST)",
+);
+for (const file of managerFiles) {
+  const code = codeOnly(file);
+  const isStaffApi = file.endsWith("lib/manager/staff-api.ts");
+  const matches = code.match(HR_EMPLOYEE_CREDENTIAL_RESET_PATTERN) || [];
+  if (matches.length === 0) continue;
+  assert(isStaffApi, `hr/employees/:id/credential-reset is referenced only from staff-api.ts, not ${file}`);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. HARD GUARD — no roster mutation, and shift-swap is REJECT ONLY
@@ -455,6 +478,12 @@ assert(
  *
  * See `docs/manager-settings-docs/MANAGER_SETTINGS_API_MATRIX.md` for the full
  * per-route census and live-verified status codes.
+ *
+ * **Track B6.7 (2026-08-22) added exactly one more**:
+ *
+ *   20. `POST /api/hr/employees/:id/credential-reset` — trigger a one-time
+ *       credential-reset token (never a Manager-chosen secret) — staff-api.ts.
+ *       The status read (`GET .../credential-reset`) is not a mutation.
  */
 const ALLOWED_MUTATION_PATHS = [
   "/api/hr/frontline-staff/onboard",
@@ -466,7 +495,7 @@ const ALLOWED_MUTATION_PATHS = [
   "/api/dash/kpi/refresh", // pre-existing (B2)
   "/api/reports/export", // B4
   "/api/reports/${encodeURIComponent(generatorPath)}", // B4
-  "/api/hr/employees/", // B6 — employee status
+  "/api/hr/employees/", // B6 — employee status; B6.7 — credential-reset trigger
   "/api/onboarding/invitations", // B6 — create/resend/revoke
   "/api/settings", // B6 — currency/tax-matrix/rounding/general
   "/api/thresholds", // B6
@@ -485,8 +514,8 @@ for (const file of managerFiles) {
   );
 }
 assert(
-  managerMutationCount === 19,
-  `exactly 19 manager mutations exist — B3's 7 + B4's 2 + B6's 10 (found ${managerMutationCount})`,
+  managerMutationCount === 20,
+  `exactly 20 manager mutations exist — B3's 7 + B4's 2 + B6's 10 + B6.7's 1 (found ${managerMutationCount})`,
 );
 
 /**

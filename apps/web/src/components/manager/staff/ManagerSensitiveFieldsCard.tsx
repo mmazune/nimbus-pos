@@ -44,12 +44,21 @@ const EXCLUDED = [
  * Listed as absent capabilities rather than greyed-out buttons — a disabled
  * "Send password reset" advertises a flow that does not exist anywhere in the
  * backend.
+ *
+ * ⚠️ Updated, not silently left stale (Track B6.7, 2026-08-22): the original
+ * bullet here read "Password administration and password resets — frontline
+ * staff have no password concept" — true when B3 wrote it, false now that
+ * B6.7 shipped a real, token-based credential reset for password-login staff
+ * (see `ManagerCredentialResetAction`). Caught live: this card renders right
+ * next to the very button that disproves its own old claim. Frontline
+ * PIN-only staff genuinely have no password concept — that half was never
+ * wrong and stays true via Quick-PIN reset, already covered above.
  */
 const ABSENT = [
-  "Password administration and password resets — frontline staff have no password concept.",
+  "Manager-set or Manager-chosen passwords — credential resets are always a one-time token the staff member redeems themselves; a Manager can trigger one but never sees or picks the new value.",
   "Two-factor authentication, API keys and passkeys — none exist in this backend.",
-  "Per-user session revocation — /api/devices is a hardware registry, not a session list.",
-  "Invite-by-email onboarding — staff are created directly, with a PIN.",
+  "Per-user session revocation on demand — sessions only end as a side effect of a credential reset or Suspend, not as a standalone action.",
+  "Invite-by-email onboarding for frontline (PIN-only) staff — they are created directly, with a PIN.",
 ] as const;
 
 export function ManagerSensitiveFieldsCard() {

@@ -11,6 +11,7 @@ import {
 import { MANAGER_STAFF_ROUTES } from "@/lib/manager/staff-route";
 import type { ManagerEmployeeRow } from "@/lib/manager/staff-types";
 
+import { ManagerCredentialResetAction } from "./ManagerCredentialResetAction";
 import { ManagerEmployeeStatusAction } from "./ManagerEmployeeStatusAction";
 
 /**
@@ -122,6 +123,12 @@ export function ManagerEmployeeDetailPanel({
       <p className="mt-4 text-xs leading-5 text-text-muted">
         Suspend / Reactivate / Offboard change the HR status field only (Track B6). Editing a staff
         profile, changing employment terms and everything to do with pay are outside this workspace.
+      </p>
+
+      <ManagerCredentialResetAction employee={employee} />
+
+      <p className="mt-2 text-xs leading-5 text-text-muted">
+        Sends a one-time reset link — this Manager never sees or sets the new password (Track B6.7).
       </p>
     </Card>
   );
