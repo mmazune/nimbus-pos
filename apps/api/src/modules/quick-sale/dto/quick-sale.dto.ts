@@ -68,14 +68,20 @@ export class QuickSalePaymentDto {
   @Matches(/^\d{4}$/, { message: 'cardLast4 must be exactly 4 digits' })
   cardLast4?: string;
 
+  /** Letters and digits, at most 8: a 16-digit card number cannot be typed in here (H1F). */
   @IsOptional()
   @IsString()
-  @MaxLength(32)
+  @Matches(/^[A-Za-z0-9]{1,8}$/, {
+    message: 'authCode must be 1 to 8 letters or digits',
+  })
   authCode?: string;
 
+  /** Letters, digits and dashes, at most 12 (H1F). */
   @IsOptional()
   @IsString()
-  @MaxLength(64)
+  @Matches(/^[A-Za-z0-9-]{1,12}$/, {
+    message: 'terminalId must be 1 to 12 letters, digits or dashes',
+  })
   terminalId?: string;
 
   @IsOptional()
@@ -87,9 +93,14 @@ export class QuickSalePaymentDto {
   @MaxLength(100)
   externalTransactionId?: string;
 
+  /** A phone number: optional +, 7 to 12 digits, single spaces or dashes between groups. At most 12
+   * digits, so no 13 to 19 digit card number can be typed in here (H1F). Mobile-money only. */
   @IsOptional()
   @IsString()
   @MaxLength(32)
+  @Matches(/^\+?\d(?:[ -]?\d){6,11}$/, {
+    message: 'payerPhone must look like a phone number (7 to 12 digits)',
+  })
   payerPhone?: string;
 }
 

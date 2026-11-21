@@ -111,8 +111,14 @@ export class QuickSaleService {
           (tx) => this.write(tx, userId, ctx, dto, plan),
           { timeout: 15000, maxWait: 5000 },
         );
-        await this.auditSale(userId, ctx, dto, saved.order, saved.payment, plan, meta);
-        return this.toResponse(saved.order, saved.payment, false, plan.changeDue);
+        // Read back after the commit, outside the branch lock: the items and their names are
+        // only needed for the response, so they are not fetched while other tills wait.
+        const order = (await this.prisma.order.findUniqueOrThrow({
+          where: { id: saved.orderId },
+          include: ORDER_INCLUDE,
+        })) as SavedOrder;
+        await this.auditSale(userId, ctx, dto, order, saved.payment, plan, meta);
+        return this.toResponse(order, saved.payment, false, plan.changeDue);
       } catch (e) {
         const violated = uniqueViolation(e);
         if (violated === 'client_sale_id') {
@@ -251,6 +257,17 @@ export class QuickSaleService {
       if (cardFields)
         this.bad('QUICK_SALE_MOMO_FIELDS', 'Card fields are not allowed on a mobile-money sale.');
     }
+    // H1F: mobile-money slip fields belong to a mobile-money sale only. The message names the
+    // field, never its value.
+    if (
+      p.method !== 'MOMO' &&
+      (p.externalTransactionId !== undefined || p.payerPhone !== undefined)
+    ) {
+      this.bad(
+        'QUICK_SALE_MOMO_SLIP_ONLY',
+        'externalTransactionId and payerPhone apply to mobile-money sales only.',
+      );
+    }
     if (p.method !== 'CASH' && p.tenderedAmount !== undefined) {
       this.bad('QUICK_SALE_TENDERED_CASH_ONLY', 'tenderedAmount applies to cash sales only.');
     }
@@ -380,7 +397,7 @@ export class QuickSaleService {
           })),
         },
       },
-      include: ORDER_INCLUDE,
+      select: { id: true },
     });
 
     const p = dto.payment;
@@ -410,7 +427,7 @@ export class QuickSaleService {
         enteredById: userId,
       },
     });
-    return { order, payment };
+    return { orderId: order.id, payment };
   }
 
   // ── after commit ──

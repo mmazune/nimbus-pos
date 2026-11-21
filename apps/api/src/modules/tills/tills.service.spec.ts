@@ -400,9 +400,14 @@ describe('TillsService', () => {
 
     beforeEach(() => {
       // Emulate Postgres: honour the OR on tillCode if the service sends one.
-      const wherePayments = ({ where }: { where: { OR?: { tillCode: string | null }[] } }) =>
+      type Cond = { tillCode: string | null | { in: string[] } };
+      const matches = (c: Cond, code: string | null) =>
+        c.tillCode !== null && typeof c.tillCode === 'object'
+          ? code !== null && c.tillCode.in.includes(code)
+          : c.tillCode === code;
+      const wherePayments = ({ where }: { where: { OR?: Cond[] } }) =>
         Promise.resolve(
-          payments.filter((p) => !where.OR || where.OR.some((c) => c.tillCode === p.tillCode)),
+          payments.filter((p) => !where.OR || where.OR.some((c) => matches(c, p.tillCode))),
         );
       prisma.payment.findMany.mockImplementation(wherePayments);
       prisma.cashMovement.findMany.mockResolvedValue([]);
@@ -435,7 +440,15 @@ describe('TillsService', () => {
       const where = prisma.payment.findMany.mock.calls[0][0].where;
       expect(where.orgId).toBe('org-1');
       expect(where.branchId).toBe('branch-1');
-      expect(where.OR).toEqual([{ tillCode: 'DRK-01' }, { tillCode: null }]);
+      expect(where.OR).toEqual([{ tillCode: { in: ['DRK-01'] } }, { tillCode: null }]);
+    });
+
+    it('H1F: a session opened as "drk-02 " also matches payments stored as DRK-02', async () => {
+      till('t2', 'drk-02 ');
+      const expected = await service.computeExpectedCash('t2', 5000, ctx);
+      expect(expected.toString()).toBe('62000'); // 5,000 + DRK-02's 50,000 + the no-till 7,000
+      const where = prisma.payment.findMany.mock.calls[0][0].where;
+      expect(where.OR[0]).toEqual({ tillCode: { in: ['drk-02 ', 'DRK-02'] } });
     });
   });
 });

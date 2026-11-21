@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../common/prisma';
@@ -41,7 +41,7 @@ function p2002(target: string[]) {
 describe('QuickSaleService', () => {
   let service: QuickSaleService;
   let prisma: {
-    order: { findFirst: jest.Mock };
+    order: { findFirst: jest.Mock; findUniqueOrThrow: jest.Mock };
     menuItem: { findMany: jest.Mock };
     $transaction: jest.Mock;
   };
@@ -99,12 +99,16 @@ describe('QuickSaleService', () => {
   beforeEach(async () => {
     tx = {
       $executeRaw: jest.fn().mockResolvedValue(1),
-      $queryRaw: jest.fn().mockResolvedValue([{ max: 6 }]),
-      order: { create: jest.fn().mockResolvedValue(orderRow({ payments: undefined })) },
+      $queryRaw: jest.fn().mockResolvedValue([{ max: '6' }]),
+      order: { create: jest.fn().mockResolvedValue({ id: 'o1' }) },
       payment: { create: jest.fn().mockResolvedValue(paymentRow()) },
     };
     prisma = {
-      order: { findFirst: jest.fn().mockResolvedValue(null) },
+      order: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        // The full order is read back after the commit, outside the branch lock (H1F).
+        findUniqueOrThrow: jest.fn().mockResolvedValue(orderRow({ payments: undefined })),
+      },
       menuItem: { findMany: jest.fn().mockResolvedValue([beer]) },
       $transaction: jest.fn().mockImplementation((fn: (t: unknown) => unknown) => fn(tx)),
     };
@@ -397,6 +401,171 @@ describe('QuickSaleService', () => {
       audit.log.mockRejectedValue(new Error('audit down'));
       const res = await service.quickSale('user-1', ctx, dto(), meta);
       expect(res.replayed).toBe(false);
+    });
+  });
+
+  describe('H1F: a replay must be the same sale', () => {
+    const mismatch = async (d: QuickSaleDto, stored = orderRow()) => {
+      prisma.order.findFirst.mockResolvedValue(stored);
+      const err = await service.quickSale('user-1', ctx, d, meta).catch((e) => e);
+      expect(err).toBeInstanceOf(ConflictException);
+      expect(err.getResponse().code).toBe('CLIENT_SALE_ID_PAYLOAD_MISMATCH');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.menuItem.findMany).not.toHaveBeenCalled();
+      return err.getResponse() as { differs: string[] };
+    };
+
+    it('a different quantity is a 409 naming "lines"', async () => {
+      const r = await mismatch(dto({ lines: [{ sku: 'BEER-1', quantity: 3 }] }));
+      expect(r.differs).toEqual(['lines']);
+    });
+
+    it('a different till, in any case or padding, is compared normalised', async () => {
+      const r = await mismatch(dto({ tillCode: 'DRK-04' }));
+      expect(r.differs).toEqual(['tillCode']);
+      prisma.order.findFirst.mockResolvedValue(orderRow());
+      const same = await service.quickSale('user-1', ctx, dto({ tillCode: ' drk-03 ' }), meta);
+      expect(same.replayed).toBe(true);
+    });
+
+    it('a different method or card scheme is a 409', async () => {
+      const r = await mismatch(dto({ payment: { method: 'CASH' } as QuickSaleDto['payment'] }));
+      expect(r.differs).toEqual(expect.arrayContaining(['payment.method', 'payment.cardScheme']));
+    });
+
+    it('authCode, cardLast4 and terminalId are not compared', async () => {
+      prisma.order.findFirst.mockResolvedValue(orderRow());
+      const res = await service.quickSale(
+        'user-1',
+        ctx,
+        dto({
+          payment: {
+            method: 'CARD',
+            cardScheme: 'VISA',
+            cardLast4: '1111',
+            authCode: 'ZZ99',
+            terminalId: 'T-9',
+          },
+        }),
+        meta,
+      );
+      expect(res.replayed).toBe(true);
+      expect(res.payment.cardLast4).toBe('4242'); // the stored sale is what comes back
+    });
+
+    it('line order does not matter and sku or menuItemId both identify the stored item', async () => {
+      const two = orderRow();
+      two.items = [
+        ...two.items,
+        {
+          id: 'i2',
+          menuItemId: 'm2',
+          menuItemServingId: null,
+          quantity: 1,
+          price: new Decimal(2000),
+          subtotal: new Decimal(2000),
+          menuItem: { sku: 'SODA-1', name: 'Soda', brand: 'X' },
+        },
+      ];
+      prisma.order.findFirst.mockResolvedValue(two);
+      const res = await service.quickSale(
+        'user-1',
+        ctx,
+        dto({
+          lines: [
+            { menuItemId: 'm2', quantity: 1 },
+            { sku: 'BEER-1', quantity: 2 },
+          ],
+        }),
+        meta,
+      );
+      expect(res.replayed).toBe(true);
+    });
+
+    it('uses the stored fingerprint for soldAt and tendered as sent', async () => {
+      const stored = orderRow({
+        metadata: {
+          source: 'QUICK_SALE',
+          changeDue: '0',
+          fingerprint: { soldAt: '2026-11-21T21:14:00+03:00', tenderedAmount: null },
+        },
+      });
+      prisma.order.findFirst.mockResolvedValue(stored);
+      const same = await service.quickSale(
+        'user-1',
+        ctx,
+        dto({ soldAt: '2026-11-21T21:14:00+03:00' }),
+        meta,
+      );
+      expect(same.replayed).toBe(true);
+      const r = await mismatch(dto({ soldAt: '2026-11-21T22:00:00+03:00' }), stored);
+      expect(r.differs).toEqual(['soldAt']);
+    });
+
+    it('the unique-violation path compares too', async () => {
+      prisma.order.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(orderRow());
+      prisma.$transaction.mockRejectedValueOnce(p2002(['org_id', 'client_sale_id']));
+      await expect(
+        service.quickSale('user-1', ctx, dto({ lines: [{ sku: 'BEER-1', quantity: 3 }] }), meta),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('stores the fingerprint and the normalised till code on a new sale', async () => {
+      await service.quickSale(
+        'user-1',
+        ctx,
+        dto({
+          tillCode: ' drk-03',
+          soldAt: '2026-11-21T21:14:00+03:00',
+          payment: { method: 'CASH', tenderedAmount: 10000 } as QuickSaleDto['payment'],
+        }),
+        meta,
+      );
+      const data = tx.order.create.mock.calls[0][0].data;
+      expect(data.tillCode).toBe('DRK-03');
+      expect(data.metadata.fingerprint).toEqual({
+        soldAt: '2026-11-21T21:14:00+03:00',
+        tenderedAmount: '10000',
+      });
+      expect(tx.payment.create.mock.calls[0][0].data.tillCode).toBe('DRK-03');
+    });
+  });
+
+  describe('H1F: mobile-money slip fields belong to a mobile-money sale', () => {
+    for (const method of ['CASH', 'CARD'] as const) {
+      for (const field of ['externalTransactionId', 'payerPhone'] as const) {
+        it(`${field} on a ${method} sale is a 400 and nothing is written`, async () => {
+          const payment =
+            method === 'CASH'
+              ? { method, [field]: 'x' }
+              : { method, cardScheme: 'VISA', [field]: 'x' };
+          await expect(
+            service.quickSale('user-1', ctx, dto({ payment } as unknown as QuickSaleDto), meta),
+          ).rejects.toBeInstanceOf(BadRequestException);
+          expect(prisma.$transaction).not.toHaveBeenCalled();
+        });
+      }
+    }
+  });
+
+  describe('H1F: a failed audit write after the commit', () => {
+    it('leaves the sale in place and logs order, sale, branch and till but no card data', async () => {
+      audit.log.mockRejectedValue(
+        new Error('Invalid prisma.auditLog.create() invocation\nlots of echoed data 4242\nrefused'),
+      );
+      const spy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      try {
+        const res = await service.quickSale('user-1', ctx, dto(), meta);
+        expect(res.replayed).toBe(false);
+        const line = String(spy.mock.calls[0][0]);
+        for (const part of ['o1', 'ORD-000007', 'sale-0000001', 'branch-1', 'DRK-03', 'refused']) {
+          expect(line).toContain(part);
+        }
+        expect(line).not.toContain('4242');
+        expect(line).not.toContain('A1B2C3');
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 });

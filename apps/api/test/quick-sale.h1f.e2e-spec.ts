@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
@@ -7,6 +7,7 @@ import { loadavg } from 'os';
 import { performance } from 'perf_hooks';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma';
+import { TillsService } from '../src/modules/tills/tills.service';
 import { assertDisposableEventDb } from './support/event-db-guard';
 
 // Must run before anything connects: refuse anything but a local nimbus_event_* database.
@@ -21,6 +22,7 @@ assertDisposableEventDb();
 describe('H1F: quick sale fixes (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let tills: TillsService;
   let orgId: string;
   const branch: Record<string, string> = {};
   const RUN = randomBytes(3).toString('hex');
@@ -117,6 +119,7 @@ describe('H1F: quick sale fixes (e2e)', () => {
     // that closed the server under in-flight concurrent requests (read ECONNRESET).
     await app.listen(0);
     prisma = app.get(PrismaService);
+    tills = app.get(TillsService);
 
     const [db] = await prisma.$queryRaw<{ db: string }[]>`select current_database() as db`;
     expect(db.db.startsWith('nimbus_event_')).toBe(true);
@@ -301,5 +304,384 @@ describe('H1F: quick sale fixes (e2e)', () => {
       }
       expect(p95s.filter((v) => v > 20)).toEqual([]);
     }, 300000);
+  });
+
+  const ordersFor = (id: string) =>
+    prisma.order.count({ where: { clientSaleId: { startsWith: id } } });
+
+  /**
+   * Everything the app logs or prints while `fn` runs: stdout, stderr and every Nest Logger
+   * call (the testing module's logger only prints errors, so the Logger methods are spied on).
+   */
+  async function captureOutput(fn: () => Promise<unknown>) {
+    let out = '';
+    const grab = (chunk: unknown) => {
+      out += String(chunk);
+      return true;
+    };
+    const spies = [
+      jest.spyOn(process.stdout, 'write').mockImplementation(grab as never),
+      jest.spyOn(process.stderr, 'write').mockImplementation(grab as never),
+      ...(['log', 'warn', 'error', 'debug', 'verbose'] as const).map((m) =>
+        jest.spyOn(Logger.prototype, m).mockImplementation(((...args: unknown[]) => {
+          out += `${JSON.stringify(args)}\n`;
+        }) as never),
+      ),
+    ];
+    try {
+      await fn();
+    } finally {
+      spies.forEach((x) => x.mockRestore());
+    }
+    return out;
+  }
+
+  // ── a. a replay must be the same sale ──
+
+  describe('a. replay fingerprint', () => {
+    const visa = { method: 'CARD', cardScheme: 'VISA', cardLast4: '4242', authCode: 'A1B2C3' };
+
+    it('the real case: the same sale posted twice is one order, 8,000, VISA, DRK-03', async () => {
+      const id = cid('real');
+      const body = sale(id, { payment: visa, soldAt: '2026-11-21T21:14:00+03:00' });
+      const one = await post('tills', body);
+      const two = await post('tills', body);
+      expect([one.status, two.status]).toEqual([200, 200]);
+      expect([one.body.replayed, two.body.replayed]).toEqual([false, true]);
+      expect(two.body.order.id).toBe(one.body.order.id);
+      expect(await ordersFor(id)).toBe(1);
+      expect(Number(one.body.order.total)).toBe(8000);
+      expect(one.body.payment.cardScheme).toBe('VISA');
+      expect(one.body.order.tillCode).toBe('DRK-03');
+    });
+
+    it('the order of the lines does not matter', async () => {
+      const id = cid('line-order');
+      const a = [
+        { sku: 'BEER-F', quantity: 1 },
+        { sku: 'SODA-F', quantity: 2 },
+      ];
+      const one = await post('tills', sale(id, { lines: a }));
+      const two = await post('tills', sale(id, { lines: [...a].reverse() }));
+      expect(two.status).toBe(200);
+      expect(two.body.replayed).toBe(true);
+      expect(two.body.order.id).toBe(one.body.order.id);
+    });
+
+    it('sku on the first send and menuItemId on the retry is still the same sale', async () => {
+      const id = cid('sku-vs-id');
+      const item = await prisma.menuItem.findFirstOrThrow({
+        where: { orgId, branchId: branch.tills, sku: 'BEER-F' },
+      });
+      const one = await post('tills', sale(id, { lines: [{ sku: 'BEER-F', quantity: 2 }] }));
+      const two = await post('tills', sale(id, { lines: [{ menuItemId: item.id, quantity: 2 }] }));
+      expect(one.status).toBe(200);
+      expect(two.status).toBe(200);
+      expect(two.body.replayed).toBe(true);
+    });
+
+    const differs: [string, Record<string, unknown>, string][] = [
+      ['a different quantity', { lines: [{ sku: 'BEER-F', quantity: 3 }] }, 'lines'],
+      ['a different item', { lines: [{ sku: 'SODA-F', quantity: 2 }] }, 'lines'],
+      [
+        'an extra line',
+        {
+          lines: [
+            { sku: 'BEER-F', quantity: 2 },
+            { sku: 'SODA-F', quantity: 1 },
+          ],
+        },
+        'lines',
+      ],
+      ['a different method', { payment: visa }, 'payment.method'],
+      ['a different till', { tillCode: 'DRK-04' }, 'tillCode'],
+      [
+        'a different tendered amount',
+        { payment: { method: 'CASH', tenderedAmount: 20000 } },
+        'payment.tenderedAmount',
+      ],
+      ['a different soldAt', { soldAt: '2026-11-21T22:00:00+03:00' }, 'soldAt'],
+    ];
+    for (const [label, over, part] of differs) {
+      it(`${label} under the same clientSaleId is a 409 that names the part and writes nothing`, async () => {
+        const id = cid(`mismatch-${label}`);
+        const first = await post(
+          'tills',
+          sale(id, {
+            soldAt: '2026-11-21T21:14:00+03:00',
+            payment: { method: 'CASH', tenderedAmount: 10000 },
+          }),
+        );
+        expect(first.status).toBe(200);
+        const second = await post(
+          'tills',
+          sale(id, {
+            soldAt: '2026-11-21T21:14:00+03:00',
+            payment: { method: 'CASH', tenderedAmount: 10000 },
+            ...over,
+          }),
+        );
+        expect(second.status).toBe(409);
+        expect(second.body.code).toBe('CLIENT_SALE_ID_PAYLOAD_MISMATCH');
+        expect(second.body.differs).toContain(part);
+        expect(await ordersFor(id)).toBe(1);
+      });
+    }
+
+    it('a different card scheme or mobile-money network is a 409', async () => {
+      const idCard = cid('scheme');
+      await post('tills', sale(idCard, { payment: visa }));
+      const card = await post(
+        'tills',
+        sale(idCard, { payment: { ...visa, cardScheme: 'MASTERCARD' } }),
+      );
+      expect(card.status).toBe(409);
+      const idMomo = cid('network');
+      await post('tills', sale(idMomo, { payment: { method: 'MOMO', momoNetwork: 'MTN' } }));
+      const momo = await post(
+        'tills',
+        sale(idMomo, { payment: { method: 'MOMO', momoNetwork: 'AIRTEL' } }),
+      );
+      expect(momo.status).toBe(409);
+    });
+
+    it('omitted soldAt on both sends is the same sale; sending one the second time is not', async () => {
+      const id = cid('soldat-omitted');
+      await post('tills', sale(id));
+      expect((await post('tills', sale(id))).body.replayed).toBe(true);
+      expect((await post('tills', sale(id, { soldAt: '2026-11-21T21:14:00+03:00' }))).status).toBe(
+        409,
+      );
+    });
+
+    it('a replay with different slip fields is a 200 and never changes the stored sale', async () => {
+      const id = cid('slip');
+      const one = await post('tills', sale(id, { payment: visa }));
+      const two = await post(
+        'tills',
+        sale(id, { payment: { ...visa, cardLast4: '1111', authCode: 'ZZ99', terminalId: 'T-9' } }),
+      );
+      expect(two.status).toBe(200);
+      expect(two.body.replayed).toBe(true);
+      const stored = await prisma.payment.findFirstOrThrow({
+        where: { orderId: one.body.order.id },
+      });
+      expect([stored.cardLast4, stored.authCode, stored.terminalId]).toEqual([
+        '4242',
+        'A1B2C3',
+        null,
+      ]);
+    });
+
+    it('the 409 does not echo a value and logs the sale id, branch and till but no card data', async () => {
+      const id = cid('echo');
+      await post('tills', sale(id, { payment: visa }));
+      let res: request.Response | undefined;
+      const out = await captureOutput(async () => {
+        res = await post(
+          'tills',
+          sale(id, { lines: [{ sku: 'SODA-F', quantity: 7 }], payment: visa }),
+        );
+      });
+      expect(res?.status).toBe(409);
+      expect(JSON.stringify(res?.body)).not.toContain('4242');
+      expect(JSON.stringify(res?.body)).not.toContain('A1B2C3');
+      expect(out).toContain('QUICK_SALE_REPLAY_MISMATCH');
+      expect(out).toContain(id);
+      expect(out).not.toContain('4242');
+      expect(out).not.toContain('A1B2C3');
+    });
+  });
+
+  // ── e. no card number in a text field ──
+
+  describe('e. card data fields', () => {
+    const PAN = '4111111111111111'; // the public Visa test number, Luhn-valid, not a real card
+    const visa = { method: 'CARD', cardScheme: 'VISA', cardLast4: '4242', authCode: 'A1B2C3' };
+    const momo = { method: 'MOMO', momoNetwork: 'MTN' };
+
+    for (const field of ['authCode', 'terminalId']) {
+      it(`a 16-digit number in ${field} is a 400: not stored, not echoed, not logged`, async () => {
+        const id = cid(`pan-${field}`);
+        let res: request.Response | undefined;
+        const out = await captureOutput(async () => {
+          res = await post('tills', sale(id, { payment: { ...visa, [field]: PAN } }));
+        });
+        expect(res?.status).toBe(400);
+        expect(JSON.stringify(res?.body)).not.toContain(PAN);
+        expect(out).not.toContain(PAN);
+        expect(await ordersFor(id)).toBe(0);
+        expect(
+          await prisma.payment.count({
+            where: { OR: [{ authCode: PAN }, { terminalId: PAN }], orgId },
+          }),
+        ).toBe(0);
+      });
+    }
+
+    const refused: [string, Record<string, unknown>][] = [
+      ['authCode with a dash', { ...visa, authCode: 'AB-123' }],
+      ['authCode of 9 characters', { ...visa, authCode: 'A12345678' }],
+      ['terminalId with a space', { ...visa, terminalId: 'TRM 03' }],
+      ['terminalId of 13 characters', { ...visa, terminalId: 'T'.repeat(13) }],
+      ['externalTransactionId on a card sale', { ...visa, externalTransactionId: 'MP123456' }],
+      ['payerPhone on a card sale', { ...visa, payerPhone: '+256700000001' }],
+      [
+        'externalTransactionId on a cash sale',
+        { method: 'CASH', externalTransactionId: 'MP123456' },
+      ],
+      ['payerPhone on a cash sale', { method: 'CASH', payerPhone: '+256700000001' }],
+      ['payerPhone that is a card number', { ...momo, payerPhone: PAN }],
+      ['payerPhone of 6 digits', { ...momo, payerPhone: '123456' }],
+      ['payerPhone with letters', { ...momo, payerPhone: 'call me' }],
+    ];
+    for (const [label, payment] of refused) {
+      it(`${label}: 400, nothing written, value not echoed`, async () => {
+        const id = cid(`e-${label}`);
+        const res = await post('tills', sale(id, { payment }));
+        expect(res.status).toBe(400);
+        expect(await ordersFor(id)).toBe(0);
+        const echoed = Object.values(payment).filter(
+          (v) => typeof v === 'string' && /\d{6}|call me|TRM 03|AB-123/.test(v),
+        );
+        for (const v of echoed) expect(JSON.stringify(res.body)).not.toContain(v as string);
+      });
+    }
+
+    const accepted: [string, Record<string, unknown>][] = [
+      ['a 6-character authCode and a dashed terminalId', { ...visa, terminalId: 'TRM-DRK-03' }],
+      [
+        'mobile money with an id and a +256 number',
+        { ...momo, externalTransactionId: 'MP240101123456', payerPhone: '+256700000001' },
+      ],
+      ['mobile money with a local number with spaces', { ...momo, payerPhone: '0700 000 001' }],
+    ];
+    for (const [label, payment] of accepted) {
+      it(`accepted: ${label}`, async () => {
+        const res = await post('tills', sale(cid(`ok-${label}`), { payment }));
+        expect(res.status).toBe(200);
+      });
+    }
+  });
+
+  // The reviewer's A3 probe (a unique violation on ANOTHER constraint is not taken for a
+  // replay) builds its probe-only index on authCode with an 11-character value, which the new
+  // 8-character authCode limit refuses. Same property, on terminalId (11 characters is valid).
+  describe('a. a unique violation on another constraint is not a replay (A3 on terminalId)', () => {
+    it('is not answered as a replay and writes nothing', async () => {
+      await prisma.$executeRawUnsafe(
+        `CREATE UNIQUE INDEX IF NOT EXISTS h1f_probe_terminal_uq ON payments (terminal_id)
+         WHERE terminal_id LIKE 'P2002%'`,
+      );
+      try {
+        const terminalId = `P2002${RUN}`;
+        const card = { method: 'CARD', cardScheme: 'VISA', cardLast4: '4242', terminalId };
+        const first = await post('tills', sale(cid('a3t-one'), { payment: card }));
+        expect(first.status).toBe(200);
+        const second = await post('tills', sale(cid('a3t-two'), { payment: card }));
+        expect(second.status).not.toBe(200);
+        expect(second.body?.order?.id).toBeUndefined();
+        expect(await ordersFor(cid('a3t-two'))).toBe(0);
+      } finally {
+        await prisma.$executeRawUnsafe('DROP INDEX IF EXISTS h1f_probe_terminal_uq');
+      }
+    });
+  });
+
+  // ── f. cash that arrives after its till was reconciled ──
+
+  describe('f. a cash sale that arrives after the till was reconciled', () => {
+    const ctx = () => ({ branchId: branch.late, organizationId: orgId });
+
+    async function openAndReconcile(tillCode: string, float: number, cashSale: number) {
+      const open = async (startedMsAgo = 60_000) => {
+        const shift = await prisma.shift.create({
+          data: {
+            orgId,
+            branchId: branch.late,
+            shiftNumber: `H1F-${tillCode}-${randomBytes(3).toString('hex')}`,
+            openedById: cashier.id,
+          },
+        });
+        return prisma.tillSession.create({
+          data: {
+            orgId,
+            branchId: branch.late,
+            shiftId: shift.id,
+            tillCode,
+            operatorUserId: cashier.id,
+            openedById: cashier.id,
+            openingFloat: float,
+            openedAt: new Date(Date.now() - startedMsAgo),
+          },
+        });
+      };
+      const session = await open();
+      const rung = await post(
+        'late',
+        sale(cid(`late-first-${tillCode}`), {
+          tillCode,
+          lines: [{ sku: 'BEER-F', quantity: cashSale / 4000 }],
+        }),
+      );
+      expect(rung.status).toBe(200);
+      const counted = float + cashSale;
+      await tills.reconcileTill(session.id, cashier.id, ctx(), { countedCash: counted }, {});
+      const done = await prisma.tillSession.findUniqueOrThrow({ where: { id: session.id } });
+      expect(done.status).toBe('RECONCILED');
+      expect(Number(done.expectedCash)).toBe(counted);
+      return { session: done, open };
+    }
+
+    it('with no later session on that code: accepted and stored with its till code, counted in no till', async () => {
+      const { session } = await openAndReconcile('DRK-07', 10000, 4000);
+      // The tablet was offline at cash-up; its queue now posts a 2,000 cash sale (rung as "drk-07 ").
+      const id = cid('late-cash');
+      const late = await post(
+        'late',
+        sale(id, {
+          tillCode: 'drk-07 ',
+          lines: [{ sku: 'SODA-F', quantity: 1 }],
+          soldAt: new Date(Date.now() - 600_000).toISOString(),
+        }),
+      );
+      expect(late.status).toBe(200);
+      expect(late.body.order.tillCode).toBe('DRK-07');
+      const stored = await prisma.payment.findFirstOrThrow({
+        where: { orderId: late.body.order.id },
+      });
+      expect([stored.tillCode, stored.method, stored.status]).toEqual([
+        'DRK-07',
+        'CASH',
+        'COMPLETED',
+      ]);
+      expect(Number(stored.amount)).toBe(2000);
+
+      // Where it shows up and where it does not:
+      expect(Number(await tills.computeExpectedCash(session.id, 10000, ctx()))).toBe(14000); // reconciled till: unchanged
+      const after = await prisma.tillSession.findUniqueOrThrow({ where: { id: session.id } });
+      expect([Number(after.expectedCash), Number(after.variance)]).toEqual([14000, 0]); // frozen at reconcile
+      const open = await prisma.tillSession.count({
+        where: { branchId: branch.late, tillCode: 'DRK-07', status: 'OPEN' },
+      });
+      expect(open).toBe(0); // no till has it
+      const sum = await prisma.payment.aggregate({
+        _sum: { amount: true },
+        where: { branchId: branch.late, tillCode: 'DRK-07', method: 'CASH', status: 'COMPLETED' },
+      });
+      expect(Number(sum._sum.amount)).toBe(6000); // the sale ledger has all of it: 4,000 + the late 2,000
+    });
+
+    it('with a new session already open on the same code: it lands in that session, not the one it was rung in', async () => {
+      const { session, open } = await openAndReconcile('DRK-08', 10000, 4000);
+      const next = await open(0); // a new shift reuses the code before the tablet syncs
+      const late = await post(
+        'late',
+        sale(cid('late-cash-2'), { tillCode: 'DRK-08', lines: [{ sku: 'SODA-F', quantity: 1 }] }),
+      );
+      expect(late.status).toBe(200);
+      expect(Number(await tills.computeExpectedCash(session.id, 10000, ctx()))).toBe(14000);
+      expect(Number(await tills.computeExpectedCash(next.id, 10000, ctx()))).toBe(12000);
+    });
   });
 });
