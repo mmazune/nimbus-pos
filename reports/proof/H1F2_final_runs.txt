@@ -1,0 +1,17 @@
+H1F2 proof at HEAD, 21 Nov 2026, disposable nimbus_event_h1f2 :55477 (removed after). check:event green (1396 files, 1 allowed); tsc 0; nest build 0 (before the final rename/format commit; tsc clean after); API unit 70 suites / 1288 tests (1254 + 34 new), 0 failing.
+e2e run 1 (quick-sale + H1F + review, one jest process):
+Tests:       166 passed, 166 total
+foreign-404 lines: 0
+e2e run 2 (quick-sale + H1F + review, one jest process):
+Tests:       166 passed, 166 total
+foreign-404 lines: 0
+e2e run 3 (quick-sale + H1F + review, one jest process):
+Tests:       166 passed, 166 total
+foreign-404 lines: 0
+Lock-hold wall-clock p95 (EVENT_PERF off by default): run 1
+    H1F allocator run 1: 200 sales, lock hold ms p50 4.8 p95 36.2 max 434.3; non-200 0; load 15.78 21.22 21.08
+    H1F allocator run 2: 200 sales, lock hold ms p50 3.9 p95 8.1 max 13.3; non-200 0; load 15.78 21.22 21.08
+    H1F allocator run 3: 200 sales, lock hold ms p50 3.3 p95 7.1 max 32.4; non-200 0; load 14.92 20.95 20.98
+    H1F allocator run 4: 200 sales, lock hold ms p50 2.9 p95 6.5 max 13.9; non-200 0; load 14.92 20.95 20.98
+    H1F allocator run 5: 200 sales, lock hold ms p50 3.1 p95 6.7 max 10.6; non-200 0; load 14.92 20.95 20.98
+    R2 lock hold ms over 200 sales: p50 4.6 p95 9.7 max 15.7; non-200: 0; load 14.12 20.69 20.89
