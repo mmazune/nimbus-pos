@@ -98,3 +98,125 @@ After each, `git diff --exit-code -- apps/api/src packages/db` returned 0.
 13. `H18` › a full card number typed into terminalId is refused (400), not stored
 
 Run: first H1's own `test/quick-sale.e2e-spec.ts` (it writes the fixture night the C10 control looks for), then `DATABASE_URL=<disposable nimbus_event_* URL> npx jest --config ./test/jest-e2e.json --runInBand test/quick-sale.review.e2e-spec.ts` from `apps/api` (through loadmaster where a task exists). The spec creates its own organisations, users (generated passwords) and branches, and suffixes every `clientSaleId` with a random run id, so it can re-run on the same database.
+
+---
+
+# Round 2 (H1-R2): second look at the H1F fixes
+
+```yaml
+reviewer_model: claude-opus-5-5
+built_by_reviewer: no
+reviewed_sha: a1a4f1d   # product code; HEAD 09120ec adds only the H1-R2 prompt
+diff_reviewed: git diff ede9ea7..a1a4f1d -- apps packages tools
+verdict: pass
+probes: apps/api/test/quick-sale.review.e2e-spec.ts (describe "H1-R2", plus P1/P2 edits)
+```
+
+**Verdict: pass. Blockers 0 · should-fix 2 · notes 5.** All six round-1 findings are fixed in the code, and the 13 round-1 probes pass with P1 and P2 applied. No product code was changed in this review.
+
+**How it was run [live].** Disposable Docker `postgres:16` `nimbus-event-h1r2` (:55474), fresh databases created inside it (`nimbus_event_h1r2`, `_mig`, `_q9`, `_final`), `migrate deploy` + `db:seed`, URL passed inline, no `.env*` read or written. Baseline: `nimbus-event-h1r2-base` (:55475) and a temporary worktree. Every check went through loadmaster with a throwaway `.loadmaster.toml` (kept out of git, removed at the end). The machine was **not quiet**: load 4.4–12 throughout, from other sessions.
+
+**Final result of the probe spec on a fresh database** (`nimbus_event_h1r2_final`, after H1's own e2e 31/31): **100 tests**. All 13 round-1 probes that were red now pass (first clean run on the first database: 99/99, before the round-2 note probes were added). On the fresh database, two full runs were 99/100 each: run 1 lost one probe to the foreign-process 404 (N-4), run 2 lost the load-sensitive R2 lock-hold timing (N-5). The round-2 block is 21 green + 2 red; the 2 red are S-1 and S-2 below and stay red until fixed.
+
+## a. The two probes (owner rulings P1, P2)
+
+```diff
+@@ A3: a unique violation on another constraint is not treated as a replay
++      // H1-R2 (owner ruling P1): authCode is capped at 8 letters or digits, so the code is
++      // 'P2' + the 6-hex run id (8 chars). The probe index covers exactly this run's code ...
++      const code = `P2${RUN}`;
++      await prisma.$executeRawUnsafe('DROP INDEX IF EXISTS h1r_probe_authcode_uq');
+       await prisma.$executeRawUnsafe(
+-        `CREATE UNIQUE INDEX IF NOT EXISTS h1r_probe_authcode_uq ON payments (auth_code)
+-         WHERE auth_code LIKE 'P2002%'`,
++        `CREATE UNIQUE INDEX h1r_probe_authcode_uq ON payments (auth_code)
++         WHERE auth_code = '${code}'`,
+       );
+-      const code = `P2002${RUN}`;
+
+@@ R2: allocator with 10,000 orders in one branch
+-    const ALLOC_SQL = (b: string) => `
+-      SELECT MAX(CAST(SUBSTRING(order_number FROM '^ORD-([0-9]+)$') AS INTEGER)) AS max
+-      FROM orders WHERE branch_id = '${b}'`;
++    // H1-R2 (owner ruling P2): the probe examines the query the allocator REALLY runs ...
++    const realAllocatorQuery = async (b: string): Promise<Prisma.Sql> => {
++      const seen: Prisma.Sql[] = [];
++      const stand = {
++        $executeRaw: async () => 0,
++        $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
++          seen.push(Prisma.sql(strings, ...values));
++          return [{ max: null }];
++        },
++      } as unknown as Prisma.TransactionClient;
++      await allocateOrderNumber(stand, b);
++      expect(seen).toHaveLength(1);
++      expect(seen[0].values).toEqual([b]);
++      return seen[0];
++    };
++    const runReal = async (q: Prisma.Sql) =>
++      (await prisma.$queryRawUnsafe<{ max: string | null }[]>(q.text, ...q.values))[0].max;
+ ...
+-      const e = await explain(ALLOC_SQL(branch.perf));
++      const q = await realAllocatorQuery(branch.perf);
++      const e = await explain(q.text, q.values);
++      // its answer agrees with the maximum computed in JS over every row of the branch
++      expect(all.length).toBeGreaterThanOrEqual(10000);
++      expect(await runReal(q)).toBe(jsMax.toString());
++      expect(e.scanned).toBeGreaterThanOrEqual(1);
+       expect(e.scanned).toBeLessThanOrEqual(10);
+```
+
+- **P1, unchanged or stronger:** the property is the same (a P2002 on another unique constraint is never answered as a replay and writes nothing). The probe index now covers one exact value instead of a prefix, so nothing else in the database can trip it, and a stale index from an interrupted run is dropped first.
+- **P2, stronger:** the probe now calls the real `allocateOrderNumber` and EXPLAINs the exact `Prisma.Sql` it sends, with its bound value. If the code's query ever stops matching the index, this probe goes red; a hand-copied query could not. It also checks the query's answer against a JS maximum over every row (a plan that reads nothing cannot pass).
+- Result: `Result > Limit > Index Scan(orders_branch_id_order_number_numeric_idx); order rows read: 1; execution 0.04–0.19 ms` on 10,000 rows, in every run.
+- Two harness fixes in the same file, no assertion weakened: the round-1 "named fix check" now drops its BIGINT probe index in `finally`, and builds it partial on its own branch. A whole-table BIGINT index **cannot even be built** once any row holds a 19+ digit `ORD-` number (`22003 … out of range for type bigint`, seen live): that is P4's reason for NUMERIC. The `post` helper now records who answered on any 404 (question 10).
+
+**P3: confirmed.** `tools/check-event.allow.json` has one entry: file `apps/api/test/quick-sale.review.e2e-spec.ts`, pattern `pan-field`. `4111111111111111` is the published Visa test number (Luhn-valid, never issued). `check:event` is green and reports exactly 1 allowed hit. One caveat to note: the gate matches on file plus pattern, not line, so a future `pan` field anywhere in that one file would also be allowed. The round-2 code adds no `pan` identifier (and avoids the `card-number` pattern), so the count stays 1.
+
+## Findings (round 2)
+
+| id | severity | file:line | what is wrong | failure scenario on event night | fix | probe |
+|---|---|---|---|---|---|---|
+| S-1 | should-fix | `apps/api/src/modules/tills/tills.service.ts:55-61` (open: exact-match duplicate check), `:393-397` (H1F widened expected cash to `[code, normalize(code)]`), `tills/dto/open-till.dto.ts:8` | Till open still compares codes byte for byte, so `DRK-03` and `drk-03` can both be OPEN in one branch. Since H1F, both sessions count every quick sale stored as `DRK-03`. | A supervisor opens `drk-03` for a relief cashier while `DRK-03` is still open. Every DRK-03 cash sale is now expected in both drawers. At cash-up the second drawer shows a shortage equal to all of DRK-03's cash, and someone is accused of a shortfall that never happened. | Normalise `OpenTillDto.tillCode` with the same `normalizeTillCode` `@Transform`, and make the duplicate-open check compare normalised codes. Existing sessions keep their code. (The till-open path was out of H1F's scope, so this is a follow-up, not an H1F defect.) | `H1-R2 › 6 › S-1` red: `second open as "drk-03": OPENED; expected cash DRK-03 8000, drk-03 8000` for one 8,000 sale |
+| S-2 | should-fix | `apps/api/src/modules/quick-sale/dto/quick-sale.dto.ts:91-94` | `externalTransactionId` (≤ 100 chars) on a mobile-money sale accepts a full card number: 200, stored in `payments.external_transaction_id`. Round 1's F-6 fix named a Luhn check for this field; H1F made it MoMo-only, which closes card and cash sales but not this. | A cashier rings a MoMo sale and types the long number from the wrong slip (a card slip) into the transaction-id box. A full card number sits in plain text in the database. | Refuse any 13–19 digit run that passes Luhn in `externalTransactionId` (MTN/Airtel ids are shorter or not Luhn-valid; confirm on a captured real id first). The message must not echo the value. | `H1-R2 › 7 › S-2` red: `HTTP 200; stored rows 1; echoed false` |
+| N-1 | note | `packages/db/prisma/migrations/20261121100000_event_order_number_index/migration.sql:10-11`, `apps/api/src/modules/orders/order-number.ts:29` | **P4, answered honestly: the index can fail an insert, but only past 131,072 digits.** Every value in the brief inserts fine through Prisma (`ORD-`, `ORD-abc`, `ORD-1e5`, `ORD-12 34`, `''`, 40 digits, 400 digits). NUMERIC has a ceiling of 131,072 digits before the point. A compressible number (repeated digits) passes the text unique index, so `ORD-` plus 131,073+ nines is refused **by the new index** (`22003 value overflows numeric format`). Control in psql, in a rolled-back transaction with the index dropped: the same insert succeeds. And one stored row of exactly 131,072 nines makes the next allocated number overflow: **every quick sale in that branch is a 500** (the F-4 class, threshold moved from 11 digits to 131,072). | None realistic: no API DTO takes an order number. Only the demo CSV import, the seed or manual SQL could write one. | Optional: bound the digits in both the index and the query, e.g. `'^ORD-([0-9]{1,18})$'` (then a longer value is NULL and ignored, and the cast can never overflow). It needs a new additive migration: create the new index, then drop the old one, with the query changed in the same PR. | `H1-R2 › 3 › note: NUMERIC ceiling` logs `insert 131072 nines ok; insert 131073 nines FAIL 22003 numeric overflow; next quick sale in that branch HTTP 500`; psql control above |
+| N-2 | note | `apps/api/src/modules/quick-sale/quick-sale.service.ts:70`, `:225` | The fingerprint compares `soldAt` as a string. The same instant written with another offset (`…21:04:00+03:00` vs `…18:04:00Z`) is a 409, not a replay. | Only bites if the till's offline queue re-serialises `soldAt` on retry (e.g. `toISOString()` in UTC). The sale is stored once (no loss, no duplicate), but the tablet shows a conflict for a sale that did land. If the cashier then re-rings it under a new id, it is counted twice. | Compare instants (`Date.parse`) rather than strings; or confirm the till client sends the queued payload byte for byte. | `H1-R2 › 1 › note: soldAt` logs `200 then 409` |
+| N-3 | note | `quick-sale.service.ts:222` | A sale stored before H1F (no `metadata.fingerprint`) is compared on till, method, scheme/network and lines only. An identical retry replays (200, `replayed: true`), different lines are a 409, but a different `tenderedAmount` is still a replay (200, `replayed: true`). No server error in any case. | Only pre-H1F rows; the event till is not deployed, so none exist outside test databases. | None needed; documented as the behaviour. | `H1-R2 › 1 › pre-H1F sale` logs `identical 200/true; other tender 200/true; other lines 409` |
+| N-4 | note | `apps/api/test/quick-sale.review.e2e-spec.ts:114` (and every spec using `request(app.getHttpServer())`) | **Question 10, cause found [live]:** the empty-body 404 is answered by **another process**. Supertest opens a new ephemeral server per request; one request went to `http://127.0.0.1:56187`, and the reply was `text/plain "not found"` from `claude` PID 74501, which listens on `127.0.0.1:56187` (`lsof`, captured at that moment). The ephemeral server shared the port number on another binding, and the loopback request reached the other process. It is a harness defect, not product behaviour. | None in production (the API listens on a fixed port). In CI or on a busy dev machine, a probe can fail with a 404 that no route returned. | Listen once, bound to `127.0.0.1` explicitly (`await app.listen(0, '127.0.0.1')`, then `request('http://127.0.0.1:' + port)`), so a clash fails loudly with `EADDRINUSE`. H1F already listens once in its own spec. | `post` helper diagnostics: `H1R2-404 url=http://127.0.0.1:56187/api/pos/quick-sale … text="not found" … claude 74501 … 127.0.0.1:56187 (LISTEN)` (seen in 2 of 8 full runs) |
+| N-5 | note | `quick-sale.review.e2e-spec.ts` R2 lock-hold probe; `quick-sale.h1f.e2e-spec.ts` part c | The lock-hold p95 gate (≤ 20 ms, timed in Node: event loop and round trips included) moves with machine load. The Postgres side is fixed (1 row, ≤ 0.2 ms). | None from the code. As a gate it is unreliable on a shared machine. | Keep "index used, 1 row read" as the gate (now real, P2). Measure lock hold on Thursday's load test on a quiet box. | see "Allocator" below |
+
+## b. Probes 1–8
+
+1. **Replay fingerprint [live].** Two different sales under one `clientSaleId`, fired together, 10 times: every time exactly one 200 (`replayed: false`) and one 409 (`replayed` absent), one order. The winner varied (the 409 came first in 3–4 of 10), so both paths ran. Two cash sales differing only in `tenderedAmount`: one 200, one 409 naming `payment.tenderedAmount`. An identical retry fired together with the original: one `false`, one `true`, same order id; a later retry: `true`. The stored fingerprint has exactly `soldAt` and `tenderedAmount`; the order's metadata holds no last four and no approval code. Pre-H1F rows: N-3. The 409's `differs` names fields only, never values; the mismatch warning logs names only.
+2. **Real case [live].** Two beers by Visa at DRK-03 with `soldAt`, posted twice at the same moment: one sale, `replayed` false/true, same order, branch +1 order, total 8,000, one CARD/VISA payment of 8,000, `till_code` `DRK-03`, one line of quantity 2. H1's own e2e 31/31 (two fresh databases).
+3. **Index never fails an insert [live].** All seven values from the brief insert through Prisma with the index present. The allocator ignores the non-matching ones: a branch holding only `ORD-`, `ORD-abc`, `ORD-1e5`, `ORD-12 34`, `''` allocates `ORD-000001`, and a branch holding the 40- and 400-digit numbers allocates the 400-digit number + 1 exactly. Random-digit numbers of 5,000 and 8,000 digits are refused by the **existing text unique index** first (`index row size 5048 exceeds btree … maximum 2704`). Text is about twice the size of NUMERIC for the same digits, so the new index never refuses first there. The one way it does is N-1. Restaurant flow `POST /api/pos/orders` (Manager, takeaway) with the index present: 201, `ORD-000015`.
+4. **Allocator [live].** Index used and 1 row read (above). `ORD-999999` → `ORD-1000000` → `ORD-1000001` and a branch above 2³¹ sells (round-1 B5, green). Lock held, p95 over 200 sales per run, review spec: 14.6 / 6.8 / 14.1 / 16.2 / 24.0 / 20.9 / 38.1 / 102.4 ms at load 4.4 / 4.4 / 7.1 / 8.2 / 7.5 / 5.0 / 5.0 / 12.0. H1F's own five-run test, three times: 14 of 15 runs ≤ 20 ms (5.9–23.2 ms, load 7–9). 0 non-200 in all 4,600 measured sales. **Under 20 ms at p95 is not established on this machine today;** it was never quiet (N-5). **Negative control:** with the `pg_advisory_xact_lock` line removed in place (copy restored afterwards, `git diff --exit-code -- apps/api/src packages/db` = 0), B7 goes **red** (19 of 20 non-200).
+5. **Migration [live].** Applies on an empty database (61 migrations, index present). On a database brought to H1's state from a scratch copy of the migrations folder, a second `migrate deploy` applied only `20261121100000_event_order_number_index`. `prisma migrate diff --from-url <that db> --to-schema-datamodel schema.prisma --script`: 253 lines, **0 `DROP INDEX`, 0 mentions of the new index, 0 statements on `orders`**. All 253 are pre-existing drift (the same 15 tables as round 1). Prisma does not model expression indexes, so it neither drops nor recreates this one. Additive: one `CREATE INDEX`, nothing altered or dropped.
+6. **Till codes [live].** `drk-03` and `DRK-03 ` are stored as `DRK-03` and reach the session opened as `DRK-03` (float 10,000 + 2 × 8,000 = 26,000). Both case variants open at once: S-1.
+7. **Card number in a text field [live].** A 16-digit number in `authCode` or `terminalId`: 400, no order, no payment row holding it, not in the response body, and not in any `Logger` (log/warn/error/debug/verbose/fatal) or `console` output during the request. `externalTransactionId` and `payerPhone` on a card sale and on a cash sale: 400 each, nothing written. Remaining gap: S-2.
+8. **Audit failure log [live].** With the audit insert forced to fail: sale 200, no audit row, and one error line `ORDER_QUICK_SALE audit write failed {"orderId","orderNumber","clientSaleId","branchId","tillCode":"DRK-03","error","reason"}`. The till code was sent as `drk-03` and logged normalised. No last four, approval code or terminal id in it. `reason` is the last line of the database error capped at 200 chars; here it is the trigger's own message.
+
+## c. Open questions from H1F
+
+9. **`orders.e2e` "close SERVED → CLOSED": pre-existing, not a regression.** At `23c7a2c` (temporary worktree `~/Code/nimbus-pos-event-baseline`, its own install and Prisma client, fresh `nimbus_event_h1r2_base` on :55475, 59 migrations + seed): **17/18, that test fails `expected 200 "OK", got 400`**. At HEAD (fresh `nimbus_event_h1r2_q9`, 61 migrations + seed): **17/18, the same test, the same 400**. Added to `docs/PRE_EXISTING_ISSUES.md` (new file). Worktree and container removed.
+10. **Flake.** The quick-sale e2e (H1's spec plus H1F's), three runs: 66/66, 66/66 and 65/66. The one failure is H1F's lock-hold timing (p95 23.2 ms at load 9; N-5). **0 responses that were neither expected nor explained.** The H1F empty-body 404 did appear twice in 8 full review-spec runs, and its source is now captured (N-4: another local process on the same port number).
+
+## Checked and found sound (round 2)
+
+| Area | What |
+|---|---|
+| F-1 replay | Both paths (up-front lookup and unique-violation race) compare the sale; identical retries replay; the comparison excludes slip fields by design (round-1 R3 control still green). `CLIENT_SALE_ID_OTHER_BRANCH` is unchanged and checked first. |
+| F-2 log | See probe 8. |
+| F-3 / F-4 allocator | Real query uses the index; BigInt arithmetic, no `Number`; padding unchanged for ≤ 6 digits; branch above 2³¹ sells. |
+| F-5 till codes | One helper; DTO `@Transform` plus service re-normalise (direct callers); expected cash matches both the opened spelling and the normalised one; the replay comparison normalises the stored code, so pre-H1F lower-case rows still replay. |
+| F-6 | `authCode` `^[A-Za-z0-9]{1,8}$`, `terminalId` `^[A-Za-z0-9-]{1,12}$`, `payerPhone` at most 12 digits, MoMo-only slip fields. |
+| Read-back after commit | Moving the order read outside the transaction does not change the response (round-1 suites green) and shortens the lock. |
+| Restaurant flow | Create through the API with the index present: 201. The legacy number generator is untouched. |
+| `check:event` | Green, 1 allowed hit (P3). |
+
+## Not checked (round 2)
+
+- The till client's real retry payload (N-2 depends on whether it re-serialises `soldAt`).
+- Lock-hold timing on a quiet machine, and anything beyond 20 concurrent sales: Thursday's load test.
+- Round 1's "Not checked" items that H1F did not touch (receipt history, `todayRange()` time zone, pool exhaustion) remain open.
+- Web and Postman: out of scope (H1F reports newman 10/18/0; not re-run here).
