@@ -135,6 +135,10 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
     );
     await app.init();
+    // Listen once. Without it supertest starts a server on the first request and closes it when
+    // that request ends, cutting every concurrent request still in flight (read ECONNRESET), and
+    // the cut-off requests then kept writing while the next test counted orders (H1F-f).
+    await app.listen(0);
     prisma = app.get(PrismaService);
     tills = app.get(TillsService);
 
@@ -273,7 +277,9 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
   it('twenty concurrent sales in one branch get twenty distinct order numbers, three runs in a row', async () => {
     const seen = new Set<string>();
     for (let run = 1; run <= 3; run++) {
-      const results = await Promise.all(
+      // Wait for all 20 to settle before judging any of them: a request still in flight when an
+      // assertion throws would write into the next test's starting count.
+      const settled = await Promise.allSettled(
         Array.from({ length: 20 }, (_, i) =>
           post(
             cashierToken,
@@ -288,6 +294,10 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
           ),
         ),
       );
+      const results = settled.map((r) => {
+        if (r.status === 'rejected') throw r.reason;
+        return r.value;
+      });
       expect(results.filter((r) => r.status >= 500)).toHaveLength(0);
       expect(results.map((r) => r.status)).toEqual(Array(20).fill(200));
       const numbers = results.map((r) => r.body.order.orderNumber as string);
