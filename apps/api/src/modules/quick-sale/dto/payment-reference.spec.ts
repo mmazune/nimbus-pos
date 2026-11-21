@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { looksLikeCardNumber, passesLuhn } from './payment-reference';
+import { looksLikeCardDigits, passesLuhn } from './payment-reference';
 import { QuickSalePaymentDto } from './quick-sale.dto';
 
 // 4111 1111 1111 1111 is the public Visa test number (Luhn-valid, never issued).
@@ -28,12 +28,17 @@ describe('H1F2 S-2: no card number as a mobile-money reference', () => {
     '4111-1111.1111-1111',
     ['4111', '1111', '1111', '111'].join('') + '1', // 16 digits again, via concatenation
   ])('%s is refused (400) as externalTransactionId', async (ref) => {
-    expect(looksLikeCardNumber(ref)).toBe(true);
-    expect(fieldErrors(await check({ externalTransactionId: ref }), 'externalTransactionId')).toHaveLength(1);
+    expect(looksLikeCardDigits(ref)).toBe(true);
+    expect(
+      fieldErrors(await check({ externalTransactionId: ref }), 'externalTransactionId'),
+    ).toHaveLength(1);
   });
 
   it('the refusal message does not echo the value', async () => {
-    const [e] = fieldErrors(await check({ externalTransactionId: LUHN_16 }), 'externalTransactionId');
+    const [e] = fieldErrors(
+      await check({ externalTransactionId: LUHN_16 }),
+      'externalTransactionId',
+    );
     expect(JSON.stringify(e.constraints)).not.toContain('4111');
   });
 
@@ -45,18 +50,19 @@ describe('H1F2 S-2: no card number as a mobile-money reference', () => {
     '1234567890123456789012', // 22 digits: longer than any card
     'A'.repeat(32),
   ])('%s is accepted', async (ref) => {
-    expect(fieldErrors(await check({ externalTransactionId: ref }), 'externalTransactionId')).toHaveLength(0);
+    expect(
+      fieldErrors(await check({ externalTransactionId: ref }), 'externalTransactionId'),
+    ).toHaveLength(0);
   });
 
-  it.each([
-    'A'.repeat(33),
-    'ref 123',
-    'ref_123',
-    'réf1',
-    '',
-  ])('%j is refused (characters or length)', async (ref) => {
-    expect(fieldErrors(await check({ externalTransactionId: ref }), 'externalTransactionId')).toHaveLength(1);
-  });
+  it.each(['A'.repeat(33), 'ref 123', 'ref_123', 'réf1', ''])(
+    '%j is refused (characters or length)',
+    async (ref) => {
+      expect(
+        fieldErrors(await check({ externalTransactionId: ref }), 'externalTransactionId'),
+      ).toHaveLength(1);
+    },
+  );
 
   it.each(['+256700000001', '0700 000 001', '256700000001', '+2567000000012', '700-000-001'])(
     'payerPhone %s is accepted (9 to 13 digits)',

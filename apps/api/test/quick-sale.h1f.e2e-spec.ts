@@ -87,9 +87,7 @@ describe('H1F: quick sale fixes (e2e)', () => {
         },
       });
     }
-    const login = await request(baseUrl)
-      .post('/api/auth/login')
-      .send({ email, password });
+    const login = await request(baseUrl).post('/api/auth/login').send({ email, password });
     expect([200, 201]).toContain(login.status);
     return { id: user.id, token: login.body.accessToken as string };
   }

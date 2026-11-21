@@ -20,7 +20,7 @@ export function passesLuhn(digits: string): boolean {
  * True when the value could be a payment card number: with dots and dashes removed it is
  * 13 to 19 digits and passes the Luhn check (H1F2, S-2).
  */
-export function looksLikeCardNumber(value: string): boolean {
+export function looksLikeCardDigits(value: string): boolean {
   const digits = value.replace(/[.-]/g, '');
   return /^\d{13,19}$/.test(digits) && passesLuhn(digits);
 }
@@ -47,7 +47,7 @@ export function IsMobileMoneyReference(options?: ValidationOptions) {
         validate: (value: unknown) =>
           typeof value === 'string' &&
           MOBILE_MONEY_REFERENCE_PATTERN.test(value) &&
-          !looksLikeCardNumber(value),
+          !looksLikeCardDigits(value),
       },
     });
 }

@@ -119,12 +119,15 @@ describe('TillsService', () => {
       );
     });
 
-    it.each(['drk-03', 'DRK-03 ', ' Drk-03'])('refuses %j while DRK-03 is open (409)', async (code) => {
-      await expect(
-        service.openTill('user-1', ctx, { tillCode: code, openingFloat: 0 }, meta),
-      ).rejects.toThrow(ConflictException);
-      expect(prisma.tillSession.create).not.toHaveBeenCalled();
-    });
+    it.each(['drk-03', 'DRK-03 ', ' Drk-03'])(
+      'refuses %j while DRK-03 is open (409)',
+      async (code) => {
+        await expect(
+          service.openTill('user-1', ctx, { tillCode: code, openingFloat: 0 }, meta),
+        ).rejects.toThrow(ConflictException);
+        expect(prisma.tillSession.create).not.toHaveBeenCalled();
+      },
+    );
 
     it('refuses when the OPEN session was stored in another spelling', async () => {
       prisma.tillSession.findMany.mockResolvedValue([{ id: 'open-1', tillCode: 'drk-03 ' }]);
