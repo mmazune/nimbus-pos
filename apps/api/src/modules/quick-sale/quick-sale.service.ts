@@ -446,8 +446,24 @@ export class QuickSaleService {
     } catch (e) {
       // The sale is committed; a failed audit write must not turn it into an error the
       // tablet would retry. It is logged loudly instead.
+      // Enough to find the sale and its till without a database lookup. No request body and no
+      // card field: only ids, and the last line of the database error (capped), never the
+      // multi-line Prisma message that echoes the statement.
+      const reason = (e instanceof Error ? e.message : String(e))
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .pop();
       this.logger.error(
-        `ORDER_QUICK_SALE audit write failed for order ${order.id}: ${(e as Error).message}`,
+        `ORDER_QUICK_SALE audit write failed ${JSON.stringify({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          clientSaleId: dto.clientSaleId,
+          branchId: ctx.branchId,
+          tillCode: dto.tillCode,
+          error: e instanceof Error ? e.name : 'unknown',
+          reason: (reason ?? '').slice(0, 200),
+        })}`,
       );
     }
   }
