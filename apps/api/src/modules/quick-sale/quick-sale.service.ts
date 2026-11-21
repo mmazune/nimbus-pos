@@ -280,7 +280,9 @@ export class QuickSaleService {
         clientSaleId: dto.clientSaleId,
         metadata: {
           source: 'QUICK_SALE',
-          soldAt: dto.soldAt ?? null,
+          // 03 §2: soldAt defaults to now when the tablet sends none. Stored only; never used
+          // for numbering, locking or ordering (createdAt stays the server's clock).
+          soldAt: dto.soldAt ?? new Date().toISOString(),
           tendered: plan.tendered ? plan.tendered.toString() : null,
           changeDue: plan.changeDue.toString(),
         },

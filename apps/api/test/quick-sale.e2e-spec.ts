@@ -355,6 +355,62 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
     });
   });
 
+  describe('guards', () => {
+    const body = () => beers(`guard-${randomBytes(6).toString('hex')}`, { method: 'CASH' });
+
+    it('no token is a 401 and writes nothing', async () => {
+      const before = await orderCount();
+      const res = await request(app.getHttpServer())
+        .post('/api/pos/quick-sale')
+        .set('X-Branch-Id', branch.a)
+        .send(body());
+      expect(res.status).toBe(401);
+      expect(await orderCount()).toBe(before);
+    });
+
+    it('a Cashier posting to a branch they have no membership in is refused and writes nothing', async () => {
+      const before = await orderCount();
+      const stranger = await prisma.branch.create({
+        data: {
+          organizationId: orgId,
+          name: 'No membership',
+          code: 'NOMEM',
+          slug: `nomem-${orgId.slice(-6)}`,
+        },
+      });
+      const res = await request(app.getHttpServer())
+        .post('/api/pos/quick-sale')
+        .set('Authorization', `Bearer ${cashierToken}`)
+        .set('X-Branch-Id', stranger.id)
+        .send(body());
+      expect([401, 403]).toContain(res.status);
+      expect(await orderCount()).toBe(before);
+    });
+
+    it("another branch's item by menuItemId is a 400 and writes nothing", async () => {
+      const before = await orderCount();
+      const foreign = await prisma.menuItem.findFirstOrThrow({
+        where: { orgId, branchId: branch.b, sku: 'FOOD-ONLY' },
+      });
+      const res = await post(cashierToken, 'a', {
+        clientSaleId: `guard-${randomBytes(6).toString('hex')}`,
+        tillCode: 'DRK-03',
+        lines: [{ menuItemId: foreign.id, quantity: 1 }],
+        payment: { method: 'CASH' },
+      });
+      expect(res.status).toBe(400);
+      expect(await orderCount()).toBe(before);
+    });
+
+    it('soldAt defaults to now when the tablet sends none', async () => {
+      const res = await post(cashierToken, 'a', body());
+      expect(res.status).toBe(200);
+      const order = await prisma.order.findUniqueOrThrow({ where: { id: res.body.order.id } });
+      const soldAt = Date.parse(String(metaOf(order).soldAt));
+      expect(Math.abs(soldAt - Date.now())).toBeLessThan(60_000);
+    });
+  });
+
   describe('tender handling', () => {
     it('cash is NOT_REQUIRED and changeDue is tendered minus total', async () => {
       const res = await post(
