@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import type { AddressInfo } from 'net';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { AppModule } from '../src/app.module';
@@ -24,6 +25,7 @@ assertDisposableEventDb();
  */
 describe('POST /api/pos/quick-sale (e2e)', () => {
   let app: INestApplication;
+  let baseUrl: string;
   let prisma: PrismaService;
   let tills: TillsService;
   let orgId: string;
@@ -88,7 +90,7 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
         },
       });
     }
-    const login = await request(app.getHttpServer())
+    const login = await request(baseUrl)
       .post('/api/auth/login')
       .send({ email, password });
     expect([200, 201]).toContain(login.status);
@@ -96,7 +98,7 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
   }
 
   const post = (token: string, branchKey: string, body: unknown) =>
-    request(app.getHttpServer())
+    request(baseUrl)
       .post('/api/pos/quick-sale')
       .set('Authorization', `Bearer ${token}`)
       .set('X-Branch-Id', branch[branchKey])
@@ -135,10 +137,12 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
     );
     await app.init();
-    // Listen once. Without it supertest starts a server on the first request and closes it when
-    // that request ends, cutting every concurrent request still in flight (read ECONNRESET), and
-    // the cut-off requests then kept writing while the next test counted orders (H1F-f).
-    await app.listen(0);
+    // Listen once, on the loopback address only, and send every request there (H1F2, part c).
+    // Without a fixed listener supertest binds a fresh ephemeral port per request, and another
+    // program on this machine once answered on that port number (a 404 'not found' from a
+    // foreign process). Listening on 127.0.0.1 and requesting that exact address removes it.
+    await app.listen(0, '127.0.0.1');
+    baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
     prisma = app.get(PrismaService);
     tills = app.get(TillsService);
 
@@ -370,7 +374,7 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
 
     it('no token is a 401 and writes nothing', async () => {
       const before = await orderCount();
-      const res = await request(app.getHttpServer())
+      const res = await request(baseUrl)
         .post('/api/pos/quick-sale')
         .set('X-Branch-Id', branch.a)
         .send(body());
@@ -388,7 +392,7 @@ describe('POST /api/pos/quick-sale (e2e)', () => {
           slug: `nomem-${orgId.slice(-6)}`,
         },
       });
-      const res = await request(app.getHttpServer())
+      const res = await request(baseUrl)
         .post('/api/pos/quick-sale')
         .set('Authorization', `Bearer ${cashierToken}`)
         .set('X-Branch-Id', stranger.id)

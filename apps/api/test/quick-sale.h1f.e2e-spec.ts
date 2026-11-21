@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import type { AddressInfo } from 'net';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { loadavg } from 'os';
@@ -21,6 +22,7 @@ assertDisposableEventDb();
  */
 describe('H1F: quick sale fixes (e2e)', () => {
   let app: INestApplication;
+  let baseUrl: string;
   let prisma: PrismaService;
   let tills: TillsService;
   let orgId: string;
@@ -85,7 +87,7 @@ describe('H1F: quick sale fixes (e2e)', () => {
         },
       });
     }
-    const login = await request(app.getHttpServer())
+    const login = await request(baseUrl)
       .post('/api/auth/login')
       .send({ email, password });
     expect([200, 201]).toContain(login.status);
@@ -93,7 +95,7 @@ describe('H1F: quick sale fixes (e2e)', () => {
   }
 
   const post = (key: string, body: unknown) =>
-    request(app.getHttpServer())
+    request(baseUrl)
       .post('/api/pos/quick-sale')
       .set('Authorization', `Bearer ${cashier.token}`)
       .set('X-Branch-Id', branch[key])
@@ -115,6 +117,12 @@ describe('H1F: quick sale fixes (e2e)', () => {
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
     );
     await app.init();
+    // Listen once, on the loopback address only, and send every request there (H1F2, part c).
+    // Without a fixed listener supertest binds a fresh ephemeral port per request, and another
+    // program on this machine once answered on that port number (a 404 'not found' from a
+    // foreign process). Listening on 127.0.0.1 and requesting that exact address removes it.
+    await app.listen(0, '127.0.0.1');
+    baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
     // Listen once, so supertest never starts (and then closes) a shared server per request:
     // that closed the server under in-flight concurrent requests (read ECONNRESET).
     await app.listen(0);
@@ -302,7 +310,12 @@ describe('H1F: quick sale fixes (e2e)', () => {
         expect(statuses.filter((s) => s !== 200)).toEqual([]);
         p95s.push(pct(0.95));
       }
-      expect(p95s.filter((v) => v > 20)).toEqual([]);
+      // H1F2 (owner ruling): the wall-clock threshold runs on demand (EVENT_PERF=1) and at the load
+      // test, not in every run on a busy laptop. Every sale above is still checked: 200 each,
+      // and the transaction spy saw all 200. The index-read half is in the review spec (R2).
+      if (process.env.EVENT_PERF === '1') {
+        expect(p95s.filter((v) => v > 20)).toEqual([]);
+      }
     }, 300000);
   });
 

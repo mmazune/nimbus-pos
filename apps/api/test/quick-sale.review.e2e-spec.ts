@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import type { AddressInfo } from 'net';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomInt } from 'crypto';
 import { readFileSync } from 'fs';
@@ -27,6 +28,7 @@ assertDisposableEventDb();
  */
 describe('H1-R review probes: quick sale (e2e)', () => {
   let app: INestApplication;
+  let baseUrl: string;
   let prisma: PrismaService;
   let tills: TillsService;
   let orgId: string;
@@ -104,7 +106,7 @@ describe('H1-R review probes: quick sale (e2e)', () => {
         },
       });
     }
-    const login = await request(app.getHttpServer())
+    const login = await request(baseUrl)
       .post('/api/auth/login')
       .send({ email, password });
     expect([200, 201]).toContain(login.status);
@@ -112,7 +114,7 @@ describe('H1-R review probes: quick sale (e2e)', () => {
   }
 
   const post = async (token: string, key: string, body: unknown) => {
-    const r = await request(app.getHttpServer())
+    const r = await request(baseUrl)
       .post('/api/pos/quick-sale')
       .set('Authorization', `Bearer ${token}`)
       .set('X-Branch-Id', branch[key])
@@ -209,6 +211,12 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
     );
     await app.init();
+    // Listen once, on the loopback address only, and send every request there (H1F2, part c).
+    // Without a fixed listener supertest binds a fresh ephemeral port per request, and another
+    // program on this machine once answered on that port number (a 404 'not found' from a
+    // foreign process). Listening on 127.0.0.1 and requesting that exact address removes it.
+    await app.listen(0, '127.0.0.1');
+    baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
     prisma = app.get(PrismaService);
     tills = app.get(TillsService);
 
@@ -359,7 +367,7 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       const r = await post(cashier.token, 'a', sale(id));
       expect(r.status).toBe(200);
       orderId = r.body.order.id;
-      const v = await request(app.getHttpServer())
+      const v = await request(baseUrl)
         .post(`/api/pos/orders/${orderId}/post-close-void`)
         .set('Authorization', `Bearer ${supervisor.token}`)
         .set('X-Branch-Id', branch.a)
@@ -768,7 +776,12 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       );
       expect(holds.length).toBe(200); // control: the spy saw every sale's transaction
       expect(statuses.filter((s) => s !== 200)).toEqual([]);
-      expect(pct(0.95)).toBeLessThanOrEqual(20);
+      // H1F2 (owner ruling): the wall-clock threshold is opt-in (EVENT_PERF=1). The deterministic
+      // half (the allocator's real query reads through the index, a handful of rows) is the R2
+      // test above and stays in every run, as do the two controls and the all-200 check here.
+      if (process.env.EVENT_PERF === '1') {
+        expect(pct(0.95)).toBeLessThanOrEqual(20);
+      }
     }, 300000);
   });
 
@@ -992,7 +1005,7 @@ describe('H1-R review probes: quick sale (e2e)', () => {
   describe('G16: GET /api/dash/today-summary (Manager) counts a quick sale', () => {
     it('closedOrders +1 and grossSales +8,000 after one quick sale', async () => {
       const read = () =>
-        request(app.getHttpServer())
+        request(baseUrl)
           .get('/api/dash/today-summary')
           .set('Authorization', `Bearer ${manager.token}`)
           .set('X-Branch-Id', branch.a);
@@ -1389,7 +1402,7 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       });
 
       it('a restaurant-flow order (POST /api/pos/orders) is created with the index present', async () => {
-        const r = await request(app.getHttpServer())
+        const r = await request(baseUrl)
           .post('/api/pos/orders')
           .set('Authorization', `Bearer ${manager.token}`)
           .set('X-Branch-Id', branch.a)
