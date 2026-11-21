@@ -1,0 +1,31 @@
+H1F final e2e, 21 Nov 2026 ~14:23 EAT, HEAD a58973b + uncommitted proof/docs only. Disposable nimbus_event_h1f (:55473), Postgres 16, load average ~3. [live]
+Command: DATABASE_URL=<disposable> loadmaster run e2e -- test/quick-sale.e2e-spec.ts test/quick-sale.h1f.e2e-spec.ts test/quick-sale.review.e2e-spec.ts (jest --runInBand)
+
+totals: 141 passed, 2 failed, 143 total
+  quick-sale.e2e-spec.ts: 31 passed, 0 failed
+  quick-sale.h1f.e2e-spec.ts: 35 passed, 0 failed
+  quick-sale.review.e2e-spec.ts: 75 passed, 2 failed
+
+The 13 probes red in H1F_RED_RUN.txt (assertions untouched: git diff ede9ea7 -- apps/api/test/quick-sale.review.e2e-spec.ts is empty):
+  PASS  R3 different lines: second post is 409 and only the first sale exists
+  PASS  R3 different tender: second post is 409 and only the first sale exists
+  PASS  R3 different till: second post is 409 and only the first sale exists
+  PASS  R3 race (unique-violation path): a different sale racing the first under the same id is a 409
+  PASS  an ORD- number beyond 2^31 in the branch does not stop the branch selling
+  FAIL  the number query reads a handful of rows, not every order in the branch
+  PASS  lock held (lock acquired -> commit returned) p95 <= 20 ms over 10 rounds of 20 concurrent sales
+  PASS  "drk-03": the cash reaches DRK-03 expected cash (or the sale is refused)
+  PASS  "DRK-03 ": the cash reaches DRK-03 expected cash (or the sale is refused)
+  PASS  " DRK-03": the cash reaches DRK-03 expected cash (or the sale is refused)
+  PASS  the error log carries order id, clientSaleId and branchId
+  PASS  a full card number typed into authCode is refused (400), not stored
+  PASS  a full card number typed into terminalId is refused (400), not stored
+
+Not passing (both reviewer probes, both unsatisfiable together with this prompt; assertions NOT edited):
+  FAIL  A3: a unique violation on another constraint is not treated as a replay a P2002 on a probe-only payments index is not answered as a replay and writes nothing
+  FAIL  R2: allocator with 10,000 orders in one branch, 20 concurrent sales the number query reads a handful of rows, not every order in the branch
+
+1. R2 'the number query reads a handful of rows': EXPLAINs a hard-coded copy of the OLD query (CAST ... AS INTEGER). With the NUMERIC index present that text is still Aggregate > Seq Scan over 10,000 rows (checked [live]); only an INTEGER expression index could serve it, and that index would make B5's ORD-99999999999 row fail at insert (cast overflow). The same property is proven on the service's real query in H1F spec 'c' and reports/proof/H1F_allocator.txt.
+2. A3 'a P2002 on a probe-only payments index is not answered as a replay': was green before. It types an 11-character authCode (P2002 + 6 hex) into its probe-only unique index; H1F-e limits authCode to at most 8 letters/digits (prompt requirement), so the FIRST request is now a 400. Same property, on terminalId (11 characters is valid there), is green in H1F spec 'a. a unique violation on another constraint is not a replay'.
+
+Allocator lock hold in the review's own R2 probe this run: p95 5.5 ms (probe passes). H1F five-run figures: see reports/proof/H1F_allocator.txt.

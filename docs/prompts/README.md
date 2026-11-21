@@ -6,7 +6,8 @@ Prompts for the B'rakaland Event Till (Sat 28 Nov 2026). One prompt = one milest
 |---|---|---|---|---|
 | H0 | `H0-clean-base.md` | Sonnet | done 2026-11-21 | `reports/H0_BASELINE.md` |
 | H1 | `H1-sale-engine.md` | Sonnet | built 2026-11-21, awaiting H1-R (1,234 unit tests / 68 suites, e2e 35/35) | `reports/H1_EVIDENCE.md` |
-| H1-R | fresh review of H1 (prompt not yet written) | Opus | not started | `reports/H1R_REVIEW.md` |
+| H1-R | fresh review of H1 | Opus | done 2026-11-21, verdict blockers | `docs/reviews/h1-sale-engine.md` |
+| H1F | `H1F-fix-review-findings.md` | Sonnet | built 2026-11-21, 12 of 13 probes green, 2 reviewer probes need a ruling (1,254 unit tests / 69 suites, e2e 141/143) | `reports/H1_EVIDENCE.md` (H1F section) |
 | H2 | go live (prompt not yet written) | Sonnet | not started | `reports/H2_REPORT.md` |
 | H3 | event till screen (prompt not yet written) | Opus | not started | `reports/H3_REPORT.md` |
 | H4a | event reports API (prompt not yet written) | Sonnet | not started | `reports/H4a_REPORT.md` |

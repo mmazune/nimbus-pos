@@ -31,13 +31,13 @@ Rules: `migrate deploy` only; direct (non-pooled) Neon URL; take a Neon restore 
 | Field | Rule |
 |---|---|
 | `clientSaleId` | string 8–64, `[A-Za-z0-9_-]`; made on the tablet (UUID). Required |
-| `tillCode` | string ≤ 50. Required |
+| `tillCode` | string ≤ 50. Required. Stored trimmed and upper-cased (H1F): `drk-03` and `DRK-03 ` are `DRK-03` |
 | `soldAt` | ISO time with offset; when the cashier tapped. Optional; defaults to now |
 | `lines[]` | 1–100. Each: `sku` **or** `menuItemId`; optional `menuItemServingId`; `quantity` integer ≥ 1 |
 | `payment.method` | `CASH`, `CARD` or `MOMO`. Exactly one payment (EV-5) |
 | `payment.tenderedAmount` | Cash only; ≥ total |
 | `payment.cardScheme` | Required when CARD |
-| `payment.authCode`, `cardLast4`, `terminalId` | **Optional** (G1 proposed `authCode` required; overridden: it would slow the queue). `cardLast4` must be 4 digits |
+| `payment.authCode`, `cardLast4`, `terminalId` | **Optional** (G1 proposed `authCode` required; overridden: it would slow the queue). `cardLast4` must be 4 digits. H1F: `authCode` letters/digits, at most 8; `terminalId` letters/digits/dashes, at most 12; `externalTransactionId` and `payerPhone` (7 to 12 digits) are accepted on a mobile-money sale only |
 | `payment.momoNetwork` | Required when MOMO |
 | `payment.externalTransactionId`, `payerPhone` | Optional |
 
@@ -45,14 +45,14 @@ The global validation pipe uses `forbidNonWhitelisted`: an unknown field returns
 
 **Service steps**
 
-1. **Replay check:** `order.findFirst({ orgId, clientSaleId })`. Found in the same branch: return it with `replayed: true`. Found in another branch: 409.
+1. **Replay check:** `order.findFirst({ orgId, clientSaleId })`. Found in the same branch: return it with `replayed: true` **only if it is the same sale** (H1F: till, method, scheme/network, lines as a multiset, tendered and `soldAt` as sent; `authCode`, `cardLast4`, `terminalId` are not compared), otherwise 409 `CLIENT_SALE_ID_PAYLOAD_MISMATCH` and nothing is written. Found in another branch: 409.
 2. **Price outside the transaction:** load all needed menu items and servings for the branch in one query (by `sku` or id, `isActive`). Price in memory. Reuse the logic of `computeLinePricing` (`orders.service.ts:273-428`), which is private and uses `this.prisma`: give it an optional transaction-client parameter or extract a small pricing service. Existing callers must not change.
 3. **Totals:** there is no tax or service-charge code in the API (G1 s1). Prices are tax-inclusive: `tax = 0`, `total = subtotal`.
 4. **Transaction** (`{ timeout: 15000, maxWait: 5000 }`; only writes inside):
    - `SELECT pg_advisory_xact_lock(hashtext(branchId))`, then allocate the next `ORD-` number (EV-15).
    - Create the order: `serviceType TAKEAWAY`, `status CLOSED`, `tillCode`, `clientSaleId`, totals, `metadata { source: 'QUICK_SALE', soldAt, tendered, changeDue }`, with its items.
    - Create the payment: `amount = total`, `status COMPLETED`, `tillCode`, card and mobile-money fields; cash `captureMode ONLINE_PROVIDER`, `verificationStatus NOT_REQUIRED`; card and mobile money `MANUAL_REFERENCE`, `UNVERIFIED` (EV-23).
-5. **Unique violations:** on `client_sale_id`, return the original as a replay. On `order_number`, retry up to 3 times.
+5. **Unique violations:** on `client_sale_id`, return the original as a replay (after the same same-sale comparison as step 1). On `order_number`, retry up to 3 times.
 6. **After commit:** one audit entry `ORDER_QUICK_SALE`. Its metadata **must** include `branchId` or `audit-branchid-guard.spec.ts` fails the build.
 7. **Response:** `{ replayed, order { id, orderNumber, status, total, tillCode, createdAt }, items[], payment {…}, changeDue }`.
 

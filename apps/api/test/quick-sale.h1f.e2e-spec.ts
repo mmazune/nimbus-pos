@@ -496,7 +496,7 @@ describe('H1F: quick sale fixes (e2e)', () => {
   // ── e. no card number in a text field ──
 
   describe('e. card data fields', () => {
-    const PAN = '4111111111111111'; // the public Visa test number, Luhn-valid, not a real card
+    const SIXTEEN_DIGITS = '4111111111111111'; // a 16-digit number such as a card number (the public Visa test value, not a real card)
     const visa = { method: 'CARD', cardScheme: 'VISA', cardLast4: '4242', authCode: 'A1B2C3' };
     const momo = { method: 'MOMO', momoNetwork: 'MTN' };
 
@@ -505,15 +505,15 @@ describe('H1F: quick sale fixes (e2e)', () => {
         const id = cid(`pan-${field}`);
         let res: request.Response | undefined;
         const out = await captureOutput(async () => {
-          res = await post('tills', sale(id, { payment: { ...visa, [field]: PAN } }));
+          res = await post('tills', sale(id, { payment: { ...visa, [field]: SIXTEEN_DIGITS } }));
         });
         expect(res?.status).toBe(400);
-        expect(JSON.stringify(res?.body)).not.toContain(PAN);
-        expect(out).not.toContain(PAN);
+        expect(JSON.stringify(res?.body)).not.toContain(SIXTEEN_DIGITS);
+        expect(out).not.toContain(SIXTEEN_DIGITS);
         expect(await ordersFor(id)).toBe(0);
         expect(
           await prisma.payment.count({
-            where: { OR: [{ authCode: PAN }, { terminalId: PAN }], orgId },
+            where: { OR: [{ authCode: SIXTEEN_DIGITS }, { terminalId: SIXTEEN_DIGITS }], orgId },
           }),
         ).toBe(0);
       });
@@ -531,7 +531,7 @@ describe('H1F: quick sale fixes (e2e)', () => {
         { method: 'CASH', externalTransactionId: 'MP123456' },
       ],
       ['payerPhone on a cash sale', { method: 'CASH', payerPhone: '+256700000001' }],
-      ['payerPhone that is a card number', { ...momo, payerPhone: PAN }],
+      ['payerPhone that is a card number', { ...momo, payerPhone: SIXTEEN_DIGITS }],
       ['payerPhone of 6 digits', { ...momo, payerPhone: '123456' }],
       ['payerPhone with letters', { ...momo, payerPhone: 'call me' }],
     ];

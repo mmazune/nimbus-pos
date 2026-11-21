@@ -1,0 +1,13 @@
+H1F lint by file, eslint without --fix, 21 Nov 2026. Rule: new files 0 problems; touched files no worse than the baseline (H0_api_lint_by_file.txt, errors warnings; H1_lint_by_file.txt for H1's own new files).
+errors warnings | file | baseline | verdict
+     0        0 | src/modules/orders/order-number.spec.ts | not listed (0 problems at baseline) | ok
+     0        0 | src/modules/orders/order-number.ts | 0   0 |     - | src/modules/orders/order-number.ts | NEW file, 0 problems: ok | ok
+     0        0 | src/modules/quick-sale/dto/quick-sale.dto.ts | 0   0 |     - | src/modules/quick-sale/dto/quick-sale.dto.ts | NEW file, 0 problems: ok | ok
+     0        0 | src/modules/quick-sale/quick-sale.service.spec.ts | 0   0 |     - | src/modules/quick-sale/quick-sale.service.spec.ts | NEW file, 0 problems: ok | ok
+     0        0 | src/modules/quick-sale/quick-sale.service.ts | 0   0 |     - | src/modules/quick-sale/quick-sale.service.ts | NEW file, 0 problems: ok | ok
+     0        0 | src/modules/quick-sale/till-code.ts | not listed (0 problems at baseline) | ok
+     0        5 | src/modules/tills/tills.service.spec.ts | 0 5 | ok
+     0        0 | src/modules/tills/tills.service.ts | 0   0 |   0/0 | src/modules/tills/tills.service.ts | existing file, not worse than H0: ok | ok
+     0        0 | test/quick-sale.e2e-spec.ts | 0   0 |     - | test/quick-sale.e2e-spec.ts | NEW file, 0 problems: ok | ok
+     0        0 | test/quick-sale.h1f.e2e-spec.ts | not listed (0 problems at baseline) | ok
+files linted: 10; worse than baseline: 0

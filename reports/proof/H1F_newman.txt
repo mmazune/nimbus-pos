@@ -1,0 +1,73 @@
+H1F newman, 2026-11-21T11:24Z, API on :4093 (pid 69569) at HEAD a58973b, disposable nimbus_event_h1f. Collection run whole, cold (no token, no branchId supplied). Credentials came from env-vars and are not in this file.
+newman
+
+EVENT H1 - Quick Sale
+
+❏ 00 Read Me
+↳ (doc) health
+  GET http://localhost:4093/api/health [200 OK, 313B, 16ms]
+  ✓  health 200
+
+❏ A. Auth
+↳ Login (cashier)
+  POST http://localhost:4093/api/auth/login [201 Created, 4.34kB, 41ms]
+  ✓  Login OK
+
+❏ B. Quick sale
+↳ Real case: two beers by Visa at the till
+  GET http://localhost:4093/api/auth/me [200 OK, 2.77kB, 28ms]
+  POST http://localhost:4093/api/pos/quick-sale [200 OK, 979B, 33ms]
+  ✓  200
+  ✓  first post is not a replay
+  ✓  order is CLOSED
+  ✓  one VISA payment, COMPLETED
+  ✓  order number has the ORD- shape
+
+↳ Replay: same clientSaleId again
+  POST http://localhost:4093/api/pos/quick-sale [200 OK, 978B, 11ms]
+  ✓  200
+  ✓  second post is a replay
+  ✓  same order
+
+↳ 409: same clientSaleId, a different sale (3 beers, not 2)
+  POST http://localhost:4093/api/pos/quick-sale [409 Conflict, 446B, 7ms]
+  ✓  409
+  ✓  payload mismatch, not a replay
+  ✓  names the part that differs
+
+↳ 400: CARD without cardScheme
+  POST http://localhost:4093/api/pos/quick-sale [400 Bad Request, 352B, 5ms]
+  ✓  400
+
+↳ 400: cash tendered below the total
+  POST http://localhost:4093/api/pos/quick-sale [400 Bad Request, 350B, 6ms]
+  ✓  400
+
+↳ 400: a 16-digit number in authCode
+  POST http://localhost:4093/api/pos/quick-sale [400 Bad Request, 363B, 5ms]
+  ✓  400
+  ✓  the number is not echoed
+
+↳ 401 (no token)
+  POST http://localhost:4093/api/pos/quick-sale [401 Unauthorized, 302B, 2ms]
+  ✓  401
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               10 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │                9 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │               10 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               18 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 290ms                                     │
+├───────────────────────────────────────────────────────────────┤
+│ total data received: 8.64kB (approx)                          │
+├───────────────────────────────────────────────────────────────┤
+│ average response time: 15ms [min: 2ms, max: 41ms, s.d.: 13ms] │
+└───────────────────────────────────────────────────────────────┘

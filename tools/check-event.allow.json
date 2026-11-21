@@ -1,0 +1,7 @@
+[
+  {
+    "file": "apps/api/test/quick-sale.review.e2e-spec.ts",
+    "pattern": "pan-field",
+    "reason": "H1-R reviewer's negative control: a local variable named pan holds the public Visa test number 4111 1111 1111 1111, which the probe types into authCode and terminalId to prove a 400. It is a test input, not a card field; the file is the reviewer's gate and its assertions are not edited."
+  }
+]

@@ -355,6 +355,60 @@
           ]
         },
         {
+          "name": "409: same clientSaleId, a different sale (3 beers, not 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/quick-sale",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "quick-sale"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSaleId\": \"{{clientSaleId}}\",\n  \"tillCode\": \"{{tillCode}}\",\n  \"soldAt\": \"2026-11-21T21:14:00+03:00\",\n  \"lines\": [\n    {\n      \"sku\": \"{{itemSku}}\",\n      \"quantity\": 3\n    }\n  ],\n  \"payment\": {\n    \"method\": \"CARD\",\n    \"cardScheme\": \"VISA\",\n    \"cardLast4\": \"4242\",\n    \"authCode\": \"123456\",\n    \"terminalId\": \"TRM-{{tillCode}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "pm.test('payload mismatch, not a replay', () => pm.expect(b.code).to.eql('CLIENT_SALE_ID_PAYLOAD_MISMATCH'));",
+                  "pm.test('names the part that differs', () => pm.expect(b.differs).to.include('lines'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "400: CARD without cardScheme",
           "request": {
             "method": "POST",
@@ -451,6 +505,58 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400: a 16-digit number in authCode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/quick-sale",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "quick-sale"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSaleId\": \"{{clientSaleId}}-bad3\",\n  \"tillCode\": \"{{tillCode}}\",\n  \"lines\": [\n    {\n      \"sku\": \"{{itemSku}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"payment\": {\n    \"method\": \"CARD\",\n    \"cardScheme\": \"VISA\",\n    \"authCode\": \"4111111111111111\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('the number is not echoed', () => pm.expect(pm.response.text()).to.not.include('4111111111111111'));"
                 ]
               }
             }

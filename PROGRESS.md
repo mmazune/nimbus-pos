@@ -1183,3 +1183,4 @@ hardening; new docs). **Do not reset/restore/stash/clean/discard.** GitHub is st
 ## Event Till (concert, Sat 28 Nov 2026)
 
 - 2026-11-21 — H0 clean base done: branch `concert/event-till--moses` from `5a35a18`; docs/event and docs/prompts committed; baseline (API unit 1,200/0 failing; API lint red from pre-existing prettier drift) in `reports/H0_BASELINE.md`; `pnpm check:event` card-data guard added and proved red/green (`reports/proof/check-event.txt`). Next: H1 (`docs/prompts/H1-sale-engine.md`).
+- 2026-11-21 — H1F done (6 commits `2ecf581`..`a58973b`, then docs): the 2 blockers and 4 should-fixes from the H1-R review fixed; 12 of 13 review probes green; the 13th (`R2` plan probe, hard-coded old SQL) and A3 (11-character `authCode` vs the 8-character limit) cannot pass with this prompt and need a ruling; late-cash behaviour documented for the runbook. Unverified: the cause of one 404 with an empty body. Details: `reports/H1_EVIDENCE.md`.

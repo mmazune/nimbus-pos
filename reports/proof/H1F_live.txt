@@ -1,0 +1,20 @@
+H1F live proof, 2026-11-21T11:21Z. API on :4093 (pid 66764), built dist at HEAD a58973b. No token or password in this file. [live]
+database: nimbus_event_h1f (disposable, container port 55473 -> 5432)
+
+case 1: two beers at UGX 4,000, Visa, till DRK-03, posted twice (first reply lost)
+POST 1 -> HTTP 200  {"replayed":false,"order":"ORD-000020","total":"8000","till":"DRK-03","pay":"CARD","scheme":"VISA"}
+POST 2 -> HTTP 200  {"replayed":true,"order":"ORD-000020","total":"8000"}
+orders with that clientSaleId: 1
+
+case 2: same clientSaleId, 3 Clubs by cash instead (a different sale)
+POST -> HTTP 409  {"code":"CLIENT_SALE_ID_PAYLOAD_MISMATCH","differs":["payment.method","payment.cardScheme","lines"]}
+orders with that clientSaleId after: 1
+
+case 3: cash rung on a tablet set up as "drk-03 " (lower case, trailing space)
+POST -> HTTP 200  till in reply: DRK-03
+stored: order till=DRK-03 payment till=DRK-03
+
+case 4: a 16-digit number typed into the approval-code box
+POST -> HTTP 400  body echoes the number: 0  message: ["payment.authCode must be 1 to 8 letters or digits"]
+orders stored: 0; payments created by this request: 0 (the table also holds 4 rows from the review's two H18 probes run against the PRE-fix code at 10:56-10:59Z, kept as the before-state)
+number in the API log: 0
