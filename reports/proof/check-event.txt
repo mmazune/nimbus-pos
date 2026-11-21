@@ -1,0 +1,76 @@
+# check:event proof, 2026-11-21 12:15, base 5a35a18 + H0 commits (final script)
+
+## 1. Required plant: cardNumber: string in apps/api/src/__check_event_plant.ts
+$ node tools/check-event.mjs
+check:event scanned 1378 files
+check:event allowed 0 hit(s) via 0 allow entries
+HIT apps/api/src/__check_event_plant.ts:2  [card-number]  cardNumber: string;
+check:event RED: 1 hit(s), 0 problem(s)
+exit=1
+
+## 2. Plant removed (gone)
+$ node tools/check-event.mjs
+check:event scanned 1377 files
+check:event allowed 0 hit(s) via 0 allow entries
+check:event green
+exit=0
+
+## 3. Coverage plant: lines 2-19 must fire (18 names); line 20 and lines 23-33 (allowed or unrelated names) must not
+(note: line 20 panNumber_unused is a control and is expected NOT to fire; result: 18 hits, on lines 2-19 only)
+$ node tools/check-event.mjs
+check:event scanned 1378 files
+check:event allowed 0 hit(s) via 0 allow entries
+HIT apps/api/src/__check_event_plant.ts:2  [card-number]  cardNumber: string;
+HIT apps/api/src/__check_event_plant.ts:3  [card-number]  card_number: string;
+HIT apps/api/src/__check_event_plant.ts:4  [card-number]  cardNo: string;
+HIT apps/api/src/__check_event_plant.ts:5  [card-number]  creditCardNumber: string;
+HIT apps/api/src/__check_event_plant.ts:6  [card-number]  credit_card_number: string;
+HIT apps/api/src/__check_event_plant.ts:7  [card-number]  CARD_NUMBER: string;
+HIT apps/api/src/__check_event_plant.ts:8  [primary-account-number]  primaryAccountNumber: string;
+HIT apps/api/src/__check_event_plant.ts:9  [pan-field]  pan: string;
+HIT apps/api/src/__check_event_plant.ts:10  [cvv-cvc]  cvv: string;
+HIT apps/api/src/__check_event_plant.ts:11  [cvv-cvc]  cvc: string;
+HIT apps/api/src/__check_event_plant.ts:12  [cvv-cvc]  cardCVV: string;
+HIT apps/api/src/__check_event_plant.ts:13  [cvv-cvc]  cardCvv: string;
+HIT apps/api/src/__check_event_plant.ts:14  [cvv-cvc]  CARD_CVV: string;
+HIT apps/api/src/__check_event_plant.ts:15  [card-expiry]  cardExpiry: string;
+HIT apps/api/src/__check_event_plant.ts:16  [expiry-month-year]  expiryMonth: number;
+HIT apps/api/src/__check_event_plant.ts:17  [expiry-month-year]  expiryYear: number;
+HIT apps/api/src/__check_event_plant.ts:18  [track-data]  track1Data: string;
+HIT apps/api/src/__check_event_plant.ts:19  [track-data]  track2Data: string;
+check:event RED: 18 hit(s), 0 problem(s)
+exit=1
+
+## 4. Coverage plant removed (gone)
+
+## 5. Migrations root: planted SQL in packages/db/prisma/migrations/__h0_plant/migration.sql (line 2, card_last4, must not fire)
+$ node tools/check-event.mjs
+check:event scanned 1378 files
+check:event allowed 0 hit(s) via 0 allow entries
+HIT packages/db/prisma/migrations/__h0_plant/migration.sql:1  [card-number]  ALTER TABLE "payments" ADD COLUMN "card_number" TEXT;
+check:event RED: 1 hit(s), 0 problem(s)
+exit=1
+(plant removed: gone)
+
+## 6. Empty tree (script copied to a directory with no apps/ and no schema): must be red
+$ node <scratch>/tools/check-event.mjs
+check:event scanned 0 files
+check:event allowed 0 hit(s) via 0 allow entries
+FAIL scan root missing: apps
+FAIL scan root missing: packages/db/prisma/migrations
+FAIL scan root missing: packages/db/prisma/schema.prisma
+FAIL 0 files scanned
+check:event RED: 0 hit(s), 4 problem(s)
+exit=1
+
+## 7. Final state on HEAD
+$ node tools/check-event.mjs
+check:event scanned 1377 files
+check:event allowed 0 hit(s) via 0 allow entries
+check:event green
+exit=0
+$ corepack pnpm@8.15.0 check:event
+
+check:event scanned 1377 files
+check:event allowed 0 hit(s) via 0 allow entries
+check:event green

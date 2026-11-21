@@ -4,7 +4,7 @@ Prompts for the B'rakaland Event Till (Sat 28 Nov 2026). One prompt = one milest
 
 | ID | Prompt | Model | Status | Report |
 |---|---|---|---|---|
-| H0 | `H0-clean-base.md` | Sonnet | running | `reports/H0_BASELINE.md` |
+| H0 | `H0-clean-base.md` | Sonnet | done 2026-11-21 | `reports/H0_BASELINE.md` |
 | H1 | `H1-sale-engine.md` | Sonnet | not started | `reports/H1_EVIDENCE.md` |
 | H1-R | fresh review of H1 (prompt not yet written) | Opus | not started | `reports/H1R_REVIEW.md` |
 | H2 | go live (prompt not yet written) | Sonnet | not started | `reports/H2_REPORT.md` |

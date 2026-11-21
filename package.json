@@ -22,7 +22,8 @@
         "db:seed": "pnpm --filter @nimbus-pos/db db:seed",
         "db:demo:validate": "corepack pnpm@8.15.0 --filter @nimbus-pos/db db:demo:validate",
         "db:demo:import": "corepack pnpm@8.15.0 --filter @nimbus-pos/db db:demo:import",
-        "db:studio": "pnpm --filter @nimbus-pos/db db:studio"
+        "db:studio": "pnpm --filter @nimbus-pos/db db:studio",
+        "check:event": "node tools/check-event.mjs"
     },
     "devDependencies": {
         "prettier": "^3.2.5",

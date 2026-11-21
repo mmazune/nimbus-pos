@@ -1173,3 +1173,7 @@ hardening; new docs). **Do not reset/restore/stash/clean/discard.** GitHub is st
 ## Commit / push status
 
 ⛔ **No commit or push** during onboarding/polish passes unless the user asks.
+
+## Event Till (concert, Sat 28 Nov 2026)
+
+- 2026-11-21 — H0 clean base done: branch `concert/event-till--moses` from `5a35a18`; docs/event and docs/prompts committed; baseline (API unit 1,200/0 failing; API lint red from pre-existing prettier drift) in `reports/H0_BASELINE.md`; `pnpm check:event` card-data guard added and proved red/green (`reports/proof/check-event.txt`). Next: H1 (`docs/prompts/H1-sale-engine.md`).
