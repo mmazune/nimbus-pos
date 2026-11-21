@@ -23,6 +23,7 @@ describe('TillsService', () => {
       },
       tillSession: {
         findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
@@ -102,15 +103,51 @@ describe('TillsService', () => {
       id: 'shift-1',
       status: 'OPEN',
     });
-    prisma.tillSession.findFirst.mockResolvedValue({
-      id: 'existing-till',
-      tillCode: 'TILL-01',
-      status: 'OPEN',
-    });
+    prisma.tillSession.findMany.mockResolvedValue([{ id: 'existing-till', tillCode: 'TILL-01' }]);
 
     await expect(
       service.openTill('user-1', ctx, { tillCode: 'TILL-01', openingFloat: 50000 }, meta),
     ).rejects.toThrow(ConflictException);
+  });
+
+  describe('H1F2 S-1: one till code, one open till', () => {
+    beforeEach(() => {
+      prisma.shift.findFirst.mockResolvedValue({ id: 'shift-1', status: 'OPEN' });
+      prisma.tillSession.findMany.mockResolvedValue([{ id: 'open-1', tillCode: 'DRK-03' }]);
+      prisma.tillSession.create.mockImplementation(({ data }: { data: { tillCode: string } }) =>
+        Promise.resolve({ id: 'till-new', ...data }),
+      );
+    });
+
+    it.each(['drk-03', 'DRK-03 ', ' Drk-03'])('refuses %j while DRK-03 is open (409)', async (code) => {
+      await expect(
+        service.openTill('user-1', ctx, { tillCode: code, openingFloat: 0 }, meta),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.tillSession.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses when the OPEN session was stored in another spelling', async () => {
+      prisma.tillSession.findMany.mockResolvedValue([{ id: 'open-1', tillCode: 'drk-03 ' }]);
+      await expect(
+        service.openTill('user-1', ctx, { tillCode: 'DRK-03', openingFloat: 0 }, meta),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('still opens a different code, stored exactly as given', async () => {
+      await service.openTill('user-1', ctx, { tillCode: 'drk-04', openingFloat: 0 }, meta);
+      expect(prisma.tillSession.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ tillCode: 'drk-04' }) }),
+      );
+    });
+
+    it('looks only at OPEN sessions of this branch', async () => {
+      await service.openTill('user-1', ctx, { tillCode: 'DRK-09', openingFloat: 0 }, meta);
+      expect(prisma.tillSession.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { branchId: ctx.branchId, status: 'OPEN' },
+        }),
+      );
+    });
   });
 
   // ── Safe Drop ──

@@ -51,14 +51,18 @@ export class TillsService {
       throw new BadRequestException('No active shift found. Open a shift before opening a till.');
     }
 
-    // Check for existing OPEN till session with same tillCode in same branch
-    const existingTill = await this.prisma.tillSession.findFirst({
+    // Check for an existing OPEN till session with the same till code in the same branch.
+    // Codes are compared trimmed and upper-cased (H1F2, S-1): `drk-03` cannot be opened while
+    // `DRK-03` is open, or both drawers would expect the same cash. The stored code is unchanged.
+    const wanted = normalizeTillCode(dto.tillCode);
+    const openTills = await this.prisma.tillSession.findMany({
       where: {
         branchId: ctx.branchId,
-        tillCode: dto.tillCode,
         status: TillSessionStatus.OPEN,
       },
+      select: { id: true, tillCode: true },
     });
+    const existingTill = openTills.find((t) => normalizeTillCode(t.tillCode) === wanted);
 
     if (existingTill) {
       throw new ConflictException(
