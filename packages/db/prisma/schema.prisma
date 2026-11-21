@@ -964,6 +964,7 @@ model MenuItem {
     browseSubgroupId String?      @map("browse_subgroup_id")
     name             String
     sku              String?
+    brand            String?
     description      String?
     price            Decimal      @db.Decimal(10, 2)
     itemType         MenuItemType @map("item_type")
@@ -986,6 +987,7 @@ model MenuItem {
     orderItems        OrderItem[]
 
     @@unique([categoryId, name])
+    @@index([orgId, sku])
     @@index([orgId])
     @@index([branchId])
     @@index([categoryId])
@@ -1325,6 +1327,9 @@ model Order {
     //     target it was absorbed into via mergedIntoOrderId
     splitFromOrderId  String?     @map("split_from_order_id")
     mergedIntoOrderId String?     @map("merged_into_order_id")
+    // Event till quick sale (H1)
+    tillCode          String?     @map("till_code")
+    clientSaleId      String?     @map("client_sale_id")
     createdAt         DateTime    @default(now()) @map("created_at")
     updatedAt         DateTime    @updatedAt @map("updated_at")
 
@@ -1349,6 +1354,8 @@ model Order {
     mergedSources    Order[]           @relation("OrderMergedInto")
 
     @@unique([branchId, orderNumber])
+    @@unique([orgId, clientSaleId])
+    @@index([orgId, branchId, tillCode, createdAt])
     @@index([orgId])
     @@index([branchId])
     @@index([tableId])
@@ -1535,6 +1542,17 @@ enum RefundStatus {
 
 // ── Enums (M13) ──
 
+enum CardScheme {
+    VISA
+    MASTERCARD
+    OTHER
+}
+
+enum MomoNetwork {
+    MTN
+    AIRTEL
+}
+
 enum PaymentMethod {
     CASH
     CARD
@@ -1590,6 +1608,13 @@ model Payment {
     postedAt              DateTime                  @default(now()) @map("posted_at")
     enteredById           String?                   @map("entered_by_id")
     verificationNote      String?                   @map("verification_note")
+    // Event till quick sale (H1): brand, last four, approval code, terminal only. Never a card number.
+    cardScheme            CardScheme?               @map("card_scheme")
+    cardLast4             String?                   @map("card_last4") @db.VarChar(4)
+    authCode              String?                   @map("auth_code")
+    terminalId            String?                   @map("terminal_id")
+    tillCode              String?                   @map("till_code")
+    momoNetwork           MomoNetwork?              @map("momo_network")
     metadata              Json?
     createdAt             DateTime                  @default(now()) @map("created_at")
     updatedAt             DateTime                  @updatedAt @map("updated_at")
@@ -1612,6 +1637,8 @@ model Payment {
     @@index([createdAt])
     @@index([transactionId])
     @@index([externalTransactionId])
+    @@index([orgId, branchId, tillCode, createdAt])
+    @@index([orgId, cardScheme])
     @@map("payments")
 }
 
