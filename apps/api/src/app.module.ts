@@ -18,6 +18,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { RefundsModule } from './modules/refunds/refunds.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
 import { TillsModule } from './modules/tills/tills.module';
+import { QuickSaleModule } from './modules/quick-sale/quick-sale.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { EventsModule } from './modules/events/events.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
@@ -76,6 +77,7 @@ import { HmsIntegrationModule } from './modules/hms-integration';
     RefundsModule,
     ShiftsModule,
     TillsModule,
+    QuickSaleModule,
     ReservationsModule,
     EventsModule,
     AnalyticsModule,
