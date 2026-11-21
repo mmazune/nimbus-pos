@@ -112,3 +112,7 @@ Builder: Sonnet 5.5. Branch `concert/event-till--moses`, review commits `3d9b593
 
 **Other checks.** `tsc` and `nest build` clean. API unit **1,254 / 1,254, 69 suites** (was 1,234 / 68). `orders` + `payments` + `refunds` unit **89 / 89** (the review's 83 plus 6 new allocator tests). `check:event` was RED at `ede9ea7` (the reviewer's variable `pan` in a negative test); it is green now through one allow entry in `tools/check-event.allow.json` for that file only. Lint per file: `proof/H1F_lint_by_file.txt` (0 worse). Migration applies on an empty database and on one that already had H1's. `proof/H1F_live.txt`: real API on :4093, four cases. Postman collection (two requests added: the 409 and the 16-digit `authCode` 400), run whole and cold: 10 requests, 18 assertions, 0 failed (`proof/H1F_newman.txt`). Checks ran through loadmaster using a throwaway `.loadmaster.toml` kept out of git (the repo has none), removed at the end.
 
+
+## Accepted risks (2026-11-21, H1F2)
+
+- **Order-number length.** An `ORD-` order number longer than 131,072 digits would be refused by the new expression index (NUMERIC ceiling, `22003 value overflows numeric format`; H1-R2 note N-1). No API path can write one: no DTO takes an order number, and only the demo CSV import, the seed or hand-written SQL could. The owner accepts this; the digits are not capped.

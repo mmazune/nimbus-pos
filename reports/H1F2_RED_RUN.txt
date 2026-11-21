@@ -1,0 +1,11 @@
+H1F2 §0: review spec at HEAD e4d3c75 (code identical to 64e37ff), 21 Nov 2026, disposable nimbus_event_h1f2 :55477, after H1 + H1F e2e; load 13-22 (other sessions).
+Review spec: 5 red of 100. Expected: S-1, S-2. Load/foreign-process: R3 different lines (404 from claude PID 4890 on 127.0.0.1:53690), terminalId 65 chars (socket hang up), lock held p95 57.2 ms.
+      ✕ R3 different lines: second post is 409 and only the first sale exists (142 ms)
+      ✕ lock held (lock acquired -> commit returned) p95 <= 20 ms over 10 rounds of 20 concurrent sales (5442 ms)
+      ✕ terminalId of 65 chars: 400, nothing written (18 ms)
+        ✕ S-1: with DRK-03 open, opening "drk-03" is refused, or the same cash is not counted by both (42 ms)
+        ✕ S-2: a Luhn-valid 16-digit number in externalTransactionId on a mobile-money sale is refused, not stored (26 ms)
+
+H1/H1F e2e: 1 red of 66: H1F c. lock held p95 <= 20 ms in each of five runs (122.9, 61.8, 157.0, 153.1, 125.6 ms at load ~20): wall-clock probe.
+Tests:       5 failed, 95 passed, 100 total
+Snapshots:   0 total
