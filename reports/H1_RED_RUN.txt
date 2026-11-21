@@ -1,0 +1,81 @@
+FAIL src/modules/quick-sale/quick-sale.service.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/modules/quick-sale/quick-sale.service.spec.ts[0m:[93m7[0m:[93m34[0m - [91merror[0m[90m TS2307: [0mCannot find module './quick-sale.service' or its corresponding type declarations.
+
+    [7m7[0m import { QuickSaleService } from './quick-sale.service';
+    [7m [0m [91m                                 ~~~~~~~~~~~~~~~~~~~~~~[0m
+    [96msrc/modules/quick-sale/quick-sale.service.spec.ts[0m:[93m8[0m:[93m30[0m - [91merror[0m[90m TS2307: [0mCannot find module './dto' or its corresponding type declarations.
+
+    [7m8[0m import { QuickSaleDto } from './dto';
+    [7m [0m [91m                             ~~~~~~~[0m
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.934 s
+Ran all test suites matching /src\/modules\/quick-sale/i.
+
+######## Part 2: e2e red run (disposable DB nimbus_event_h1), before the module exists ########
+
+=== e2e red run: route not built yet (live disposable DB) ===
+    e2e database: nimbus_event_h1 port 5432
+    ✕ the same clientSaleId from another branch is a 409 and writes nothing (5 ms)
+    ✕ twenty concurrent sales in one branch get twenty distinct order numbers, three runs in a row (6 ms)
+      ✕ creates one CLOSED TAKEAWAY order and one COMPLETED VISA payment; the second post is a replay (19 ms)
+      ✕ two posts sent at the same moment still make one order (14 ms)
+      ✕ writes an ORDER_QUICK_SALE audit entry carrying branchId (5 ms)
+      ✕ CARD without cardScheme (5 ms)
+      ✕ MOMO without momoNetwork (3 ms)
+      ✕ cash tendered below the total (2 ms)
+      ✕ two payments (payments array) (2 ms)
+      ✕ two payments (payment as an array) (2 ms)
+      ✕ an inactive SKU (2 ms)
+      ✕ another branch's SKU (2 ms)
+      ✕ a SKU that matches two active items (1 ms)
+      ✕ card fields on a cash sale (2 ms)
+      ✕ a malformed cardLast4 (2 ms)
+      ✕ a soldAt with no UTC offset (1 ms)
+      ✕ a clientSaleId that is too short (2 ms)
+      ✕ an unknown field (2 ms)
+      ✕ an empty lines array (2 ms)
+      ✕ a Bartender gets 403 and writes nothing; a Cashier gets 200 (2 ms)
+      ✕ cash is NOT_REQUIRED and changeDue is tendered minus total (2 ms)
+      ✕ card and mobile money are UNVERIFIED manual references (1 ms)
+      ✕ each till's expected cash is its own float plus its own cash sales; a null-till cash payment still counts (23 ms)
+      ✕ a payment that fails inside the transaction leaves no order row (42 ms)
+      ✕ order totals = payment amounts = the fixture total
+      ✕ matches per tender, per card scheme, per mobile-money network and per branch
+      ✕ each till's cash equals the cash term of that till's summary, and its expected cash is float + cash
+    Expected: 200
+    Received: 404
+    - Expected  - 2
+    + Received  + 2
+    Expected: 409
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
+    Expected: 400
+    Received: 404
