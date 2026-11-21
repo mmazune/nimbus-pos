@@ -276,6 +276,8 @@ export class OrdersService {
     menuItemServingId: string | null | undefined,
     quantity: number,
     modifierMeta?: Record<string, unknown>,
+    // Optional transaction client (H1). Existing callers omit it and keep using db.
+    client?: Prisma.TransactionClient,
   ): Promise<{
     price: Decimal;
     subtotal: Decimal;
@@ -284,7 +286,8 @@ export class OrdersService {
     marginTotal: Decimal | null;
     marginPct: Decimal | null;
   }> {
-    const menuItem = await this.prisma.menuItem.findFirst({
+    const db = client ?? this.prisma;
+    const menuItem = await db.menuItem.findFirst({
       where: { id: menuItemId, branchId: ctx.branchId, orgId: ctx.organizationId },
       include: { servings: true },
     });
@@ -321,12 +324,12 @@ export class OrdersService {
       }[];
       const optionIds = [...new Set(selectedModifiers.map((m) => m.modifierOptionId).filter(Boolean))];
       if (optionIds.length > 0) {
-        const assignedGroups = await this.prisma.menuItemOnGroup.findMany({
+        const assignedGroups = await db.menuItemOnGroup.findMany({
           where: { itemId: menuItem.id },
           select: { groupId: true },
         });
         const assignedGroupIds = new Set(assignedGroups.map((assignment) => assignment.groupId));
-        const options = await this.prisma.modifierOption.findMany({
+        const options = await db.modifierOption.findMany({
           where: { id: { in: optionIds }, group: { branchId: ctx.branchId, orgId: ctx.organizationId } },
           include: { group: { select: { id: true, isActive: true } } },
         });
@@ -365,7 +368,7 @@ export class OrdersService {
     let marginTotal: Decimal | null = null;
     let marginPct: Decimal | null = null;
 
-    const recipeIngredients = await this.prisma.recipeIngredient.findMany({
+    const recipeIngredients = await db.recipeIngredient.findMany({
       where: {
         menuItemId,
         branchId: ctx.branchId,
@@ -392,7 +395,7 @@ export class OrdersService {
         }[];
         const modOptionIds = selectedModifiers.map((m) => m.modifierOptionId);
         if (modOptionIds.length > 0) {
-          const modRecipes = await this.prisma.recipeIngredient.findMany({
+          const modRecipes = await db.recipeIngredient.findMany({
             where: {
               menuItemId,
               branchId: ctx.branchId,
