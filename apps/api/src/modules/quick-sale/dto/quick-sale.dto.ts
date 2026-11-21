@@ -18,6 +18,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { CardScheme, MomoNetwork } from '@prisma/client';
+import { IsMobileMoneyReference } from './payment-reference';
 import { normalizeTillCode } from '../till-code';
 
 /**
@@ -88,18 +89,19 @@ export class QuickSalePaymentDto {
   @IsEnum(MomoNetwork)
   momoNetwork?: MomoNetwork;
 
+  /** Letters, digits, dots and dashes, at most 32; never a card number (H1F2, S-2). Mobile money only. */
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @IsMobileMoneyReference()
   externalTransactionId?: string;
 
-  /** A phone number: optional +, 7 to 12 digits, single spaces or dashes between groups. At most 12
-   * digits, so no 13 to 19 digit card number can be typed in here (H1F). Mobile-money only. */
+  /** A phone number: an optional +, then 9 to 13 digits, single spaces or dashes between digits.
+   * Mobile-money only (H1F2: 9 to 13 digits; a 14 to 19 digit card number cannot be typed in). */
   @IsOptional()
   @IsString()
   @MaxLength(32)
-  @Matches(/^\+?\d(?:[ -]?\d){6,11}$/, {
-    message: 'payerPhone must look like a phone number (7 to 12 digits)',
+  @Matches(/^\+?\d(?:[ -]?\d){8,12}$/, {
+    message: 'payerPhone must look like a phone number (9 to 13 digits)',
   })
   payerPhone?: string;
 }
