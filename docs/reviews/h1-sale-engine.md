@@ -227,3 +227,12 @@ probes: apps/api/test/quick-sale.review.e2e-spec.ts (describe "H1-R2", plus P1/P
 - Web and Postman: out of scope (H1F reports newman 10/18/0; not re-run here).
 - `quick-sale.h1f.e2e-spec.ts` (687 lines, H1F's own spec) was run (its timings are cited) but not reviewed line by line. The H1F edits to `quick-sale.e2e-spec.ts` (listen once; `allSettled` before judging) and `tills.service.spec.ts` (mock honours `{ in: [...] }`; one added case) were read: no case removed, no assertion relaxed beyond following the new `in` shape. H1F's `app.listen(0)` binds all interfaces, so the N-4 clash is rarer there (one bind, not one per request) but not impossible.
 - H1's e2e count: 31/31 here; round 1 recorded 35/35. No `it(` was added or removed in that file since `eac1494`, so round 1's 35 came from a different file set or a miscount; not reproduced.
+
+## Round 2 fixes (H1F2)
+
+- **Commits:** `e4d3c75..10694e9` on `concert/event-till--moses` (nothing pushed).
+- **S-1 closed:** one open till per code, compared trimmed and upper-cased; same 409; stored code unchanged.
+- **S-2 closed:** a card number can no longer be sent as a mobile-money reference (`externalTransactionId`); `payerPhone` is optional, `+` and 9 to 13 digits.
+- **Evidence:** three consecutive full e2e runs of the quick-sale, H1F and review specs, 166/166 each, with no foreign 404 (every spec now listens once on 127.0.0.1). API unit 1,288 tests in 70 suites. `check:event` green; `tsc` 0 errors; `nest build` passes at HEAD.
+- **Perf probes now opt-in:** both p95 ≤ 20 ms wall-clock probes run only with `EVENT_PERF=1`. The reviewer's spec change was the permitted one; the same gate on the H1F spec's own probe went beyond the ruling and was accepted by the architect.
+- **Still open:** the "Not checked (round 2)" list above, apart from lock-hold timing, which `EVENT_PERF=1` now makes measurable for Thursday's load test.
