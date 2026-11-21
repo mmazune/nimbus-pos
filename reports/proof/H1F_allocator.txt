@@ -1,0 +1,25 @@
+H1F-c allocator proof, 21 Nov 2026 ~14:02 EAT. Target: disposable Postgres 16 nimbus_event_h1f (:55473), API in-process (supertest, one listening server), 10,000 pre-inserted orders in one branch, then 5 runs x 10 rounds x 20 concurrent quick sales. [live]
+Lock hold = from the advisory lock being granted to the transaction's return (event loop and round trip included), the same definition as the review's R2 probe.
+
+BEFORE (HEAD 7b35577, review run 21 Nov 13:5x, load ~9): plan Aggregate > Seq Scan, 10,045 order rows read, 15.3 ms; lock hold over 200 sales p50 30.0 p95 58.6 max 130.4.
+
+CHANGE: migration 20261121100000_event_order_number_index (additive, one index) and allocator MAX over the NUMERIC expression of the same text:
+CREATE INDEX "orders_branch_id_order_number_numeric_idx"
+  ON "orders" ("branch_id", ((CAST(SUBSTRING("order_number" FROM '^ORD-([0-9]+)$') AS NUMERIC))));
+
+AFTER (the service's own query, captured from the running service and EXPLAINed):
+    H1F allocator plan: Result > Limit > Index Scan(orders_branch_id_order_number_numeric_idx); order rows read 1; 0.02 ms
+    H1F allocator run 1: 200 sales, lock hold ms p50 5.6 p95 11.0 max 22.3; non-200 0; load 5.12 6.92 6.25
+    H1F allocator run 2: 200 sales, lock hold ms p50 3.7 p95 7.0 max 25.9; non-200 0; load 5.12 6.92 6.25
+    H1F allocator run 3: 200 sales, lock hold ms p50 3.0 p95 4.8 max 9.7; non-200 0; load 5.12 6.92 6.25
+    H1F allocator run 4: 200 sales, lock hold ms p50 3.7 p95 13.5 max 25.0; non-200 0; load 5.12 6.92 6.25
+    H1F allocator run 5: 200 sales, lock hold ms p50 3.3 p95 6.5 max 11.3; non-200 0; load 6.07 7.08 6.31
+
+Pass rule: plan uses the index and p95 <= 20 ms in all five runs. Result: p95 11.0 / 7.0 / 4.8 / 13.5 / 6.5 ms, 0 non-200: five of five. Load average 5-6 (other sessions on the machine); the figures are not a quiet-machine best case.
+
+prisma migrate diff (db at H1F state -> schema.prisma): 253 lines of PRE-EXISTING drift, 0 mention of the new index, 0 DROP INDEX statements, 0 mention of "orders". Prisma does not model expression indexes, so it neither proposes dropping nor recreating this one.
+Migration applies: on an empty database (61 migrations, all finished, index present) and on a database that already had H1's migration (applied as the only new one).
+
+Why NUMERIC: the review named BIGINT. An index expression is evaluated for every row written to "orders"; a BIGINT cast overflows on a 19+ digit ORD- number and would fail inserts table-wide. NUMERIC cannot overflow (B5 probe: ORD-99999999999 sells on; ORD-999999 -> ORD-1000000 -> ORD-1000001).
+
+Not satisfiable, said plainly: review probe "R2 > the number query reads a handful of rows" EXPLAINs a hard-coded copy of the OLD query (CAST ... AS INTEGER). Checked [live] on 10,000 rows with the NUMERIC index present: that text is still Aggregate > Seq Scan, 10,000 rows. An INTEGER expression index would serve it but would make B5's ORD-99999999999 row fail at insert. The two probes cannot both pass; the assertion is untouched and the same property is proven above on the service's real query.
