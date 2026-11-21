@@ -1,0 +1,17 @@
+H1F §0: review spec red at HEAD 7b35577 (code identical to ede9ea7), 21 Nov 2026 13:5x EAT, disposable nimbus_event_h1f :55473, run after H1's e2e so the fixture night exists (load ~9, other sessions on the machine).
+13 red probes named by docs/reviews/h1-sale-engine.md, plus one flake not in that list (see end):
+      ✕ R3 different lines: second post is 409 and only the first sale exists
+      ✕ R3 different tender: second post is 409 and only the first sale exists
+      ✕ R3 different till: second post is 409 and only the first sale exists
+      ✕ R3 race (unique-violation path): a different sale racing the first under the same id is a 409
+      ✕ an ORD- number beyond 2^31 in the branch does not stop the branch selling
+      ✕ the number query reads a handful of rows, not every order in the branch
+      ✕ lock held (lock acquired -> commit returned) p95 <= 20 ms over 10 rounds of 20 concurrent sales
+      ✕ "drk-03": the cash reaches DRK-03 expected cash (or the sale is refused)
+      ✕ "DRK-03 ": the cash reaches DRK-03 expected cash (or the sale is refused)
+      ✕ " DRK-03": the cash reaches DRK-03 expected cash (or the sale is refused)
+      ✕ the error log carries order id, clientSaleId and branchId
+      ✕ a full card number typed into authCode is refused (400), not stored
+      ✕ a full card number typed into terminalId is refused (400), not stored
+
+Not in the 13: 'F13 note (documents ...)' failed this run with HTTP 404 and body {} (a Nest 404 carries statusCode+message, so the router did not answer). Passed in the reviewer's runs. Flake; see H1F report, Unverified.
