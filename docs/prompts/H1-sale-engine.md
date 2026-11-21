@@ -1,7 +1,9 @@
 # H1 — Sale engine: `POST /api/pos/quick-sale`
 
+*Version 2, 21 Nov 2026, after the H0 report. Changes from v1: baseline numbers, the lint rule, test users, and §0.*
+
 Model: Sonnet. If you are not Sonnet, say so and stop.
-Size: L · Sat 21 – Sun 22 Nov 2026 · Depends on: H0 (its three commits at HEAD, `reports/H0_BASELINE.md` present)
+Size: L · Sat 21 – Sun 22 Nov 2026 · Depends on: H0 (commits `18d019c`, `2f48c4a`, `23c7a2c`; `reports/H0_BASELINE.md` present)
 Folder: `~/Code/nimbus-pos-event` · This is the only session in this folder.
 Branch: `concert/event-till--moses`
 Database: a disposable Docker `postgres:16` this session starts and removes: container `nimbus-event-h1`, port **55471**, database `nimbus_event_h1`. Nothing else.
@@ -25,7 +27,7 @@ First: load `moses-build-standards`, say so, and read §0, §1.3, §6, §7, §8 
 1. `docs/event/README.md`; `docs/event/01_DIRECTION.md` (F1, F5, F6, F7; EV-2, 3, 5, 7, 14, 15, 16, 20, 23).
 2. `docs/event/03_BACKEND_SPEC.md` §1, §2, §3. **This is the contract.**
 3. `docs/event/research/G1_backend_build_spec.md` §1 (order path, numbering race, pricing, side effects), §2, §3 (idempotency), §4 (auth, part a), §8 (tills), §10, §11, §12. Open the section, not the file.
-4. `reports/H0_BASELINE.md`; `CLAUDE.md` §8, §14, §15, §16; `docs/TESTING_AND_QA.md` (the disposable Docker Postgres recipe, about lines 280–300).
+4. `reports/H0_BASELINE.md` and `reports/proof/H0_api_lint_by_file.txt`; `CLAUDE.md` §8, §14, §15, §16; `docs/TESTING_AND_QA.md` (the disposable Docker Postgres recipe, about lines 280–300).
 5. Code: `apps/api/src/modules/orders/orders.service.ts` (67–81, 273–468), `tills/tills.service.ts` (364–452) and its spec, `payments/payments.service.spec.ts` (10–70, the mock pattern), `common/audit/audit-branchid-guard.spec.ts`, `app.module.ts`, the `Order`, `Payment` and `MenuItem` models, and migration `20260821200636_b5_4_d1_posting_error_resolution` as the style to copy.
 
 Where G1 and `03` differ, **`03` wins**. Three known cases: `authCode` is optional; a cash sale does not require an open till session; there is no unique index on `(branch_id, sku)`.
@@ -41,13 +43,15 @@ Write `reports/H1_READ_BACK.md` (≤ 60 lines): the route, the columns, what is 
 - No full card number, CVV or free-text card field anywhere. Brand, last four, approval code and terminal ID only. `pnpm check:event` stays green.
 - Tests and the live proof use the disposable database only. Pass its URL inline on each command; never write or read a `.env*`; the throwaway password never appears in a report. Print `select current_database(), inet_server_port()` before the first test run.
 - `db:seed` may run on the disposable database only. It never runs on anything else.
-- Never the API's `lint` script (it has `--fix`); call eslint directly. Never `pkill -f`: stop the API by its recorded PID and the container by its name.
+- Lint, per file. The base has 22,533 lint problems, 21,424 of them formatting drift; that total is not a target. Lint only the files you touch, with eslint called directly and never with `--fix`. A **new** file has 0 problems. An **existing** file you touch has no more problems than its line in `reports/proof/H0_api_lint_by_file.txt`. Never run the API's `lint` script, `pnpm format`, or prettier over the repo.
+- Never `pkill -f`: stop the API by its recorded PID and the container by its name.
+- No credential literal in any new file. `docs/event/research` quotes the demo seed passwords; do not copy them into specs, fixtures, reports or proof files.
 - Do not take the raw output of `prisma migrate dev`: the repo carries schema drift that a raw diff would apply. Hand-write the SQL.
 - Decide, log under "Decisions taken", continue. Ask only if a rule here would have to be broken.
 
 ## Parts
 
-**§0 Preconditions.** H0's commits at HEAD, clean tree, `pnpm check:event` green. Start the container. Stop if port 55471 is taken; do not reuse someone else's database.
+**§0 Preconditions.** `23c7a2c` is HEAD or an ancestor of it. The only uncommitted change allowed is this prompt file (v2 replaces v1): commit it first as `docs(event): H1 prompt v2`. Then the tree is clean and `pnpm check:event` is green. Start the container. Stop if port 55471 is taken; do not reuse someone else's database.
 
 **a. Migration (`03` §1, G1 §12).** One new folder under `packages/db/prisma/migrations/`, timestamped today, named `event_till_quick_sale`.
 - New enums `CardScheme` (VISA, MASTERCARD, OTHER) and `MomoNetwork` (MTN, AIRTEL).
@@ -77,14 +81,14 @@ Commit.
 
 **e. Tests, seen failing first.** Write each test before the code it proves where you can, and save the red run to `reports/H1_RED_RUN.txt` before the green one.
 - Unit tests in the repo's mock pattern for validation, the replay branch and both unique-violation branches.
-- Integration tests against the disposable database, in the repo's e2e style (boot `AppModule`, real HTTP): `apps/api/test/quick-sale.e2e-spec.ts`. Setup is `migrate deploy` plus `db:seed`, then the spec creates its own branch items with SKUs through Prisma. If no Bartender user is seeded, the spec creates one.
+- Integration tests against the disposable database, in the repo's e2e style (boot `AppModule`, real HTTP): `apps/api/test/quick-sale.e2e-spec.ts`. Setup is `migrate deploy` plus `db:seed` (for roles and permissions), then the spec creates what it needs through Prisma: branch items with SKUs, and its own Cashier and Bartender users with passwords generated at run time. It does not log in as a demo user.
 - A guard at the top of the new specs: refuse to run unless the database host is `localhost` or `127.0.0.1` and the name starts with `nimbus_event_`. Prove it red with a made-up remote URL; no connection is attempted.
 - A deterministic fixture night of about 200 sales across two branches and four tills, in `apps/api/test/fixtures/event-night.ts`, with its expected totals computed in the fixture. H4a reuses it.
 
 Commit.
 
 **f. Proof and hand-off.**
-- Live: start the API on 4091 against the disposable database, log in as a seeded cashier, post the real case twice with `curl`. Save status codes and the two `replayed` values to `reports/proof/H1_live.txt`. No token in the file.
+- Live: start the API on 4091 against the disposable database, log in as a cashier the session creates with a generated password, post the real case twice with `curl`. Save status codes and the two `replayed` values to `reports/proof/H1_live.txt`. No token in the file.
 - `reports/H1_EVIDENCE.md` for the reviewer: one negative control per guard; the failure modes you considered; `file:line` for the lock, the replay check, both unique-violation handlers, every query's org and branch scope, and every money operation; the rollback (revert the commits; the migration is additive and needs no down).
 - Repo hygiene, briefly: the new route in the Postman collection (the repo's dual-scope variable rule; login asserts 201), a dated entry in `ai/AI_STATUS.md` and `PROGRESS.md`, H1 marked in `docs/prompts/README.md`.
 - Stop the API by PID. Remove the container by name.
@@ -109,7 +113,7 @@ Event reports (H4a) · `event-setup.ts` and `import-event-menu.ts` (H2) · healt
 10. A payment failure inside the transaction leaves no order row.
 11. The fixture night reconciles to the shilling: the sum of order totals equals the sum of payment amounts equals the fixture's expected total; the same per tender; each till's cash equals the cash term of that till's summary.
 12. The audit entry carries `branchId` and `audit-branchid-guard.spec.ts` is green.
-13. API unit tests: the H0 count plus the new ones, 0 failing. eslint without `--fix`, `tsc` and `nest build` are clean or no worse than `reports/H0_BASELINE.md`. `pnpm check:event` is green.
+13. API unit tests: the H0 baseline of 1,200 in 67 suites plus the new ones, 0 failing. `tsc` and `nest build` are clean. Every new file lints with 0 problems and no touched file is worse than its H0 line. `pnpm check:event` is green.
 14. No `parseFloat` or `toFixed` on money in the new module; the database guard was seen red; the red-run file exists.
 
 ## Report
