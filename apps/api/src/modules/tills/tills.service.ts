@@ -16,6 +16,7 @@ import {
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { OpenTillDto, SafeDropDto, ReconcileTillDto } from './dto';
+import { normalizeTillCode } from '../quick-sale/till-code';
 
 interface BranchContext {
   branchId: string;
@@ -386,7 +387,16 @@ export class TillsService {
         status: 'COMPLETED',
         // EV-20: with several tills in one branch, each till counts its own cash. A payment
         // with no till code (the restaurant flow) is still counted, exactly as before.
-        OR: [{ tillCode: till.tillCode }, { tillCode: null }],
+        // H1F: quick sales store the till code trimmed and upper-cased, so the session's code
+        // is matched in that form too (the code as opened still matches, as before).
+        OR: [
+          {
+            tillCode: {
+              in: Array.from(new Set([till.tillCode, normalizeTillCode(till.tillCode)])),
+            },
+          },
+          { tillCode: null },
+        ],
         createdAt: { gte: timeStart, lte: timeEnd },
       },
     });

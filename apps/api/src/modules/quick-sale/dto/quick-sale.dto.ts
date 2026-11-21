@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -18,6 +18,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { CardScheme, MomoNetwork } from '@prisma/client';
+import { normalizeTillCode } from '../till-code';
 
 /**
  * POST /api/pos/quick-sale. Brand, last four, approval code and terminal ID only: there is
@@ -98,6 +99,8 @@ export class QuickSaleDto {
   })
   clientSaleId!: string;
 
+  /** Stored trimmed and upper-cased (H1F): `drk-03` and `DRK-03 ` are the till `DRK-03`. */
+  @Transform(({ value }) => normalizeTillCode(value))
   @IsString()
   @MinLength(1)
   @MaxLength(50)
