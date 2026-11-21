@@ -37,7 +37,10 @@ export interface FixtureSale {
   changeDue: number;
 }
 
-export const NIGHT_BRANCHES: Record<BranchKey, { name: string; tills: string[]; items: FixtureItem[] }> = {
+export const NIGHT_BRANCHES: Record<
+  BranchKey,
+  { name: string; tills: string[]; items: FixtureItem[] }
+> = {
   drinks: {
     name: 'Night Drinks',
     tills: ['DRK-01', 'DRK-02'],
@@ -46,7 +49,13 @@ export const NIGHT_BRANCHES: Record<BranchKey, { name: string; tills: string[]; 
       { sku: 'BEER-BELL', name: 'Bell Lager 500ml', brand: 'Bell', price: 4500, type: 'DRINK' },
       { sku: 'SODA-COLA', name: 'Cola 300ml', brand: 'Coca-Cola', price: 2000, type: 'DRINK' },
       { sku: 'WATER-500', name: 'Water 500ml', brand: 'Rwenzori', price: 1500, type: 'DRINK' },
-      { sku: 'WHISKY-JW', name: 'Whisky tot', brand: 'Johnnie Walker', price: 10000, type: 'DRINK' },
+      {
+        sku: 'WHISKY-JW',
+        name: 'Whisky tot',
+        brand: 'Johnnie Walker',
+        price: 10000,
+        type: 'DRINK',
+      },
     ],
   },
   food: {

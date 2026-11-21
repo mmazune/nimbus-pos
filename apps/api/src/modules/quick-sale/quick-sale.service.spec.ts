@@ -17,7 +17,7 @@ const beer = {
   brand: 'Nile',
   price: new Decimal(4000),
   isActive: true,
-  servings: [] as any[],
+  servings: [] as { id: string; price: Decimal; isActive: boolean }[],
 };
 
 function dto(over: Partial<QuickSaleDto> = {}): QuickSaleDto {
@@ -40,11 +40,20 @@ function p2002(target: string[]) {
 
 describe('QuickSaleService', () => {
   let service: QuickSaleService;
-  let prisma: any;
-  let tx: any;
-  let audit: any;
+  let prisma: {
+    order: { findFirst: jest.Mock };
+    menuItem: { findMany: jest.Mock };
+    $transaction: jest.Mock;
+  };
+  let tx: {
+    $executeRaw: jest.Mock;
+    $queryRaw: jest.Mock;
+    order: { create: jest.Mock };
+    payment: { create: jest.Mock };
+  };
+  let audit: { log: jest.Mock };
 
-  const paymentRow = (over: any = {}) => ({
+  const paymentRow = (over: Record<string, unknown> = {}) => ({
     id: 'p1',
     orderId: 'o1',
     amount: new Decimal(8000),
@@ -61,7 +70,7 @@ describe('QuickSaleService', () => {
     createdAt: new Date('2026-11-21T18:14:00Z'),
     ...over,
   });
-  const orderRow = (over: any = {}) => ({
+  const orderRow = (over: Record<string, unknown> = {}) => ({
     id: 'o1',
     orgId: 'org-1',
     branchId: 'branch-1',
@@ -97,7 +106,7 @@ describe('QuickSaleService', () => {
     prisma = {
       order: { findFirst: jest.fn().mockResolvedValue(null) },
       menuItem: { findMany: jest.fn().mockResolvedValue([beer]) },
-      $transaction: jest.fn().mockImplementation((fn) => fn(tx)),
+      $transaction: jest.fn().mockImplementation((fn: (t: unknown) => unknown) => fn(tx)),
     };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
     const module: TestingModule = await Test.createTestingModule({
@@ -191,9 +200,7 @@ describe('QuickSaleService', () => {
     });
 
     it('turns a client_sale_id unique violation into a replay of the original', async () => {
-      prisma.order.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(orderRow());
+      prisma.order.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(orderRow());
       prisma.$transaction.mockRejectedValueOnce(p2002(['org_id', 'client_sale_id']));
       const res = await service.quickSale('user-1', ctx, dto(), meta);
       expect(res.replayed).toBe(true);
@@ -215,7 +222,7 @@ describe('QuickSaleService', () => {
     it('retries and succeeds on the second attempt', async () => {
       prisma.$transaction
         .mockRejectedValueOnce(p2002(['branch_id', 'order_number']))
-        .mockImplementationOnce((fn: any) => fn(tx));
+        .mockImplementationOnce((fn: (t: unknown) => unknown) => fn(tx));
       const res = await service.quickSale('user-1', ctx, dto(), meta);
       expect(res.replayed).toBe(false);
       expect(prisma.$transaction).toHaveBeenCalledTimes(2);
@@ -245,25 +252,43 @@ describe('QuickSaleService', () => {
     };
 
     it('CARD without cardScheme', () =>
-      rejects(dto({ payment: { method: 'CARD', cardLast4: '4242' } as any })));
+      rejects(dto({ payment: { method: 'CARD', cardLast4: '4242' } as QuickSaleDto['payment'] })));
     it('MOMO without momoNetwork', () =>
-      rejects(dto({ payment: { method: 'MOMO', payerPhone: '+256700000001' } as any })));
+      rejects(
+        dto({
+          payment: { method: 'MOMO', payerPhone: '+256700000001' } as QuickSaleDto['payment'],
+        }),
+      ));
     it('cash tendered below the total', () =>
-      rejects(dto({ payment: { method: 'CASH', tenderedAmount: 7999 } as any })));
+      rejects(
+        dto({ payment: { method: 'CASH', tenderedAmount: 7999 } as QuickSaleDto['payment'] }),
+      ));
     it('card fields on a cash sale', () =>
-      rejects(dto({ payment: { method: 'CASH', cardScheme: 'VISA' } as any })));
+      rejects(dto({ payment: { method: 'CASH', cardScheme: 'VISA' } as QuickSaleDto['payment'] })));
     it('mobile-money network on a card sale', () =>
       rejects(
-        dto({ payment: { method: 'CARD', cardScheme: 'VISA', momoNetwork: 'MTN' } as any }),
+        dto({
+          payment: {
+            method: 'CARD',
+            cardScheme: 'VISA',
+            momoNetwork: 'MTN',
+          } as QuickSaleDto['payment'],
+        }),
       ));
     it('tendered amount on a card sale', () =>
       rejects(
-        dto({ payment: { method: 'CARD', cardScheme: 'VISA', tenderedAmount: 9000 } as any }),
+        dto({
+          payment: {
+            method: 'CARD',
+            cardScheme: 'VISA',
+            tenderedAmount: 9000,
+          } as QuickSaleDto['payment'],
+        }),
       ));
     it('a line with neither sku nor menuItemId', () =>
-      rejects(dto({ lines: [{ quantity: 1 }] as any })));
+      rejects(dto({ lines: [{ quantity: 1 }] as unknown as QuickSaleDto['lines'] })));
     it('a line with both sku and menuItemId', () =>
-      rejects(dto({ lines: [{ sku: 'BEER-1', menuItemId: 'm1', quantity: 1 }] as any })));
+      rejects(dto({ lines: [{ sku: 'BEER-1', menuItemId: 'm1', quantity: 1 }] })));
 
     it('an unknown, inactive or other-branch SKU (not among active branch items)', async () => {
       prisma.menuItem.findMany.mockResolvedValue([]);
@@ -292,7 +317,7 @@ describe('QuickSaleService', () => {
       const res = await service.quickSale(
         'user-1',
         ctx,
-        dto({ payment: { method: 'CASH' } as any }),
+        dto({ payment: { method: 'CASH' } as QuickSaleDto['payment'] }),
         meta,
       );
       expect(res.changeDue.toString()).toBe('0');
@@ -306,7 +331,7 @@ describe('QuickSaleService', () => {
       const res = await service.quickSale(
         'user-1',
         ctx,
-        dto({ payment: { method: 'CASH', tenderedAmount: 10000.5 } as any }),
+        dto({ payment: { method: 'CASH', tenderedAmount: 10000.5 } as QuickSaleDto['payment'] }),
         meta,
       );
       expect(res.changeDue.toString()).toBe('2000.5');
@@ -337,7 +362,7 @@ describe('QuickSaleService', () => {
       await service.quickSale(
         'user-1',
         ctx,
-        dto({ payment: { method: 'MOMO', momoNetwork: 'MTN' } as any }),
+        dto({ payment: { method: 'MOMO', momoNetwork: 'MTN' } as QuickSaleDto['payment'] }),
         meta,
       );
       const payData = tx.payment.create.mock.calls[0][0].data;

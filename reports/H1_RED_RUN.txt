@@ -79,3 +79,12 @@ Ran all test suites matching /src\/modules\/quick-sale/i.
     Received: 404
     Expected: 400
     Received: 404
+
+######## Part 3: e2e with the module built, tills.service.ts NOT yet fixed (EV-20 red) ########
+      ✕ each till's expected cash is its own float plus its own cash sales; a null-till cash payment still counts (32 ms)
+      ✕ each till's cash equals the cash term of that till's summary, and its expected cash is float + cash (16 ms)
+    Expected: 50000
+    Received: 100000
+    Expected: 443500
+    Received: 856000
+Tests:       2 failed, 25 passed, 27 total
