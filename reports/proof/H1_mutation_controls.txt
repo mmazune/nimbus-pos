@@ -1,0 +1,61 @@
+=== M1 replay lookup ignored
+  unit : Tests:       2 failed, 49 passed, 51 total
+  e2e  : Tests:       28 skipped, 3 passed, 31 total  (-t "the real case")
+=== M2 replay branch check removed
+  unit : Tests:       2 failed, 49 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "another branch is a 409")
+         red: ✕ the same clientSaleId from another branch is a 409 and writes nothing (47 ms)
+         Received: 200
+=== M3 advisory lock removed
+  unit : Tests:       1 failed, 50 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "twenty concurrent")
+         red: ✕ twenty concurrent sales in one branch get twenty distinct order numbers, three runs in a row (290 ms)
+=== M3b advisory lock AND order_number retry removed
+  unit : Tests:       3 failed, 48 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "twenty concurrent")
+         red: ✕ twenty concurrent sales in one branch get twenty distinct order numbers, three runs in a row (171 ms)
+=== M4 client_sale_id unique-violation handler removed
+  unit : Tests:       2 failed, 49 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "same moment")
+         red: ✕ two posts sent at the same moment still make one order (114 ms)
+=== M5 @Permissions removed from the route
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "Bartender")
+         red: ✕ a Bartender gets 403 and writes nothing; a Cashier gets 200 (50 ms)
+         Received: 200
+=== M6 branch filter removed from the menu query
+  unit : Tests:       1 failed, 50 passed, 51 total
+  e2e  : Tests:       2 failed, 29 skipped, 31 total  (-t "another branch's")
+         red: ✕ another branch's SKU (160 ms)
+         red: ✕ another branch's item by menuItemId is a 400 and writes nothing (241 ms)
+         Received: 200
+         Received: 200
+=== M7 isActive filter removed from the menu query
+  unit : Tests:       1 failed, 50 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "an inactive SKU")
+         red: ✕ an inactive SKU (76 ms)
+         Received: 200
+=== M8 order written outside the transaction
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "leaves no order row")
+         red: ✕ a payment that fails inside the transaction leaves no order row (132 ms)
+         Received: 1
+=== M9 tills OR(tillCode, null) removed
+  unit : Tests:       3 failed, 48 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "till cash")
+         red: ✕ each till's expected cash is its own float plus its own cash sales; a null-till cash payment still counts (103 ms)
+         Received: 100000
+=== M10 branchId dropped from the audit metadata
+  unit : Tests:       2 failed, 49 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "audit entry")
+         red: ✕ writes an ORDER_QUICK_SALE audit entry carrying branchId (23 ms)
+=== M11 cash tendered-below-total check removed
+  unit : Tests:       1 failed, 50 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "cash tendered below the total")
+         red: ✕ cash tendered below the total (78 ms)
+         Received: 200
+=== M12 cardScheme requirement removed
+  unit : Tests:       1 failed, 50 passed, 51 total
+  e2e  : Tests:       1 failed, 30 skipped, 31 total  (-t "CARD without cardScheme")
+         red: ✕ CARD without cardScheme (38 ms)
+         Received: 200
+=== after restore, git diff --stat: reports/proof/H1_mutation_controls.py | 32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)

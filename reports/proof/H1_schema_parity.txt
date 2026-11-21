@@ -1,0 +1,4 @@
+H1 schema/SQL parity: prisma migrate diff (migrated disposable DB -> schema.prisma), grep for H1 objects
+total diff lines (pre-existing drift, ignored):      253
+--- lines mentioning H1 objects (expect none) ---
+(none)

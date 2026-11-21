@@ -1,0 +1,52 @@
+newman run, EVENT-H1-Quick-Sale.postman_collection.json against the disposable stack on :4091 (2026-11-21T09:50Z); newman exit code 0
+EVENT H1 - Quick Sale
+❏ 00 Read Me
+↳ (doc) health
+  GET http://localhost:4091/api/health [200 OK, 313B, 24ms]
+  ✓  health 200
+❏ A. Auth
+↳ Login (cashier)
+  POST http://localhost:4091/api/auth/login [201 Created, 4.38kB, 26ms]
+  ✓  Login OK
+❏ B. Quick sale
+↳ Real case: two beers by Visa at the till
+  GET http://localhost:4091/api/auth/me [200 OK, 2.81kB, 42ms]
+  POST http://localhost:4091/api/pos/quick-sale [200 OK, 993B, 34ms]
+  ✓  200
+  ✓  first post is not a replay
+  ✓  order is CLOSED
+  ✓  one VISA payment, COMPLETED
+  ✓  order number has the ORD- shape
+↳ Replay: same clientSaleId again
+  POST http://localhost:4091/api/pos/quick-sale [200 OK, 992B, 9ms]
+  ✓  200
+  ✓  second post is a replay
+  ✓  same order
+↳ 400: CARD without cardScheme
+  POST http://localhost:4091/api/pos/quick-sale [400 Bad Request, 352B, 6ms]
+  ✓  400
+↳ 400: cash tendered below the total
+  POST http://localhost:4091/api/pos/quick-sale [400 Bad Request, 350B, 8ms]
+  ✓  400
+↳ 401 (no token)
+  POST http://localhost:4091/api/pos/quick-sale [401 Unauthorized, 302B, 2ms]
+  ✓  401
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │                8 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │                7 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │                8 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               13 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 275ms                                     │
+├───────────────────────────────────────────────────────────────┤
+│ total data received: 8.46kB (approx)                          │
+├───────────────────────────────────────────────────────────────┤
+│ average response time: 18ms [min: 2ms, max: 42ms, s.d.: 13ms] │
+└───────────────────────────────────────────────────────────────┘

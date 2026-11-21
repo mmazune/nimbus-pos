@@ -1,0 +1,11 @@
+H1 live proof, 2026-11-21T09:48Z. API on :4091 (pid 92396). No token in this file.
+database: nimbus_event_h1| (port is the container side) | host mapping: 5432/tcp -> 127.0.0.1:55471 
+case: two beers at UGX 4,000 each, Visa, till DRK-03, posted twice (the first reply was lost)
+POST 1 -> HTTP 200  replayed=false  ORD-000001 status=CLOSED total=8000 till=DRK-03 payment=CARD/VISA/COMPLETED verification=UNVERIFIED changeDue=0
+POST 2 -> HTTP 200  replayed=true  ORD-000001 total=8000
+--- database, rows for client_sale_id live-drk03-visa-0001 ---
+orders=1
+payments=1
+order row: ORD-000001 CLOSED TAKEAWAY total=8000.00 till=DRK-03 source=QUICK_SALE
+payment row: CARD VISA COMPLETED amount=8000.00 till=DRK-03 last4=4242 capture=MANUAL_REFERENCE verification=UNVERIFIED
+audit rows ORDER_QUICK_SALE with branchId: 1

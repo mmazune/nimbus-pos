@@ -1,22 +1,24 @@
+H1 DB guard: seen red, then green (2026-11-21T09:50Z)
+--- identity of the disposable database before the first test run ---
 nimbus_event_h1|
---- guard run with a made-up remote URL (no connection attempted) ---
+(port 5432 is the container side) host mapping: 5432/tcp -> 127.0.0.1:55471 
+
+--- RED: quick-sale e2e started with a made-up remote DATABASE_URL (no connection is attempted) ---
 FAIL test/quick-sale.e2e-spec.ts
-  ● Test suite failed to run
     Refusing to run: database host "db.example.invalid" is not localhost or 127.0.0.1.
-      16 |   const name = decodeURIComponent(parsed.pathname.replace(/^\//, ''));
-      17 |   if (host !== 'localhost' && host !== '127.0.0.1') {
-    > 18 |     throw new Error(`Refusing to run: database host "${host}" is not localhost or 127.0.0.1.`);
-         |           ^
-      19 |   }
-      20 |   if (!name.startsWith('nimbus_event_')) {
-      21 |     throw new Error(`Refusing to run: database name "${name}" does not start with "nimbus_event_".`);
-      at assertDisposableEventDb (support/event-db-guard.ts:18:11)
-      at Object.<anonymous> (quick-sale.e2e-spec.ts:19:24)
+    > 20 |     throw new Error(`Refusing to run: database host "${host}" is not localhost or 127.0.0.1.`);
 Test Suites: 1 failed, 1 total
 Tests:       0 total
---- guard unit cases ---
-    ✓ accepts a local nimbus_event_ database (1 ms)
-    ✓ refuses a remote host and never echoes credentials
-    ✓ refuses a local database whose name is not nimbus_event_* (5 ms)
-    ✕ refuses a missing or unparseable URL (1 ms)
-Tests:       1 failed, 3 passed, 4 total
+
+--- RED: a local database with the wrong name ---
+FAIL test/quick-sale.e2e-spec.ts
+    Refusing to run: database name "nimbus_pos" does not start with "nimbus_event_".
+      24 |       `Refusing to run: database name "${name}" does not start with "nimbus_event_".`,
+Tests:       0 total
+
+--- GREEN: the guard's own cases, then the disposable URL accepted ---
+    ✓ accepts a local nimbus_event_ database (3 ms)
+    ✓ refuses a remote host and never echoes credentials (1 ms)
+    ✓ refuses a local database whose name is not nimbus_event_* (8 ms)
+    ✓ refuses a missing or unparseable URL (10 ms)
+Tests:       4 passed, 4 total

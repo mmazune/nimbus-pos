@@ -1,0 +1,5 @@
+H1 negative control: advisory lock removed. Real Prisma P2002 on (branch_id, order_number) exercised over HTTP.
+Variant A: lock removed, order_number retry (3 attempts) kept
+  first failing run (20 requests): 200 x5, 409 x15; 5xx count = 0
+Variant B: lock removed AND retry removed
+  first failing run (20 requests): 200 x2, 409 x18; 5xx count = 0

@@ -29,9 +29,9 @@ MUTATIONS = [
  ('M7 isActive filter removed from the menu query', [(QS, '        isActive: true,\n        OR: [', '        OR: [')], 'an inactive SKU', True),
  ('M8 order written outside the transaction', [(QS, 'const order = await tx.order.create({', 'const order = await this.prisma.order.create({')], 'leaves no order row', False),
  ('M9 tills OR(tillCode, null) removed', [(TL, 'OR: [{ tillCode: till.tillCode }, { tillCode: null }],', '')], 'till cash', True),
- ('M10 branchId dropped from the audit metadata', [(QS, '          branchId: ctx.branchId,\n          orgId: ctx.organizationId,\n          orderNumber', '          orgId: ctx.organizationId,\n          orderNumber')], 'audit entry', True),
- ('M11 cash tendered-below-total check removed', [(QS, 'if (tendered.lt(total)) this.bad(', 'if (false as boolean) this.bad(')], 'cash tendered below the total', True),
- ('M12 cardScheme requirement removed', [(QS, 'if (!p.cardScheme) this.bad(', 'if (false as boolean) this.bad(')], 'CARD without cardScheme', True),
+ ('M10 branchId dropped from the audit metadata', [(QS, 'metadata: {\n          branchId: ctx.branchId,\n', 'metadata: {\n')], 'audit entry', True),
+ ('M11 cash tendered-below-total check removed', [(QS, 'if (tendered.lt(total))', 'if (false as boolean)')], 'cash tendered below the total', True),
+ ('M12 cardScheme requirement removed', [(QS, 'if (!p.cardScheme)', 'if (false as boolean)')], 'CARD without cardScheme', True),
 ]
 
 ANSI = re.compile(r'\x1b\[[0-9;]*m')
@@ -47,17 +47,23 @@ def main():
     keep = tempfile.mkdtemp(prefix='h1-mut-')
     for name, edits, pattern, do_unit in MUTATIONS:
         backups = {}
-        for f, old, new in edits:
-            p = os.path.join(ROOT, f)
-            if f not in backups:
-                backups[f] = os.path.join(keep, f.replace('/', '__'))
-                shutil.copy2(p, backups[f])
-            s = open(p).read()
-            if old not in s:
-                print(f'!! {name}: pattern not found in {f}; mutation NOT applied'); sys.exit(2)
-            open(p, 'w').write(s.replace(old, new, 1))
-        print(f'=== {name}')
         try:
+            for f, old, new in edits:
+                p = os.path.join(ROOT, f)
+                if f not in backups:
+                    backups[f] = os.path.join(keep, f.replace('/', '__'))
+                    shutil.copy2(p, backups[f])
+                s = open(p).read()
+                if old not in s:
+                    print(f'!! {name}: pattern not found in {f}; mutation NOT applied')
+                    continue_run = False
+                    break
+                open(p, 'w').write(s.replace(old, new, 1))
+            else:
+                continue_run = True
+            print(f'=== {name}')
+            if not continue_run:
+                continue
             if do_unit:
                 t, failed, _ = run(UNIT)
                 print(f'  unit : {t}')

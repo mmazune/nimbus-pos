@@ -1,0 +1,501 @@
+{
+  "info": {
+    "name": "EVENT H1 - Quick Sale",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "H1 event till: POST /api/pos/quick-sale. Cashier role, one call, one transaction, one payment, safe to replay."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "cashierEmail",
+      "value": ""
+    },
+    {
+      "key": "cashierPassword",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
+    },
+    {
+      "key": "tillCode",
+      "value": "DRK-03"
+    },
+    {
+      "key": "itemSku",
+      "value": "BEER-NILE"
+    },
+    {
+      "key": "clientSaleId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function getVar(k) {",
+          "  // Environment first, but only when it holds a value (an empty env value must not shadow the",
+          "  // collection value). Checked without .name so a nameless env from `newman --env-var` still counts.",
+          "  const ev = pm.environment ? pm.environment.get(k) : undefined;",
+          "  if (ev !== undefined && ev !== null && ev !== '') return ev;",
+          "  return pm.collectionVariables.get(k);",
+          "}",
+          "function setVar(k, v) {",
+          "  if (v === undefined || v === null || v === '') return;",
+          "  pm.collectionVariables.set(k, v);",
+          "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+          "}",
+          "const path = pm.request.url.getPath();",
+          "const name = pm.info.requestName || '';",
+          "const isPublic = path === '/api/auth/login' || path === '/api/health' || name.indexOf('(no token)') >= 0;",
+          "const token = getVar('accessToken');",
+          "if (!isPublic && (!token || String(token).length < 20)) {",
+          "  const email = getVar('cashierEmail');",
+          "  const password = getVar('cashierPassword');",
+          "  if (!email || !password) {",
+          "    console.warn('cashierEmail / cashierPassword are empty: set them in the environment (never commit them).');",
+          "    pm.test('skipped: no cashier credentials supplied', () => pm.expect.fail('set cashierEmail and cashierPassword'));",
+          "  } else {",
+          "    pm.sendRequest({",
+          "      url: getVar('baseUrl') + '/api/auth/login',",
+          "      method: 'POST',",
+          "      header: { 'Content-Type': 'application/json' },",
+          "      body: { mode: 'raw', raw: JSON.stringify({ email: email, password: password }) }",
+          "    }, (err, res) => {",
+          "      if (err || !res || [200, 201].indexOf(res.code) < 0) { console.warn('auto-login failed'); return; }",
+          "      setVar('accessToken', res.json().accessToken);",
+          "    });",
+          "  }",
+          "}",
+          "if (!isPublic && !getVar('branchId')) {",
+          "  pm.sendRequest({",
+          "    url: getVar('baseUrl') + '/api/auth/me',",
+          "    method: 'GET',",
+          "    header: { Authorization: 'Bearer ' + getVar('accessToken') }",
+          "  }, (err, res) => {",
+          "    if (!err && res && res.code === 200) setVar('branchId', (res.json().context || {}).defaultBranchId);",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Read Me",
+      "description": "Folders in run order: A. Auth [STANDALONE], B. Quick sale [STANDALONE: auto-login and branch resolution run from the collection pre-request].\n\nVariables: baseUrl (no /api suffix), cashierEmail and cashierPassword (EMPTY on purpose: supply them in a Postman environment that is never committed), tillCode and itemSku (defaults DRK-03 / BEER-NILE: the branch must have an active item with that SKU). Set by the collection: accessToken, refreshToken, branchId (from /api/auth/me), clientSaleId (fresh per run, reused by the replay request).\n\nRuns: newman run <file> --env-var baseUrl=... --env-var cashierEmail=... --env-var cashierPassword=...\n\n⚠️ **Re-import required after any script change.** Postman caches pre-request and test scripts at import time. If you previously imported this collection and the scripts have since been updated, delete the collection from Postman and re-import the JSON.",
+      "item": [
+        {
+          "name": "(doc) health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A. Auth",
+      "description": "[STANDALONE] ⚠️ **Re-import required** if this folder's scripts have changed since last import.",
+      "item": [
+        {
+          "name": "Login (cashier)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{cashierEmail}}\",\n  \"password\": \"{{cashierPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function getVar(k) {",
+                  "  // Environment first, but only when it holds a value (an empty env value must not shadow the",
+                  "  // collection value). Checked without .name so a nameless env from `newman --env-var` still counts.",
+                  "  const ev = pm.environment ? pm.environment.get(k) : undefined;",
+                  "  if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                  "  return pm.collectionVariables.get(k);",
+                  "}",
+                  "function setVar(k, v) {",
+                  "  if (v === undefined || v === null || v === '') return;",
+                  "  pm.collectionVariables.set(k, v);",
+                  "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                  "}",
+                  "pm.test('Login OK', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const body = pm.response.json();",
+                  "setVar('accessToken', body.accessToken);",
+                  "setVar('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "B. Quick sale",
+      "description": "[STANDALONE] The first request mints a fresh clientSaleId; the next reuses it to prove the replay. ⚠️ **Re-import required** if this folder's scripts have changed since last import.",
+      "item": [
+        {
+          "name": "Real case: two beers by Visa at the till",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/quick-sale",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "quick-sale"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSaleId\": \"{{clientSaleId}}\",\n  \"tillCode\": \"{{tillCode}}\",\n  \"soldAt\": \"2026-11-21T21:14:00+03:00\",\n  \"lines\": [\n    {\n      \"sku\": \"{{itemSku}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"payment\": {\n    \"method\": \"CARD\",\n    \"cardScheme\": \"VISA\",\n    \"cardLast4\": \"4242\",\n    \"authCode\": \"123456\",\n    \"terminalId\": \"TRM-{{tillCode}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function getVar(k) {",
+                  "  // Environment first, but only when it holds a value (an empty env value must not shadow the",
+                  "  // collection value). Checked without .name so a nameless env from `newman --env-var` still counts.",
+                  "  const ev = pm.environment ? pm.environment.get(k) : undefined;",
+                  "  if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                  "  return pm.collectionVariables.get(k);",
+                  "}",
+                  "function setVar(k, v) {",
+                  "  if (v === undefined || v === null || v === '') return;",
+                  "  pm.collectionVariables.set(k, v);",
+                  "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                  "}",
+                  "setVar('clientSaleId', 'pm-' + Date.now() + '-' + Math.floor(Math.random() * 1e6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function getVar(k) {",
+                  "  // Environment first, but only when it holds a value (an empty env value must not shadow the",
+                  "  // collection value). Checked without .name so a nameless env from `newman --env-var` still counts.",
+                  "  const ev = pm.environment ? pm.environment.get(k) : undefined;",
+                  "  if (ev !== undefined && ev !== null && ev !== '') return ev;",
+                  "  return pm.collectionVariables.get(k);",
+                  "}",
+                  "function setVar(k, v) {",
+                  "  if (v === undefined || v === null || v === '') return;",
+                  "  pm.collectionVariables.set(k, v);",
+                  "  if (pm.environment && pm.environment.name) pm.environment.set(k, v);",
+                  "}",
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('first post is not a replay', () => pm.expect(b.replayed).to.eql(false));",
+                  "pm.test('order is CLOSED', () => pm.expect(b.order.status).to.eql('CLOSED'));",
+                  "pm.test('one VISA payment, COMPLETED', () => { pm.expect(b.payment.cardScheme).to.eql('VISA'); pm.expect(b.payment.status).to.eql('COMPLETED'); });",
+                  "pm.test('order number has the ORD- shape', () => pm.expect(b.order.orderNumber).to.match(/^ORD-\\d{6}$/));",
+                  "setVar('quickSaleOrderId', b.order.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Replay: same clientSaleId again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/quick-sale",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "quick-sale"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSaleId\": \"{{clientSaleId}}\",\n  \"tillCode\": \"{{tillCode}}\",\n  \"soldAt\": \"2026-11-21T21:14:00+03:00\",\n  \"lines\": [\n    {\n      \"sku\": \"{{itemSku}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"payment\": {\n    \"method\": \"CARD\",\n    \"cardScheme\": \"VISA\",\n    \"cardLast4\": \"4242\",\n    \"authCode\": \"123456\",\n    \"terminalId\": \"TRM-{{tillCode}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('second post is a replay', () => pm.expect(b.replayed).to.eql(true));",
+                  "pm.test('same order', () => pm.expect(b.order.id).to.eql(pm.collectionVariables.get('quickSaleOrderId') || (pm.environment && pm.environment.get('quickSaleOrderId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400: CARD without cardScheme",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/quick-sale",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "quick-sale"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSaleId\": \"{{clientSaleId}}-bad1\",\n  \"tillCode\": \"{{tillCode}}\",\n  \"soldAt\": \"2026-11-21T21:14:00+03:00\",\n  \"lines\": [\n    {\n      \"sku\": \"{{itemSku}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"payment\": {\n    \"method\": \"CARD\",\n    \"cardLast4\": \"4242\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400: cash tendered below the total",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/quick-sale",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "quick-sale"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSaleId\": \"{{clientSaleId}}-bad2\",\n  \"tillCode\": \"{{tillCode}}\",\n  \"soldAt\": \"2026-11-21T21:14:00+03:00\",\n  \"lines\": [\n    {\n      \"sku\": \"{{itemSku}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"payment\": {\n    \"method\": \"CASH\",\n    \"tenderedAmount\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "401 (no token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Branch-Id",
+                "value": "{{branchId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pos/quick-sale",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pos",
+                "quick-sale"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSaleId\": \"{{clientSaleId}}-bad3\",\n  \"tillCode\": \"{{tillCode}}\",\n  \"soldAt\": \"2026-11-21T21:14:00+03:00\",\n  \"lines\": [\n    {\n      \"sku\": \"{{itemSku}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"payment\": {\n    \"method\": \"CASH\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
