@@ -15,6 +15,7 @@ import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { allocateOrderNumber } from '../orders/order-number';
 import { QuickSaleDto } from './dto';
+import { normalizeTillCode } from './till-code';
 
 interface BranchContext {
   branchId: string;
@@ -57,6 +58,20 @@ type SavedOrder = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
 type SavedPayment = Prisma.PaymentGetPayload<object>;
 type StoredSale = SavedOrder & { payments: SavedPayment[] };
 
+/** The parts of a request that a stored sale cannot reproduce on its own. */
+type Fingerprint = {
+  soldAt: string | null;
+  tenderedAmount: string | null;
+};
+
+function fingerprintOf(dto: QuickSaleDto): Fingerprint {
+  const sent = dto.payment.tenderedAmount;
+  return {
+    soldAt: dto.soldAt ?? null,
+    tenderedAmount: sent === undefined ? null : new Decimal(String(sent)).toString(),
+  };
+}
+
 /** Which unique index a P2002 violated, normalised so column or field names both match. */
 function uniqueViolation(e: unknown): 'client_sale_id' | 'order_number' | null {
   if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== 'P2002') return null;
@@ -77,10 +92,14 @@ export class QuickSaleService {
     private readonly audit: AuditService,
   ) {}
 
-  async quickSale(userId: string, ctx: BranchContext, dto: QuickSaleDto, meta: RequestMeta) {
+  async quickSale(userId: string, ctx: BranchContext, rawDto: QuickSaleDto, meta: RequestMeta) {
+    // The DTO transform already normalises the till code; this keeps direct callers honest too.
+    const dto: QuickSaleDto = { ...rawDto, tillCode: normalizeTillCode(rawDto.tillCode) };
+
     // 1. Replay check, first: a retry of a sale that already landed never re-validates or re-prices.
+    //    It is a replay only if it is the SAME sale (H1F); otherwise it is a 409 and nothing is written.
     const existing = await this.findExisting(ctx, dto.clientSaleId);
-    if (existing) return this.replayOf(existing, ctx);
+    if (existing) return this.replayOf(existing, ctx, dto);
 
     // 2-3. Load, validate and price outside the transaction.
     const plan = await this.plan(ctx, dto);
@@ -98,7 +117,7 @@ export class QuickSaleService {
         const violated = uniqueViolation(e);
         if (violated === 'client_sale_id') {
           const original = await this.findExisting(ctx, dto.clientSaleId);
-          if (original) return this.replayOf(original, ctx);
+          if (original) return this.replayOf(original, ctx, dto);
           throw e;
         }
         if (violated === 'order_number') {
@@ -127,17 +146,79 @@ export class QuickSaleService {
     }) as Promise<StoredSale | null>;
   }
 
-  private replayOf(stored: StoredSale, ctx: BranchContext) {
+  private replayOf(stored: StoredSale, ctx: BranchContext, dto: QuickSaleDto) {
     if (stored.branchId !== ctx.branchId) {
       throw new ConflictException({
         code: 'CLIENT_SALE_ID_OTHER_BRANCH',
         message: 'This clientSaleId was already used in another branch.',
       });
     }
+    const differs = this.differences(stored, dto);
+    if (differs.length > 0) {
+      // Names of the differing parts only, never their values. The stored sale is untouched.
+      this.logger.warn(
+        `QUICK_SALE_REPLAY_MISMATCH ${JSON.stringify({
+          clientSaleId: dto.clientSaleId,
+          branchId: ctx.branchId,
+          tillCode: dto.tillCode,
+          orderId: stored.id,
+          differs,
+        })}`,
+      );
+      throw new ConflictException({
+        code: 'CLIENT_SALE_ID_PAYLOAD_MISMATCH',
+        message:
+          'This clientSaleId was already used for a different sale. Nothing was saved; give the new sale its own clientSaleId.',
+        differs,
+      });
+    }
     const changeDue = new Decimal(
       String((stored.metadata as { changeDue?: string } | null)?.changeDue ?? '0'),
     );
     return this.toResponse(stored, stored.payments[0], true, changeDue);
+  }
+
+  /**
+   * Which parts of this request differ from the sale already stored under its clientSaleId.
+   * Compared: till, method, card scheme / mobile-money network, the lines as a multiset of
+   * (item, serving, quantity), and (from the stored fingerprint) tendered amount and soldAt
+   * exactly as sent. Not compared: authCode, cardLast4, terminalId and the mobile-money slip
+   * fields: a retry may carry a corrected slip, and a replay never changes the stored sale.
+   */
+  private differences(stored: StoredSale, dto: QuickSaleDto): string[] {
+    const out: string[] = [];
+    const payment = stored.payments[0];
+    const p = dto.payment;
+
+    if (normalizeTillCode(stored.tillCode ?? '') !== dto.tillCode) out.push('tillCode');
+    if (!payment || payment.method !== p.method) out.push('payment.method');
+    if ((payment?.cardScheme ?? null) !== (p.cardScheme ?? null)) out.push('payment.cardScheme');
+    if ((payment?.momoNetwork ?? null) !== (p.momoNetwork ?? null)) out.push('payment.momoNetwork');
+
+    // Lines as a multiset: each request line must claim one distinct stored line.
+    const unclaimed = [...stored.items];
+    let linesMatch = dto.lines.length === stored.items.length;
+    for (const l of dto.lines) {
+      if (!linesMatch) break;
+      const at = unclaimed.findIndex(
+        (i) =>
+          (l.sku ? i.menuItem?.sku === l.sku : i.menuItemId === l.menuItemId) &&
+          (i.menuItemServingId ?? null) === (l.menuItemServingId ?? null) &&
+          i.quantity === l.quantity,
+      );
+      if (at < 0) linesMatch = false;
+      else unclaimed.splice(at, 1);
+    }
+    if (!linesMatch) out.push('lines');
+
+    // Fingerprint fields only exist on sales written by H1F or later; older rows skip them.
+    const fp = (stored.metadata as { fingerprint?: Fingerprint } | null)?.fingerprint;
+    if (fp) {
+      const now = fingerprintOf(dto);
+      if (fp.tenderedAmount !== now.tenderedAmount) out.push('payment.tenderedAmount');
+      if (fp.soldAt !== now.soldAt) out.push('soldAt');
+    }
+    return out;
   }
 
   // ── validate + price ──
@@ -285,6 +366,9 @@ export class QuickSaleService {
           soldAt: dto.soldAt ?? new Date().toISOString(),
           tendered: plan.tendered ? plan.tendered.toString() : null,
           changeDue: plan.changeDue.toString(),
+          // What was asked for, as sent: a later request with the same clientSaleId is a replay
+          // only if it matches (H1F).
+          fingerprint: fingerprintOf(dto),
         },
         items: {
           create: plan.lines.map((l) => ({
