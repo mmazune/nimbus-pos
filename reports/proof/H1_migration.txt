@@ -1,0 +1,31 @@
+H1 check 1: migration on an EMPTY Postgres 16 (database nimbus_event_h1_empty, created for this check, removed after) (2026-11-21T09:56Z)
+prisma migrate deploy exit code: 0
+60 migrations found in prisma/migrations
+Applying migration `20261121000000_event_till_quick_sale`
+All migrations have been successfully applied.
+migrations applied (rows in _prisma_migrations, all finished): 60 / finished: true
+--- SQL scan of packages/db/prisma/migrations/20261121000000_event_till_quick_sale/migration.sql ---
+DROP statements: 0
+ADD VALUE: 0
+NOT NULL: 0
+statements (non-comment lines starting ALTER/CREATE):
+CREATE TYPE "CardScheme" AS ENUM ('VISA', 'MASTERCARD', 'OTHER');
+CREATE TYPE "MomoNetwork" AS ENUM ('MTN', 'AIRTEL');
+ALTER TABLE "orders" ADD COLUMN     "till_code" TEXT,
+ALTER TABLE "payments" ADD COLUMN     "card_scheme" "CardScheme",
+ALTER TABLE "menu_items" ADD COLUMN     "brand" TEXT;
+CREATE UNIQUE INDEX "orders_org_id_client_sale_id_key" ON "orders"("org_id", "client_sale_id");
+CREATE INDEX "orders_org_id_branch_id_till_code_created_at_idx" ON "orders"("org_id", "branch_id", "till_code"
+CREATE INDEX "payments_org_id_branch_id_till_code_created_at_idx" ON "payments"("org_id", "branch_id", "till_c
+CREATE INDEX "payments_org_id_card_scheme_idx" ON "payments"("org_id", "card_scheme");
+CREATE INDEX "menu_items_org_id_sku_idx" ON "menu_items"("org_id", "sku");
+columns added: orders 2, payments 6, menu_items 1; all without NOT NULL or DEFAULT:
+ALTER TABLE "orders" ADD COLUMN     "till_code" TEXT,
+ADD COLUMN     "client_sale_id" TEXT;
+ALTER TABLE "payments" ADD COLUMN     "card_scheme" "CardScheme",
+ADD COLUMN     "card_last4" VARCHAR(4),
+ADD COLUMN     "auth_code" TEXT,
+ADD COLUMN     "terminal_id" TEXT,
+ADD COLUMN     "till_code" TEXT,
+ADD COLUMN     "momo_network" "MomoNetwork";
+ALTER TABLE "menu_items" ADD COLUMN     "brand" TEXT;

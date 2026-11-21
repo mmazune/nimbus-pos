@@ -1,0 +1,4 @@
+H1 check 14: money arithmetic scan of the new module (2026-11-21T09:57Z)
+pattern: parseFloat | toFixed | parseInt | Number( | Math.round/floor/ceil | float literal multipliers, in apps/api/src/modules/quick-sale (non-spec) and orders/order-number.ts
+hits: none
+money values are Prisma Decimal throughout (new Decimal / .add / .sub / .mul / .lt / .gte).

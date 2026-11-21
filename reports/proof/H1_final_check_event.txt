@@ -1,0 +1,3 @@
+check:event scanned 1389 files
+check:event allowed 0 hit(s) via 0 allow entries
+check:event green

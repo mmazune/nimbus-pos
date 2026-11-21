@@ -29,6 +29,16 @@ map them using the table below — but always use ROADMAP numbers going forward.
 
 From M34 onward, ROADMAP numbers and migration names are aligned. No more offset.
 
+## Event Till — H1 sale engine (2026-11-21, branch `concert/event-till--moses`)
+
+`POST /api/pos/quick-sale` built and proven on a disposable Postgres (shared Neon untouched, nothing pushed or deployed):
+one call, one transaction, one payment, replay-safe by `(orgId, clientSaleId)`; additive migration
+`20261121000000_event_till_quick_sale` (card scheme, last four, approval code, terminal, till code, mobile-money network,
+`client_sale_id`, `brand`); per-branch order numbers under `pg_advisory_xact_lock`; EV-20 per-till expected cash fix in
+`tills.service.ts` (`shifts.service.ts` has the same pattern and is deliberately unchanged). API unit 1,234 passed / 68 suites
+(H0 baseline 1,200 / 67); quick-sale e2e 35/35 incl. a 200-sale fixture night reconciled to the shilling; negative control per guard.
+Evidence for the fresh reviewer (H1-R): `reports/H1_EVIDENCE.md`. Not started: H2 go-live scripts, event reports (H4a), any web code.
+
 ## Current State
 
 - **ENTERPRISE UI TRACK B6 COMPLETE — Manager Settings, Staff Onboarding, and Credential Management

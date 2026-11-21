@@ -4,6 +4,12 @@
 > **`ai/AI_STATUS.md`** (its top-of-file "Current State" is authoritative).
 > This file summarises where the project stands and links to the evidence.
 
+**EVENT TILL — H1 SALE ENGINE BUILT (2026-11-21, branch `concert/event-till--moses`; awaiting H1-R review).**
+`POST /api/pos/quick-sale` plus an additive migration and the EV-20 per-till cash fix, proven on a disposable Postgres only
+(no push, no merge, no deploy, shared Neon never touched). The real case (two beers, Visa, till `DRK-03`, posted twice) gives one
+CLOSED order, one COMPLETED VISA payment, and `replayed: true` on the second reply. API unit 1,234/68 suites; e2e 35/35.
+See `reports/H1_EVIDENCE.md` and `docs/prompts/README.md`.
+
 **ENTERPRISE UI TRACK B6 COMPLETE — Manager Settings, Staff Onboarding, and Credential Management
 (2026-08-22).** Scoped by an explicit owner prompt narrower than the roadmap's original "B6 —
 Settings" (Devices/Printers/Terminals/Alerts/Sync/Branch-profile moved to new roadmap section

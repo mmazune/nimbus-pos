@@ -1,0 +1,17 @@
+H1 per-file lint at HEAD (eslint called directly, no --fix). errors warnings | H0 errors/warnings | file | verdict
+  1   0 |   1/0 | src/app.module.ts | existing file, not worse than H0: ok
+  0   0 |     - | src/modules/orders/order-number.ts | NEW file, 0 problems: ok
+  6   4 |   6/4 | src/modules/orders/orders.service.ts | existing file, not worse than H0: ok
+  0   0 |     - | src/modules/quick-sale/dto/index.ts | NEW file, 0 problems: ok
+  0   0 |     - | src/modules/quick-sale/dto/quick-sale.dto.ts | NEW file, 0 problems: ok
+  0   0 |     - | src/modules/quick-sale/quick-sale.controller.ts | NEW file, 0 problems: ok
+  0   0 |     - | src/modules/quick-sale/quick-sale.module.ts | NEW file, 0 problems: ok
+  0   0 |     - | src/modules/quick-sale/quick-sale.service.spec.ts | NEW file, 0 problems: ok
+  0   0 |     - | src/modules/quick-sale/quick-sale.service.ts | NEW file, 0 problems: ok
+  0   5 |   0/5 | src/modules/tills/tills.service.spec.ts | existing file, not worse than H0: ok
+  0   0 |   0/0 | src/modules/tills/tills.service.ts | existing file, not worse than H0: ok
+  0   0 |     - | test/fixtures/event-night.ts | NEW file, 0 problems: ok
+  0   0 |     - | test/quick-sale.e2e-spec.ts | NEW file, 0 problems: ok
+  0   0 |     - | test/support/event-db-guard.e2e-spec.ts | NEW file, 0 problems: ok
+  0   0 |     - | test/support/event-db-guard.ts | NEW file, 0 problems: ok
+files checked: 15 ; failures: 0
