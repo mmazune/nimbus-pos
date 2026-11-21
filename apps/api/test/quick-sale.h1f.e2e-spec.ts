@@ -123,9 +123,6 @@ describe('H1F: quick sale fixes (e2e)', () => {
     // foreign process). Listening on 127.0.0.1 and requesting that exact address removes it.
     await app.listen(0, '127.0.0.1');
     baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
-    // Listen once, so supertest never starts (and then closes) a shared server per request:
-    // that closed the server under in-flight concurrent requests (read ECONNRESET).
-    await app.listen(0);
     prisma = app.get(PrismaService);
     tills = app.get(TillsService);
 
