@@ -197,6 +197,7 @@ nimbus-pos/
 │   │   │       │   ├── orders.controller.ts
 │   │   │       │   ├── orders.service.ts
 │   │   │       │   ├── orders.service.spec.ts
+│   │   │       │   ├── order-number.ts
 │   │   │       │   └── dto/
 │   │   │       │       ├── index.ts
 │   │   │       │       ├── create-order.dto.ts
@@ -250,6 +251,14 @@ nimbus-pos/
 │   │   │       │   ├── tills.service.ts
 │   │   │       │   ├── tills.service.spec.ts
 │   │   │       │   └── dto/
+│   │   │       ├── quick-sale/
+│   │   │       │   ├── quick-sale.module.ts
+│   │   │       │   ├── quick-sale.controller.ts
+│   │   │       │   ├── quick-sale.service.ts
+│   │   │       │   ├── quick-sale.service.spec.ts
+│   │   │       │   └── dto/
+│   │   │       │       ├── index.ts
+│   │   │       │       └── quick-sale.dto.ts
 │   │   │       ├── reservations/
 │   │   │       │   ├── reservations.module.ts
 │   │   │       │   ├── reservations.controller.ts
@@ -413,6 +422,9 @@ nimbus-pos/
 │   │   └── test/
 │   │       ├── jest-e2e.json
 │   │       ├── app.e2e-spec.ts
+│   │       ├── quick-sale.e2e-spec.ts
+│   │       ├── support/event-db-guard.ts (+ event-db-guard.e2e-spec.ts)
+│   │       ├── fixtures/event-night.ts
 │   │       ├── auth.e2e-spec.ts
 │   │       ├── discounts.e2e-spec.ts
 │   │       ├── floor.e2e-spec.ts

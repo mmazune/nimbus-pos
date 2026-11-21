@@ -59,3 +59,4 @@
          Received: 200
 === after restore, git diff --stat: reports/proof/H1_mutation_controls.py | 32 +++++++++++++++++++-------------
  1 file changed, 19 insertions(+), 13 deletions(-)
+NOTE (added after the run): the only file reported above is reports/proof/H1_mutation_controls.py, the driver itself, which was edited before the run. No file under apps/ or packages/ differed after restore; confirmed again at the end of the session by an empty `git status` for those paths.

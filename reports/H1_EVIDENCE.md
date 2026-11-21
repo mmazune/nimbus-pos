@@ -34,7 +34,7 @@ Red-first record: `reports/H1_RED_RUN.txt` (part 1 compile-red; part 2 behaviour
 - **Audit write fails after commit.** Swallowed and logged; the sale is not turned into an error the tablet would retry. A replay never back-fills a missing audit row.
 - **Retried payload differs from the stored sale.** The stored sale is returned as is, by the spec's "return it".
 - **Overflow.** Total ≥ 10,000,000,000 is a 400; quantity ≤ 1000, lines ≤ 100.
-- **Cross-tenant.** Every query carries `orgId`; branch comes from the guard's membership check, not the body.
+- **Cross-tenant.** Every row read and write carries `orgId` (replay lookup, menu query, order and payment creates, till cash). The advisory lock and the `MAX` number scan are keyed on `branch_id` only (a branch belongs to one organisation, and the branch comes from the guard's membership check, never from the body).
 
 ## 3. `file:line` (HEAD `b4f1c12`)
 | What | Where |
@@ -60,10 +60,10 @@ Org and branch scope of each query: replay `findFirst` (org; branch compared aft
 Every money operation, all `Decimal`, no `parseFloat`/`toFixed`/`Number` on money in the module (grep at HEAD: none): price `:221-232`; subtotal sum `:232`; total `:243`; limit `:244`; tendered `:249`; below-total check `:250`; change `:252`; stored amounts `:274-277`, payment amount in `write()`. Test side only: fixtures use integer shillings.
 
 ## 4. Rollback
-Revert the H1 commits (`git revert 0c1fa50^..HEAD`, or drop the branch). The migration is additive and nullable, so no down migration is needed: the previous app version keeps working with the extra columns present. On a shared database, only `migrate deploy` ever; a Neon restore branch first (not done here: shared Neon was never touched).
+Revert the H1 commits (`git revert 0c1fa50^..HEAD`; do not drop the branch, it also carries H0 and the event docs). The migration is additive and nullable, so no down migration is needed: the previous app version keeps working with the extra columns present. On a shared database, only `migrate deploy` ever; a Neon restore branch first (not done here: shared Neon was never touched).
 
 ## 5. Decisions taken (beyond `03`)
-1. `tenderedAmount` optional for cash, absent = exact. 2. Card or mobile-money fields on a cash sale: 400; likewise `momoNetwork` on card, card fields on MOMO, and `tenderedAmount` on non-cash. 3. A SKU matching more than one active branch item: 400. 4. `soldAt` stored in metadata as given (defaults to the server's now when absent, per `03`); never used for numbering or ordering. 5. Quick sale prices from one in-memory query and **skips recipe cost snapshots** (`costUnit`/`costTotal`/margin stay null on its items). 6. `computeLinePricing` gained an optional `client` parameter as the prompt asked; **it has no caller yet**. 7. Limits not in `03`: quantity ≤ 1000, total < 10^10. 8. Order numbers come from `MAX(numeric part)` over the branch, not "latest by created_at".
+1. `tenderedAmount` optional for cash, absent = exact. 2. Card or mobile-money fields on a cash sale: 400; likewise `momoNetwork` on card, card fields on MOMO, and `tenderedAmount` on non-cash. 3. A SKU matching more than one active branch item: 400. 4. `soldAt` stored in metadata as given (defaults to the server's now when absent, per `03`); never used for numbering or ordering. 5. Quick sale prices from one in-memory query and **skips recipe cost snapshots** (`costUnit`/`costTotal`/margin stay null on its items). 6. `computeLinePricing` gained an optional `client` parameter as the prompt asked; **it has no caller yet**. 7. Limits not in `03`: quantity ≤ 1000, total < 10^10. 8. Order numbers come from `MAX(numeric part)` over the branch, not "latest by created_at". 9. "Retry up to 3 times" (`03` §2 step 5) is read as three attempts in total (`MAX_ATTEMPTS = 3`), not one try plus three retries.
 
 ## 6. Look hardest at
 - Whether swallowing the audit failure is acceptable for a money path.
@@ -74,10 +74,10 @@ Revert the H1 commits (`git revert 0c1fa50^..HEAD`, or drop the branch). The mig
 ## 7. Disclosures and limits
 - The full unit run once showed 1 failure in `quick-pin.service.spec.ts` (untouched, bcrypt-heavy, host load ~25); it passed alone 3 times and the full re-run was 1234/1234 (`H1_final_unit_build.txt`). Not fixed.
 - Quick-sale e2e refuses any database not named `nimbus_event_*`, so a full `test:e2e` elsewhere shows it red by design.
-- Prettier ran on new files only; checks ran directly, not through loadmaster (no `.loadmaster.toml`), as in H0.
+- Prettier ran on new files only; checks ran directly, not through loadmaster (`ls -a` at the repo root shows no `.loadmaster*` file), as in H0.
 - `ShiftCloseSummary` (`shifts.service.ts`) has the same branch-wide cash pattern; deliberately not changed (prompt).
-- The Postman collection has empty credential variables; its auto-login reads them from a Postman environment.
+- The Postman collection has empty credential variables; its auto-login reads them from a Postman environment. A first version fired `/api/auth/me` beside the login, so a cold `--folder` run would have sent an empty `X-Branch-Id`; it is now chained inside the login callback and re-proved COLD on a fresh stack (`H1_newman.txt`: folder B alone 7 requests / 11 assertions, whole collection 8 / 13, 0 failed, exit 0).
 - Not run: web, Playwright, any shared or Neon database, four-viewport sweeps (no web code).
 
 ## 8. Proof files (`reports/proof/`)
-`H1_migration.txt` · `H1_schema_parity.txt` · `H1_guard_red.txt` · `H1_mutation_controls.{py,txt}` · `H1_lock_removed_spread.txt` · `H1_live.txt` · `H1_newman.txt` · `H1_final_unit_build.txt` · `H1_final_e2e.txt` · `H1_lint_by_file.txt` · `H1_final_check_event.txt`
+`H1_migration.txt` · `H1_schema_parity.txt` · `H1_guard_red.txt` · `H1_mutation_controls.{py,txt}` (its last line shows the driver script as the only modified file; nothing under `apps/` or `packages/` differed) · `H1_lock_removed_spread.txt` · `H1_live.txt` · `H1_newman.txt` · `H1_final_unit_build.txt` · `H1_final_e2e.txt` · `H1_lint_by_file.txt` · `H1_final_check_event.txt`

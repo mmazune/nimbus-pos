@@ -16,8 +16,13 @@ exit 0
 ## nest build
 exit 0
 
-## Disclosure: the first full run above showed 1 failure in src/modules/auth/quick-pin.service.spec.ts (a file H1 does not touch; bcrypt-heavy; 19.7 s).
-## Host load average was about 23-27 (other sessions). That spec then passed 17/17 three times alone, and a full re-run at the same load gave:
+## Disclosure: the FIRST full run above shows 1 failure in src/modules/auth/quick-pin.service.spec.ts (a file H1 does not touch; bcrypt-heavy; 19.7 s).
+## Host load average was about 23-27 (other sessions). That spec then passed 17/17 three times on its own (isolated runs, not recorded in a file), and the full re-run below passed.
+## git diff of src/modules/auth since 23c7a2c is empty. Judged a load-induced timeout in an existing test; not fixed here.
+
+## Full unit re-run at HEAD (captured from the jest output of that run, not typed)
 Test Suites: 68 passed, 68 total
 Tests:       1234 passed, 1234 total
-## Conclusion: a load-induced timeout flake in an existing test, not caused by H1 (git diff of src/modules/auth since 23c7a2c is empty). Not fixed here.
+Snapshots:   0 total
+Time:        61.862 s
+Check 13: H0 baseline 1,200 passed / 67 suites; now 1,234 passed / 68 suites, 0 failing (this re-run). The first run above had 1 failing, a pre-existing spec, under load.
