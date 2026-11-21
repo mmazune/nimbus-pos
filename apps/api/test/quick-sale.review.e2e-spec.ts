@@ -245,6 +245,8 @@ describe('H1-R review probes: quick sale (e2e)', () => {
     for (const sql of [
       'DROP TRIGGER IF EXISTS h1r_audit_fail ON audit_logs',
       'DROP FUNCTION IF EXISTS h1r_audit_fail()',
+      'DROP TRIGGER IF EXISTS h1r_race ON orders',
+      'DROP FUNCTION IF EXISTS h1r_race()',
       'DROP TRIGGER IF EXISTS h1r_collide ON orders',
       'DROP FUNCTION IF EXISTS h1r_collide()',
       'DROP SEQUENCE IF EXISTS h1r_collide_seq',
@@ -275,6 +277,37 @@ describe('H1-R review probes: quick sale (e2e)', () => {
         expect(await ordersFor(id)).toBe(1);
       });
     }
+
+    it('R3 race (unique-violation path): a different sale racing the first under the same id is a 409', async () => {
+      // Probe-only trigger: the first insert for this id sleeps, so the second request misses
+      // the up-front lookup and reaches the client_sale_id unique-violation handler instead.
+      const id = cid('r3race');
+      await prisma.$executeRawUnsafe(`
+        CREATE OR REPLACE FUNCTION h1r_race() RETURNS trigger AS $$
+        BEGIN
+          IF NEW.client_sale_id = '${id}' THEN PERFORM pg_sleep(0.6); END IF;
+          RETURN NEW;
+        END $$ LANGUAGE plpgsql`);
+      await prisma.$executeRawUnsafe(
+        'CREATE TRIGGER h1r_race BEFORE INSERT ON orders FOR EACH ROW EXECUTE FUNCTION h1r_race()',
+      );
+      try {
+        const first = post(cashier.token, 'a', sale(id));
+        await new Promise((r) => setTimeout(r, 150));
+        const second = post(
+          cashier.token,
+          'a',
+          sale(id, { lines: [{ sku: 'BEER-R', quantity: 3 }] }),
+        );
+        const [x, y] = await Promise.all([first, second]);
+        expect(x.status).toBe(200);
+        expect(x.body.replayed).toBe(false);
+        expect(y.status).toBe(409);
+        expect(await ordersFor(id)).toBe(1);
+      } finally {
+        await prisma.$executeRawUnsafe('DROP TRIGGER IF EXISTS h1r_race ON orders');
+      }
+    });
 
     it('R3 control: differing only in optional slip fields is still a plain replay (200)', async () => {
       const id = cid('r3-slip');
@@ -535,9 +568,10 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       return out;
     };
     const explain = async (sql: string) => {
-      const rows = await prisma.$queryRawUnsafe<{ 'QUERY PLAN': { Plan: PlanNode }[] }[]>(
-        `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${sql}`,
-      );
+      const rows = await prisma.$queryRawUnsafe<
+        { 'QUERY PLAN': { Plan: PlanNode; 'Execution Time': number }[] }[]
+      >(`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${sql}`);
+      const execMs = rows[0]['QUERY PLAN'][0]['Execution Time'];
       const nodes = walk(rows[0]['QUERY PLAN'][0].Plan);
       const scanned = nodes
         .filter((n) => n['Relation Name'] === 'orders')
@@ -549,6 +583,7 @@ describe('H1-R review probes: quick sale (e2e)', () => {
           0,
         );
       return {
+        execMs,
         scanned,
         nodes: nodes.map(
           (n) => `${n['Node Type']}${n['Index Name'] ? `(${n['Index Name']})` : ''}`,
@@ -572,7 +607,9 @@ describe('H1-R review probes: quick sale (e2e)', () => {
     it('the number query reads a handful of rows, not every order in the branch', async () => {
       const e = await explain(ALLOC_SQL(branch.perf));
       // eslint-disable-next-line no-console
-      console.log(`R2 allocator plan: ${e.nodes.join(' > ')}; order rows read: ${e.scanned}`);
+      console.log(
+        `R2 allocator plan: ${e.nodes.join(' > ')}; order rows read: ${e.scanned}; execution ${e.execMs} ms`,
+      );
       expect(e.scanned).toBeLessThanOrEqual(10);
     });
 
@@ -588,7 +625,9 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       const [fix] = await prisma.$queryRawUnsafe<{ max: bigint }[]>(fixSql);
       await prisma.$executeRawUnsafe('DROP INDEX IF EXISTS h1r_probe_ordnum_idx');
       // eslint-disable-next-line no-console
-      console.log(`R2 fix plan: ${e.nodes.join(' > ')}; order rows read: ${e.scanned}`);
+      console.log(
+        `R2 fix plan: ${e.nodes.join(' > ')}; order rows read: ${e.scanned}; execution ${e.execMs} ms`,
+      );
       expect(e.scanned).toBeLessThanOrEqual(2);
       expect(Number(fix.max)).toBe(Number(cur.max));
     });
@@ -739,10 +778,11 @@ describe('H1-R review probes: quick sale (e2e)', () => {
   describe('C10: Payment.amount = Order.total on every quick-sale row in this database', () => {
     it('no quick-sale order has a payment that differs from its total, or other than one payment', async () => {
       const [row] = await prisma.$queryRawUnsafe<
-        { sales: bigint; mismatched: bigint; not_one_payment: bigint }[]
+        { sales: bigint; night: bigint; mismatched: bigint; not_one_payment: bigint }[]
       >(`
         SELECT
           (SELECT count(*) FROM orders WHERE client_sale_id IS NOT NULL) AS sales,
+          (SELECT count(*) FROM orders WHERE client_sale_id LIKE 'night-%') AS night,
           (SELECT count(*) FROM orders o JOIN payments p ON p.order_id = o.id
              WHERE o.client_sale_id IS NOT NULL AND p.amount <> o.total) AS mismatched,
           (SELECT count(*) FROM orders o
@@ -750,9 +790,11 @@ describe('H1-R review probes: quick sale (e2e)', () => {
                AND (SELECT count(*) FROM payments p WHERE p.order_id = o.id) <> 1) AS not_one_payment`);
       // eslint-disable-next-line no-console
       console.log(
-        `C10 quick-sale orders: ${row.sales}; amount<>total: ${row.mismatched}; not one payment: ${row.not_one_payment}`,
+        `C10 quick-sale orders: ${row.sales} (fixture night: ${row.night}); amount<>total: ${row.mismatched}; not one payment: ${row.not_one_payment}`,
       );
-      expect(Number(row.sales)).toBeGreaterThanOrEqual(200); // control: the fixture night is here
+      // Control: H1's 200-sale fixture night (test/quick-sale.e2e-spec.ts) must have been run
+      // on this database first; its clientSaleIds start with "night-".
+      expect(Number(row.night)).toBeGreaterThanOrEqual(200);
       expect(Number(row.mismatched)).toBe(0);
       expect(Number(row.not_one_payment)).toBe(0);
     });
