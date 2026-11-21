@@ -388,4 +388,54 @@ describe('TillsService', () => {
     const result = await service.hasActiveTillInBranch(ctx);
     expect(result).toBe(false);
   });
+  // ── EV-20: per-till expected cash ──
+
+  describe('computeExpectedCash with two tills in one branch', () => {
+    const payments = [
+      { tillCode: 'DRK-01', amount: new Decimal(30000) },
+      { tillCode: 'DRK-02', amount: new Decimal(50000) },
+      { tillCode: null, amount: new Decimal(7000) }, // restaurant-flow cash, no till code
+    ];
+    const opened = new Date('2026-11-21T16:00:00Z');
+
+    beforeEach(() => {
+      // Emulate Postgres: honour the OR on tillCode if the service sends one.
+      const wherePayments = ({ where }: { where: { OR?: { tillCode: string | null }[] } }) =>
+        Promise.resolve(
+          payments.filter((p) => !where.OR || where.OR.some((c) => c.tillCode === p.tillCode)),
+        );
+      prisma.payment.findMany.mockImplementation(wherePayments);
+      prisma.cashMovement.findMany.mockResolvedValue([]);
+      prisma.refund.findMany.mockResolvedValue([]);
+    });
+
+    const till = (id: string, tillCode: string) =>
+      prisma.tillSession.findUnique.mockResolvedValueOnce({
+        id,
+        tillCode,
+        openedAt: opened,
+        closedAt: null,
+      });
+
+    it("DRK-01's expected cash is its own float plus its own cash and the no-till cash", async () => {
+      till('t1', 'DRK-01');
+      const expected = await service.computeExpectedCash('t1', 20000, ctx);
+      expect(expected.toString()).toBe('57000'); // 20,000 + 30,000 + 7,000, not + 50,000
+    });
+
+    it("DRK-02's expected cash is its own float plus its own cash and the no-till cash", async () => {
+      till('t2', 'DRK-02');
+      const expected = await service.computeExpectedCash('t2', 5000, ctx);
+      expect(expected.toString()).toBe('62000'); // 5,000 + 50,000 + 7,000, not + 30,000
+    });
+
+    it('queries by org, branch, till code or null till code', async () => {
+      till('t1', 'DRK-01');
+      await service.computeExpectedCash('t1', 0, ctx);
+      const where = prisma.payment.findMany.mock.calls[0][0].where;
+      expect(where.orgId).toBe('org-1');
+      expect(where.branchId).toBe('branch-1');
+      expect(where.OR).toEqual([{ tillCode: 'DRK-01' }, { tillCode: null }]);
+    });
+  });
 });

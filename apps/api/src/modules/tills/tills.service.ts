@@ -384,6 +384,9 @@ export class TillsService {
         orgId: ctx.organizationId,
         method: PaymentMethod.CASH,
         status: 'COMPLETED',
+        // EV-20: with several tills in one branch, each till counts its own cash. A payment
+        // with no till code (the restaurant flow) is still counted, exactly as before.
+        OR: [{ tillCode: till.tillCode }, { tillCode: null }],
         createdAt: { gte: timeStart, lte: timeEnd },
       },
     });
