@@ -17,12 +17,14 @@ body{margin:0}
     <div class="hstack"><h1 class="t-title grow">Set your own PIN</h1></div>
     <p class="sub">Welcome, Brian O.</p>
   </header>
-  <main class="body" style="gap: 16px; justify-content: flex-end; padding-bottom: 24px">
+  <main class="body" style="gap: 16px; padding-bottom: 24px">
+    <div class="card" style="padding: 8px 16px"><div class="hstack" style="min-height: 40px"><span class="pill p-green">Done</span><span class="t-body">1. Type four numbers</span></div><div class="hstack" style="min-height: 40px"><span class="pill p-brand">Now</span><span class="t-body b">2. Type them again</span></div></div><p class="t-sup muted">Do not use 1234 or your birthday.</p>
+    <span class="grow"></span>
     <h2 class="t-h" style="text-align: center">Type the same four again</h2>
     <div class="pin " aria-label="3 of 4 digits"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
-    <p class="t-sup muted" style="text-align: center; min-height: 20px">Step 2 of 2 · nobody else sees your PIN</p>
-    <div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><button class="key" style="height: 72px">1</button><button class="key" style="height: 72px">2</button><button class="key" style="height: 72px">3</button><button class="key" style="height: 72px">4</button><button class="key" style="height: 72px">5</button><button class="key" style="height: 72px">6</button><button class="key" style="height: 72px">7</button><button class="key" style="height: 72px">8</button><button class="key" style="height: 72px">9</button><button class="key" aria-label="Clear" style="height: 72px; font-size: 17px">Clear</button><button class="key" style="height: 72px">0</button><button class="key" style="height: 72px" aria-label="Delete"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2"/></svg></button></div>
-    
+    <p class="t-sup muted" style="text-align: center; min-height: 20px">Nobody else sees it, not even the manager.</p>
+    <div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><button class="key" style="height: 72px">1</button><button class="key" style="height: 72px">2</button><button class="key" style="height: 72px">3</button><button class="key" style="height: 72px">4</button><button class="key" style="height: 72px">5</button><button class="key" style="height: 72px">6</button><button class="key" style="height: 72px">7</button><button class="key" style="height: 72px">8</button><button class="key" style="height: 72px">9</button><button class="key" aria-label="Clear" style="height: 72px; font-size: 17px">Clear</button><button class="key" style="height: 72px">0</button><button class="key" style="height: 72px" aria-label="Delete"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 6H9l-6 6 6 6h12z"/><path d="m12 9 6 6M18 9l-6 6"/></svg></button></div>
+    <button class="btn textbtn" style="align-self: center">Start over</button>
   </main>
 </div>
 </x-dc>

@@ -14,7 +14,8 @@ I.update(dict(
   gear='<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
   bag='<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>', fire='<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 2 1 3 3 3 5 1-1 1-3 0-9z"/>',
   pause='<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
-  receipt='<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>', door='<path d="M5 21V4h11v17M16 21h3M12 12h.01"/><path d="M16 4l3 1v16"/>',
+  receipt='<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>', bksp='<path d="M21 6H9l-6 6 6 6h12z"/><path d="m12 9 6 6M18 9l-6 6"/>',
+  door='<path d="M5 21V4h11v17M16 21h3M12 12h.01"/><path d="M16 4l3 1v16"/>',
 ))
 def ic(n, c=''): return f'<svg class="ic {c}" viewBox="0 0 24 24" aria-hidden="true">{I[n]}</svg>'
 def reg(name, w, h, group, role, shows, route, ms):
@@ -211,7 +212,7 @@ def keypad(keys=('1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'del'), 
     st = f' style="height: {h}px"' if h else ''
     o = ''
     for k in keys:
-        if k == 'del': o += f'<button class="key"{st} aria-label="Delete">{ic("back2", "l")}</button>'
+        if k == 'del': o += f'<button class="key"{st} aria-label="Delete">{ic("bksp", "l")}</button>'
         elif k == 'C': o += f'<button class="key"{st} aria-label="Clear" style="font-size: 17px">Clear</button>' if not h else f'<button class="key" aria-label="Clear" style="height: {h}px; font-size: 17px">Clear</button>'
         else: o += f'<button class="key"{st}>{k}</button>'
     return f'<div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr)){";" + style if style else ""}">{o}</div>'

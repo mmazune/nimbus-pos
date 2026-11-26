@@ -1,0 +1,236 @@
+[
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Table-Move",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Table-Move-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Table-Join",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Table-Join-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Guest",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Guest-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Item",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Item-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Amount",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Amount-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Even",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Split-Even-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Discount",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Discount-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Change-Waiter",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Change-Waiter-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Handover-Offer",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Handover-Offer-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Handover-Accept",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Handover-Accept-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Line-Move",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Line-Move-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Order-Cancel",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Order-Cancel-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Supervisor-PIN-Pad",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Supervisor-PIN-Pad-Phone",
+  "size": "390x844"
+ }
+]
