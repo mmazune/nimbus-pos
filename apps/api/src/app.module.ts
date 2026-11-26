@@ -12,6 +12,7 @@ import { MenuModule } from './modules/menu/menu.module';
 import { RecipesModule } from './modules/recipes/recipes.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { SeatingModule } from './modules/seating/seating.module';
 import { KdsModule } from './modules/kds/kds.module';
 import { DiscountsModule } from './modules/discounts/discounts.module';
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -71,6 +72,7 @@ import { HmsIntegrationModule } from './modules/hms-integration';
     RecipesModule,
     InventoryModule,
     OrdersModule,
+    SeatingModule,
     KdsModule,
     DiscountsModule,
     PaymentsModule,

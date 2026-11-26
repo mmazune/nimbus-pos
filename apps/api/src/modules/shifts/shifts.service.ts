@@ -113,6 +113,26 @@ export class ShiftsService {
       );
     }
 
+    // T2 phase 2 (E3): a shift does not end while its person still holds open tables; they
+    // are handed over to a colleague first (POST /api/handovers).
+    const openTables = await this.prisma.order.findMany({
+      where: {
+        branchId: ctx.branchId,
+        userId: shift.openedById,
+        tableId: { not: null },
+        status: { notIn: ['CLOSED', 'VOIDED'] },
+      },
+      select: { id: true, table: { select: { id: true, label: true } } },
+    });
+    if (openTables.length > 0) {
+      const tables = [...new Map(openTables.map((o) => [o.table!.id, o.table!])).values()];
+      throw new ConflictException({
+        code: 'OPEN_TABLES',
+        message: `Hand over your open tables first: ${tables.map((t) => t.label).join(', ')}.`,
+        tables,
+      });
+    }
+
     // Generate shift close summary
     const summary = await this.generateShiftCloseSummary(shift.id, userId, ctx);
 

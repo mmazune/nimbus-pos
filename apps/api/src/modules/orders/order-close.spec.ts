@@ -31,7 +31,15 @@ describe('closeOrderInTx', () => {
         findFirst: jest.fn().mockResolvedValue(orderRow),
         count: jest.fn().mockResolvedValue(0),
       },
-      table: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      table: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        // T2 phase 2: no table joined to this one, and it is not a tab
+        findMany: jest.fn().mockResolvedValue([]),
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValue({ isTab: false, isActive: true, label: 'T' }),
+        update: jest.fn(),
+      },
       reservation: {
         findFirst: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),

@@ -164,6 +164,41 @@ export async function releaseTableIfIdleInTx(
     where: { id: tableId, status: TableStatus.OCCUPIED },
     data: { status: TableStatus.AVAILABLE },
   });
+
+  // T2 phase 2: tables joined to this one are free again with it, unless they hold an order.
+  const joined = await tx.table.findMany({
+    where: { joinedToTableId: tableId },
+    select: { id: true },
+    orderBy: { id: 'asc' },
+  });
+  for (const j of joined) {
+    await tx.$queryRaw`SELECT "id" FROM "tables" WHERE "id" = ${j.id} FOR UPDATE`;
+    const openOnJoined = await tx.order.count({ where: { tableId: j.id, status: OPEN_FILTER } });
+    await tx.table.updateMany({
+      where: { id: j.id },
+      data: {
+        joinedToTableId: null,
+        ...(openOnJoined === 0 ? { status: TableStatus.AVAILABLE } : {}),
+      },
+    });
+  }
+
+  // T2 phase 2: a tab is put away once nothing is open on it (paid or voided). Its number is
+  // freed for the next tab; the row is kept, never deleted.
+  const table = await tx.table.findUniqueOrThrow({
+    where: { id: tableId },
+    select: { isTab: true, isActive: true, label: true },
+  });
+  if (table.isTab && table.isActive) {
+    await tx.table.update({
+      where: { id: tableId },
+      data: {
+        isActive: false,
+        putAwayAt: new Date(),
+        label: `${table.label} · ${tableId.slice(-8)}`,
+      },
+    });
+  }
   return freed.count > 0;
 }
 

@@ -373,6 +373,13 @@ export class PosHandoffService {
                     `OrderItem ${sel.orderItemId} not found on source order`,
                 );
             }
+            // T2 phase 2: a voided line stays where it is, on the record; it is never moved.
+            if (it.voidedAt) {
+                throw new ConflictException({
+                    code: 'ITEM_VOIDED',
+                    message: 'A voided line cannot be moved or split.',
+                });
+            }
             if (sel.quantity > it.quantity) {
                 throw new BadRequestException({
                     code: 'SPLIT_QUANTITY_EXCEEDS_SOURCE',
@@ -474,6 +481,7 @@ export class PosHandoffService {
                             // T2 phase 1 (E2): an offer line keeps its normal price when it moves
                             normalPrice: it.normalPrice ?? null,
                             offerBasePrice: it.offerBasePrice ?? null,
+                            guest: it.guest ?? null,
                             metadata: it.metadata
                                 ? (it.metadata as Prisma.InputJsonValue)
                                 : Prisma.JsonNull,
@@ -887,6 +895,13 @@ export class PosHandoffService {
                     `OrderItem ${sel.orderItemId} not found on source order`,
                 );
             }
+            // T2 phase 2: a voided line stays where it is, on the record; it is never moved.
+            if (it.voidedAt) {
+                throw new ConflictException({
+                    code: 'ITEM_VOIDED',
+                    message: 'A voided line cannot be moved or split.',
+                });
+            }
             if (sel.quantity > it.quantity) {
                 throw new BadRequestException({
                     code: 'MOVE_QUANTITY_EXCEEDS_SOURCE',
@@ -941,6 +956,7 @@ export class PosHandoffService {
                             // T2 phase 1 (E2): an offer line keeps its normal price when it moves
                             normalPrice: it.normalPrice ?? null,
                             offerBasePrice: it.offerBasePrice ?? null,
+                            guest: it.guest ?? null,
                             metadata: it.metadata
                                 ? (it.metadata as Prisma.InputJsonValue)
                                 : Prisma.JsonNull,

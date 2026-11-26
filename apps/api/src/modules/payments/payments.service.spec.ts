@@ -34,7 +34,15 @@ describe('PaymentsService', () => {
       orderItem: {
         findMany: jest.fn().mockResolvedValue([{ sentAt: new Date() }]),
       },
-      table: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      table: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        // T2 phase 2: no table joined to this one, and it is not a tab
+        findMany: jest.fn().mockResolvedValue([]),
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValue({ isTab: false, isActive: true, label: 'T' }),
+        update: jest.fn(),
+      },
       reservation: {
         findFirst: jest.fn().mockResolvedValue(null),
         // E1F (N1): the close door reads every SEATED reservation; delegate to findFirst

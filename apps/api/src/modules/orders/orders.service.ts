@@ -484,10 +484,8 @@ export class OrdersService {
 
   // ── Recalculate Order Totals ──
 
-  private async recalcOrderTotals(
-    orderId: string,
-    client?: Prisma.TransactionClient,
-  ): Promise<void> {
+  // T2 phase 2: public so the seating moves recompute totals the same way.
+  async recalcOrderTotals(orderId: string, client?: Prisma.TransactionClient): Promise<void> {
     const db = client ?? this.prisma;
     // E1 — a voided line stays on the order for the record but leaves the totals.
     const items = await db.orderItem.findMany({
@@ -591,6 +589,7 @@ export class OrdersService {
           subtotal: linePricing.subtotal,
           normalPrice: linePricing.normalPrice,
           offerBasePrice: linePricing.offerBasePrice,
+          guest: dto.guest ?? null,
           notes: dto.notes ?? null,
           metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
           costUnit: linePricing.costUnit,
@@ -1291,6 +1290,7 @@ export class OrdersService {
             subtotal: unit.mul(voidQty).toDecimalPlaces(2),
             normalPrice: item.normalPrice,
             offerBasePrice: item.offerBasePrice,
+            guest: item.guest,
             notes: item.notes,
             metadata: item.metadata ? (item.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
             costUnit: item.costUnit,
