@@ -1,0 +1,146 @@
+[
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Day",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Day-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Till",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Till-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Voids",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Voids-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Sales-By-Item",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Sales-By-Item-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Ticket-Times",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Ticket-Times-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Stock-On-Hand",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Stock-On-Hand-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Count-Differences",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Count-Differences-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Cost-Margin",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Report-Cost-Margin-Phone",
+  "size": "390x844"
+ }
+]

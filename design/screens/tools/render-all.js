@@ -20,14 +20,14 @@ const path = require('path'); const fs = require('fs');
         let filled = 0;
         for (const el of root.querySelectorAll('.filled')) if (vis(el) && !el.closest('[data-spec],[inert]')) filled++;
         out.filled = filled;
-        for (const el of root.querySelectorAll('button,a,.pill,.chip,.opt,.mbtn,.tbl .mid,.tbl .bot,.item b,.line .nm,th,td,h1,h2,p,span.who,span.amt')) {
+        for (const el of root.querySelectorAll('button,a,.pill,.chip,.opt,.mbtn,.tbl .mid,.tbl .bot,.item b,.line .nm,th,td,h1,h2,p,span.who,span.amt,.stat b,.big')) {
           if (!vis(el)) continue;
           if (el.scrollWidth > el.clientWidth + 1) out.issues.push('clip ' + el.className + ' "' + el.textContent.trim().slice(0, 30) + '"');
           const r = el.getBoundingClientRect();
           if (r.right > R.right + 1 || r.bottom > R.bottom + 1 || r.left < R.left - 1) out.issues.push('outside ' + el.tagName + '.' + el.className + ' "' + el.textContent.trim().slice(0, 30) + '" ' + Math.round(r.right) + ',' + Math.round(r.bottom));
         }
         // children wider than their parent box (text spilling out of a tile)
-        for (const el of root.querySelectorAll('.tbl,.item,.mrow,.opt,.btn,.chip,.pill,.mbtn,.seg button,.tk,.row,.line,.field')) {
+        for (const el of root.querySelectorAll('.tbl,.item,.mrow,.opt,.btn,.chip,.pill,.mbtn,.seg button,.tk,.row,.line,.field,.stat')) {
           const r = el.getBoundingClientRect();
           for (const c of el.querySelectorAll('*')) { const cr = c.getBoundingClientRect(); if (cr.width && (cr.right > r.right + 1 || cr.bottom > r.bottom + 1)) { out.issues.push('spill in ' + el.className.split(' ')[0] + ' "' + el.textContent.trim().slice(0, 28) + '"'); break; } }
         }

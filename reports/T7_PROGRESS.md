@@ -10,8 +10,9 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 | 4 Paying | drawn; 16 of 16 pass (lowest 21); pending Record made inactive until a reference is typed | see git log |
 | 5 Supervisor | drawn; 16 of 16 pass (lowest 20); counts and times made to agree after review | see git log |
 | 6 Kitchen and bar | drawn; 14 of 14 pass after re-review (lowest 21) | see git log |
-| 7 Stock | drawn; 9 of 14 passed review 1; 5 redrawn (sums, receive button, way back, words), re-review with group 8 | see git log |
-| 8 Manager on a laptop | drawn, measured, under review | see git log |
+| 7 Stock | drawn; 14 of 14 pass after re-review (lowest 20) | see git log |
+| 8 Manager on a laptop | drawn; 21 of 22 passed; Manager-Menu-List (18) redrawn, re-review with group 9 | see git log |
+| 9 Reports | drawn, measured, under review | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -33,10 +34,12 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 13. "We found more" stays on the take-out sheet: R21 lists it among the fixed reasons of that one action.
 14. Lamb chops sold out at 19:40 in every drawing (order screen, kitchen, manager, opening list).
 15. The manager's laptop top bar keeps the five words of the approved drawings (Floor, Menu, Stock, Staff, More); Today is the home behind the mark, and Approvals, Reports and Settings sit under More.
+16. Report tiles carry the currency in the label ("Sales, UGX") and the bare figure in the number, as in the approved `Manager-Waste-Report`; on a phone a report shows two tiles, not three, so seven-digit figures fit.
+17. The other 16 reports of `05-reports.md` follow the report layout drawn here (control panel with period chips and Download; four tiles; the rows in one table; a 420 px side panel; on a phone two tiles and rows). They get no drawing of their own.
 6. "as at 19:42" stays: the first 38 drawings use it on every count.
 
 ## Left out, and why
 (none yet)
 
 ## Next
-Group 9, reports.
+Group 10, owner and accountant.
