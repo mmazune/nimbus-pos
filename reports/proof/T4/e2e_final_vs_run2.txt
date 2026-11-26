@@ -1,0 +1,5 @@
+A 1174 pass 83 fail | B 1174 pass 86 fail
+failed in both: 83 | only A: 0 | only B: 3
+ONLY B: e1-review.probes.e2e-spec.ts › R-E1 probes (e2e) N2 two cash rows whose last is smaller than the change still settle (75,000 + 5,000 on 74,000) | in A: absent
+ONLY B: e1-review.probes.e2e-spec.ts › R-E1 probes (e2e) A1 a waiter cannot list the branch payslips (R14: no finance rights for frontline roles) | in A: absent
+ONLY B: e1-review.writers.e2e-spec.ts › R-E1 writers probe (static) S6 money arrives as a string decimal, never a JS number, on the payment DTOs | in A: absent

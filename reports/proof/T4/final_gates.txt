@@ -1,0 +1,13 @@
+Final gates on HEAD ba3099a, 2026-11-26T10:49:08Z
+API typecheck (tsc --noEmit) exit 0
+API build (nest build) exit 0
+Test Suites: 71 passed, 71 total
+Tests:       1309 passed, 1309 total
+eslint on T4's changed API files: 4 files
+✖ 2 problems (0 errors, 2 warnings)
+
+(eslint exit 0)
+demo-venue strict tsc exit 0 (no ESLint config covers packages/db)
+All matched files use Prettier code style!
+check:event green
+shell scripts: bash -n ok

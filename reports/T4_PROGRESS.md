@@ -4,7 +4,7 @@ Branch `t4/review-and-data`, cut from `origin/e1/order-truth` (`19e1eee`). Push 
 `git push -u origin t4/review-and-data` (the branch tracks `origin/e1/order-truth`; a bare push could hit it).
 
 ## Now
-- Phase 4 done: `docs/direction/10-people-and-access.md` and `rights-matrix.json` (314 keys, 67 changes ruled; all 36 ungranted keys ruled; R14: 15 Manager gaps and frontline payroll rights, probe A1 live). Next: final gates, `reports/T4_REPORT.md`, push.
+- All four phases done; report `reports/T4_REPORT.md`; final gates `reports/proof/T4/final_gates.txt`. Next: nothing (stop Redis and Postgres started by this session).
 
 ## Phases
 | phase | state | last commit |
