@@ -112,7 +112,7 @@ export function shortName(user: ApiUser | undefined): string | null {
   return last ? `${first} ${last.charAt(0)}.`.trim() : first;
 }
 
-const LEAVE_OUT = /^(leave out|without|no\b)/i;
+const LEAVE_OUT = /(^|\s)(leave out|without|no)\b/i;
 
 /** "Double · Cola", "Medium · No onions", then the note. */
 export function choicesText(line: Pick<OrderLineModel, "servingLabel" | "choices" | "note">): string {
@@ -322,4 +322,31 @@ export async function payAndClose(
     return c === null ? sum : (sum ?? 0) + c;
   }, null);
   return { changeMinor: toMinor(res.change ?? res.changeDue) ?? fromRows };
+}
+
+// ── Table actions (supervisor, manager) ──
+
+export type FreeTable = { id: string; label: string; seats: number | null };
+
+export async function listFreeTables(ctx: Ctx, exceptId: string): Promise<FreeTable[]> {
+  const rows = await apiRequest<Array<{ id: string; label?: string | null; capacity?: number | null; status?: string | null; isActive?: boolean | null }>>(
+    "/api/tables",
+    ctx,
+  );
+  return (rows ?? [])
+    .filter((t) => t.id !== exceptId && t.status === "AVAILABLE" && t.isActive !== false)
+    .map((t) => ({ id: t.id, label: (t.label ?? "").trim() || "Table", seats: t.capacity ?? null }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+}
+
+export async function moveToTable(ctx: Ctx, orderId: string, targetTableId: string): Promise<void> {
+  await apiRequest(`/api/pos/orders/${orderId}/transfer-table`, { ...ctx, method: "POST", body: { targetTableId } });
+}
+
+export async function askForDiscount(ctx: Ctx, orderId: string, percent: number, reason: string): Promise<void> {
+  await apiRequest(`/api/pos/orders/${orderId}/discounts`, { ...ctx, method: "POST", body: { type: "PERCENTAGE", value: percent, reason } });
+}
+
+export async function cancelOrder(ctx: Ctx, orderId: string, reason: string): Promise<void> {
+  await apiRequest(`/api/pos/orders/${orderId}/void`, { ...ctx, method: "POST", body: { reason } });
 }

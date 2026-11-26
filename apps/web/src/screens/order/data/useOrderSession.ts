@@ -261,15 +261,15 @@ export function useOrderSession(args: {
         setChosenId(orderId);
       }
       // Save each line not yet saved, one at a time; a saved line keeps its server id.
-      const pending = [...local];
+      // Lines added while this Send runs are not in `pending` and stay for the next Send.
+      const pending = local.filter((l) => !l.serverId);
+      const pendingKeys = new Set(pending.map((l) => l.key));
       for (const line of pending) {
-        if (line.serverId) continue;
         const saved = await addLine(ctx, orderId, line);
         setLocal((cur) => cur.map((l) => (l.key === line.key ? { ...l, serverId: saved.serverId } : l)));
-        line.serverId = saved.serverId;
       }
       await sendOrder(ctx, orderId);
-      setLocal([]);
+      setLocal((cur) => cur.filter((l) => !pendingKeys.has(l.key)));
       createdIdRef.current = null;
       await refresh();
       onChanged?.();
@@ -333,7 +333,7 @@ export function useOrderSession(args: {
     order,
     summary: chosen && !mayRead ? chosen : null,
     lines,
-    unsentCount: lines.filter((l) => l.state === "unsent").length,
+    unsentCount: lines.reduce((s, l) => (l.state === "unsent" ? s + l.quantity : s), 0),
     totalMinor: linesTotal(lines),
     count: chosen && !mayRead ? chosen.itemCount : itemCount(lines),
     busy,

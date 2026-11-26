@@ -12,12 +12,14 @@ export type OrderHeaderProps = {
   searchLabel: string;
   searchSize?: SearchSize;
   onSearch?: () => void;
+  /** Hide the menu search (another waiter's table, the payment view). */
+  hideSearch?: boolean;
   initials: string;
   personName: string;
 };
 
 /** The 60 px header on an open table: back, the table, its facts, search the menu, who is signed in. */
-export function OrderHeader({ backLabel, onBack, title, context, searchLabel, searchSize = "large", onSearch, initials, personName }: OrderHeaderProps) {
+export function OrderHeader({ backLabel, onBack, title, context, searchLabel, searchSize = "large", onSearch, hideSearch = false, initials, personName }: OrderHeaderProps) {
   return (
     <header className="flex h-kit-app-bar flex-none items-center gap-kit-20 bg-kit-primary px-kit-24 text-kit-on-primary font-kit">
       <button
@@ -37,7 +39,7 @@ export function OrderHeader({ backLabel, onBack, title, context, searchLabel, se
       <h1 className="m-kit-0 whitespace-nowrap text-kit-h">{title}</h1>
       {context ? <span className="whitespace-nowrap text-kit-sup text-kit-on-primary-muted">{context}</span> : null}
       <span className="min-w-0 flex-1" />
-      <BarSearch label={searchLabel} size={searchSize} onClick={onSearch} />
+      {hideSearch ? null : <BarSearch label={searchLabel} size={searchSize} onClick={onSearch} />}
       <span
         title={personName}
         aria-label={`Signed in: ${personName}`}

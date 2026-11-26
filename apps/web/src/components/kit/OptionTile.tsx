@@ -27,7 +27,7 @@ export function OptionTile({ label, second, icon, current = false, disabled, onC
       onClick={onClick}
       className={[
         "flex w-full min-w-0 items-center justify-center rounded-kit-seg px-kit-8 text-center font-kit",
-        icon || second ? "flex-col" : "whitespace-nowrap",
+        icon || second ? "flex-col" : "text-balance leading-tight",
         height,
         type,
         disabled

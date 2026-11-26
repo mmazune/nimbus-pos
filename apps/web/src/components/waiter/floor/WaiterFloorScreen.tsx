@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { OperationalFloor } from "@/components/floor/OperationalFloor";
 import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
 import { ErrorState } from "@/components/ui";
-import { WaiterTableWorkspace } from "@/components/waiter/floor/WaiterTableWorkspace";
+import { OrderScreen } from "@/screens/order/OrderScreen";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
@@ -14,7 +14,8 @@ import {
   type WaiterTableViewModel,
 } from "@/lib/waiter/floor-model";
 import { loadWaiterFloorData, type WaiterFloorData } from "@/lib/waiter/floor-api";
-import { loadWaiterMenuWorkspace, type WaiterOrderApi } from "@/lib/waiter/order-api";
+import { loadWaiterMenuWorkspace } from "@/lib/waiter/order-api";
+import { seatReservation } from "@/lib/waiter/reservation-api";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
 
 function getErrorCopy(error: unknown) {
@@ -108,7 +109,6 @@ export function WaiterFloorScreen() {
   useEffect(() => {
     setSelectionOverride(undefined);
   }, [routeTableId]);
-  const requestedOrderId = typeof router.query.orderId === "string" ? router.query.orderId : undefined;
   const selectedTable = useMemo(
     () => tables.find((table) => table.id === selectedTableId),
     [selectedTableId, tables],
@@ -116,11 +116,12 @@ export function WaiterFloorScreen() {
   const selectedAction = selectedTable
     ? getWaiterTableAction(selectedTable, shiftIsOpen)
     : null;
-  const opensOrderWorkspace = Boolean(
-    requestedOrderId ||
-      selectedAction?.intent === "start-order" ||
-      selectedAction?.intent === "own-order",
-  );
+  const seatable = useMemo(() => {
+    if (!selectedTable || selectedTable.activeOrderId) return null;
+    return (floorQuery.data?.reservations || []).find(
+      (r) => r.tableId === selectedTable.id && (r.status === "PENDING" || r.status === "CONFIRMED"),
+    ) ?? null;
+  }, [floorQuery.data?.reservations, selectedTable]);
 
   function handleSelectTable(table: WaiterTableViewModel) {
     if (typeof performance !== "undefined") {
@@ -163,34 +164,6 @@ export function WaiterFloorScreen() {
     void router.replace("/waiter/floor", undefined, { shallow: true, scroll: false });
   }
 
-  function handleOpenOrder(tableId: string, orderId: string, order?: WaiterOrderApi) {
-    setSelectionOverride(tableId);
-    if (order && branchId) {
-      queryClient.setQueryData<WaiterFloorData>(["waiter", "floor", branchId], (current) => {
-        if (!current) return current;
-        const activeOrder: WaiterOrderApi = {
-          ...order,
-          id: orderId,
-          tableId,
-          userId: order.userId || user?.id,
-          table: order.table || { id: tableId },
-        };
-        return {
-          ...current,
-          activeOrders: [
-            activeOrder,
-            ...current.activeOrders.filter((entry) => entry.id !== orderId && entry.tableId !== tableId),
-          ],
-        };
-      });
-    }
-    void router.replace(
-      { pathname: "/waiter/floor", query: { tableId, orderId } },
-      undefined,
-      { shallow: true, scroll: false },
-    );
-  }
-
   const errorCopy = floorQuery.isError ? getErrorCopy(floorQuery.error) : null;
 
   return (
@@ -207,16 +180,39 @@ export function WaiterFloorScreen() {
         onRetry={() => void floorQuery.refetch()}
       />
 
-      {selectedAction ? (
-        <OperationalTableWorkspaceFrame immersive={opensOrderWorkspace} onClose={handleCloseWorkspace}>
-          <WaiterTableWorkspace
-            action={selectedAction}
-            requestedOrderId={requestedOrderId}
-            shiftIsOpen={shiftIsOpen}
-            onClose={handleCloseWorkspace}
-            onOpenOrder={handleOpenOrder}
-          />
-        </OperationalTableWorkspaceFrame>
+      {selectedAction && selectedTable ? (
+        <OrderScreen
+          key={selectedTable.id}
+          role="waiter"
+          tableId={selectedTable.id}
+          tableLabel={selectedTable.label}
+          seats={selectedTable.capacity}
+          onClose={handleCloseWorkspace}
+          onChanged={() => void queryClient.invalidateQueries({ queryKey: ["waiter", "floor", branchId] })}
+          orderingBlocked={
+            shiftIsOpen ? null : { title: "Shift not started", detail: "Start your shift under Me before taking orders." }
+          }
+          reservation={
+            seatable
+              ? {
+                  title: `Booked${seatable.reservationAt ? ` for ${new Date(seatable.reservationAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Kampala" })}` : ""}`,
+                  detail: [seatable.customerName, seatable.partySize ? `${seatable.partySize} guests` : null]
+                    .filter(Boolean)
+                    .join(" · "),
+                  onSeat: async () => {
+                    if (!accessToken || !branchId) return false;
+                    try {
+                      await seatReservation(accessToken, branchId, seatable.id, { tableId: selectedTable.id, createOrder: true });
+                      await queryClient.invalidateQueries({ queryKey: ["waiter", "floor", branchId] });
+                      return true;
+                    } catch {
+                      return false;
+                    }
+                  },
+                }
+              : null
+          }
+        />
       ) : null}
 
       {selectedTableId && !floorQuery.isLoading && !selectedTable && !floorQuery.isError ? (

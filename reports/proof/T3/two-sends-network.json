@@ -1,0 +1,180 @@
+{
+  "table": "14",
+  "calls": [
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tables",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/reservations?pageSize=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/navigation?activeOnly=true",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/shifts/active",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/catalog",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders?tableId=cmwxe4vua00keaev4jefrrbbs&excludeStatus=CLOSED,VOIDED&pageSize=20",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/navigation?activeOnly=true",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/catalog",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/items/cmwxe2fpy005oaev42uglk0p6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/items/cmwxe2frb0060aev4nj4p0ejr",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/items/cmwxe2fql005uaev41ph9uos9",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/items",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/items",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/items",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/send",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders?tableId=cmwxe4vua00keaev4jefrrbbs&excludeStatus=CLOSED,VOIDED&pageSize=20",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tables",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/reservations?pageSize=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/items/cmwxe2fnf0056aev4lw6az11w",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/items/cmwxe2fo9005caev4g408ssal",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/items/cmwxe2fp8005iaev4f4ckvfjy",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/items",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/items",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/items",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7/send",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders?tableId=cmwxe4vua00keaev4jefrrbbs&excludeStatus=CLOSED,VOIDED&pageSize=20",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders/cmwxe9jrl0163aev42d0aeay7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tables",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/reservations?pageSize=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "status": 200
+    }
+  ]
+}

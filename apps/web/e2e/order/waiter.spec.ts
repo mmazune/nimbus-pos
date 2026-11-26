@@ -1,0 +1,141 @@
+/**
+ * T3 phases 2 and 3: the order screen for a waiter on a 1280 × 800 terminal.
+ * Done-when 2 (a free table tapped and left saves nothing), 3 (the second Send
+ * sends only the new lines) and 4 (search by three letters and by initials,
+ * quantity first, "Same again").
+ */
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+
+import { expect, test, type Page } from "@playwright/test";
+
+import { api, expectRule10, freeTable, measurePage, ordersOnTable, pinToken, recordNetwork, setupVenue, signInWithPin } from "./fixture";
+
+const PROOF = join(__dirname, "../../../../reports/proof/T3");
+mkdirSync(PROOF, { recursive: true });
+
+test.use({ viewport: { width: 1280, height: 800 } });
+
+async function openTable(page: Page, tableId: string) {
+  await page.locator(`[data-operational-table-id="${tableId}"]`).first().click();
+  await expect(page.locator("[data-order-screen]")).toBeVisible();
+  await expect(page.locator("[data-order-menu]")).toBeVisible();
+}
+
+test("a free table tapped and left creates nothing on the server", async ({ page }) => {
+  const v = await setupVenue();
+  const table = await freeTable(v.managerToken);
+  const ordersBefore = (await ordersOnTable(v.managerToken, table.id)).length;
+  await signInWithPin(page, v.people.waiter.pin, /\/waiter\/floor/);
+  const net = recordNetwork(page);
+  await openTable(page, table.id);
+  await expect(page.getByText("Nothing on this table yet")).toBeVisible();
+  await page.screenshot({ path: join(PROOF, "built-Order-Empty-1280x800.png") });
+  expectRule10(await measurePage(page), "Order-Empty 1280");
+  await page.getByRole("button", { name: "Floor" }).click();
+  await expect(page.locator("[data-order-screen]")).toHaveCount(0);
+  await page.waitForTimeout(500);
+  const writes = net.filter((e) => e.method !== "GET");
+  writeFileSync(join(PROOF, "free-table-network.json"), JSON.stringify({ table: table.label, calls: net, writes }, null, 2));
+  expect(writes).toEqual([]);
+  expect((await ordersOnTable(v.managerToken, table.id)).length).toBe(ordersBefore);
+});
+
+test("waiter sends food, adds drinks, and the second Send sends only the new lines", async ({ page }) => {
+  const v = await setupVenue();
+  const table = await freeTable(v.managerToken);
+  await signInWithPin(page, v.people.waiter.pin, /\/waiter\/floor/);
+  const net = recordNetwork(page);
+  await openTable(page, table.id);
+
+  // Food: a burger with choices, two chips (quantity first), wings.
+  await page.getByRole("button", { name: "Grills", exact: true }).click();
+  await page.getByRole("button", { name: /^Beef burger,/ }).click();
+  const sheet = page.locator("[data-order-item-sheet]");
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole("button", { name: "Medium", exact: true }).click();
+  await sheet.getByRole("button", { name: "Onions", exact: true }).click();
+  await page.getByRole("button", { name: "Add · UGX 28,000" }).click();
+  await page.getByRole("button", { name: "Sides", exact: true }).click();
+  await page.locator("[data-order-qty]").getByRole("button", { name: "2", exact: true }).click();
+  await page.getByRole("button", { name: /^Chips,/ }).click();
+  await page.getByRole("button", { name: "Grills", exact: true }).click();
+  await page.getByRole("button", { name: /^Chicken wings,/ }).click();
+
+  const panel = page.locator("[data-order-panel]");
+  await expect(panel.getByRole("button", { name: /2 Chips/ })).toBeVisible();
+  await expect(panel.locator("[data-order-total]")).toHaveText("UGX 68,000");
+  expect(net.filter((e) => e.method !== "GET")).toEqual([]); // still nothing saved before Send
+
+  await panel.getByRole("button", { name: "Send 4 items" }).click();
+  await expect(panel.locator("[data-order-round]")).toHaveCount(1);
+  const creates = net.filter((e) => e.method === "POST" && e.path === "/api/pos/orders");
+  expect(creates).toHaveLength(1);
+
+  // Drinks: Popular → lager ×2, Whisky → Double + Cola, Soft drinks → cola.
+  await page.getByRole("tab", { name: "Drinks" }).click();
+  await page.getByRole("button", { name: "Popular", exact: true }).click();
+  await page.locator("[data-order-qty]").getByRole("button", { name: "2", exact: true }).click();
+  await page.getByRole("button", { name: /^Lager 500 ml,/ }).click();
+  await page.getByRole("button", { name: "Whisky", exact: true }).click();
+  await page.getByRole("button", { name: "Blended Scotch, Double, 15,000" }).click();
+  await page.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }).click();
+  await expect(panel.getByRole("button", { name: /Blended Scotch, Double · Cola/ })).toBeVisible();
+  // Search: three letters, then initials.
+  await page.getByRole("button", { name: "Search the whole menu" }).click();
+  await page.getByLabel("Search the whole menu").fill("col");
+  await expect(page.locator("[data-order-search]").getByRole("button", { name: /^Cola 300 ml,/ })).toBeVisible();
+  await page.getByLabel("Search the whole menu").fill("bs");
+  await expect(page.locator("[data-order-search]").getByRole("button", { name: /Blended Scotch, Tot/ })).toBeVisible();
+  await page.getByLabel("Search the whole menu").fill("col");
+  await page.locator("[data-order-search]").getByRole("button", { name: /^Cola 300 ml,/ }).click();
+  await page.getByRole("button", { name: "Back to the menu" }).click();
+  await page.getByRole("button", { name: "Whisky", exact: true }).click();
+  await page.screenshot({ path: join(PROOF, "built-Order-Terminal-1280x800.png") });
+  expectRule10(await measurePage(page), "Order-Terminal 1280");
+
+  await expect(panel.locator("[data-order-total]")).toHaveText("UGX 98,000");
+  const before = net.length;
+  await panel.getByRole("button", { name: "Send 4 items" }).click();
+  await expect(panel.locator("[data-order-round]")).toHaveCount(2);
+  await expect(panel.locator("[data-order-total]")).toHaveText("UGX 98,000");
+
+  const second = net.slice(before);
+  expect(second.filter((e) => e.method === "POST" && e.path === "/api/pos/orders")).toEqual([]);
+  expect(second.filter((e) => e.method === "POST" && /\/items$/.test(e.path))).toHaveLength(3);
+  expect(second.filter((e) => e.method === "POST" && /\/send$/.test(e.path))).toHaveLength(1);
+
+  const order = (await ordersOnTable(v.managerToken, table.id)).find((o) => !["CLOSED", "VOIDED"].includes(o.status));
+  if (!order) throw new Error("the order was not found after the first Send");
+  const detail = (await api(v.managerToken, "GET", `/api/pos/orders/${order.id}`)).json;
+  const rounds = new Set(detail.items.map((i: { sentAt: string }) => i.sentAt));
+  expect(rounds.size).toBe(2);
+  expect(detail.total).toBe("98000");
+
+  // "Same again" re-adds the drinks of the last round, not sent.
+  await panel.getByRole("button", { name: "Same again" }).click();
+  await expect(panel.locator("[data-order-unsent]")).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Send 4 items" })).toBeVisible();
+  await expect(panel.locator("[data-order-total]")).toHaveText("UGX 128,000");
+  // Tap an unsent line: change how many, then remove another.
+  await panel.locator("[data-order-unsent]").getByRole("button", { name: /^2 Lager 500 ml/ }).click();
+  await page.locator("[data-order-item-sheet]").waitFor();
+  await page.getByRole("button", { name: "Fewer items" }).click();
+  await page.getByRole("button", { name: "Save · UGX 6,000" }).click();
+  await expect(panel.locator("[data-order-unsent]").getByRole("button", { name: /^1 Lager 500 ml/ })).toBeVisible();
+  await panel.locator("[data-order-unsent]").getByRole("button", { name: /^1 Cola 300 ml/ }).click();
+  await page.getByRole("button", { name: "Remove", exact: true }).click();
+  await expect(panel.locator("[data-order-unsent]").getByRole("button", { name: /Cola 300 ml/ })).toHaveCount(0);
+  await expect(panel.locator("[data-order-total]")).toHaveText("UGX 119,000");
+  // Leave it unsent: the leave guard asks; leave without sending.
+  await page.getByRole("button", { name: "Floor" }).click();
+  await page.getByRole("button", { name: "Leave without sending" }).click();
+  await expect(page.locator("[data-order-screen]")).toHaveCount(0);
+  const after = (await api(v.managerToken, "GET", `/api/pos/orders/${order.id}`)).json;
+  expect(after.items).toHaveLength(detail.items.length);
+
+  writeFileSync(join(PROOF, "two-sends-network.json"), JSON.stringify({ table: table.label, calls: net }, null, 2));
+  // Close this table's order so the next run starts on a clean floor.
+  const cashierToken = await pinToken(v.people.cashier.pin);
+  await api(cashierToken, "POST", `/api/pos/orders/${order.id}/close`, { payments: [{ method: "CASH", amount: 98000 }] });
+});
