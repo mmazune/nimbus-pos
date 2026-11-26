@@ -1,78 +1,87 @@
 == run 1
-[1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
-[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
-[3/24] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
-[4/24] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
-[5/24] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
-[6/24] [vp-1440x900] › e2e/t1/floor.spec.ts:123:5 › waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits
-[7/24] [vp-1440x900] › e2e/t1/floor.spec.ts:151:5 › tapping a table opens what it opened before, for each role
-[8/24] [vp-1440x900] › e2e/t1/floor.spec.ts:173:5 › cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search sheet open
-[9/24] [vp-1440x900] › e2e/t1/me.spec.ts:33:5 › waiter: a real order opened, sent and paid moves My day (1280 × 800)
-[10/24] [vp-1440x900] › e2e/t1/me.spec.ts:63:5 › waiter asks for leave, clocks in, and End my shift asks first (1280 × 800)
-[11/24] [vp-1440x900] › e2e/t1/me.spec.ts:98:5 › cashier and supervisor Me, and all three at 390 × 844
-[12/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:43:5 › cashier finds today's paid bill, opens it and asks for refunds (1280 × 800)
-[13/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:96:5 › cashier drops cash to the safe, counts and closes the till, and opens a new one (1280 × 800)
-[14/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:163:5 › Receipts and Till at 390 × 844, each sheet open
-[15/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:42:5 › waiter seats a late booking at another free table (1280 × 800)
-[16/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:104:5 › supervisor creates, confirms, moves, completes and cancels bookings (1280 × 800)
-[17/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:178:5 › both roles at 390 × 844 and the supervisor History
-[18/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:193:5 › at 390 × 844: the waiter seats from the booking sheet; the supervisor creates and cancels
-[19/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 1280 × 800: no developer wording on any section
-[20/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 1280 × 800: no developer wording on any section
-[21/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 1280 × 800: no developer wording on any section
-[22/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
-[23/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
-[24/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
-  24 passed (1.2m)
+[1/27] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
+[2/27] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
+[3/27] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
+[4/27] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
+[5/27] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
+[6/27] [vp-1440x900] › e2e/t1/floor.spec.ts:123:5 › waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits
+[7/27] [vp-1440x900] › e2e/t1/floor.spec.ts:151:5 › tapping a table opens what it opened before, for each role
+[8/27] [vp-1440x900] › e2e/t1/floor.spec.ts:173:5 › cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search sheet open
+[9/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:35:5 › 1. the header shows the station's name when the station has one (1280 × 800)
+[10/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:45:5 › 2. closing a till takes no supervisor sign-off
+[11/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:52:5 › 3. a small refund is paid at once and the cashier cannot read the limit
+[12/27] [vp-1440x900] › e2e/t1/me.spec.ts:33:5 › waiter: a real order opened, sent and paid moves My day (1280 × 800)
+[13/27] [vp-1440x900] › e2e/t1/me.spec.ts:63:5 › waiter asks for leave, clocks in, and End my shift asks first (1280 × 800)
+[14/27] [vp-1440x900] › e2e/t1/me.spec.ts:98:5 › cashier and supervisor Me, and all three at 390 × 844
+[15/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:43:5 › cashier finds today's paid bill, opens it and asks for refunds (1280 × 800)
+[16/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:96:5 › cashier drops cash to the safe, counts and closes the till, and opens a new one (1280 × 800)
+[17/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:163:5 › Receipts and Till at 390 × 844, each sheet open
+[18/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:42:5 › waiter seats a late booking at another free table (1280 × 800)
+[19/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:104:5 › supervisor creates, confirms, moves, completes and cancels bookings (1280 × 800)
+[20/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:178:5 › both roles at 390 × 844 and the supervisor History
+[21/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:193:5 › at 390 × 844: the waiter seats from the booking sheet; the supervisor creates and cancels
+[22/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 1280 × 800: no developer wording on any section
+[23/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 1280 × 800: no developer wording on any section
+[24/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 1280 × 800: no developer wording on any section
+[25/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
+[26/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
+[27/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
+  27 passed (1.3m)
 == run 2
-[1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
-[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
-[3/24] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
-[4/24] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
-[5/24] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
-[6/24] [vp-1440x900] › e2e/t1/floor.spec.ts:123:5 › waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits
-[7/24] [vp-1440x900] › e2e/t1/floor.spec.ts:151:5 › tapping a table opens what it opened before, for each role
-[8/24] [vp-1440x900] › e2e/t1/floor.spec.ts:173:5 › cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search sheet open
-[9/24] [vp-1440x900] › e2e/t1/me.spec.ts:33:5 › waiter: a real order opened, sent and paid moves My day (1280 × 800)
-[10/24] [vp-1440x900] › e2e/t1/me.spec.ts:63:5 › waiter asks for leave, clocks in, and End my shift asks first (1280 × 800)
-[11/24] [vp-1440x900] › e2e/t1/me.spec.ts:98:5 › cashier and supervisor Me, and all three at 390 × 844
-[12/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:43:5 › cashier finds today's paid bill, opens it and asks for refunds (1280 × 800)
-[13/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:96:5 › cashier drops cash to the safe, counts and closes the till, and opens a new one (1280 × 800)
-[14/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:163:5 › Receipts and Till at 390 × 844, each sheet open
-[15/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:42:5 › waiter seats a late booking at another free table (1280 × 800)
-[16/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:104:5 › supervisor creates, confirms, moves, completes and cancels bookings (1280 × 800)
-[17/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:178:5 › both roles at 390 × 844 and the supervisor History
-[18/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:193:5 › at 390 × 844: the waiter seats from the booking sheet; the supervisor creates and cancels
-[19/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 1280 × 800: no developer wording on any section
-[20/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 1280 × 800: no developer wording on any section
-[21/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 1280 × 800: no developer wording on any section
-[22/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
-[23/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
-[24/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
-  24 passed (1.2m)
+[1/27] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
+[2/27] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
+[3/27] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
+[4/27] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
+[5/27] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
+[6/27] [vp-1440x900] › e2e/t1/floor.spec.ts:123:5 › waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits
+[7/27] [vp-1440x900] › e2e/t1/floor.spec.ts:151:5 › tapping a table opens what it opened before, for each role
+[8/27] [vp-1440x900] › e2e/t1/floor.spec.ts:173:5 › cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search sheet open
+[9/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:35:5 › 1. the header shows the station's name when the station has one (1280 × 800)
+[10/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:45:5 › 2. closing a till takes no supervisor sign-off
+[11/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:52:5 › 3. a small refund is paid at once and the cashier cannot read the limit
+[12/27] [vp-1440x900] › e2e/t1/me.spec.ts:33:5 › waiter: a real order opened, sent and paid moves My day (1280 × 800)
+[13/27] [vp-1440x900] › e2e/t1/me.spec.ts:63:5 › waiter asks for leave, clocks in, and End my shift asks first (1280 × 800)
+[14/27] [vp-1440x900] › e2e/t1/me.spec.ts:98:5 › cashier and supervisor Me, and all three at 390 × 844
+[15/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:43:5 › cashier finds today's paid bill, opens it and asks for refunds (1280 × 800)
+[16/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:96:5 › cashier drops cash to the safe, counts and closes the till, and opens a new one (1280 × 800)
+[17/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:163:5 › Receipts and Till at 390 × 844, each sheet open
+[18/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:42:5 › waiter seats a late booking at another free table (1280 × 800)
+[19/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:104:5 › supervisor creates, confirms, moves, completes and cancels bookings (1280 × 800)
+[20/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:178:5 › both roles at 390 × 844 and the supervisor History
+[21/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:193:5 › at 390 × 844: the waiter seats from the booking sheet; the supervisor creates and cancels
+[22/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 1280 × 800: no developer wording on any section
+[23/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 1280 × 800: no developer wording on any section
+[24/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 1280 × 800: no developer wording on any section
+[25/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
+[26/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
+[27/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
+  27 passed (1.2m)
 == run 3
-[1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
-[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
-[3/24] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
-[4/24] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
-[5/24] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
-[6/24] [vp-1440x900] › e2e/t1/floor.spec.ts:123:5 › waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits
-[7/24] [vp-1440x900] › e2e/t1/floor.spec.ts:151:5 › tapping a table opens what it opened before, for each role
-[8/24] [vp-1440x900] › e2e/t1/floor.spec.ts:173:5 › cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search sheet open
-[9/24] [vp-1440x900] › e2e/t1/me.spec.ts:33:5 › waiter: a real order opened, sent and paid moves My day (1280 × 800)
-[10/24] [vp-1440x900] › e2e/t1/me.spec.ts:63:5 › waiter asks for leave, clocks in, and End my shift asks first (1280 × 800)
-[11/24] [vp-1440x900] › e2e/t1/me.spec.ts:98:5 › cashier and supervisor Me, and all three at 390 × 844
-[12/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:43:5 › cashier finds today's paid bill, opens it and asks for refunds (1280 × 800)
-[13/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:96:5 › cashier drops cash to the safe, counts and closes the till, and opens a new one (1280 × 800)
-[14/24] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:163:5 › Receipts and Till at 390 × 844, each sheet open
-[15/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:42:5 › waiter seats a late booking at another free table (1280 × 800)
-[16/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:104:5 › supervisor creates, confirms, moves, completes and cancels bookings (1280 × 800)
-[17/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:178:5 › both roles at 390 × 844 and the supervisor History
-[18/24] [vp-1440x900] › e2e/t1/reservations.spec.ts:193:5 › at 390 × 844: the waiter seats from the booking sheet; the supervisor creates and cancels
-[19/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 1280 × 800: no developer wording on any section
-[20/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 1280 × 800: no developer wording on any section
-[21/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 1280 × 800: no developer wording on any section
-[22/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
-[23/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
-[24/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
-  24 passed (1.3m)
+[1/27] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
+[2/27] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
+[3/27] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
+[4/27] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
+[5/27] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
+[6/27] [vp-1440x900] › e2e/t1/floor.spec.ts:123:5 › waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits
+[7/27] [vp-1440x900] › e2e/t1/floor.spec.ts:151:5 › tapping a table opens what it opened before, for each role
+[8/27] [vp-1440x900] › e2e/t1/floor.spec.ts:173:5 › cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search sheet open
+[9/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:35:5 › 1. the header shows the station's name when the station has one (1280 × 800)
+[10/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:45:5 › 2. closing a till takes no supervisor sign-off
+[11/27] [vp-1440x900] › e2e/t1/left-out.spec.ts:52:5 › 3. a small refund is paid at once and the cashier cannot read the limit
+[12/27] [vp-1440x900] › e2e/t1/me.spec.ts:33:5 › waiter: a real order opened, sent and paid moves My day (1280 × 800)
+[13/27] [vp-1440x900] › e2e/t1/me.spec.ts:63:5 › waiter asks for leave, clocks in, and End my shift asks first (1280 × 800)
+[14/27] [vp-1440x900] › e2e/t1/me.spec.ts:98:5 › cashier and supervisor Me, and all three at 390 × 844
+[15/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:43:5 › cashier finds today's paid bill, opens it and asks for refunds (1280 × 800)
+[16/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:96:5 › cashier drops cash to the safe, counts and closes the till, and opens a new one (1280 × 800)
+[17/27] [vp-1440x900] › e2e/t1/receipts-till.spec.ts:163:5 › Receipts and Till at 390 × 844, each sheet open
+[18/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:42:5 › waiter seats a late booking at another free table (1280 × 800)
+[19/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:104:5 › supervisor creates, confirms, moves, completes and cancels bookings (1280 × 800)
+[20/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:178:5 › both roles at 390 × 844 and the supervisor History
+[21/27] [vp-1440x900] › e2e/t1/reservations.spec.ts:193:5 › at 390 × 844: the waiter seats from the booking sheet; the supervisor creates and cancels
+[22/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 1280 × 800: no developer wording on any section
+[23/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 1280 × 800: no developer wording on any section
+[24/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 1280 × 800: no developer wording on any section
+[25/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
+[26/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
+[27/27] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
+  27 passed (1.2m)
