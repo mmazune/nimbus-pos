@@ -35,8 +35,13 @@ export async function bootWorld(): Promise<T2World> {
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
   await app.init();
+  // Listen once on a real port: supertest given a non-listening server starts one per
+  // request, and thirty requests at once then reset each other (ECONNRESET).
+  await app.listen(0, '127.0.0.1');
+  const address = app.getHttpServer().address() as { port: number };
+  const baseUrl = `http://127.0.0.1:${address.port}`;
   const prisma = app.get(PrismaService);
-  const http = () => request(app.getHttpServer()) as unknown as request.SuperTest<request.Test>;
+  const http = () => request(baseUrl) as unknown as request.SuperTest<request.Test>;
 
   const tokens = {} as Record<keyof typeof DEMO | 'cashier', string>;
   for (const [k, [email, password]] of Object.entries(DEMO)) {
