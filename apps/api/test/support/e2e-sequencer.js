@@ -50,7 +50,9 @@ class E2eSequencer {
 
   sort(tests) {
     const order = process.env.E2E_ORDER
-      ? process.env.E2E_ORDER.split(',').map((s) => s.trim()).filter(Boolean)
+      ? process.env.E2E_ORDER.split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
       : null;
     const r = (p) => (order ? rank(p, order) : defaultRank(p));
     return [...tests].sort((a, b) => {
