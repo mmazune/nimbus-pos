@@ -189,7 +189,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
       <Sheet placement={placement} title="Void an item" summary="Tap the line to void." onClose={onClose} footer={<>{back}</>}>
         <div className="flex flex-col" data-order-void-pick>
           {sentLines.map((l) => (
-            <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="sent" onClick={() => onVoidItem(l)} />
+            <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="sent" onClick={() => onVoidItem(l)} />
           ))}
         </div>
         {sentLines.length === 0 ? <Text variant="sup" tone="muted">Nothing has been sent on this table.</Text> : null}

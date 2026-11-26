@@ -112,10 +112,10 @@ async function ensureMenu(token: string) {
     }
     return g as Json;
   };
-  const cooked = await mg(`${FIX} How cooked`, { min: 1, max: 1, required: true, sortOrder: 1 }, [["Rare"], ["Medium"], ["Well done"]]);
-  const extras = await mg(`${FIX} Extras`, { min: 0, max: 3, required: false, sortOrder: 2 }, [["Cheese", "3000"], ["Bacon", "5000"]]);
-  const leave = await mg(`${FIX} Leave out`, { min: 0, max: 3, required: false, sortOrder: 3 }, [["Onions"], ["Tomato"], ["Sauce"]]);
-  const mixer = await mg(`${FIX} Mixer`, { min: 0, max: 1, required: false, sortOrder: 1 }, [["Cola"], ["Soda water"], ["Tonic"], ["Ginger ale"], ["Water"], ["Ice only"]]);
+  const cooked = await mg("How cooked", { min: 1, max: 1, required: true, sortOrder: 1 }, [["Rare"], ["Medium"], ["Well done"]]);
+  const extras = await mg("Extras", { min: 0, max: 3, required: false, sortOrder: 2 }, [["Cheese", "3000"], ["Bacon", "5000"]]);
+  const leave = await mg("Leave out", { min: 0, max: 3, required: false, sortOrder: 3 }, [["Onions"], ["Tomato"], ["Sauce"]]);
+  const mixer = await mg("Mixer", { min: 0, max: 1, required: false, sortOrder: 1 }, [["Cola"], ["Soda water"], ["Tonic"], ["Ginger ale"], ["Water"], ["Ice only"]]);
   await must(token, "POST", `/api/menu/items/${burger.id}/modifier-groups`, { groups: [{ groupId: cooked.id, sortOrder: 1 }, { groupId: extras.id, sortOrder: 2 }, { groupId: leave.id, sortOrder: 3 }] });
   await must(token, "POST", `/api/menu/items/${scotch.id}/modifier-groups`, { groups: [{ groupId: mixer.id, sortOrder: 1 }] });
 
@@ -309,7 +309,9 @@ export async function measurePage(page: Page) {
       const s = getComputedStyle(el);
       return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none";
     };
-    const scope = document.querySelector("[data-order-screen]") ?? document.body;
+    // With a sheet open, what counts is the sheet: the page under its scrim cannot be touched.
+    const dialogs = document.querySelectorAll("[role=dialog]");
+    const scope = dialogs.length ? dialogs[dialogs.length - 1] : document.querySelector("[data-order-screen]") ?? document.body;
     for (const el of scope.querySelectorAll("button, a, input, [role=tab]")) {
       if (!visible(el)) continue;
       const r = el.getBoundingClientRect();

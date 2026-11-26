@@ -8,12 +8,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/tables",
+      "path": "/api/shifts/active",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/shifts/active",
+      "path": "/api/tables",
       "status": 200
     },
     {
@@ -28,12 +28,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/menu/catalog",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "path": "/api/menu/catalog",
       "status": 200
     },
     {

@@ -10,6 +10,8 @@ export type OrderLineProps = {
   /** Grouped shillings. */
   price: string;
   state: OrderLineState;
+  /** Inside a sheet: no side padding, so the line lines up with the sheet's own edge. */
+  flush?: boolean;
   onClick?: () => void;
   demo?: KitDemo;
 };
@@ -17,7 +19,7 @@ export type OrderLineProps = {
 const WORD: Record<OrderLineState, string> = { notSent: "not sent", sent: "sent", voided: "voided" };
 
 /** One line of an order: not sent, sent (quieter), voided (struck through, never deleted — R6). */
-export function OrderLine({ quantity, name, choices, price, state, onClick, demo }: OrderLineProps) {
+export function OrderLine({ quantity, name, choices, price, state, flush = false, onClick, demo }: OrderLineProps) {
   const sentish = state !== "notSent";
   return (
     <button
@@ -25,7 +27,8 @@ export function OrderLine({ quantity, name, choices, price, state, onClick, demo
       onClick={onClick}
       aria-label={[`${quantity} ${name}`, choices, price, WORD[state]].filter(Boolean).join(", ")}
       className={[
-        "flex min-h-kit-line w-full items-start gap-kit-10 px-kit-16 py-kit-10 text-left font-kit",
+        "flex min-h-kit-line w-full items-start gap-kit-10 py-kit-10 text-left font-kit",
+        flush ? "px-kit-0" : "px-kit-16",
         demo === "pressed" ? "bg-kit-canvas" : "active:bg-kit-canvas",
         FOCUS,
         focusLook(demo),

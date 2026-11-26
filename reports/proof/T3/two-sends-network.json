@@ -13,12 +13,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/tables",
+      "path": "/api/menu/navigation?activeOnly=true",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/menu/navigation?activeOnly=true",
+      "path": "/api/tables",
       "status": 200
     },
     {
@@ -38,12 +38,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?tableId=cmwxe4vua00keaev4jefrrbbs&excludeStatus=CLOSED,VOIDED&pageSize=20",
+      "path": "/api/menu/navigation?activeOnly=true",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/menu/navigation?activeOnly=true",
+      "path": "/api/pos/orders?tableId=cmwxe4vua00keaev4jefrrbbs&excludeStatus=CLOSED,VOIDED&pageSize=20",
       "status": 200
     },
     {
@@ -73,22 +73,22 @@
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/items",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/items",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/items",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/send",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/send",
       "status": 200
     },
     {
@@ -108,12 +108,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
       "status": 200
     },
     {
@@ -133,22 +133,22 @@
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/items",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/items",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/items",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u/send",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1/send",
       "status": 200
     },
     {
@@ -158,7 +158,7 @@
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders/cmwxev64502poaev4gjq02m3u",
+      "path": "/api/pos/orders/cmwxeyted0397aev4yjlp14v1",
       "status": 200
     },
     {
@@ -168,12 +168,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/reservations?pageSize=200",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "path": "/api/reservations?pageSize=200",
       "status": 200
     }
   ]

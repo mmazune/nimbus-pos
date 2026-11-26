@@ -48,8 +48,6 @@ type Props = {
   notices: ReactNode;
 };
 
-const GROUPS_SHOWN = 7;
-
 function Items({ items, onPick }: { items: MenuItem[]; onPick: Props["onPick"] }) {
   const measured = items.filter((i) => i.servings.length > 1);
   const single = items.filter((i) => i.servings.length <= 1);
@@ -89,10 +87,14 @@ export function PhoneOrderScreen(p: Props) {
   const section = menu?.sections.find((s) => s.key === nav?.sectionKey) ?? menu?.sections[0];
   const group = section?.groups.find((g) => g.id === nav?.groupId) ?? section?.groups[0];
   const groups = section?.groups ?? [];
-  const shown = groups.length > GROUPS_SHOWN + 1 ? groups.slice(0, GROUPS_SHOWN) : groups;
-  const hidden = groups.length - shown.length;
   // The group in use stays visible: it takes the last shown place when it is one of the hidden ones.
-  const visible = group && !shown.some((g) => g.id === group.id) ? [...shown.slice(0, GROUPS_SHOWN - 1), group] : shown;
+  // Four across as drawn; three when a group name has a word too long for a quarter of the phone.
+  const longWord = groups.some((g) => g.name.split(/\s+/).some((w) => w.length > 8));
+  const perRow = longWord ? 3 : 4;
+  const shownCount = perRow * 2 - 1;
+  const shownGroups = groups.length > shownCount + 1 ? groups.slice(0, shownCount) : groups;
+  const hiddenCount = groups.length - shownGroups.length;
+  const visible = group && !shownGroups.some((g) => g.id === group.id) ? [...shownGroups.slice(0, shownCount - 1), group] : shownGroups;
   const items = query.trim()
     ? searchMenu(menu as MenuWorkspace, query)
     : group
@@ -144,11 +146,11 @@ export function PhoneOrderScreen(p: Props) {
               {query.trim() ? null : (
                 <>
                   <Segmented label="Food or Drinks" fill options={menu.sections.map((s) => ({ key: s.key, label: s.label }))} value={section?.key ?? ""} onChange={(k) => p.onNav(firstNav(menu, k))} />
-                  <div className="grid grid-cols-4 gap-kit-8" data-order-groups>
+                  <div className={["grid gap-kit-8", perRow === 3 ? "grid-cols-3" : "grid-cols-4"].join(" ")} data-order-groups>
                     {visible.map((g) => (
                       <OptionTile key={g.id} label={g.name} current={g.id === group?.id} onClick={() => p.onNav({ sectionKey: section!.key, groupId: g.id, subgroupId: null })} />
                     ))}
-                    {hidden > 0 ? <OptionTile label={`More · ${hidden}`} onClick={() => setMoreGroups(true)} /> : null}
+                    {hiddenCount > 0 ? <OptionTile label={`More · ${hiddenCount}`} onClick={() => setMoreGroups(true)} /> : null}
                   </div>
                   {group && group.subgroups.length > 1 ? (
                     <div className="flex flex-wrap gap-kit-8" data-order-subgroups>
@@ -221,30 +223,30 @@ export function PhoneOrderScreen(p: Props) {
             </div>
           }
         >
-          <div className="-mx-kit-20 flex min-h-kit-0 flex-col overflow-y-auto" data-order-lines>
+          <div className="flex flex-col" data-order-lines>
             {unsent.length ? (
               <section aria-label="Not sent">
-                <div className="px-kit-20 pb-kit-4 pt-kit-4"><Text variant="cap" tone="muted">Not sent · tap a line to change it</Text></div>
+                <div className="pb-kit-4 pt-kit-4"><Text variant="cap" tone="muted">Not sent · tap a line to change it</Text></div>
                 {unsent.map((l) => (
-                  <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="notSent" onClick={() => { setOrderOpen(false); p.onLine(l); }} />
+                  <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="notSent" onClick={() => { setOrderOpen(false); p.onLine(l); }} />
                 ))}
               </section>
             ) : null}
             {rounds.map((r, i) => (
-              <section key={r.sentAt} aria-label={`Sent ${timeOf(r.sentAt)}`} className={unsent.length || i > 0 ? "mx-kit-20 shadow-kit-line-top" : ""}>
-                <div className={["flex items-center justify-between pb-kit-4 pt-kit-12", unsent.length || i > 0 ? "" : "px-kit-20"].join(" ")}>
+              <section key={r.sentAt} aria-label={`Sent ${timeOf(r.sentAt)}`} className={unsent.length || i > 0 ? "mt-kit-8 shadow-kit-line-top" : ""}>
+                <div className="flex items-center justify-between pb-kit-4 pt-kit-12">
                   <Text variant="cap" tone="muted">{[`Sent ${timeOf(r.sentAt)}`, i === rounds.length - 1 && roundWord ? roundWord : null].filter(Boolean).join(" · ")}</Text>
                   {i === 0 && p.canSameAgain ? <Button tone="text" size="laptop" onClick={() => { p.onSameAgain(); setOrderOpen(false); }}>Same again</Button> : null}
                 </div>
-                <div className={unsent.length || i > 0 ? "-mx-kit-20" : ""}>
+                <div>
                   {r.lines.map((l) => (
-                    <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={[choicesText(l), l.state === "voided" ? "Voided" : ""].filter(Boolean).join(" · ") || undefined} price={groupShillings(l.lineMinor)} state={l.state === "voided" ? "voided" : "sent"} onClick={p.rights.canVoidLine && l.state === "sent" ? () => { setOrderOpen(false); p.onLine(l); } : undefined} />
+                    <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={[choicesText(l), l.state === "voided" ? "Voided" : ""].filter(Boolean).join(" · ") || undefined} price={groupShillings(l.lineMinor)} state={l.state === "voided" ? "voided" : "sent"} onClick={p.rights.canVoidLine && l.state === "sent" ? () => { setOrderOpen(false); p.onLine(l); } : undefined} />
                   ))}
                 </div>
               </section>
             ))}
             {session.lines.length === 0 ? (
-              <div className="px-kit-20 py-kit-20"><Text variant="sup" tone="muted">{p.readOnly ? "Only the waiter on this table sees its lines." : "Nothing on this table yet. Tap an item to start. The table stays free until you send the order."}</Text></div>
+              <div className="py-kit-20"><Text variant="sup" tone="muted">{p.readOnly ? "Only the waiter on this table sees its lines." : "Nothing on this table yet. Tap an item to start. The table stays free until you send the order."}</Text></div>
             ) : null}
           </div>
         </Sheet>
