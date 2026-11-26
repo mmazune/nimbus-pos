@@ -53,7 +53,6 @@ test("waiter on a phone: food, then drinks, two sends", async ({ page }) => {
   await page.getByRole("button", { name: "Popular", exact: true }).tap();
   await page.getByRole("button", { name: /^Lager 500 ml,/ }).tap();
   await page.getByRole("button", { name: /^Lager 500 ml,/ }).tap();
-  await page.getByRole("button", { name: "Whisky", exact: true }).tap();
   await page.getByRole("button", { name: "Blended Scotch, Double, 15,000" }).tap();
   await page.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }).tap();
   await page.getByLabel("Search the whole menu").fill("col");

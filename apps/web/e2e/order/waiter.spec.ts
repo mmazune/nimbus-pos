@@ -77,7 +77,6 @@ test("waiter sends food, adds drinks, and the second Send sends only the new lin
   await page.getByRole("button", { name: "Popular", exact: true }).click();
   await page.locator("[data-order-qty]").getByRole("button", { name: "2", exact: true }).click();
   await page.getByRole("button", { name: /^Lager 500 ml,/ }).click();
-  await page.getByRole("button", { name: "Whisky", exact: true }).click();
   await page.getByRole("button", { name: "Blended Scotch, Double, 15,000" }).click();
   await page.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }).click();
   await expect(panel.getByRole("button", { name: /Blended Scotch, Double · Cola/ })).toBeVisible();

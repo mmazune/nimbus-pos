@@ -28,12 +28,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "path": "/api/menu/catalog",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/menu/catalog",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
       "status": 200
     },
     {
@@ -73,22 +73,22 @@
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/items",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/items",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/items",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/send",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/send",
       "status": 200
     },
     {
@@ -108,12 +108,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9",
       "status": 200
     },
     {
@@ -133,22 +133,22 @@
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/items",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/items",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/items",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/items",
       "status": 201
     },
     {
       "method": "POST",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc/send",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9/send",
       "status": 200
     },
     {
@@ -158,7 +158,7 @@
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders/cmwxg476008fzaev4xizv4awc",
+      "path": "/api/pos/orders/cmwxgd1up00hg14cm9ef6glc9",
       "status": 200
     },
     {

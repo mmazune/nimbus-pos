@@ -74,10 +74,9 @@ test("Table 12's evening", async ({ browser }) => {
   await expect(waiter.getByRole("button", { name: "Popular", exact: true })).toHaveAttribute("aria-pressed", "true");
   await waiter.getByRole("button", { name: /^Lager 500 ml,/ }).click();
   await waiter.getByRole("button", { name: /^Lager 500 ml,/ }).click(); // the second lager
-  // A double whisky with cola: Drinks → Whisky → Double → Cola.
+  // A double whisky with cola: Drinks (opens on Popular, where the house Scotch is) → Double → Cola.
   await home();
   await waiter.getByRole("tab", { name: "Drinks" }).click();
-  await waiter.getByRole("button", { name: "Whisky", exact: true }).click();
   await waiter.getByRole("button", { name: "Blended Scotch, Double, 15,000" }).click();
   await waiter.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }).click();
   await waiter.getByRole("button", { name: "Soft drinks", exact: true }).click();

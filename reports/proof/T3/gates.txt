@@ -1,14 +1,12 @@
-# T3 gates, 2026-11-26T11:08:08Z, on the final code
+# T3 gates, 2026-11-26T11:14:52Z, on the final code
 ## web typecheck
 exit 0
 ## web lint (next lint, no --fix)
 ✔ No ESLint warnings or errors
 ## web build
-ƒ  (Dynamic)  server-rendered on demand
-
-(next build exit 0, the build every final proof ran on)
+next build exit 0 (app source unchanged since that build: git diff of src is empty; only e2e fixtures and reports changed after it)
 ## check:ui
 check:ui green
 ## check:event
 check:event green
-## e2e/order on the production build: 26 passed (data 11 unit tests inside); evening + phone + taps 3 of 3 in a row (evening-3-runs.txt); fixture on a fresh DB 2 of 2 (fixture-fresh-db.txt)
+## e2e/order on the production build: 26 passed (11 data unit tests inside); evening + phone + taps 3 of 3 in a row; fixture on a fresh DB 2 of 2

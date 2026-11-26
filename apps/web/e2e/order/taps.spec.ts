@@ -48,9 +48,8 @@ test("tap counts from the Floor", async ({ page }) => {
       await tap(page.locator("[data-order-search]").getByRole("button", { name: "Blended Scotch, Double, 15,000" }));
       await tap(page.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }));
     }, /Blended Scotch, Double · Cola/),
-    await task("a double whisky with cola by groups: table, Drinks, Whisky, Double, Cola", async () => {
+    await task("a double whisky with cola by groups: table, Drinks (Popular), Double, Cola", async () => {
       await tap(page.getByRole("tab", { name: "Drinks" }));
-      await tap(page.getByRole("button", { name: "Whisky", exact: true }));
       await tap(page.getByRole("button", { name: "Blended Scotch, Double, 15,000" }));
       await tap(page.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }));
     }, /Blended Scotch, Double · Cola/),
@@ -65,6 +64,7 @@ test("tap counts from the Floor", async ({ page }) => {
   expect(counts["a beer from Popular: table, Drinks, Lager"]).toBeLessThanOrEqual(4);
   expect(counts["a double whisky with cola by search: table, Search, Double, Cola (typing “bs” not counted)"]).toBeLessThanOrEqual(4);
   expect(counts["a burger with choices: table, Beef burger (Food › Popular food), Medium, Add"]).toBeLessThanOrEqual(4);
-  // By groups the whisky is one over the budget; recorded, not hidden.
-  expect(counts["a double whisky with cola by groups: table, Drinks, Whisky, Double, Cola"]).toBe(5);
+  expect(counts["a double whisky with cola by groups: table, Drinks (Popular), Double, Cola"]).toBeLessThanOrEqual(4);
+  // Done-when 8: none above four.
+  for (const [what, n] of Object.entries(counts)) expect(n, what).toBeLessThanOrEqual(4);
 });

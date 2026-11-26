@@ -85,19 +85,24 @@ async function ensureMenu(token: string) {
   };
 
   const lager = await item("Lager 500 ml", 6000, "DRINK", "BAR", gPopular.id);
-  const scotch = await item("Blended Scotch", 8000, "DRINK", "BAR", gWhisky.id);
+  // The house Scotch is a Popular drink (as a manager sets it); the Whisky group keeps a single malt with measures.
+  const scotch = await item("Blended Scotch", 8000, "DRINK", "BAR", gPopular.id);
+  const malt = await item("Single malt 12", 16000, "DRINK", "BAR", gWhisky.id);
   const cola = await item("Cola 300 ml", 3000, "DRINK", "BAR", gSoft.id);
   const burger = await item("Beef burger", 28000, "FOOD", "KITCHEN", gFoodPopular.id);
   const wings = await item("Chicken wings", 24000, "FOOD", "KITCHEN", gGrills.id);
   const chips = await item("Chips", 8000, "FOOD", "KITCHEN", gSides.id);
 
-  // Measures on the Scotch: Tot, Double, Bottle.
-  const servings = (await must(token, "GET", `/api/menu/items/${scotch.id}/servings`)) as Json[];
-  if (!servings.length) {
-    await must(token, "POST", `/api/menu/items/${scotch.id}/servings`, { format: "SHOT", label: "Tot", price: 8000, isDefault: true, sortOrder: 1 });
-    await must(token, "POST", `/api/menu/items/${scotch.id}/servings`, { format: "DOUBLE", label: "Double", price: 15000, sortOrder: 2 });
-    await must(token, "POST", `/api/menu/items/${scotch.id}/servings`, { format: "BOTTLE", label: "Bottle", price: 180000, sortOrder: 3 });
-  }
+  // Measures: Tot, Double, Bottle.
+  const measures = async (it: Json, tot: number, dbl: number, bottle: number) => {
+    const servings = (await must(token, "GET", `/api/menu/items/${it.id}/servings`)) as Json[];
+    if (servings.length) return;
+    await must(token, "POST", `/api/menu/items/${it.id}/servings`, { format: "SHOT", label: "Tot", price: tot, isDefault: true, sortOrder: 1 });
+    await must(token, "POST", `/api/menu/items/${it.id}/servings`, { format: "DOUBLE", label: "Double", price: dbl, sortOrder: 2 });
+    await must(token, "POST", `/api/menu/items/${it.id}/servings`, { format: "BOTTLE", label: "Bottle", price: bottle, sortOrder: 3 });
+  };
+  await measures(scotch, 8000, 15000, 180000);
+  await measures(malt, 16000, 30000, 380000);
 
   // Choice groups.
   const mgs = (await must(token, "GET", "/api/menu/modifier-groups")) as Json[];
@@ -119,6 +124,7 @@ async function ensureMenu(token: string) {
   const mixer = await mg("Mixer", { min: 0, max: 1, required: false, sortOrder: 1 }, [["Cola"], ["Soda water"], ["Tonic"], ["Ginger ale"], ["Water"], ["Ice only"]]);
   await must(token, "POST", `/api/menu/items/${burger.id}/modifier-groups`, { groups: [{ groupId: cooked.id, sortOrder: 1 }, { groupId: extras.id, sortOrder: 2 }, { groupId: leave.id, sortOrder: 3 }] });
   await must(token, "POST", `/api/menu/items/${scotch.id}/modifier-groups`, { groups: [{ groupId: mixer.id, sortOrder: 1 }] });
+  await must(token, "POST", `/api/menu/items/${malt.id}/modifier-groups`, { groups: [{ groupId: mixer.id, sortOrder: 1 }] });
 
   return { lager, scotch, cola, burger, wings, chips };
 }

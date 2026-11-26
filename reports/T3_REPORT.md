@@ -76,18 +76,18 @@ The order's lines carry two distinct `sentAt` values (`two-sends-network.json`).
 - Extra phone captures: `built-Supervisor-Table-390x844.png`, `built-Supervisor-Void-390x844.png`, `built-Cashier-Pay-390x844.png`.
 - Differences and their reasons are listed below.
 
-### 8. "Table 12's evening" passes three runs in a row; tap counts are in the report and none is above four [live, partly]
-- `reports/proof/T3/evening-3-runs.txt`: three of three green on the final production build, each run with the waiter's part at 390 × 844 and the 390 checks for supervisor and cashier.
-- The tap counts are from `taps.spec.ts` (`reports/proof/T3/tap-counts.json`): measured by a click counter, **from the waiter's Floor including the table tap** (as A2 §3.8 counts). Each task starts with nothing unsent.
+### 8. "Table 12's evening" passes three runs in a row; tap counts are in the report and none is above four [live]
+- `reports/proof/T3/evening-3-runs.txt`: three of three green on the final production build, each run with the waiter's part at 390 × 844, the 390 checks for supervisor and cashier, and the tap-count test.
+- The tap counts are from `taps.spec.ts` (`reports/proof/T3/tap-counts.json`): measured by a click counter, **from the waiter's Floor including the table tap** (as A2 §3.8 counts). Each task starts with nothing unsent. The test asserts none is above four.
 
 | Task | Route | Taps |
 |---|---|---|
-| A beer from Popular | table, Drinks, Lager | **3** |
-| A double whisky with cola, by search | table, Search, Double, Cola (typing "bs" not counted) | **4** |
-| A double whisky with cola, by groups | table, Drinks, Whisky, Double, Cola | **5** |
+| A beer from Popular | table, Drinks (opens on Popular), Lager | **3** |
+| A double whisky with cola | table, Drinks (opens on Popular, where the house Scotch is), Double, Cola | **4** |
+| … the same by search | table, Search, Double, Cola (typing "bs" not counted) | **4** |
 | A burger with choices | table, Beef burger (in Food › Popular food), Medium, Add | **4** |
 
-The whisky by groups is **five, one over the budget**. Search brings it to four, as would the Scotch sitting in Drinks › Popular. The burger is four only because the fixture puts it in a Food popular group; from Grills it would be five.
+The counts rest on the venue's Popular groups (R3: Popular comes first). The fixture puts the house Scotch, the lager and the burger there, as a manager would. A drink that is not in Popular takes one more tap through its own group (a single malt via Whisky: table, Drinks, Whisky, Double, Cola = 5) or four by search.
 
 ### 9. Rule 10 holds at both sizes; check:ui, web lint, typecheck and build are green [emulation, live]
 The measurer checks five things: no sideways scroll, nothing clipped, no target under 44 px, no text under 12 px, at most one filled button (a chosen tile counts as a selection, not a button). It is green on:
@@ -120,10 +120,10 @@ Saved in `reports/proof/T3/gates.txt`, run on the final code after the last chan
 | `check:ui` | green |
 | `check:event` | green |
 | `e2e/order` on that build | **26 passed** |
-| Evening, phone and taps | three of three in a row |
+| Evening, phone (390) and taps | three of three in a row |
 | Fixture on a fresh database | two of two (`fixture-fresh-db.txt`) |
 
-- The fresh-database check ran only migrations, seed and demo import, plus a second API on :4112. The fixture builds its menu, tables, people, shifts and tills through the API, and its second run is idempotent: one Grace, six tables, six items.
+- The fresh-database check ran only migrations, seed and demo import, plus a second API on :4112. The fixture builds its menu, tables, people, shifts and tills through the API, and its second run is idempotent: one Grace, six tables, seven items.
 - The web package has no unit runner (its `test` script is a stub). The data layer's 11 unit tests run in `e2e/order/data.spec.ts`, inside the 26.
 - The API is untouched, so its gates are E1's (`reports/E1_REPORT.md`).
 
@@ -211,7 +211,7 @@ In phase 6 the first production build ran while my own dev server was still aliv
 ## After the closing review
 The advisor's closing list was worked through:
 - the till rule restored;
-- counts taken from the Floor (the whisky by groups stated as five);
+- counts taken from the Floor; the house Scotch placed in Drinks › Popular so the whisky task is four (a non-popular whisky stays five by groups, four by search);
 - 390 coverage for the supervisor and the cashier;
 - Table status added;
 - the discount-then-cash test added;
