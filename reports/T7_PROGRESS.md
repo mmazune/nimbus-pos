@@ -13,6 +13,7 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 | 7 Stock | drawn; 14 of 14 pass after re-review (lowest 20) | see git log |
 | 8 Manager on a laptop | drawn; 21 of 22 passed; Manager-Menu-List (18) redrawn, re-review with group 9 | see git log |
 | 9 Reports | drawn, measured, under review | see git log |
+| 10 Owner and accountant | drawn, measured, under review (with group 11) | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -36,10 +37,11 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 15. The manager's laptop top bar keeps the five words of the approved drawings (Floor, Menu, Stock, Staff, More); Today is the home behind the mark, and Approvals, Reports and Settings sit under More.
 16. Report tiles carry the currency in the label ("Sales, UGX") and the bare figure in the number, as in the approved `Manager-Waste-Report`; on a phone a report shows two tiles, not three, so seven-digit figures fit.
 17. The other 16 reports of `05-reports.md` follow the report layout drawn here (control panel with period chips and Download; four tiles; the rows in one table; a 420 px side panel; on a phone two tiles and rows). They get no drawing of their own.
+18. The accountant is Daniel W. ("DW", as in the approved `Accountant-Costs`); the owner is Esther L. ("EL"), a new member of the fictional cast. The owner's laptop bar mirrors the owner's phone bar: Today, Branches, Reports, Alerts, More.
 6. "as at 19:42" stays: the first 38 drawings use it on every count.
 
 ## Left out, and why
 (none yet)
 
 ## Next
-Group 10, owner and accountant.
+Group 11, empty, loading and error.

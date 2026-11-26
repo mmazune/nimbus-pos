@@ -1,0 +1,74 @@
+[
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Owner-Branches",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Owner-Branches-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Owner-Branch",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Owner-Branch-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Accountant-Purchases",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Accountant-Purchases-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Accountant-Stock-Value",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Accountant-Stock-Value-Phone",
+  "size": "390x844"
+ }
+]

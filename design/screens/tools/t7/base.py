@@ -52,8 +52,8 @@ ORIGINAL38 = set('''Accountant-Costs Accountant-Phone-Costs Bill-Phone Cashier-P
 WHO = dict(waiter=('Amina K.', 'Waiter', 'Terminal 01', 'AK'), cashier=('Sarah M.', 'Cashier', 'Till 1', 'SM'),
            supervisor=('Grace N.', 'Supervisor', 'Front desk', 'GN'), chef=('Ruth A.', 'Chef', 'Kitchen screen 1', 'RA'),
            bar=('Isaac B.', 'Bartender', 'Bar screen', 'IB'), store=('Joel T.', 'Store keeper', 'Main store', 'JT'),
-           manager=('Peter K.', 'Manager', 'Tapas Downtown', 'PK'), owner=('Daniel W.', 'Owner', 'All branches', 'DW'),
-           accountant=('Esther L.', 'Accountant', 'Tapas Downtown', 'EL'))
+           manager=('Peter K.', 'Manager', 'Tapas Downtown', 'PK'), owner=('Esther L.', 'Owner', 'All branches', 'EL'),
+           accountant=('Daniel W.', 'Accountant', 'Tapas Downtown', 'DW'))
 NAV = dict(NAV)
 NAV['bar'] = NAV['kitchen']
 NAV['chef'] = NAV['kitchen']
