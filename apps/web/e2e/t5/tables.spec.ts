@@ -149,6 +149,62 @@ test("supervisor: move a table, join two and split them again, move a line, chan
   await S.ctx.close();
 });
 
+// Before the split case: after a split-items, the API's next new order on the branch answers 500
+// (the child is numbered ORD-n-S1 and the next number is taken from it: listed for T6).
+test("hand over a table and all tables: the colleague accepts on their screen; a shift with open tables is refused with the way out", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const A = await terminal(browser);
+  const B = await terminal(browser);
+  await pinSignIn(A.page, "waiter3");
+  await pinSignIn(B.page, "waiter2");
+  const w2 = await as("waiter2");
+  await B.page.goto("/waiter/floor");
+
+  // One table: Gloria (waiter3) starts her shift and sends a dish on B10 (her own table, whatever
+  // earlier cases did with her others), then hands B10 to Brian (waiter2).
+  const g = (await as("waiter3")).token;
+  await api(g, "POST", "/shifts/open", {}, [200, 201, 409]);
+  const b10 = await tableByLabel("B10");
+  const menu = await api<Json>(g, "GET", "/menu/workspace");
+  const dish = (menu.items as Json[]).find((i) => i.station === "BAR" && !(i.servings?.length > 1) && !(i.choiceGroups ?? []).length && i.availability?.state !== "SOLD_OUT") as Json;
+  const o = await api<Json>(g, "POST", "/pos/orders", { serviceType: "DINE_IN", tableId: b10.id });
+  await api(g, "POST", `/pos/orders/${o.id}/items`, { menuItemId: dish.id, quantity: 1 });
+  await api(g, "POST", `/pos/orders/${o.id}/send`, {});
+  await openTable(A.page, "waiter", b10.id);
+  await A.page.getByRole("button", { name: "More for this table" }).click();
+  await pick(A.page, /^Hand over this table/);
+  await A.page.getByRole("dialog").getByRole("button", { name: /^Brian O/ }).first().click();
+  await A.page.getByRole("dialog").getByRole("button", { name: /^Offer it to Brian O/ }).click();
+  const incoming = B.page.getByRole("dialog").filter({ hasText: /offers you 1 table/ });
+  await expect(incoming).toBeVisible({ timeout: 15_000 });
+  await rule10(B.page, "handover-accept-1280", log);
+  await shot(B.page, "phase3-handover-accept-1280x800.png");
+  await incoming.getByRole("button", { name: "Accept 1 table" }).click();
+  await expect.poll(async () => (await openOrderOn("B10"))?.userId, { timeout: 10_000 }).toBe(w2.userId);
+
+  // End of shift with tables still open: refused, with "Hand over your tables".
+  await A.page.goto("/waiter/me");
+  await A.page.getByRole("button", { name: "End my shift" }).click();
+  const confirm = A.page.getByRole("button", { name: /^End (my )?shift/ }).last();
+  await confirm.click();
+  await expect(A.page.getByText(/You still have open tables/)).toBeVisible({ timeout: 10_000 });
+  await A.page.getByRole("button", { name: "Hand over your tables" }).click();
+  await A.page.getByRole("dialog").getByRole("button", { name: /^Brian O/ }).first().click();
+  await rule10(A.page, "handover-offer-1280", log);
+  await shot(A.page, "phase3-handover-offer-1280x800.png");
+  await A.page.getByRole("dialog").getByRole("button", { name: /^Offer \d+ tables? to Brian O/ }).click();
+  await expect(A.page.getByText(/Offered to Brian O/)).toBeVisible();
+  const all = B.page.getByRole("dialog").filter({ hasText: /offers you \d+ tables?/ });
+  await expect(all).toBeVisible({ timeout: 15_000 });
+  await all.getByRole("button", { name: /^Accept \d+ tables?$/ }).click();
+  await expect(all).toHaveCount(0, { timeout: 10_000 });
+  // Now the shift ends.
+  await A.page.getByRole("button", { name: "End my shift" }).click();
+  await A.page.getByRole("button", { name: /^End (my )?shift/ }).last().click();
+  await expect(A.page.getByText("Your shift has ended.")).toBeVisible({ timeout: 10_000 });
+  for (const t of [A, B]) await t.ctx.close();
+});
+
 test("split the bill four ways from the table actions sheet", async ({ browser }) => {
   test.setTimeout(180_000);
   const m = (await as("manager1")).token;
@@ -231,65 +287,6 @@ test("split the bill four ways from the table actions sheet", async ({ browser }
   const splits = await apiRaw(m, "GET", `/pos/orders/${t02?.id}/split-bill`);
   log.t02Splits = splits.status;
   await S.ctx.close();
-});
-
-test("hand over a table and all tables: the colleague accepts on their screen; a shift with open tables is refused with the way out", async ({ browser }) => {
-  test.setTimeout(180_000);
-  const A = await terminal(browser);
-  const B = await terminal(browser);
-  await pinSignIn(A.page, "waiter3");
-  await pinSignIn(B.page, "waiter2");
-  const w2 = await as("waiter2");
-  await B.page.goto("/waiter/floor");
-
-  // One table: Gloria (waiter3) starts her shift and sends a dish on B10 (her own table, whatever
-  // earlier cases did with her others), then hands B10 to Brian (waiter2).
-  const g = (await as("waiter3")).token;
-  await api(g, "POST", "/shifts/open", {}, [200, 201, 409]);
-  const b10 = await tableByLabel("B10");
-  const menu = await api<Json>(g, "GET", "/menu/workspace");
-  const dish = (menu.items as Json[]).find((i) => i.station === "BAR" && !(i.servings?.length > 1) && !(i.choiceGroups ?? []).length && i.availability?.state !== "SOLD_OUT") as Json;
-  // Set-up only: the API can answer 500 to a new order when two order numbers collide (recorded by
-  // T3 and in the T5 report for T6); one retry, as a terminal would.
-  const o = await api<Json>(g, "POST", "/pos/orders", { serviceType: "DINE_IN", tableId: b10.id }).catch(async (e) => {
-    if (!String(e).includes("→ 500")) throw e;
-    return api<Json>(g, "POST", "/pos/orders", { serviceType: "DINE_IN", tableId: b10.id });
-  });
-  await api(g, "POST", `/pos/orders/${o.id}/items`, { menuItemId: dish.id, quantity: 1 });
-  await api(g, "POST", `/pos/orders/${o.id}/send`, {});
-  await openTable(A.page, "waiter", b10.id);
-  await A.page.getByRole("button", { name: "More for this table" }).click();
-  await pick(A.page, /^Hand over this table/);
-  await A.page.getByRole("dialog").getByRole("button", { name: /^Brian O/ }).first().click();
-  await A.page.getByRole("dialog").getByRole("button", { name: /^Offer it to Brian O/ }).click();
-  const incoming = B.page.getByRole("dialog").filter({ hasText: /offers you 1 table/ });
-  await expect(incoming).toBeVisible({ timeout: 15_000 });
-  await rule10(B.page, "handover-accept-1280", log);
-  await shot(B.page, "phase3-handover-accept-1280x800.png");
-  await incoming.getByRole("button", { name: "Accept 1 table" }).click();
-  await expect.poll(async () => (await openOrderOn("B10"))?.userId, { timeout: 10_000 }).toBe(w2.userId);
-
-  // End of shift with tables still open: refused, with "Hand over your tables".
-  await A.page.goto("/waiter/me");
-  await A.page.getByRole("button", { name: "End my shift" }).click();
-  const confirm = A.page.getByRole("button", { name: /^End (my )?shift/ }).last();
-  await confirm.click();
-  await expect(A.page.getByText(/You still have open tables/)).toBeVisible({ timeout: 10_000 });
-  await A.page.getByRole("button", { name: "Hand over your tables" }).click();
-  await A.page.getByRole("dialog").getByRole("button", { name: /^Brian O/ }).first().click();
-  await rule10(A.page, "handover-offer-1280", log);
-  await shot(A.page, "phase3-handover-offer-1280x800.png");
-  await A.page.getByRole("dialog").getByRole("button", { name: /^Offer \d+ tables? to Brian O/ }).click();
-  await expect(A.page.getByText(/Offered to Brian O/)).toBeVisible();
-  const all = B.page.getByRole("dialog").filter({ hasText: /offers you \d+ tables?/ });
-  await expect(all).toBeVisible({ timeout: 15_000 });
-  await all.getByRole("button", { name: /^Accept \d+ tables?$/ }).click();
-  await expect(all).toHaveCount(0, { timeout: 10_000 });
-  // Now the shift ends.
-  await A.page.getByRole("button", { name: "End my shift" }).click();
-  await A.page.getByRole("button", { name: /^End (my )?shift/ }).last().click();
-  await expect(A.page.getByText("Your shift has ended.")).toBeVisible({ timeout: 10_000 });
-  for (const t of [A, B]) await t.ctx.close();
 });
 
 test("phone, 390 × 844: the Tabs area and the actions sheet fit", async ({ browser }) => {
