@@ -1,0 +1,3 @@
+A 1133 pass 92 fail | B 1174 pass 83 fail
+failed in both: 72 | only A: 20 | only B: 11
+ONLY A: quick-sale.review.e2e-spec.ts › H1-R review probes: quick sale (e2e) C10: Payment.amount = Order.total on every quick-sale row in this database no quick-sale order has a payment that differs from its total, or other than one payment | in B: passed

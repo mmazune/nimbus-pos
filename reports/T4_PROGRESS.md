@@ -4,13 +4,13 @@ Branch `t4/review-and-data`, cut from `origin/e1/order-truth` (`19e1eee`). Push 
 `git push -u origin t4/review-and-data` (the branch tracks `origin/e1/order-truth`; a bare push could hit it).
 
 ## Now
-- Phase 1 (review E1): review file and probes written; committing and pushing. Next: phase 2.
+- Phase 2 done: sequencer fixes C1 (test order) and C2 (shared cashier password); 83 red named in `docs/reviews/e2e-baseline.md`; `tools/test-env.sh` proven from a stopped Postgres. Next: phase 3 (demo venue).
 
 ## Phases
 | phase | state | last commit |
 |---|---|---|
-| 1 Review E1 | review pushed (can be added to) | see `git log` |
-| 2 Repair the test run | started: `tools/test-env.sh` written; base and E1 full runs done (92 = 92 by name) | |
+| 1 Review E1 | done, pushed (`964500b`, B5 live proof after) | |
+| 2 Repair the test run | done: 92 → 72 pre-existing red + 11 probes; all named | see `git log` |
 | 3 Demo venue | not started | |
 | 4 People and access | not started | |
 
@@ -23,8 +23,10 @@ Branch `t4/review-and-data`, cut from `origin/e1/order-truth` (`19e1eee`). Push 
 - **Redis** was started by this session at the start (PID 763, `--save '' --appendonly no`); stop it with `redis-cli -p 6379 shutdown nosave` when done.
 - The probe specs log in with the seeded demo passwords as literals, as every existing e2e spec does (rule 15 note; no new credential was created in a file).
 
+- **Phase 2 fix lives in config, not in other people's specs:** `test/support/e2e-sequencer.js` (no new dependency: a standalone class, since `@jest/test-sequencer` is not resolvable from `apps/api` under pnpm). The lasting fixes for `bg1-onboarding` (restore the user it changes) and the stale specs F2/F4 are for their owners.
+
 ## Left out, and why
 - (none yet)
 
 ## Next
-1. Phase 2: classify each of the 92 red tests (container or real fault), fix the container kind in `apps/api/test/` helpers/config, write `docs/reviews/e2e-baseline.md`.
+1. Phase 3: Tapas Downtown venue under `packages/db/demo-venue/` (new; the existing `demo-data` importer is outside T4's folders, has 99 items and 68 tables over 4 branches, phones outside the fictional block, no localhost guard, and a committed credentials file).

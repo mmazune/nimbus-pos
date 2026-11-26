@@ -1,0 +1,21 @@
+## 1. Postgres stopped first (fresh-container state), no DATABASE_URL in the shell
+16/main (port 5432): down
+$ eval "$(tools/test-env.sh)"
+test-env: started the container's Postgres
+test-env: empty database nimbus_event_b28afb8b on localhost:5432 (role nimbus_t_b28afb8b)
+export DATABASE_URL=postgresql://nimbus_t_b28afb8b:<random-password>@localhost:5432/nimbus_event_b28afb8b\?schema=public
+export DIRECT_DATABASE_URL=postgresql://nimbus_t_b28afb8b:<random-password>@localhost:5432/nimbus_event_b28afb8b\?schema=public
+
+## 2. A remote address in the shell is refused before anything starts
+$ DATABASE_URL=postgresql://u:p@ep-example.neon.tech/x tools/test-env.sh
+test-env: refusing: DATABASE_URL points at host "ep-example.neon.tech", which is not localhost
+exit 1
+$ DIRECT_DATABASE_URL=postgresql://u:p@10.0.0.5:5432/x tools/test-env.sh
+test-env: refusing: DIRECT_DATABASE_URL points at host "10.0.0.5", which is not localhost
+exit 1
+$ tools/test-env.sh --check postgresql://u:p@db.example.invalid:5432/x
+test-env: refusing: the given address points at host "db.example.invalid", which is not localhost
+exit 1
+$ tools/test-env.sh --check postgresql://u:p@[::1]:5432/x
+test-env: local address, accepted
+exit 0
