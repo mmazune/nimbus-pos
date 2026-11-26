@@ -13,8 +13,8 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 | 7 Stock | drawn; 14 of 14 pass after re-review (lowest 20) | see git log |
 | 8 Manager on a laptop | drawn; 22 of 22 pass after re-review (lowest 20) | see git log |
 | 9 Reports | drawn; 16 of 16 pass (lowest 20); numbers made to agree after review | see git log |
-| 10 Owner and accountant | drawn, measured, under review (with group 11) | see git log |
-| 11 Empty, loading, error, not connected | drawn, measured, under review | see git log |
+| 10 Owner and accountant | drawn; 8 of 8 pass (lowest 20) | see git log |
+| 11 Empty, loading, error, not connected | drawn; 20 of 20 pass (lowest 20) | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -46,7 +46,7 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 6. "as at 19:42" stays: the first 38 drawings use it on every count.
 
 ## Left out, and why
-(none yet)
+Nothing from groups 1 to 11. The other 16 reports and the empty/loading/error states of every other screen follow the drawn layouts (decisions 17 and 21 in the report).
 
 ## Next
-Waiting for the group 10 and 11 review; then the report and the last push.
+Done. Report: `reports/T7_REPORT.md`. Nothing next for this track.

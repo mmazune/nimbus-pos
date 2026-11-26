@@ -1,6 +1,6 @@
 # Measurements of every T7 drawing
 
-Rendered and measured on 26 Nov 2026 with `design/screens/tools/render-all.js` (the checks of `render.js` plus "hidden by its box", "squeezed" and tile-number clipping). Raw output per group: `measure-g1.json` … `measure-g11.json`.
+Rendered and measured on 26 Nov 2026 with `design/screens/tools/render-all.js` (the checks of `render.js` plus "hidden by its box", "squeezed" and tile-number clipping), from the final generator. Raw output per group: `measure-g1.json` … `measure-g11.json`.
 
 - Drawings: 184
 - With any issue: 0

@@ -28,7 +28,7 @@ laside = f'<aside class="card vstack g12" style="width: 420px; padding: 20px; fl
 page('State-List-Loading', *T, 'Receipts, loading', rec_t(load, laside, 'Paid bills today · loading'), G, 'Cashier', 'Loading list: header and bar at once, grey shapes in the final places, no spinner', REC, 'U3')
 pload = '<div class="card" style="overflow: hidden">' + ''.join(f'<div class="row" style="width: 100%"><span class="vstack g8 grow">{sk("50%")}{sk("70%", 12)}</span>{sk("72px")}</div>' for _ in range(7)) + '</div>'
 page('State-List-Loading-Phone', *P, 'Receipts, loading, phone', rec_p(pload, 'Today · loading'), G, 'Cashier', 'Loading list on a phone', REC, 'U3')
-err = state('wifi', 'Receipts could not load', 'The bills are safe; this screen could not reach them. Showing nothing rather than an old list. Tables can still be paid from the Floor.', btn('Try again', 'filled', 'min-width: 200px'), 'red')
+err = state('wifi', 'Receipts could not load', 'The bills are safe; this screen could not reach them. Tables can still be paid from the Floor.', btn('Try again', 'filled', 'min-width: 200px'), 'red')
 page('State-List-Error', *T, 'Receipts, error', rec_t(center(err), '', 'Paid bills today · not loaded'), G, 'Cashier', 'Error on a list: what happened, what is safe, Try again', REC, 'U3')
 page('State-List-Error-Phone', *P, 'Receipts, error, phone', rec_p(state('wifi', 'Receipts could not load', 'The bills are safe. Tables can still be paid from the Floor.', btn('Try again', 'filled'), 'red', '24px'), 'Today · not loaded'), G, 'Cashier', 'Error on a list, phone', REC, 'U3')
 
@@ -70,11 +70,11 @@ page('State-Sheet-Error', *T, 'Discount sheet, error', obg() + scrim() + sheet('
 page('State-Sheet-Error-Phone', *P, 'Discount sheet, error, phone', pbg + scrim() + sheet('Discount on table 12', 'UGX 98,000', ser.replace('max-width: 460px', 'max-width: 320px'), ''), G, 'Waiter', 'Error in a sheet, phone', '/waiter/floor?tableId=#discount', 'U3, needs E9')
 
 # ---------- not connected, with held orders ----------
-off = banner('Not connected · 3 orders held on this terminal', 'Keep taking orders. Held lines send themselves once, never twice, when the line is back. Payments by card and mobile money wait.', pill('Since 20:31', 'p-red'), 'red', 'wifi')
-held = [t.replace('p-amber">Not sent', 'p-red">Held').replace('3 items not sent', '3 items held') for t in MAIN_TILES]
-held = [t.replace('<span class="pill p-brand">Open</span></span><span class="mid">4 guests · 14 min', '<span class="pill p-red">Held</span></span><span class="mid">2 items held') if '>17<' in t else t for t in held]
-held = [t.replace('<span class="pill p-brand">Open</span></span><span class="mid">2 guests · 9 min', '<span class="pill p-red">Held</span></span><span class="mid">1 item held') if '>9<' in t else t for t in held]
-body = tbar('Floor', 'Main hall · 17 of 32 tables open · as at 20:34', 'waiter', extra=pill('Not connected', 'p-red')) + f'''
+off = banner('Not connected · 3 orders held on this terminal', 'Keep taking orders. Held lines send themselves once, never twice, when the line is back. Payments by card and mobile money wait.', pill('Since 19:55', 'p-red'), 'red', 'wifi')
+held = [t.replace('p-amber">Not sent', 'p-amber">Held').replace('3 items not sent', '3 items held') for t in MAIN_TILES]
+held = [t.replace('<span class="pill p-brand">Open</span></span><span class="mid">4 guests · 14 min', '<span class="pill p-amber">Held</span></span><span class="mid">2 items held') if '>17<' in t else t for t in held]
+held = [t.replace('<span class="pill p-brand">Open</span></span><span class="mid">2 guests · 9 min', '<span class="pill p-amber">Held</span></span><span class="mid">1 item held') if '>9<' in t else t for t in held]
+body = tbar('Floor', 'Main hall · 17 of 32 tables open · as at 19:58', 'waiter', extra=pill('Not connected', 'p-red')) + f'''
   <main class="page" style="padding: 16px 32px 16px; gap: 12px">
     {off}
     <div class="hstack" style="justify-content: space-between">{areas()}{seg(["My tables · 6", "All tables"], "All tables")}</div>
@@ -82,6 +82,6 @@ body = tbar('Floor', 'Main hall · 17 of 32 tables open · as at 20:34', 'waiter
   </main>
 {navbar("waiter", "Floor")}'''
 page('Offline-Held', *T, 'Not connected, held orders', body, G, 'Waiter', '“Not connected”: orders held on the terminal, tiles marked Held', '/waiter/floor', 'U1, needs E12')
-pheld = [ptile(23, '3 items', 'Held', 'p-red'), ptile(17, '2 items', 'Held', 'p-red'), ptile(9, '1 item', 'Held', 'p-red'), ptile(6, '26 min', 'Late', 'p-red'), ptile(12, '1 h 05', 'Bill', 'p-amber'), ptile(2, '42 min', 'Open', 'p-brand')]
-body = band('Floor', '6 tables are yours · as at 20:34') + f'<main class="body">{banner("Not connected · 3 held", "Keep taking orders. They send once, by themselves, when the line is back.", "", "red", "wifi", "padding: 10px 12px")}{seg(["My tables · 6", "All tables"], "My tables · 6", True)}{floor(pheld, 3, "floor c")}</main>' + navbar('waiter', 'Floor', True)
+pheld = [ptile(23, '3 items', 'Held', 'p-amber'), ptile(17, '2 items', 'Held', 'p-amber'), ptile(9, '1 item', 'Held', 'p-amber'), ptile(6, '26 min', 'Late', 'p-red'), ptile(12, '1 h 05', 'Bill', 'p-amber'), ptile(2, '42 min', 'Open', 'p-brand')]
+body = band('Floor', '6 tables are yours · as at 19:58') + f'<main class="body">{banner("Not connected · 3 held", "Keep taking orders. They send once, by themselves, when the line is back.", "", "red", "wifi", "padding: 10px 12px")}{seg(["My tables · 6", "All tables"], "My tables · 6", True)}{floor(pheld, 3, "floor c")}</main>' + navbar('waiter', 'Floor', True)
 page('Offline-Held-Phone', *P, 'Not connected, phone', body, G, 'Waiter', '“Not connected” on a phone', '/waiter/floor', 'U1, needs E12')

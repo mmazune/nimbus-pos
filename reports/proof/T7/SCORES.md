@@ -2,7 +2,7 @@
 
 Each drawing’s latest score from a reviewer that drew nothing (`review-*.md` in this folder, 12 points of 0 to 2 from the build standards; pass is 20 of 24 with no zero). Where a drawing failed and was redrawn, the re-review score is the one shown.
 
-- Drawings: 184; scored: 156; not scored: 28
+- Drawings: 184; scored: 184; not scored: 0
 - Under 20 or with a zero: 0
 - Lowest: 20; highest: 2218
 
@@ -164,31 +164,31 @@ Each drawing’s latest score from a reviewer that drew nothing (`review-*.md` i
 | `Report-Count-Differences-Phone` | 9 | 22 | review-g9.md |
 | `Report-Cost-Margin` | 9 | 22 | review-g9.md |
 | `Report-Cost-Margin-Phone` | 9 | 21 | review-g9.md |
-| `Owner-Branches` | 10 | not scored |  |
-| `Owner-Branches-Phone` | 10 | not scored |  |
-| `Owner-Branch` | 10 | not scored |  |
-| `Owner-Branch-Phone` | 10 | not scored |  |
-| `Accountant-Purchases` | 10 | not scored |  |
-| `Accountant-Purchases-Phone` | 10 | not scored |  |
-| `Accountant-Stock-Value` | 10 | not scored |  |
-| `Accountant-Stock-Value-Phone` | 10 | not scored |  |
-| `State-List-Empty` | 11 | not scored |  |
-| `State-List-Empty-Phone` | 11 | not scored |  |
-| `State-List-Loading` | 11 | not scored |  |
-| `State-List-Loading-Phone` | 11 | not scored |  |
-| `State-List-Error` | 11 | not scored |  |
-| `State-List-Error-Phone` | 11 | not scored |  |
-| `State-Detail-Empty` | 11 | not scored |  |
-| `State-Detail-Empty-Phone` | 11 | not scored |  |
-| `State-Detail-Loading` | 11 | not scored |  |
-| `State-Detail-Loading-Phone` | 11 | not scored |  |
-| `State-Detail-Error` | 11 | not scored |  |
-| `State-Detail-Error-Phone` | 11 | not scored |  |
-| `State-Sheet-Empty` | 11 | not scored |  |
-| `State-Sheet-Empty-Phone` | 11 | not scored |  |
-| `State-Sheet-Loading` | 11 | not scored |  |
-| `State-Sheet-Loading-Phone` | 11 | not scored |  |
-| `State-Sheet-Error` | 11 | not scored |  |
-| `State-Sheet-Error-Phone` | 11 | not scored |  |
-| `Offline-Held` | 11 | not scored |  |
-| `Offline-Held-Phone` | 11 | not scored |  |
+| `Owner-Branches` | 10 | 23 | review-g10-11.md |
+| `Owner-Branches-Phone` | 10 | 20 | review-g10-11.md |
+| `Owner-Branch` | 10 | 22 | review-g10-11.md |
+| `Owner-Branch-Phone` | 10 | 22 | review-g10-11.md |
+| `Accountant-Purchases` | 10 | 21 | review-g10-11.md |
+| `Accountant-Purchases-Phone` | 10 | 21 | review-g10-11.md |
+| `Accountant-Stock-Value` | 10 | 23 | review-g10-11.md |
+| `Accountant-Stock-Value-Phone` | 10 | 21 | review-g10-11.md |
+| `State-List-Empty` | 11 | 23 | review-g10-11.md |
+| `State-List-Empty-Phone` | 11 | 24 | review-g10-11.md |
+| `State-List-Loading` | 11 | 23 | review-g10-11.md |
+| `State-List-Loading-Phone` | 11 | 24 | review-g10-11.md |
+| `State-List-Error` | 11 | 23 | review-g10-11.md |
+| `State-List-Error-Phone` | 11 | 24 | review-g10-11.md |
+| `State-Detail-Empty` | 11 | 24 | review-g10-11.md |
+| `State-Detail-Empty-Phone` | 11 | 24 | review-g10-11.md |
+| `State-Detail-Loading` | 11 | 23 | review-g10-11.md |
+| `State-Detail-Loading-Phone` | 11 | 24 | review-g10-11.md |
+| `State-Detail-Error` | 11 | 22 | review-g10-11.md |
+| `State-Detail-Error-Phone` | 11 | 23 | review-g10-11.md |
+| `State-Sheet-Empty` | 11 | 24 | review-g10-11.md |
+| `State-Sheet-Empty-Phone` | 11 | 24 | review-g10-11.md |
+| `State-Sheet-Loading` | 11 | 24 | review-g10-11.md |
+| `State-Sheet-Loading-Phone` | 11 | 23 | review-g10-11.md |
+| `State-Sheet-Error` | 11 | 24 | review-g10-11.md |
+| `State-Sheet-Error-Phone` | 11 | 24 | review-g10-11.md |
+| `Offline-Held` | 11 | 22 | review-g10-11.md |
+| `Offline-Held-Phone` | 11 | 21 | review-g10-11.md |
