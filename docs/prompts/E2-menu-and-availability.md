@@ -5,7 +5,8 @@ Size: one session, four parts, one demo (the e2e test "Lamb chops, 2 left, then 
 Base: `rebuild/main` **with E1 merged**. If `OrderItem.sentAt` is not in `packages/db/prisma/schema.prisma`, E1 is not merged: say so and stop.
 You may change: `apps/api/**`, `packages/db/**` (one new migration and the seed), `reports/**`. Nothing else.
 Runs beside: one screens session in `apps/web`. Do not touch it.
-Ship policy: commit per part; push this session's branch; open no pull request; merge nothing; deploy nothing.
+Branch: before your first commit run `git switch -c e2/menu-and-availability`. Never commit on `rebuild/main`.
+Ship policy: commit per part on that branch and push it after each part with exactly `git push -u origin e2/menu-and-availability`. The owner's go-ahead for that push is this line and the message that started you; do not wait to be asked again. Never push `rebuild/main` or any other branch, never force-push, open no pull request, merge nothing, deploy nothing.
 
 Database: a throwaway one inside this container only (`service postgresql start` or Docker). Set `DATABASE_URL` and `DIRECT_DATABASE_URL` in the shell, never in a file; if the host is not `localhost` or `127.0.0.1`, stop. Never read, print or write `.env*`. Never Neon. `db:seed` on the throwaway database only.
 Commands: `corepack pnpm@8.15.0`. Never a lint script with `--fix`; run `eslint` on the files you changed. Record PIDs; never `pkill -f`.
@@ -59,7 +60,7 @@ No web change. No stock, no servings-left from ingredients, no alerts table (E10
 9. The seed diff shows the one new key for the five roles and no other grant.
 10. "Lamb chops, 2 left, then gone" passes three runs in a row; E1's "Table 12's evening" still passes.
 11. API typecheck 0, build 0, unit and e2e suites 0 failed, `eslint` clean on changed files, `pnpm check:event` green, the migration only adds.
-12. `git diff --stat rebuild/main...HEAD` shows changes only in the allowed places.
+12. `git diff --stat rebuild/main...HEAD` shows changes only in the allowed places, and `git log origin/e2/menu-and-availability -1` shows your last commit is on GitHub.
 
 ## Proof and report
 

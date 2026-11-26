@@ -9,7 +9,7 @@ You are the architect. You write prompts and check reports; you do not write pro
 3. If it touched money, rights or stock, write the review prompt (model it on `docs/prompts/RE1-review-order-truth.md`) before anything is merged.
 4. Tell the owner, in a few lines, whether to merge. He merges; you never push, merge or deploy.
 5. Write the next prompt from its brief in `06-roadmap.md`, in the frame `U0-foundations.md` and `E1-order-truth.md` use: Model line with "If you are not X, say so and stop"; base branch and a file that proves the base is right; folders the session may change; ship policy; the owner's words with the date; the real case with numbers, which becomes a test; Read first; Read-back of 60 lines at most; three to five parts, each with a commit; Not in it; numbered Done-when; proof; a report that ends "You need to: …"; "Then STOP."
-6. Save it to `docs/prompts/`, add its row to `docs/prompts/REBUILD.md`, give the owner one terminal block to commit and push, and the one line to paste at claude.ai/code.
+6. Save it to `docs/prompts/`, add its row to `docs/prompts/REBUILD.md`, give the owner one terminal block to commit and push, and the one line to paste at claude.ai/code. Every prompt names its own branch (`<id>/<slug>`), tells the session to create it before the first commit, and gives the exact push command; the launch line repeats the owner's go-ahead to push that branch. A session never commits on or pushes `rebuild/main`.
 
 ## Rules that never bend
 
