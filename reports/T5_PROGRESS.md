@@ -3,19 +3,18 @@
 Branch `t5/join-up`, cut from `rebuild/main` `41772c7`. Merge result (Done-when 9 baseline): `f0b6d87`.
 
 ## Now
-- All six phases built and committed (last code commit `053b3da`). Running the three full runs in a
-  row on fresh venues (T1 27 + "Table 12's evening" + every T5 spec), the fresh look review, then the
-  final gates, SCREENS.md and the report.
+- **Done.** Final three runs 53/53 ×3 on fresh venues; final gates green; look reviews done; report
+  written (`reports/T5_REPORT.md`); branch pushed.
 
 ## Phases
 | Phase | State | Commit |
 |---|---|---|
-| 1 One branch that works | built; three-run confirm in progress | f0b6d87, 0e1dac5 |
+| 1 One branch that works | done | f0b6d87, 0e1dac5 |
 | 2 The menu knows what is left | built, proven (menu.spec 2/2) | 0ab105a |
 | 3 Areas, tabs and moving people | built, proven (tables.spec 5/5) | ee2fa26 |
 | 4 The kitchen talks back | built, proven in the Starters chain | ee2fa26, 053b3da |
 | 5 The kitchen and bar screens | built, proven (kitchen.spec 4/4) | 7edbafd |
-| 6 The chains in the browser | built (chains.spec 6/6 at both sizes) | 053b3da |
+| 6 The chains in the browser | done (53/53 ×3 with everything) | 053b3da … |
 
 ## How to run (no credential in any file)
 - `/tmp`-free: `apps/web/e2e/t5/stack.sh <command>` loads a fresh venue into a throwaway database,

@@ -10,7 +10,12 @@ viewport; **[code]** read; **[asserted]** stated, not checked.
 
 ## Verdict
 
-__VERDICT__
+**Done.** All six phases are built and every Done-when line is proven, or settled by a numbered
+decision: Done-when 1–7 and 9 are proven [live]; Done-when 8 holds for every SCREENS.md row T5 set
+(`Waiter-Ready` 22, `Kitchen` 20; re-scored `Main`, `Floor-Phone`, `Supervisor-Table` 20,
+`Order-Terminal` 21). The one T7 form below the pass mark, Join tables (19), has no row here and is
+recorded by decision 19. The four browser cases, with T1's 27 and the evening, passed 53/53 three runs in
+a row on fresh demo venues. One API defect was found for T6 (decision 20).
 
 ## How the proofs run (rules 14, 15, 24)
 
@@ -45,7 +50,9 @@ warnings or errors", `check:ui` green); API `tsc --noEmit` exit 0; API `nest bui
 Both tracks' browser suites run on the demo venue (T1 and T3 wrote theirs for the old import's cast):
 each suite gained a venue mode — the venue's own people and load-time PINs, a 42,000 dish found by name,
 `M`-prefixed labels, the drawn states made through the API, a real Tabs area — and T3's specs reach a
-table through T1's Floor (`e2e/t5/floor.ts`). Three runs in a row: __THREE_RUNS__
+table through T1's Floor (`e2e/t5/floor.ts`). Three runs in a row: **53 of 53, three runs in a row** (T1's 27 + the evening + T5's 25), each on its own fresh venue,
+on the final web build (`reports/proof/T5/final_three_runs.txt`) [live]. Runs 2 and 3 show later commit
+ids only because proof images were committed between runs; no code changed.
 
 The cashier sentence in `lib/cashier/payment-validation.ts` that said "backend" now reads "Cash can
 be taken once everything on the bill has been served."; T1's sweep no longer allows the old line.
@@ -119,7 +126,8 @@ Done-when 6: **the four browser cases pass three runs in a row.** `e2e/t5/chains
 - "A busy Friday": a tab opened and named, a party moved, two tables joined and split, a hand-over
   accepted, then the shift ended.
 - "Table 12's evening" still passes (T3's spec, on the venue).
-Three runs: __THREE_RUNS_SHORT__
+Three runs in a row with everything else: 53/53, 53/53, 53/53 (`final_three_runs.txt`) [live]. The chains
+run alone also passed 6/6 before that.
 
 ## Done-when 7 — rule 10, check:ui, no developer wording
 
@@ -182,7 +190,9 @@ on its branch); their scores are the table above.
 
 ## Done-when 9 — the diff
 
-`git diff --stat f0b6d87..HEAD`: __DIFFSTAT__
+`git diff --stat f0b6d87..HEAD`: 188 files, +5,091 −317, of which `apps/web` 75, `reports` 112,
+`design/screens/SCREENS.md` 1 (Status cells only) [live]. Nothing under `apps/api`, `packages/db` or
+`design/screens/html|png|kit.css`.
 
 ## Gates (final, this turn)
 
@@ -288,3 +298,18 @@ check:event green
 - **T4 / seed owner:** the venue loader could give tables their `areaId` itself (today the seed's second
   run does it) and could make a Tabs area.
 - **Everyone:** run browser proofs through `apps/web/e2e/t5/stack.sh`.
+
+## Closing
+
+```
+Done: the four tracks are joined on t5/join-up and the screens run on T2's engines.
+Menu: one call, "N left", sold out within 10 s on every terminal, the red line, Send names what it skipped.
+Floor: server areas, Tabs and New tab, Ready/Late/Not sent/Joined; move, join and split again, line move,
+  four splits, change waiter, hand-overs with the colleague accepting and the shift-end way out.
+Kitchen and bar screens for chef and bartender; Ready reaches the waiter; hold, fire, undo, allergy, takeaway.
+Proof: 53/53 three runs in a row on fresh demo venues; API unit 1,318/0 failed; all web gates green.
+Look: every SCREENS.md row T5 set scores 20 or more; Join tables is 19 (decision 19).
+Found for T6: after split-items the next new order answers 500 (decision 20).
+You need to: review t5/join-up and decide when it merges; give T6 decision 20's order-number defect;
+  ask T7 to add rows for its built forms and to settle where Join's summary sits.
+```
