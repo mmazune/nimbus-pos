@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Refund, a supervisor’s PIN</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall" inert>
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">Receipts</h1>
+    <span class="clock">Paid bills today · 96 · UGX 4,860,000 · as at 20:58</span>
+    <span class="grow"></span>
+    
+    <span class="name"><b>Sarah M.</b> · Cashier · Till 1</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px" inert><div class="card" style="overflow: hidden"><table class="dt"><thead><tr><th>Bill</th><th>Table</th><th>Waiter</th><th>Paid</th><th>How</th><th class="num">UGX</th></tr></thead><tbody><tr class="sel"><td>0418</td><td>Table 16</td><td>Brian O.</td><td>19:38</td><td>Mobile money</td><td class="num">38,000</td></tr><tr><td>0417</td><td>Tab 2</td><td>David S.</td><td>19:35</td><td>Cash</td><td class="num">24,000</td></tr><tr><td>0416</td><td>Table 30</td><td>Brian O.</td><td>19:33</td><td>Card</td><td class="num">143,500</td></tr><tr><td>0415</td><td>Table 20</td><td>Grace N.</td><td>19:28</td><td>Cash</td><td class="num">59,000</td></tr></tbody></table></div></main>
+  <nav inert class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Receipts</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="8" rx="2"/><path d="M6 11V5h12v6M10 15h4"/></svg>Till</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>  <div class="scrim"></div>  <section class="sheet mid" aria-label="Refund from bill 0418" style="gap: 16px">
+    <span class="grab"></span>
+    <div class="hstack"><div class="grow"><h2 class="t-h">Refund from bill 0418</h2><p class="t-sup muted">Table 16 · Brian O. · paid 19:38 · UGX 38,000</p></div><a class="close" href="#" aria-label="Close"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a></div>
+    <div class="hstack g24" style="align-items: flex-start"><div class="grow vstack g16"><div><p class="lab">What goes back</p><div class="card" style="overflow: hidden"><button class="row" style="width: 100%;background: var(--tonal)"><span class="grow"><span class="t-body b">Chicken wings</span><br><span class="t-sup muted">1 · UGX 24,000</span></span><span class="round sm" style="width: 32px; height: 32px; background: var(--primary); color: var(--on-primary)"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span></button><button class="row" style="width: 100%"><span class="grow"><span class="t-body b">Lager 500 ml</span><br><span class="t-sup muted">2 · UGX 12,000</span></span></button><button class="row" style="width: 100%"><span class="grow"><span class="t-body b">Water 500 ml</span><br><span class="t-sup muted">1 · UGX 2,000</span></span></button></div></div><div><p class="lab">Why</p><div class="optgrid" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><button class="opt on">Guest complaint</button><button class="opt">Charged twice</button><button class="opt">Item never came</button><button class="opt">Something else</button></div></div><div><p class="lab">Money goes back by</p><div class="seg fill"><button class="on">Mobile money, as paid</button><button class="">Cash</button></div></div></div>
+    <div class="vstack g12" style="width: 300px; flex: none"><p class="t-row" style="text-align: center">A supervisor’s PIN</p><div class="pin " aria-label="0 of 4 digits"><i></i><i></i><i></i><i></i></div><div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><button class="key" style="height: 60px">1</button><button class="key" style="height: 60px">2</button><button class="key" style="height: 60px">3</button><button class="key" style="height: 60px">4</button><button class="key" style="height: 60px">5</button><button class="key" style="height: 60px">6</button><button class="key" style="height: 60px">7</button><button class="key" style="height: 60px">8</button><button class="key" style="height: 60px">9</button><button class="key" aria-label="Clear" style="height: 60px; font-size: 17px">Clear</button><button class="key" style="height: 60px">0</button><button class="key" style="height: 60px" aria-label="Delete"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 6H9l-6 6 6 6h12z"/><path d="m12 9 6 6M18 9l-6 6"/></svg></button></div></div></div>
+    <div class="hstack" style="justify-content: flex-end"><button class="btn textbtn">Cancel</button><button class="btn off" style="min-width: 320px">Refund UGX 24,000 · after the PIN</button></div>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Take payment</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar">
+    <a class="back" href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>Table 12</a>
+    <h1 class="t-h">Take payment</h1>
+    <span class="clock">Table 12 · 3 guests · served by Amina K.</span>
+    <span class="grow"></span>
+    
+    <span class="who" title="Signed in">SM</span>
+  </header>
+  <div class="ord" style="grid-template-columns: minmax(0, 1fr) 372px">
+    <main class="menu" style="gap: 18px; padding: 20px 24px"><div><p class="cap">To pay</p><p class="big" style="margin-top: 4px">UGX 98,000</p></div>
+      <div class="card vstack g12" style="padding: 20px; background: var(--amber-t); box-shadow: none; color: var(--amber)">
+        <div class="hstack"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><div class="grow"><p class="t-h">Waiting for the guest’s money</p><p class="t-body">MTN MoMo · UGX 98,000 · since 20:51, 3 minutes</p></div><span class="pill p-amber">Pending</span></div>
+        <p class="t-sup">Table 12 shows “Paying” on the floor. Nothing is counted in the till until you enter the reference. After 10 minutes the supervisor is told.</p>
+      </div>
+      <div><label class="lab">Reference, when their message arrives</label><div class="field ph">Type the code from the guest’s message</div></div>
+      <span class="grow"></span>
+      <div class="vstack g8"><div class="hstack g12"><button class="btn tonal" style="flex: 1 1 0; height: 64px">Change the method</button><button class="btn filled" style="flex: 2 1 0; height: 64px; font-size: 18px">Record the payment</button></div><p class="t-small muted" style="text-align: center">Still pending when the day closes? It is on the close list until it is settled.</p></div></main>
+    <aside class="check" aria-label="Bill">
+      <div class="hstack" style="padding: 16px 16px 8px; justify-content: space-between"><h2 class="t-h">Bill</h2><span class="t-sup muted">8 items</span></div>
+      <p class="cap" style="padding: 8px 16px 4px">Sent 20:15</p><button class="line sent" style="width: 100%"><span class="q">2</span><span class="grow"><span class="nm">Lager 500 ml</span></span><span class="pr">12,000</span></button><button class="line sent" style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Blended Scotch</span><br><span class="sub">Double · Cola</span></span><span class="pr">15,000</span></button><button class="line sent" style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Cola 300 ml</span></span><span class="pr">3,000</span></button><div class="hr" style="margin: 8px 16px"></div><p class="cap" style="padding: 8px 16px 4px">Sent 19:42</p><button class="line sent" style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Beef burger</span><br><span class="sub">Medium · No onions</span></span><span class="pr">28,000</span></button><button class="line sent" style="width: 100%"><span class="q">2</span><span class="grow"><span class="nm">Chips</span></span><span class="pr">16,000</span></button><button class="line sent" style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Chicken wings</span></span><span class="pr">24,000</span></button>
+      <span class="grow"></span>
+      <div class="hr"></div>
+      <div class="tot" style="padding: 14px 16px 16px"><span class="t-row">Total</span><span class="t-h">UGX 98,000</span></div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

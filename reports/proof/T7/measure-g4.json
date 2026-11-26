@@ -1,0 +1,146 @@
+[
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Mobile-Money",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Mobile-Money-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Mobile-Pending",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Mobile-Pending-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Card",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Card-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Split-Part",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Split-Part-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Paid",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Paid-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Bill-Changed",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Pay-Bill-Changed-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Refund-Supervisor",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Refund-Supervisor-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Walk-Out",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Walk-Out-Phone",
+  "size": "390x844"
+ }
+]

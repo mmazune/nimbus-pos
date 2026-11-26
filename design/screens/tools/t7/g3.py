@@ -52,27 +52,28 @@ phone('Order-Search-None-Phone', 'Order, nothing found, phone', 'Nothing found o
 
 # 3 a line that became sold out; grills group with one low and one out
 GR = [item('Pork ribs', '35,000'), item('Pepper steak', '45,000', small='45,000 · 3 left'), item('Lamb chops', '', 'off', 'Sold out since 20:12'), item('Grilled tilapia', '38,000'), item('T-bone steak', '52,000'), item('Beef skewers', '18,000'), item('Grilled chicken', '25,000'), item('Pork chops', '30,000')]
-LAMB = '<div class="line" style="background: var(--red-t)"><span class="q" style="background: var(--card); color: var(--red)">1</span><span class="grow"><span class="nm" style="color: var(--red)">Lamb chops</span><br><span class="sub" style="color: var(--red)">Sold out at 20:12, after you added it. It will not send.</span></span><button class="btn sm textbtn danger" style="padding: 0 8px">Remove</button></div>'
-chk = check('<p class="cap" style="padding: 8px 16px 4px">Not sent</p>' + LAMB + lines([('', '', [(1, 'Pepper steak', 'Medium', '45,000'), (2, 'Chips', '', '16,000')])]) + '<div class="hr" style="margin: 8px 16px"></div>' + lines([('Sent 19:58', 'sent', [(2, 'Beef samosas', '', '24,000')])]), '85,000',
-            MORE + btn('Ask the kitchen', 'tonal', 'flex: 1 1 0; padding: 0 12px') + btn('Send 2 items', 'filled', 'flex: 1.2 1 0; padding: 0 12px'), count='6 items')
+LAMB = '<div class="line" style="background: var(--red-t)"><span class="q" style="background: var(--card); color: var(--red)">1</span><span class="grow"><span class="nm" style="color: var(--red)">Lamb chops</span><br><span class="sub" style="color: var(--red)">Sold out at 20:12, after you added it. It will not send and is not on the bill.</span></span><button class="btn sm textbtn danger" style="padding: 0 8px">Remove</button></div>'
+NS23 = [('', '', [(1, 'Rolex', '', '9,000'), (1, 'Chips', '', '8,000'), (1, 'Water 500 ml', '', '2,000')])]
+chk = check('<p class="cap" style="padding: 8px 16px 4px">Not sent</p>' + LAMB + lines(NS23), '19,000',
+            MORE + btn('Ask the kitchen', 'tonal', 'flex: 1 1 0; padding: 0 12px') + btn('Send 3 items', 'filled', 'flex: 1.2 1 0; padding: 0 12px'), count='3 items')
 main = f'{seg(["Food", "Drinks"], "Food").replace("<button class=", "<button style=\"min-width: 140px\" class=")}{optgrid(FOODG, 8, "Grills")}<div class="items" style="grid-template-columns: repeat(4, minmax(0, 1fr))">{"".join(GR)}</div>'
-page('Order-Line-Sold-Out', *T, 'Order, a line became sold out', oscreen(main, chk, 'Table 17', '4 guests · open 14 min · Amina K.'), G, 'Waiter', 'A line not yet sent whose item sold out: red, Send skips it', R, 'U2, needs E2 and E10')
+page('Order-Line-Sold-Out', *T, 'Order, a line became sold out', oscreen(main, chk, 'Table 23', '2 guests · open 6 min · Amina K.'), G, 'Waiter', 'A line not yet sent whose item sold out: red, Send skips it', R, 'U2, needs E2 and E10')
 phone('Order-Line-Sold-Out-Phone', 'Order, line sold out, phone', 'A line that sold out, on a phone', R, 'U2, needs E2 and E10',
-      f'<p class="cap">Not sent</p><div class="card" style="overflow: hidden">{LAMB}{lines([("", "", [(1, "Pepper steak", "Medium", "45,000"), (2, "Chips", "", "16,000")])])}</div><p class="t-sup muted">Send skips Lamb chops and sends the other 2. Or ask the kitchen; they may have one left.</p><p class="cap">Sent 19:58</p><div class="card" style="overflow: hidden">{lines([("", "sent", [(2, "Beef samosas", "", "24,000")])])}</div>',
-      btn('Ask the kitchen', 'tonal', 'flex: 1 1 0') + btn('Send 2 items', 'filled', 'flex: 1.4 1 0'), sub='4 guests · UGX 85,000', head=rband('Table 17', '4 guests · open 14 min'))
+      f'<p class="cap">Not sent</p><div class="card" style="overflow: hidden">{LAMB}{lines(NS23)}</div><p class="t-sup muted">Send skips Lamb chops and sends the other 3. Or ask the kitchen; they may have one left.</p>',
+      btn('Ask the kitchen', 'tonal', 'flex: 1 1 0') + btn('Send 3 items', 'filled', 'flex: 1.4 1 0'), head=rband('Table 23', '2 guests · UGX 19,000'))
 
 # 4 hold and fire, the moment after Fire with 3 s to undo
-HELD = '<p class="cap" style="padding: 8px 16px 4px">Firing in 3 s</p>' + '<div class="line"><span class="q">1</span><span class="grow"><span class="nm">Grilled tilapia</span><br><span class="sub">Main · was held for later</span></span><span class="pr">38,000</span></div>'
+HELD = '<p class="cap" style="padding: 8px 16px 4px">Going to the kitchen in 3 seconds</p>' + '<div class="line"><span class="q">1</span><span class="grow"><span class="nm">Grilled tilapia</span><br><span class="sub">Main · was held for later</span></span><span class="pr">38,000</span></div>'
 S2 = lines([('Sent 19:58', 'sent', [(2, 'Beef samosas', 'Starter', '24,000'), (1, 'Spring rolls', 'Starter', '12,000'), (2, 'Lager 500 ml', '', '12,000')])])
 chk = check(HELD + '<div class="hr" style="margin: 8px 16px"></div>' + S2, '86,000', MORE + btn('Print bill', 'tonal', 'flex: 1 1 0; padding: 0 12px'), count='6 items')
 main = f'{seg(["Food", "Drinks"], "Food").replace("<button class=", "<button style=\"min-width: 140px\" class=")}{optgrid(FOODG, 8, "Popular")}<div class="items" style="grid-template-columns: repeat(4, minmax(0, 1fr))">{"".join(item(n, p) for n, p in POP[:16])}</div>'
-tst = toast('Grilled tilapia fired to the kitchen in 3 s', 'Undo', 'left: 24px; right: 396px; bottom: 24px')
+tst = toast('Grilled tilapia goes to the kitchen in 3 seconds', 'Undo', 'left: 24px; right: 396px; bottom: 24px')
 page('Order-Hold-Fire', *T, 'Order, fire with undo', oscreen(main, chk, 'Table 2', '4 guests · open 42 min · Amina K.', over=tst), G, 'Waiter', 'Hold and fire: a held main is fired, 3 seconds to undo', R, 'U2, needs E5')
-heldp = '<div class="card" style="overflow: hidden"><div class="line"><span class="q">1</span><span class="grow"><span class="nm">Grilled tilapia</span><br><span class="sub">Held for later</span></span><button class="btn sm tonal" icon="">' + ic('fire', 's') + 'Fire</button></div></div>'
+heldp = '<div class="card" style="overflow: hidden"><div class="line"><span class="q">1</span><span class="grow"><span class="nm">Grilled tilapia</span><br><span class="sub">Main · was held for later</span></span><span class="pr">38,000</span></div></div>'
 phone('Order-Hold-Fire-Phone', 'Order, hold and fire, phone', 'A held main with Fire, and the undo after firing', R, 'U2, needs E5',
-      f'<p class="cap">Held for later · 1</p>{heldp}<p class="cap">Sent 19:58</p><div class="card" style="overflow: hidden">{S2}</div>',
-      f'<a class="btn tonal" href="#" style="flex: 1 1 0">Order · 6</a>' + btn('Print bill', 'tonal', 'flex: 1 1 0'), head=rband('Table 2', '4 guests · open 42 min'),
-      over=toast('Fired to the kitchen in 3 s', 'Undo', 'left: 16px; right: 16px; bottom: 96px'))
+      f'<p class="cap">Going to the kitchen in 3 seconds</p>{heldp}<div class="card" style="overflow: hidden">{S2}</div>',
+      f'<a class="btn tonal" href="#" style="flex: 1 1 0">Order · 6</a>' + btn('Print bill', 'tonal', 'flex: 1 1 0'), head=rband('Table 2', '4 guests · UGX 86,000'),
+      over=toast('Grilled tilapia goes to the kitchen in 3 s', 'Undo', 'left: 16px; right: 16px; bottom: 96px'))
 
 # 5 a line's options: allergy, takeaway, note
 ALL = ['Nuts', 'Gluten', 'Dairy', 'Eggs', 'Shellfish', 'Other']
@@ -83,18 +84,20 @@ def line_sheet(cols):
     <div><p class="lab">Allergy</p>{optgrid(ALL, cols, "Nuts")}</div>
     <div><p class="lab">Where it is eaten</p>{seg(["Here", "Takeaway"], "Takeaway", True)}</div>
     <div><label class="lab">Note for the kitchen</label><div class="field">No sauce on the bun</div></div>
-    <p class="t-sup muted">The ticket shows NUT ALLERGY in red at the top and says Takeaway. The allergy stays on table 12 for later rounds.</p>''',
+    <div class="hstack g8"><span class="pill p-red">NUT ALLERGY</span><span class="pill p-neutral">TAKEAWAY</span><span class="t-sup muted grow">How the ticket shows it, in red at the top. The allergy stays on table 12 for later rounds.</span></div>''',
         sfoot(btn('Remove', 'textbtn danger'), '<span class="grow"></span>', btn('Save the line', 'filled', 'min-width: 220px'), end=False))
-bg = oscreen(main.replace('"Popular"', '"Burgers"'), std_check).replace('<div class="ord"', '<div class="ord" inert')
+NEWB = ('Not sent', '', [(1, 'Beef burger', 'Medium · Nut allergy · Takeaway', '28,000')])
+al_check = check(lines([NEWB, T12[0]]) + '<div class="hr" style="margin: 8px 16px"></div><button class="line sent" style="width: 100%"><span class="q">4</span><span class="grow"><span class="nm">Sent 19:42 · food</span></span><span class="pr">68,000</span></button>', '126,000', MORE + btn('Print bill', 'tonal', 'flex: 1 1 0; padding: 0 12px') + btn('Send 1 item', 'filled', 'flex: 1.4 1 0; padding: 0 12px'), count='9 items')
+bg = oscreen(main.replace('"Popular"', '"Burgers"'), al_check).replace('<div class="ord"', '<div class="ord" inert')
 page('Order-Line-Allergy', *T, 'Order, a line with allergy and takeaway', bg + scrim() + line_sheet(6).replace('class="sheet "', 'class="sheet wide"'), G, 'Waiter', 'A line’s options: allergy, takeaway, note', R, 'U2, needs E5')
-pbg = rband('Table 12', '3 guests · open 1 h 05').replace('<header class="band"', '<header inert class="band"') + f'<main class="body" inert><div class="card" style="overflow: hidden">{lines([NOTSENT])}</div></main>'
-page('Order-Line-Allergy-Phone', *P, 'Order, line options, phone', pbg + scrim() + line_sheet(3).replace('<div><label class="lab">Note for the kitchen</label><div class="field">No sauce on the bun</div></div>', '').replace('<p class="t-sup muted">The ticket shows NUT ALLERGY in red at the top and says Takeaway. The allergy stays on table 12 for later rounds.</p>', '<p class="t-sup muted">The ticket shows NUT ALLERGY in red and says Takeaway.</p>'), G, 'Waiter', 'A line’s options on a phone', R, 'U2, needs E5')
+pbg = rband('Table 12', '3 guests · open 1 h 05').replace('<header class="band"', '<header inert class="band"') + f'<main class="body" inert><div class="card" style="overflow: hidden">{lines([NEWB])}</div></main>'
+page('Order-Line-Allergy-Phone', *P, 'Order, line options, phone', pbg + scrim() + line_sheet(3).replace('<div><p class="lab">Where it is eaten</p>', '<div><p class="lab" style="display: none"></p>').replace('<span class="t-sup muted grow">How the ticket shows it, in red at the top. The allergy stays on table 12 for later rounds.</span>', '<span class="t-sup muted grow">On the ticket, in red</span>'), G, 'Waiter', 'A line’s options on a phone', R, 'U2, needs E5')
 
 # 6 same again
 AGAIN = ('Not sent · same again', '', [(2, 'Lager 500 ml', '', '12,000'), (1, 'Blended Scotch', 'Double · Cola', '15,000'), (1, 'Cola 300 ml', '', '3,000')])
 sa_btn = f'<div style="padding: 4px 16px 0">{btn("Same again · 4 drinks · UGX 30,000", "tonal", "width: 100%", icon="redo")}</div>'
 older = '<div class="hr" style="margin: 8px 16px"></div><button class="line sent"><span class="q">4</span><span class="grow"><span class="nm">Sent 19:42 · food</span><br><span class="sub">Beef burger, Chips, Chicken wings</span></span><span class="pr">68,000</span></button>'
-chk = check(lines([AGAIN]) + '<div class="hr" style="margin: 8px 16px"></div>' + lines([T12[0]]) + sa_btn.replace('Same again · 4 drinks · UGX 30,000', 'Same again · 4 more') + older, '128,000', MORE + btn('Print bill', 'tonal', 'flex: 1 1 0; padding: 0 12px') + btn('Send 4 items', 'filled', 'flex: 1.4 1 0; padding: 0 12px'), count='12 items')
+chk = check(lines([AGAIN]) + '<div class="hr" style="margin: 8px 16px"></div>' + lines([T12[0]]) + older, '128,000', MORE + btn('Print bill', 'tonal', 'flex: 1 1 0; padding: 0 12px') + btn('Send 4 items', 'filled', 'flex: 1.4 1 0; padding: 0 12px'), count='12 items')
 DR = [f'<div class="mrow"><b class="grow">{n}</b>' + ''.join(f'<button class="mbtn">{m}<small>{p}</small></button>' for m, p in ms) + '</div>' for n, ms in [
     ('Lager', [('500 ml', '6,000'), ('Jug', '22,000')]), ('Stout', [('500 ml', '7,000')]), ('Local lager', [('500 ml', '5,000')]), ('Draught', [('Pint', '8,000'), ('Jug', '22,000')]),
     ('Imported lager', [('330 ml', '9,000')]), ('Cider', [('330 ml', '8,000')]), ('Cola', [('300 ml', '3,000')]), ('Soda water', [('300 ml', '3,000')]), ('Tonic', [('300 ml', '3,500')]), ('Water', [('500 ml', '2,000'), ('1.5 l', '4,000')])]]
@@ -102,15 +105,15 @@ main = f'{seg(["Food", "Drinks"], "Drinks").replace("<button class=", "<button s
 tst = toast('Added the last round again: 4 drinks', 'Undo', 'left: 24px; right: 396px; bottom: 24px')
 page('Order-Same-Again', *T, 'Order, same again', oscreen(main, chk, over=tst), G, 'Waiter', 'Same again: one tap re-adds the last sent drinks', R, 'U2')
 phone('Order-Same-Again-Phone', 'Order, same again, phone', 'Same again on a phone', R, 'U2',
-      f'{btn("Same again · 4 drinks · UGX 30,000", "tonal", "width: 100%", icon="redo")}<p class="cap">Not sent · same again</p><div class="card" style="overflow: hidden">{lines([("", "", AGAIN[2])])}</div><p class="cap">Sent 20:15</p><div class="card" style="overflow: hidden">{lines([("", "sent", T12[0][2])])}</div>',
-      pfoot(12, 'Send 4 items'), sub='3 guests · UGX 128,000')
+      f'<p class="cap">Not sent · same again</p><div class="card" style="overflow: hidden">{lines([("", "", AGAIN[2])])}</div><p class="cap">Sent</p><div class="card" style="overflow: hidden">{lines([("", "sent", [(4, "Drinks, 20:15", "Lager, Blended Scotch, Cola", "30,000"), (4, "Food, 19:42", "Beef burger, Chips, Chicken wings", "68,000")])])}</div>',
+      pfoot(12, 'Send 4 items'), sub='3 guests · UGX 128,000', over=toast('Added the last round again', 'Undo', 'left: 16px; right: 16px; bottom: 96px'))
 
 # 7 a group with a sub-group filter row
 SUB = ['All · 14', 'Bottles · 8', 'Draught · 3', 'Local · 5', 'Imported · 4']
 subrow = '<div class="hstack g8">' + ''.join(f'<button class="chip{" on" if s.startswith("Draught") else ""}">{s}</button>' for s in SUB) + '</div>'
 DRA = [f'<div class="mrow"><b class="grow">{n}</b>' + ''.join(f'<button class="mbtn">{m}<small>{p}</small></button>' for m, p in ms) + '</div>' for n, ms in [
     ('Draught lager', [('Half', '5,000'), ('Pint', '8,000'), ('Jug', '22,000')]), ('Draught stout', [('Half', '6,000'), ('Pint', '9,000'), ('Jug', '25,000')]), ('Draught cider', [('Half', '5,500'), ('Pint', '9,000'), ('Jug', '24,000')])]]
-main = f'{seg(["Food", "Drinks"], "Drinks").replace("<button class=", "<button style=\"min-width: 140px\" class=")}{optgrid(DRINKG, 8, "Beer")}{subrow}<div class="items" style="grid-template-columns: repeat(2, minmax(0, 1fr))">{"".join(DRA)}</div><p class="t-sup muted">Beer has sub-groups, so a filter row shows under the groups. It is the same menu tree the manager sets.</p>'
+main = f'{seg(["Food", "Drinks"], "Drinks").replace("<button class=", "<button style=\"min-width: 140px\" class=")}{optgrid(DRINKG, 8, "Beer")}{subrow}<div class="items" style="grid-template-columns: repeat(2, minmax(0, 1fr))">{"".join(DRA)}</div>'
 page('Order-Subgroup', *T, 'Order, group with a sub-group filter', oscreen(main, std_check), G, 'Waiter', 'A group with a sub-group filter row', R, 'U2, needs E2')
 psub = '<div class="hstack g8">' + ''.join(f'<button class="chip{" on" if s == "Draught" else ""}">{s}</button>' for s in ['All', 'Bottles', 'Draught']) + '<button class="chip">More · 2</button></div>'
 phone('Order-Subgroup-Phone', 'Order, sub-group filter, phone', 'Sub-group filter on a phone: three chips and More', R, 'U2, needs E2',
