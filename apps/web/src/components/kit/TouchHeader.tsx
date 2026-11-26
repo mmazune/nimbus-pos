@@ -62,7 +62,7 @@ export function TouchHeader({ title, context, searchLabel, searchSize = "regular
         <b className="font-kit-bold text-kit-on-primary">{person.name}</b> · {person.role}
         {person.station ? ` · ${person.station}` : ""}
       </span>
-      <RoundAction icon="lock" label="Lock the screen" size="small" tone="onPrimary" onClick={onLock} />
+      <RoundAction icon="lock" label="Lock the screen" size="small" tone="bar" onClick={onLock} />
     </header>
   );
 }

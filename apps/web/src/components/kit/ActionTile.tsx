@@ -31,7 +31,7 @@ export function ActionTile({ icon, title, line, danger = false, disabled, onClic
       onClick={onClick}
       disabled={disabled}
       className={[
-        "flex h-kit-action min-w-0 items-center gap-kit-12 rounded-kit-control px-kit-16 text-left font-kit",
+        "flex h-kit-action w-full min-w-0 items-center gap-kit-12 rounded-kit-control px-kit-16 text-left font-kit",
         ground,
         FOCUS,
         focusLook(demo),

@@ -64,13 +64,15 @@ export function Button({ tone, size = "touch", icon, fill = false, disabled, onC
   );
 }
 
-export type IconActionTone = "tonal" | "filled" | "card" | "onPrimary" | "field";
+export type IconActionTone = "tonal" | "filled" | "card" | "onPrimary" | "bar" | "field";
 
 const ICON_TONE: Record<IconActionTone, { idle: string; pressed: string }> = {
   tonal: { idle: "bg-kit-tonal text-kit-primary active:bg-kit-tonal-2", pressed: "bg-kit-tonal-2 text-kit-primary" },
   filled: { idle: "bg-kit-primary text-kit-on-primary active:bg-kit-primary-2", pressed: "bg-kit-primary-2 text-kit-on-primary" },
   card: { idle: "bg-kit-card text-kit-primary shadow-kit-small active:bg-kit-canvas", pressed: "bg-kit-canvas text-kit-primary shadow-kit-small" },
   onPrimary: { idle: "bg-kit-primary-2 text-kit-on-primary active:bg-kit-primary", pressed: "bg-kit-primary text-kit-on-primary" },
+  // bare on a navy bar (kit.css `.bar .rb`): no ground until pressed
+  bar: { idle: "bg-kit-primary text-kit-on-primary active:bg-kit-primary-2", pressed: "bg-kit-primary-2 text-kit-on-primary" },
   field: { idle: "bg-kit-field text-kit-text active:bg-kit-tonal-2", pressed: "bg-kit-tonal-2 text-kit-text" },
 };
 

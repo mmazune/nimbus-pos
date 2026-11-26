@@ -23,8 +23,11 @@ export type TableTileProps = {
   state: TableState;
   /** Open on someone else's name: flat, tinted, their name in regular weight. */
   others?: boolean;
-  /** Roomy 108 px when the area fits; compact 84 px when it does not, and on phones. */
-  density: "roomy" | "compact";
+  /**
+   * Roomy 108 px when the area fits; compact 84 px when it does not; phone is
+   * the 84 px tile as Floor-Phone draws it (time top right, the state below).
+   */
+  density: "roomy" | "compact" | "phone";
   /** Roomy middle line: "4 guests · 42 min", "20:00 · 6 guests", "2 seats". */
   detail?: string;
   /** "You" or "Brian O." */
@@ -46,6 +49,7 @@ export function TableTile({ name, state, others = false, density, detail, who, a
   const tone: PillTone = state === "open" && others ? "neutral" : s.tone;
   const idle = IDLE.includes(state);
   const roomy = density === "roomy";
+  const phone = density === "phone";
   const ground = others
     ? demo === "pressed"
       ? "bg-kit-tonal-2"
@@ -61,7 +65,7 @@ export function TableTile({ name, state, others = false, density, detail, who, a
       disabled={disabled}
       aria-label={label}
       className={[
-        "flex min-w-0 flex-col justify-between text-left text-kit-text font-kit",
+        "flex w-full min-w-0 flex-col justify-between text-left text-kit-text font-kit",
         roomy ? "h-kit-tile rounded-kit-tile px-kit-14 py-kit-12" : "h-kit-tile-compact rounded-kit-tile-compact px-kit-12 py-kit-10",
         disabled ? "cursor-not-allowed bg-kit-neutral-t text-kit-muted" : ground,
         FOCUS,
@@ -71,8 +75,12 @@ export function TableTile({ name, state, others = false, density, detail, who, a
       ].join(" ")}
     >
       <span className="flex items-start justify-between gap-kit-6">
-        <span className={tab ? "text-kit-tab-no" : roomy ? "text-kit-tile-no" : "text-kit-tile-no-c"}>{name}</span>
-        <Pill tone={tone}>{s.word}</Pill>
+        <span className={["min-w-0 whitespace-nowrap", tab ? "text-kit-tab-no" : roomy ? "text-kit-tile-no" : "text-kit-tile-no-c"].join(" ")}>{name}</span>
+        {phone ? (
+          <span className="whitespace-nowrap text-kit-bar text-kit-muted">{short ?? ""}</span>
+        ) : (
+          <Pill tone={tone}>{s.word}</Pill>
+        )}
       </span>
       {roomy ? <span className="whitespace-nowrap text-kit-small text-kit-muted">{detail ?? ""}</span> : null}
       <span
@@ -81,7 +89,9 @@ export function TableTile({ name, state, others = false, density, detail, who, a
           roomy ? "text-kit-small" : "text-kit-bar",
         ].join(" ")}
       >
-        {roomy ? (
+        {phone ? (
+          <Pill tone={tone}>{s.word}</Pill>
+        ) : roomy ? (
           <>
             <span className={others ? "font-kit-regular text-kit-muted" : "font-kit-bold"}>{who ?? ""}</span>
             <span className="font-kit-semibold">{amount ?? ""}</span>
@@ -102,13 +112,13 @@ export function TableTile({ name, state, others = false, density, detail, who, a
 }
 
 /** "New tab": the last tile in the Tabs area. */
-export function NewTabTile({ density, onClick, demo }: { density: "roomy" | "compact"; onClick?: () => void; demo?: KitDemo }) {
+export function NewTabTile({ density, onClick, demo }: { density: "roomy" | "compact" | "phone"; onClick?: () => void; demo?: KitDemo }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
-        "flex min-w-0 flex-col items-center justify-center gap-kit-4 text-kit-chip font-kit-bold text-kit-primary font-kit",
+        "flex w-full min-w-0 flex-col items-center justify-center gap-kit-4 text-kit-chip font-kit-bold text-kit-primary font-kit",
         density === "roomy" ? "h-kit-tile rounded-kit-tile" : "h-kit-tile-compact rounded-kit-tile-compact",
         demo === "pressed" ? "bg-kit-tonal-2" : "bg-kit-tonal active:bg-kit-tonal-2",
         FOCUS,

@@ -19,7 +19,7 @@ export function Key({ label, name, disabled, onPress, demo }: KeyProps) {
       disabled={disabled}
       onClick={onPress}
       className={[
-        "flex h-kit-key min-w-0 items-center justify-center rounded-kit-control text-center text-kit-key font-kit",
+        "flex h-kit-key w-full min-w-0 items-center justify-center rounded-kit-control text-center text-kit-key font-kit",
         disabled
           ? "bg-kit-neutral-t text-kit-muted cursor-not-allowed"
           : demo === "pressed"

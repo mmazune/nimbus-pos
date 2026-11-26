@@ -21,7 +21,7 @@ export function ItemTile({ name, price, left, soldOut = false, onClick, demo }: 
       onClick={onClick}
       aria-label={[name, soldOut ? "Sold out" : price, !soldOut && left !== undefined ? `${left} left` : ""].filter(Boolean).join(", ")}
       className={[
-        "flex h-kit-item min-w-0 flex-col justify-between rounded-kit-control px-kit-14 py-kit-12 text-left font-kit",
+        "flex h-kit-item w-full min-w-0 flex-col justify-between rounded-kit-control px-kit-14 py-kit-12 text-left font-kit",
         soldOut
           ? "bg-kit-neutral-t text-kit-muted"
           : demo === "pressed"
