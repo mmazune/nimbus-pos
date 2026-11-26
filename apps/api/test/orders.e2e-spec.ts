@@ -299,6 +299,14 @@ describe('POS Orders (e2e)', () => {
       .send({ serviceType: 'TAKEAWAY' });
     const id = createRes.body.id;
 
+    // E1: a send with nothing on the order is a 409, so put one item on it first.
+    await request(app.getHttpServer())
+      .post(`/api/pos/orders/${id}/items`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .send({ menuItemId, quantity: 1 })
+      .expect(201);
+
     await request(app.getHttpServer())
       .post(`/api/pos/orders/${id}/send`)
       .set('Authorization', `Bearer ${ownerToken}`)

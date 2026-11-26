@@ -1,0 +1,20 @@
+FAIL ./attendance.e2e-spec.ts
+FAIL ./bg7-hms-integration.e2e-spec.ts
+FAIL ./billing.e2e-spec.ts
+FAIL ./control-plane.e2e-spec.ts
+FAIL ./franchise-analytics.e2e-spec.ts
+FAIL ./franchise.e2e-spec.ts
+FAIL ./orders.e2e-spec.ts
+FAIL ./quick-pin.e2e-spec.ts
+FAIL ./tenancy.e2e-spec.ts
+FAIL test/attendance.e2e-spec.ts
+FAIL test/bg7-hms-integration.e2e-spec.ts
+FAIL test/billing.e2e-spec.ts
+FAIL test/control-plane.e2e-spec.ts
+FAIL test/franchise-analytics.e2e-spec.ts
+FAIL test/franchise.e2e-spec.ts
+FAIL test/orders.e2e-spec.ts
+FAIL test/quick-pin.e2e-spec.ts
+FAIL test/tenancy.e2e-spec.ts
+Test Suites: 9 failed, 43 passed, 52 total
+Tests:       91 failed, 973 passed, 1064 total

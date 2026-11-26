@@ -1,0 +1,4 @@
+    ✕ two sends fired together: exactly one succeeds, the lines are ticketed once (164 ms)
+    - Expected  - 2
+    + Received  + 2
+Tests:       1 failed, 4 skipped, 5 total

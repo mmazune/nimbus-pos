@@ -1,0 +1,21 @@
+run 1
+    ✓ Table 12's evening (517 ms)
+    ✓ 100,000 cash on a 98,000 bill: 2,000 change, order closed, table freed (120 ms)
+    ✓ two open orders on one table: closing one leaves the table occupied (173 ms)
+    ✓ void rules: never-sent line, part quantity, OTHER needs a note, payment blocks a void (163 ms)
+    ✓ two sends fired together: exactly one succeeds, the lines are ticketed once (95 ms)
+Tests:       5 passed, 5 total
+run 2
+    ✓ Table 12's evening (484 ms)
+    ✓ 100,000 cash on a 98,000 bill: 2,000 change, order closed, table freed (110 ms)
+    ✓ two open orders on one table: closing one leaves the table occupied (164 ms)
+    ✓ void rules: never-sent line, part quantity, OTHER needs a note, payment blocks a void (167 ms)
+    ✓ two sends fired together: exactly one succeeds, the lines are ticketed once (109 ms)
+Tests:       5 passed, 5 total
+run 3
+    ✓ Table 12's evening (505 ms)
+    ✓ 100,000 cash on a 98,000 bill: 2,000 change, order closed, table freed (109 ms)
+    ✓ two open orders on one table: closing one leaves the table occupied (168 ms)
+    ✓ void rules: never-sent line, part quantity, OTHER needs a note, payment blocks a void (146 ms)
+    ✓ two sends fired together: exactly one succeeds, the lines are ticketed once (103 ms)
+Tests:       5 passed, 5 total
