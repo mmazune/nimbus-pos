@@ -19,6 +19,8 @@ type Props = {
   paidMinor: Minor;
   /** False until the posted payments are read; nothing can be taken before. */
   ready: boolean;
+  /** The person's own till is open: cash needs one (the till counts cash by its open period). null while unknown. */
+  tillOpen: boolean | null;
   busy: boolean;
   error: string | null;
   onPay: (payments: Array<{ method: PayMethod; amountMinor: Minor }>) => Promise<PayResult | null>;
@@ -49,8 +51,9 @@ const METHODS: Array<{ key: PayMethod; label: string; second: string; icon: "rev
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "back"];
 
-export function PayPane({ title, totalMinor, paidMinor, ready, busy, error, onPay, onDone }: Props) {
-  const [method, setMethod] = useState<PayMethod>("CASH");
+export function PayPane({ title, totalMinor, paidMinor, ready, tillOpen, busy, error, onPay, onDone }: Props) {
+  const [chosen, setMethod] = useState<PayMethod | null>(null);
+  const method: PayMethod = chosen ?? (tillOpen === false ? "CARD" : "CASH");
   const [typed, setTyped] = useState("");
   const [result, setResult] = useState<{ changeMinor: Minor; method: PayMethod; givenMinor: Minor } | null>(null);
   const due = totalMinor;
@@ -79,7 +82,7 @@ export function PayPane({ title, totalMinor, paidMinor, ready, busy, error, onPa
           <div className="flex flex-col items-center gap-kit-4 rounded-kit-card bg-kit-green-t px-kit-32 py-kit-20" data-order-change-after>
             <Text variant="row" tone="green">{result.changeMinor > 0 ? "Give this change" : "No change to give"}</Text>
             <span className="text-kit-big text-kit-green">{formatMoney(result.changeMinor)}</span>
-            <Text variant="sup" tone="green">{`Cash given ${formatMoney(result.givenMinor)}, as the till recorded it`}</Text>
+            <Text variant="sup" tone="green">{`Cash given ${formatMoney(result.givenMinor)}, as recorded on the payment`}</Text>
           </div>
         ) : (
           <Text variant="body">{`Taken by ${result.method === "CARD" ? "card" : "mobile money"}.`}</Text>
@@ -106,9 +109,18 @@ export function PayPane({ title, totalMinor, paidMinor, ready, busy, error, onPa
           <Text variant="sup" strong>How are they paying?</Text>
           <div className="grid grid-cols-3 gap-kit-8">
             {METHODS.map((m) => (
-              <OptionTile key={m.key} label={m.label} second={m.second} icon={m.icon} current={method === m.key} onClick={() => { setMethod(m.key); setTyped(""); }} />
+              <OptionTile
+                key={m.key}
+                label={m.label}
+                second={m.key === "CASH" && tillOpen === false ? "No till open" : m.second}
+                icon={m.icon}
+                current={method === m.key}
+                disabled={m.key === "CASH" && tillOpen !== true}
+                onClick={() => { setMethod(m.key); setTyped(""); }}
+              />
             ))}
           </div>
+          {tillOpen === false ? <Text variant="sup" tone="muted">Cash needs your till open: open it under Till. Card and mobile money work without one.</Text> : null}
           {method === "CASH" ? (
             <>
               <Text variant="sup" strong>Cash given</Text>
@@ -128,7 +140,7 @@ export function PayPane({ title, totalMinor, paidMinor, ready, busy, error, onPa
           )}
         </div>
         {method === "CASH" ? (
-          <div className="flex w-kit-sheet-wide-gap flex-none flex-col gap-kit-8" data-order-keypad>
+          <div className="flex w-full flex-none flex-col gap-kit-8 md:w-kit-sheet-wide-gap" data-order-keypad>
             <div className="flex h-kit-row items-center justify-end rounded-kit-control bg-kit-field px-kit-20">
               <span className="text-kit-key text-kit-text" aria-live="polite">{typed ? groupShillings(given) : "0"}</span>
             </div>
@@ -143,11 +155,11 @@ export function PayPane({ title, totalMinor, paidMinor, ready, busy, error, onPa
       <div className="flex flex-col gap-kit-8">
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
         <div className="flex">
-          <Button tone="filled" fill disabled={busy || short || !ready} onClick={take}>
+          <Button tone="filled" fill disabled={busy || short || !ready || (method === "CASH" && tillOpen !== true)} onClick={take}>
             {busy ? "Taking payment…" : `Take ${formatMoney(due)} ${method === "CASH" ? "in cash" : method === "CARD" ? "by card" : "by mobile money"}`}
           </Button>
         </div>
-        <Text variant="small" tone="muted" align="center">{`The till records it and ${title} becomes free. The receipt is under Receipts.`}</Text>
+        <Text variant="small" tone="muted" align="center">{method === "CASH" ? `Your till counts the cash and ${title} becomes free. The receipt is under Receipts.` : `${title} becomes free. The receipt is under Receipts.`}</Text>
       </div>
     </div>
   );

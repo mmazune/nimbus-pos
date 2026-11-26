@@ -25,6 +25,8 @@ export type OrderRights = {
   canVoidOrder: boolean;
   /** Read posted payments: "to pay" and the payment safety gate. */
   canReadPayments: boolean;
+  /** Set a table's status (free an empty table a move or join left occupied). */
+  canSetTableStatus: boolean;
 };
 
 export function rightsFor(role: OrderRole, permissions: readonly string[]): OrderRights {
@@ -41,6 +43,7 @@ export function rightsFor(role: OrderRole, permissions: readonly string[]): Orde
     canDiscount: lead && has("pos:discount:request"),
     canVoidOrder: lead && has("pos:orders:void"),
     canReadPayments: role !== "waiter" && has("pos:payment:read"),
+    canSetTableStatus: lead && has("pos:table:write"),
   };
 }
 

@@ -6,10 +6,9 @@
  *  3. The supervisor voids the wings, made, with a reason. A waiter cannot.
  *  4. The cashier takes 100,000 in cash; the change shows before and after.
  *  5. Table 12 is free.
- * Tap counts (a beer from Popular, a double whisky with cola, a burger with
- * choices) are measured with a click counter, from the open table.
+ * Tap counts are measured in taps.spec.ts, from the Floor.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { expect, test, type Browser, type Page } from "@playwright/test";
@@ -32,51 +31,29 @@ async function openTable(page: Page, tableId: string) {
   await expect(page.locator("[data-order-screen]")).toBeVisible();
 }
 
-/** Clicks and counts. */
-function counter(page: Page) {
-  let n = 0;
-  return {
-    tap: async (loc: ReturnType<Page["locator"]>) => {
-      n += 1;
-      await loc.click();
-    },
-    take: () => {
-      const v = n;
-      n = 0;
-      return v;
-    },
-  };
-}
-
 test("Table 12's evening", async ({ browser }) => {
   test.setTimeout(180_000);
   const v = await setupVenue();
   const table = await freeTable(v.managerToken, [], "12");
-  const taps: Record<string, number> = {};
-  const searchTaps: Record<string, number> = {};
 
   // ── 1. The waiter sends food at a free table 12 ──
   const waiter = await person(browser, v.people.waiter.pin, /\/waiter\/floor/);
-  const w = counter(waiter);
-  await w.tap(waiter.locator(`[data-operational-table-id="${table.id}"]`).first());
+  await waiter.locator(`[data-operational-table-id="${table.id}"]`).first().click();
   await expect(waiter.locator("[data-order-screen]")).toBeVisible();
   await expect(waiter.getByRole("heading", { name: "Table 12" })).toBeVisible();
-  w.take();
 
-  // Each tap count starts from the screen as it opens (Food, its first group), counted from the open table.
+  // Back to the screen's opening view between tasks.
   const home = async () => {
     await waiter.getByRole("tab", { name: "Food" }).click();
-    w.take();
   };
 
   // A burger with choices: Grills → Beef burger → Medium → Add.
   await home();
-  await w.tap(waiter.getByRole("button", { name: "Grills", exact: true }));
-  await w.tap(waiter.getByRole("button", { name: /^Beef burger,/ }));
-  await w.tap(waiter.locator("[data-order-item-sheet]").getByRole("button", { name: "Medium", exact: true }));
+  await waiter.getByRole("button", { name: "Popular food", exact: true }).click();
+  await waiter.getByRole("button", { name: /^Beef burger,/ }).click();
+  await waiter.locator("[data-order-item-sheet]").getByRole("button", { name: "Medium", exact: true }).click();
   await waiter.locator("[data-order-item-sheet]").getByRole("button", { name: "Onions", exact: true }).click(); // an extra choice, beyond the count
-  await w.tap(waiter.getByRole("button", { name: "Add · UGX 28,000" }));
-  taps["a burger with choices: Grills, Beef burger, Medium, Add"] = w.take();
+  await waiter.getByRole("button", { name: "Add · UGX 28,000" }).click();
 
   await waiter.getByRole("button", { name: "Sides", exact: true }).click();
   await waiter.locator("[data-order-qty]").getByRole("button", { name: "2", exact: true }).click();
@@ -93,28 +70,25 @@ test("Table 12's evening", async ({ browser }) => {
   // ── 2. She adds drinks and sends again ──
   // A beer from Popular: Drinks opens on Popular (R3: Popular is the first group), then the lager.
   await home();
-  await w.tap(waiter.getByRole("tab", { name: "Drinks" }));
+  await waiter.getByRole("tab", { name: "Drinks" }).click();
   await expect(waiter.getByRole("button", { name: "Popular", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await w.tap(waiter.getByRole("button", { name: /^Lager 500 ml,/ }));
-  taps["a beer from Popular: Drinks, Lager"] = w.take();
+  await waiter.getByRole("button", { name: /^Lager 500 ml,/ }).click();
   await waiter.getByRole("button", { name: /^Lager 500 ml,/ }).click(); // the second lager
   // A double whisky with cola: Drinks → Whisky → Double → Cola.
   await home();
-  await w.tap(waiter.getByRole("tab", { name: "Drinks" }));
-  await w.tap(waiter.getByRole("button", { name: "Whisky", exact: true }));
-  await w.tap(waiter.getByRole("button", { name: "Blended Scotch, Double, 15,000" }));
-  await w.tap(waiter.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }));
-  taps["a double whisky with cola: Drinks, Whisky, Double, Cola"] = w.take();
+  await waiter.getByRole("tab", { name: "Drinks" }).click();
+  await waiter.getByRole("button", { name: "Whisky", exact: true }).click();
+  await waiter.getByRole("button", { name: "Blended Scotch, Double, 15,000" }).click();
+  await waiter.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }).click();
   await waiter.getByRole("button", { name: "Soft drinks", exact: true }).click();
   await waiter.getByRole("button", { name: /^Cola 300 ml,/ }).click();
   await expect(wPanel.locator("[data-order-total]")).toHaveText("UGX 98,000");
   // The same whisky by search (typing is not a tap): search, Double, Cola — then removed again.
   await home();
-  await w.tap(waiter.getByRole("button", { name: "Search the whole menu" }));
+  await waiter.getByRole("button", { name: "Search the whole menu" }).click();
   await waiter.getByLabel("Search the whole menu").fill("bs");
-  await w.tap(waiter.locator("[data-order-search]").getByRole("button", { name: "Blended Scotch, Double, 15,000" }));
-  await w.tap(waiter.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }).first());
-  searchTaps["a double whisky with cola by search: Search, Double, Cola (typing “bs” not counted)"] = w.take();
+  await waiter.locator("[data-order-search]").getByRole("button", { name: "Blended Scotch, Double, 15,000" }).click();
+  await waiter.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }).first().click();
   await waiter.getByRole("button", { name: "Back to the menu" }).click().catch(() => undefined);
   await wPanel.locator("[data-order-unsent]").getByRole("button", { name: /^1 Blended Scotch/ }).last().click();
   await waiter.getByRole("button", { name: "Remove", exact: true }).click();
@@ -202,9 +176,4 @@ test("Table 12's evening", async ({ browser }) => {
   expect(payments.payments[0].changeGiven).toBe("26000");
   await cashier.context().close();
 
-  writeFileSync(
-    join(PROOF, `evening-${RUN}-taps.json`),
-    JSON.stringify({ table: "12", from: "the open table, in its default view (Food, first group); add 1 for the table tap from the Floor", taps, searchTaps }, null, 2),
-  );
-  for (const [what, n] of Object.entries(taps)) expect(n, what).toBeLessThanOrEqual(4);
 });

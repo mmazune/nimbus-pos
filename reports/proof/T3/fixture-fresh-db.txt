@@ -1,0 +1,6 @@
+Fresh throwaway DB t3_fresh: migrate deploy + db:seed + db:demo:import only; API :4112. Two runs.
+  1 passed (5.6s)
+  1 passed (4.4s)
+second waiters named Grace Atim: 1
+fixture tables: 12,14,15,16,17,18
+fixture items: 6

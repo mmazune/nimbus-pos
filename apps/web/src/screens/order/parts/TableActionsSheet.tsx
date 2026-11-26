@@ -21,13 +21,16 @@ import {
   listOtherOpenOrders,
   listStaff,
   moveToTable,
+  setTableStatus,
   splitEqually,
+  TABLE_STATUSES,
+  type TableStatus,
   type OrderLineModel,
 } from "../data/order";
 import type { OrderRights } from "../data/rights";
 
 type Ctx = { token: string; branchId: string };
-export type Step = "menu" | "move" | "discount" | "cancel" | "voidPick" | "join" | "waiter" | "split";
+export type Step = "menu" | "move" | "discount" | "cancel" | "voidPick" | "join" | "waiter" | "split" | "status";
 
 type Props = {
   placement: SheetPlacement;
@@ -64,6 +67,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   const [error, setError] = useState<string | null>(null);
 
   const [count, setCount] = useState<number | null>(null);
+  const [status, setStatus] = useState<TableStatus | null>(null);
   const othersQ = useQuery({
     queryKey: ["order-screen", "other-orders", ctx?.branchId, orderId],
     enabled: Boolean(ctx && orderId && step === "join"),
@@ -184,6 +188,19 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     );
   }
 
+  if (step === "status") {
+    const words: Record<TableStatus, string> = { AVAILABLE: "Free", OCCUPIED: "In use", RESERVED: "Reserved", CLEANING: "Cleaning" };
+    return (
+      <Sheet placement={placement} title={`Table status · ${title}`} summary={orderId ? "The table has an open order; it stays on the table." : "Use this when a table shows in use but nothing is on it."} onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!status || busy} onClick={() => run(() => setTableStatus(ctx as Ctx, tableId as string, status as TableStatus), { leave: false, message: `${title} is now ${words[status as TableStatus].toLowerCase()}` })}>{status ? `Mark it ${words[status].toLowerCase()}` : "Choose a status"}</Button></>}>
+        <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-4" data-order-status>
+          {TABLE_STATUSES.map((st) => <OptionTile key={st} label={words[st]} current={status === st} onClick={() => setStatus(st)} />)}
+        </div>
+        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
   if (step === "voidPick") {
     return (
       <Sheet placement={placement} title="Void an item" summary="Tap the line to void." onClose={onClose} footer={<>{back}</>}>
@@ -219,8 +236,13 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
         {canSameAgain ? <ActionTile icon="refresh" title="Same again" line="The drinks of the last round, not sent yet" onClick={onSameAgain} /> : null}
         {lead && rights.canVoidOrder && !hasPayment ? <ActionTile icon="close" title="Cancel the order" line="Everything on this table" danger onClick={() => { setReason(""); setStep("cancel"); }} /> : null}
       </div>
+      {rights.canSetTableStatus && tableId ? (
+        <div className="grid grid-cols-1 gap-kit-8 md:grid-cols-2">
+          <ActionTile icon="table" title="Table status" line="Free, in use, reserved or cleaning" onClick={() => { setStatus(null); setStep("status"); }} />
+        </div>
+      ) : null}
       {hasPayment && lead ? <Text variant="sup" tone="muted">A payment is already posted, so Discount and Cancel the order are not offered.</Text> : null}
-      {!lead && !canSameAgain ? <Text variant="sup" tone="muted">Nothing more to do on this table yet.</Text> : null}
+      {!lead && !canSameAgain && !(rights.canSetTableStatus && tableId) ? <Text variant="sup" tone="muted">Nothing more to do on this table yet.</Text> : null}
     </Sheet>
   );
 }

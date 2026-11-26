@@ -25,7 +25,7 @@ test("waiter on a phone: food, then drinks, two sends", async ({ page }) => {
   await expect(screen).toBeVisible();
 
   // Food: Grills → burger (the item sheet), Sides → chips ×2, Grills → wings.
-  await page.getByRole("button", { name: "Grills", exact: true }).tap();
+  await page.getByRole("button", { name: "Popular food", exact: true }).tap();
   await page.getByRole("button", { name: /^Beef burger,/ }).tap();
   const sheet = page.locator("[data-order-item-sheet]");
   await expect(sheet).toBeVisible();
@@ -84,4 +84,59 @@ test("waiter on a phone: food, then drinks, two sends", async ({ page }) => {
   expect(detail.total).toBe("101000");
   const cashierToken = await pinToken(v.people.cashier.pin);
   expect([200, 201]).toContain((await api(cashierToken, "POST", `/api/pos/orders/${order.id}/close`, { payments: [{ method: "CASH", amount: 101000 }] })).status);
+});
+
+async function sentOrderOn(v: Awaited<ReturnType<typeof setupVenue>>, tableId: string) {
+  const t = await pinToken(v.people.waiter.pin);
+  const o = (await api(t, "POST", "/api/pos/orders", { serviceType: "DINE_IN", tableId })).json;
+  await api(t, "POST", `/api/pos/orders/${o.id}/items`, { menuItemId: v.items.wings.id, quantity: 1 });
+  await api(t, "POST", `/api/pos/orders/${o.id}/items`, { menuItemId: v.items.chips.id, quantity: 2 });
+  await api(t, "POST", `/api/pos/orders/${o.id}/send`, {});
+  return o as { id: string };
+}
+
+test("supervisor and cashier on a phone: actions, void and payment fit 390", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const v = await setupVenue();
+  const table = await freeTable(v.managerToken);
+  const order = await sentOrderOn(v, table.id);
+  const size = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+
+  const supCtx = await browser.newContext(size);
+  const sup = await supCtx.newPage();
+  await signInWithPin(sup, v.people.supervisor.pin, /\/supervisor\//);
+  await sup.goto("/supervisor/floor");
+  await sup.locator(`[data-operational-table-id="${table.id}"]`).first().tap();
+  await sup.getByRole("button", { name: "More for this table" }).tap();
+  await expect(sup.locator("[data-order-actions]")).toBeVisible();
+  await sup.waitForTimeout(300);
+  await sup.screenshot({ path: join(PROOF, "built-Supervisor-Table-390x844.png") });
+  expectRule10(await measurePage(sup), "supervisor actions 390");
+  await sup.getByRole("button", { name: /Void an item/ }).tap();
+  await sup.locator("[data-order-void-pick]").getByRole("button", { name: /Chicken wings/ }).tap();
+  await sup.getByRole("tab", { name: "Not made" }).tap();
+  await sup.getByRole("button", { name: "Wrong item entered", exact: true }).tap();
+  await sup.waitForTimeout(300);
+  await sup.screenshot({ path: join(PROOF, "built-Supervisor-Void-390x844.png") });
+  expectRule10(await measurePage(sup), "supervisor void 390");
+  await sup.getByRole("button", { name: "Void 1 item · UGX 24,000" }).tap();
+  await expect(sup.locator("[data-order-void-sheet]")).toHaveCount(0);
+  await supCtx.close();
+
+  const cashCtx = await browser.newContext(size);
+  const cashier = await cashCtx.newPage();
+  await signInWithPin(cashier, v.people.cashier.pin, /\/cashier\//);
+  await cashier.goto("/cashier/floor");
+  await cashier.locator(`[data-operational-table-id="${table.id}"]`).first().tap();
+  await cashier.locator("[data-order-foot]").getByRole("button", { name: "Take payment" }).tap();
+  await expect(cashier.locator("[data-order-to-pay]")).toHaveText("UGX 16,000");
+  await cashier.getByRole("button", { name: "20,000", exact: true }).tap();
+  await expect(cashier.locator("[data-order-change-before]")).toContainText("UGX 4,000");
+  await cashier.waitForTimeout(300);
+  await cashier.screenshot({ path: join(PROOF, "built-Cashier-Pay-390x844.png") });
+  expectRule10(await measurePage(cashier), "cashier pay 390");
+  await cashier.getByRole("button", { name: "Take UGX 16,000 in cash" }).tap();
+  await expect(cashier.locator("[data-order-change-after]")).toContainText("UGX 4,000");
+  expect((await api(v.managerToken, "GET", `/api/pos/orders/${order.id}`)).json.status).toBe("CLOSED");
+  await cashCtx.close();
 });

@@ -414,3 +414,16 @@ export async function changeWaiter(ctx: Ctx, orderId: string, targetUserId: stri
 export async function splitEqually(ctx: Ctx, orderId: string, count: number): Promise<void> {
   await apiRequest(`/api/pos/orders/${orderId}/split-bill`, { ...ctx, method: "POST", body: { mode: "EQUAL", count } });
 }
+
+/** The signed-in person's own open till (cash needs one, or it falls outside every till's count). */
+export async function hasOpenTill(ctx: Ctx): Promise<boolean> {
+  const till = await apiRequest<{ id?: string } | null>("/api/tills/active", ctx);
+  return Boolean(till && till.id);
+}
+
+export const TABLE_STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED", "CLEANING"] as const;
+export type TableStatus = (typeof TABLE_STATUSES)[number];
+
+export async function setTableStatus(ctx: Ctx, tableId: string, status: TableStatus): Promise<void> {
+  await apiRequest(`/api/tables/${tableId}/status`, { ...ctx, method: "PATCH", body: { status } });
+}

@@ -192,3 +192,60 @@ test("manager on a laptop: the same table under the top bar", async ({ browser }
   expect((await api(v.managerToken, "GET", `/api/pos/orders/${order.id}`)).json.status).toBe("CLOSED");
   await mgr.context().close();
 });
+
+test("a discount, then cash: the change before equals the change recorded after", async ({ browser }) => {
+  const v = await setupVenue();
+  const t = await freeTable(v.managerToken);
+  const order = await sentOrder(v, t.id, [{ item: "burger" }, { item: "chips", qty: 2 }]); // 44,000
+  const sup = await person(browser, v.people.supervisor.pin, /\/supervisor\//);
+  await sup.goto("/supervisor/floor");
+  await openTable(sup, t.id);
+  await actions(sup);
+  await sup.getByRole("button", { name: /Discount/ }).click();
+  await sup.getByRole("button", { name: "10%", exact: true }).click();
+  await sup.getByRole("button", { name: "Regular guest", exact: true }).click();
+  await sup.getByRole("button", { name: "Take 10% off" }).click();
+  await expect(sup.getByText(/10% off (taken|is waiting for approval)/)).toBeVisible();
+  await sup.context().close();
+  const total = (await api(v.managerToken, "GET", `/api/pos/orders/${order.id}`)).json.total as string;
+  const totalShillings = Number.parseInt(total, 10);
+  const words = (n: number) => `UGX ${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+
+  const cashier = await person(browser, v.people.cashier.pin, /\/cashier\//);
+  await cashier.goto("/cashier/floor");
+  await openTable(cashier, t.id);
+  await cashier.locator("[data-order-panel]").getByRole("button", { name: "Take payment" }).click();
+  await expect(cashier.locator("[data-order-to-pay]")).toHaveText(words(totalShillings));
+  await cashier.getByRole("button", { name: "50,000", exact: true }).click();
+  const before = words(50000 - totalShillings);
+  await expect(cashier.locator("[data-order-change-before]")).toContainText(before);
+  await cashier.getByRole("button", { name: `Take ${words(totalShillings)} in cash` }).click();
+  await expect(cashier.locator("[data-order-change-after]")).toContainText(before);
+  const pays = (await api(v.managerToken, "GET", `/api/pos/orders/${order.id}/payments`)).json;
+  expect(pays.payments[0].changeGiven).toBe(String(50000 - totalShillings));
+  await cashier.context().close();
+});
+
+test("a supervisor frees an empty table that a move left in use", async ({ browser }) => {
+  const v = await setupVenue();
+  const a = await freeTable(v.managerToken);
+  const b = await freeTable(v.managerToken, [a.id]);
+  const order = await sentOrder(v, a.id, [{ item: "chips" }]);
+  const supToken = await pinToken(v.people.supervisor.pin);
+  expect([200, 201]).toContain((await api(supToken, "POST", `/api/pos/orders/${order.id}/transfer-table`, { targetTableId: b.id })).status);
+  const left = ((await api(v.managerToken, "GET", "/api/tables")).json as Array<{ id: string; status: string }>).find((x) => x.id === a.id);
+  const sup = await person(browser, v.people.supervisor.pin, /\/supervisor\//);
+  await sup.goto("/supervisor/floor");
+  await openTable(sup, a.id);
+  await sup.locator("[data-order-panel]").getByRole("button", { name: "More for this table" }).click();
+  await sup.getByRole("button", { name: /Table status/ }).click();
+  await sup.locator("[data-order-status]").getByRole("button", { name: "Free", exact: true }).click();
+  await sup.getByRole("button", { name: "Mark it free" }).click();
+  await expect(sup.getByText(/is now free/)).toBeVisible();
+  const after = ((await api(v.managerToken, "GET", "/api/tables")).json as Array<{ id: string; status: string }>).find((x) => x.id === a.id);
+  expect(after?.status).toBe("AVAILABLE");
+  test.info().annotations.push({ type: "source table after move (API gap for T2)", description: String(left?.status) });
+  await sup.context().close();
+  const cashierToken = await pinToken(v.people.cashier.pin);
+  await api(cashierToken, "POST", `/api/pos/orders/${order.id}/close`, { payments: [{ method: "CASH", amount: 8000 }] });
+});

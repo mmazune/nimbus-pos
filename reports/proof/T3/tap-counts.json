@@ -1,0 +1,9 @@
+{
+  "from": "the waiter's Floor, including the table tap",
+  "counts": {
+    "a beer from Popular: table, Drinks, Lager": 3,
+    "a double whisky with cola by search: table, Search, Double, Cola (typing “bs” not counted)": 4,
+    "a double whisky with cola by groups: table, Drinks, Whisky, Double, Cola": 5,
+    "a burger with choices: table, Beef burger (Food › Popular food), Medium, Add": 4
+  }
+}

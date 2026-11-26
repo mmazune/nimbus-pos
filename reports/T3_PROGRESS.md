@@ -39,6 +39,8 @@ Track T3 — the one order screen. Branch `t3/order-screen`. Rules: `docs/prompt
 14. R5's filled button takes payment from the role: cashier and manager; a supervisor gets Print bill (owner default 2: a supervisor does not take payment), even though the supervisor's token could close.
 15. With two orders on one table, the signed-in person's own opens first and a banner offers the other.
 16. Proofs come from a production build (`next build` + `next start`), not the dev server.
+17. Cash needs the taker's own open till (`GET /api/tills/active`), as the old cashier screen required; card and mobile money do not.
+18. Tap counts are measured from the Floor including the table tap (A2 §3.8); the burger sits in a Food group "Popular food" because group names are unique per branch.
 
 ## Left out (and why)
 See `T3_READ_BACK.md` "What is missing".

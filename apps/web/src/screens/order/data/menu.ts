@@ -133,9 +133,10 @@ export function initialsOf(name: string): string {
 }
 
 export function groupKind(name: string): MenuGroupKind {
+  // Group names are unique per branch across Food and Drinks, so a venue writes "Popular food" or "Popular drinks".
   const n = name.trim().toLowerCase();
-  if (n === "popular") return "popular";
-  if (n === "offers" || n === "offers of the day") return "offers";
+  if (/^popular\b/.test(n)) return "popular";
+  if (/^offers?\b/.test(n)) return "offers";
   return "plain";
 }
 

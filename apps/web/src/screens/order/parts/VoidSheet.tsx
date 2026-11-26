@@ -79,8 +79,8 @@ export function VoidSheet({ placement, line, tableTitle, waiterName, billMinor, 
           label="Was it made?"
           fill
           options={[
-            { key: "made", label: "Made, it is waste" },
-            { key: "notMade", label: "Not made, back to stock" },
+            { key: "made", label: placement === "bottom" ? "Made, waste" : "Made, it is waste" },
+            { key: "notMade", label: placement === "bottom" ? "Not made" : "Not made, back to stock" },
           ]}
           value={made}
           onChange={(k) => setMade(k as "made" | "notMade")}

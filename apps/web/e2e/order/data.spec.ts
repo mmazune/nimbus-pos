@@ -82,6 +82,13 @@ test.describe("menu source", () => {
     expect(names("")).toEqual([]);
     expect(initialsOf("Fish and chips")).toBe("fac");
   });
+  test("a group named \u201cPopular food\u201d counts as Popular and comes first", () => {
+    const m = buildMenuWorkspace([{ section: "FOOD", groups: [{ id: "a", name: "Mains", sortOrder: 0 }, { id: "b", name: "Popular food", sortOrder: 5 }] }], { categories: [{ items: [
+      { id: "x", name: "Stew", price: "1", browseGroup: { id: "a", section: "FOOD" } },
+      { id: "y", name: "Burger", price: "1", browseGroup: { id: "b", section: "FOOD" } },
+    ] }] });
+    expect(m.sections[0].groups.map((g) => g.name)).toEqual(["Popular food", "Mains"]);
+  });
 });
 
 test.describe("order lines", () => {

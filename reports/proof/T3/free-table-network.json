@@ -18,12 +18,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/menu/navigation?activeOnly=true",
+      "path": "/api/reservations?pageSize=200",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/reservations?pageSize=200",
+      "path": "/api/menu/navigation?activeOnly=true",
       "status": 200
     },
     {

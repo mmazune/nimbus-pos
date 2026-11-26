@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 
 import { loadItemChoices, loadMenu, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
 import { formatMoney } from "./data/money";
-import { sentRounds, type LineChoice, type OrderLineModel } from "./data/order";
+import { hasOpenTill, sentRounds, type LineChoice, type OrderLineModel } from "./data/order";
 import { filledAction, rightsFor, type OrderRole } from "./data/rights";
 import { unitPriceOf, useOrderSession } from "./data/useOrderSession";
 import { ItemSheet, type ItemSheetResult } from "./parts/ItemSheet";
@@ -96,6 +96,12 @@ export function OrderScreen(props: OrderScreenProps) {
     staleTime: 5 * 60_000,
   });
   const menu = menuQ.data;
+  const tillQ = useQuery({
+    queryKey: ["order-screen", "till", branchId, user?.id],
+    enabled: Boolean(ctx && rights.canPay),
+    queryFn: () => hasOpenTill(ctx!),
+    staleTime: 30_000,
+  });
 
   const [nav, setNav] = useState<MenuNav | null>(null);
   const [armedQty, setArmedQty] = useState<number | null>(null);
@@ -416,7 +422,7 @@ export function OrderScreen(props: OrderScreenProps) {
         >
           <Text variant="sup" tone="muted">
             {billAsked
-              ? "The bill request is saved and the cashier sees it. This terminal has no printer connected yet, so nothing printed."
+              ? "The bill request is saved on the order. This terminal has no printer connected yet, so nothing printed."
               : session.lastError ?? "The bill request did not go through. Try again."}
           </Text>
         </Sheet>
@@ -464,6 +470,7 @@ export function OrderScreen(props: OrderScreenProps) {
         totalMinor={Math.max(0, session.totalMinor - session.paidMinor)}
         paidMinor={session.paidMinor}
         ready={session.paidKnown}
+        tillOpen={tillQ.isSuccess ? tillQ.data : tillQ.isError ? false : null}
         busy={session.busy === "pay"}
         error={session.lastError}
         onPay={session.pay}

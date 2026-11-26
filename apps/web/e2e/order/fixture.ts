@@ -69,6 +69,7 @@ async function ensureMenu(token: string) {
   const gWhisky = await group("DRINKS", "Whisky", 40);
   const gSoft = await group("DRINKS", "Soft drinks", 41);
   const gGrills = await group("FOOD", "Grills", 40);
+  const gFoodPopular = await group("FOOD", "Popular food", 0);
   const gSides = await group("FOOD", "Sides", 41);
 
   const list = (await must(token, "GET", "/api/menu/items")) as Json[] | Json;
@@ -86,7 +87,7 @@ async function ensureMenu(token: string) {
   const lager = await item("Lager 500 ml", 6000, "DRINK", "BAR", gPopular.id);
   const scotch = await item("Blended Scotch", 8000, "DRINK", "BAR", gWhisky.id);
   const cola = await item("Cola 300 ml", 3000, "DRINK", "BAR", gSoft.id);
-  const burger = await item("Beef burger", 28000, "FOOD", "KITCHEN", gGrills.id);
+  const burger = await item("Beef burger", 28000, "FOOD", "KITCHEN", gFoodPopular.id);
   const wings = await item("Chicken wings", 24000, "FOOD", "KITCHEN", gGrills.id);
   const chips = await item("Chips", 8000, "FOOD", "KITCHEN", gSides.id);
 
@@ -200,10 +201,16 @@ export async function setupVenue(): Promise<Venue> {
   await ensureTables(managerToken);
   await resetFixtureTables(managerToken);
 
+  // Each demo person's id, from their own session (the seeded demo accounts share one password).
+  const byEmail = async (email: string) => {
+    const t = await loginPassword(email);
+    const me = await must(t, "GET", "/api/auth/me");
+    return { id: me.id as string, name: `${me.firstName} ${me.lastName}` };
+  };
   const ids = {
-    waiter: { id: process.env.PW_WAITER_USER_ID || "c7e82e844c56ec13e71e8562", name: "Brian Kisekka" },
-    supervisor: { id: process.env.PW_SUPERVISOR_USER_ID || "ca2e4e5cf3c6c2154968387c", name: "Peter Mugisha" },
-    cashier: { id: process.env.PW_CASHIER_USER_ID || "cf291c0aa2e7e6ced029f8cf", name: "Sarah Namutebi" },
+    waiter: await byEmail(process.env.PW_WAITER_EMAIL || "waiter@nimbus.demo"),
+    supervisor: await byEmail(process.env.PW_SUPERVISOR_EMAIL || "supervisor@nimbus.demo"),
+    cashier: await byEmail(process.env.PW_CASHIER_EMAIL || "cashier@nimbus.demo"),
   };
 
   // A second waiter for "another waiter's table" (fictional cast, fictional phone block).
@@ -233,6 +240,13 @@ export async function setupVenue(): Promise<Venue> {
   for (const w of [people.waiter, people.waiter2]) {
     const t = await pinToken(w.pin);
     await api(t, "POST", "/api/shifts/open", {}); // 201, or 409 when already open
+  }
+  // Cash needs the taker's own open till (and a till needs a shift).
+  for (const [code, p] of [["T3-C1", people.cashier], ["T3-M1", people.manager]] as const) {
+    const t = await pinToken(p.pin);
+    await api(t, "POST", "/api/shifts/open", {});
+    const active = await api(t, "GET", "/api/tills/active");
+    if (!active.json?.id) await must(t, "POST", "/api/tills/open", { tillCode: `${code}-${Date.now()}`, openingFloat: 100000 });
   }
 
   cached = { managerToken, people, items };

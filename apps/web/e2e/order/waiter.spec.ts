@@ -49,7 +49,7 @@ test("waiter sends food, adds drinks, and the second Send sends only the new lin
   await openTable(page, table.id);
 
   // Food: a burger with choices, two chips (quantity first), wings.
-  await page.getByRole("button", { name: "Grills", exact: true }).click();
+  await page.getByRole("button", { name: "Popular food", exact: true }).click();
   await page.getByRole("button", { name: /^Beef burger,/ }).click();
   const sheet = page.locator("[data-order-item-sheet]");
   await expect(sheet).toBeVisible();
