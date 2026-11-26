@@ -75,6 +75,27 @@ export function isManagerCompatible(user: AuthMeResponse | null) {
   });
 }
 
+/** Chef and bartender (T5): the kitchen and bar screen, on their own stations. */
+const KITCHEN_COMPATIBLE_JOB_ROLES = new Set(["CHEF", "BARTENDER"]);
+
+export function isKitchenCompatible(user: AuthMeResponse | null) {
+  if (!user) return false;
+  return user.roles.some((role) => {
+    const jobRole = role.jobRole?.toUpperCase();
+    const roleName = role.name?.toUpperCase();
+    return (!!jobRole && KITCHEN_COMPATIBLE_JOB_ROLES.has(jobRole)) || roleName === "CHEF" || roleName === "BARTENDER";
+  });
+}
+
+/** Which kitchen screen: the bar for a bartender, the kitchen for a chef. */
+export function isBartender(user: AuthMeResponse | null) {
+  return Boolean(user?.roles.some((r) => r.jobRole?.toUpperCase() === "BARTENDER" || r.name?.toUpperCase() === "BARTENDER"));
+}
+
+export function getKitchenLandingPath() {
+  return "/kitchen";
+}
+
 export function getCashierLandingPath() {
   return "/cashier/floor";
 }

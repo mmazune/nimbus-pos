@@ -17,8 +17,7 @@ import {
   isCashierCompatible,
   isManagerCompatible,
   isSupervisorCompatible,
-  isWaiterCompatible,
-} from "@/lib/auth/role";
+  isWaiterCompatible, getKitchenLandingPath, isKitchenCompatible } from "@/lib/auth/role";
 import type { AuthMeResponse } from "@/lib/auth/types";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
@@ -79,6 +78,7 @@ export default function LoginPage() {
     isManager,
     isSupervisor,
     isWaiter,
+    isKitchen,
     loginWithPassword,
     loginWithPin,
   } = useAuth();
@@ -120,7 +120,10 @@ export default function LoginPage() {
     if (!isLoading && isAuthenticated && isManager) {
       void router.replace(getManagerLandingPath());
     }
-  }, [isAuthenticated, isCashier, isLoading, isManager, isSupervisor, isWaiter, router]);
+    if (!isLoading && isAuthenticated && isKitchen && !isWaiter && !isCashier && !isSupervisor && !isManager) {
+      void router.replace(getKitchenLandingPath());
+    }
+  }, [isAuthenticated, isCashier, isKitchen, isLoading, isManager, isSupervisor, isWaiter, router]);
 
   function handlePinKey(key: string) {
     setFormError(null);
@@ -150,12 +153,11 @@ export default function LoginPage() {
       const isCashierUser = isCashierCompatible(me);
       const isSupervisorUser = isSupervisorCompatible(me);
       const isManagerUser = isManagerCompatible(me);
+      const isKitchenUser = isKitchenCompatible(me);
 
-      if (!isWaiterUser && !isCashierUser && !isSupervisorUser && !isManagerUser) {
+      if (!isWaiterUser && !isCashierUser && !isSupervisorUser && !isManagerUser && !isKitchenUser) {
         clearSession();
-        setBlockedMessage(
-          "This frontend currently supports waiter, cashier, supervisor, and manager workspaces only.",
-        );
+        setBlockedMessage("There is no screen for your role on this terminal yet. Ask a manager.");
         return;
       }
 
@@ -169,7 +171,9 @@ export default function LoginPage() {
           ? getSupervisorLandingPath()
           : isCashierUser
             ? getCashierLandingPath()
-            : "/waiter/floor";
+            : isWaiterUser
+              ? "/waiter/floor"
+              : getKitchenLandingPath();
 
       if (typeof window !== "undefined") {
         window.location.replace(landingPath);

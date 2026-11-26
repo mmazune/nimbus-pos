@@ -121,6 +121,7 @@ export type WaiterSessionState = {
   isCashier: boolean;
   isSupervisor: boolean;
   isManager: boolean;
+  isKitchen: boolean;
   branchId: string | null;
   branchName: string | null;
   currencyCode: string | null;

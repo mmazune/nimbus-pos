@@ -73,7 +73,7 @@ test("the Floor reads areas from the server; the Tabs area and New tab open a na
   await rule10(W.page, "tabs-area-1280", log);
   await shot(W.page, "phase3-tabs-area-1280x800.png");
   const { areas } = await api<{ areas: Json[] }>((await as("manager1")).token, "GET", "/areas");
-  const tab = areas.find((a) => a.kind === "TABS").tables.find((t: Json) => t.tabNote === "Red cap at the bar");
+  const tab = (areas.find((a) => a.kind === "TABS") as Json).tables.find((t: Json) => t.tabNote === "Red cap at the bar");
   log.tab = { label: tab?.label, isTab: tab?.isTab };
   expect(tab?.isTab).toBe(true);
   await W.ctx.close();
@@ -122,7 +122,7 @@ test("supervisor: move a table, join two and split them again, move a line, chan
 
   // Move a line from M09 to M02 (free): M02 gets a bill with that line.
   const m09 = await api<Json>((await as("manager1")).token, "GET", `/pos/orders/${(await openOrderOn("M09"))?.id}`);
-  const moved = (m09.items as Json[]).find((i) => i.sentAt && !i.voidedAt);
+  const moved = (m09.items as Json[]).find((i) => i.sentAt && !i.voidedAt) as Json;
   await openTable(S.page, "supervisor", (await tableByLabel("M09")).id);
   await actions(S.page);
   await pick(S.page, /^Move a line/);

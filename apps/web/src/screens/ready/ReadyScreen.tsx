@@ -142,9 +142,11 @@ export function ReadyScreen() {
                       </Text>
                     ))}
                   </div>
-                  <Button tone="tonal" fill disabled={busy !== null} onClick={() => void collect(t)}>
-                    {busy === t.id ? "Saving…" : "Collected"}
-                  </Button>
+                  <div className="flex">
+                    <Button tone="tonal" fill disabled={busy !== null} onClick={() => void collect(t)}>
+                      {busy === t.id ? "Saving…" : "Collected"}
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );

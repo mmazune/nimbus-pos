@@ -91,19 +91,21 @@ export function withClock(summary: string | undefined, clock: string): string | 
   return summary || asAt || undefined;
 }
 
-const ROLE_WORD: Record<TouchRole, string> = { waiter: "Waiter", cashier: "Cashier", supervisor: "Supervisor" };
+const ROLE_WORD: Record<TouchRole, string> = { waiter: "Waiter", cashier: "Cashier", supervisor: "Supervisor", kitchen: "Kitchen" };
 
 export type TouchShellProps = {
   /** A count badge per section key on the bars, e.g. { approvals: 3 }. */
   counts?: Readonly<Record<string, number>>;
   role: TouchRole;
+  /** The word under the person's name when the role is wider than one job ("Chef", "Bartender"). */
+  roleWord?: string;
   children: ReactNode;
   /** One line under the header (a shift that is not open). Wrap it in `TouchNotice`. */
   notice?: ReactNode;
   idleHandler?: ReactNode;
 };
 
-export function TouchShell({ role, children, notice, idleHandler, counts }: TouchShellProps) {
+export function TouchShell({ role, roleWord, children, notice, idleHandler, counts }: TouchShellProps) {
   const router = useRouter();
   const { displayName, logout } = useAuth();
   const station = useStationTerminalLabel();
@@ -122,7 +124,7 @@ export function TouchShell({ role, children, notice, idleHandler, counts }: Touc
   const terminalSummary = withClock(roomyHeader ? config?.summary : (config?.summaryShort ?? config?.summary), asAt);
   const person = {
     name: formatOperationalStaffIdentity({ displayName }) ?? displayName ?? "",
-    role: ROLE_WORD[role],
+    role: roleWord ?? ROLE_WORD[role],
     station,
   };
 

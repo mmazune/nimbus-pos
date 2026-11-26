@@ -1,0 +1,91 @@
+{
+  "openChefTickets": 9,
+  "at1920": {
+    "cards": 9,
+    "fullyVisible": 9,
+    "gridScrolls": false,
+    "pageScrolls": false
+  },
+  "kitchen-1920": {
+    "viewport": "1920x1080",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 99,
+    "checkedTargets": 17
+  },
+  "kitchen-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 99,
+    "checkedTargets": 17
+  },
+  "done-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Bring back to Tickets"
+    ],
+    "checkedText": 27,
+    "checkedTargets": 13
+  },
+  "soldout-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 17,
+    "checkedTargets": 10
+  },
+  "set-number-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Set 12 left"
+    ],
+    "checkedText": 27,
+    "checkedTargets": 18
+  },
+  "barTickets": 0,
+  "bar-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 86,
+    "checkedTargets": 13
+  },
+  "kitchenBar": [
+    "Tickets8",
+    "Done",
+    "Sold out"
+  ]
+}
