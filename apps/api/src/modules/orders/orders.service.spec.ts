@@ -63,6 +63,11 @@ describe('OrdersService', () => {
       discount: {
         findFirst: jest.fn().mockResolvedValue(null),
       },
+      // T2 phase 1 (E2): no availability row = available, no number
+      menuItemAvailability: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
     };
     prisma.$transaction = jest.fn().mockImplementation((fn: any) => fn(prisma));
 
@@ -345,7 +350,10 @@ describe('OrdersService', () => {
       prisma.order.findUniqueOrThrow
         .mockResolvedValueOnce({ id: 'order-1', status: 'NEW' })
         .mockResolvedValue({ id: 'order-1', status: 'SENT' });
-      prisma.orderItem.findMany.mockResolvedValue([{ id: 'line-1' }, { id: 'line-2' }]);
+      prisma.orderItem.findMany.mockResolvedValue([
+        { id: 'line-1', menuItemId: 'mi-1', quantity: 1, menuItem: { name: 'Item one' } },
+        { id: 'line-2', menuItemId: 'mi-2', quantity: 1, menuItem: { name: 'Item two' } },
+      ]);
     });
 
     it('moves NEW → SENT the first time, stamps the lines and tickets exactly those lines', async () => {

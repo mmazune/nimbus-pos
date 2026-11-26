@@ -471,6 +471,9 @@ export class PosHandoffService {
                             price: unitPrice.toFixed(2),
                             subtotal: movedSubtotal.toFixed(2),
                             notes: it.notes ?? null,
+                            // T2 phase 1 (E2): an offer line keeps its normal price when it moves
+                            normalPrice: it.normalPrice ?? null,
+                            offerBasePrice: it.offerBasePrice ?? null,
                             metadata: it.metadata
                                 ? (it.metadata as Prisma.InputJsonValue)
                                 : Prisma.JsonNull,
@@ -935,6 +938,9 @@ export class PosHandoffService {
                             price: unitPrice.toFixed(2),
                             subtotal: round2(unitPrice.mul(moveQty)).toFixed(2),
                             notes: it.notes ?? null,
+                            // T2 phase 1 (E2): an offer line keeps its normal price when it moves
+                            normalPrice: it.normalPrice ?? null,
+                            offerBasePrice: it.offerBasePrice ?? null,
                             metadata: it.metadata
                                 ? (it.metadata as Prisma.InputJsonValue)
                                 : Prisma.JsonNull,

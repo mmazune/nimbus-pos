@@ -13,6 +13,13 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { KdsService } from '../kds/kds.service';
 import { closeOrderInTx } from './order-close';
 import {
+  giveBackForVoid,
+  MENU_AVAILABILITY_CHANGED,
+  MenuAvailabilityChangedEvent,
+  takeAvailabilityForSend,
+  availabilityView,
+} from '../menu/availability-engine';
+import {
   ORDER_CLOSED,
   ORDER_LINES_SENT,
   ORDER_LINE_VOIDED,
@@ -237,7 +244,28 @@ export class OrdersService {
 
     if (!order) throw new NotFoundException('Order not found');
     if (actor) assertWaiterOrderOwnership(actor, order);
-    return order;
+
+    // T2 phase 1 (E2): an unsent line whose item is sold out is flagged; Send will skip it.
+    const unsentItemIds = [
+      ...new Set(order.items.filter((i) => !i.sentAt && !i.voidedAt).map((i) => i.menuItemId)),
+    ];
+    const rows = unsentItemIds.length
+      ? await this.prisma.menuItemAvailability.findMany({
+          where: { menuItemId: { in: unsentItemIds } },
+        })
+      : [];
+    const byItem = new Map(rows.map((r) => [r.menuItemId, availabilityView(r)]));
+    return {
+      ...order,
+      items: order.items.map((i) => {
+        const view = !i.sentAt && !i.voidedAt ? byItem.get(i.menuItemId) : undefined;
+        return {
+          ...i,
+          unsendable: view?.state === 'SOLD_OUT',
+          ...(view?.state === 'SOLD_OUT' ? { unsendableReason: 'SOLD_OUT' } : {}),
+        };
+      }),
+    };
   }
 
   // ── List Orders ──
@@ -300,9 +328,13 @@ export class OrdersService {
     modifierMeta?: Record<string, unknown>,
     // Optional transaction client (H1). Existing callers omit it and keep using db.
     client?: Prisma.TransactionClient,
+    // T2 phase 1 (E2): an offer price agreed when the line was added stays on later edits.
+    lockedOfferBase?: Decimal | string | null,
   ): Promise<{
     price: Decimal;
     subtotal: Decimal;
+    normalPrice: Decimal | null;
+    offerBasePrice: Decimal | null;
     costUnit: Decimal | null;
     costTotal: Decimal | null;
     marginTotal: Decimal | null;
@@ -323,6 +355,16 @@ export class OrdersService {
 
     // Determine base price from serving or item
     let unitPrice = menuItem.price;
+    // T2 phase 1 (E2): offers. The offer replaces the item's own price; a chosen serving keeps
+    // its serving price. The normal price is kept beside the line.
+    let offerBase: Decimal | null = null;
+    if (!menuItemServingId) {
+      if (lockedOfferBase !== undefined && lockedOfferBase !== null) {
+        offerBase = new Decimal(lockedOfferBase);
+      } else if (menuItem.isOffer && menuItem.offerPrice !== null) {
+        offerBase = new Decimal(menuItem.offerPrice);
+      }
+    }
 
     if (menuItemServingId) {
       const serving = menuItem.servings.find((s) => s.id === menuItemServingId);
@@ -386,7 +428,8 @@ export class OrdersService {
       }
     }
 
-    const effectivePrice = new Decimal(unitPrice).add(modifierDelta);
+    const normalUnit = new Decimal(unitPrice).add(modifierDelta);
+    const effectivePrice = offerBase ? offerBase.add(modifierDelta) : normalUnit;
     const lineSubtotal = effectivePrice.mul(quantity);
 
     // Compute cost snapshot from M8 recipes
@@ -450,6 +493,8 @@ export class OrdersService {
     return {
       price: effectivePrice.toDecimalPlaces(2),
       subtotal: lineSubtotal.toDecimalPlaces(2),
+      normalPrice: offerBase ? normalUnit.toDecimalPlaces(2) : null,
+      offerBasePrice: offerBase ? offerBase.toDecimalPlaces(2) : null,
       costUnit,
       costTotal,
       marginTotal,
@@ -524,6 +569,20 @@ export class OrdersService {
 
     const quantity = dto.quantity ?? 1;
 
+    // T2 phase 1 (E2): a sold-out item cannot be added; its button is grey for everyone.
+    const availability = await this.prisma.menuItemAvailability.findUnique({
+      where: { menuItemId: dto.menuItemId },
+      select: { state: true, since: true },
+    });
+    if (availability?.state === 'SOLD_OUT') {
+      throw new ConflictException({
+        code: 'ITEM_SOLD_OUT',
+        message: 'This item is sold out.',
+        menuItemId: dto.menuItemId,
+        since: availability.since,
+      });
+    }
+
     const pricing = await this.computeLinePricing(
       ctx,
       dto.menuItemId,
@@ -540,6 +599,8 @@ export class OrdersService {
         quantity,
         price: pricing.price,
         subtotal: pricing.subtotal,
+        normalPrice: pricing.normalPrice,
+        offerBasePrice: pricing.offerBasePrice,
         notes: dto.notes ?? null,
         metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
         costUnit: pricing.costUnit,
@@ -615,6 +676,8 @@ export class OrdersService {
       existingItem.menuItemServingId,
       quantity,
       metadata as Record<string, unknown> | undefined,
+      undefined,
+      existingItem.offerBasePrice,
     );
 
     const updated = await this.prisma.orderItem.update({
@@ -628,6 +691,8 @@ export class OrdersService {
             : undefined,
         price: pricing.price,
         subtotal: pricing.subtotal,
+        normalPrice: pricing.normalPrice,
+        offerBasePrice: pricing.offerBasePrice,
         costUnit: pricing.costUnit,
         costTotal: pricing.costTotal,
         marginTotal: pricing.marginTotal,
@@ -825,7 +890,13 @@ export class OrdersService {
 
       const unsent = await tx.orderItem.findMany({
         where: { orderId, sentAt: null, voidedAt: null },
-        select: { id: true },
+        select: {
+          id: true,
+          menuItemId: true,
+          quantity: true,
+          menuItem: { select: { name: true } },
+        },
+        orderBy: { createdAt: 'asc' },
       });
       if (unsent.length === 0) {
         throw new ConflictException({
@@ -833,7 +904,30 @@ export class OrdersService {
           message: 'There is nothing new to send on this order.',
         });
       }
-      const lineIds = unsent.map((l) => l.id);
+
+      // T2 phase 1 (E2): sold-out lines are skipped and reported; counted items lose portions
+      // with a guarded update, so two sends racing for the last one cannot both take it.
+      const take = await takeAvailabilityForSend(
+        tx,
+        ctx,
+        orderId,
+        userId,
+        unsent.map((l) => ({
+          id: l.id,
+          menuItemId: l.menuItemId,
+          quantity: l.quantity,
+          name: l.menuItem.name,
+        })),
+      );
+      if (take.sendIds.length === 0) {
+        throw new ConflictException({
+          code: 'NOTHING_SENDABLE',
+          message: `Nothing could be sent: ${[...new Set(take.skipped.map((k) => k.name))].join(', ')} sold out or not enough left.`,
+          skipped: take.skipped,
+        });
+      }
+      const sendSet = new Set(take.sendIds);
+      const lineIds = unsent.filter((l) => sendSet.has(l.id)).map((l) => l.id);
 
       await tx.orderItem.updateMany({
         where: { id: { in: lineIds }, sentAt: null },
@@ -862,12 +956,13 @@ export class OrdersService {
             lineCount: lineIds.length,
             orderItemIds: lineIds,
             ticketIds: tickets.map((t) => t.id),
+            skipped: take.skipped.map((k) => ({ orderItemId: k.orderItemId, reason: k.reason })),
           },
           ipAddress: meta.ipAddress ?? null,
           userAgent: meta.userAgent ?? null,
         },
       });
-      return { lineIds, tickets, firstSend };
+      return { lineIds, tickets, firstSend, skipped: take.skipped, changed: take.changedItemIds };
     });
 
     if (result.firstSend && order.serviceType === 'DINE_IN') {
@@ -881,8 +976,16 @@ export class OrdersService {
       orderItemIds: result.lineIds,
       ticketIds: result.tickets.map((t) => t.id),
     } satisfies OrderLinesSentEvent);
+    if (result.changed.length > 0) {
+      this.eventEmitter.emit(MENU_AVAILABILITY_CHANGED, {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        menuItemIds: result.changed,
+      } satisfies MenuAvailabilityChangedEvent);
+    }
 
-    return this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    const sentOrder = await this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    return { ...sentOrder, sent: result.lineIds, skipped: result.skipped };
   }
 
   async markInKitchen(
@@ -1081,6 +1184,8 @@ export class OrdersService {
             quantity: voidQty,
             price: item.price,
             subtotal: unit.mul(voidQty).toDecimalPlaces(2),
+            normalPrice: item.normalPrice,
+            offerBasePrice: item.offerBasePrice,
             notes: item.notes,
             metadata: item.metadata ? (item.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
             costUnit: item.costUnit,
@@ -1108,6 +1213,12 @@ export class OrdersService {
 
       await this.recalcOrderTotals(orderId, tx);
 
+      // T2 phase 1 (E2): "not made" gives the portions back to the number, if there is one.
+      const gaveBack =
+        dto.wasMade === false
+          ? await giveBackForVoid(tx, ctx, item.menuItemId, voidQty, userId, orderId, voided.id)
+          : false;
+
       await tx.auditLog.create({
         data: {
           actorUserId: userId,
@@ -1131,8 +1242,20 @@ export class OrdersService {
           userAgent: meta.userAgent ?? null,
         },
       });
-      return { item: voided, unchanged: false, event: voided.id as string | null };
+      return {
+        item: voided,
+        unchanged: false,
+        event: voided.id as string | null,
+        gaveBack: gaveBack ? item.menuItemId : null,
+      };
     });
+    if ('gaveBack' in result && result.gaveBack) {
+      this.eventEmitter.emit(MENU_AVAILABILITY_CHANGED, {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        menuItemIds: [result.gaveBack],
+      } satisfies MenuAvailabilityChangedEvent);
+    }
 
     const order = await this.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
