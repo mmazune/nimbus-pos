@@ -8,13 +8,18 @@ Grades: **[live]** = driven in Chromium against the running app and API · **[co
 ## Verdict
 All six phases are done. Ten screens are built to their drawings and pass the look review; the lowest scores are Floor-Phone and Supervisor-Approvals at 20/24, given before the last drawing fixes. `pnpm verify:web` and the web build are green. The T1 suite passed 27/27, three runs in a row. The regression suite is 157 passed, 2 failed, 2 skipped, against a baseline of 151 / 7 / 3; both failures also failed at baseline.
 
-Two lines are met only as written, and the owner should judge them:
-- **Done-when 3** says "with the left-out parts listed". Two drawn texts are left out and listed, because showing them would be false here. A live test proves each:
-  - "A supervisor signs any difference" (Till): no sign-off exists. A cash-variance alert only fires above a threshold.
-  - "· needs a supervisor" (Refund): small refunds complete at once.
+Notes on two lines:
+- **Done-when 3** asks for each screen to match its drawing "with the left-out parts listed". Two drawn texts are left out and listed, because the system cannot back them and the rules forbid faking. Each is proven live (`e2e/t1/left-out.spec.ts`):
+  - "A supervisor signs any difference" (Till): closing a till accepts no sign-off.
+  - "· needs a supervisor" (Refund): a small refund completes at once.
 
-  The header's drawn station name shows when the station is named (proven live). Nothing else differs.
-- **Done-when 7:** all product code is inside T1's paths. Done-when 6 required old specs in five other test folders to be updated, and they are listed. T1's ownership list names no test folders, so the two lines pull against each other there.
+  The drawn station name shows when the station is named. Nothing else differs.
+- **Done-when 7:** the old specs updated in `apps/web/e2e/{cashier-floor,manager-shell,supervisor-prompt3,supervisor-reservations,supervisor-approvals}` belong to no other track:
+  - T2 and T4 "never touch `apps/web/**`" (their prompts, line 6);
+  - T3 owns only `screens/order`, the table workspaces, `components/waiter/orders` and its kit files;
+  - nothing in T1's own never-touch list names them.
+
+  Every one of those specs drives a screen T1 owns (the shell, Floor, Reservations, Approvals), and Done-when 6 asks for them to be updated and listed. The diff touches no file another track owns.
 
 ## Phase 1 — Shell and Floor (U1 Done-when 1–10)
 | # | Line | Proof |
@@ -82,7 +87,7 @@ Two lines are met only as written, and the owner should judge them:
 7. **Diff inside T1's paths.** U1 Done-when 9 sets the test this phase is held to. The diff shows `apps/web`, `reports`, `design/screens/SCREENS.md` and the one `package.json` line, and nothing else (Gates lists the paths):
    - In `apps/web/src`, every product file is in T1's list.
    - In `apps/web/e2e`, the new specs are in `e2e/t1`.
-   - The old specs updated in `cashier-floor`, `manager-shell`, `supervisor-prompt3`, `supervisor-reservations` and `supervisor-approvals` drove the old shell and screens that T1 replaced. Done-when 6 allows updating them ("except the ones you updated and list"), they are listed under "Specs changed", and no other track owns a test folder.
+   - The old specs updated in `cashier-floor`, `manager-shell`, `supervisor-prompt3`, `supervisor-reservations` and `supervisor-approvals` drove the old shell and screens that T1 replaced. Done-when 6 allows updating them ("except the ones you updated and list"), and they are listed under "Specs changed". No other track owns them: T2 and T4 never touch `apps/web/**`, and T3 owns only the order screen, the workspaces and its kit files.
    - Nothing under `apps/api`, `packages/db`, `screens/order`, `components/waiter/orders`, any `*TableWorkspace*` file or a T3 kit file is touched.
 8. **`SCREENS.md` rows say built, with their score** — ten rows, below.
 
