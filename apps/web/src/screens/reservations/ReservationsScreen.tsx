@@ -184,7 +184,9 @@ export function ReservationsScreen({ role }: { role: Role }) {
   };
   const rows = lists[view];
   const all = [...todayRows, ...activeRows, ...lists.history];
-  const selected = all.find((r) => r.id === selectedId);
+  // A booking that just left its list (cancelled, completed) stays in the panel, as the API last returned it.
+  const [lastSeen, setLastSeen] = useState<SupervisorReservation | undefined>();
+  const selected = all.find((r) => r.id === selectedId) ?? (lastSeen?.id === selectedId ? lastSeen : undefined);
 
   useTouchHeader({
     title: "Reservations",
@@ -228,7 +230,11 @@ export function ReservationsScreen({ role }: { role: Role }) {
   });
   function run(fn: () => Promise<unknown>, done: string, after?: () => void) {
     act.mutate(fn, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        const row = data as SupervisorReservation | undefined;
+        if (row && typeof row === "object" && "id" in row && row.id === selectedId) {
+          setLastSeen({ ...(selected ?? {}), ...row } as SupervisorReservation);
+        }
         setNotice(done);
         // On a phone the booking sheet stays open to show what happened; on a terminal the side panel does.
         setSheet(wide.phone ? "detail" : null);

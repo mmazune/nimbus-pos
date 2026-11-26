@@ -3,7 +3,7 @@
 Branch `t1/screens`, cut from `rebuild/main` at `0af95f8` (U0 merged; `kit/index.ts` present).
 
 ## Now
-- Phases 1 and 2 built, proven and pushed. Phase 3 (Me) written, not yet committed or proven. Look-review scores for every screen are done in phase 6 by a reviewer subagent.
+- Phases 1–3 committed and pushed (`718c91d` is phase 3). Phase 4 (Receipts, Till) written and green 3×, NOT committed: fixing the advisor's money points first (till remainder line, Earlier filter-then-cap, one idempotency key per attempt, pending refund test + trace on the bill, close confirm + open a new till, paid-time check, bounded reads, 390 sheets, old-screen inventory, two Floor assertions). Then regression, commit, phase 5. Scores in phase 6.
 
 ## Commits
 | Phase.part | Commit | What |
@@ -46,6 +46,17 @@ Branch `t1/screens`, cut from `rebuild/main` at `0af95f8` (U0 merged; `kit/index
 
 ## Specs updated (old shell/nav/toolbar/4B reservations)
 cashier-floor: navigation-and-default-route, hidden-legacy-routes, legacy-compatibility-regression, responsive, responsive-c2, shared-floor-parity · supervisor-prompt3: floor, regression, role-boundaries · manager-shell: shell-parity (frontline case) · supervisor-reservations: fixtures, arriving-actions, attention, create-reservation, history-and-pagination, navigation-and-default-view, privacy-and-boundaries, responsive, seated-and-completion, waiter-visibility.
+
+## Decisions since phase 2 (phase 3–4)
+19. "as at HH:MM" = when the screen's data was read (`dataUpdatedAt`); Floor, Reservations, Receipts, Till refresh every 30 s.
+20. An order with nothing on it (NEW, no items) does not make a table busy; a seated booking's table (OCCUPIED) shows open.
+21. Order lists are read in pages of 500, de-duplicated by id: offset paging over tied createdAt lost rows (Me sales went down after a payment).
+22. Deposits: keep / give back only when one was RECEIVED (the service only acts on RECEIVED); no-show asks.
+23. Waiter seat sends createOrder: true (the old waiter screen did); supervisor seat sends the table only (4B did).
+24. Me: "Sales so far" for the waiter only; attendance clock in/out kept in My shift (old Me had it); End my shift asks first; the "Open Me" shift line hides on Me.
+25. Receipts: "Print again" left out (reprint only records); list "How" column left out (no method on the order list); Refund reuses the cashier refund rules.
+26. Till: only what the summary returns; per-method tiles, cash sales line, Pay out, Open the drawer left out.
+27. Sheets cover the bars: shell is `isolate`, bars at -z-10.
 
 ## Next
 - Phase 3 Me: shoot, spec (e2e/t1/me.spec.ts), commit.

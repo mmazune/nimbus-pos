@@ -89,6 +89,16 @@ test("waiter seats a late booking at another free table (1280 × 800)", async ({
   expect(after.status).toBe("SEATED");
   expect(`Table ${after.table?.label}`).toBe(label);
   await shot(page, "Reservations-Waiter-seated-1280x800.png");
+  // the table the waiter just seated now shows open on the Floor
+  const tables = await apiCall<Array<{ id: string; label: string }>>("manager", "/tables");
+  const seatedId = tables.find((t) => `Table ${t.label}` === label)?.id;
+  await page.goto("/waiter/floor");
+  await page.getByRole("tab", { name: "All tables" }).click();
+  for (const area of ["Main hall", "Terrace", "Bar", "VIP", "Tabs"]) {
+    await page.getByRole("button", { name: new RegExp(`^${area}`) }).click();
+    if (await page.locator(`[data-floor-table-id="${seatedId}"]`).count()) break;
+  }
+  await expect(page.locator(`[data-floor-table-id="${seatedId}"]`)).toHaveAttribute("data-floor-tile", "open");
 });
 
 test("supervisor creates, confirms, moves, completes and cancels bookings (1280 × 800)", async ({ page }) => {

@@ -153,9 +153,20 @@ test("tapping a table opens what it opened before, for each role", async ({ page
   for (const who of ["waiter", "cashier", "supervisor"] as const) {
     await openMainHall(page, who);
     const state = who === "waiter" ? "free" : "open";
-    await page.locator(`[data-floor-tile="${state}"] button`).first().click();
+    const tile = page.locator(`[data-floor-tile="${state}"]`).first();
+    const tableId = await tile.getAttribute("data-floor-table-id");
+    await tile.locator("button").click();
     await expect(page.locator("[data-operational-workspace]")).toBeVisible();
     await shot(page, `tap-${who}-1280x800.png`);
+    if (who === "waiter") {
+      // a free table tapped and backed out of saves nothing (R2): it is still free
+      await page.goBack();
+      await expect(page.locator("[data-operational-workspace]")).toHaveCount(0);
+      await page.reload();
+      await page.getByRole("tab", { name: "All tables" }).click();
+      await page.getByRole("button", { name: /^Main hall/ }).click();
+      await expect(page.locator(`[data-floor-table-id="${tableId}"]`)).toHaveAttribute("data-floor-tile", "free");
+    }
   }
 });
 

@@ -1,0 +1,146 @@
+{
+  "receipts-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 30,
+    "checkedTargets": 11
+  },
+  "refund-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 41,
+    "checkedTargets": 17
+  },
+  "till-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Count and close"
+    ],
+    "checkedText": 23,
+    "checkedTargets": 10
+  },
+  "safe-drop-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Record the drop"
+    ],
+    "checkedText": 31,
+    "checkedTargets": 15
+  },
+  "close-confirm-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Close the till"
+    ],
+    "checkedText": 32,
+    "checkedTargets": 12
+  },
+  "receipts-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 612,
+    "checkedTargets": 208
+  },
+  "receipts-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 14,
+    "checkedTargets": 9
+  },
+  "refund-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 23,
+    "checkedTargets": 14
+  },
+  "receipts-earlier-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 13,
+    "checkedTargets": 9
+  },
+  "till-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Count and close"
+    ],
+    "checkedText": 23,
+    "checkedTargets": 8
+  },
+  "safe-drop-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Record the drop"
+    ],
+    "checkedText": 31,
+    "checkedTargets": 13
+  },
+  "till-variance-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Count and close"
+    ],
+    "checkedText": 23,
+    "checkedTargets": 8
+  },
+  "close-confirm-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Close the till"
+    ],
+    "checkedText": 33,
+    "checkedTargets": 11
+  }
+}
