@@ -91,7 +91,7 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 22,
+    "checkedText": 17,
     "checkedTargets": 7
   },
   "cashier-me-390": {
@@ -105,8 +105,8 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 23,
-    "checkedTargets": 8
+    "checkedText": 19,
+    "checkedTargets": 7
   },
   "supervisor-me-390": {
     "viewport": "390x844",
@@ -119,7 +119,7 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 19,
+    "checkedText": 22,
     "checkedTargets": 7
   }
 }

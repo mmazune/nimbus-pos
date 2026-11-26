@@ -1,0 +1,12 @@
+Final three runs, each on a fresh demo venue (e2e/t5/stack.sh), web build of cc33ee3 code;
+suites: e2e/t1 (27) + e2e/order/evening.spec.ts (1) + e2e/t5 (25) = 53 tests
+=== run 1 18:48:40 on cc33ee3
+t5-stack: database nimbus_event_0ddc0c83
+  53 passed (4.0m)
+=== run 2 18:53:21 on 71e4b80
+t5-stack: database nimbus_event_1d3b7b0b
+  53 passed (4.0m)
+=== run 3 18:58:00 on a52f79a
+t5-stack: database nimbus_event_de768d57
+  53 passed (4.0m)
+DONE
