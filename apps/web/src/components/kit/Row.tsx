@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import type { OperationalIconName } from "@/components/pos-shell/role-icons";
+
 import { KitIcon } from "./KitIcon";
 import { FOCUS, MOTION, TAP, focusLook, type KitDemo } from "./states";
 
@@ -10,6 +12,8 @@ export type RowProps = {
   initials?: string;
   /** One thing on the right: a pill, a value, a round action. */
   trailing?: ReactNode;
+  /** An icon in a 40 px tonal circle in front (Supervisor-Approvals). */
+  icon?: OperationalIconName;
   /** A time or short word in front, set large (Reservations: "19:30"). */
   leading?: string;
   /** A › at the end: the row opens something. */
@@ -27,9 +31,14 @@ export type RowProps = {
  * A list row. The tall row (76) and the leading column (76) reuse the two 76 px
  * tokens that exist (bottom-bar, round-label-w) rather than add new ones.
  * Put rows in a `RowGroup` inside one card; dividers come from the group. */
-export function Row({ title, line, initials, leading, chevron = false, current = false, trailing, size = "regular", onClick, disabled, demo }: RowProps) {
+export function Row({ title, line, initials, icon, leading, chevron = false, current = false, trailing, size = "regular", onClick, disabled, demo }: RowProps) {
   const body = (
     <>
+      {icon ? (
+        <span className="flex h-kit-avatar w-kit-avatar flex-none items-center justify-center rounded-kit-full bg-kit-tonal text-kit-primary">
+          <KitIcon name={icon} />
+        </span>
+      ) : null}
       {leading ? <span className="w-kit-round-label-w flex-none text-kit-h text-kit-text">{leading}</span> : null}
       {initials ? (
         <span className="flex h-kit-avatar w-kit-avatar flex-none items-center justify-center rounded-kit-full bg-kit-tonal text-kit-avatar text-kit-primary">

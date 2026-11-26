@@ -1,0 +1,54 @@
+{
+  "approvals-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 37,
+    "checkedTargets": 16
+  },
+  "decline-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Decline"
+    ],
+    "checkedText": 42,
+    "checkedTargets": 20
+  },
+  "approvals-done-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 37,
+    "checkedTargets": 14
+  },
+  "approvals-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 9,
+    "checkedTargets": 7
+  },
+  "approvals-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 38,
+    "checkedTargets": 13
+  }
+}

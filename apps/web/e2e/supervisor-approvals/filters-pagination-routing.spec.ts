@@ -1,60 +1,46 @@
 import { test, expect } from "@playwright/test";
 
 import { uiLogin } from "../supervisor-prompt3/fixtures";
-import { gotoApprovals } from "./approvals-fixtures";
+import { apiCreatePendingDiscount, domainRows, gotoApprovals } from "./approvals-fixtures";
 
+// T1 (26 Nov 2026): Approvals rebuilt to the drawing Supervisor-Approvals (Waiting / Done today /
+// History, one list, a side panel). Same routes and decisions; selectors updated.
+
+// The domain chips and the date-range toolbar are not in the drawing and were removed
+// (listed in the T1 report); the view and the open request stay in the URL.
 test.describe("Approvals — filters, routing & URL state", () => {
-  test("scope + domain changes are reflected in the URL and survive refresh", async ({ page }) => {
+  test("the view is reflected in the URL and survives refresh", async ({ page }) => {
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
-
-    // Switch scope → Resolved. URL gains ?scope=resolved.
-    await page.getByRole("tab", { name: /resolved/i }).click();
-    await expect(page).toHaveURL(/scope=resolved/);
-
-    // Switch domain → Leave. URL gains ?domain=leave.
-    await page.getByRole("button", { name: /^leave$/i }).click();
-    await expect(page).toHaveURL(/domain=leave/);
-
-    // Refresh preserves scope + domain (the real requirement).
+    await page.getByRole("tab", { name: /^Done today/ }).click();
+    await expect(page).toHaveURL(/view=done/);
     await page.reload();
-    await expect(page).toHaveURL(/scope=resolved/);
-    await expect(page).toHaveURL(/domain=leave/);
-    await expect(page.getByRole("tab", { name: /resolved/i })).toHaveAttribute("aria-selected", "true");
-
-    // Filter changes use replace()-routing (no per-filter history entries, matching
-    // Reservations), so Back returns to the prior page cleanly — stable, no crash.
+    await expect(page).toHaveURL(/view=done/);
+    await expect(page.getByRole("tab", { name: /^Done today/ })).toHaveAttribute("aria-selected", "true");
     await page.goBack();
     await expect(page).toHaveURL(/\/supervisor\//);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test("Resolved/History omit the Discounts domain (no branch-wide endpoint)", async ({ page }) => {
+  test("Done today and History hold no discounts (no branch-wide endpoint)", async ({ page }) => {
     await uiLogin(page, "supervisor");
-    await gotoApprovals(page);
-
-    // Needs action shows Discounts.
-    await expect(page.getByRole("button", { name: /^discounts$/i })).toBeVisible();
-
-    await page.getByRole("tab", { name: /resolved/i }).click();
-    await expect(page.getByRole("button", { name: /^discounts$/i })).toHaveCount(0);
-
-    await page.getByRole("tab", { name: /history/i }).click();
-    await expect(page.getByRole("button", { name: /^discounts$/i })).toHaveCount(0);
+    await page.goto("/supervisor/approvals?view=history");
+    await expect(page.getByRole("tab", { name: /^History$/ })).toHaveAttribute("aria-selected", "true");
+    await expect(domainRows(page, /^discounts$/i)).toHaveCount(0);
+    await expect(page.getByText(/leave, swaps and alerts/i)).toBeVisible();
   });
 
-  test("forcing discount history via URL shows a truthful order-scoped notice", async ({ page }) => {
+  test("an old deep link (selDomain + selId) still opens the request", async ({ page }) => {
+    const { discountId } = await apiCreatePendingDiscount();
     await uiLogin(page, "supervisor");
-    await page.goto("/supervisor/approvals?scope=history&domain=discount");
-    await expect(page.getByText(/available from the related order/i)).toBeVisible();
+    await page.goto(`/supervisor/approvals?selDomain=discount&selId=${discountId}`);
+    await expect(page.locator(`[data-approval="discount:${discountId}"]`)).toBeVisible();
   });
 
-  test("History exposes a date-range toolbar that maps to URL params", async ({ page }) => {
+  test("History pages with Newer / Older", async ({ page }) => {
     await uiLogin(page, "supervisor");
-    await page.goto("/supervisor/approvals?scope=history");
-    const from = page.getByLabel(/history date from/i);
-    await expect(from).toBeVisible();
-    await from.fill("2026-01-01");
-    await expect(page).toHaveURL(/from=2026-01-01/);
+    await page.goto("/supervisor/approvals?view=history");
+    await expect(page.getByRole("button", { name: /^newer$/i })).toBeDisabled();
+    await expect(page.getByText(/^Page 1 /)).toBeVisible();
   });
 });

@@ -2,11 +2,11 @@
   "myDay": {
     "before": {
       "sales": "UGX 9,905,200",
-      "served": "28"
+      "served": "29"
     },
     "after": {
       "sales": "UGX 9,947,200",
-      "served": "29"
+      "served": "30"
     },
     "orderTotal": "42000"
   },
@@ -19,7 +19,7 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 26,
+    "checkedText": 28,
     "checkedTargets": 9
   },
   "waiter-leave-sheet-1280": {
@@ -31,7 +31,7 @@
     "filled": [
       "Send the request"
     ],
-    "checkedText": 38,
+    "checkedText": 40,
     "checkedTargets": 19
   },
   "waiter-end-sheet-1280": {
@@ -43,7 +43,7 @@
     "filled": [
       "End my shift"
     ],
-    "checkedText": 33,
+    "checkedText": 36,
     "checkedTargets": 12
   },
   "cashier-me-1280": {
@@ -67,7 +67,7 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 24,
+    "checkedText": 21,
     "checkedTargets": 10
   },
   "waiter-me-390": {
@@ -79,8 +79,8 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 15,
-    "checkedTargets": 5
+    "checkedText": 24,
+    "checkedTargets": 7
   },
   "cashier-me-390": {
     "viewport": "390x844",
@@ -91,8 +91,8 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 16,
-    "checkedTargets": 6
+    "checkedText": 19,
+    "checkedTargets": 7
   },
   "supervisor-me-390": {
     "viewport": "390x844",
@@ -103,7 +103,7 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 19,
-    "checkedTargets": 8
+    "checkedText": 16,
+    "checkedTargets": 6
   }
 }

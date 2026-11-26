@@ -1,5 +1,5 @@
 {
-  "fixture": "made",
+  "fixture": "present",
   "waiter1280": {
     "layout": "roomy",
     "fits": "true",
@@ -117,7 +117,7 @@
       "small": [],
       "tinyText": [],
       "filled": [],
-      "checkedText": 272,
+      "checkedText": 274,
       "checkedTargets": 84
     }
   },
@@ -139,8 +139,8 @@
         "small": [],
         "tinyText": [],
         "filled": [],
-        "checkedText": 58,
-        "checkedTargets": 25
+        "checkedText": 61,
+        "checkedTargets": 26
       },
       {
         "viewport": "390x844",
@@ -249,8 +249,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 56,
-    "checkedTargets": 22
+    "checkedText": 61,
+    "checkedTargets": 23
   },
   "search-390": {
     "viewport": "390x844",
@@ -259,7 +259,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 64,
-    "checkedTargets": 28
+    "checkedText": 67,
+    "checkedTargets": 29
   }
 }
