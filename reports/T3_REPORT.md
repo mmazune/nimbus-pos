@@ -128,24 +128,24 @@ Saved in `reports/proof/T3/gates.txt`, run on the final code after the last chan
 - The API is untouched, so its gates are E1's (`reports/E1_REPORT.md`).
 
 ## Look review [emulation, reviewer]
-A subagent that built nothing scored the compare images (`reports/T3_LOOK_REVIEW.md`). Each score is out of 24, with no zero:
+**The scores in `SCREENS.md` come from an independent review** (`reports/T3_LOOK_REVIEW_INDEPENDENT.md`): a fresh subagent that built nothing, had seen no earlier review, and was given no guidance on what to set aside. Each score is out of 24; a pass is 20 with no zero.
 
-| Screen | Score |
-|---|---|
-| Order-Empty | 20 |
-| Order-Terminal | 22 |
-| Order-Other | 21* |
-| Order-Laptop | 21* |
-| Order-Phone | 21 |
-| Order-Phone-Check | 23 |
-| Order-Phone-Item | 23 |
-| Supervisor-Table | 23 |
-| Supervisor-Void | 24 |
-| Cashier-Pay | 22 |
+| Screen | Score | Result |
+|---|---|---|
+| Order-Empty | 21 | pass |
+| Order-Terminal | 21 | pass |
+| Order-Other | 20 | **fail** (fidelity 0) |
+| Order-Laptop | 19 | **fail** |
+| Order-Phone | 20 | pass |
+| Order-Phone-Check | 23 | pass |
+| Order-Phone-Item | 22 | pass |
+| Supervisor-Table | 22 | pass |
+| Supervisor-Void | 23 | pass |
+| Cashier-Pay | 23 | pass |
 
-\* First scored 18 each and fixed: a filled "Back to the floor" on the lock card, and "Floor ›" with an Open pill on the laptop bar. **The re-score was led:** my message told the reviewer which gaps to set aside (endpoints that do not exist, and the shared top bar). Weigh those two 21s accordingly.
-
-The review was done before the closing fixes (the till rule, Table status, the "Popular food" group, the short void words on a phone). They change no drawn layout.
+- **Order-Other fails on fidelity** because "Ask Brian O.", "Take it over", the read-only order lines and Print bill are not on the built screen. The API gives a waiter none of them: there is no endpoint for the two requests, and it refuses both the read and the bill request on another waiter's order (rule 13: left out, never faked).
+- **Order-Laptop fails** mainly on the top bar: the build sits under the shared manager top bar (D-MGRTOPNAV, `pos-shell`, not T3's), not the drawn Floor/Menu/Stock bar. The search is also a labelled field rather than a pill.
+- An earlier review (`reports/T3_LOOK_REVIEW.md`) scored 20–24 after a re-score I led by naming the gaps to set aside. It is kept for the record but **not used**.
 
 ## Differences from the drawings (and why)
 - **Icons:** the drawings' stand-in icons are drawn with names from the Phosphor registry. I cannot add names, because `pos-shell` is not mine. Move table uses `table`, Join tables `serviceArea`, Change waiter `staff`, Split bill `count`, Discount `revenue`, Void an item `soldOut`, Cancel the order `close`, Same again `refresh`, Table status `table`.
