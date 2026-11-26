@@ -25,7 +25,20 @@ describe('PaymentsService', () => {
       order: {
         findFirst: jest.fn(),
         update: jest.fn(),
+        // E1 — the close door
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        count: jest.fn().mockResolvedValue(0),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'order-1', status: 'CLOSED' }),
       },
+      // one sent, live line by default so the E1 payable gate passes
+      orderItem: {
+        findMany: jest.fn().mockResolvedValue([{ sentAt: new Date() }]),
+      },
+      table: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      reservation: { findFirst: jest.fn().mockResolvedValue(null), updateMany: jest.fn() },
+      reservationEvent: { create: jest.fn() },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+      $queryRaw: jest.fn().mockResolvedValue([]),
       payment: {
         create: jest.fn(),
         findFirst: jest.fn(),
@@ -36,7 +49,7 @@ describe('PaymentsService', () => {
         findFirst: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       webhookEvent: {
         create: jest.fn(),
@@ -129,6 +142,157 @@ describe('PaymentsService', () => {
     );
 
     expect(result.changeDue).toBe('20.00');
+  });
+
+  // ── E1 part c — pay with change, and the payable gate ──
+
+  describe('E1 pay with change', () => {
+    const openOrder = (total: number, status = 'SERVED') => ({
+      id: 'order-1',
+      status,
+      total: new Decimal(total),
+      branchId: 'branch-1',
+      orgId: 'org-1',
+      payments: [],
+    });
+    beforeEach(() => {
+      prisma.payment.create.mockImplementation(async ({ data }: any) => ({
+        id: `pay-${data.method}`,
+        status: 'COMPLETED',
+        ...data,
+      }));
+    });
+
+    it('100,000 cash on a 98,000 bill stores 98,000 applied, 100,000 tendered, 2,000 change', async () => {
+      prisma.order.findFirst.mockResolvedValue(openOrder(98000, 'SENT'));
+      const r = await service.closeOrderWithPayment(
+        'u',
+        ctx,
+        'order-1',
+        { payments: [{ method: 'CASH', amount: 100000 }] },
+        meta,
+      );
+
+      const data = prisma.payment.create.mock.calls[0][0].data;
+      expect(data.amount.toString()).toBe('98000');
+      expect(data.tendered.toString()).toBe('100000');
+      expect(data.changeGiven.toString()).toBe('2000');
+      expect(r.change).toBe('2000.00');
+      expect(r.changeDue).toBe('2000.00');
+      expect(r.cashHandedOver).toBe('100000.00');
+    });
+
+    it('accepts payment in SENT, IN_KITCHEN, READY and SERVED', async () => {
+      for (const status of ['SENT', 'IN_KITCHEN', 'READY', 'SERVED']) {
+        prisma.order.findFirst.mockResolvedValue(openOrder(50, status));
+        await expect(
+          service.closeOrderWithPayment(
+            'u',
+            ctx,
+            'order-1',
+            { payments: [{ method: 'CASH', amount: 50 }] },
+            meta,
+          ),
+        ).resolves.toBeDefined();
+      }
+    });
+
+    it('a card payment must equal what is owed: over is refused, under is refused', async () => {
+      prisma.order.findFirst.mockResolvedValue(openOrder(98000));
+      await expect(
+        service.closeOrderWithPayment(
+          'u',
+          ctx,
+          'order-1',
+          { payments: [{ method: 'CARD', amount: 100000 }] },
+          meta,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.closeOrderWithPayment(
+          'u',
+          ctx,
+          'order-1',
+          { payments: [{ method: 'CARD', amount: 90000 }] },
+          meta,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('split card + cash: change comes out of the cash row only', async () => {
+      prisma.order.findFirst.mockResolvedValue(openOrder(98000));
+      const r = await service.closeOrderWithPayment(
+        'u',
+        ctx,
+        'order-1',
+        {
+          payments: [
+            { method: 'CARD', amount: 60000 },
+            { method: 'CASH', amount: 50000 },
+          ],
+        },
+        meta,
+      );
+      const rows = prisma.payment.create.mock.calls.map((c: any[]) => c[0].data);
+      expect(rows[0].amount.toString()).toBe('60000');
+      expect(rows[0].tendered).toBeNull();
+      expect(rows[1].amount.toString()).toBe('38000');
+      expect(rows[1].changeGiven.toString()).toBe('12000');
+      expect(r.change).toBe('12000.00');
+    });
+
+    it('refuses a payment while a line is unsent (409, Send or remove the unsent items first)', async () => {
+      prisma.order.findFirst.mockResolvedValue(openOrder(98000));
+      prisma.orderItem.findMany.mockResolvedValue([{ sentAt: new Date() }, { sentAt: null }]);
+      await expect(
+        service.closeOrderWithPayment(
+          'u',
+          ctx,
+          'order-1',
+          { payments: [{ method: 'CASH', amount: 98000 }] },
+          meta,
+        ),
+      ).rejects.toThrow('Send or remove the unsent items first');
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses an order with no live line', async () => {
+      prisma.order.findFirst.mockResolvedValue(openOrder(0));
+      prisma.orderItem.findMany.mockResolvedValue([]);
+      await expect(
+        service.closeOrderWithPayment(
+          'u',
+          ctx,
+          'order-1',
+          { payments: [{ method: 'CASH', amount: 100 }] },
+          meta,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('closes through the one door and emits order.closed once', async () => {
+      prisma.order.findFirst.mockResolvedValue(openOrder(98000));
+      await service.closeOrderWithPayment(
+        'u',
+        ctx,
+        'order-1',
+        { payments: [{ method: 'CASH', amount: 98000 }] },
+        meta,
+      );
+      expect(prisma.order.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { status: 'CLOSED' } }),
+      );
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      const closed = eventEmitter.emit.mock.calls.filter((c: any[]) => c[0] === 'order.closed');
+      expect(closed).toHaveLength(1);
+      expect(Object.keys(closed[0][1]).sort()).toEqual([
+        'branchId',
+        'completedReservationId',
+        'orderId',
+        'orgId',
+        'tableId',
+      ]);
+    });
   });
 
   it('should accept split payment across methods', async () => {
@@ -1042,13 +1206,14 @@ describe('PaymentsService', () => {
       meta,
     );
 
-    expect(audit.log).toHaveBeenCalledWith(
-      expect.objectContaining({
+    // E1 — the order's close audit row is written by the close door, inside the transaction
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
         action: 'ORDER_PAID_AND_CLOSED',
         entityType: 'order',
         entityId: 'order-1',
       }),
-    );
+    });
   });
 
   it('should emit SSE events on close', async () => {

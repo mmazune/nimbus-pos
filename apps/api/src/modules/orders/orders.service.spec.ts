@@ -3,7 +3,7 @@ import { OrdersService } from './orders.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { KdsService } from '../kds/kds.service';
-import { ReservationsService } from '../reservations/reservations.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -11,8 +11,8 @@ describe('OrdersService', () => {
   let service: OrdersService;
   let prisma: Record<string, any>;
   let audit: { log: jest.Mock };
-  let kdsService: { createTicketsForOrder: jest.Mock };
-  let reservationsService: { completeForClosedOrder: jest.Mock };
+  let kdsService: { createTicketsForLines: jest.Mock; announceTickets: jest.Mock };
+  let emitter: { emit: jest.Mock };
 
   const mockCtx = {
     branchId: 'branch-1',
@@ -29,14 +29,25 @@ describe('OrdersService', () => {
         create: jest.fn(),
         update: jest.fn(),
         count: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       orderItem: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         delete: jest.fn(),
       },
+      kdsTicketItem: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+        updateMany: jest.fn(),
+      },
+      payment: { count: jest.fn().mockResolvedValue(0) },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+      $queryRaw: jest.fn().mockResolvedValue([]),
       table: {
         findFirst: jest.fn(),
       },
@@ -53,10 +64,14 @@ describe('OrdersService', () => {
         findFirst: jest.fn().mockResolvedValue(null),
       },
     };
+    prisma.$transaction = jest.fn().mockImplementation((fn: any) => fn(prisma));
 
     audit = { log: jest.fn().mockResolvedValue(undefined) };
-    kdsService = { createTicketsForOrder: jest.fn().mockResolvedValue({ tickets: [] }) };
-    reservationsService = { completeForClosedOrder: jest.fn().mockResolvedValue(null) };
+    kdsService = {
+      createTicketsForLines: jest.fn().mockResolvedValue([{ id: 'ticket-1', station: 'KITCHEN' }]),
+      announceTickets: jest.fn(),
+    };
+    emitter = { emit: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -64,7 +79,7 @@ describe('OrdersService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: KdsService, useValue: kdsService },
-        { provide: ReservationsService, useValue: reservationsService },
+        { provide: EventEmitter2, useValue: emitter },
       ],
     }).compile();
 
@@ -318,22 +333,88 @@ describe('OrdersService', () => {
 
   // ── State Machine Transitions ──
 
-  describe('sendOrder', () => {
-    it('should transition NEW → SENT', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'NEW' });
-      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'SENT' });
-
-      const result = await service.sendOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
-      expect(result.status).toBe('SENT');
-      expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'ORDER_SENT' }));
+  describe('sendOrder (E1 — send by line)', () => {
+    beforeEach(() => {
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'NEW',
+        serviceType: 'TAKEAWAY',
+        tableId: null,
+      });
+      // first read = the locked row inside the transaction, second = the answer
+      prisma.order.findUniqueOrThrow
+        .mockResolvedValueOnce({ id: 'order-1', status: 'NEW' })
+        .mockResolvedValue({ id: 'order-1', status: 'SENT' });
+      prisma.orderItem.findMany.mockResolvedValue([{ id: 'line-1' }, { id: 'line-2' }]);
     });
 
-    it('should reject CLOSED → SENT', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+    it('moves NEW → SENT the first time, stamps the lines and tickets exactly those lines', async () => {
+      const result = await service.sendOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
 
+      expect(prisma.orderItem.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { orderId: 'order-1', sentAt: null, voidedAt: null } }),
+      );
+      expect(prisma.orderItem.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: { in: ['line-1', 'line-2'] }, sentAt: null } }),
+      );
+      expect(prisma.order.update).toHaveBeenCalledWith({
+        where: { id: 'order-1' },
+        data: { status: 'SENT' },
+      });
+      expect(kdsService.createTicketsForLines).toHaveBeenCalledWith(prisma, mockCtx, 'order-1', [
+        'line-1',
+        'line-2',
+      ]);
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ action: 'ORDER_SENT' }),
+      });
+      expect(result.status).toBe('SENT');
+    });
+
+    it('a later send leaves the status alone', async () => {
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'SERVED',
+        serviceType: 'TAKEAWAY',
+        tableId: null,
+      });
+      prisma.order.findUniqueOrThrow
+        .mockReset()
+        .mockResolvedValue({ id: 'order-1', status: 'SERVED' });
+
+      await service.sendOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
+
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(kdsService.createTicketsForLines).toHaveBeenCalled();
+    });
+
+    it('answers 409 when there is nothing to send', async () => {
+      prisma.orderItem.findMany.mockResolvedValue([]);
       await expect(service.sendOrder('user-1', mockCtx, 'order-1', {}, mockMeta)).rejects.toThrow(
         ConflictException,
       );
+      expect(kdsService.createTicketsForLines).not.toHaveBeenCalled();
+    });
+
+    it('rejects a CLOSED order', async () => {
+      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+      prisma.order.findUniqueOrThrow
+        .mockReset()
+        .mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+      await expect(service.sendOrder('user-1', mockCtx, 'order-1', {}, mockMeta)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('emits order.lines.sent with ids only, after the transaction', async () => {
+      await service.sendOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
+      expect(emitter.emit).toHaveBeenCalledWith('order.lines.sent', {
+        orderId: 'order-1',
+        branchId: 'branch-1',
+        orgId: 'org-1',
+        orderItemIds: ['line-1', 'line-2'],
+        ticketIds: ['ticket-1'],
+      });
     });
   });
 
@@ -367,45 +448,200 @@ describe('OrdersService', () => {
     });
   });
 
-  describe('closeOrder', () => {
-    it('should transition SERVED → CLOSED', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
-      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
-
-      const result = await service.closeOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
-      expect(result.status).toBe('CLOSED');
+  describe('closing an order (E1 — one close door)', () => {
+    it('there is no closeOrder method that closes without payment', () => {
+      expect((service as any).closeOrder).toBeUndefined();
     });
 
-    it('should reconcile a linked reservation on close (Prompt 4A auto-completion)', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
-      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
-      reservationsService.completeForClosedOrder.mockResolvedValue('res-1');
+    it('transitionOrder(CLOSED) closes through the door and emits order.closed', async () => {
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'SERVED',
+        orgId: 'org-1',
+        branchId: 'branch-1',
+        tableId: null,
+        total: new Decimal(0),
+        userId: 'u',
+      });
+      prisma.order.findUniqueOrThrow.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+      prisma.reservation = { findFirst: jest.fn().mockResolvedValue(null), updateMany: jest.fn() };
 
-      await service.closeOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
-
-      expect(reservationsService.completeForClosedOrder).toHaveBeenCalledWith(
-        'order-1',
-        mockCtx,
+      const result = await (service as any).transitionOrder(
         'user-1',
+        mockCtx,
+        'order-1',
+        'CLOSED',
+        'ORDER_CLOSED',
         mockMeta,
       );
-    });
 
-    it('should not fail the order close when reservation auto-completion throws', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
-      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
-      reservationsService.completeForClosedOrder.mockRejectedValue(new Error('db blip'));
-
-      const result = await service.closeOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
-      expect(result.status).toBe('CLOSED');
-    });
-
-    it('should reject NEW → CLOSED', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'NEW' });
-
-      await expect(service.closeOrder('user-1', mockCtx, 'order-1', {}, mockMeta)).rejects.toThrow(
-        ConflictException,
+      expect(prisma.order.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { status: 'CLOSED' } }),
       );
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(result.status).toBe('CLOSED');
+      expect(emitter.emit).toHaveBeenCalledWith('order.closed', {
+        orderId: 'order-1',
+        branchId: 'branch-1',
+        orgId: 'org-1',
+        tableId: null,
+        completedReservationId: null,
+      });
+    });
+
+    it('rejects NEW → CLOSED', async () => {
+      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'NEW' });
+      await expect(
+        (service as any).transitionOrder(
+          'user-1',
+          mockCtx,
+          'order-1',
+          'CLOSED',
+          'ORDER_CLOSED',
+          mockMeta,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('voidOrderItem (E1 — void one line)', () => {
+    const sentLine = {
+      id: 'line-1',
+      orderId: 'order-1',
+      menuItemId: 'm-1',
+      menuItemServingId: null,
+      quantity: 2,
+      price: new Decimal(12000),
+      subtotal: new Decimal(24000),
+      notes: null,
+      metadata: null,
+      costUnit: null,
+      sentAt: new Date('2026-11-25T16:42:00Z'),
+      voidedAt: null,
+    };
+    const dto = { reason: 'GUEST_CHANGED_MIND', wasMade: false } as any;
+
+    beforeEach(() => {
+      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
+      prisma.orderItem.findFirst.mockResolvedValue(sentLine);
+      prisma.orderItem.update.mockImplementation(async ({ data }: any) => ({
+        ...sentLine,
+        ...data,
+      }));
+      prisma.orderItem.create.mockImplementation(async ({ data }: any) => ({
+        id: 'line-new',
+        ...data,
+      }));
+      prisma.orderItem.findMany.mockResolvedValue([]);
+      prisma.order.findUniqueOrThrow.mockResolvedValue({ id: 'order-1', total: new Decimal(0) });
+    });
+
+    it('voids a whole sent line: who, when, why, wasMade; ticket item flagged; event emitted', async () => {
+      const result = await service.voidOrderItem(
+        'sup-1',
+        mockCtx,
+        'order-1',
+        'line-1',
+        dto,
+        mockMeta,
+      );
+
+      expect(prisma.orderItem.update).toHaveBeenCalledWith({
+        where: { id: 'line-1' },
+        data: expect.objectContaining({
+          voidedById: 'sup-1',
+          voidReason: 'GUEST_CHANGED_MIND',
+          wasMade: false,
+          voidedAt: expect.any(Date),
+        }),
+      });
+      expect(prisma.kdsTicketItem.updateMany).toHaveBeenCalledWith({
+        where: { orderItemId: 'line-1' },
+        data: expect.objectContaining({ voidReason: 'GUEST_CHANGED_MIND', wasMade: false }),
+      });
+      expect(prisma.orderItem.delete).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ action: 'ORDER_ITEM_VOIDED', actorUserId: 'sup-1' }),
+      });
+      expect(result.unchanged).toBe(false);
+      expect(emitter.emit).toHaveBeenCalledWith('order.line.voided', {
+        orderId: 'order-1',
+        branchId: 'branch-1',
+        orgId: 'org-1',
+        orderItemId: 'line-1',
+      });
+    });
+
+    it('part of a quantity splits the line in two', async () => {
+      await service.voidOrderItem(
+        'sup-1',
+        mockCtx,
+        'order-1',
+        'line-1',
+        { ...dto, quantity: 1 },
+        mockMeta,
+      );
+
+      expect(prisma.orderItem.update).toHaveBeenCalledWith({
+        where: { id: 'line-1' },
+        data: expect.objectContaining({ quantity: 1 }),
+      });
+      expect(prisma.orderItem.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          quantity: 1,
+          voidReason: 'GUEST_CHANGED_MIND',
+          sentAt: sentLine.sentAt,
+        }),
+      });
+    });
+
+    it('refuses a line that was never sent (400, remove it instead)', async () => {
+      prisma.orderItem.findFirst.mockResolvedValue({ ...sentLine, sentAt: null });
+      await expect(
+        service.voidOrderItem('sup-1', mockCtx, 'order-1', 'line-1', dto, mockMeta),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('refuses a closed order and an order with a posted payment (409)', async () => {
+      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+      await expect(
+        service.voidOrderItem('sup-1', mockCtx, 'order-1', 'line-1', dto, mockMeta),
+      ).rejects.toThrow(ConflictException);
+
+      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
+      prisma.payment.count.mockResolvedValue(1);
+      await expect(
+        service.voidOrderItem('sup-1', mockCtx, 'order-1', 'line-1', dto, mockMeta),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('voiding an already voided line returns it unchanged and writes nothing', async () => {
+      prisma.orderItem.findFirst.mockResolvedValue({ ...sentLine, voidedAt: new Date() });
+      const result = await service.voidOrderItem(
+        'sup-1',
+        mockCtx,
+        'order-1',
+        'line-1',
+        dto,
+        mockMeta,
+      );
+      expect(result.unchanged).toBe(true);
+      expect(prisma.orderItem.update).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
+      expect(emitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('OTHER needs a note', async () => {
+      await expect(
+        service.voidOrderItem(
+          'sup-1',
+          mockCtx,
+          'order-1',
+          'line-1',
+          { reason: 'OTHER', wasMade: true } as any,
+          mockMeta,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
