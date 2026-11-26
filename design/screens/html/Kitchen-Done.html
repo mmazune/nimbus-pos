@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kitchen, Done</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1920px; height: 1080px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">Hot kitchen</h1>
+    <span class="clock">Done in the last hour · 23 tickets · as at 20:04</span>
+    <span class="grow"></span>
+    
+    <span class="name"><b>Ruth A.</b> · Chef · Kitchen screen 1</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 16px">
+    <section class="grow vstack g16"><div class="hstack"><div class="seg"><button class="on">Last hour · 23</button><button class="">Today · 142</button></div><span class="grow"></span><span class="t-sup muted">Newest first</span></div><div class="card" style="overflow: hidden"><table class="dt"><thead><tr><th>Ticket</th><th>Waiter</th><th>Done at</th><th class="num">Took</th><th>Now</th></tr></thead><tbody><tr class="sel"><td>Table 9</td><td>Amina K.</td><td>19:58</td><td class="num">8 min</td><td><span class="pill p-amber">Ready</span></td></tr><tr><td>Table 13</td><td>Grace N.</td><td>19:55</td><td class="num">12 min</td><td><span class="pill p-neutral">Collected 19:57</span></td></tr><tr><td>Table 20</td><td>Grace N.</td><td>19:51</td><td class="num">9 min</td><td><span class="pill p-neutral">Collected 19:53</span></td></tr><tr><td>Table 3</td><td>Brian O.</td><td>19:47</td><td class="num">14 min</td><td><span class="pill p-neutral">Collected 19:50</span></td></tr><tr><td>Tab 2</td><td>Brian O.</td><td>19:44</td><td class="num">7 min</td><td><span class="pill p-neutral">Collected 19:45</span></td></tr><tr><td>Table 26</td><td>David S.</td><td>19:40</td><td class="num">11 min</td><td><span class="pill p-neutral">Collected 19:43</span></td></tr><tr><td>Table 16</td><td>Brian O.</td><td>19:36</td><td class="num">10 min</td><td><span class="pill p-neutral">Collected 19:38</span></td></tr></tbody></table></div></section>
+    <aside class="card vstack g12" style="width: 440px; padding: 20px; flex: none"><div class="hstack"><div class="grow"><h2 class="t-h">Table 9</h2><p class="t-sup muted">Amina K. · sent 19:50 · done 19:58</p></div><span class="pill p-amber">Ready, not collected</span></div><div class="hr"></div><div class="tk" style="box-shadow: none"><div class="ln"><span class="q">2</span><span>Chicken curry</span></div><div class="ln"><span class="q">1</span><span>Chips</span></div></div><p class="t-sup muted">Bumped by mistake, or the plate went to the wrong table? Bring it back: it goes to the top of Tickets with its first time kept, and the waiter’s Ready line is taken down.</p><span class="grow"></span><button class="btn filled" style="height: 56px; font-size: 18px">Bring back to Tickets</button></aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Tickets<span class="nb">8</span></a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Done</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m6.5 6.5 11 11"/></svg>Sold out</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>Store<span class="nb">1</span></a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

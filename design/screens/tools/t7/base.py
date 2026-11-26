@@ -56,6 +56,7 @@ WHO = dict(waiter=('Amina K.', 'Waiter', 'Terminal 01', 'AK'), cashier=('Sarah M
            accountant=('Esther L.', 'Accountant', 'Tapas Downtown', 'EL'))
 NAV = dict(NAV)
 NAV['bar'] = NAV['kitchen']
+NAV['chef'] = NAV['kitchen']
 NAV['supervisor_phone'] = [('Floor', 'grid', 0), ('Bookings', 'cal', 0), ('Approvals', 'shield', 4), ('Team', 'team', 0), ('Me', 'user', 0)]
 
 def navbar(role, on, phone=False):

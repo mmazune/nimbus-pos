@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kitchen, set a number</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1920px; height: 1080px">
+  <header class="bar tall" inert>
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">Hot kitchen</h1>
+    <span class="clock">Sold out and low · as at 17:05</span>
+    <span class="grow"></span>
+    
+    <span class="name"><b>Ruth A.</b> · Chef · Kitchen screen 1</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 16px" inert>
+    <section class="grow vstack g16"><div class="hstack"><div class="seg"><button class="on">Out or low · 4</button><button class="">All 64 items</button></div><span class="field ph" style="width: 360px; margin-left: 12px"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Find an item</span><span class="grow"></span><button class="btn tonal"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Set a number</button></div><div class="card" style="overflow: hidden"><table class="dt"><thead><tr><th>Item</th><th>Group</th><th>Now</th><th>Why</th><th></th></tr></thead><tbody><tr><td>Lamb chops</td><td class="muted">Grills</td><td><span class="pill p-red">Sold out</span></td><td class="muted">Marked by Ruth A. at 19:20</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">Back on</button></td></tr><tr><td>Goat stew</td><td class="muted">Local</td><td><span class="pill p-amber">12 left</span></td><td class="muted">Number set by Ruth A. at 17:05</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">Change</button></td></tr><tr><td>Pepper steak</td><td class="muted">Grills</td><td><span class="pill p-amber">3 left</span></td><td class="muted">From the kitchen store: 3 servings of steak</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">Sold out</button></td></tr><tr><td>Chicken luwombo</td><td class="muted">Local</td><td><span class="pill p-amber">Check stock</span></td><td class="muted">Stock says 0 banana leaves; still sells</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">We have it</button></td></tr><tr><td>Beef burger</td><td class="muted">Burgers</td><td><span class="pill p-green">Available</span></td><td class="muted">24 servings in the kitchen store</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">Sold out</button></td></tr><tr><td>Grilled tilapia</td><td class="muted">Grills</td><td><span class="pill p-green">Available</span></td><td class="muted">9 servings</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">Sold out</button></td></tr><tr><td>Chicken wings</td><td class="muted">Starters</td><td><span class="pill p-green">Available</span></td><td class="muted">Not counted</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">Sold out</button></td></tr><tr><td>Fruit platter</td><td class="muted">Desserts</td><td><span class="pill p-green">Available</span></td><td class="muted">Not counted</td><td class="num" style="width: 200px"><button class="btn tonal sm" style="min-width: 150px">Sold out</button></td></tr></tbody></table></div></section>
+    <aside class="vstack g16" style="width: 380px; flex: none"><div class="card" style="padding: 16px 20px"><p class="cap" style="padding-bottom: 6px">How it works</p><p class="t-sup"><b>Sold out</b> greys the item for every waiter at once. <b>Set a number</b> counts down with each send; at 0 it is sold out. <b>We have it</b> clears a stock warning until the day closes and asks the store for a count.</p></div><div class="card" style="padding: 16px 20px"><p class="cap" style="padding-bottom: 6px">At day close</p><p class="t-sup">Marks and numbers clear. Tomorrow you are asked “still sold out?”.</p></div></aside>
+  </main>
+  <nav inert class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Tickets<span class="nb">8</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Done</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m6.5 6.5 11 11"/></svg>Sold out</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>Store<span class="nb">1</span></a>
+  </nav>  <div class="scrim"></div>  <section class="sheet mid" aria-label="How many Goat stew are left?" style="gap: 16px">
+    <span class="grab"></span>
+    <div class="hstack"><div class="grow"><h2 class="t-h">How many Goat stew are left?</h2><p class="t-sup muted">Local · counted by hand, no stock needed</p></div><a class="close" href="#" aria-label="Close"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a></div>
+    <div class="hstack g24" style="align-items: flex-start"><div class="vstack g12 grow"><div class="field" style="height: 72px; justify-content: flex-end; font-size: 26px; line-height: 32px; font-weight: 700">12</div><div class="optgrid" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><button class="opt lg">5</button><button class="opt lg">10</button><button class="opt lg on">12</button><button class="opt lg">20</button></div><p class="t-sup muted">Each send of Goat stew takes one. At 3 the waiters see “3 left”; at 0 it greys out. The number clears when the day closes.</p></div>
+    <div style="width: 340px; flex: none"><div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><button class="key" style="height: 72px">1</button><button class="key" style="height: 72px">2</button><button class="key" style="height: 72px">3</button><button class="key" style="height: 72px">4</button><button class="key" style="height: 72px">5</button><button class="key" style="height: 72px">6</button><button class="key" style="height: 72px">7</button><button class="key" style="height: 72px">8</button><button class="key" style="height: 72px">9</button><button class="key" aria-label="Clear" style="height: 72px; font-size: 17px">Clear</button><button class="key" style="height: 72px">0</button><button class="key" style="height: 72px" aria-label="Delete"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 6H9l-6 6 6 6h12z"/><path d="m12 9 6 6M18 9l-6 6"/></svg></button></div></div></div>
+    <div class="hstack" style="justify-content: flex-end"><button class="btn textbtn">Cancel</button><button class="btn filled" style="min-width: 240px">Set 12 left</button></div>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>

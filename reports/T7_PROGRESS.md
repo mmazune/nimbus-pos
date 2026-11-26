@@ -8,7 +8,8 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 | 2 Table actions | drawn; 26 of 26 pass (lowest 20); logic clashes fixed after review | see git log |
 | 3 Order screen states | drawn; 16 of 16 pass after re-review (lowest 22) | see git log |
 | 4 Paying | drawn; 16 of 16 pass (lowest 21); pending Record made inactive until a reference is typed | see git log |
-| 5 Supervisor | drawn, measured, under review | see git log |
+| 5 Supervisor | drawn; 16 of 16 pass (lowest 20); counts and times made to agree after review | see git log |
+| 6 Kitchen and bar | drawn, measured, under review | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -24,10 +25,12 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 7. The sold-out drawing moved from table 17 to table 23, whose floor tile already says "3 items not sent · 19,000", so totals agree with `Main`.
 8. The walk-out is drawn on a terminal with the manager signed in: R1 gives every role the same order screen.
 9. A choice with several picks (tables to move or hand over) shows a check on a deeper tint, never navy, so the one filled button stays alone on the screen. Helper `picks()` in `base.py`.
+10. Reservations "Attention" holds 2 (late, table busy), as in the approved `Reservations-Supervisor`. A booking with no table joins Attention only 30 minutes before its time.
+11. The bar screen keeps the kitchen ticket; colour times are 5 and 10 minutes for drinks (a station setting, as `02-life-cycles.md` section 4 allows).
 6. "as at 19:42" stays: the first 38 drawings use it on every count.
 
 ## Left out, and why
 (none yet)
 
 ## Next
-Group 6, kitchen and bar.
+Group 7, stock.
