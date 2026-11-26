@@ -249,7 +249,12 @@ test("hand over a table and all tables: the colleague accepts on their screen; a
   const b10 = await tableByLabel("B10");
   const menu = await api<Json>(g, "GET", "/menu/workspace");
   const dish = (menu.items as Json[]).find((i) => i.station === "BAR" && !(i.servings?.length > 1) && !(i.choiceGroups ?? []).length && i.availability?.state !== "SOLD_OUT") as Json;
-  const o = await api<Json>(g, "POST", "/pos/orders", { serviceType: "DINE_IN", tableId: b10.id });
+  // Set-up only: the API can answer 500 to a new order when two order numbers collide (recorded by
+  // T3 and in the T5 report for T6); one retry, as a terminal would.
+  const o = await api<Json>(g, "POST", "/pos/orders", { serviceType: "DINE_IN", tableId: b10.id }).catch(async (e) => {
+    if (!String(e).includes("→ 500")) throw e;
+    return api<Json>(g, "POST", "/pos/orders", { serviceType: "DINE_IN", tableId: b10.id });
+  });
   await api(g, "POST", `/pos/orders/${o.id}/items`, { menuItemId: dish.id, quantity: 1 });
   await api(g, "POST", `/pos/orders/${o.id}/send`, {});
   await openTable(A.page, "waiter", b10.id);
