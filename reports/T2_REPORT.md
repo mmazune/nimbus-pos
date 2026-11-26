@@ -10,11 +10,15 @@ Grades: **[live]** run here and seen; **[emulation]** a real state written by SQ
 
 All three phases are built, and so are the E1 review fixes. Every Done-when line holds except the two exceptions below.
 
-The four real cases pass three runs in a row, 54 of 54 tests each [live]. The E1 review probes, refreshed to T4 `e26bb73`, are 30 of 30 green [live].
+The four real cases, with the E1F tests and probes, pass three runs in a row at final HEAD `4f87277`: 57 of 57 tests each time (`all_real_cases_three_runs.txt`) [live]. The E1 review probes, refreshed to T4 `e26bb73`, are 30 of 30 green [live].
 
 **eslint is now clean** on all 50 files T2 changed, with 0 errors (`eslint_changed_files_final.txt`). `pos-handoff.service.ts`, `orders.controller.ts`, `inventory.controller.ts` and `app.module.ts` were formatted whole with Prettier (layout only; with whitespace ignored the `pos-handoff` diff is line wrapping). Unit tests, build and the `pos-handoff` e2e suite are unchanged.
 
-**One exception, proven unreachable inside the rules:** the full e2e suite is not 0 failed. On the last fresh run (after the F3 fix below) **72 of 1,282 fail**: F1 59, F2 11, F4 1, C1 1. C2 (9 more) bites only when Jest happens to run `bg1-onboarding` earlier; before F3 the run was 82 of 1,279 (`full_e2e_final.txt`). Each remaining group needs something rule 14, 17, 20 or Done-when 4 forbids T2 to do; see "Why the full e2e suite cannot be 0 failed here". On T4's own tree, with T4's sequencer, it is 83 red (`reports/proof/T4/e2e_t4_run3.txt` on `t4/review-and-data`).
+**By name, no new red:** subtracting T4's named red list from this branch's 72 failing names leaves only quick-sale C10. That is T4's cause C1, which is green on T4's tree only because of T4's sequencer (`e2e_by_name_vs_t4.txt`) [live].
+
+**Where the whole-suite clause comes from.** T2's Done-when 6 reads "API typecheck 0, build 0, unit tests 0 failed, `eslint` clean on changed files, `pnpm check:event` green", with no e2e clause. LONG-RUN rule 12's gate is "your own e2e green", and it holds. The whole-suite clause appears only in E2's line 11 ("unit and e2e suites 0 failed"), which Done-when 1 pulls in.
+
+**One exception, proven unreachable inside the rules (LONG-RUN rule 2):** the full e2e suite is not 0 failed. On the last fresh run (after the F3 fix below) **72 of 1,282 fail**: F1 59, F2 11, F4 1, C1 1. C2 (9 more) bites only when Jest happens to run `bg1-onboarding` earlier; before F3 the run was 82 of 1,279 (`full_e2e_final.txt`). Each remaining group needs something rule 14, 17, 20 or Done-when 4 forbids T2 to do; see "Why the full e2e suite cannot be 0 failed here". On T4's own tree, with T4's sequencer, it is 83 red (`reports/proof/T4/e2e_t4_run3.txt` on `t4/review-and-data`).
 
 ## Phase 1: the menu in one call, offers, sold out and a number left (E2)
 
@@ -148,7 +152,7 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
 ## Done when (T2)
 
 1. Phase 1's twelve lines hold: see above [live].
-2. "A busy Friday" and "Starters now, mains later" each pass three runs in a row, and so do "Table 12's evening", "Lamb chops", the E1F tests and the probes: **54 of 54, three times** (`all_real_cases_three_runs.txt`) [live].
+2. "A busy Friday" and "Starters now, mains later" each pass three runs in a row, and so do "Table 12's evening", "Lamb chops", the E1F tests and the probes: **57 of 57, three times at `4f87277`** (`all_real_cases_three_runs.txt`) [live].
 3. **One additive migration per phase:** `20261126100000_t2_menu_availability`, `20261126200000_t2_areas_tabs`, `20261126300000_t2_tickets`. Each was applied to a database already holding orders and tables, with identical row counts before and after (`phase1/2/3_migration_rows.txt`) [live].
 4. **Seed diff per phase.**
    - Phase 1: one key for 5 roles.
@@ -156,11 +160,11 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
    - Phase 3: none.
    - The E1F S7 data fix stamps `sentAt` on sent demo lines.
    - No other grant changed. The whole diff is in `seed_diff_all_phases.txt`: 6 permission lines, all of them the one key and its five grants [live].
-5. **Review findings** in my files are fixed with their probes passing (29 of 29), or answered (B5, S1, A1) [live].
+5. **Review findings** in my files are fixed with their probes passing (30 of 30 against T4 `e26bb73`), or answered (B5, S1, A1) [live].
 6. **Gates:** API typecheck 0, build 0, unit **1,318 passed / 72 suites, 0 failed**, `pnpm check:event` green.
    - eslint: **0 errors on all 50 files T2 changed** (`eslint_changed_files_final.txt`) [live].
 7. **`git diff --stat`.**
-   - `c6983c4..HEAD` (T2's own commits): 74 files, all in `apps/api/src`, `apps/api/test` (new files, plus unit specs beside the code), `packages/db/prisma` and `reports`. None of T4's e2e tests or helpers was edited.
+   - `c6983c4..HEAD` (T2's own commits): 80 files, all in `apps/api/src`, `apps/api/test` (new files, plus unit specs beside the code), `packages/db/prisma` and `reports`. None of T4's e2e tests or helpers was edited.
    - `origin/e1/order-truth...HEAD` also shows `apps/web`, `tools` and `docs`. Those come from the base `rebuild/main` (U0), not from T2's commits (`done_when_7_diff_stat.txt`) [live].
 8. **Endpoint list for T3 and T1:** below.
 
@@ -173,14 +177,14 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
 | Unit `jest` | 1,318 passed, 72 suites, 0 failed (base 1,309 / 71) [live] |
 | `pnpm check:event` | green [live] |
 | eslint on changed files (called directly, no `--fix` script) | 0 errors across all 50 changed files [live] |
-| Four real cases + E1F + probes, three runs | 54 / 54, three times [live] |
+| Four real cases + E1F + probes, three runs | 57 / 57, three times at `4f87277` [live] |
 | Full e2e, fresh migrated and seeded db, Jest's own order | **1,282 tests: 1,210 passed, 72 failed**, all in T4's named groups F1 (59), F2 (11), F4 (1) and C1 (1). F3 is fixed by T2. All T2 and E1F specs pass inside the run. T4 run A before T2: 92 failed; T4's own tree with its sequencer: 83 (`full_e2e_final.txt`) [live] |
 
 ## Why the full e2e suite cannot be 0 failed here
 
 | group (tests) | cause (T4 `docs/reviews/e2e-baseline.md`) | what would fix it | why T2 may not |
 |---|---|---|---|
-| F1: billing 17, franchise 13, franchise-analytics 12, bg7-hms-integration 17 | guard keys with no permission row, or no grant | add 22+ permission rows and grants to the seed | Done-when 4 limits the seed diff to the grants this prompt names; T4: "the seed change itself is a separate, authorised step" |
+| F1: billing 17, franchise 13, franchise-analytics 12, bg7-hms-integration 17 | guard keys with no permission row, or no grant | add 22+ permission rows and grants to the seed | CLAUDE.md §12 forbids it outright: "Do not seed the 37 `franchise:*` / `ops:*` / `dev:*` / `merchant:*` / `billing:*` / `onboarding:*` / `support:*` strings (C-22) — those modules are deferred". Done-when 4 also limits the seed diff to the grants this prompt names, and T4 says "the seed change itself is a separate, authorised step" |
 | F2: attendance 11 | the spec acts for other employees; the service allows self-service only (a deliberate rule) | edit the spec, or build a manager-on-behalf path | the spec is an existing test helper/spec that T4 is repairing (prompt: "do not edit theirs"); a new path is a feature outside T2's phases |
 | F3: control-plane 1 | two training answers disagree | **fixed here**: the BG3 simulator answer now also carries M42's `inTraining`, `simulated`, `sessionId` (additive; `bg3-reliability` still green) | — [live] |
 | F4: orders 1 | the spec pays a fixed 9,999 on a dearer seeded item | edit the spec | existing spec (T4's to repair) |
@@ -227,6 +231,7 @@ All answers are JSON. Money is a decimal string. Every route needs `Authorizatio
 - `POST /api/kds/tickets/:id/mark-ready` and `/recall` are refused (403) for anyone but the station's chef or bartender, a supervisor, a manager or the owner.
 - The `GET /api/kds/queue` items carry `allergy`, `takeaway` and `guest`; the ticket carries `allergies`, `waiterUserId` and `collectedAt`. `table` is the line's current table.
 - `POST /api/pos/orders/:id/items/:itemId/void` exists beside `/api/orders/…`.
+- `POST /api/inventory/adjustments` with `x-training-session-id` (the training simulator) now also answers `inTraining: true`, `simulated: true` and `sessionId`, beside the existing `id` and `status: SIMULATED` (fixes T4 F3).
 
 ## Left out, and which milestone brings it
 
@@ -246,6 +251,7 @@ All answers are JSON. Money is a decimal string. Every route needs `Authorizatio
 - Tabs are numbered per branch with the lowest free number. A put-away tab's label gets its id tail, so the number can be used again.
 - **Fire is deferred:** it goes out after the undo window. This was chosen over "make the ticket, then withdraw it" so the kitchen never sees a withdrawn ticket.
 - The shift-close guard is for waiters only (rule 07 "People").
+- **Attendance (T4 F2, "ruling for T2"):** self-service stands, and the spec is stale (T4's first option). A manager clocking or requesting leave for someone else would weaken a guard that feeds payroll, which the error protocol forbids to make a test pass. CLAUDE.md already records the manager-on-behalf path as a known gap left unbuilt (B3-F3).
 - My e2e specs make their own staff and their own Friday branch, so they don't depend on the order of test files (T4 C2).
 
 ## For the other tracks
