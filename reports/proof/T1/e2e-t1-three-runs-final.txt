@@ -23,7 +23,7 @@
 [22/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
 [23/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
 [24/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
-  24 passed (1.1m)
+  24 passed (1.2m)
 == run 2
 [1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
 [2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:121:5 › Approvals at 390 × 844 with the request sheet open
@@ -49,7 +49,7 @@
 [22/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
 [23/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
 [24/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
-  24 passed (1.1m)
+  24 passed (1.2m)
 == run 3
 [1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
 [2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:121:5 › Approvals at 390 × 844 with the request sheet open
