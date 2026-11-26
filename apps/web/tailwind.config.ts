@@ -1,10 +1,56 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import type { Config } from "tailwindcss";
+
+/*
+ * U0 kit keys. Every key below is read from src/styles/kit-tokens.css, so the
+ * Tailwind names and the CSS variables cannot drift apart. All kit values are
+ * absolute px (R10) — they never follow the viewport-scaled root font size.
+ *   colours   --kit-color-<n>   -> bg-kit-<n>, text-kit-<n>
+ *   sizes     --kit-size-<n>    -> h-kit-<n>, w-kit-<n>, min-h-kit-<n> ...
+ *   gaps      --kit-space-<n>   -> p-kit-<n>, gap-kit-<n> ...
+ *   radii     --kit-radius-<n>  -> rounded-kit-<n>
+ *   depth     --kit-shadow-<n>  -> shadow-kit-<n>
+ *   type      --kit-type-<n>-*  -> text-kit-<n> (size + line + weight + tracking)
+ *   weights   --kit-weight-<n>  -> font-kit-<n>
+ */
+const kitTokenNames = Array.from(
+  readFileSync(join(__dirname, "src/styles/kit-tokens.css"), "utf8").matchAll(/(--kit-[a-z0-9-]+)\s*:/g),
+  (m) => m[1],
+);
+function kitGroup(prefix: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of kitTokenNames) {
+    if (name.startsWith(prefix)) out[`kit-${name.slice(prefix.length)}`] = `var(${name})`;
+  }
+  return out;
+}
+const kitColors = Object.fromEntries(
+  Object.entries(kitGroup("--kit-color-")).map(([k, v]) => [k.slice("kit-".length), v]),
+);
+const kitFontSize: Record<string, [string, { lineHeight: string; fontWeight: string; letterSpacing?: string }]> = {};
+for (const name of kitTokenNames) {
+  const m = /^--kit-type-(.+)-size$/.exec(name);
+  if (!m) continue;
+  const t = m[1];
+  const tracked = t === "title" || t === "title-lg" || t === "big" || t === "tile-no" || t === "tile-no-c";
+  kitFontSize[`kit-${t}`] = [
+    `var(--kit-type-${t}-size)`,
+    {
+      lineHeight: `var(--kit-type-${t}-line)`,
+      fontWeight: `var(--kit-type-${t}-weight)`,
+      ...(tracked ? { letterSpacing: "var(--kit-track-tight)" } : t === "cap" ? { letterSpacing: "var(--kit-track-cap)" } : {}),
+    },
+  ];
+}
 
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
+        kit: kitColors,
         brand: {
           "navy-950": "rgb(var(--color-brand-navy-950-ch) / <alpha-value>)",
           "navy-900": "var(--color-brand-navy-900)",
@@ -66,7 +112,13 @@ const config: Config = {
           highlight: "var(--color-skeleton-highlight)",
         },
       },
+      fontSize: kitFontSize,
+      fontWeight: kitGroup("--kit-weight-"),
+      opacity: kitGroup("--kit-opacity-"),
+      transitionTimingFunction: { kit: "var(--kit-ease)" },
+      transitionDuration: kitGroup("--kit-duration-"),
       fontFamily: {
+        kit: ["var(--kit-font)"],
         sans: [
           // Bundled self-hosted variable Inter (@fontsource-variable/inter,
           // imported in src/pages/_app.tsx) first; a system-installed "Inter"
@@ -91,6 +143,8 @@ const config: Config = {
         8: "var(--space-8)",
         10: "var(--space-10)",
         12: "var(--space-12)",
+        ...kitGroup("--kit-size-"),
+        ...kitGroup("--kit-space-"),
       },
       borderRadius: {
         xs: "var(--radius-xs)",
@@ -99,6 +153,7 @@ const config: Config = {
         lg: "var(--radius-lg)",
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
+        ...kitGroup("--kit-radius-"),
       },
       boxShadow: {
         subtle: "var(--shadow-subtle)",
@@ -106,6 +161,7 @@ const config: Config = {
         overlay: "var(--shadow-overlay)",
         focus: "var(--shadow-focus)",
         "focus-inverse": "var(--shadow-focus-inverse)",
+        ...kitGroup("--kit-shadow-"),
       },
     },
   },
