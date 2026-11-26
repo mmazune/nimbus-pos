@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cancel a booking, phone</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 390px; height: 844px">
+  <header inert class="band">
+    <div class="hstack"><h1 class="t-title grow">Bookings</h1><button class="rb" aria-label="New booking"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+    <p class="sub">Today · 7 to come · 1 late · 19:42</p>
+  </header>
+  <main class="body" inert><div class="seg fill"><button style="padding: 0 4px" class="on">Arriving</button><button style="padding: 0 4px" class="">Seated</button><button style="padding: 0 4px" class="">Attention</button><button style="padding: 0 4px" class="">History</button></div><div class="card" style="overflow: hidden"><button class="row" style="width: 100%"><span class="t-row" style="width: 56px">19:30</span><span class="grow"><span class="t-body b">P. Achieng</span><br><span class="t-sup muted">2 guests · Table 22</span></span><span class="pill p-red">Late 12 min</span></button><button class="row" style="width: 100%"><span class="t-row" style="width: 56px">19:45</span><span class="grow"><span class="t-body b">J. Mukasa</span><br><span class="t-sup muted">6 guests · Table 5</span></span><span class="pill p-amber">Table busy</span></button><button class="row" style="width: 100%"><span class="t-row" style="width: 56px">20:00</span><span class="grow"><span class="t-body b">R. Namara</span><br><span class="t-sup muted">6 guests · Table 7</span></span><span class="pill p-neutral">In 18 min</span></button><button class="row" style="width: 100%"><span class="t-row" style="width: 56px">20:30</span><span class="grow"><span class="t-body b">S. Okello</span><br><span class="t-sup muted">4 guests · Table 21</span></span><span class="pill p-neutral">In 48 min</span></button><button class="row" style="width: 100%"><span class="t-row" style="width: 56px">20:30</span><span class="grow"><span class="t-body b">D. Ssali</span><br><span class="t-sup muted">8 guests · Table 27</span></span><span class="pill p-neutral">In 48 min</span></button><button class="row" style="width: 100%"><span class="t-row" style="width: 56px">21:00</span><span class="grow"><span class="t-body b">M. Atim</span><br><span class="t-sup muted">2 guests · No table yet</span></span><span class="pill p-amber">Needs a table</span></button></div></main>
+  <nav inert class="tabbar" aria-label="Main">
+    <a href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Bookings</a>
+    <a href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="m9 12 2 2 4-4"/></svg>Approvals<span class="nb">4</span></a>
+    <a href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5"/></svg>Team</a>
+    <a href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>  <div class="scrim"></div>  <section class="sheet " aria-label="Cancel J. Mukasa’s booking" style="gap: 16px">
+    <span class="grab"></span>
+    <div class="hstack"><div class="grow"><h2 class="t-h">Cancel J. Mukasa’s booking</h2><p class="t-sup muted">19:45 · 6 guests</p></div><a class="close" href="#" aria-label="Close"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a></div>
+    <div class="optgrid" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><button class="opt on">Guest cancelled</button><button class="opt">Booked twice</button><button class="opt">Cannot seat them</button><button class="opt">Something else</button></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Deposit kept</span><span class="t-body b" style="text-align: right">UGX 50,000</span></div><p class="t-sup muted">It stays in History with your name and reason.</p>
+    <button class="btn filled">Cancel the booking</button>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>

@@ -6,8 +6,9 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 |---|---|---|
 | 1 Start of a shift | drawn; 16 of 16 pass after re-review (lowest 20) | see git log |
 | 2 Table actions | drawn; 26 of 26 pass (lowest 20); logic clashes fixed after review | see git log |
-| 3 Order screen states | drawn; 15 of 16 pass, Order-Hold-Fire-Phone (19) redrawn, re-review in group 4's | see git log |
-| 4 Paying | drawn, measured, under review | see git log |
+| 3 Order screen states | drawn; 16 of 16 pass after re-review (lowest 22) | see git log |
+| 4 Paying | drawn; 16 of 16 pass (lowest 21); pending Record made inactive until a reference is typed | see git log |
+| 5 Supervisor | drawn, measured, under review | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -22,10 +23,11 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 5. The keypad's delete key in new drawings is a backspace mark, not the curved arrow of `Cashier-Pay` (the reviewer read it as "undo"). `Cashier-Pay` is not changed.
 7. The sold-out drawing moved from table 17 to table 23, whose floor tile already says "3 items not sent · 19,000", so totals agree with `Main`.
 8. The walk-out is drawn on a terminal with the manager signed in: R1 gives every role the same order screen.
+9. A choice with several picks (tables to move or hand over) shows a check on a deeper tint, never navy, so the one filled button stays alone on the screen. Helper `picks()` in `base.py`.
 6. "as at 19:42" stays: the first 38 drawings use it on every count.
 
 ## Left out, and why
 (none yet)
 
 ## Next
-Group 5, supervisor.
+Group 6, kitchen and bar.

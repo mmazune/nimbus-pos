@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reservations history</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">Reservations</h1>
+    <span class="clock">History · last 7 days</span>
+    <span class="grow"></span>
+    
+    <span class="name"><b>Grace N.</b> · Supervisor · Front desk</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="grow vstack g16">
+      <div class="hstack" style="justify-content: space-between"><div class="seg"><button class="">Arriving · 7</button><button class="">Seated · 4</button><button class="">Attention · 3</button><button class="on">History</button></div><button class="btn tonal"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New reservation</button></div>
+      <div class="hstack g8"><button class="chip">Yesterday</button><button class="chip on">Last 7 days</button><button class="chip">This month</button><span class="grow"></span><span class="t-sup muted">41 bookings · 3 no‑shows · 2 cancelled</span></div><div class="card" style="overflow: hidden"><table class="dt"><thead><tr><th>Day</th><th>Time</th><th>Name</th><th class="num">Guests</th><th>Table</th><th>What happened</th></tr></thead><tbody><tr><td>Wed 25 Nov</td><td>20:00</td><td>A. Kato</td><td class="num">4</td><td>Table 14</td><td><span class="pill p-green">Seated, paid 118,000</span></td></tr><tr class="sel"><td>Wed 25 Nov</td><td>19:30</td><td>B. Nakato</td><td class="num">2</td><td>Table 22</td><td><span class="pill p-red">No‑show</span></td></tr><tr><td>Wed 25 Nov</td><td>19:00</td><td>C. Opio</td><td class="num">6</td><td>Table 5</td><td><span class="pill p-green">Seated, paid 246,500</span></td></tr><tr><td>Tue 24 Nov</td><td>21:00</td><td>E. Mugisha</td><td class="num">3</td><td>Table 9</td><td><span class="pill p-neutral">Cancelled by guest</span></td></tr><tr><td>Tue 24 Nov</td><td>20:30</td><td>F. Tumusiime</td><td class="num">8</td><td>Table 27</td><td><span class="pill p-green">Seated, paid 402,000</span></td></tr><tr><td>Tue 24 Nov</td><td>19:45</td><td>G. Akello</td><td class="num">2</td><td>T4</td><td><span class="pill p-green">Seated, paid 64,000</span></td></tr><tr><td>Mon 23 Nov</td><td>20:00</td><td>H. Wasswa</td><td class="num">5</td><td>Table 14</td><td><span class="pill p-red">No‑show</span></td></tr><tr><td>Mon 23 Nov</td><td>19:30</td><td>I. Nambi</td><td class="num">4</td><td>Table 21</td><td><span class="pill p-green">Seated, paid 131,000</span></td></tr></tbody></table></div>
+    </section>
+    <aside class="card vstack g12" style="width: 420px; padding: 20px; flex: none"><div class="hstack" style="align-items: flex-start"><div class="grow"><h2 class="t-h">B. Nakato</h2><p class="t-sup muted">Wed 25 Nov · 19:30 · 2 guests</p></div><span class="pill p-red">No‑show</span></div>
+      <div class="card" style="box-shadow: none; background: var(--canvas); padding: 4px 16px"><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Booked</span><span class="t-body b" style="text-align: right">23 Nov by phone, Grace N.</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Marked no‑show</span><span class="t-body b" style="text-align: right">19:58 by Grace N.</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Phone</span><span class="t-body b" style="text-align: right">+256 700 000 163</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Deposit</span><span class="t-body b" style="text-align: right">None</span></div></div>
+      <p class="t-sup muted">Earlier visits from this number: 2 seated, 1 no‑show.</p>
+      <span class="grow"></span><button class="btn tonal">Book them again</button></aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Reservations</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="m9 12 2 2 4-4"/></svg>Approvals<span class="nb">4</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5"/></svg>Team</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

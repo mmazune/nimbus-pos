@@ -239,3 +239,13 @@ def toast(text, action='Undo', style=''):
 def write_list(path, names=None):
     items = [dict(name=r[0], w=r[1], h=r[2]) for r in REG if names is None or r[0] in names]
     json.dump(items, open(path, 'w'))
+def picks(opts, cols, on=(), tall=False):
+    """multi-select: picked ones carry a check on a deeper tint, so the one filled button stays alone"""
+    o = ''
+    for x in opts:
+        lab, small = (x if isinstance(x, tuple) else (x, None))
+        p = lab in on
+        st = ' style="background: var(--tonal-2)"' if p else ''
+        inner = f'<span class="hstack g4">{ic("check", "s") if p else ""}{lab}</span>' + (f'<small>{small}</small>' if small else '')
+        o += f'<button class="opt{" tall" if tall or small else ""}"{st} aria-pressed="{"true" if p else "false"}">{inner}</button>'
+    return f'<div class="optgrid" style="grid-template-columns: repeat({cols}, minmax(0, 1fr))">{o}</div>'

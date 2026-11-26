@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Team, supervisor</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">Team</h1>
+    <span class="clock">On shift now · 6 people · as at 20:10</span>
+    <span class="grow"></span>
+    
+    <span class="name"><b>Grace N.</b> · Supervisor · Front desk</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="grow vstack g16"><div class="hstack" style="justify-content: space-between"><div class="seg"><button class="on">On now · 6</button><button class="">Later today · 3</button><button class="">Off</button></div><span class="t-sup muted">Tap a person to see their tables</span></div><div class="card" style="overflow: hidden"><table class="dt"><thead><tr><th>Who</th><th>Role and area</th><th>Open now</th><th class="num">Sold today, UGX</th><th>Shift</th></tr></thead><tbody><tr><td>Amina K.</td><td>Waiter · Main hall</td><td>6 tables</td><td class="num">1,240,000</td><td class="muted">On since 16:02</td></tr><tr class="sel"><td>Brian O.</td><td>Waiter · Main hall</td><td>4 tables</td><td class="num">986,000</td><td class="muted">On since 16:30</td></tr><tr><td>David S.</td><td>Waiter · Main hall, Bar</td><td>4 tables</td><td class="num">871,500</td><td class="muted">On since 17:00</td></tr><tr><td>Joy M.</td><td>Waiter · Terrace</td><td>1 table</td><td class="num">142,000</td><td class="muted">On since 19:30</td></tr><tr><td>Sarah M.</td><td>Cashier · Till 1</td><td>—</td><td class="num">96 bills</td><td class="muted">On since 15:55</td></tr><tr><td>Ruth A.</td><td>Chef · Hot kitchen</td><td>8 tickets</td><td class="num">Oldest 26 min</td><td class="muted">On since 15:00</td></tr></tbody></table></div></section>
+    <aside class="card vstack g12" style="width: 420px; padding: 20px; flex: none"><div class="hstack"><span class="av">BO</span><div class="grow"><h2 class="t-h">Brian O.</h2><p class="t-sup muted">Waiter · on since 16:30 · 4 tables open</p></div></div>
+      <div><p class="lab">Tables to move · 2 picked</p><div class="optgrid" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><button class="opt tall" aria-pressed="false"><span class="hstack g4">Table 3</span><small>54,000</small></button><button class="opt tall" aria-pressed="false"><span class="hstack g4">Table 16</span><small>38,000</small></button><button class="opt tall" style="background: var(--tonal-2)" aria-pressed="true"><span class="hstack g4"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Table 24</span><small>81,000</small></button><button class="opt tall" style="background: var(--tonal-2)" aria-pressed="true"><span class="hstack g4"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Table 30</span><small>143,500</small></button></div></div>
+      <div><p class="lab">To</p><div class="seg fill"><button class="">David S.</button><button class="on">Joy M.</button><button class="">Amina K.</button></div></div>
+      <p class="t-sup muted">Both waiters are told. Sales already sent stay counted for Brian O.</p>
+      <span class="grow"></span><button class="btn filled">Move 2 tables to Joy M.</button></aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Reservations</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="m9 12 2 2 4-4"/></svg>Approvals<span class="nb">4</span></a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5"/></svg>Team</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>
