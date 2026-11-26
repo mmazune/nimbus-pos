@@ -46,7 +46,8 @@ export function Row({ title, line, initials, icon, leading, chevron = false, cur
         </span>
       ) : null}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="break-words text-kit-body font-kit-bold text-kit-text">{title}</span>
+        {/* tall rows (Reservations, Approvals) title at the 17 px row style, as drawn */}
+        <span className={["break-words font-kit-bold text-kit-text", size === "tall" ? "text-kit-row" : "text-kit-body"].join(" ")}>{title}</span>
         {line ? <span className="break-words text-kit-sup text-kit-muted">{line}</span> : null}
       </span>
       {trailing}

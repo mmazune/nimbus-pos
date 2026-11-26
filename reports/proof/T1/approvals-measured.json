@@ -10,7 +10,7 @@
     "filled": [
       "Approve the discount"
     ],
-    "checkedText": 38,
+    "checkedText": 37,
     "checkedTargets": 16
   },
   "decline-sheet-1280": {
@@ -24,7 +24,7 @@
     "filled": [
       "Decline"
     ],
-    "checkedText": 43,
+    "checkedText": 42,
     "checkedTargets": 20
   },
   "approvals-done-1280": {
@@ -36,7 +36,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 38,
+    "checkedText": 37,
     "checkedTargets": 14
   },
   "approvals-390": {
@@ -48,8 +48,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 13,
-    "checkedTargets": 8
+    "checkedText": 16,
+    "checkedTargets": 9
   },
   "approvals-sheet-390": {
     "viewport": "390x844",
@@ -60,7 +60,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 39,
+    "checkedText": 38,
     "checkedTargets": 13
   }
 }

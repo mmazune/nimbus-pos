@@ -141,7 +141,7 @@ function describe(item: ApprovalQueueItem): { title: string; line: string; headi
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-h-kit-target items-center justify-between gap-kit-12">
+    <div className="flex py-kit-9 items-center justify-between gap-kit-12">
       <Text variant="sup" tone="muted">
         {label}
       </Text>
@@ -277,7 +277,6 @@ export function ApprovalsScreen() {
   function panel(item: ApprovalQueueItem): ReactNode {
     const { title, line, heading } = describe(item);
     const status = String(item.status).toUpperCase();
-    const pill = statusPill(status);
     const facts: Array<[string, string]> = [];
     let primary: ReactNode = null;
     let decline: ReactNode = null;
@@ -397,7 +396,6 @@ export function ApprovalsScreen() {
               {line}
             </Text>
           </div>
-          <Pill tone={pill.tone}>{pill.word}</Pill>
         </div>
         {notice ? (
           <Text variant="body" tone="green" strong>

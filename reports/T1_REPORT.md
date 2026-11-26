@@ -42,19 +42,15 @@ All six phases are done. Ten screens are built to their drawings and pass the lo
    - **Till:** the action row spans the width; the field label reads "Cash counted".
    - **Approvals:** queue rows are 76 px; a percentage discount shows its money; the detail heading names the action ("UGX 21,000 off bill 000060").
 
-   Kept on purpose, with reasons:
-   - Fact and drawer lines stay 44 px tall, not 40: rule 10's target size, and the kit has no 40 px row size.
-   - The status pill in the Approvals detail stays: it is the only place Done today shows the outcome.
-   - Till explains a difference with "Write why if it does not match", not "A supervisor signs any difference": closing a till takes a written reason, and no route records a sign-off.
-   - Me keeps "Needs a review" (the shift is flagged) and "Off shift" beside "On shift".
+   Fixed after that:
+   - Fact and drawer lines are 40 px, as drawn.
+   - The Approvals detail has no status pill (the drawing has none); decisions show on the row and in "Approved by" / "Declined by".
+   - Tall rows (Reservations, Approvals) have 17 px titles.
+   - Me is a bare person and the lock has no keyhole, as drawn.
+   - Receipt and CashRegister stay: they are the nearest glyphs in the icon set the kit uses.
 
-   Needs a shared file T1 does not own:
-   - the side panel is 440 px, not 420 (`kit-tokens.css` has no 420);
-   - Row titles are 16 px where Approvals draws 17;
-   - some icon glyphs differ from the drawing;
-   - the header says "Terminal 01" (no route names a station).
+   What still differs is listed in the table below, marked ⟵ Done-when 3. Each item is a left-out part (no data or route behind it), a file T1 does not own (one kit token), or a real state the drawing does not show.
 
-   The left-out parts (data or route missing) are in the list below.
 4. **No permission key, route or endpoint on any reachable screen** [live] `e2e/t1/sweep.spec.ts`. It covers every section of the three roles, the hidden cashier Queue, and the "not your role" guards, at 1280 × 800 and 390 × 844, with a wider ban list: API, v1, stub, endpoint, backend, MVP, adapter, build-step names, broken values, raw status codes. One sentence is listed, not fixed. It contains "backend", is beyond Done-when 4's three items, and lives in `lib/cashier/payment-validation.ts`, outside T1's paths: "Cash close is available only when the backend order status is Served." It shows on the hidden Queue.
 **The A2 list** (`docs/direction/research/A2_frontend_as_built.md` §6, the developer wording found on screen):
 - **Gone with the old screens:**
@@ -144,6 +140,11 @@ Not fixed, for the next pass (all scored, none a fail):
 | Receipts: "How" column, Paid time | the order list has no method and orders have no paid time; the list shows when a bill was opened | E1 / E4 |
 | Till: per-method tiles, cash sales line, Pay out, Open the drawer, bill count | not in the till summary; no drawer driver | E4, hardware wave |
 | Approvals: Void, Refund, Take over rows; PIN on the spot | no route lists pending refunds or voids; take-over has no route | E1 / E4 / U3 |
+| ⟵ Done-when 3 · Till: "A supervisor signs any difference" | closing a till takes a written reason and writes an audit row; no route records a supervisor's sign-off, so the screen says "Write why if it does not match" | API work, U3 |
+| ⟵ Done-when 3 · Receipts: "· needs a supervisor" on Refund | whether a refund needs a supervisor depends on its amount against the org limit, which the cashier cannot read; the screen says so after the refund is asked ("It waits for approval…") | settings read for cashiers |
+| ⟵ Done-when 3 · Header: the station's name ("Till 1", "Front desk") | no route names a device; the shell shows its default "Terminal 01" | device setup, B6.6 |
+| ⟵ Done-when 3 · Side panel 420 px (built 440) | the panel width is the kit token `sheet-side` in `kit-tokens.css`, which T1 does not own; no 420 token exists | U0 tokens |
+| ⟵ Done-when 3 · Me: "Needs a review", "Off shift" | not drawn, but real shift states (flagged shift, no shift); shown beside the drawn "On shift" | — |
 | Shift-swap Approve | Outcome C: no roster write exists (decline only) | roster engine |
 
 ## Decisions taken

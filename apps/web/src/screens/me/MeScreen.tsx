@@ -114,7 +114,7 @@ const LEAVE_TYPES: Array<{ key: CreateLeaveRequestPayload["leaveType"]; label: s
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-h-kit-chip items-center justify-between gap-kit-12">
+    <div className="flex py-kit-9 items-center justify-between gap-kit-12">
       <Text variant="sup" tone="muted">
         {label}
       </Text>

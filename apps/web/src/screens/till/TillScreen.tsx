@@ -67,7 +67,7 @@ function groupTyped(v: string) {
 
 function Line({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex min-h-kit-target items-center justify-between gap-kit-12">
+    <div className="flex py-kit-9 items-center justify-between gap-kit-12">
       <Text variant={strong ? "row" : "sup"} tone={strong ? "text" : "muted"}>
         {label}
       </Text>
