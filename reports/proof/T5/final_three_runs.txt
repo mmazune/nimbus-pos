@@ -1,12 +1,115 @@
-Final three runs, each on a fresh demo venue (e2e/t5/stack.sh), web build of cc33ee3 code;
-suites: e2e/t1 (27) + e2e/order/evening.spec.ts (1) + e2e/t5 (25) = 53 tests
-=== run 1 18:48:40 on cc33ee3
-t5-stack: database nimbus_event_0ddc0c83
-  53 passed (4.0m)
-=== run 2 18:53:21 on 71e4b80
-t5-stack: database nimbus_event_1d3b7b0b
-  53 passed (4.0m)
-=== run 3 18:58:00 on a52f79a
-t5-stack: database nimbus_event_de768d57
-  53 passed (4.0m)
+=== run 1 19:30:24 on 33926b4
+t5-stack: database nimbus_event_a16eb622
+== validate the data files
+demo-venue validator: /home/user/nimbus-pos/packages/db/demo-venue/data
+  people             21
+  tables             64
+  areas              4
+  menuItems          242
+  itemsWithChoices   83
+  servings           157
+  stockItems         149
+  recipes            57
+  openTables         17
+  bookingsToday      9
+  paidBills          4
+  recipe cost as % of price: lowest 9.3, median 20.8, highest 45.2
+GREEN: 0 errors
+== migrate (prisma migrate deploy)
+   the guarded database holds the E1 migration
+== seed roles and permissions (db:seed; it also makes its own small demo org)
+== load Tapas Downtown
+Tapas Downtown loaded:
+  tables           64
+  people           21
+  menuItems        242
+  stockItems       149
+  recipes          57
+  orderLines       56
+  kitchenTickets   38
+  payments         5
+  paidBills        4
+  openTables       17
+  bookingsToday    9
+t5-stack: API pid 3309 on :3001, branch cmwxy6tl300032dmiy9wrs00p
+
+Running 53 tests using 1 worker
+
+  53 passed (3.9m)
+=== run 2 19:35:01 on 33926b4
+t5-stack: database nimbus_event_0a629e90
+== validate the data files
+demo-venue validator: /home/user/nimbus-pos/packages/db/demo-venue/data
+  people             21
+  tables             64
+  areas              4
+  menuItems          242
+  itemsWithChoices   83
+  servings           157
+  stockItems         149
+  recipes            57
+  openTables         17
+  bookingsToday      9
+  paidBills          4
+  recipe cost as % of price: lowest 9.3, median 20.8, highest 45.2
+GREEN: 0 errors
+== migrate (prisma migrate deploy)
+   the guarded database holds the E1 migration
+== seed roles and permissions (db:seed; it also makes its own small demo org)
+== load Tapas Downtown
+Tapas Downtown loaded:
+  tables           64
+  people           21
+  menuItems        242
+  stockItems       149
+  recipes          57
+  orderLines       56
+  kitchenTickets   38
+  payments         5
+  paidBills        4
+  openTables       17
+  bookingsToday    9
+t5-stack: API pid 6757 on :3001, branch cmwxycrq00003obhbuyv08sc4
+
+Running 53 tests using 1 worker
+
+  53 passed (3.9m)
+=== run 3 19:39:37 on e3cbbda
+t5-stack: database nimbus_event_e281826f
+== validate the data files
+demo-venue validator: /home/user/nimbus-pos/packages/db/demo-venue/data
+  people             21
+  tables             64
+  areas              4
+  menuItems          242
+  itemsWithChoices   83
+  servings           157
+  stockItems         149
+  recipes            57
+  openTables         17
+  bookingsToday      9
+  paidBills          4
+  recipe cost as % of price: lowest 9.3, median 20.8, highest 45.2
+GREEN: 0 errors
+== migrate (prisma migrate deploy)
+   the guarded database holds the E1 migration
+== seed roles and permissions (db:seed; it also makes its own small demo org)
+== load Tapas Downtown
+Tapas Downtown loaded:
+  tables           64
+  people           21
+  menuItems        242
+  stockItems       149
+  recipes          57
+  orderLines       56
+  kitchenTickets   38
+  payments         5
+  paidBills        4
+  openTables       17
+  bookingsToday    9
+t5-stack: API pid 10096 on :3001, branch cmwxyinbc0003y0i3zpd2iguj
+
+Running 53 tests using 1 worker
+
+  53 passed (3.9m)
 DONE

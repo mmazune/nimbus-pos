@@ -13,8 +13,8 @@ viewport; **[code]** read; **[asserted]** stated, not checked.
 **Done.** All six phases are built and every Done-when line is proven, or settled by a numbered
 decision: Done-when 1–7 and 9 are proven [live]; Done-when 8 holds for every SCREENS.md row T5 set
 (`Waiter-Ready` 22, `Kitchen` 20; re-scored `Main`, `Floor-Phone`, `Supervisor-Table` 20,
-`Order-Terminal` 21). The one T7 form below the pass mark, Join tables (19), has no row here and is
-recorded by decision 19. The four browser cases, with T1's 27 and the evening, passed 53/53 three runs in
+`Order-Terminal` 21), and every T7 form T5 built scores 20 or more (Join tables, the last one, 22 on
+the final build). The four browser cases, with T1's 27 and the evening, passed 53/53 three runs in
 a row on fresh demo venues. One API defect was found for T6 (decision 20).
 
 ## How the proofs run (rules 14, 15, 24)
@@ -155,7 +155,7 @@ with no zero), screenshots beside the drawings [emulation, reviewer]:
 | Fire with undo (Order-Hold-Fire) | 19 | **22** | |
 | Table actions (Supervisor-Table) | 17 | **20** | |
 | Move table (Table-Move) | 15 | **23** | |
-| Join tables (Table-Join) | 18 | 19 | 19, then 19 on the final build (decision 19) |
+| Join tables (Table-Join) | 18 | 19 | 19, 15, 20, then **22** on the final build (decision 19) |
 | Move a line (Line-Move) | 14 | **23** | |
 | Split by guest / item / amount / evenly | 17 / 16 / 15 / 17 | **21 / 21 / 22 / 22** | |
 | Change waiter (Change-Waiter) | 15 | **22** | |
@@ -177,11 +177,13 @@ highlights the section you are on, Ready's age goes amber and red; split totals 
 with "Each pays" as the big figure; Change waiter marks who has it now; Move and Join show one area at
 a time; the tabs toggle and header say "tabs".
 
-**Join (19/24, under the pass mark).** Round 3 scored 19; its money and wording points were fixed
-(breakdown above the grid, "You" on your own tables) and a fourth fresh reviewer scored the final build
-**19** again — with no zero and nothing breaking use, but asking for the summary *below* the picker (the
-third had asked for it above), a tinted card for the summary, bare amounts on the tiles, bold summary
-amounts, a fade where the grid scrolls under the footer and a shorter subtitle. Settled by decision 19.
+**Join (22/24 on the final build).** Rounds 3 and 4 scored 19; a fifth scored 15 because Main hall's 22
+tables pushed the bills card off screen. The sheet was rebuilt to the drawing: it rises over the menu with
+the order column in view, the amount on the table is under the title, the list shows three rows then
+scrolls with a count line, the bills card (each table, then "One bill on …") and the footnote stay in view,
+and Cancel sits beside the filled button. Two fresh reviewers then scored **20** and, on the final build,
+**22**. Their remaining notes are on the shared kit (a selected area chip as dark as the chosen table; no
+fade where the list scrolls) and go to the next kit pass, not this sheet.
 
 SCREENS.md rows set this phase: `Waiter-Ready` built 22/24, `Kitchen` built 20/24; re-scored after
 T5's changes: `Main` and `Floor-Phone` 20/24, `Order-Terminal` 21/24, `Supervisor-Table` 20/24. The T7
@@ -190,7 +192,7 @@ on its branch); their scores are the table above.
 
 ## Done-when 9 — the diff
 
-`git diff --stat f0b6d87..HEAD`: 188 files, +5,091 −317, of which `apps/web` 75, `reports` 112,
+`git diff --stat f0b6d87..HEAD`: 188 files changed, 5247 insertions(+), 320 deletions(-), of which `apps/web` 75, `reports` 112,
 `design/screens/SCREENS.md` 1 (Status cells only) [live]. Nothing under `apps/api`, `packages/db` or
 `design/screens/html|png|kit.css`.
 
@@ -213,6 +215,11 @@ check:ui green
 verify:web exit 0
 check:event green
 ```
+
+After the last web change (the Join rework and the blank-choice fix, `33926b4`) the web gates were run
+again [live]: next build ok (`web.sh build` stops on failure), web typecheck exit 0, eslint on every
+changed web file exit 0, check:ui green, check:event green; `apps/api` has not changed since `cc33ee3`.
+Then three full runs, 53/53 ×3, on `33926b4` (`final_three_runs.txt`).
 
 `eslint` (no `--fix`) on every changed web file: clean (`next lint` in `verify:web` covers them all). No file under `apps/api` or `packages/db` changed, so the API gates are the merge's, re-run here.
 
@@ -256,11 +263,11 @@ check:event green
     order). Where one case changes what a later case starts from, the later case sets up its own start
     through the API as staff would (a waiter starts a shift, the chef puts a dish back on, its own table),
     never by editing the database.
-19. **Join tables stays at 19/24 and is recorded, not passed.** It has no SCREENS.md row (it is a step
-    of the Supervisor-Table sheet, which scores 20), so Done-when 8 holds; two fresh reviewers disagreed
-    on where its summary goes, and another rebuild would have restarted the three green runs. The next
-    pass (a T7 drawing pass or U3) takes the fourth reviewer's list: summary on a tinted card under the
-    picker, bare tile amounts, bold summary amounts, a scroll fade above the footer, a one-line subtitle.
+19. **Join tables: what differs from its drawing, on purpose.** The drawing's last sentence, "another
+    waiter's table needs a supervisor", is left out: the join route checks only the join right, so the
+    sentence would be untrue. Guests are not stored on an order, so the subtitle shows the amount only.
+    The venue's areas hold up to 22 tables, so the sheet adds area chips and a three-row list that scrolls.
+    Scored 22/24 on the final build by a fresh reviewer.
 20. **An API defect found, not fixed (T6's code):** after a `split-items`, the next `POST /api/pos/orders`
     on the branch answers 500 every time: the child is numbered `ORD-n-S1`, and `generateOrderNumber`
     takes the newest order's number, reads `n` and proposes `ORD-(n+1)`, which already exists. The T5
@@ -273,6 +280,11 @@ check:event green
 23. **A tab's note on its tile** is shortened to whole words that fit (about 16 letters, no dangling little
     word); the whole note is kept on the tab.
 24. **Tests run in Kampala time** (T5's own terminals), so the header clock and "since 19:40" agree.
+25. **The Lamb chops race opens each racing bill first.** Two new bills created at the same instant can
+    collide on the API's order number (a 500; one run in three hit it; decision 20's class, T6's code). The
+    race the case proves is for the last portion, so each racer's table gets its bill (a soft drink, sent)
+    one after the other, then both send the lamb at the same moment. Exactly one gets it, the other is told.
+26. **A choice saved without a name shows nothing** on an order line (a demo line showed a bare "· ·").
 
 ## Left out, and which milestone brings it
 
@@ -285,12 +297,14 @@ check:event green
 | Paying one share of an amount or even split | the close route takes the whole balance | U3 |
 | Giving a sent line a guest; "Guests 2" on a new tab | no route | later E3 pass |
 | A colleague with no table in the hand-over list | no who-is-on-shift route a waiter can read | E9 |
+| Join's "another waiter's table needs a supervisor" | the join route checks only the join right (decision 19) | — |
 | Guest picker on the phone's order screen as a strip | the item sheet carries it on both sizes; no separate strip | — |
 
 ## For the other tracks
 
 - **T6 (API):** a who-is-on-shift list readable to a waiter, collected tickets, and the waiter's name on
-  the ticket queue would close three left-outs above. `split-items` still takes no locks (T2's note).
+  the ticket queue would close three left-outs above. `split-items` still takes no locks (T2's note). Order numbers collide after a split and when two bills
+  open at the same instant (decisions 20, 25).
 - **T7 (drawings):** the T7 forms are built (Floor-Tabs, Tab-Name, Table-Move, Table-Join, Line-Move,
   Split-Guest/Item/Amount/Even, Change-Waiter, Handover-Offer/Accept, Order-Hold-Fire,
   Order-Line-Allergy, Order-Line-Sold-Out, Kitchen-Done/Sold-Out/Set-Number, Bar); their SCREENS.md rows
@@ -308,8 +322,8 @@ Floor: server areas, Tabs and New tab, Ready/Late/Not sent/Joined; move, join an
   four splits, change waiter, hand-overs with the colleague accepting and the shift-end way out.
 Kitchen and bar screens for chef and bartender; Ready reaches the waiter; hold, fire, undo, allergy, takeaway.
 Proof: 53/53 three runs in a row on fresh demo venues; API unit 1,318/0 failed; all web gates green.
-Look: every SCREENS.md row T5 set scores 20 or more; Join tables is 19 (decision 19).
-Found for T6: after split-items the next new order answers 500 (decision 20).
+Look: every SCREENS.md row T5 set scores 20 or more; every T7 form T5 built too (Join tables 22).
+Found for T6: order numbers collide after split-items and when two bills open at once (20, 25).
 You need to: review t5/join-up and decide when it merges; give T6 decision 20's order-number defect;
-  ask T7 to add rows for its built forms and to settle where Join's summary sits.
+  ask T7 to add rows for its built forms.
 ```

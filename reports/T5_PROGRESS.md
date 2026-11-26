@@ -3,8 +3,8 @@
 Branch `t5/join-up`, cut from `rebuild/main` `41772c7`. Merge result (Done-when 9 baseline): `f0b6d87`.
 
 ## Now
-- **Done.** Final three runs 53/53 ×3 on fresh venues; final gates green; look reviews done; report
-  written (`reports/T5_REPORT.md`); branch pushed.
+- **Done.** Join rebuilt to its drawing (22/24 on the final build); final three runs 53/53 ×3 on
+  `33926b4`, fresh venues; gates green; report updated (`reports/T5_REPORT.md`); branch pushed.
 
 ## Phases
 | Phase | State | Commit |
@@ -33,6 +33,9 @@ Branch `t5/join-up`, cut from `rebuild/main` `41772c7`. Merge result (Done-when 
 8. Hand-over colleagues are those holding tables now (a waiter cannot read a staff list).
 9. Kitchen tickets oldest first (the API ranks red first).
 10. Chef and bartender land on /kitchen; supervisor and manager may open it.
+11. (report 19) Join leaves out the supervisor sentence: the route checks only the join right.
+12. (report 25) The Lamb race opens each racing bill first: concurrent new bills can collide on the order number.
+13. (report 26) A choice with no name shows nothing on an order line.
 
 ## Left out (with the milestone that brings it)
 - Tile "Bill" (no API reads "bill asked"), E4. Ready's "Collected in the last hour" (no route).
