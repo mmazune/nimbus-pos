@@ -277,10 +277,20 @@ export function OrderScreen(props: OrderScreenProps) {
     await session.send();
   };
 
+  // Print bill: the terminal's own print dialog prints the order as shown. On the waiter's
+  // own table the bill request is also recorded; on another waiter's table the API refuses
+  // that request to a waiter, so only the print happens (nothing is recorded, and the sheet says so).
   const printBill = async () => {
+    if (readOnly) {
+      setBillAsked(false);
+      setSheet({ kind: "bill" });
+      window.setTimeout(() => window.print(), 50);
+      return;
+    }
     const ok = await session.askForBill();
     if (ok) setBillAsked(true);
     setSheet({ kind: "bill" });
+    if (ok) window.setTimeout(() => window.print(), 50);
   };
 
   const personName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Signed in";
@@ -413,7 +423,7 @@ export function OrderScreen(props: OrderScreenProps) {
       {sheet?.kind === "bill" ? (
         <Sheet
           placement={phone ? "bottom" : "middle"}
-          title={billAsked ? "Bill asked for" : "Bill not recorded"}
+          title={readOnly ? "Bill sent to print" : billAsked ? "Bill asked for" : "Bill not recorded"}
           summary={`${title} · ${formatMoney(session.totalMinor)}`}
           onClose={() => setSheet(null)}
           footer={
@@ -423,9 +433,11 @@ export function OrderScreen(props: OrderScreenProps) {
           }
         >
           <Text variant="sup" tone="muted">
-            {billAsked
-              ? "The bill request is saved on the order. This terminal has no printer connected yet, so nothing printed."
-              : session.lastError ?? "The bill request did not go through. Try again."}
+            {readOnly
+              ? `The bill went to this terminal’s print dialog. The bill request stays with ${waiterName ?? "the table’s waiter"}.`
+              : billAsked
+                ? "The bill request is saved on the order, and the bill went to this terminal’s print dialog."
+                : session.lastError ?? "The bill request did not go through. Try again."}
           </Text>
         </Sheet>
       ) : null}
@@ -479,7 +491,8 @@ export function OrderScreen(props: OrderScreenProps) {
     </>
   );
 
-  const showActions = rights.canTableActions || canSameAgain;
+  // The ⋯ shows whenever the table has an order (as drawn); its sheet lists what this role may do.
+  const showActions = rights.canTableActions || canSameAgain || Boolean(order);
   const payPane =
     paying && order ? (
       <PayPane

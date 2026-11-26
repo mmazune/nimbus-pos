@@ -13,17 +13,7 @@
     },
     {
       "method": "GET",
-      "path": "/api/menu/navigation?activeOnly=true",
-      "status": 200
-    },
-    {
-      "method": "GET",
       "path": "/api/tables",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/menu/catalog",
       "status": 200
     },
     {
@@ -33,17 +23,27 @@
     },
     {
       "method": "GET",
+      "path": "/api/menu/navigation?activeOnly=true",
+      "status": 200
+    },
+    {
+      "method": "GET",
       "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?tableId=cmwxe4vua00keaev4jefrrbbs&excludeStatus=CLOSED,VOIDED&pageSize=20",
+      "path": "/api/menu/catalog",
       "status": 200
     },
     {
       "method": "GET",
       "path": "/api/menu/navigation?activeOnly=true",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/pos/orders?tableId=cmwxe4vua00keaev4jefrrbbs&excludeStatus=CLOSED,VOIDED&pageSize=20",
       "status": 200
     },
     {

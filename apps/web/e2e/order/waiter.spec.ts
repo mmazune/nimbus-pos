@@ -30,6 +30,7 @@ test("a free table tapped and left creates nothing on the server", async ({ page
   const net = recordNetwork(page);
   await openTable(page, table.id);
   await expect(page.getByText("Nothing on this table yet")).toBeVisible();
+  await page.waitForTimeout(400);
   await page.screenshot({ path: join(PROOF, "built-Order-Empty-1280x800.png") });
   expectRule10(await measurePage(page), "Order-Empty 1280");
   await page.getByRole("button", { name: "Floor" }).click();
@@ -90,6 +91,7 @@ test("waiter sends food, adds drinks, and the second Send sends only the new lin
   await page.locator("[data-order-search]").getByRole("button", { name: /^Cola 300 ml,/ }).click();
   await page.getByRole("button", { name: "Back to the menu" }).click();
   await page.getByRole("button", { name: "Whisky", exact: true }).click();
+  await page.waitForTimeout(400);
   await page.screenshot({ path: join(PROOF, "built-Order-Terminal-1280x800.png") });
   expectRule10(await measurePage(page), "Order-Terminal 1280");
 
@@ -208,13 +210,25 @@ test("another waiter's table: read only, as drawn", async ({ page }) => {
   await expect(panel.getByRole("button", { name: /^2 Lager 500 ml/ })).toBeVisible();
   await expect(panel.getByRole("button", { name: /^1 Chips/ })).toBeVisible();
   await expect(panel.locator("[data-order-total]")).toHaveText("UGX 20,000");
-  await expect(panel.getByRole("button", { name: /Send|Print bill|Take payment/ })).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: /Send|Take payment/ })).toHaveCount(0);
   await expect(panel.getByRole("button", { name: /^2 Lager 500 ml, 12,000/ })).toBeVisible();
   await expect(panel.getByText("The lines as the kitchen has them")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Search the whole menu" })).toHaveCount(0);
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(PROOF, "built-Order-Other-1280x800.png") });
   expectRule10(await measurePage(page), "Order-Other 1280");
+
+  // Print bill prints from this terminal (the API refuses the bill request to a waiter, so none is recorded).
+  await page.evaluate(() => {
+    (window as unknown as { __prints: number }).__prints = 0;
+    window.print = () => {
+      (window as unknown as { __prints: number }).__prints += 1;
+    };
+  });
+  await panel.getByRole("button", { name: "Print bill" }).click();
+  await expect(page.getByText("Bill sent to print")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __prints: number }).__prints)).toBe(1);
+  await page.getByRole("button", { name: "Done" }).click();
 
   // Take it over with a supervisor's PIN, typed by the supervisor on this device.
   await other.getByRole("button", { name: /Take it over/ }).click();

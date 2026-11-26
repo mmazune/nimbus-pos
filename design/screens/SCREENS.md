@@ -13,25 +13,25 @@ One row per drawing in `html/` and `png/`. "Built in" is the milestone from `doc
 | `Table-Life` | 1440 × 760 | All | The life of a table | `spec, no route` | U2 | built (T3; a spec, its states are scored on the screens above) |
 | `Order-Empty` | 1280 × 800 | Waiter | Free table · the menu opens at once | `/waiter/floor?tableId=` | U2 | built · scored 22/24 (T3, independent review) |
 | `Order-Terminal` | 1280 × 800 | Waiter | Table with an order · add more, send | `/waiter/floor?tableId=` | U2 | built · scored 22/24 (T3, independent review) |
-| `Order-Other` | 1280 × 800 | Waiter | Another waiter’s table | `/waiter/floor?tableId=` | U2 | built · scored 20/24 (T3, independent review) — fails on one zero (fidelity): the drawn Print bill and Ask need API a waiter does not have; Take it over and the lines are built |
+| `Order-Other` | 1280 × 800 | Waiter | Another waiter’s table | `/waiter/floor?tableId=` | U2 | built · scored 23/24 (T3, independent review) |
 | `Reservations-Waiter` | 1280 × 800 | Waiter | Reservations · waiter · seat somewhere else | `/waiter/reservations` | U4 | drawn |
 | `Waiter-Ready` | 1280 × 800 | Waiter | Ready · waiter | `/waiter/ready (new)` | U4, needs E5 | drawn |
 | `Waiter-Me` | 1280 × 800 | Waiter | Me · waiter | `/waiter/me` | U4 | drawn |
-| `Order-Phone` | 390 × 844 | Waiter | Order · phone | `/waiter/floor?tableId=` | U2 | built · scored 22/24 (T3, independent review) |
-| `Order-Phone-Check` | 390 × 844 | Waiter | Order · phone · the order | `/waiter/floor?tableId=` | U2 | built · scored 23/24 (T3, independent review) |
+| `Order-Phone` | 390 × 844 | Waiter | Order · phone | `/waiter/floor?tableId=` | U2 | built · scored 21/24 (T3, independent review) |
+| `Order-Phone-Check` | 390 × 844 | Waiter | Order · phone · the order | `/waiter/floor?tableId=` | U2 | built · scored 22/24 (T3, independent review) |
 | `Order-Phone-Item` | 390 × 844 | Waiter | Order · phone · an item with choices | `/waiter/floor?tableId=` | U2, needs E2 | built · scored 22/24 (T3, independent review) |
 | `Bill-Phone` | 390 × 844 | Waiter | Bill · phone | `/waiter/floor?tableId=` | U3, needs E4 | drawn |
-| `Supervisor-Table` | 1280 × 800 | Supervisor | Supervisor · table actions | `/supervisor/floor?tableId=` | U3 | built · scored 22/24 (T3, independent review) |
+| `Supervisor-Table` | 1280 × 800 | Supervisor | Supervisor · table actions | `/supervisor/floor?tableId=` | U3 | built · scored 21/24 (T3, independent review) |
 | `Supervisor-Void` | 1280 × 800 | Supervisor | Supervisor · void one item | `/supervisor/floor?tableId=` | U3, needs E1 | built · scored 24/24 (T3, independent review) |
 | `Reservations-Supervisor` | 1280 × 800 | Supervisor | Reservations · supervisor | `/supervisor/reservations` | U4 | drawn |
 | `Supervisor-Approvals` | 1280 × 800 | Supervisor | Approvals · supervisor | `/supervisor/approvals` | U4 | drawn |
-| `Cashier-Pay` | 1280 × 800 | Cashier | Cashier · take payment | `/cashier/floor?tableId=` | U3, needs E1 | built · scored 21/24 (T3, independent review) |
+| `Cashier-Pay` | 1280 × 800 | Cashier | Cashier · take payment | `/cashier/floor?tableId=` | U3, needs E1 | built · scored 22/24 (T3, independent review) |
 | `Cashier-Receipts` | 1280 × 800 | Cashier | Cashier · receipts | `/cashier/receipts` | U3 | drawn |
 | `Cashier-Till` | 1280 × 800 | Cashier | Cashier · till | `/cashier/till` | U3 | drawn |
 | `Kitchen` | 1920 × 1080 | Chef | Kitchen screen · 1920 × 1080 | `/kitchen (new)` | U5, needs E5 | drawn |
 | `Store-Requests` | 1280 × 800 | Store keeper | Store keeper · requests | `/store/requests (new)` | U6, needs E7 | drawn |
 | `Chef-Request-Phone` | 390 × 844 | Chef | Chef · phone · ask the store | `/kitchen/store (new)` | U6, needs E7 | drawn |
-| `Order-Laptop` | 1440 × 900 | Manager | Manager · laptop · the same table | `/manager/operations/floor?tableId=` | U2 | built · scored 22/24 (T3, independent review) |
+| `Order-Laptop` | 1440 × 900 | Manager | Manager · laptop · the same table | `/manager/operations/floor?tableId=` | U2 | built · scored 21/24 (T3, independent review) |
 | `Manager-Item` | 1440 × 900 | Manager | Manager · menu item and recipe | `/manager/menu/items/[id] (new)` | U7, needs E2 and E6 | drawn |
 | `Manager-Floor` | 1440 × 900 | Manager | Manager · floor setup · add tables | `/manager/settings/floor (new)` | U7, needs E3 | drawn |
 | `Accountant-Costs` | 1440 × 900 | Accountant | Accountant · item costs | `/accounting/costs (new)` | U7, needs E8 | drawn |

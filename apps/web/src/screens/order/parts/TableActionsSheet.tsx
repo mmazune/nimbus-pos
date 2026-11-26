@@ -242,7 +242,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
         </div>
       ) : null}
       {hasPayment && lead ? <Text variant="sup" tone="muted">A payment is already posted, so Discount and Cancel the order are not offered.</Text> : null}
-      {!lead && !canSameAgain && !(rights.canSetTableStatus && tableId) ? <Text variant="sup" tone="muted">Nothing more to do on this table yet.</Text> : null}
+      {!lead && !canSameAgain && !(rights.canSetTableStatus && tableId) ? <Text variant="sup" tone="muted">Same again shows here once a round of drinks is sent. A supervisor moves, discounts and voids.</Text> : null}
     </Sheet>
   );
 }

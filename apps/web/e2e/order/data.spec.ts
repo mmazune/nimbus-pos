@@ -131,7 +131,8 @@ test.describe("rights and the one filled button (R5)", () => {
     expect(filledAction(r, 3, true, false)).toBe("send");
     expect(filledAction(r, 0, true, false)).toBe("printBill");
     expect(filledAction(r, 0, false, false)).toBe("send");
-    expect(filledAction(r, 0, true, true)).toBe("none");
+    expect(filledAction(r, 0, true, true)).toBe("printBill");
+    expect(filledAction(r, 0, false, true)).toBe("none");
   });
   test("cashier and manager take payment; supervisor prints the bill", () => {
     expect(filledAction(rightsFor("cashier", ["pos:orders:write", "pos:orders:close"]), 0, true, false)).toBe("takePayment");

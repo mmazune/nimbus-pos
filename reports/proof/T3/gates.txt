@@ -1,3 +1,3 @@
-# T3 gates, 2026-11-26T12:01:21Z, on the final code
-web typecheck exit 0; next lint clean; next build exit 0 (the build every final proof ran on); check:ui green; check:event green
-e2e/order on that build: 30 passed; evening + phone + taps 3 of 3 in a row; fixture on a fresh DB 2 of 2
+# T3 gates, 2026-11-26T12:13:00Z, on the final code
+web typecheck exit 0; next lint: No ESLint warnings or errors; next build exit 0 (the build every final proof ran on); check:ui green; check:event green
+e2e/order on that build: 30 passed (11 data unit tests inside); evening + phone + taps 3 of 3 in a row; fixture on a fresh DB 2 of 2

@@ -51,8 +51,9 @@ export type FilledAction = "send" | "printBill" | "takePayment" | "none";
 
 /** R5: Send when there are unsent lines; otherwise Print bill (waiter, supervisor) or Take payment (cashier, manager). */
 export function filledAction(rights: OrderRights, unsentCount: number, hasSentLines: boolean, readOnly: boolean): FilledAction {
-  // Another waiter's table: the API refuses both the read and the bill request to a waiter.
-  if (readOnly) return "none";
+  // Another waiter's table: the API refuses the bill request to a waiter, but the terminal can
+  // still print what it shows (Order-Other's filled Print bill). Nothing else is offered.
+  if (readOnly) return hasSentLines ? "printBill" : "none";
   if (unsentCount > 0 && rights.canOrder) return "send";
   if (!hasSentLines) return rights.canOrder ? "send" : "none";
   if (rights.canPay) return "takePayment";

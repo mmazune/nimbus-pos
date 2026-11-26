@@ -128,32 +128,29 @@ Saved in `reports/proof/T3/gates.txt`, run on the final code after the last chan
 - The API is untouched, so its gates are E1's (`reports/E1_REPORT.md`).
 
 ## Look review [emulation, reviewer]
-**The scores in `SCREENS.md` come from an independent review** (`reports/T3_LOOK_REVIEW_INDEPENDENT.md`, round 3): a fresh subagent that built nothing, saw no earlier review, and was given no guidance on what to set aside. Each score is out of 24; a pass is 20 with no zero.
+**The scores in `SCREENS.md` come from the fifth independent review** (`reports/T3_LOOK_REVIEW_INDEPENDENT.md`). Each round was scored by a fresh subagent that built nothing, saw no earlier review, and was given no guidance on what to set aside; each round followed that round's fixes. Each score is out of 24; a pass is 20 with no zero. **All ten pass.**
 
-| Screen | Round 1 | Round 2 | Round 3 (recorded) |
-|---|---|---|---|
-| Order-Empty | 21 | 22 | **22** pass |
-| Order-Terminal | 21 | 22 | **22** pass |
-| Order-Other | 20 fail | 19 fail | **20 fail** (one zero: fidelity) |
-| Order-Laptop | 19 fail | 22 | **22** pass |
-| Order-Phone | 20 | 21 | **22** pass |
-| Order-Phone-Check | 23 | 23 | **23** pass |
-| Order-Phone-Item | 22 | 21 | **22** pass |
-| Supervisor-Table | 22 | 21 | **22** pass |
-| Supervisor-Void | 23 | 24 | **24** pass |
-| Cashier-Pay | 23 | 22 | **21** pass |
+| Screen | Round 1 | Round 2 | Round 3 | Round 4 | **Round 5 (recorded)** |
+|---|---|---|---|---|---|
+| Order-Empty | 21 | 22 | 22 | 20 | **22** |
+| Order-Terminal | 21 | 22 | 22 | 19 | **22** |
+| Order-Other | 20 fail | 19 fail | 20 fail | 23 | **23** |
+| Order-Laptop | 19 fail | 22 | 22 | 20 | **21** |
+| Order-Phone | 20 | 21 | 22 | 21 | **21** |
+| Order-Phone-Check | 23 | 23 | 23 | 23 | **22** |
+| Order-Phone-Item | 22 | 21 | 22 | 22 | **22** |
+| Supervisor-Table | 22 | 21 | 22 | 21 | **21** |
+| Supervisor-Void | 23 | 24 | 24 | 23 | **24** |
+| Cashier-Pay | 23 | 22 | 21 | 22 | **22** |
 
-Each round was scored by a different fresh reviewer, after each round's fixes.
-- **Order-Laptop**, from round 1 to round 2: the breadcrumb and an Open pill, and five items across.
-- **Order-Other**, between rounds 2 and 3:
-  - "Take it over" works: a supervisor enters their own PIN on the waiter's device. That makes a one-off supervisor session for the existing transfer-server call, which is logged out at once; the PIN is never stored.
-  - The other waiter's lines are read from the kitchen tickets, priced from the menu only when the prices add up to the order's own total.
-
-**Order-Other still fails on one zero, and it cannot pass on this track.** The drawn filled Print bill and "Ask Brian O." have no API a waiter can use on another waiter's order:
-- the bill request is refused (`assertWaiterOrderOwnership`);
-- there is no "ask the waiter" endpoint.
-
-Building either would mean a dead or faked control (rule 13), and `apps/api` is outside T3's folders (rule 20). The fix is an API change: a waiter-safe bill request and a request-to-waiter endpoint. It goes to T2 or the joining-up prompt, and the screen then needs two buttons.
+What changed between rounds:
+- **Order-Laptop:** "Floor ›" with an Open pill, and five items across.
+- **Order-Other:**
+  - "Take it over" with a supervisor PIN, through the existing transfer-server route.
+  - The other waiter's lines read from the kitchen tickets, priced only when they reconcile with the order's total.
+  - Print bill prints from the terminal's own print dialog. The API refuses a waiter's bill request on another's order, so none is recorded, and the sheet says so.
+  - "Ask Brian O." stays out: there is no endpoint.
+- **Order-Terminal, round 4 to round 5:** the round-4 capture had caught the selected group mid-transition; screenshots now settle first. The waiter's ⋯ now shows whenever the table has an order.
 
 The first review (`reports/T3_LOOK_REVIEW.md`), with a re-score I led, is kept for the record and not used.
 
@@ -169,7 +166,7 @@ The first review (`reports/T3_LOOK_REVIEW.md`), with a re-score I led, is kept f
 - **Order-Other:**
   - "Take it over" is built: a supervisor enters their PIN, and it calls the existing transfer-server route.
   - "Ask Brian O." has no endpoint.
-  - There is no Print bill: the API refuses a waiter's bill request on another's order.
+  - Print bill prints from the terminal's print dialog. No bill request is recorded, because the API refuses it to a waiter on another's order; the sheet says so.
   - The lines come from the kitchen tickets, because the order read is refused. They are priced from the menu only when the prices add up to the order's own total; otherwise the price is blank and a line says so.
 - **Supervisor-Table:** "Send to kitchen again" has no endpoint, so "Same again" stands in its place. Split bill says "Equal parts, recorded for the cashier", because the API only records the allocation. Table status is added.
 - **Cashier-Pay:**
@@ -185,7 +182,7 @@ The first review (`reports/T3_LOOK_REVIEW.md`), with a re-score I led, is kept f
 |---|---|---|
 | Popular and Offers from sales data | no data source; a group named Popular… is honoured | T2 `/api/menu/workspace` |
 | Sold out, "3 left", availability | not in the API; the tile already renders both states | T2 (E2) and the joining-up prompt |
-| Printing the bill | no printer path; the button records the bill request and says nothing printed | E4 |
+| Printer drivers and receipt printers | Print bill uses the terminal's own print dialog (and records the request on the waiter's own table); real printer routing waits for the printer decision | E4 |
 | A waiter asking for a void | no approval route for a line void | a later approvals milestone |
 | Ask the waiter, Take it over | no endpoint | U4 or later |
 | Split payment, partial cash | close needs the whole amount in one call; entering parts has no drawing | U3 follow-up |
