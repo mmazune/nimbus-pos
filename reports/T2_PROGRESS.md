@@ -4,13 +4,14 @@ Branch `t2/engines`, cut from `rebuild/main` `0af95f8`, `origin/e1/order-truth` 
 DB: throwaway Postgres 16, db `nimbus_event_t2`, role `t2`, localhost; URL set per shell, never in a file.
 
 ## Now
-- Phase 1 DONE. E1F DONE (two fix(e1f) commits, 29/29 probes). Phase 2 DONE. Next: phase 3 (tickets).
+- Phase 1, E1F, phase 2, phase 3 DONE. Report: reports/T2_REPORT.md. Last step: final full e2e by name, then push.
 
 ## Done
 - Phase 1: workspace (239 items: 185,682 B, 36 ms), offers, sold out / back on / a number left, send hook, void give-back, reset + opening list. Lamb chops e2e 6 tests + Table 12, 3 runs green. Race x20 green; mutation with both guards removed goes red. Seed: 1 key, 5 roles (seeded twice). Migration additive, row counts unchanged.
 - Baseline: tsc 0, build 0, unit 1,309/71, e2e touched suites 103/104 (1 pre-existing), check:event green.
 
 ## Decisions taken
+- Phase 3: fire is deferred (goes out after the 3 s undo window, timer + lazy release on reads); no grant needed (Chef and Bartender already held pos:kds:*); station check refuses waiter and cashier on Ready and recall; the shift-close guard is for waiters only.
 - E1F rulings, reviewer defaults taken: R-a a SERVED order left at zero may be voided (no cashier zero-close); R-b manual reference never above the balance; R-c a void completes the seated reservation (source order-void); R-d auto-settle never closes with unsent lines and closes once they are sent or removed.
 - S6: money DTOs take a decimal string; a JSON number is still accepted and turned into its exact string (no client breaks).
 - Line void also answers under /api/pos/orders/:id/items/:itemId/void; the first path stays.

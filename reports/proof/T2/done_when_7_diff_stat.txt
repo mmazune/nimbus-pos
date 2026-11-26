@@ -1,0 +1,44 @@
+Done-when 7. Measured 2026-11-26T11:23:41Z.
+
+== git diff --stat origin/e1/order-truth...HEAD (asked for): includes rebuild/main's U0 commits (apps/web, tools, docs), which are the base T2 was cut from, not T2's work
+ 146 files changed, 11615 insertions(+), 372 deletions(-)
+     50 apps/api
+     38 apps/web
+      1 design/screens
+      1 docs/direction
+      9 docs/prompts
+      1 package.json/
+      5 packages/db
+      1 reports/E2_READ_BACK.md
+      1 reports/T2_PROGRESS.md
+      1 reports/U0_CHECK_UI_GREEN.txt
+      1 reports/U0_CHECK_UI_RED.txt
+      1 reports/U0_PLAYWRIGHT.txt
+      1 reports/U0_READ_BACK.md
+      1 reports/U0_REPORT.md
+      1 reports/U0_TOKEN_COVERAGE.txt
+     31 reports/proof
+      1 tools/check-ui.allow.json
+      1 tools/check-ui.mjs
+
+== U0 files in that diff come from these base commits (not on e1/order-truth):
+0af95f8 Merge remote-tracking branch 'origin/u0/foundations' into rebuild/main
+57cc20f docs(rebuild): four long-run track prompts and their rules
+8e4052b docs(rebuild): each session works on and pushes its own branch; U0 and E1 carry-overs
+fbc1424 docs(u0): proof, report and SCREENS.md status for U0
+1380ba3 feat(tools): U0d check:ui keeps new UI made from the kit
+4f03f4c feat(web/kit): U0c the /kit gallery and its Playwright spec
+171d674 feat(web/kit): U0b the kit pieces and the bar section registry
+45fa5c5 feat(web/kit): U0a kit tokens in px from design/screens/kit.css
+
+== git diff --stat c6983c4..HEAD (T2's own commits after the E1 merge)
+ 74 files changed, 7694 insertions(+), 350 deletions(-)
+     42 apps/api/src
+      8 apps/api/test
+      5 packages/db/prisma
+      1 reports/E2_READ_BACK.md/
+      1 reports/T2_PROGRESS.md/
+     17 reports/proof/T2
+
+files outside apps/api/src, apps/api/test, packages/db/prisma, reports: 0
+existing test files edited under apps/api/test: 0
