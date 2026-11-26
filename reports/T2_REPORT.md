@@ -185,11 +185,16 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
 | group (tests) | cause (T4 `docs/reviews/e2e-baseline.md`) | what would fix it | why T2 may not |
 |---|---|---|---|
 | F1: billing 17, franchise 13, franchise-analytics 12, bg7-hms-integration 17 | guard keys with no permission row, or no grant | add 22+ permission rows and grants to the seed | CLAUDE.md §12 forbids it outright: "Do not seed the 37 `franchise:*` / `ops:*` / `dev:*` / `merchant:*` / `billing:*` / `onboarding:*` / `support:*` strings (C-22) — those modules are deferred". Done-when 4 also limits the seed diff to the grants this prompt names, and T4 says "the seed change itself is a separate, authorised step" |
-| F2: attendance 11 | the spec acts for other employees; the service allows self-service only (a deliberate rule) | edit the spec, or build a manager-on-behalf path | the spec is an existing test helper/spec that T4 is repairing (prompt: "do not edit theirs"); a new path is a feature outside T2's phases |
+| F2: attendance 11 | the spec acts for other employees; the service allows self-service only (a deliberate rule) | edit the spec, or build a manager-on-behalf path | T2 owns only *new* test files (Done-when 7); a manager-on-behalf path would weaken a payroll guard to pass a test (error protocol) |
 | F3: control-plane 1 | two training answers disagree | **fixed here**: the BG3 simulator answer now also carries M42's `inTraining`, `simulated`, `sessionId` (additive; `bg3-reliability` still green) | — [live] |
-| F4: orders 1 | the spec pays a fixed 9,999 on a dearer seeded item | edit the spec | existing spec (T4's to repair) |
+| F4: orders 1 | the spec pays a fixed 9,999 on a dearer seeded item | edit the spec | T2 owns only *new* test files (Done-when 7) |
 | C1: quick-sale.review C10 1 | depends on `quick-sale.e2e` running first | the e2e sequencer | the e2e configuration is T4's (prompt: never touch it) |
-| C2: tenancy 4, order-truth 5 | `bg1-onboarding` resets `cashier@demo.local`'s password, so later cashier logins get 401 | the sequencer, or that spec resetting a user it made | T4's configuration and an existing spec. T2's own specs avoid it: they make their own cashier |
+| C2: tenancy 4, order-truth 5 | `bg1-onboarding` resets `cashier@demo.local`'s password, so later cashier logins get 401 | the sequencer, or that spec resetting a user it made | the e2e configuration is T4's; `bg1-onboarding` is an existing spec T2 may not edit (Done-when 7). T2's own specs avoid it: they make their own cashier |
+
+**A contradiction inside the Done-when list, on this base.**
+- E2 line 11's whole-suite clause ("unit and e2e suites 0 failed") cannot hold together with Done-when 4 (the seed diff shows only the named grants, and CLAUDE.md §12 forbids seeding the C-22 keys) and Done-when 7 (T2 owns only *new* test files).
+- **The floor under those two lines is 60 red tests:** F1's 59 (seed) and C1's 1 (T4's sequencer). It is 72 as run, because F2 (11) and F4 (1) are existing specs T2 may not edit.
+- **Ownership gap between the prompts:** T4's baseline lists F1–F4 "for track T2 and the seed owner" and says `bg1-onboarding` "is not T4's to edit". T2's prompt gives T2 only new test files. So no track owns the existing specs behind F2, F4 and C2; the next prompt has to give them to one.
 
 ## Endpoints for T3 and T1
 
