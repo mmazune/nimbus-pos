@@ -7,7 +7,7 @@ Built by Sonnet 5.5 on `rebuild/main` (base `27790c1`). Database: throwaway Post
 |---|---|---|
 | API typecheck (`tsc --noEmit`) | 0 errors | [live] |
 | API build (`nest build`) | exit 0 | [live] |
-| Unit tests | **1,309 passed / 71 suites, 0 failed** (base 1,288 / 70; +21 mine: close door 8, send 5, void 6, KDS lines 3, pay-with-change 7, less 8 replaced old tests) | [live] |
+| Unit tests | **1,309 passed / 71 suites, 0 failed** (base 1,288 / 70: net +21 after I replaced the old send/close/ticket tests and added close-door, send, void, KDS-lines and pay-with-change tests) | [live] |
 | `eslint` on changed files (called directly, no `--fix` script) | 0 errors in every file I created and in every file that was clean at base. Pre-existing prettier errors remain in `pos-handoff.service.ts` (853 at base, 858 now: my 5 are indentation of two copy blocks in that file's own style), `orders.controller.ts` (2, same as base) | [live] |
 | `pnpm check:event` | green | [live] |
 | Full e2e, both trees on fresh clones of one seeded db, quick-sale specs excluded | **base 91 failed / 968 passed (9 suites red); E1 91 failed / 973 passed (the same 9 suites red).** The +5 passes are my 5 new tests. Failure *names* were not diffed (default reporter prints none for multi-suite runs); suite list and counts are identical | [live] |
