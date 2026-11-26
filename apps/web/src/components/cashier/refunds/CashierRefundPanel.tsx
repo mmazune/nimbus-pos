@@ -141,7 +141,7 @@ export function CashierRefundPanel({
     if (isLoading) return "Session is still loading.";
     if (!accessToken) return "Sign in before creating a refund.";
     if (!isCashier) return "Only cashier users can create cashier refund requests.";
-    if (!branchId) return "Branch context is missing.";
+    if (!branchId) return "No branch is set for this account.";
     if (!orderId) return "Order detail is missing.";
     if (orderError) return "Order detail missing or unavailable.";
     if (paymentError) return "Payment summary failed, so refund payments cannot be trusted.";
@@ -202,12 +202,12 @@ export function CashierRefundPanel({
         ? {
             tone: "warning" as const,
             title: "Refund request submitted for manager approval.",
-            body: "Cashier can create refund requests. Manager approval remains outside this workflow.",
+            body: "It waits for approval before money goes back.",
           }
         : {
             tone: "success" as const,
             title: "Refund recorded.",
-            body: "The backend returned a completed or approved refund state.",
+            body: "The refund is done.",
           };
 
       setResult(message);
@@ -332,7 +332,7 @@ export function CashierRefundPanel({
                   onSubmit={handleSubmit}
                 />
                 <CashierRefundBoundaryCard title="Manager approval">
-                  Cashier can create refund requests. Approval for refunds above threshold is manager/supervisor-only.
+                  A refund above the approval limit waits for approval.
                 </CashierRefundBoundaryCard>
                 <CashierRefundBoundaryCard title="Post-close void">
                   Post-close void is manager/supervisor-only and remains outside the cashier workflow.

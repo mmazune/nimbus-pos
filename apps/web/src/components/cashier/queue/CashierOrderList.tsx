@@ -75,7 +75,7 @@ export function CashierOrderList({
         description={
           search
             ? "Try another order number, table, server, guest, or status."
-            : "Active payable orders will appear here after the backend returns SENT, IN_KITCHEN, READY, or SERVED orders."
+            : "Orders that can be paid show here once they are sent to the kitchen or bar."
         }
       />
     );

@@ -16,6 +16,7 @@ import { getCashierTill, getCashierTillSummary, openCashierTill, reconcileCashie
 import { groupCents, shortName, toCents } from "../floor/floor-model";
 import { useAttemptKey } from "../shared/attempt-key";
 import { useWide } from "../floor/useWide";
+import { errorWords } from "../shared/words";
 
 /**
  * Till (T1 phase 4, drawing Cashier-Till) on the existing till routes, with the
@@ -39,8 +40,8 @@ function hhmm(iso?: string | null) {
   return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 }
 
-function errorText(e: unknown) {
-  return e instanceof ApiError ? e.message : e instanceof Error ? e.message : "That did not go through.";
+function errorText(e: unknown): string {
+  return errorWords(e);
 }
 
 const MOVE_WORD: Record<string, string> = {

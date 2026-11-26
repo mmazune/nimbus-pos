@@ -22,6 +22,7 @@ import { normalizeShift } from "@/lib/waiter/me-model";
 import { loadOrders } from "../floor/floor-data";
 import { formatMinutes, groupCents, shortName, toCents } from "../floor/floor-model";
 import { useWide } from "../floor/useWide";
+import { errorWords } from "../shared/words";
 
 /**
  * Me, for waiter, cashier and supervisor (T1 phase 3, drawing Waiter-Me).
@@ -41,8 +42,8 @@ const ACTIVE = new Set(["NEW", "SENT", "IN_KITCHEN", "READY", "SERVED"]);
 type Order = { id: string; tableId?: string | null; status?: string | null; total?: string | number | null; createdAt?: string | null };
 type Shift = { id: string; openedAt?: string | null; status?: string | null } | null;
 
-function errorText(e: unknown) {
-  return e instanceof ApiError ? e.message : e instanceof Error ? e.message : "That did not go through.";
+function errorText(e: unknown): string {
+  return errorWords(e);
 }
 
 function isoToday() {

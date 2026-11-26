@@ -18,6 +18,7 @@ import { apiRequest } from "@/lib/api/client";
 import { groupCents, shortName, toCents } from "../floor/floor-model";
 import { useAttemptKey } from "../shared/attempt-key";
 import { useWide } from "../floor/useWide";
+import { errorWords } from "../shared/words";
 
 /**
  * Receipts (T1 phase 4, drawing Cashier-Receipts): today's and earlier paid
@@ -80,8 +81,8 @@ function openedAt(o: Order) {
   return new Date(o.createdAt ?? 0).getTime();
 }
 
-function errorText(e: unknown) {
-  return e instanceof ApiError ? e.message : e instanceof Error ? e.message : "That did not go through.";
+function errorText(e: unknown): string {
+  return errorWords(e);
 }
 
 export function ReceiptsScreen() {

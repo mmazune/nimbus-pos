@@ -14,6 +14,7 @@ import {
 } from "@/lib/supervisor/floor";
 import { fetchSupervisorReservations } from "@/lib/supervisor/reservations";
 import { FloorScreen } from "@/screens/floor/FloorScreen";
+import { errorWords } from "@/screens/shared/words";
 import { loadAllActiveOrders } from "@/screens/floor/floor-data";
 import {
   normalizeSupervisorFloorTables,
@@ -36,12 +37,12 @@ function getErrorCopy(error: unknown) {
     if (error.isAuthError) {
       return { title: "Session expired", description: "Please log in again to continue." };
     }
-    return { title: "Could not load floor", description: error.message };
+    return { title: "Could not load floor", description: errorWords(error) };
   }
 
   return {
     title: "Could not load floor",
-    description: error instanceof Error ? error.message : "Try again when the connection is stable.",
+    description: errorWords(error, "Try again when the connection is stable."),
   };
 }
 

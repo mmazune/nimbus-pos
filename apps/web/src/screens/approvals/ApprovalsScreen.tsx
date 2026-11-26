@@ -30,6 +30,7 @@ import { fetchSupervisorOrderPayments, getPaymentState, type SupervisorOrderUser
 
 import { formatMinutes, groupCents, shortName, toCents } from "../floor/floor-model";
 import { useWide } from "../floor/useWide";
+import { errorWords } from "../shared/words";
 
 /**
  * Approvals (T1 phase 5, drawing Supervisor-Approvals) on the approval routes
@@ -85,9 +86,9 @@ function plain(text: string) {
   return out.charAt(0).toUpperCase() + out.slice(1);
 }
 
-function errorText(e: unknown) {
-  if (e instanceof ApiError) return e.message || mapApprovalErrorToMessage(decisionErrorStatus(e));
-  return e instanceof Error ? e.message : "That did not go through.";
+function errorText(e: unknown): string {
+  if (e instanceof ApiError && !e.message) return mapApprovalErrorToMessage(decisionErrorStatus(e));
+  return errorWords(e);
 }
 
 const STATUS: Record<string, { tone: PillTone; word: string }> = {

@@ -19,6 +19,7 @@ import {
   type WaiterOrderApi as FloorWaiterOrder,
 } from "@/lib/waiter/floor-api";
 import { FloorScreen } from "@/screens/floor/FloorScreen";
+import { errorWords } from "@/screens/shared/words";
 import { loadAllActiveOrders } from "@/screens/floor/floor-data";
 import { loadWaiterMenuWorkspace, type WaiterOrderApi } from "@/lib/waiter/order-api";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
@@ -55,13 +56,13 @@ function getErrorCopy(error: unknown) {
 
     return {
       title: "Could not load floor",
-      description: error.message,
+      description: errorWords(error),
     };
   }
 
   return {
     title: "Could not load floor",
-    description: error instanceof Error ? error.message : "Try again when the connection is stable.",
+    description: errorWords(error, "Try again when the connection is stable."),
   };
 }
 

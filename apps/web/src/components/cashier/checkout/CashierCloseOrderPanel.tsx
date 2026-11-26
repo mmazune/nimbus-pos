@@ -29,7 +29,7 @@ export function CashierCloseOrderPanel({ order }: CashierCloseOrderPanelProps) {
     ? "Outstanding balance remains. Close is blocked."
     : hasPendingCashierPaymentIntent(order)
       ? "A provider intent is still pending."
-      : "Backend close requires final payment data. Refresh if a manual final payment just auto-settled.";
+      : "Close needs the final payment. Refresh if a payment was just taken.";
 
   return (
     <div className="rounded-md bg-surface-muted p-4">

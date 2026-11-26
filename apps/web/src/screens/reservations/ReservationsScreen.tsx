@@ -35,6 +35,7 @@ import {
 import { buildFloorTiles, groupCents, toCents, type FloorTableApi, type FloorTile } from "../floor/floor-model";
 import { loadAllActiveOrders } from "../floor/floor-data";
 import { useWide } from "../floor/useWide";
+import { errorWords } from "../shared/words";
 import {
   actionsFor,
   dayLabel,
@@ -76,8 +77,7 @@ async function allPages(load: (page: number) => Promise<{ data: SupervisorReserv
 }
 
 function errorText(e: unknown): string {
-  if (e instanceof ApiError) return e.message;
-  return e instanceof Error ? e.message : "That did not go through.";
+  return errorWords(e);
 }
 
 function Fact({ label, value }: { label: string; value: string }) {

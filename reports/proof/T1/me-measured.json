@@ -67,7 +67,7 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 21,
+    "checkedText": 24,
     "checkedTargets": 10
   },
   "waiter-me-390": {
@@ -79,8 +79,8 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 24,
-    "checkedTargets": 7
+    "checkedText": 16,
+    "checkedTargets": 6
   },
   "cashier-me-390": {
     "viewport": "390x844",

@@ -164,7 +164,7 @@ export function CashierTransferTablePanel({ order, disabledReasons, onRefresh }:
         onCancel={() => setPendingInput(null)}
         onConfirm={() => pendingInput && mutation.mutate(pendingInput)}
       >
-        <p>This updates the order table assignment only. Payment and KDS state remain governed by backend workflow.</p>
+        <p>This updates the order table assignment only. Payments and the kitchen tickets stay as they are.</p>
       </CashierResolutionConfirmDialog>
     </section>
   );

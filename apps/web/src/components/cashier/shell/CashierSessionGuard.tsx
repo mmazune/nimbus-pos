@@ -41,7 +41,7 @@ export function CashierSessionGuard({ children }: CashierSessionGuardProps) {
       <main className="flex min-h-screen items-center justify-center bg-page p-4 sm:p-8">
         <BlockedState
           title="Cashier access required."
-          description="This route requires a cashier role from the authenticated session context."
+          description="Sign in with a cashier PIN to use it."
           action={
             <Button
               variant="secondary"
@@ -63,8 +63,8 @@ export function CashierSessionGuard({ children }: CashierSessionGuardProps) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-page p-4 sm:p-8">
         <BlockedState
-          title="Branch context unavailable."
-          description="The cashier workspace needs a default branch from /api/auth/me before shift and till reads can run."
+          title="No branch is set for this account."
+          description="Ask a manager to add you to a branch, then sign in again."
           action={
             <Button
               variant="secondary"

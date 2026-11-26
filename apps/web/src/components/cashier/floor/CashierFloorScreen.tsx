@@ -12,6 +12,7 @@ import { listCashierOperationalReservations, type CashierFloorData } from "@/lib
 import type { CashierOrderApi } from "@/lib/cashier/order-types";
 import { listCashierTables } from "@/lib/cashier/resolution";
 import { FloorScreen } from "@/screens/floor/FloorScreen";
+import { errorWords } from "@/screens/shared/words";
 import { loadAllActiveOrders } from "@/screens/floor/floor-data";
 import {
   normalizeCashierFloorTables,
@@ -40,12 +41,12 @@ function getErrorCopy(error: unknown) {
     if (error.isAuthError) {
       return { title: "Session expired", description: "Please log in again to continue." };
     }
-    return { title: "Could not load floor", description: error.message };
+    return { title: "Could not load floor", description: errorWords(error) };
   }
 
   return {
     title: "Could not load floor",
-    description: error instanceof Error ? error.message : "Try again when the connection is stable.",
+    description: errorWords(error, "Try again when the connection is stable."),
   };
 }
 
