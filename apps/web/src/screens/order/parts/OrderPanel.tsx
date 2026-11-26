@@ -79,7 +79,8 @@ export function OrderPanel(props: Props) {
     <aside className="flex min-h-kit-0 w-kit-sheet-wide-gap flex-none flex-col bg-kit-card shadow-kit-line-left" aria-label="Order" data-order-panel>
       <div className="flex items-baseline justify-between px-kit-16 pb-kit-8 pt-kit-20">
         <Text variant="h" as="h2">{props.title ?? "Order"}</Text>
-        <Text variant="sup" tone="muted">{countWord(count)}</Text>
+        {/* Another waiter's order: the API gives only its line ids, so the count is lines, not items. */}
+        <Text variant="sup" tone="muted">{linesHidden ? (count === 1 ? "1 line" : `${count} lines`) : countWord(count)}</Text>
       </div>
 
       <div className="flex min-h-kit-0 flex-1 flex-col overflow-y-auto pb-kit-12" data-order-lines>

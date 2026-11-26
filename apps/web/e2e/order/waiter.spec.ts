@@ -139,3 +139,78 @@ test("waiter sends food, adds drinks, and the second Send sends only the new lin
   const cashierToken = await pinToken(v.people.cashier.pin);
   await api(cashierToken, "POST", `/api/pos/orders/${order.id}/close`, { payments: [{ method: "CASH", amount: 98000 }] });
 });
+
+test("race: a double tap on Send makes one order and one ticket round", async ({ page }) => {
+  const v = await setupVenue();
+  const table = await freeTable(v.managerToken);
+  await signInWithPin(page, v.people.waiter.pin, /\/waiter\/floor/);
+  const net = recordNetwork(page);
+  await openTable(page, table.id);
+  await page.getByRole("button", { name: "Sides", exact: true }).click();
+  await page.getByRole("button", { name: /^Chips,/ }).click();
+  const send = page.locator("[data-order-panel]").getByRole("button", { name: "Send 1 item" });
+  await Promise.all([send.click({ noWaitAfter: true }), send.click({ noWaitAfter: true, force: true }).catch(() => undefined)]);
+  await expect(page.locator("[data-order-panel] [data-order-round]")).toHaveCount(1);
+  await page.waitForTimeout(500);
+  expect(net.filter((e) => e.method === "POST" && e.path === "/api/pos/orders")).toHaveLength(1);
+  expect(net.filter((e) => e.method === "POST" && /\/send$/.test(e.path) && e.status < 300)).toHaveLength(1);
+  const open = (await ordersOnTable(v.managerToken, table.id)).filter((o) => !["CLOSED", "VOIDED"].includes(o.status));
+  expect(open).toHaveLength(1);
+  const detail = (await api(v.managerToken, "GET", `/api/pos/orders/${open[0].id}`)).json;
+  expect(detail.items).toHaveLength(1);
+  const cashierToken = await pinToken(v.people.cashier.pin);
+  await api(cashierToken, "POST", `/api/pos/orders/${open[0].id}/close`, { payments: [{ method: "CASH", amount: 8000 }] });
+});
+
+test("race: two waiters send on the same free table at once; the screen shows both orders", async ({ browser }) => {
+  const v = await setupVenue();
+  const table = await freeTable(v.managerToken);
+  const pages: Page[] = [];
+  for (const pin of [v.people.waiter.pin, v.people.waiter2.pin]) {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const p = await ctx.newPage();
+    await signInWithPin(p, pin, /\/waiter\/floor/);
+    await openTable(p, table.id);
+    await p.getByRole("button", { name: "Sides", exact: true }).click();
+    await p.getByRole("button", { name: /^Chips,/ }).click();
+    pages.push(p);
+  }
+  await Promise.all(pages.map((p) => p.locator("[data-order-panel]").getByRole("button", { name: "Send 1 item" }).click()));
+  for (const p of pages) await expect(p.locator("[data-order-panel] [data-order-round]")).toHaveCount(1);
+  const open = (await ordersOnTable(v.managerToken, table.id)).filter((o) => !["CLOSED", "VOIDED"].includes(o.status));
+  expect(open).toHaveLength(2);
+  // Reopened, the table says it holds two orders instead of silently showing one.
+  await pages[0].getByRole("button", { name: "Floor" }).click();
+  await pages[0].reload();
+  await openTable(pages[0], table.id);
+  await expect(pages[0].getByText("2 open orders on this table")).toBeVisible();
+  const cashierToken = await pinToken(v.people.cashier.pin);
+  for (const o of open) await api(cashierToken, "POST", `/api/pos/orders/${o.id}/close`, { payments: [{ method: "CASH", amount: 8000 }] });
+  for (const p of pages) await p.context().close();
+});
+
+test("another waiter's table: read only, as drawn", async ({ page }) => {
+  const v = await setupVenue();
+  const table = await freeTable(v.managerToken);
+  const graceToken = await pinToken(v.people.waiter2.pin);
+  const created = (await api(graceToken, "POST", "/api/pos/orders", { serviceType: "DINE_IN", tableId: table.id })).json;
+  await api(graceToken, "POST", `/api/pos/orders/${created.id}/items`, { menuItemId: v.items.lager.id, quantity: 2 });
+  await api(graceToken, "POST", `/api/pos/orders/${created.id}/items`, { menuItemId: v.items.chips.id, quantity: 1 });
+  await api(graceToken, "POST", `/api/pos/orders/${created.id}/send`, {});
+
+  await signInWithPin(page, v.people.waiter.pin, /\/waiter\/floor/);
+  await page.locator(`[data-operational-table-id="${table.id}"]`).first().click();
+  const other = page.locator("[data-order-other]");
+  await expect(other).toBeVisible();
+  await expect(other.getByText("This is Grace A.’s table")).toBeVisible();
+  const panel = page.locator("[data-order-panel]");
+  await expect(panel.getByText("2 lines")).toBeVisible();
+  await expect(panel.locator("[data-order-total]")).toHaveText("UGX 20,000");
+  await expect(panel.getByRole("button", { name: /Send|Print bill|Take payment/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Search the whole menu" })).toHaveCount(0);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: join(PROOF, "built-Order-Other-1280x800.png") });
+  expectRule10(await measurePage(page), "Order-Other 1280");
+  const cashierToken = await pinToken(v.people.cashier.pin);
+  await api(cashierToken, "POST", `/api/pos/orders/${created.id}/close`, { payments: [{ method: "CASH", amount: 20000 }] });
+});

@@ -4,7 +4,6 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { OperationalFloor } from "@/components/floor/OperationalFloor";
-import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
 import { Button, ErrorState } from "@/components/ui";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -185,6 +184,20 @@ export function CashierFloorScreen() {
         </Button>
       </div>
 
+      {invalidSelectedTable && !requestedOrderId ? (
+        <div className="grid gap-3" data-floor-table-unavailable>
+          <ErrorState
+            title="Table unavailable"
+            description="The selected table is not accessible on this Floor. Choose another table."
+          />
+          <div>
+            <Button variant="secondary" size="compact" onClick={handleCloseWorkspace}>
+              Close
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <OperationalFloor
         branchName={context.branchName}
         readinessLabel={readiness.shift.label}
@@ -220,23 +233,6 @@ export function CashierFloorScreen() {
         />
       ) : null}
 
-      {invalidSelectedTable && !requestedOrderId ? (
-        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
-          <div className="grid gap-5">
-            <button
-              type="button"
-              className="w-fit rounded-md px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-muted focus-visible:shadow-focus"
-              onClick={handleCloseWorkspace}
-            >
-              Back to Floor
-            </button>
-            <ErrorState
-              title="Table unavailable"
-              description="The selected table is not accessible on this Floor. Return to Floor and choose another table."
-            />
-          </div>
-        </OperationalTableWorkspaceFrame>
-      ) : null}
     </>
   );
 }

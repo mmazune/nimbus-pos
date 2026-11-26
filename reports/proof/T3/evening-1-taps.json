@@ -1,9 +1,12 @@
 {
   "table": "12",
+  "from": "the open table, in its default view (Food, first group); add 1 for the table tap from the Floor",
   "taps": {
-    "a burger with choices (Grills, Beef burger, Medium, Add)": 4,
-    "a beer from Popular (Popular, Lager)": 2,
-    "a double whisky with cola (Whisky, Double, Cola)": 3
+    "a burger with choices: Grills, Beef burger, Medium, Add": 4,
+    "a beer from Popular: Drinks, Lager": 2,
+    "a double whisky with cola: Drinks, Whisky, Double, Cola": 4
   },
-  "from": "the open table (after the table tap)"
+  "searchTaps": {
+    "a double whisky with cola by search: Search, Double, Cola (typing “bs” not counted)": 3
+  }
 }

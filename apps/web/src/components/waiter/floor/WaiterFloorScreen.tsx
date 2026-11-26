@@ -3,8 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { OperationalFloor } from "@/components/floor/OperationalFloor";
-import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
-import { ErrorState } from "@/components/ui";
+import { Button, ErrorState } from "@/components/ui";
 import { OrderScreen } from "@/screens/order/OrderScreen";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -168,6 +167,20 @@ export function WaiterFloorScreen() {
 
   return (
     <>
+      {selectedTableId && !floorQuery.isLoading && !selectedTable && !floorQuery.isError ? (
+        <div className="grid gap-3" data-floor-table-unavailable>
+          <ErrorState
+            title="Table unavailable"
+            description="The selected table is not accessible on this Floor. Choose another table."
+          />
+          <div>
+            <Button variant="secondary" size="compact" onClick={handleCloseWorkspace}>
+              Close
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <OperationalFloor
         branchName={branchName}
         readinessLabel={shiftIsOpen ? "Shift open" : "Shift not started"}
@@ -215,14 +228,6 @@ export function WaiterFloorScreen() {
         />
       ) : null}
 
-      {selectedTableId && !floorQuery.isLoading && !selectedTable && !floorQuery.isError ? (
-        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
-          <ErrorState
-            title="Table unavailable"
-            description="The selected table is not accessible on this Floor. Close this context and choose another table."
-          />
-        </OperationalTableWorkspaceFrame>
-      ) : null}
     </>
   );
 }

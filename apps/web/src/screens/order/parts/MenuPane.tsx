@@ -173,19 +173,18 @@ export function MenuPane(props: Props) {
           ) : null}
 
           <ItemGrid items={itemsFor(menu, section, nav)} onPick={onPick} disabled={disabled} />
-
-          {mixer ? (
-            <div className="flex flex-col gap-kit-8" data-order-mixer>
-              <Text variant="cap" tone="muted">{`Add a ${mixer.group.name.toLowerCase().replace(/s$/, "")} · ${mixer.line.name}`}</Text>
-              <div className="grid grid-cols-3 gap-kit-8 xl:grid-cols-6">
-                {mixer.group.options.map((o) => (
-                  <OptionTile key={o.id} label={o.priceDeltaMinor ? `${o.name} · ${groupShillings(o.priceDeltaMinor)}` : o.name} current={mixer.currentOptionId === o.id} onClick={() => onMixer(o.id)} />
-                ))}
-              </div>
-            </div>
-          ) : null}
         </>
       )}
+      {mixer ? (
+        <div className="flex flex-col gap-kit-8" data-order-mixer>
+          <Text variant="cap" tone="muted">{`Add a ${mixer.group.name.toLowerCase().replace(/s$/, "")} · ${mixer.line.name}`}</Text>
+          <div className="grid grid-cols-3 gap-kit-8 xl:grid-cols-6">
+            {mixer.group.options.map((o) => (
+              <OptionTile key={o.id} label={o.priceDeltaMinor ? `${o.name} · ${groupShillings(o.priceDeltaMinor)}` : o.name} current={mixer.currentOptionId === o.id} onClick={() => onMixer(o.id)} />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

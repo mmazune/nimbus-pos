@@ -163,7 +163,9 @@ export function useOrderSession(args: {
     staleTime: 5_000,
   });
   const openOrders = useMemo(() => openQ.data ?? [], [openQ.data]);
-  const targetId = chosenId ?? createdIdRef.current ?? orderId ?? openOrders[0]?.id ?? null;
+  // With several orders on a table, the signed-in person's own comes first (two waiters can both Send on one free table).
+  const ownFirst = openOrders.find((o) => o.waiterId && o.waiterId === userId) ?? openOrders[0];
+  const targetId = chosenId ?? createdIdRef.current ?? orderId ?? ownFirst?.id ?? null;
   const chosen = openOrders.find((o) => o.id === targetId) ?? null;
   // An order opened by id (not in this table's open list) is read when the role may read others'.
   const mayRead = Boolean(targetId && (chosen ? canReadOthers || !chosen.waiterId || chosen.waiterId === userId : canReadOthers));
