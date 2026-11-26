@@ -1345,6 +1345,8 @@ model Order {
     // Event till quick sale (H1)
     tillCode          String?     @map("till_code")
     clientSaleId      String?     @map("client_sale_id")
+    // T2 phase 3 (E5) — allergies said at this table, shown on every later ticket
+    allergies         String[]    @default([])
     createdAt         DateTime    @default(now()) @map("created_at")
     updatedAt         DateTime    @updatedAt @map("updated_at")
 
@@ -1418,6 +1420,12 @@ model OrderItem {
     wasMade           Boolean?               @map("was_made")
     // T2 phase 2 (E3) — which guest at the table, for a split by guest
     guest             Int?
+    // T2 phase 3 (E5) — hold and fire, allergy, takeaway
+    heldAt            DateTime?              @map("held_at")
+    fireAt            DateTime?              @map("fire_at")
+    fireId            String?                @map("fire_id")
+    allergy           String?
+    takeaway          Boolean                @default(false)
     // T2 phase 1 (E2) — an offer line keeps the normal unit price beside it
     normalPrice       Decimal?               @map("normal_price") @db.Decimal(10, 2)
     offerBasePrice    Decimal?               @map("offer_base_price") @db.Decimal(10, 2)
@@ -1432,6 +1440,7 @@ model OrderItem {
     @@index([orderId])
     @@index([menuItemId])
     @@index([menuItemServingId])
+    @@index([fireAt])
     @@map("order_items")
 }
 
@@ -1461,6 +1470,10 @@ model KdsTicket {
     startedAt  DateTime        @default(now()) @map("started_at")
     readyAt    DateTime?       @map("ready_at")
     recalledAt DateTime?       @map("recalled_at")
+    // T2 phase 3 (E5) — the waiter took it from the pass
+    collectedAt   DateTime?    @map("collected_at")
+    collectedById String?      @map("collected_by_id")
+    fireId        String?      @map("fire_id")
     metadata   Json?
     createdAt  DateTime        @default(now()) @map("created_at")
     updatedAt  DateTime        @updatedAt @map("updated_at")
