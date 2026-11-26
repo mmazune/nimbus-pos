@@ -13,7 +13,9 @@ console.log(`demo-venue validator: ${dir}`);
 for (const [k, v] of Object.entries(report.counts)) console.log(`  ${k.padEnd(18)} ${v}`);
 const pcts = report.recipeCosts.map((r) => r.pct).sort((a, b) => a - b);
 if (pcts.length)
-  console.log(`  recipe cost as % of price: lowest ${pcts[0]}, median ${pcts[Math.floor(pcts.length / 2)]}, highest ${pcts[pcts.length - 1]}`);
+  console.log(
+    `  recipe cost as % of price: lowest ${pcts[0]}, median ${pcts[Math.floor(pcts.length / 2)]}, highest ${pcts[pcts.length - 1]}`,
+  );
 if (report.errors.length) {
   console.log(`RED: ${report.errors.length} error(s)`);
   for (const e of report.errors) console.log(`  - ${e}`);
