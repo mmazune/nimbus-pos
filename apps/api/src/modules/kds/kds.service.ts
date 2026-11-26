@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { ListKdsQueueQueryDto, UpdateKdsSlaDto } from './dto';
@@ -49,100 +50,70 @@ export class KdsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  // ── Create Tickets from Order ──
-
-  async createTicketsForOrder(
-    userId: string,
+  // ── Create Tickets for lines (E1) ──
+  //
+  // Tickets are made for exactly the lines just sent, one ticket per station. Runs inside the
+  // send transaction. `kds_ticket_items.order_item_id` is unique, so a line can never be
+  // ticketed twice even if two sends race; the order row lock taken by the caller makes the
+  // second send find nothing unsent in the first place.
+  async createTicketsForLines(
+    tx: Prisma.TransactionClient,
     ctx: BranchContext,
     orderId: string,
-    meta: RequestMeta,
-  ): Promise<{ tickets: any[] }> {
-    const order = await this.prisma.order.findFirst({
-      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
-      include: {
-        items: {
-          include: {
-            menuItem: { select: { id: true, name: true, station: true } },
-          },
-        },
-      },
+    orderItemIds: string[],
+  ): Promise<{ id: string; station: string }[]> {
+    const lines = await tx.orderItem.findMany({
+      where: { id: { in: orderItemIds }, orderId, voidedAt: null },
+      include: { menuItem: { select: { station: true } } },
     });
-    if (!order) throw new NotFoundException('Order not found');
 
-    if (order.status !== 'SENT') {
-      throw new ConflictException('Order must be in SENT status to create KDS tickets');
-    }
-
-    // Check if tickets already exist for this order (idempotency)
-    const existingTickets = await this.prisma.kdsTicket.findMany({
-      where: { orderId, branchId: ctx.branchId },
-    });
-    if (existingTickets.length > 0) {
-      return { tickets: existingTickets };
-    }
-
-    // Group items by station, exclude NONE
-    const stationGroups: Record<string, typeof order.items> = {};
-    for (const item of order.items) {
-      const station = item.menuItem.station;
+    // Group by station, exclude NONE
+    const stationGroups: Record<string, string[]> = {};
+    for (const line of lines) {
+      const station = line.menuItem.station;
       if (station === 'NONE') continue;
-      if (!stationGroups[station]) stationGroups[station] = [];
-      stationGroups[station].push(item);
+      (stationGroups[station] ??= []).push(line.id);
     }
 
-    const createdTickets: any[] = [];
-
-    for (const [station, items] of Object.entries(stationGroups)) {
-      const ticket = await this.prisma.kdsTicket.create({
+    const tickets: { id: string; station: string }[] = [];
+    for (const [station, ids] of Object.entries(stationGroups)) {
+      const ticket = await tx.kdsTicket.create({
         data: {
           orgId: ctx.organizationId,
           branchId: ctx.branchId,
           orderId,
           station,
           status: 'QUEUED',
-          items: {
-            create: items.map((item) => ({
-              orderItemId: item.id,
-            })),
-          },
+          items: { create: ids.map((orderItemId) => ({ orderItemId })) },
         },
-        include: {
-          items: {
-            include: {
-              orderItem: {
-                include: {
-                  menuItem: { select: { id: true, name: true, station: true } },
-                  menuItemServing: { select: { id: true, format: true, label: true } },
-                },
-              },
-            },
+      });
+      tickets.push({ id: ticket.id, station });
+      await tx.auditLog.create({
+        data: {
+          action: 'KDS_TICKET_CREATED',
+          entityType: 'kdsTicket',
+          entityId: ticket.id,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            orderId,
+            station,
+            itemCount: ids.length,
           },
         },
       });
+    }
+    return tickets;
+  }
 
-      createdTickets.push(ticket);
-
-      await this.audit.log({
-        actorUserId: userId,
-        action: 'KDS_TICKET_CREATED',
-        entityType: 'kdsTicket',
-        entityId: ticket.id,
-        metadata: {
-          orgId: ctx.organizationId,
-          branchId: ctx.branchId,
-          orderId,
-          station,
-          itemCount: items.length,
-        },
-        ipAddress: meta.ipAddress,
-        userAgent: meta.userAgent,
-      });
-
+  /** Tell the screens a ticket exists. Called after the send transaction has committed. */
+  announceTickets(ctx: BranchContext, orderId: string, tickets: { id: string; station: string }[]) {
+    for (const t of tickets) {
       this.emitKdsEvent({
         eventType: 'NEW_TICKET',
-        ticketId: ticket.id,
+        ticketId: t.id,
         orderId,
-        station,
+        station: t.station,
         status: 'QUEUED',
         urgencyState: 'GREEN',
         elapsedSeconds: 0,
@@ -150,8 +121,6 @@ export class KdsService {
         branchId: ctx.branchId,
       });
     }
-
-    return { tickets: createdTickets };
   }
 
   // ── Get Queue ──
@@ -261,6 +230,11 @@ export class KdsService {
           menuItemId: ti.orderItem.menuItem.id,
           serving: ti.orderItem.menuItemServing,
           notes: ti.orderItem.notes,
+          // E1 — a voided line stays on the ticket, flagged
+          voided: ti.voidedAt !== null,
+          voidedAt: ti.voidedAt,
+          voidReason: ti.voidReason,
+          wasMade: ti.wasMade,
         })),
       };
     });

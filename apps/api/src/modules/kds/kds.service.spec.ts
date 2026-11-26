@@ -50,97 +50,72 @@ describe('KdsService', () => {
     service = module.get<KdsService>(KdsService);
   });
 
-  // ── Create Tickets from Order ──
+  // ── Create Tickets for lines (E1) ──
 
-  describe('createTicketsForOrder', () => {
-    it('should group order items by station and create multiple tickets', async () => {
-      prisma.order.findFirst.mockResolvedValue({
-        id: 'order-1',
-        branchId: 'branch-1',
-        orgId: 'org-1',
-        status: 'SENT',
-        items: [
-          { id: 'item-1', menuItem: { id: 'mi-1', name: 'Burger', station: 'KITCHEN' } },
-          { id: 'item-2', menuItem: { id: 'mi-2', name: 'Fries', station: 'KITCHEN' } },
-          { id: 'item-3', menuItem: { id: 'mi-3', name: 'Cocktail', station: 'BAR' } },
-        ],
-      });
-      prisma.kdsTicket.findMany.mockResolvedValue([]);
-      prisma.kdsTicket.create.mockImplementation(({ data }: any) => {
-        return Promise.resolve({
-          id: `ticket-${data.station}`,
-          orderId: data.orderId,
-          station: data.station,
+  describe('createTicketsForLines', () => {
+    const line = (id: string, station: string) => ({ id, menuItem: { station } });
+
+    beforeEach(() => {
+      prisma.orderItem = { findMany: jest.fn() };
+      prisma.auditLog = { create: jest.fn().mockResolvedValue({}) };
+      prisma.kdsTicket.create.mockImplementation(({ data }: any) =>
+        Promise.resolve({ id: `ticket-${data.station}`, station: data.station }),
+      );
+    });
+
+    it('groups only the given lines by station: one ticket per station', async () => {
+      prisma.orderItem.findMany.mockResolvedValue([
+        line('l-1', 'KITCHEN'),
+        line('l-2', 'KITCHEN'),
+        line('l-3', 'BAR'),
+      ]);
+
+      const tickets = await service.createTicketsForLines(prisma as any, mockCtx, 'order-1', [
+        'l-1',
+        'l-2',
+        'l-3',
+      ]);
+
+      expect(tickets.map((t) => t.station).sort()).toEqual(['BAR', 'KITCHEN']);
+      expect(prisma.orderItem.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: { in: ['l-1', 'l-2', 'l-3'] }, orderId: 'order-1', voidedAt: null },
+        }),
+      );
+      const kitchen = prisma.kdsTicket.create.mock.calls.find(
+        (c: any[]) => c[0].data.station === 'KITCHEN',
+      )[0];
+      expect(kitchen.data.items.create).toEqual([{ orderItemId: 'l-1' }, { orderItemId: 'l-2' }]);
+    });
+
+    it('excludes lines with station NONE', async () => {
+      prisma.orderItem.findMany.mockResolvedValue([line('l-1', 'KITCHEN'), line('l-2', 'NONE')]);
+      const tickets = await service.createTicketsForLines(prisma as any, mockCtx, 'order-1', [
+        'l-1',
+        'l-2',
+      ]);
+      expect(tickets).toHaveLength(1);
+    });
+
+    it('announces tickets only when asked (after commit), never inside the transaction', async () => {
+      prisma.orderItem.findMany.mockResolvedValue([line('l-1', 'COLD_KITCHEN')]);
+      const tickets = await service.createTicketsForLines(prisma as any, mockCtx, 'order-1', [
+        'l-1',
+      ]);
+      expect(eventEmitter.emit).not.toHaveBeenCalled();
+
+      service.announceTickets(mockCtx, 'order-1', tickets);
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'kds.update',
+        expect.objectContaining({
+          eventType: 'NEW_TICKET',
+          station: 'COLD_KITCHEN',
           status: 'QUEUED',
-          items: [],
-        });
-      });
-
-      const result = await service.createTicketsForOrder('user-1', mockCtx, 'order-1', mockMeta);
-
-      expect(result.tickets).toHaveLength(2);
-      expect(prisma.kdsTicket.create).toHaveBeenCalledTimes(2);
-      expect(eventEmitter.emit).toHaveBeenCalledTimes(2);
-    });
-
-    it('should exclude items with station NONE', async () => {
-      prisma.order.findFirst.mockResolvedValue({
-        id: 'order-1',
-        branchId: 'branch-1',
-        orgId: 'org-1',
-        status: 'SENT',
-        items: [
-          { id: 'item-1', menuItem: { id: 'mi-1', name: 'Burger', station: 'KITCHEN' } },
-          { id: 'item-2', menuItem: { id: 'mi-2', name: 'Water', station: 'NONE' } },
-        ],
-      });
-      prisma.kdsTicket.findMany.mockResolvedValue([]);
-      prisma.kdsTicket.create.mockResolvedValue({
-        id: 'ticket-1',
-        orderId: 'order-1',
-        station: 'KITCHEN',
-        status: 'QUEUED',
-        items: [],
-      });
-
-      const result = await service.createTicketsForOrder('user-1', mockCtx, 'order-1', mockMeta);
-
-      expect(result.tickets).toHaveLength(1);
-      expect(prisma.kdsTicket.create).toHaveBeenCalledTimes(1);
-    });
-
-    it('should reject non-SENT orders', async () => {
-      prisma.order.findFirst.mockResolvedValue({
-        id: 'order-1',
-        branchId: 'branch-1',
-        orgId: 'org-1',
-        status: 'NEW',
-        items: [],
-      });
-
-      await expect(
-        service.createTicketsForOrder('user-1', mockCtx, 'order-1', mockMeta),
-      ).rejects.toThrow(ConflictException);
-    });
-
-    it('should be idempotent - return existing tickets', async () => {
-      prisma.order.findFirst.mockResolvedValue({
-        id: 'order-1',
-        branchId: 'branch-1',
-        orgId: 'org-1',
-        status: 'SENT',
-        items: [{ id: 'item-1', menuItem: { id: 'mi-1', name: 'Burger', station: 'KITCHEN' } }],
-      });
-      prisma.kdsTicket.findMany.mockResolvedValue([{ id: 'existing-ticket' }]);
-
-      const result = await service.createTicketsForOrder('user-1', mockCtx, 'order-1', mockMeta);
-
-      expect(result.tickets).toHaveLength(1);
-      expect(prisma.kdsTicket.create).not.toHaveBeenCalled();
+          orderId: 'order-1',
+        }),
+      );
     });
   });
-
-  // ── Get Queue ──
 
   describe('getQueue', () => {
     it('should return enriched queue with urgency fields', async () => {
@@ -517,39 +492,6 @@ describe('KdsService', () => {
 
       const result = await service.getQueue(mockCtx, {});
       expect(result.data[0].urgencyState).toBe('RED');
-    });
-  });
-
-  // ── SSE Event Publishing ──
-
-  describe('event publishing', () => {
-    it('should emit NEW_TICKET event on ticket creation', async () => {
-      prisma.order.findFirst.mockResolvedValue({
-        id: 'order-1',
-        branchId: 'branch-1',
-        orgId: 'org-1',
-        status: 'SENT',
-        items: [{ id: 'item-1', menuItem: { id: 'mi-1', name: 'Salad', station: 'COLD_KITCHEN' } }],
-      });
-      prisma.kdsTicket.findMany.mockResolvedValue([]);
-      prisma.kdsTicket.create.mockResolvedValue({
-        id: 'ticket-1',
-        orderId: 'order-1',
-        station: 'COLD_KITCHEN',
-        status: 'QUEUED',
-        items: [],
-      });
-
-      await service.createTicketsForOrder('user-1', mockCtx, 'order-1', mockMeta);
-
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        'kds.update',
-        expect.objectContaining({
-          eventType: 'NEW_TICKET',
-          station: 'COLD_KITCHEN',
-          status: 'QUEUED',
-        }),
-      );
     });
   });
 });

@@ -165,7 +165,8 @@ export class PosHandoffService {
     ) {
         const [items, order] = await Promise.all([
             tx.orderItem.findMany({
-                where: { orderId },
+                // E1 — voided lines stay on the order but are not part of its total
+                where: { orderId, voidedAt: null },
                 select: { price: true, quantity: true },
             }),
             tx.order.findUnique({
@@ -477,6 +478,8 @@ export class PosHandoffService {
                             costTotal: it.costUnit
                                 ? round2(new Decimal(it.costUnit).mul(moveQty)).toFixed(2)
                                 : null,
+                            // E1 — a moved or split part of a sent line is still a sent line
+                            sentAt: it.sentAt ?? null,
                         },
                     });
                     movedSummaries.push({
@@ -939,6 +942,8 @@ export class PosHandoffService {
                             costTotal: it.costUnit
                                 ? round2(new Decimal(it.costUnit).mul(moveQty)).toFixed(2)
                                 : null,
+                            // E1 — a moved or split part of a sent line is still a sent line
+                            sentAt: it.sentAt ?? null,
                         },
                     });
                     movedSummaries.push({

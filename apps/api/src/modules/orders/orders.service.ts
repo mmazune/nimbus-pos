@@ -9,8 +9,17 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma, OrderStatus, ShiftStatus, TableStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { KdsService } from '../kds/kds.service';
-import { ReservationsService } from '../reservations/reservations.service';
+import { closeOrderInTx } from './order-close';
+import {
+  ORDER_CLOSED,
+  ORDER_LINES_SENT,
+  ORDER_LINE_VOIDED,
+  OrderClosedEvent,
+  OrderLinesSentEvent,
+  OrderLineVoidedEvent,
+} from './order-events';
 import {
   ActorLike,
   assertWaiterOrderOwnership,
@@ -23,6 +32,7 @@ import {
   UpdateOrderItemDto,
   TransitionOrderDto,
   ListOrdersQueryDto,
+  VoidOrderItemDto,
 } from './dto';
 
 interface BranchContext {
@@ -50,6 +60,15 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   CLOSED: [],
 };
 
+// E1 — lines may be added, and sent, while the order is in any of these states.
+const SENDABLE_STATES: OrderStatus[] = [
+  OrderStatus.NEW,
+  OrderStatus.SENT,
+  OrderStatus.IN_KITCHEN,
+  OrderStatus.READY,
+  OrderStatus.SERVED,
+];
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -58,8 +77,8 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly kdsService: KdsService,
-    private readonly reservationsService: ReservationsService,
-  ) { }
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   // ── Order Number Generation ──
   // Format: ORD-XXXXXX, branch-scoped, sequential, concurrency-safe via DB
@@ -233,7 +252,8 @@ export class OrdersService {
       orgId: ctx.organizationId,
     };
     if (query.status) where.status = query.status as OrderStatus;
-    if (query.serviceType) where.serviceType = query.serviceType as Prisma.OrderWhereInput['serviceType'];
+    if (query.serviceType)
+      where.serviceType = query.serviceType as Prisma.OrderWhereInput['serviceType'];
     if (query.tableId) where.tableId = query.tableId;
 
     // Waiter MVP: support userId filter with literal `me`
@@ -245,7 +265,9 @@ export class OrdersService {
     // Waiter MVP: support excludeStatus to hide e.g. NEW drafts
     if (query.excludeStatus && query.excludeStatus.length > 0) {
       where.status = {
-        ...(typeof where.status === 'string' ? { equals: where.status } : (where.status as object) || {}),
+        ...(typeof where.status === 'string'
+          ? { equals: where.status }
+          : (where.status as object) || {}),
         notIn: query.excludeStatus as OrderStatus[],
       } as Prisma.EnumOrderStatusFilter;
     }
@@ -322,7 +344,9 @@ export class OrdersService {
       const selectedModifiers = (modifierMeta as any).selectedModifiers as {
         modifierOptionId: string;
       }[];
-      const optionIds = [...new Set(selectedModifiers.map((m) => m.modifierOptionId).filter(Boolean))];
+      const optionIds = [
+        ...new Set(selectedModifiers.map((m) => m.modifierOptionId).filter(Boolean)),
+      ];
       if (optionIds.length > 0) {
         const assignedGroups = await db.menuItemOnGroup.findMany({
           where: { itemId: menuItem.id },
@@ -330,7 +354,10 @@ export class OrdersService {
         });
         const assignedGroupIds = new Set(assignedGroups.map((assignment) => assignment.groupId));
         const options = await db.modifierOption.findMany({
-          where: { id: { in: optionIds }, group: { branchId: ctx.branchId, orgId: ctx.organizationId } },
+          where: {
+            id: { in: optionIds },
+            group: { branchId: ctx.branchId, orgId: ctx.organizationId },
+          },
           include: { group: { select: { id: true, isActive: true } } },
         });
         if (options.length !== optionIds.length) {
@@ -432,9 +459,14 @@ export class OrdersService {
 
   // ── Recalculate Order Totals ──
 
-  private async recalcOrderTotals(orderId: string): Promise<void> {
-    const items = await this.prisma.orderItem.findMany({
-      where: { orderId },
+  private async recalcOrderTotals(
+    orderId: string,
+    client?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const db = client ?? this.prisma;
+    // E1 — a voided line stays on the order for the record but leaves the totals.
+    const items = await db.orderItem.findMany({
+      where: { orderId, voidedAt: null },
       select: { subtotal: true },
     });
 
@@ -444,7 +476,7 @@ export class OrdersService {
     }
 
     // M12: Compute discount from latest approved discount
-    const approvedDiscount = await this.prisma.discount.findFirst({
+    const approvedDiscount = await db.discount.findFirst({
       where: { orderId, status: 'APPROVED' },
       orderBy: { approvedAt: 'desc' },
     });
@@ -460,7 +492,7 @@ export class OrdersService {
 
     const total = Decimal.max(subtotal.sub(discountAmount), new Decimal(0));
 
-    await this.prisma.order.update({
+    await db.order.update({
       where: { id: orderId },
       data: {
         subtotal: subtotal.toDecimalPlaces(2),
@@ -567,6 +599,9 @@ export class OrdersService {
       where: { id: itemId, orderId },
     });
     if (!existingItem) throw new NotFoundException('Order item not found');
+    if (existingItem.voidedAt) {
+      throw new ConflictException('This item was voided and cannot be changed');
+    }
 
     const quantity = dto.quantity ?? existingItem.quantity;
     const metadata =
@@ -648,6 +683,12 @@ export class OrdersService {
       where: { id: itemId, orderId },
     });
     if (!item) throw new NotFoundException('Order item not found');
+    if (item.sentAt) {
+      throw new ConflictException({
+        code: 'ITEM_ALREADY_SENT',
+        message: 'This item was already sent. Ask a supervisor to void it instead.',
+      });
+    }
 
     await this.prisma.orderItem.delete({ where: { id: itemId } });
     await this.recalcOrderTotals(orderId);
@@ -701,44 +742,35 @@ export class OrdersService {
 
     this.validateTransition(order.status, targetStatus);
 
+    // E1 — closing goes through the one close door (table, reservation, audit, all in one
+    // transaction). It writes its own audit row, so this method returns straight after it.
+    if (targetStatus === OrderStatus.CLOSED) {
+      const closed = await this.prisma.$transaction((tx) =>
+        closeOrderInTx(tx, {
+          orderId,
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          userId,
+          source: 'transition',
+          auditAction,
+          auditMetadata: { previousStatus: order.status, reason: reason ?? null },
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+        }),
+      );
+      if (closed.event)
+        this.eventEmitter.emit(ORDER_CLOSED, closed.event satisfies OrderClosedEvent);
+      return this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    }
+
     const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: targetStatus },
     });
 
-    // Waiter MVP — auto-occupy on SENT; auto-release on CLOSED.
+    // Waiter MVP — auto-occupy on SENT.
     if (targetStatus === OrderStatus.SENT && order.serviceType === 'DINE_IN') {
       await this.autoOccupyTable(order.tableId);
-    }
-    if (targetStatus === OrderStatus.CLOSED) {
-      await this.autoReleaseTableIfIdle(order.tableId, orderId);
-
-      // Prompt 4A — canonical order-close reservation reconciliation. A SEATED
-      // reservation explicitly linked via seatedOrderId is auto-completed here,
-      // at the single order-close choke point (never in Cashier frontend code).
-      // The order close remains canonical: completion runs after the committed
-      // status change and is retry-safe/idempotent (conditional update, no
-      // duplicate event). Failure is logged for visibility, never swallowed
-      // silently, and never rolls back the order close.
-      try {
-        const completedReservationId = await this.reservationsService.completeForClosedOrder(
-          orderId,
-          ctx,
-          userId,
-          meta,
-        );
-        if (completedReservationId) {
-          this.logger.log(
-            `Order ${orderId} close auto-completed reservation ${completedReservationId}`,
-          );
-        }
-      } catch (err) {
-        this.logger.error(
-          `Order ${orderId} closed but linked reservation auto-completion failed: ${
-            (err as Error)?.message ?? err
-          }. Reservation may remain SEATED and can be completed manually.`,
-        );
-      }
     }
 
     await this.audit.log({
@@ -760,6 +792,13 @@ export class OrdersService {
     return updated;
   }
 
+  /**
+   * E1 — send by line. Stamps every line that is not yet sent and not voided, moves
+   * NEW → SENT the first time (later sends leave the status alone) and makes kitchen/bar
+   * tickets for exactly the lines just sent. Everything happens under a row lock on the
+   * order, and `kds_ticket_items.order_item_id` is unique, so a doubled or retried send
+   * cannot ticket a line twice: the second one finds nothing unsent and answers 409.
+   */
   async sendOrder(
     userId: string,
     ctx: BranchContext,
@@ -767,21 +806,83 @@ export class OrdersService {
     dto: TransitionOrderDto,
     meta: RequestMeta,
   ) {
-    const order = await this.transitionOrder(
-      userId,
-      ctx,
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) {
+      assertWaiterOrderOwnership(meta.actor, order);
+      assertWaiterTransitionAllowed(meta.actor, OrderStatus.SENT);
+    }
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      const locked = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+      if (!SENDABLE_STATES.includes(locked.status)) {
+        throw new ConflictException(`Cannot send items on a ${locked.status} order`);
+      }
+
+      const unsent = await tx.orderItem.findMany({
+        where: { orderId, sentAt: null, voidedAt: null },
+        select: { id: true },
+      });
+      if (unsent.length === 0) {
+        throw new ConflictException({
+          code: 'NOTHING_TO_SEND',
+          message: 'There is nothing new to send on this order.',
+        });
+      }
+      const lineIds = unsent.map((l) => l.id);
+
+      await tx.orderItem.updateMany({
+        where: { id: { in: lineIds }, sentAt: null },
+        data: { sentAt: new Date() },
+      });
+
+      const firstSend = locked.status === OrderStatus.NEW;
+      if (firstSend) {
+        await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.SENT } });
+      }
+
+      const tickets = await this.kdsService.createTicketsForLines(tx, ctx, orderId, lineIds);
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_SENT',
+          entityType: 'order',
+          entityId: orderId,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            previousStatus: locked.status,
+            newStatus: firstSend ? OrderStatus.SENT : locked.status,
+            reason: dto.reason ?? null,
+            lineCount: lineIds.length,
+            orderItemIds: lineIds,
+            ticketIds: tickets.map((t) => t.id),
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return { lineIds, tickets, firstSend };
+    });
+
+    if (result.firstSend && order.serviceType === 'DINE_IN') {
+      await this.autoOccupyTable(order.tableId);
+    }
+    this.kdsService.announceTickets(ctx, orderId, result.tickets);
+    this.eventEmitter.emit(ORDER_LINES_SENT, {
       orderId,
-      OrderStatus.SENT,
-      'ORDER_SENT',
-      meta,
-      dto.reason,
-    );
+      branchId: ctx.branchId,
+      orgId: ctx.organizationId,
+      orderItemIds: result.lineIds,
+      ticketIds: result.tickets.map((t) => t.id),
+    } satisfies OrderLinesSentEvent);
 
-    // M11: Create KDS tickets grouped by station. Ticket creation is intentionally
-    // best-effort here so a slow KDS write never traps the waiter in "Sending".
-    void this.kdsService.createTicketsForOrder(userId, ctx, orderId, meta).catch(() => undefined);
-
-    return order;
+    return this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
   }
 
   async markInKitchen(
@@ -833,24 +934,6 @@ export class OrdersService {
       orderId,
       OrderStatus.SERVED,
       'ORDER_SERVED',
-      meta,
-      dto.reason,
-    );
-  }
-
-  async closeOrder(
-    userId: string,
-    ctx: BranchContext,
-    orderId: string,
-    dto: TransitionOrderDto,
-    meta: RequestMeta,
-  ) {
-    return this.transitionOrder(
-      userId,
-      ctx,
-      orderId,
-      OrderStatus.CLOSED,
-      'ORDER_CLOSED',
       meta,
       dto.reason,
     );
@@ -909,15 +992,167 @@ export class OrdersService {
     return updated;
   }
 
-  // ── Request Bill (Waiter MVP) ──
-  // Records an explicit "bill requested" audit event so the cashier flow can
-  // pick it up later. Does NOT mutate payment state or order status.
-  async requestBill(
+  // ── Void one line (E1) ──
+  //
+  // A sent line is never deleted: it stays on the order with who, when, why and whether it
+  // was made, leaves the totals, and shows as voided on its ticket. Part of a quantity splits
+  // the line in two. Refused: a line never sent (remove it instead), an order that is closed or
+  // voided, an order that already has a posted payment. Voiding a voided line changes nothing.
+  async voidOrderItem(
     userId: string,
     ctx: BranchContext,
     orderId: string,
+    itemId: string,
+    dto: VoidOrderItemDto,
     meta: RequestMeta,
   ) {
+    if (dto.reason === 'OTHER' && !dto.note?.trim()) {
+      throw new BadRequestException('A note is required when the reason is OTHER');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      const order = await tx.order.findFirst({
+        where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+      });
+      if (!order) throw new NotFoundException('Order not found');
+      if (order.status === OrderStatus.CLOSED || order.status === OrderStatus.VOIDED) {
+        throw new ConflictException(`Cannot void items on a ${order.status} order`);
+      }
+
+      const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId } });
+      if (!item) throw new NotFoundException('Order item not found');
+      if (item.voidedAt) return { item, unchanged: true, event: null as string | null };
+      if (!item.sentAt) {
+        throw new BadRequestException({
+          code: 'ITEM_NOT_SENT',
+          message: 'This item was never sent. Remove it instead.',
+        });
+      }
+
+      const posted = await tx.payment.count({ where: { orderId, status: 'COMPLETED' } });
+      if (posted > 0) {
+        throw new ConflictException({
+          code: 'ORDER_HAS_PAYMENT',
+          message: 'This order already has a payment, so a line cannot be voided.',
+        });
+      }
+
+      const voidQty = dto.quantity ?? item.quantity;
+      if (voidQty > item.quantity) {
+        throw new BadRequestException(`Quantity cannot be more than ${item.quantity}`);
+      }
+
+      const now = new Date();
+      const voidFields = {
+        voidedAt: now,
+        voidedById: userId,
+        voidReason: dto.reason,
+        voidNote: dto.note?.trim() || null,
+        wasMade: dto.wasMade,
+      };
+
+      let voided = item;
+      if (voidQty === item.quantity) {
+        voided = await tx.orderItem.update({ where: { id: itemId }, data: voidFields });
+        await tx.kdsTicketItem.updateMany({
+          where: { orderItemId: itemId },
+          data: { voidedAt: now, voidReason: dto.reason, wasMade: dto.wasMade },
+        });
+      } else {
+        // Split: the original keeps what is still wanted; a new line carries the voided part.
+        const remaining = item.quantity - voidQty;
+        const unit = new Decimal(item.price);
+        await tx.orderItem.update({
+          where: { id: itemId },
+          data: {
+            quantity: remaining,
+            subtotal: unit.mul(remaining).toDecimalPlaces(2),
+            costTotal: item.costUnit
+              ? new Decimal(item.costUnit).mul(remaining).toDecimalPlaces(2)
+              : null,
+          },
+        });
+        voided = await tx.orderItem.create({
+          data: {
+            orderId,
+            menuItemId: item.menuItemId,
+            menuItemServingId: item.menuItemServingId,
+            quantity: voidQty,
+            price: item.price,
+            subtotal: unit.mul(voidQty).toDecimalPlaces(2),
+            notes: item.notes,
+            metadata: item.metadata ? (item.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+            costUnit: item.costUnit,
+            costTotal: item.costUnit
+              ? new Decimal(item.costUnit).mul(voidQty).toDecimalPlaces(2)
+              : null,
+            sentAt: item.sentAt,
+            ...voidFields,
+          },
+        });
+        // The voided part shows on the same ticket as the line it came from.
+        const ticketItem = await tx.kdsTicketItem.findFirst({ where: { orderItemId: itemId } });
+        if (ticketItem) {
+          await tx.kdsTicketItem.create({
+            data: {
+              ticketId: ticketItem.ticketId,
+              orderItemId: voided.id,
+              voidedAt: now,
+              voidReason: dto.reason,
+              wasMade: dto.wasMade,
+            },
+          });
+        }
+      }
+
+      await this.recalcOrderTotals(orderId, tx);
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_ITEM_VOIDED',
+          entityType: 'orderItem',
+          entityId: voided.id,
+          metadata: {
+            orderId,
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            sourceItemId: itemId,
+            menuItemId: item.menuItemId,
+            quantityVoided: voidQty,
+            quantityBefore: item.quantity,
+            reason: dto.reason,
+            note: dto.note?.trim() || null,
+            wasMade: dto.wasMade,
+            amountRemoved: new Decimal(item.price).mul(voidQty).toDecimalPlaces(2).toString(),
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return { item: voided, unchanged: false, event: voided.id as string | null };
+    });
+
+    const order = await this.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { id: true, subtotal: true, discount: true, total: true, status: true },
+    });
+    if (result.event) {
+      this.eventEmitter.emit(ORDER_LINE_VOIDED, {
+        orderId,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        orderItemId: result.event,
+      } satisfies OrderLineVoidedEvent);
+    }
+    return { item: result.item, order, unchanged: result.unchanged };
+  }
+
+  // ── Request Bill (Waiter MVP) ──
+  // Records an explicit "bill requested" audit event so the cashier flow can
+  // pick it up later. Does NOT mutate payment state or order status.
+  async requestBill(userId: string, ctx: BranchContext, orderId: string, meta: RequestMeta) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });

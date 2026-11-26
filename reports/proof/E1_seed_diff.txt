@@ -1,0 +1,36 @@
+diff --git a/packages/db/prisma/seed.ts b/packages/db/prisma/seed.ts
+index 0d0707d..3617440 100644
+--- a/packages/db/prisma/seed.ts
++++ b/packages/db/prisma/seed.ts
+@@ -469,6 +469,7 @@ const PERMISSIONS_DATA = [
+   { action: 'pos:order:merge', description: 'Merge two open POS orders — POST /api/pos/orders/merge. Source becomes VOIDED with mergedIntoOrderId pointing at the target' },
+   { action: 'pos:order:transfer', description: 'Transfer an open POS order to another table or server — POST /api/pos/orders/:id/transfer-table or /transfer-server' },
+   { action: 'pos:order:move-items', description: 'Move selected items between two open POS orders — POST /api/pos/orders/:id/move-items' },
++  { action: 'pos:order:item:void', description: 'Void one sent line of an open POS order — POST /api/orders/:orderId/items/:itemId/void (E1)' },
+   // BG5 — Device / Printer / Terminal Registry
+   { action: 'devices:read', description: 'Read device registry (list / detail / history) and printer route configuration' },
+   { action: 'devices:write', description: 'Activate (register) a new operational device — POST /api/devices/activate or /api/devices/kds/register' },
+@@ -936,6 +937,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
+     'pos:order:split',
+     'pos:order:merge',
+     'pos:order:transfer',
++    'pos:order:item:void',
+     'pos:order:move-items',
+     // BG5: Device / Printer / Terminal Registry (Owner: full)
+     'devices:read',
+@@ -1212,6 +1214,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
+     'pos:order:split',
+     'pos:order:merge',
+     'pos:order:transfer',
++    'pos:order:item:void',
+     'pos:order:move-items',
+     // BG5: Device / Printer / Terminal Registry (Manager: full)
+     'devices:read',
+@@ -1366,6 +1369,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
+     // transfer-server endpoint therefore becomes API-reachable for Supervisor but
+     // has no UI; it is audit-logged and requires an active same-branch membership.
+     'pos:order:transfer',
++    'pos:order:item:void',
+     'pos:kds:read',
+     'pos:kds:write',
+     'pos:kds:sla:write',
