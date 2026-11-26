@@ -63,6 +63,34 @@
     "m07": "104000",
     "after": "214000"
   },
+  "handover-accept-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Accept 1 table"
+    ],
+    "checkedText": 161,
+    "checkedTargets": 40
+  },
+  "handover-offer-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Offer 1 table to Brian O."
+    ],
+    "checkedText": 42,
+    "checkedTargets": 16
+  },
   "split-guest-1280": {
     "sideways": 0,
     "clipped": [],
@@ -74,6 +102,20 @@
       "height": 800
     }
   },
-  "splitItemFrom": "cmwxwaj13023b14lz7v2is61n",
-  "t02Splits": 404
+  "splitItemFrom": "cmwxwga0z023bs8n70zmra7st",
+  "t02Splits": 404,
+  "phone-tabs-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "New tab"
+    ],
+    "checkedText": 39,
+    "checkedTargets": 20
+  }
 }
