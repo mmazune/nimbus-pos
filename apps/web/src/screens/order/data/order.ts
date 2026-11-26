@@ -147,6 +147,8 @@ export function choicesText(
   if (line.held) parts.push("Held for later");
   if (line.servingLabel) parts.push(line.servingLabel);
   for (const c of line.choices) {
+    // A choice saved without a name (an older line or an API-made one) shows nothing, never a bare "·".
+    if (!c.optionName.trim()) continue;
     parts.push(LEAVE_OUT.test(c.groupName) ? `No ${c.optionName.toLowerCase()}` : c.optionName);
   }
   if (line.allergy) parts.push(`${line.allergy} allergy`);
