@@ -2,20 +2,22 @@ import { KitIcon } from "./KitIcon";
 import { Pill, type PillTone } from "./Pill";
 import { FOCUS, MOTION, TAP, focusLook, type KitDemo } from "./states";
 
-export type TableState = "free" | "open" | "notSent" | "late" | "bill" | "reserved" | "cleaning";
+export type TableState = "free" | "open" | "notSent" | "ready" | "late" | "bill" | "joined" | "reserved" | "cleaning";
 
 const STATE: Record<TableState, { word: string; tone: PillTone }> = {
   free: { word: "Free", tone: "green" },
   open: { word: "Open", tone: "brand" },
   notSent: { word: "Not sent", tone: "amber" },
+  ready: { word: "Ready", tone: "green" },
   late: { word: "Late", tone: "red" },
   bill: { word: "Bill", tone: "amber" },
   reserved: { word: "Reserved", tone: "neutral" },
   cleaning: { word: "Cleaning", tone: "neutral" },
+  joined: { word: "Joined", tone: "neutral" },
 };
 
 /** States with nobody on them: a white tile with the small shadow. */
-const IDLE: readonly TableState[] = ["free", "reserved", "cleaning"];
+const IDLE: readonly TableState[] = ["free", "reserved", "cleaning", "joined"];
 
 export type TableTileProps = {
   /** "4", "23", "Tab 3". Never a guest's name, an order number or a code. */

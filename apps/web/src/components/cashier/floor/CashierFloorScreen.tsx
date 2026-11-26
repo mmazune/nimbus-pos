@@ -12,7 +12,7 @@ import type { CashierOrderApi } from "@/lib/cashier/order-types";
 import { listCashierTables } from "@/lib/cashier/resolution";
 import { FloorScreen } from "@/screens/floor/FloorScreen";
 import { errorWords } from "@/screens/shared/words";
-import { loadAllActiveOrders, loadAreas } from "@/screens/floor/floor-data";
+import { loadAllActiveOrders, loadAreas, loadFloorState } from "@/screens/floor/floor-data";
 import {
   normalizeCashierFloorTables,
   type CashierFloorTableViewModel,
@@ -85,13 +85,14 @@ export function CashierFloorScreen() {
     queryFn: async (): Promise<CashierFloorData> => {
       const token = accessToken as string;
       const branch = branchId as string;
-      const [tables, activeOrders, reservations, areas] = await Promise.all([
+      const [tables, activeOrders, reservations, areas, floorState] = await Promise.all([
         listCashierTables(token, branch),
         loadAllActiveOrders<CashierOrderApi>(token, branch),
         listCashierOperationalReservations(token, branch),
         loadAreas(token, branch),
+        loadFloorState(token, branch),
       ]);
-      return { tables, activeOrders, reservations, areas };
+      return { tables, activeOrders, reservations, areas, floorState };
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,

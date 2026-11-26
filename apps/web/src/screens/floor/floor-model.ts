@@ -52,10 +52,23 @@ export type FloorAreaApi = {
   name: string;
   kind?: "TABLES" | "TABS" | string | null;
   sortOrder?: number | null;
-  tables?: ReadonlyArray<{ id: string; isTab?: boolean | null; tabNote?: string | null; joinedToTableId?: string | null }> | null;
+  tables?: ReadonlyArray<{ id: string; label?: string | null; isTab?: boolean | null; tabNote?: string | null; joinedToTableId?: string | null }> | null;
+};
+
+/** `GET /api/floor/state` (T2): each table's state, derived on the server, never written. */
+export type FloorStateApi = {
+  at?: string;
+  tables?: ReadonlyArray<{
+    tableId: string;
+    state: "LATE" | "READY" | "NOT_SENT" | "SENT" | "OPEN" | "JOINED" | "FREE" | string;
+    joinedToTableId?: string | null;
+    counts?: { notSent?: number; held?: number; ready?: number; late?: number; tickets?: number } | null;
+  }> | null;
 };
 
 export type FloorSource = {
+  /** When present, tiles take Late, Ready, Not sent and Joined from the server. */
+  floorState?: FloorStateApi;
   /** When present, areas come from the server; otherwise from each table's floor plan (older data). */
   areas?: readonly FloorAreaApi[];
   tables: readonly FloorTableApi[];
@@ -89,6 +102,11 @@ export type FloorTile = {
   party?: number;
   /** Items entered and not sent. */
   waiting?: number;
+  /** Tickets ready at the pass, or late in the kitchen (server state). */
+  ready?: number;
+  late?: number;
+  /** "M12": this table's bill is joined onto that table's. */
+  joinedTo?: string;
 };
 
 const HIDDEN = new Set(["BLOCKED", "UNAVAILABLE", "OUT_OF_SERVICE"]);
@@ -256,6 +274,21 @@ export function buildFloorTiles(source: FloorSource, viewer: FloorViewer, now: D
     }
     tiles.push({ ...base, state: "free", mine: false, others: false });
   }
+  // The server's state wins where it knows more: Late and Ready from the kitchen, lines not sent
+  // on a table already sent, and a table joined onto another (T2 GET /api/floor/state).
+  const server = new Map((source.floorState?.tables ?? []).map((t) => [t.tableId, t]));
+  const labelOf = new Map(source.tables.map((t) => [t.id, (t.label ?? "").trim()]));
+  for (const tile of tiles) {
+    const st = server.get(tile.id);
+    if (!st) continue;
+    const c = st.counts ?? {};
+    if (st.state === "LATE") Object.assign(tile, { state: "late", late: c.late ?? undefined });
+    else if (st.state === "READY") Object.assign(tile, { state: "ready", ready: c.ready ?? undefined });
+    else if (st.state === "NOT_SENT" && tile.state === "open") Object.assign(tile, { state: "notSent", waiting: c.notSent ?? undefined });
+    else if (st.state === "JOINED") {
+      Object.assign(tile, { state: "joined", joinedTo: st.joinedToTableId ? labelOf.get(st.joinedToTableId) : undefined, amount: undefined, who: undefined });
+    }
+  }
   return tiles.sort((a, b) => compareLabels(a.label, b.label));
 }
 
@@ -264,7 +297,17 @@ export function tileWords(t: FloorTile) {
   const seats = t.seats ? `${t.seats} seats` : undefined;
   const items = t.waiting ? `${t.waiting} ${t.waiting === 1 ? "item" : "items"}` : undefined;
   const booked = [t.bookedAt, t.party ? `${t.party} guests` : undefined].filter(Boolean).join(" · ") || undefined;
+  if (t.isTab && t.tabNote && (t.state === "free" || t.state === "open" || t.state === "notSent")) {
+    // A tab is found by its note ("Red cap at the bar"), not by seats.
+    return { detail: t.tabNote, short: t.minutes ?? t.tabNote };
+  }
   switch (t.state) {
+    case "joined":
+      return { detail: t.joinedTo ? `Joined to ${t.joinedTo}` : "Joined", short: t.joinedTo ? `To ${t.joinedTo}` : undefined };
+    case "ready":
+      return { detail: [t.ready && t.ready > 1 ? `${t.ready} ready` : "At the pass", t.minutes].filter(Boolean).join(" · "), short: t.minutes };
+    case "late":
+      return { detail: [t.late && t.late > 1 ? `${t.late} late` : "Kitchen late", t.minutes].filter(Boolean).join(" · "), short: t.minutes };
     case "free":
     case "cleaning":
       return { detail: seats, short: seats };

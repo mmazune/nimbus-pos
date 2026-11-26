@@ -29,6 +29,9 @@ import {
   requestBill,
   sendOrder,
   serverCode,
+  fireLines,
+  undoFire,
+  type FireResult,
   voidLine,
   type SendReport,
   type LineChoice,
@@ -53,6 +56,12 @@ export type NewLine = {
   choices: LineChoice[];
   note: string;
   quantity: number;
+  /** Which guest at the table it is for (by-guest splits); null when it is for the table. */
+  guest?: number | null;
+  /** Hold it (starters now, mains later): Send skips it until it is fired. */
+  hold?: boolean;
+  allergy?: string | null;
+  takeaway?: boolean;
 };
 
 export function unitPriceOf(item: MenuItem, serving: MenuServing | null, choices: LineChoice[]): Minor {
@@ -80,6 +89,10 @@ export function draftLine(input: NewLine): OrderLineModel {
     station: input.item.station,
     voidReason: null,
     wasMade: null,
+    guest: input.guest ?? null,
+    held: Boolean(input.hold),
+    allergy: input.allergy?.trim() || null,
+    takeaway: Boolean(input.takeaway),
   };
 }
 
@@ -88,6 +101,10 @@ function sameLine(a: OrderLineModel, b: OrderLineModel) {
     a.menuItemId === b.menuItemId &&
     a.servingId === b.servingId &&
     a.note.trim() === b.note.trim() &&
+    (a.guest ?? null) === (b.guest ?? null) &&
+    Boolean(a.held) === Boolean(b.held) &&
+    (a.allergy ?? "") === (b.allergy ?? "") &&
+    Boolean(a.takeaway) === Boolean(b.takeaway) &&
     a.choices.map((c) => c.optionId).sort().join() === b.choices.map((c) => c.optionId).sort().join()
   );
 }
@@ -118,9 +135,14 @@ export type OrderSession = {
   setQuantity: (key: string, quantity: number) => void;
   setNote: (key: string, note: string) => void;
   setChoices: (key: string, choices: LineChoice[], unitMinor: Minor) => void;
+  /** Allergy, takeaway, hold and guest on a line not yet saved. */
+  setFlags: (key: string, flags: { allergy?: string | null; takeaway?: boolean; held?: boolean; guest?: number | null }) => void;
   remove: (key: string) => void;
   discardUnsent: () => void;
   send: () => Promise<boolean>;
+  /** Fire the held lines (all of them): they go after a 3-second undo window. */
+  fire: () => Promise<FireResult | null>;
+  undo: (fireId: string) => Promise<boolean>;
   voidOne: (line: OrderLineModel, body: { reason: VoidReason; wasMade: boolean; quantity?: number; note?: string }) => Promise<boolean>;
   askForBill: () => Promise<boolean>;
   pay: (payments: Array<{ method: PayMethod; amountMinor: Minor }>) => Promise<PayResult | null>;
@@ -268,6 +290,12 @@ export function useOrderSession(args: {
     [updateLine],
   );
 
+  const setFlags = useCallback(
+    (key: string, flags: { allergy?: string | null; takeaway?: boolean; held?: boolean; guest?: number | null }) =>
+      setLocal((cur) => cur.map((l) => (l.key === key ? { ...l, ...flags } : l))),
+    [],
+  );
+
   const remove = useCallback(
     (key: string) => {
       if (local.some((l) => l.key === key)) {
@@ -338,6 +366,32 @@ export function useOrderSession(args: {
     }
   }, [ctx, local, onChanged, order?.id, order?.lines, qc, refresh, tableId]);
 
+  const fire = useCallback(async () => {
+    if (!ctx || !order) return null;
+    const held = order.lines.filter((l) => l.state === "unsent" && l.held && l.serverId).map((l) => l.serverId as string);
+    if (!held.length) return null;
+    setBusy("fire");
+    setLastError(null);
+    try {
+      const r = await fireLines(ctx, order.id, held);
+      await refresh();
+      return r;
+    } catch (e) {
+      setLastError(errorText(e));
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  }, [ctx, order, refresh]);
+
+  const undo = useCallback(
+    async (fireId: string) => {
+      if (!ctx || !order) return false;
+      return runServer("undo", () => undoFire(ctx, order.id, fireId));
+    },
+    [ctx, order, runServer],
+  );
+
   const voidOne = useCallback(
     async (line: OrderLineModel, body: { reason: VoidReason; wasMade: boolean; quantity?: number; note?: string }) => {
       if (!ctx || !order || !line.serverId) return false;
@@ -397,9 +451,12 @@ export function useOrderSession(args: {
     setQuantity,
     setNote,
     setChoices,
+    setFlags,
     remove,
     discardUnsent,
     send,
+    fire,
+    undo,
     voidOne,
     askForBill,
     pay,

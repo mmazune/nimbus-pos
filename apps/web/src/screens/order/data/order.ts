@@ -138,12 +138,18 @@ export function shortName(user: ApiUser | undefined): string | null {
 const LEAVE_OUT = /(^|\s)(leave out|without|no)\b/i;
 
 /** "Double · Cola", "Medium · No onions", then the note. */
-export function choicesText(line: Pick<OrderLineModel, "servingLabel" | "choices" | "note">): string {
+export function choicesText(
+  line: Pick<OrderLineModel, "servingLabel" | "choices" | "note"> & Partial<Pick<OrderLineModel, "allergy" | "takeaway" | "held" | "guest">>,
+): string {
   const parts: string[] = [];
+  if (line.held) parts.push("Held for later");
   if (line.servingLabel) parts.push(line.servingLabel);
   for (const c of line.choices) {
     parts.push(LEAVE_OUT.test(c.groupName) ? `No ${c.optionName.toLowerCase()}` : c.optionName);
   }
+  if (line.allergy) parts.push(`${line.allergy} allergy`);
+  if (line.takeaway) parts.push("Takeaway");
+  if (typeof line.guest === "number") parts.push(`Guest ${line.guest}`);
   if (line.note.trim()) parts.push(line.note.trim());
   return parts.join(" · ");
 }
@@ -290,6 +296,10 @@ export async function addLine(ctx: Ctx, orderId: string, line: OrderLineModel): 
         quantity: line.quantity,
         ...(line.note.trim() ? { notes: line.note.trim() } : {}),
         ...(meta ? { metadata: meta } : {}),
+        ...(typeof line.guest === "number" ? { guest: line.guest } : {}),
+        ...(line.held ? { hold: true } : {}),
+        ...(line.allergy ? { allergy: line.allergy } : {}),
+        ...(line.takeaway ? { takeaway: true } : {}),
       },
     }),
   );
@@ -342,6 +352,8 @@ export async function sendOrder(ctx: Ctx, orderId: string): Promise<SendReport> 
     });
     return { skipped: skippedOf(res?.skipped), held: res?.held?.length ?? 0, sent: res?.sent?.length ?? 0 };
   } catch (e) {
+    // Only held lines were new: they are saved and wait for Fire; nothing goes to the kitchen yet.
+    if (serverCode(e) === "NOTHING_TO_SEND") return { skipped: [], held: 1, sent: 0 };
     if (serverCode(e) === "NOTHING_SENDABLE") {
       return { skipped: skippedOf((e as { details?: { skipped?: unknown } }).details?.skipped), held: 0, sent: 0 };
     }
@@ -429,7 +441,7 @@ export async function paidOn(ctx: Ctx, orderId: string): Promise<Minor> {
   return toMinor(res?.totalPaid) ?? 0;
 }
 
-export type OtherOrder = { id: string; tableLabel: string; waiterName: string | null; totalMinor: Minor };
+export type OtherOrder = { id: string; tableId: string; waiterId: string | null; tableLabel: string; waiterName: string | null; totalMinor: Minor };
 
 /** Other open orders on other tables in this branch: the targets for Join tables. */
 export async function listOtherOpenOrders(ctx: Ctx, exceptOrderId: string): Promise<OtherOrder[]> {
@@ -441,6 +453,8 @@ export async function listOtherOpenOrders(ctx: Ctx, exceptOrderId: string): Prom
     .filter((o) => o.id !== exceptOrderId && o.tableId && OPEN_STATES.includes(o.status ?? ""))
     .map((o) => ({
       id: o.id,
+      tableId: o.tableId as string,
+      waiterId: o.userId ?? null,
       tableLabel: ((o as { table?: { label?: string | null } | null }).table?.label ?? "").trim() || "Table",
       waiterName: shortName(o.user),
       totalMinor: toMinor(o.total) ?? 0,
@@ -570,4 +584,21 @@ export async function takeOverWithSupervisorPin(ctx: Ctx, orderId: string, pin: 
   } finally {
     await apiRequest("/api/auth/logout", { method: "POST", token: supervisor, branchId: ctx.branchId, body: {} }).catch(() => undefined);
   }
+}
+
+// ── Hold and fire (T2 E5): starters now, mains later ──
+
+export async function holdLine(ctx: Ctx, orderId: string, itemId: string, held: boolean) {
+  return apiRequest(`/api/pos/orders/${orderId}/lines/${itemId}/hold`, { ...ctx, method: "POST", body: { held } });
+}
+
+export type FireResult = { fireId: string; fireAt: string; undoUntil: string; itemIds: string[] };
+
+/** Fire held lines: they go to the kitchen when the 3-second undo window ends (on the server's clock). */
+export async function fireLines(ctx: Ctx, orderId: string, itemIds?: string[]): Promise<FireResult> {
+  return apiRequest<FireResult>(`/api/pos/orders/${orderId}/fire`, { ...ctx, method: "POST", body: itemIds?.length ? { itemIds } : {} });
+}
+
+export async function undoFire(ctx: Ctx, orderId: string, fireId: string) {
+  return apiRequest(`/api/pos/orders/${orderId}/fire/${fireId}/undo`, { ...ctx, method: "POST", body: {} });
 }

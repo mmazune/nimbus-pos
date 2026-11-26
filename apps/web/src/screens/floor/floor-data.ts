@@ -32,3 +32,8 @@ export async function loadAreas(token: string, branchId: string) {
   const res = await apiRequest<{ areas?: import("./floor-model").FloorAreaApi[] | null }>("/api/areas", { token, branchId });
   return res.areas ?? [];
 }
+
+/** Each table's state, derived on the server (T2 `GET /api/floor/state`). */
+export async function loadFloorState(token: string, branchId: string) {
+  return apiRequest<import("./floor-model").FloorStateApi>("/api/floor/state", { token, branchId });
+}

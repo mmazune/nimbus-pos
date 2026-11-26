@@ -12,7 +12,20 @@ import { formatMoney, groupShillings } from "../data/money";
 import type { LineChoice } from "../data/order";
 import { unitPriceOf } from "../data/useOrderSession";
 
-export type ItemSheetResult = { serving: MenuServing | null; choices: LineChoice[]; note: string; quantity: number };
+export type ItemSheetResult = {
+  serving: MenuServing | null;
+  choices: LineChoice[];
+  note: string;
+  quantity: number;
+  /** T5 (drawing Order-Line-Allergy): an allergy the kitchen sees in red; takeaway; hold for later; the guest. */
+  allergy?: string | null;
+  takeaway?: boolean;
+  hold?: boolean;
+  guest?: number | null;
+};
+
+const ALLERGIES = ["Nuts", "Gluten", "Dairy", "Eggs", "Shellfish"];
+const GUESTS = [1, 2, 3, 4, 5, 6];
 
 type Props = {
   placement: SheetPlacement;
@@ -37,6 +50,12 @@ export function ItemSheet({ placement, item, groups, initial, mode, onDone, onRe
   const [picked, setPicked] = useState<LineChoice[]>(initial.choices);
   const [note, setNote] = useState(initial.note);
   const [quantity, setQuantity] = useState(Math.max(1, initial.quantity));
+  const [allergy, setAllergy] = useState<string>(initial.allergy ?? "");
+  const [otherAllergy, setOtherAllergy] = useState(Boolean(initial.allergy && !ALLERGIES.includes(initial.allergy)));
+  const [takeaway, setTakeaway] = useState(Boolean(initial.takeaway));
+  const [hold, setHold] = useState(Boolean(initial.hold));
+  const [guest, setGuest] = useState<number | null>(initial.guest ?? null);
+  const result = (): ItemSheetResult => ({ serving, choices: picked, note, quantity, allergy: allergy.trim() || null, takeaway, hold, guest });
 
   const unit = unitPriceOf(item, serving, picked);
   const missing = groups.filter((g) => g.required && picked.filter((p) => p.groupId === g.id).length < Math.max(1, g.min));
@@ -74,7 +93,7 @@ export function ItemSheet({ placement, item, groups, initial, mode, onDone, onRe
           Remove
         </Button>
       ) : null}
-      <Button tone="filled" disabled={missing.length > 0} onClick={() => onDone({ serving, choices: picked, note, quantity })}>
+      <Button tone="filled" disabled={missing.length > 0} onClick={() => onDone(result())}>
         {`${mode === "add" ? "Add" : "Save"} · ${formatMoney(unit * quantity)}`}
       </Button>
     </>
@@ -119,6 +138,39 @@ export function ItemSheet({ placement, item, groups, initial, mode, onDone, onRe
             </div>
           );
         })}
+        <div className="flex flex-col gap-kit-8" data-line-allergy>
+          <Text variant="row">Allergy</Text>
+          <div className="grid grid-cols-3 gap-kit-8">
+            {ALLERGIES.map((a) => (
+              <OptionTile key={a} label={a} current={!otherAllergy && allergy === a} onClick={() => { setOtherAllergy(false); setAllergy(allergy === a ? "" : a); }} />
+            ))}
+            <OptionTile label="Other" current={otherAllergy} onClick={() => { setOtherAllergy(!otherAllergy); setAllergy(""); }} />
+          </div>
+          {otherAllergy ? <Field label="Which allergy" value={allergy} placeholder="For example sesame" onChange={setAllergy} /> : null}
+        </div>
+        <div className="flex flex-col gap-kit-8">
+          <Text variant="row">Where it is eaten</Text>
+          <div className="grid grid-cols-2 gap-kit-8">
+            <OptionTile label="Here" current={!takeaway} onClick={() => setTakeaway(false)} />
+            <OptionTile label="Takeaway" current={takeaway} onClick={() => setTakeaway(true)} />
+          </div>
+        </div>
+        {mode === "add" || initial.hold !== undefined ? (
+          <div className="flex flex-col gap-kit-8">
+            <Text variant="row">When</Text>
+            <div className="grid grid-cols-2 gap-kit-8">
+              <OptionTile label="With the next Send" current={!hold} onClick={() => setHold(false)} />
+              <OptionTile label="Hold for later" second="Fire it when ready" current={hold} onClick={() => setHold(true)} />
+            </div>
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-kit-8">
+          <Text variant="row">For guest</Text>
+          <div className="grid grid-cols-4 gap-kit-8 md:grid-cols-7">
+            <OptionTile label="All" current={guest === null} onClick={() => setGuest(null)} />
+            {GUESTS.map((g) => <OptionTile key={g} label={String(g)} current={guest === g} onClick={() => setGuest(g)} />)}
+          </div>
+        </div>
         <Field label="Note for the kitchen" value={note} placeholder="Anything the kitchen should know" onChange={setNote} />
         {missing.length ? <Text variant="sup" tone="muted">{`Choose ${missing.map((g) => g.name.toLowerCase()).join(" and ")} first.`}</Text> : null}
       </div>

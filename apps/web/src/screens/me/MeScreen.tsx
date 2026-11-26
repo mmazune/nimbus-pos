@@ -23,6 +23,8 @@ import { loadOrders } from "../floor/floor-data";
 import { formatMinutes, groupCents, shortName, toCents } from "../floor/floor-model";
 import { useWide } from "../floor/useWide";
 import { errorWords } from "../shared/words";
+import { HandoverOfferSheet } from "../floor/Handover";
+import { serverCode } from "../order/data/order";
 
 /**
  * Me, for waiter, cashier and supervisor (T1 phase 3, drawing Waiter-Me).
@@ -204,6 +206,8 @@ export function MeScreen({ role }: { role: Role }) {
     onSettled: () => void qc.invalidateQueries({ queryKey: [...KEY, "attendance"] }),
   });
 
+  const [handingOver, setHandingOver] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const shiftMutation = useMutation({
     mutationFn: () => (shift ? endShift(token, branch, shift.id) : startShift(token, branch)),
     onMutate: () => {
@@ -214,7 +218,16 @@ export function MeScreen({ role }: { role: Role }) {
       setEnding(false);
       setNotice(shift ? "Your shift has ended." : "Your shift has started.");
     },
-    onError: (e) => setFailure(errorText(e)),
+    onError: (e) => {
+      // A waiter still holding tables cannot end the shift (T2): show the way out, not a dead end.
+      if (serverCode(e) === "OPEN_TABLES") {
+        setEnding(false);
+        setFailure("You still have open tables. Hand them over to a colleague; your shift ends when every table is taken.");
+        setHandingOver(true);
+        return;
+      }
+      setFailure(errorText(e));
+    },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: [...KEY, "shift"] });
       void qc.invalidateQueries({ queryKey: ["waiter", "active-shift"] });
@@ -296,6 +309,26 @@ export function MeScreen({ role }: { role: Role }) {
           </Text>
         ) : null}
         {failure ? <Banner tone="red" title={failure} /> : null}
+        {handingOver && user?.id ? (
+          <Button tone="tonal" icon="staff" onClick={() => setOfferOpen(true)}>
+            Hand over your tables
+          </Button>
+        ) : null}
+        {offerOpen && user?.id ? (
+          <HandoverOfferSheet
+            ctx={{ token, branchId: branch }}
+            meId={user.id}
+            meName={displayName ?? "You"}
+            phone={wide.phone}
+            onClose={() => setOfferOpen(false)}
+            onOffered={(to) => {
+              setOfferOpen(false);
+              setHandingOver(false);
+              setFailure(null);
+              setNotice(`Offered to ${to}. End your shift once they accept.`);
+            }}
+          />
+        ) : null}
         {shiftQ.isLoading ? null : (
           <Button tone="tonal" disabled={shiftMutation.isPending} onClick={() => (shift ? setEnding(true) : shiftMutation.mutate())}>
             {shift ? "End my shift" : "Start my shift"}

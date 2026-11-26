@@ -111,6 +111,28 @@ export function OrderScreen(props: OrderScreenProps) {
   const [billAsked, setBillAsked] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [toast, setToast] = useState<string | null>(null);
+  // A fire in its 3-second undo window (drawing Order-Hold-Fire): names, the server's deadline, Undo.
+  const [firing, setFiring] = useState<{ fireId: string; until: number; names: string } | null>(null);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!firing) return;
+    const t = window.setInterval(() => {
+      setTick((n) => n + 1);
+      if (Date.now() > firing.until + 500) {
+        setFiring(null);
+        void session.refresh();
+      }
+    }, 250);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firing]);
+  const doFire = async () => {
+    const names = session.lines.filter((l) => l.state === "unsent" && l.held && l.serverId).map((l) => l.name);
+    const r = await session.fire();
+    // The window is the server's (undoUntil); a terminal clock a little off still shows about 3 seconds.
+    const left = Math.min(3500, Math.max(500, new Date(r?.undoUntil ?? 0).getTime() - Date.now()));
+    if (r) setFiring({ fireId: r.fireId, until: Date.now() + left, names: names.join(", ") });
+  };
   // Laptop: the frame sits under the manager's top bar, whose height follows the old root scale.
   const [barBottom, setBarBottom] = useState<number | null>(null);
   useEffect(() => {
@@ -244,7 +266,7 @@ export function OrderScreen(props: OrderScreenProps) {
       groups = [];
     }
     const serving = item.servings.find((s) => s.id === line.servingId) ?? null;
-    setSheet({ kind: "item", item, groups, initial: { serving, choices: line.choices, note: line.note, quantity: line.quantity }, mode: "edit", lineKey: line.key });
+    setSheet({ kind: "item", item, groups, initial: { serving, choices: line.choices, note: line.note, quantity: line.quantity, allergy: line.allergy, takeaway: line.takeaway, hold: line.serverId ? undefined : Boolean(line.held), guest: line.guest ?? null }, mode: "edit", lineKey: line.key });
   };
 
   const sameAgain = () => {
@@ -326,12 +348,13 @@ export function OrderScreen(props: OrderScreenProps) {
           }
           onDone={(r) => {
             if (sheet.mode === "add") {
-              const line = session.add({ item: sheet.item, serving: r.serving, choices: r.choices, note: r.note, quantity: r.quantity });
+              const line = session.add({ item: sheet.item, serving: r.serving, choices: r.choices, note: r.note, quantity: r.quantity, allergy: r.allergy, takeaway: r.takeaway, hold: r.hold, guest: r.guest });
               setLastAddedKey(line.key);
             } else if (sheet.lineKey) {
               session.setChoices(sheet.lineKey, r.choices, unitPriceOf(sheet.item, r.serving, r.choices));
               session.setNote(sheet.lineKey, r.note);
               session.setQuantity(sheet.lineKey, r.quantity);
+              session.setFlags(sheet.lineKey, { allergy: r.allergy ?? null, takeaway: Boolean(r.takeaway), held: Boolean(r.hold), guest: r.guest ?? null });
             }
             setSheet(null);
           }}
@@ -407,6 +430,8 @@ export function OrderScreen(props: OrderScreenProps) {
           }}
           sentLines={rights.canVoidLine ? session.lines.filter((l) => l.state === "sent" && l.serverId) : []}
           onVoidItem={(line) => setSheet({ kind: "void", line })}
+          lines={session.lines}
+          userId={user?.id ?? null}
           hasPayment={session.paidMinor > 0 || !session.paidKnown}
           initialStep={sheet.step}
           onDone={async (outcome) => {
@@ -483,6 +508,22 @@ export function OrderScreen(props: OrderScreenProps) {
       {session.lastError && !sheet ? (
         <Banner tone="red" title="That did not go through" detail={session.lastError} action={{ label: "Close", onClick: session.clearError }} />
       ) : null}
+      {firing ? (
+        <Banner
+          tone="amber"
+          title={`${firing.names} ${firing.names.includes(",") ? "go" : "goes"} to the kitchen in ${Math.max(0, Math.ceil((firing.until - Date.now()) / 1000))} seconds`}
+          detail={tick >= 0 ? "Undo keeps it held." : undefined}
+          action={{
+            label: "Undo",
+            onClick: async () => {
+              const f = firing;
+              setFiring(null);
+              const ok = await session.undo(f.fireId);
+              setToast(ok ? `${f.names} held again` : "Too late to undo: it has gone to the kitchen");
+            },
+          }}
+        />
+      ) : null}
       {session.sendReport ? (
         <Banner
           tone="amber"
@@ -541,7 +582,8 @@ export function OrderScreen(props: OrderScreenProps) {
     [menu, pricedLines],
   );  // What Send can actually send, and the total without lines that cannot go.
   const blocked = shownLines.filter((l) => l.state === "unsent" && l.unsendable);
-  const sendableCount = session.unsentCount - blocked.reduce((n, l) => n + l.quantity, 0);
+  const heldOnServer = shownLines.filter((l) => l.state === "unsent" && l.serverId && (l.held || l.fireAt) && !l.unsendable);
+  const sendableCount = session.unsentCount - blocked.reduce((n, l) => n + l.quantity, 0) - heldOnServer.reduce((n, l) => n + l.quantity, 0);
   const shownTotal = session.totalMinor - blocked.filter((l) => !l.serverId).reduce((n, l) => n + l.lineMinor, 0);
   const viewSession = useMemo(() => ({ ...session, unsentCount: sendableCount, totalMinor: shownTotal }), [session, sendableCount, shownTotal]);
 
@@ -677,6 +719,7 @@ export function OrderScreen(props: OrderScreenProps) {
       linesHidden={readOnly && session.lines.length === 0}
       onLine={readOnly ? undefined : openLine}
       onRemove={readOnly ? undefined : (l) => session.remove(l.key)}
+      onFire={readOnly || !rights.canOrder ? undefined : () => void doFire()}
       onSend={doSend}
       onPrintBill={printBill}
       onTakePayment={() => setPaying(true)}

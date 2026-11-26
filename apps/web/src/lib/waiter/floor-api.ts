@@ -65,6 +65,7 @@ export type PaginatedResponse<T> = {
 export type WaiterFloorData = {
   /** The branch\'s areas with their tables (T2 `GET /api/areas`); the Floor groups tiles by these. */
   areas?: import("@/screens/floor/floor-model").FloorAreaApi[];
+  floorState?: import("@/screens/floor/floor-model").FloorStateApi;
   tables: WaiterTableApi[];
   activeOrders: WaiterOrderApi[];
   reservations: WaiterReservationApi[];

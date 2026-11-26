@@ -19,10 +19,12 @@ import {
 } from "@/lib/waiter/floor-api";
 import { FloorScreen } from "@/screens/floor/FloorScreen";
 import { errorWords } from "@/screens/shared/words";
-import { loadAllActiveOrders, loadAreas } from "@/screens/floor/floor-data";
+import { loadAllActiveOrders, loadAreas, loadFloorState } from "@/screens/floor/floor-data";
 import { loadMenu } from "@/screens/order/data/menu";
 import { menuKey } from "@/screens/order/data/useMenu";
 import { seatReservation } from "@/lib/waiter/reservation-api";
+import { openTab } from "@/screens/order/data/seating";
+import { IncomingHandover } from "@/screens/floor/Handover";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
 
 function getErrorCopy(error: unknown) {
@@ -81,13 +83,14 @@ export function WaiterFloorScreen() {
     queryFn: async (): Promise<WaiterFloorData> => {
       const token = accessToken as string;
       const branch = branchId as string;
-      const [tables, activeOrders, reservations, areas] = await Promise.all([
+      const [tables, activeOrders, reservations, areas, floorState] = await Promise.all([
         listWaiterTables(token, branch),
         loadAllActiveOrders<FloorWaiterOrder>(token, branch),
         listWaiterOperationalReservations(token, branch),
         loadAreas(token, branch),
+        loadFloorState(token, branch),
       ]);
-      return { tables, activeOrders, reservations, areas };
+      return { tables, activeOrders, reservations, areas, floorState };
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
@@ -214,7 +217,21 @@ export function WaiterFloorScreen() {
           const table = tables.find((entry) => entry.id === tableId);
           if (table) handleSelectTable(table);
         }}
+        onNewTab={async (areaId, note) => {
+          if (!accessToken || !branchId) return;
+          const tab = await openTab({ token: accessToken, branchId }, areaId, note);
+          await floorQuery.refetch();
+          handleSelectTable({ id: tab.id } as WaiterTableViewModel);
+        }}
       />
+
+      {accessToken && branchId ? (
+        <IncomingHandover
+          ctx={{ token: accessToken, branchId }}
+          phone={typeof window !== "undefined" && window.innerWidth < 768}
+          onAnswered={() => void queryClient.invalidateQueries({ queryKey: ["waiter", "floor", branchId] })}
+        />
+      ) : null}
 
       {selectedAction && selectedTable ? (
         <OrderScreen

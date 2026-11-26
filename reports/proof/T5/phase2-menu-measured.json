@@ -6,7 +6,7 @@
       "status": 200
     }
   ],
-  "twoLeftSeenAfterMs": 4238,
+  "twoLeftSeenAfterMs": 4244,
   "A-2-left-1280": {
     "sideways": 0,
     "clipped": [],
@@ -18,7 +18,7 @@
       "height": 800
     }
   },
-  "soldOutSeenAfterMs": 4564,
+  "soldOutSeenAfterMs": 4689,
   "C-sold-out-1280": {
     "sideways": 0,
     "clipped": [],
@@ -42,7 +42,7 @@
     }
   },
   "sentOnB": [
-    "Cola"
+    "Cola 300 ml"
   ],
   "addSoldOut": 409,
   "phone-3-left-390": {

@@ -65,7 +65,19 @@ export type FloorScreenProps = {
   onOpenTable: (tableId: string) => void;
   /** Cashier "Find bill", supervisor "Find order": one tonal button in the top row. */
   extraAction?: { label: string; icon: OperationalIconName; onClick: () => void };
+  /** Open a tab in a tabs area (T2), with a note to find the guests; then the tab opens. */
+  onNewTab?: (areaId: string, note: string) => Promise<void>;
 };
+
+const TAB_NOTES = ["At the bar", "Standing", "By the door", "Darts board"];
+
+/** The lowest tab number no open tab uses: the number the server gives the next tab. */
+function nextTabNumber(tiles: readonly FloorTile[]) {
+  const used = new Set(tiles.filter((t) => t.isTab).map((t) => Number(splitTableName(t.label).number)).filter((n) => Number.isFinite(n)));
+  let n = 1;
+  while (used.has(n)) n += 1;
+  return n;
+}
 
 function openCount(tiles: readonly FloorTile[]) {
   return tiles.filter((t) => OPEN_STATES.has(t.state)).length;
@@ -83,6 +95,7 @@ function Tile({ tile, density, onOpen }: { tile: FloorTile; density: "roomy" | "
       short={words.short}
       who={tile.who}
       amount={density === "roomy" ? tile.amount : undefined}
+      tab={tile.isTab}
       onClick={() => onOpen(tile.id)}
     />
   );
@@ -106,7 +119,7 @@ function Grid({ tiles, layout, phone, onOpen }: { tiles: readonly FloorTile[]; l
   );
 }
 
-export function FloorScreen({ role, source, readAt, viewer, isLoading, error, onRetry, onOpenTable, extraAction }: FloorScreenProps) {
+export function FloorScreen({ role, source, readAt, viewer, isLoading, error, onRetry, onOpenTable, extraAction, onNewTab }: FloorScreenProps) {
   const wide = useWide();
   const tiles = useMemo(() => (source ? buildFloorTiles(source, viewer) : []), [source, viewer]);
   const areas = useMemo(() => floorAreas(tiles, source?.areas), [tiles, source?.areas]);
@@ -124,11 +137,21 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const [listingAreas, setListingAreas] = useState(false);
+  const [tabNote, setTabNote] = useState<string | null>(null);
+  const [tabBusy, setTabBusy] = useState(false);
+  const [tabError, setTabError] = useState<string | null>(null);
 
   const areaTiles = area === ALL_AREAS ? tiles : tiles.filter((t) => t.areaKey === area);
   const mineTiles = tiles.filter((t) => t.mine);
   const shown = whose === "mine" ? mineTiles : areaTiles;
   const areaName = area === ALL_AREAS ? "All areas" : (areas.find((a) => a.key === area)?.name ?? "");
+  const tabsArea = area !== ALL_AREAS && whose === "all" ? areas.find((a) => a.key === area && a.tabs) : undefined;
+  const nextTab = nextTabNumber(tiles);
+  const newTabButton = onNewTab && tabsArea ? (
+    <Button tone="filled" icon="plus" onClick={() => { setTabError(null); setTabNote(""); }}>
+      New tab
+    </Button>
+  ) : null;
 
   // an area of bar tabs ("Tab 1"…) counts tabs, not tables
   const noun = areaTiles.length && areaTiles.every((t) => splitTableName(t.label).prefix?.toLowerCase() === "tab") ? "tabs" : "tables";
@@ -215,6 +238,49 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
     </Sheet>
   ) : null;
 
+  const tabSheet = tabNote !== null && tabsArea && onNewTab ? (
+    <Sheet
+      placement={wide.phone ? "bottom" : "middle"}
+      title={`New tab · Tab ${nextTab}`}
+      summary={`Tab ${nextTab} is the next free number. Add a note so anyone can find them.`}
+      onClose={() => setTabNote(null)}
+      footer={
+        <>
+          <Button tone="text" onClick={() => setTabNote(null)}>Cancel</Button>
+          <span className="flex-1" />
+          <Button
+            tone="filled"
+            disabled={tabBusy}
+            onClick={async () => {
+              setTabBusy(true);
+              setTabError(null);
+              try {
+                await onNewTab(tabsArea.key, tabNote);
+                setTabNote(null);
+              } catch (e) {
+                setTabError(e instanceof Error ? e.message : "The tab did not open. Try again.");
+              } finally {
+                setTabBusy(false);
+              }
+            }}
+          >
+            {tabBusy ? "Opening…" : `Open Tab ${nextTab}`}
+          </Button>
+        </>
+      }
+    >
+      <Field label="Note" value={tabNote} placeholder="For example green dress, by the pillar" onChange={setTabNote} />
+      <Text variant="sup" strong>Or pick one</Text>
+      <div className="grid grid-cols-2 gap-kit-8">
+        {TAB_NOTES.map((n) => (
+          <Chip key={n} label={n} current={tabNote === n} onClick={() => setTabNote(n)} />
+        ))}
+      </div>
+      <Text variant="sup" tone="muted">An empty tab can be put away by anyone. Once something is sent it stays until paid.</Text>
+      {tabError ? <Text variant="sup" tone="red">{tabError}</Text> : null}
+    </Sheet>
+  ) : null;
+
   let body: JSX.Element;
   if (error) {
     body = (
@@ -288,6 +354,7 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
             onOpen={() => setListingAreas(true)}
           />
         ) : null}
+        {newTabButton}
         <Grid tiles={rest} layout={layout} phone onOpen={open} />
       </div>
     );
@@ -346,12 +413,14 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
                 {extraAction.label}
               </Button>
             ) : null}
+            {newTabButton}
           </div>
         </div>
       ) : null}
       {body}
       {searchSheet}
       {areaSheet}
+      {tabSheet}
     </div>
   );
 }

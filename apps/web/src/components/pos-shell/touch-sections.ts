@@ -6,11 +6,11 @@ export type TouchRole = "waiter" | "cashier" | "supervisor";
  * The sections each touch role shows today (T1 / U1 part a). The full list
  * per role lives in `kit/sections.ts` (decision R9); a section whose screen is
  * not built yet is left out here, never faked:
- *   waiter      Ready waits for E5 / U4
  *   supervisor  Team waits for U4
+ * (T5 built the waiter's Ready on T2's ready list.)
  */
 const BUILT: Record<TouchRole, readonly string[]> = {
-  waiter: ["floor", "reservations", "me"],
+  waiter: ["floor", "reservations", "ready", "me"],
   cashier: ["floor", "receipts", "till", "me"],
   supervisor: ["floor", "reservations", "approvals", "me"],
 };

@@ -69,7 +69,7 @@ test("waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling", a
   measured.waiter1280 = { ...f, chrome: c, rules: r };
   expect(c.header).toBe(64);
   expect(c.bar).toBe(76);
-  expect(c.sections).toEqual(["floor", "reservations", "me"]);
+  expect(c.sections).toEqual(["floor", "reservations", "ready", "me"]);
   expect(f.layout).toBe("roomy");
   expect(f.columns).toBe(8);
   expect(f.tile?.h).toBe(108);
@@ -77,7 +77,13 @@ test("waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling", a
   expect(f.gap).toBe(12);
   expect(f.spaceScrolls).toBe(false);
   expect(f.visibleWithoutScrolling).toBe(32);
-  expect(f.states).toEqual(["cleaning", "free", "notSent", "open", "reserved"]);
+  if (onVenue()) {
+    // The demo venue's service has tickets at the pass and in the kitchen: Ready and Late come from the server (T5).
+    expect(f.states).toEqual(expect.arrayContaining(["cleaning", "free", "notSent", "open", "reserved"]));
+    for (const st of f.states) expect(["cleaning", "free", "notSent", "open", "reserved", "ready", "late"]).toContain(st);
+  } else {
+    expect(f.states).toEqual(["cleaning", "free", "notSent", "open", "reserved"]);
+  }
   expectRules(r);
   await shot(page, "Main-1280x800-waiter.png");
 });
@@ -128,7 +134,7 @@ test("waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits"
   await expect(page.locator("[data-floor-grid]").first()).toBeVisible();
   const c = await chrome(page);
   expect(c.bar).toBe(84);
-  expect(c.sections).toEqual(["floor", "reservations", "me"]);
+  expect(c.sections).toEqual(["floor", "reservations", "ready", "me"]);
   const yours = await page.evaluate(() => document.querySelector("[data-floor-grid]")?.getAttribute("data-floor-columns"));
   expect(yours).toBe("3");
   const r1 = await pageRules(page);

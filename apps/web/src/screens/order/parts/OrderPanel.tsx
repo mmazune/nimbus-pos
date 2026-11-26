@@ -36,6 +36,8 @@ type Props = {
   onLine?: (line: OrderLineModel) => void;
   /** Remove a not-sent line (offered beside a line whose item sold out). */
   onRemove?: (line: OrderLineModel) => void;
+  /** Fire the held lines (starters now, mains later). */
+  onFire?: () => void;
   onSend: () => void;
   onPrintBill: () => void;
   onTakePayment: () => void;
@@ -54,8 +56,10 @@ export function sendLabel(n: number) {
 }
 
 export function OrderPanel(props: Props) {
-  const { lines, count, totalMinor, discountMinor = 0, unsentCount, filled, busy, linesHidden, onLine, onRemove, onSend, onPrintBill, onTakePayment, onMore, onSameAgain, canSameAgain, sentTappable, notice, billMode } = props;
-  const unsent = lines.filter((l) => l.state === "unsent");
+  const { lines, count, totalMinor, discountMinor = 0, unsentCount, filled, busy, linesHidden, onLine, onRemove, onFire, onSend, onPrintBill, onTakePayment, onMore, onSameAgain, canSameAgain, sentTappable, notice, billMode } = props;
+  const unsent = lines.filter((l) => l.state === "unsent" && !(l.serverId && (l.held || l.fireAt)));
+  // Held on the server (saved, waiting to be fired) or fired and inside the undo window.
+  const held = lines.filter((l) => l.state === "unsent" && l.serverId && (l.held || l.fireAt));
   const rounds = sentRounds(lines);
   const empty = lines.length === 0 && !linesHidden;
 
@@ -117,6 +121,24 @@ export function OrderPanel(props: Props) {
                 <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={l.priceKnown === false ? "" : groupShillings(l.lineMinor)} state="notSent" onClick={onLine ? () => onLine(l) : undefined} />
               ),
             )}
+          </section>
+        ) : null}
+
+        {held.length ? (
+          <section aria-label="Held for later" className={unsent.length ? "mx-kit-16 mt-kit-8 shadow-kit-line-top" : ""} data-order-held>
+            <div className={["flex items-center justify-between pb-kit-4 pt-kit-12", unsent.length ? "" : "px-kit-16"].join(" ")}>
+              <Text variant="cap" tone="muted">{held.some((l) => l.fireAt) ? "Going to the kitchen" : "Held for later"}</Text>
+              {onFire && held.some((l) => l.held && !l.fireAt) ? (
+                <Button tone="tonal" size="laptop" disabled={busy !== null} onClick={onFire}>
+                  {busy === "fire" ? "Firing…" : "Fire now"}
+                </Button>
+              ) : null}
+            </div>
+            <div className={unsent.length ? "-mx-kit-16" : ""}>
+              {held.map((l) => (
+                <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText({ ...l, held: false }) || undefined} price={groupShillings(l.lineMinor)} state="notSent" />
+              ))}
+            </div>
           </section>
         ) : null}
 

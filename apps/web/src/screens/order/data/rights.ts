@@ -27,6 +27,15 @@ export type OrderRights = {
   canReadPayments: boolean;
   /** Set a table's status (free an empty table a move or join left occupied). */
   canSetTableStatus: boolean;
+  /** T2 tables and people: move a table, join and split again, move a line, split the bill. */
+  canMoveTable: boolean;
+  canJoin: boolean;
+  canMoveLine: boolean;
+  canSplit: boolean;
+  /** Give a table to another waiter (supervisor, manager). */
+  canChangeWaiter: boolean;
+  /** Offer one's own table to a colleague, who accepts on their screen (a waiter). */
+  canHandover: boolean;
 };
 
 export function rightsFor(role: OrderRole, permissions: readonly string[]): OrderRights {
@@ -44,6 +53,12 @@ export function rightsFor(role: OrderRole, permissions: readonly string[]): Orde
     canVoidOrder: lead && has("pos:orders:void"),
     canReadPayments: role !== "waiter" && has("pos:payment:read"),
     canSetTableStatus: lead && has("pos:table:write"),
+    canMoveTable: has("pos:order:transfer"),
+    canJoin: has("pos:order:merge"),
+    canMoveLine: has("pos:order:move-items"),
+    canSplit: has("pos:order:split"),
+    canChangeWaiter: lead && has("pos:order:transfer"),
+    canHandover: role === "waiter" && has("pos:orders:write"),
   };
 }
 

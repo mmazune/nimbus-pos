@@ -11,26 +11,29 @@ import { ActionTile, Button, Field, OptionTile, OrderLine, Sheet, Text, type She
 
 import { groupShillings } from "../data/money";
 import { formatMoney } from "../data/money";
+import { loadAreas } from "@/screens/floor/floor-data";
+
 import {
   askForDiscount,
   cancelOrder,
   changeWaiter,
   choicesText,
-  joinInto,
   listFreeTables,
   listOtherOpenOrders,
   listStaff,
-  moveToTable,
   setTableStatus,
-  splitEqually,
   TABLE_STATUSES,
   type TableStatus,
   type OrderLineModel,
 } from "../data/order";
 import type { OrderRights } from "../data/rights";
+import { changeWaiterAt, colleaguesOnFloor, joinTables, moveLine, moveTable, offerHandover, splitTables } from "../data/seating";
+import { SplitSheet } from "./SplitSheet";
 
 type Ctx = { token: string; branchId: string };
-export type Step = "menu" | "move" | "discount" | "cancel" | "voidPick" | "join" | "waiter" | "split" | "status";
+export type Step =
+  | "menu" | "move" | "discount" | "cancel" | "voidPick" | "join" | "unjoin" | "waiter" | "split" | "status"
+  | "linePick" | "lineTo" | "handover";
 
 type Props = {
   placement: SheetPlacement;
@@ -46,6 +49,10 @@ type Props = {
   /** Sent lines that may be voided; the person picks one (never preselected). */
   sentLines: OrderLineModel[];
   onVoidItem: (line: OrderLineModel) => void;
+  /** Every line on the order (splits, move a line). */
+  lines: OrderLineModel[];
+  /** The signed-in person (a hand-over is to someone else). */
+  userId: string | null;
   /** A payment is posted: Discount and Cancel the order are hidden (the API does not check; the old screen did). */
   hasPayment: boolean;
   /** Open straight on one action (the laptop bar's Move table, Split bill, Discount). */
@@ -58,7 +65,7 @@ type Props = {
 const PERCENTS = [5, 10, 15, 20, 50];
 const DISCOUNT_REASONS = ["Regular guest", "Slow service", "Kitchen error", "Manager’s offer"];
 
-export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, totalMinor, canSameAgain, onSameAgain, sentLines, onVoidItem, hasPayment, initialStep = "menu", onDone, onClose }: Props) {
+export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, totalMinor, canSameAgain, onSameAgain, sentLines, onVoidItem, lines, userId, hasPayment, initialStep = "menu", onDone, onClose }: Props) {
   const [step, setStep] = useState<Step>(initialStep);
   const [target, setTarget] = useState<string | null>(null);
   const [percent, setPercent] = useState<number | null>(null);
@@ -80,6 +87,24 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     queryFn: () => listStaff(ctx as Ctx),
     staleTime: 60_000,
   });
+  // The branch's tables by area (T2): what is joined to this table, and where a line can go.
+  const areasQ = useQuery({
+    queryKey: ["order-screen", "areas", ctx?.branchId],
+    enabled: Boolean(ctx && (step === "unjoin" || step === "lineTo" || step === "menu")),
+    queryFn: () => loadAreas((ctx as Ctx).token, (ctx as Ctx).branchId),
+    // Read fresh each time the sheet opens: a join made a moment ago must show "Split tables again".
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+  const allTables = (areasQ.data ?? []).flatMap((a) => (a.tables ?? []).map((t) => ({ ...t, areaName: a.name })));
+  const joinedHere = allTables.filter((t) => t.joinedToTableId && t.joinedToTableId === tableId);
+  const colleaguesQ = useQuery({
+    queryKey: ["order-screen", "colleagues", ctx?.branchId],
+    enabled: Boolean(ctx && step === "handover"),
+    queryFn: () => colleaguesOnFloor(ctx as Ctx, userId),
+    staleTime: 5_000,
+  });
+  const [line, setLine] = useState<OrderLineModel | null>(null);
   const tablesQ = useQuery({
     queryKey: ["order-screen", "free-tables", ctx?.branchId, tableId],
     enabled: Boolean(ctx && step === "move"),
@@ -111,8 +136,8 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   if (step === "move") {
     const chosen = tablesQ.data?.find((t) => t.id === target);
     return (
-      <Sheet placement={placement} title={`Move ${title}`} summary="To a free table. The order goes with it." onClose={onClose}
-        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => moveToTable(ctx as Ctx, orderId as string, target as string), { leave: true, message: `Moved to ${chosen?.label}` })}>{chosen ? `Move to ${chosen.label}` : "Choose a table"}</Button></>}>
+      <Sheet placement={placement} title={`Move ${title}`} summary={`${formatMoney(totalMinor)} · pick a free table. The order, the bill and the waiter go with it.`} onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => moveTable(ctx as Ctx, tableId as string, target as string), { leave: true, message: `Moved to ${chosen?.label}. The order, the bill and the waiter went with it.` })}>{chosen ? `Move to ${chosen.label}` : "Choose a table"}</Button></>}>
         <div className="grid grid-cols-3 gap-kit-8 md:grid-cols-5" data-order-move>
           {(tablesQ.data ?? []).map((t) => (
             <OptionTile key={t.id} label={t.label} second={t.seats ? `${t.seats} seats` : undefined} current={target === t.id} onClick={() => setTarget(t.id)} />
@@ -143,16 +168,76 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   }
 
   if (step === "join") {
-    const chosen = othersQ.data?.find((o) => o.id === target);
+    const chosen = othersQ.data?.find((o) => o.tableId === target);
+    const sum = totalMinor + (chosen?.totalMinor ?? 0);
     return (
-      <Sheet placement={placement} title={`Join ${title} to another table`} summary="This table's items move onto the other table's bill." onClose={onClose}
-        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinInto(ctx as Ctx, orderId as string, target as string), { leave: true, message: `Joined to ${chosen?.tableLabel}` })}>{chosen ? `Join to ${chosen.tableLabel}` : "Choose a table"}</Button></>}>
+      <Sheet placement={placement} title={`Join ${title} with another`} summary={`${formatMoney(totalMinor)} · pick the table to join to ${title}`} onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinTables(ctx as Ctx, tableId as string, target as string), { leave: false, message: `${chosen?.tableLabel} joined to ${title}: one bill` })}>{chosen ? `Join 2 tables · ${formatMoney(sum)}` : "Choose a table"}</Button></>}>
         <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3" data-order-join>
-          {(othersQ.data ?? []).map((o) => (
-            <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterName, formatMoney(o.totalMinor)].filter(Boolean).join(" · ")} current={target === o.id} onClick={() => setTarget(o.id)} />
+          {(othersQ.data ?? []).filter((o) => o.tableId && o.tableId !== tableId).map((o) => (
+            <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterName, groupShillings(o.totalMinor)].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
           ))}
         </div>
+        {chosen ? <Text variant="sup" tone="muted">{`One bill on ${title}, ${formatMoney(sum)}. ${chosen.tableLabel} shows “Joined to ${title}” until the bill is paid. You can split them again at any time.`}</Text> : null}
         {othersQ.data && othersQ.data.length === 0 ? <Text variant="sup" tone="muted">No other table has an open order.</Text> : null}
+        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
+  if (step === "unjoin") {
+    const chosen = joinedHere.find((t) => t.id === target);
+    return (
+      <Sheet placement={placement} title={`Split ${title} from the table joined to it`} summary="Each table gets its own bill back, with the lines it had." onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => splitTables(ctx as Ctx, tableId as string, target as string), { leave: false, message: `${chosen?.label} has its own bill again` })}>{chosen ? `Split ${chosen.label} off` : "Choose a table"}</Button></>}>
+        <div className="grid grid-cols-3 gap-kit-8" data-order-unjoin>
+          {joinedHere.map((t) => <OptionTile key={t.id} label={t.label ?? "Table"} second={`Joined to ${title}`} current={target === t.id} onClick={() => setTarget(t.id)} />)}
+        </div>
+        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
+  if (step === "linePick") {
+    const movable = lines.filter((l) => l.serverId && l.state !== "voided");
+    return (
+      <Sheet placement={placement} title="Move a line" summary="Tap the line that belongs on another table." onClose={onClose} footer={<>{back}</>}>
+        <div className="flex flex-col" data-order-line-pick>
+          {movable.map((l) => (
+            <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state={l.state === "unsent" ? "notSent" : "sent"} onClick={() => { setLine(l); setTarget(null); setStep("lineTo"); }} />
+          ))}
+        </div>
+        {movable.length === 0 ? <Text variant="sup" tone="muted">Nothing on this table can be moved yet.</Text> : null}
+      </Sheet>
+    );
+  }
+
+  if (step === "lineTo" && line) {
+    const others = allTables.filter((t) => t.id !== tableId && !t.joinedToTableId);
+    const chosen = others.find((t) => t.id === target);
+    return (
+      <Sheet placement={placement} title={`Move ${line.name}`} summary={`${line.sentAt ? "Sent" : "Not sent"} · ${formatMoney(line.lineMinor)} · to which table`} onClose={onClose}
+        footer={<><Button tone="text" onClick={() => { setStep("linePick"); setError(null); }}>Back</Button><span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => moveLine(ctx as Ctx, orderId as string, line.serverId as string, target as string), { leave: false, message: `${line.name} moved to ${chosen?.label}` })}>{chosen ? `Move to ${chosen.label}` : "Choose a table"}</Button></>}>
+        <div className="grid grid-cols-3 gap-kit-8 md:grid-cols-6" data-order-line-to>
+          {others.map((t) => <OptionTile key={t.id} label={t.label ?? "Table"} second={t.areaName} current={target === t.id} onClick={() => setTarget(t.id)} />)}
+        </div>
+        <Text variant="sup" tone="muted">Nothing is voided and no stock moves. A free table gets a bill of its own.</Text>
+        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
+  if (step === "handover") {
+    const chosen = colleaguesQ.data?.find((c) => c.userId === target);
+    return (
+      <Sheet placement={placement} title={`Hand over ${title}`} summary="To a colleague on the floor. They accept on their own screen." onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => offerHandover(ctx as Ctx, target as string, { tableIds: [tableId as string] }), { leave: false, message: `Offered to ${chosen?.name}. It stays yours until they accept.` })}>{chosen ? `Offer it to ${chosen.name}` : "Choose who"}</Button></>}>
+        <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3" data-order-handover>
+          {(colleaguesQ.data ?? []).map((c) => (
+            <OptionTile key={c.userId} label={c.name} second={`${c.tables === 1 ? "1 table" : `${c.tables} tables`} · ${groupShillings(c.openMinor)} open`} current={target === c.userId} onClick={() => setTarget(c.userId)} />
+          ))}
+        </div>
+        {colleaguesQ.data && colleaguesQ.data.length === 0 ? <Text variant="sup" tone="muted">No colleague has a table on the floor right now.</Text> : null}
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
       </Sheet>
     );
@@ -161,8 +246,8 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   if (step === "waiter") {
     const chosen = staffQ.data?.find((m) => m.userId === target);
     return (
-      <Sheet placement={placement} title={`Change the waiter on ${title}`} summary="The table and its order go to the person you choose." onClose={onClose}
-        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => changeWaiter(ctx as Ctx, orderId as string, target as string), { leave: false, message: `${chosen?.name} has this table now` })}>{chosen ? `Give it to ${chosen.name}` : "Choose who"}</Button></>}>
+      <Sheet placement={placement} title={`New waiter for ${title}`} summary="The table and its bill move to the person you choose. Sales already sent stay counted for the first waiter." onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => (tableId ? changeWaiterAt(ctx as Ctx, tableId, target as string) : changeWaiter(ctx as Ctx, orderId as string, target as string)), { leave: false, message: `${chosen?.name} has this table now; both are told` })}>{chosen ? `Give it to ${chosen.name}` : "Choose who"}</Button></>}>
         <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-4" data-order-waiters>
           {(staffQ.data ?? []).map((m) => (
             <OptionTile key={m.userId} label={m.name} current={target === m.userId} onClick={() => setTarget(m.userId)} />
@@ -173,19 +258,8 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     );
   }
 
-  if (step === "split") {
-    return (
-      <Sheet placement={placement} title={`Split the bill on ${title}`} summary="Equal parts are recorded for the cashier. Payment still settles the whole bill." onClose={onClose}
-        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!count || busy} onClick={() => run(() => splitEqually(ctx as Ctx, orderId as string, count as number), { leave: false, message: `Split in ${count} recorded` })}>{count ? `Split in ${count}` : "Choose how many"}</Button></>}>
-        <Text variant="sup" strong>Between how many guests</Text>
-        <div className="grid grid-cols-5 gap-kit-8" data-order-split>
-          {[2, 3, 4, 5, 6].map((n) => (
-            <OptionTile key={n} label={String(n)} second={formatMoney(Math.floor(totalMinor / n / 100) * 100)} current={count === n} onClick={() => setCount(n)} />
-          ))}
-        </div>
-        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
-      </Sheet>
-    );
+  if (step === "split" && ctx && orderId) {
+    return <SplitSheet placement={placement} title={title} ctx={ctx} orderId={orderId} totalMinor={totalMinor} lines={lines} back={back} onClose={onClose} run={(fn, o) => run(fn, o)} busy={busy} error={error} />;
   }
 
   if (step === "status") {
@@ -227,10 +301,13 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   return (
     <Sheet placement={placement} title={title} summary={summary} onClose={onClose}>
       <div className="grid grid-cols-1 gap-kit-8 md:grid-cols-2" data-order-actions>
-        {lead && tableId ? <ActionTile icon="table" title="Move table" line="To a free table, the order goes with it" onClick={() => { setReason(""); setStep("move"); }} /> : null}
-        {lead && tableId ? <ActionTile icon="serviceArea" title="Join tables" line="Put two tables on one bill" onClick={() => { setTarget(null); setStep("join"); }} /> : null}
-        {lead ? <ActionTile icon="staff" title="Change waiter" line="Give this table to someone else" onClick={() => { setTarget(null); setStep("waiter"); }} /> : null}
-        {lead ? <ActionTile icon="count" title="Split bill" line="Equal parts, recorded for the cashier" onClick={() => { setCount(null); setStep("split"); }} /> : null}
+        {lead && tableId && rights.canMoveTable ? <ActionTile icon="table" title="Move table" line="To a free table, the order goes with it" onClick={() => { setTarget(null); setStep("move"); }} /> : null}
+        {lead && tableId && rights.canJoin ? <ActionTile icon="serviceArea" title="Join tables" line="Put two tables on one bill" onClick={() => { setTarget(null); setStep("join"); }} /> : null}
+        {lead && tableId && rights.canJoin && joinedHere.length ? <ActionTile icon="serviceArea" title="Split tables again" line={`${joinedHere.map((t) => t.label).join(", ")} joined here`} onClick={() => { setTarget(null); setStep("unjoin"); }} /> : null}
+        {lead && tableId && rights.canMoveLine ? <ActionTile icon="table" title="Move a line" line="It was entered on the wrong table" onClick={() => setStep("linePick")} /> : null}
+        {lead && rights.canSplit ? <ActionTile icon="count" title="Split bill" line="By guest, by item, by amount or evenly" onClick={() => setStep("split")} /> : null}
+        {lead && rights.canChangeWaiter ? <ActionTile icon="staff" title="Change waiter" line="Give this table to someone else" onClick={() => { setTarget(null); setStep("waiter"); }} /> : null}
+        {tableId && orderId && rights.canHandover ? <ActionTile icon="staff" title="Hand over this table" line="A colleague accepts it on their screen" onClick={() => { setTarget(null); setStep("handover"); }} /> : null}
         {lead && rights.canDiscount && !hasPayment ? <ActionTile icon="revenue" title="Discount" line="A reason is saved with your name" onClick={() => { setReason(""); setStep("discount"); }} /> : null}
         {lead && rights.canVoidLine ? <ActionTile icon="soldOut" title="Void an item" line="Pick the line, say why" onClick={() => setStep("voidPick")} /> : null}
         {canSameAgain ? <ActionTile icon="refresh" title="Same again" line="The drinks of the last round, not sent yet" onClick={onSameAgain} /> : null}
@@ -242,7 +319,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
         </div>
       ) : null}
       {hasPayment && lead ? <Text variant="sup" tone="muted">A payment is already posted, so Discount and Cancel the order are not offered.</Text> : null}
-      {!lead && !canSameAgain && !(rights.canSetTableStatus && tableId) ? <Text variant="sup" tone="muted">Same again shows here once a round of drinks is sent. A supervisor moves, discounts and voids.</Text> : null}
+      {!lead && !canSameAgain && !rights.canHandover && !(rights.canSetTableStatus && tableId) ? <Text variant="sup" tone="muted">Same again shows here once a round of drinks is sent. A supervisor moves, discounts and voids.</Text> : null}
     </Sheet>
   );
 }
