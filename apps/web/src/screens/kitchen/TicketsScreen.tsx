@@ -47,7 +47,7 @@ function TicketCard({ t, now, busy, onReady, showStation }: { t: KitchenTicket; 
           {t.lines.map((l) => (
             <div key={l.id} className="flex flex-col" data-kitchen-line={l.voided ? "voided" : "live"}>
               <span className={["text-kit-row", l.voided ? "text-kit-muted line-through" : "text-kit-text"].join(" ")}>
-                <strong>{l.quantity}</strong> {l.name}
+                <strong>{l.quantity}</strong>{"\u00a0\u00a0"}{l.name}
               </span>
               {[l.serving, l.notes, l.allergy && !l.voided ? `${l.allergy} allergy` : null].filter(Boolean).length ? (
                 <span className={["text-kit-small", l.allergy && !l.voided ? "text-kit-red" : "text-kit-muted"].join(" ")}>

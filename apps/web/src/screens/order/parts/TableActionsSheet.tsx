@@ -92,7 +92,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   // The branch's tables by area (T2): what is joined to this table, and where a line can go.
   const areasQ = useQuery({
     queryKey: ["order-screen", "areas", ctx?.branchId],
-    enabled: Boolean(ctx && (step === "unjoin" || step === "lineTo" || step === "menu" || step === "move")),
+    enabled: Boolean(ctx && (step === "unjoin" || step === "lineTo" || step === "menu" || step === "move" || step === "join")),
     queryFn: () => loadAreas((ctx as Ctx).token, (ctx as Ctx).branchId),
     // Read fresh each time the sheet opens: a join made a moment ago must show "Split tables again".
     staleTime: 0,
@@ -111,10 +111,10 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   // One area at a time in Move table and Move a line (T5 look review: no wall of every table).
   const hereArea = (areasQ.data ?? []).find((a) => (a.tables ?? []).some((t) => t.id === tableId))?.id ?? null;
   const [areaPick, setAreaPick] = useState<string | null>(null);
-  const areaId = areaPick ?? hereArea ?? areasQ.data?.[0]?.id ?? null;
+  const areaId = areaPick ?? hereArea ?? areasQ.data?.find((a) => a.kind !== "TABS")?.id ?? null;
   const areaChips = (counts: (id: string) => number) => (
     <div className="flex flex-wrap gap-kit-8" role="group" aria-label="Areas">
-      {(areasQ.data ?? []).filter((a) => counts(a.id) > 0).map((a) => (
+      {(areasQ.data ?? []).filter((a) => a.kind !== "TABS" && counts(a.id) > 0).map((a) => (
         <Chip key={a.id} label={a.name} count={counts(a.id)} current={areaId === a.id} onClick={() => { setAreaPick(a.id); setTarget(null); }} />
       ))}
     </div>
@@ -188,10 +188,13 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     return (
       <Sheet placement={placement} title={`Join ${title} with another`} summary={`${formatMoney(totalMinor)} · pick the table to join to ${title}`} onClose={onClose}
         footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinTables(ctx as Ctx, tableId as string, target as string), { leave: false, message: `${chosen?.tableLabel} joined to ${title}: one bill` })}>{chosen ? `Join 2 tables · ${formatMoney(sum)}` : "Choose a table"}</Button></>}>
+        {areaChips((id) => (othersQ.data ?? []).filter((o) => o.tableId && o.tableId !== tableId && areaOfTable(o.tableId) === id).length)}
         <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3" data-order-join>
-          {(othersQ.data ?? []).filter((o) => o.tableId && o.tableId !== tableId).map((o) => (
-            <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterName, groupShillings(o.totalMinor)].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
-          ))}
+          {(othersQ.data ?? [])
+            .filter((o) => o.tableId && o.tableId !== tableId && (!areaId || areaOfTable(o.tableId) === areaId))
+            .map((o) => (
+              <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterName, o.totalMinor > 0 ? formatMoney(o.totalMinor) : "Nothing yet"].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
+            ))}
         </div>
         {chosen ? (
           <RowGroup>

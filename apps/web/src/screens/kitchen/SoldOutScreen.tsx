@@ -135,7 +135,7 @@ export function SoldOutScreen() {
           <div className="grid grid-cols-4 gap-kit-8">
             {QUICK.map((k) => <OptionTile key={k} label={String(k)} current={n === k && count !== ""} onClick={() => setCount(String(k))} />)}
           </div>
-          <Text variant="sup" tone="muted">{`Each send of ${setting.name} takes one. Waiters see “N left”; at 0 it greys out.`}</Text>
+          <Text variant="sup" tone="muted">{`Each send of ${setting.name} takes one. Waiters see “${count ? n : 12} left”; at 0 it greys out.`}</Text>
         </Sheet>
       ) : null}
     </div>

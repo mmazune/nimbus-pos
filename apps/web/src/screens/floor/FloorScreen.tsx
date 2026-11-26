@@ -403,8 +403,8 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
                 value={whose}
                 onChange={(k) => setWhosePick(k as "mine" | "all")}
                 options={[
-                  { key: "mine", label: `My tables · ${mineCount}` },
-                  { key: "all", label: "All tables" },
+                  { key: "mine", label: `My ${tabsArea ? "tabs" : "tables"} · ${tabsArea ? mineTiles.filter((t) => t.isTab).length : mineCount}` },
+                  { key: "all", label: tabsArea ? "All tabs" : "All tables" },
                 ]}
               />
             ) : null}
