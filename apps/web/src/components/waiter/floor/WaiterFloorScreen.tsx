@@ -88,6 +88,7 @@ export function WaiterFloorScreen() {
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
@@ -214,6 +215,7 @@ export function WaiterFloorScreen() {
       <FloorScreen
         role="waiter"
         source={floorQuery.data}
+        readAt={floorQuery.dataUpdatedAt}
         viewer={viewer}
         isLoading={floorQuery.isLoading}
         error={errorCopy}

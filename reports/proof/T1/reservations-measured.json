@@ -6,10 +6,10 @@
     "small": [],
     "tinyText": [],
     "filled": [
-      "Seat at table 35"
+      "Seat at table 1"
     ],
-    "checkedText": 79,
-    "checkedTargets": 25
+    "checkedText": 71,
+    "checkedTargets": 23
   },
   "supervisor-create-1280": {
     "viewport": "1280x800",
@@ -20,8 +20,8 @@
     "filled": [
       "Create booking"
     ],
-    "checkedText": 77,
-    "checkedTargets": 35
+    "checkedText": 69,
+    "checkedTargets": 33
   },
   "supervisor-1280": {
     "viewport": "1280x800",
@@ -30,8 +30,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 85,
-    "checkedTargets": 34
+    "checkedText": 77,
+    "checkedTargets": 32
   },
   "waiter-390": {
     "viewport": "390x844",
@@ -40,7 +40,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 8,
+    "checkedText": 7,
     "checkedTargets": 5
   },
   "supervisor-390": {
@@ -50,8 +50,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 61,
-    "checkedTargets": 24
+    "checkedText": 52,
+    "checkedTargets": 22
   },
   "supervisor-history-390": {
     "viewport": "390x844",
@@ -60,7 +60,43 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 91,
-    "checkedTargets": 29
+    "checkedText": 67,
+    "checkedTargets": 23
+  },
+  "waiter-detail-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Seat at table 4"
+    ],
+    "checkedText": 66,
+    "checkedTargets": 22
+  },
+  "supervisor-create-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Create booking"
+    ],
+    "checkedText": 66,
+    "checkedTargets": 31
+  },
+  "supervisor-cancel-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Cancel booking"
+    ],
+    "checkedText": 63,
+    "checkedTargets": 27
   }
 }

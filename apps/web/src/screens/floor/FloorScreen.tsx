@@ -54,6 +54,8 @@ const OPEN_STATES = new Set(["open", "notSent"]);
 export type FloorScreenProps = {
   role: "waiter" | "cashier" | "supervisor";
   source: FloorSource | undefined;
+  /** When `source` was read (ms), for "as at HH:MM". */
+  readAt?: number;
   viewer: FloorViewer;
   isLoading: boolean;
   error?: { title: string; description: string } | null;
@@ -103,7 +105,7 @@ function Grid({ tiles, layout, phone, onOpen }: { tiles: readonly FloorTile[]; l
   );
 }
 
-export function FloorScreen({ role, source, viewer, isLoading, error, onRetry, onOpenTable, extraAction }: FloorScreenProps) {
+export function FloorScreen({ role, source, readAt, viewer, isLoading, error, onRetry, onOpenTable, extraAction }: FloorScreenProps) {
   const wide = useWide();
   const tiles = useMemo(() => (source ? buildFloorTiles(source, viewer) : []), [source, viewer]);
   const areas = useMemo(() => floorAreas(tiles), [tiles]);
@@ -141,6 +143,7 @@ export function FloorScreen({ role, source, viewer, isLoading, error, onRetry, o
     title: "Floor",
     summary,
     summaryShort,
+    asAt: source ? readAt : undefined,
     search: { label: "Find a table", onOpen: () => setSearching(true) },
     phoneActions: [{ icon: "search", label: "Find a table", onClick: () => setSearching(true) }],
   });

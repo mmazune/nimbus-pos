@@ -76,6 +76,7 @@ export function SupervisorFloorScreen() {
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
+    refetchInterval: 30_000,
   });
 
   const tables = useMemo(
@@ -187,6 +188,7 @@ export function SupervisorFloorScreen() {
       <FloorScreen
         role="supervisor"
         source={floorQuery.data}
+        readAt={floorQuery.dataUpdatedAt}
         viewer={FLOOR_VIEWER}
         isLoading={floorQuery.isLoading}
         error={floorError}

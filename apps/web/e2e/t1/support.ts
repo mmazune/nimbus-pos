@@ -34,13 +34,14 @@ function password(): string {
   return p;
 }
 
-async function api<T>(path: string, init: { method?: string; token?: string; body?: unknown } = {}): Promise<T> {
+async function api<T>(path: string, init: { method?: string; token?: string; body?: unknown; headers?: Record<string, string> } = {}): Promise<T> {
   const res = await fetch(`${API}/api${path}`, {
     method: init.method ?? "GET",
     headers: {
       "content-type": "application/json",
       "x-branch-id": BRANCH,
       ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
+      ...(init.headers ?? {}),
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
@@ -62,9 +63,9 @@ export async function apiSession(who: Person) {
   return value;
 }
 
-export async function apiCall<T>(who: Person, path: string, method = "GET", body?: unknown): Promise<T> {
+export async function apiCall<T>(who: Person, path: string, method = "GET", body?: unknown, headers?: Record<string, string>): Promise<T> {
   const { token } = await apiSession(who);
-  return api<T>(path, { method, token, body });
+  return api<T>(path, { method, token, body, headers });
 }
 
 const pins = new Map<Person, string>();
@@ -101,6 +102,8 @@ export async function pinSignIn(page: Page, who: Person) {
   for (const d of pin) await page.getByRole("button", { name: d, exact: true }).click();
   await page.getByRole("button", { name: /^enter$/i }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 45_000 });
+  // the landing redirect has settled once the touch shell is on screen
+  await page.locator("[data-touch-shell]").waitFor({ timeout: 45_000 });
 }
 
 export type Rules = {
@@ -153,6 +156,7 @@ export async function pageRules(page: Page): Promise<Rules> {
       const fs = parseFloat(getComputedStyle(el).fontSize);
       if (fs < 12) out.tinyText.push(`${el.tagName} "${name(el)}" ${fs}px`);
     }
+    const modal = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')).find((d) => d.getBoundingClientRect().height > 0) ?? null;
     for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("button, a, input, select, textarea, [role=tab]"))) {
       if (!visible(el)) continue;
       out.checkedTargets += 1;
@@ -160,7 +164,9 @@ export async function pageRules(page: Page): Promise<Rules> {
       if (el.offsetWidth < 44 || el.offsetHeight < 44) out.small.push(`${el.tagName} "${name(el)}" ${el.offsetWidth}x${el.offsetHeight}`);
       // A chosen chip or option (aria-pressed / aria-selected) is a selection, not an action button.
       const chosen = el.getAttribute("aria-pressed") === "true" || el.getAttribute("aria-selected") === "true";
-      if (el.tagName === "BUTTON" && !chosen && !el.closest("header, nav") && getComputedStyle(el).backgroundColor === primaryRgb) out.filled.push(name(el));
+      // With a modal sheet open, the page behind is dimmed and out of reach: count the sheet only.
+      const inLayer = !modal || modal.contains(el);
+      if (el.tagName === "BUTTON" && inLayer && !chosen && !el.closest("header, nav") && getComputedStyle(el).backgroundColor === primaryRgb) out.filled.push(name(el));
     }
     return out;
   });

@@ -179,3 +179,45 @@ test("both roles at 390 × 844 and the supervisor History", async ({ page }) => 
   await rules(page, "supervisor-history-390");
   await shot(page, "Reservations-supervisor-history-390x844.png");
 });
+
+test("at 390 × 844: the waiter seats from the booking sheet; the supervisor creates and cancels", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const made = await apiCall<{ id: string }>("supervisor", "/reservations", "POST", {
+    customerName: `Phone Guest ${stamp}`,
+    partySize: 2,
+    reservationAt: minutesFromNow(40),
+    source: "PHONE",
+  });
+  await apiCall("supervisor", `/reservations/${made.id}/confirm`, "PATCH", {});
+
+  await pinSignIn(page, "waiter");
+  await page.goto("/waiter/reservations");
+  await page.getByRole("button", { name: new RegExp(`P\\. Guest ${stamp}`) }).click();
+  const sheet = page.getByRole("dialog", { name: new RegExp(`P\\. Guest ${stamp}`) });
+  await expect(sheet).toBeVisible();
+  await rules(page, "waiter-detail-sheet-390");
+  await shot(page, "Reservations-waiter-sheet-390x844.png");
+  await sheet.getByRole("button", { name: /^Seat at / }).click();
+  await expect(sheet.getByText(/^Seated at /)).toBeVisible();
+
+  await pinSignIn(page, "supervisor");
+  await page.goto("/supervisor/reservations");
+  await page.getByRole("button", { name: "New reservation" }).click();
+  const create = page.getByRole("dialog", { name: "New reservation" });
+  await create.getByLabel("Guest's name").fill(`Phone Booking ${stamp}`);
+  await create.getByLabel("Guests").fill("3");
+  const later = new Date(Date.now() + 150 * 60_000);
+  await create.getByLabel("Time").fill(`${String(later.getHours()).padStart(2, "0")}:${String(later.getMinutes()).padStart(2, "0")}`);
+  await rules(page, "supervisor-create-sheet-390");
+  await shot(page, "Reservations-supervisor-new-390x844.png");
+  await create.getByRole("button", { name: "Create booking" }).click();
+  await expect(create).toHaveCount(0);
+  const detail = page.getByRole("dialog", { name: new RegExp(`P\\. Booking ${stamp}`) });
+  if (!(await detail.isVisible())) await page.getByRole("button", { name: new RegExp(`P\\. Booking ${stamp}`) }).click();
+  await detail.getByRole("button", { name: "Cancel booking" }).click();
+  const cancel = page.getByRole("dialog", { name: "Cancel booking" });
+  await cancel.getByLabel(/why is it cancelled/i).fill("Booked twice by mistake");
+  await rules(page, "supervisor-cancel-sheet-390");
+  await cancel.getByRole("button", { name: "Cancel booking" }).click();
+  await expect(cancel).toHaveCount(0);
+});

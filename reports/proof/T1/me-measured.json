@@ -1,0 +1,109 @@
+{
+  "myDay": {
+    "before": {
+      "sales": "UGX 9,905,200",
+      "served": "28"
+    },
+    "after": {
+      "sales": "UGX 9,947,200",
+      "served": "29"
+    },
+    "orderTotal": "42000"
+  },
+  "waiter-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 26,
+    "checkedTargets": 9
+  },
+  "waiter-leave-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Send the request"
+    ],
+    "checkedText": 38,
+    "checkedTargets": 19
+  },
+  "waiter-end-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "End my shift"
+    ],
+    "checkedText": 33,
+    "checkedTargets": 12
+  },
+  "cashier-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 27,
+    "checkedTargets": 10
+  },
+  "supervisor-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 24,
+    "checkedTargets": 10
+  },
+  "waiter-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 15,
+    "checkedTargets": 5
+  },
+  "cashier-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 16,
+    "checkedTargets": 6
+  },
+  "supervisor-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 16,
+    "checkedTargets": 6
+  }
+}

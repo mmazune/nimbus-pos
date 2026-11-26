@@ -31,6 +31,8 @@ export type TouchHeaderConfig = {
   title: string;
   /** "Main hall · 17 of 32 tables open". The shell adds " · as at 19:42". */
   summary?: string;
+  /** When the data on screen was read (ms). "as at HH:MM" shows this, not the wall clock. */
+  asAt?: number;
   /** The same line for terminals under 1280 px wide (Floor-1024: "17 of 32 open"). */
   summaryShort?: string;
   /** The header search box, where the drawing has one. */
@@ -47,7 +49,7 @@ export function useTouchHeader(config: TouchHeaderConfig) {
   const slot = useContext(TouchHeaderSlot);
   const latest = useRef(config);
   latest.current = config;
-  const key = [config.title, config.summary ?? "", config.summaryShort ?? "", config.search?.label ?? "", config.phoneActions?.map((a) => a.label).join("|") ?? ""].join("¦");
+  const key = [config.title, config.summary ?? "", config.summaryShort ?? "", config.asAt ?? "", config.search?.label ?? "", config.phoneActions?.map((a) => a.label).join("|") ?? ""].join("¦");
   useEffect(() => {
     if (!slot) return;
     const c = latest.current;
@@ -55,6 +57,7 @@ export function useTouchHeader(config: TouchHeaderConfig) {
       title: c.title,
       summary: c.summary,
       summaryShort: c.summaryShort,
+      asAt: c.asAt,
       search: c.search ? { label: c.search.label, onOpen: () => latest.current.search?.onOpen() } : undefined,
       phoneActions: c.phoneActions?.map((a, i) => ({
         ...a,
@@ -65,17 +68,8 @@ export function useTouchHeader(config: TouchHeaderConfig) {
   useEffect(() => () => slot?.set(null), [slot]);
 }
 
-/** "19:42", re-read every 20 s. Empty until mounted so the server and client agree. */
-export function useClockMinute(): string {
-  const [now, setNow] = useState<string>("");
-  useEffect(() => {
-    const read = () =>
-      setNow(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()));
-    read();
-    const id = window.setInterval(read, 20_000);
-    return () => window.clearInterval(id);
-  }, []);
-  return now;
+function hhmmOf(ms: number): string {
+  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(ms));
 }
 
 /** True from `px` wide; false on the server and before mount. */
@@ -102,7 +96,7 @@ const ROLE_WORD: Record<TouchRole, string> = { waiter: "Waiter", cashier: "Cashi
 export type TouchShellProps = {
   role: TouchRole;
   children: ReactNode;
-  /** One line under the header (a shift that is not open). */
+  /** One line under the header (a shift that is not open). Wrap it in `TouchNotice`. */
   notice?: ReactNode;
   idleHandler?: ReactNode;
 };
@@ -111,7 +105,6 @@ export function TouchShell({ role, children, notice, idleHandler }: TouchShellPr
   const router = useRouter();
   const { displayName, logout } = useAuth();
   const station = useStationTerminalLabel();
-  const clock = useClockMinute();
   const [config, setConfig] = useState<TouchHeaderConfig | null>(null);
   const slot = useMemo<Slot>(() => ({ set: setConfig }), []);
   const [locking, setLocking] = useState(false);
@@ -121,8 +114,10 @@ export function TouchShell({ role, children, notice, idleHandler }: TouchShellPr
   const fallbackTitle = sections.find((s) => s.key === current)?.label ?? "";
   const title = config?.title ?? fallbackTitle;
   const roomyHeader = useMinWidth(1280);
-  const summary = withClock(config?.summary, clock);
-  const terminalSummary = withClock(roomyHeader ? config?.summary : (config?.summaryShort ?? config?.summary), clock);
+  // "as at" is when the screen's data was read; a screen with no read time gets no clock.
+  const asAt = config?.asAt ? hhmmOf(config.asAt) : "";
+  const summary = withClock(config?.summary, asAt);
+  const terminalSummary = withClock(roomyHeader ? config?.summary : (config?.summaryShort ?? config?.summary), asAt);
   const person = {
     name: formatOperationalStaffIdentity({ displayName }) ?? displayName ?? "",
     role: ROLE_WORD[role],
@@ -138,7 +133,8 @@ export function TouchShell({ role, children, notice, idleHandler }: TouchShellPr
 
   return (
     <TouchHeaderSlot.Provider value={slot}>
-      <div className="relative flex h-dvh flex-col bg-kit-canvas font-kit" data-touch-shell={role}>
+      {/* isolate + bars at -z-10: a sheet a screen opens covers the bars, never slips under them. */}
+      <div className="relative isolate flex h-dvh flex-col bg-kit-canvas font-kit" data-touch-shell={role}>
         {idleHandler}
         <div className="hidden flex-none sm:block" data-touch-header="terminal">
           <TouchHeader
@@ -155,19 +151,24 @@ export function TouchShell({ role, children, notice, idleHandler }: TouchShellPr
         <div className="flex-none sm:hidden" data-touch-header="phone">
           <HeaderBand title={title} summary={summary} actions={config?.phoneActions} />
         </div>
-        {notice ? <div className="flex-none px-kit-16 pt-kit-12 sm:px-kit-32">{notice}</div> : null}
+        {notice}
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-touch-body>
           {children}
         </main>
-        <div className="hidden flex-none sm:block" data-touch-bar="terminal">
+        <div className="relative -z-10 hidden flex-none sm:block" data-touch-bar="terminal">
           <BottomBar sections={sections} currentKey={current} />
         </div>
-        <div className="flex-none sm:hidden" data-touch-bar="phone">
+        <div className="relative -z-10 flex-none sm:hidden" data-touch-bar="phone">
           <TabBar sections={sections} currentKey={current} />
         </div>
       </div>
     </TouchHeaderSlot.Provider>
   );
+}
+
+/** The one line under the header, with the page's gutters. */
+export function TouchNotice({ children }: { children: ReactNode }) {
+  return <div className="flex-none px-kit-16 pt-kit-12 sm:px-kit-32">{children}</div>;
 }
 
 /** For screens not rebuilt yet: the old page body, scrolling inside the shell with the old gutters. */

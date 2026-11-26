@@ -63,6 +63,18 @@ const VIEWS: Record<Role, readonly ResView[]> = {
 const VIEW_WORD: Record<ResView, string> = { arriving: "Arriving", seated: "Seated", attention: "Attention", history: "History" };
 const HISTORY_PAGE = 25;
 
+/** Every page of a paged list (100 a page, at most 10 pages), so counts are never cut at one page. */
+async function allPages(load: (page: number) => Promise<{ data: SupervisorReservation[]; total: number }>) {
+  const first = await load(1);
+  const rows = [...(first.data ?? [])];
+  for (let page = 2; rows.length < (first.total ?? 0) && page <= 10; page += 1) {
+    const next = await load(page);
+    if (!next.data?.length) break;
+    rows.push(...next.data);
+  }
+  return { ...first, data: rows };
+}
+
 function errorText(e: unknown): string {
   if (e instanceof ApiError) return e.message;
   return e instanceof Error ? e.message : "That did not go through.";
@@ -79,6 +91,13 @@ function Fact({ label, value }: { label: string; value: string }) {
       </Text>
     </div>
   );
+}
+
+/** Deposits held now: only RECEIVED ones can be given back or kept (the service acts on RECEIVED only). */
+function heldDeposit(r: SupervisorReservation): bigint {
+  return (r.deposits ?? [])
+    .filter((d) => String(d.status ?? "").toUpperCase() === "RECEIVED")
+    .reduce((acc, d) => acc + toCents(d.amount), 0n);
 }
 
 function depositWords(r: SupervisorReservation): string | undefined {
@@ -112,20 +131,23 @@ export function ReservationsScreen({ role }: { role: Role }) {
   const [failure, setFailure] = useState<string | null>(null);
   const [sheet, setSheet] = useState<null | "create" | "cancel" | "noShow" | "changeTable" | "detail">(null);
   const [choice, setChoice] = useState<string | null>(null);
+  const [noShowOutcome, setNoShowOutcome] = useState<"FORFEIT" | "REFUND">("FORFEIT");
 
   const todayQ = useQuery({
     queryKey: [...KEY, "today", branch, day],
     enabled: ready,
-    queryFn: () => fetchSupervisorActiveReservations(token, branch, { date: day, pageSize: 100 }),
+    queryFn: () => allPages((page) => fetchSupervisorActiveReservations(token, branch, { date: day, page, pageSize: 100 })),
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
+    refetchInterval: 30_000,
   });
   const activeQ = useQuery({
     queryKey: [...KEY, "active", branch],
     enabled: ready && role === "supervisor",
-    queryFn: () => fetchSupervisorActiveReservations(token, branch, { pageSize: 100 }),
+    queryFn: () => allPages((page) => fetchSupervisorActiveReservations(token, branch, { page, pageSize: 100 })),
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
+    refetchInterval: 30_000,
   });
   const historyQ = useQuery({
     queryKey: [...KEY, "history", branch, historyPage],
@@ -146,6 +168,7 @@ export function ReservationsScreen({ role }: { role: Role }) {
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
+    refetchInterval: 30_000,
   });
   const tiles: FloorTile[] = useMemo(() => floorQ.data ?? [], [floorQ.data]);
 
@@ -166,6 +189,7 @@ export function ReservationsScreen({ role }: { role: Role }) {
   useTouchHeader({
     title: "Reservations",
     summary: todayQ.data ? (day === today ? summaryLine(todayRows) : `${dayLabel(`${day}T12:00:00`)} · ${lists.arriving.length} booked`) : undefined,
+    asAt: todayQ.data ? todayQ.dataUpdatedAt : undefined,
   });
 
   function go(next: { view?: ResView; id?: string | null; date?: string | null }) {
@@ -206,7 +230,8 @@ export function ReservationsScreen({ role }: { role: Role }) {
     act.mutate(fn, {
       onSuccess: () => {
         setNotice(done);
-        setSheet(wide.phone && sheet !== "detail" ? "detail" : null);
+        // On a phone the booking sheet stays open to show what happened; on a terminal the side panel does.
+        setSheet(wide.phone ? "detail" : null);
         after?.();
       },
     });
@@ -225,7 +250,7 @@ export function ReservationsScreen({ role }: { role: Role }) {
     let primary: ReactNode = null;
     if (actions.has("seat") && picked) {
       primary = (
-        <Button tone="filled" disabled={act.isPending} onClick={() => run(() => seatSupervisorReservation(token, branch, r.id, { tableId: picked.id }), `Seated at ${tileName(picked)}.`)}>
+        <Button tone="filled" disabled={act.isPending} onClick={() => run(() => seatSupervisorReservation(token, branch, r.id, role === "waiter" ? { tableId: picked.id, createOrder: true } : { tableId: picked.id }), `Seated at ${tileName(picked)}.`)}>
           {`Seat at ${tileName(picked).replace(/^Table /, "table ")}`}
         </Button>
       );
@@ -479,15 +504,22 @@ export function ReservationsScreen({ role }: { role: Role }) {
             <Button tone="text" onClick={() => setSheet(null)}>
               Keep waiting
             </Button>
-            <Button tone="filled" fill disabled={act.isPending} onClick={() => run(() => markSupervisorReservationNoShow(token, branch, selected.id, toCents(selected.depositRequired) > 0n ? { depositOutcome: "FORFEIT" } : {}), "Marked as no-show.")}>
+            <Button tone="filled" fill disabled={act.isPending} onClick={() => run(() => markSupervisorReservationNoShow(token, branch, selected.id, { depositOutcome: heldDeposit(selected) > 0n ? noShowOutcome : "NO_DEPOSIT" }), "Marked as no-show.")}>
               Mark as no-show
             </Button>
           </>
         }
       >
-        <Text variant="body" tone="muted">
-          {toCents(selected.depositRequired) > 0n ? "The deposit is kept." : "The table is freed for walk-ins."}
-        </Text>
+        {heldDeposit(selected) > 0n ? (
+          <div className="grid grid-cols-2 gap-kit-8">
+            <OptionTile label="Keep the deposit" second={`UGX ${groupCents(heldDeposit(selected))}`} current={noShowOutcome === "FORFEIT"} onClick={() => setNoShowOutcome("FORFEIT")} />
+            <OptionTile label="Give it back" second={`UGX ${groupCents(heldDeposit(selected))}`} current={noShowOutcome === "REFUND"} onClick={() => setNoShowOutcome("REFUND")} />
+          </div>
+        ) : (
+          <Text variant="body" tone="muted">
+            No deposit was received. The table is freed for walk-ins.
+          </Text>
+        )}
         {failure ? <Banner tone="red" title={failure} /> : null}
       </Sheet>
     );
@@ -579,7 +611,8 @@ function CancelSheet({
 }) {
   const [reason, setReason] = useState("");
   const [tried, setTried] = useState(false);
-  const hasDeposit = toCents(r.depositRequired) > 0n || (r.deposits ?? []).length > 0;
+  const held = heldDeposit(r);
+  const hasDeposit = held > 0n;
   const [outcome, setOutcome] = useState<"REFUND" | "FORFEIT">("REFUND");
   const missing = tried && !reason.trim();
   return (
@@ -610,8 +643,8 @@ function CancelSheet({
       <Field label="Why is it cancelled?" value={reason} onChange={setReason} required error={missing ? "Write the reason." : undefined} placeholder="The guest called to cancel" />
       {hasDeposit ? (
         <div className="grid grid-cols-2 gap-kit-8">
-          <OptionTile label="Give the deposit back" current={outcome === "REFUND"} onClick={() => setOutcome("REFUND")} />
-          <OptionTile label="Keep the deposit" current={outcome === "FORFEIT"} onClick={() => setOutcome("FORFEIT")} />
+          <OptionTile label="Give the deposit back" second={`UGX ${groupCents(held)}`} current={outcome === "REFUND"} onClick={() => setOutcome("REFUND")} />
+          <OptionTile label="Keep the deposit" second={`UGX ${groupCents(held)}`} current={outcome === "FORFEIT"} onClick={() => setOutcome("FORFEIT")} />
         </div>
       ) : null}
       {failure ? <Banner tone="red" title={failure} /> : null}

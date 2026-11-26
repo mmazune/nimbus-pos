@@ -2,21 +2,27 @@ import { apiRequest } from "@/lib/api/client";
 
 type Page<T> = { data?: T[] | null; total?: number | null };
 
+const PAGE = 500;
+
 /**
- * Every open order in the branch, page by page. One page of 100 is not enough:
- * the demo branch has 135 open orders, and a tile built from a cut list lies.
- * Stops at the server's `total`, or at a short page, or after 20 pages.
+ * Every open order in the branch. One page of 100 is not enough (the demo branch
+ * has 135 open orders, and a tile built from a cut list lies), and paging by
+ * offset is unsafe here: orders sort by createdAt, many share the same instant,
+ * so a row can slip between pages. So: one large page, more only if `total` says
+ * so, and every row de-duplicated by id.
  */
-export async function loadAllActiveOrders<T>(token: string, branchId: string): Promise<T[]> {
-  const out: T[] = [];
-  for (let page = 1; page <= 20; page += 1) {
-    const res = await apiRequest<Page<T>>(
-      `/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100&page=${page}`,
-      { token, branchId },
-    );
+export async function loadAllActiveOrders<T extends { id: string }>(token: string, branchId: string): Promise<T[]> {
+  return loadOrders<T>(token, branchId, "excludeStatus=CLOSED,VOIDED");
+}
+
+/** All orders matching `query`, in pages of 500, de-duplicated by id (at most 10 pages). */
+export async function loadOrders<T extends { id: string }>(token: string, branchId: string, query: string): Promise<T[]> {
+  const byId = new Map<string, T>();
+  for (let page = 1; page <= 10; page += 1) {
+    const res = await apiRequest<Page<T>>(`/api/pos/orders?${query}&pageSize=${PAGE}&page=${page}`, { token, branchId });
     const rows = res.data ?? [];
-    out.push(...rows);
-    if (rows.length < 100 || (typeof res.total === "number" && out.length >= res.total)) break;
+    for (const r of rows) byId.set(r.id, r);
+    if (rows.length < PAGE || (typeof res.total === "number" && byId.size >= res.total)) break;
   }
-  return out;
+  return [...byId.values()];
 }

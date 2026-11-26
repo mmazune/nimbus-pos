@@ -94,6 +94,7 @@ export function CashierFloorScreen() {
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
@@ -224,6 +225,7 @@ export function CashierFloorScreen() {
       <FloorScreen
         role="cashier"
         source={floorQuery.data}
+        readAt={floorQuery.dataUpdatedAt}
         viewer={FLOOR_VIEWER}
         isLoading={floorQuery.isLoading}
         error={floorError}

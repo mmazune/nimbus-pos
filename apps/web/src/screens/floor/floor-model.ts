@@ -166,7 +166,26 @@ export function buildFloorTiles(source: FloorSource, viewer: FloorViewer, now: D
       areaName: areaName || "Other",
       seats: t.capacity ?? undefined,
     };
-    const orders = (ordersByTable.get(t.id) ?? []).slice().sort((a, b) => String(a.createdAt ?? "").localeCompare(String(b.createdAt ?? "")));
+    const all = (ordersByTable.get(t.id) ?? []).slice().sort((a, b) => String(a.createdAt ?? "").localeCompare(String(b.createdAt ?? "")));
+    // An order with nothing on it yet (NEW, no items) does not make a table busy — as the old
+    // floor model read it. If the table is marked occupied (a seated booking), it shows open.
+    const orders = all.filter((o) => up(o.status) !== "NEW" || (o.items?.length ?? 0) > 0);
+    const status = up(t.status);
+    if (!orders.length && all.length && status === "OCCUPIED") {
+      const oldest = all[0];
+      const ownerId = oldest.userId || oldest.user?.id;
+      const mine = Boolean(viewer.userId && ownerId === viewer.userId);
+      const opened = oldest.createdAt ? new Date(oldest.createdAt) : null;
+      tiles.push({
+        ...base,
+        state: "open",
+        mine,
+        others: viewer.ownership === "waiter" && !mine,
+        who: viewer.ownership === "waiter" && mine ? "You" : shortName(oldest.user),
+        minutes: opened && !Number.isNaN(opened.getTime()) ? formatMinutes(Math.floor((now.getTime() - opened.getTime()) / 60000)) : undefined,
+      });
+      continue;
+    }
     if (orders.length) {
       // A table with several open orders: whose, mine and minutes come from the oldest; the amount is the sum.
       const oldest = orders[0];
@@ -190,7 +209,6 @@ export function buildFloorTiles(source: FloorSource, viewer: FloorViewer, now: D
       });
       continue;
     }
-    const status = up(t.status);
     if (status === "CLEANING") {
       tiles.push({ ...base, state: "cleaning", mine: false, others: false });
       continue;

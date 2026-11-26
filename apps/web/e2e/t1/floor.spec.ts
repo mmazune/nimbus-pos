@@ -158,3 +158,34 @@ test("tapping a table opens what it opened before, for each role", async ({ page
     await shot(page, `tap-${who}-1280x800.png`);
   }
 });
+
+test("cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search sheet open", async ({ page }) => {
+  for (const who of ["cashier", "supervisor"] as const) {
+    for (const [w, h] of [[1280, 800], [390, 844]] as const) {
+      await page.setViewportSize({ width: w, height: h });
+      await pinSignIn(page, who);
+      await page.goto(`/${who}/floor`);
+      await expect(page.locator("[data-floor-grid]").first()).toBeVisible();
+      const r = await pageRules(page);
+      measured[`${who}-${w}`] = { chrome: await chrome(page), rules: r };
+      expectRules(r);
+      await shot(page, `Floor-${who}-${w}x${h}.png`);
+    }
+  }
+  // the search sheet, as a waiter would use it
+  for (const [w, h] of [[1280, 800], [390, 844]] as const) {
+    await page.setViewportSize({ width: w, height: h });
+    await pinSignIn(page, "waiter");
+    await page.goto("/waiter/floor");
+    await page.getByRole("button", { name: /find a table/i }).first().click();
+    const sheet = page.getByRole("dialog", { name: "Find a table" });
+    await sheet.getByLabel(/table number/i).fill("12");
+    await expect(sheet.getByRole("button", { name: /^Table 12,/ })).toBeVisible();
+    const r = await pageRules(page);
+    measured[`search-${w}`] = r;
+    expectRules(r);
+    await shot(page, `Floor-search-${w}x${h}.png`);
+    await sheet.getByRole("button", { name: /^Table 12,/ }).click();
+    await expect(page.locator("[data-operational-workspace]")).toBeVisible();
+  }
+});
