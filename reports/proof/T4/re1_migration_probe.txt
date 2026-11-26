@@ -1,0 +1,11 @@
+== case A+B (no duplicate ticket line): apply the E1 migration
+   migration: applied
+   id after_backfill has_ticket
+   probe_line_a1 SENT t
+   probe_line_a2_after_send SENT f
+   probe_line_b1 SENT f
+   (3 rows)
+== case A+B+C (a line already on two tickets): apply the E1 migration
+   psql:/home/user/nimbus-pos/packages/db/prisma/migrations/20261126000000_e1_order_truth/migration.sql:25: ERROR:  could not create unique index "kds_ticket_items_order_item_id_key"
+   DETAIL:  Key (order_item_id)=(probe_line_a1) is duplicated.
+   migration: ABORTED (the deploy stops here; nothing of E1 is applied)

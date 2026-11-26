@@ -1,0 +1,14 @@
+Final gates on HEAD e506716, 2026-11-26T11:07:40Z
+API typecheck (tsc --noEmit) exit 0
+API build (nest build) exit 0
+Test Suites: 71 passed, 71 total
+Tests:       1309 passed, 1309 total
+eslint (no --fix) on T4's 4 changed API files:
+  exit 0 — ✖ 2 problems (0 errors, 2 warnings)
+demo-venue strict tsc exit 0 (no ESLint config covers packages/db)
+prettier: All matched files use Prettier code style!
+check:event green
+shell scripts: bash -n ok
+JSON files parse: rights-matrix.json + 7 venue data files
+outside T4 folders: 0 files; product code (apps/api/src, apps/web, packages/db/prisma): 0 files
+git diff --check origin/e1/order-truth...HEAD: clean (after stripping psql's trailing spaces from the proof files)

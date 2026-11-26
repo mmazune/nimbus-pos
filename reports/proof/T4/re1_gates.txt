@@ -1,0 +1,8 @@
+typecheck exit 0 (tsc --noEmit)
+build exit 0 (nest build)
+PASS src/modules/budget/dto/query-dtos.spec.ts
+
+Test Suites: 71 passed, 71 total
+Tests:       1309 passed, 1309 total
+Snapshots:   0 total
+Time:        16.779 s

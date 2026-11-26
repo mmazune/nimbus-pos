@@ -1,0 +1,7 @@
+API smoke on a freshly loaded Tapas Downtown database (sign-ins from the loader's stderr, passed in DEMO_SIGNIN in the same shell, never a file):
+    ✓ every PIN role signs in by PIN; owner and accountant by password
+    ✓ owner and accountant sign in with their one-time passwords
+    ✓ a loaded waiter adds and sends on a loaded table; the bar gets a ticket for that line only
+    ✓ a cashier takes cash on a bill-asked table: change given, table free, booking complete
+    ✓ a new order after the load gets the next number, and a new booking too
+Tests:       5 passed, 5 total

@@ -1,0 +1,44 @@
+-- Tapas Downtown: counts and bad-state checks. Run after packages/db/demo-venue/run.sh:
+--   psql -d <throwaway db> < packages/db/demo-venue/check.sql
+\pset footer off
+\echo '-- people per role'
+select r.name as role, count(*) from memberships m join roles r on r.id=m.role_id join branches b on b.id=m.branch_id where b.slug='tapas-downtown' group by 1 order by 1;
+\echo '-- tables per area (floor plan)'
+select fp.name as area, count(*) from tables t join floor_plans fp on fp.id=t.floor_plan_id join branches b on b.id=t.branch_id where b.slug='tapas-downtown' group by 1 order by 2 desc;
+\echo '-- menu'
+select g.section, count(*) items from menu_items i join menu_browse_groups g on g.id=i.browse_group_id join branches b on b.id=i.branch_id where b.slug='tapas-downtown' group by 1;
+select count(distinct g.name) groups, count(distinct sg.name) subgroups from menu_items i join menu_browse_groups g on g.id=i.browse_group_id join menu_browse_subgroups sg on sg.id=i.browse_subgroup_id join branches b on b.id=i.branch_id where b.slug='tapas-downtown';
+select count(distinct o.item_id) items_with_choices from menu_item_on_groups o join menu_items i on i.id=o.item_id join branches b on b.id=i.branch_id where b.slug='tapas-downtown';
+select count(*) spirits_with_tot_double_bottle from menu_items i join branches b on b.id=i.branch_id where b.slug='tapas-downtown' and exists(select 1 from menu_item_servings s where s.menu_item_id=i.id and s.format='SINGLE') and exists(select 1 from menu_item_servings s where s.menu_item_id=i.id and s.format='DOUBLE') and exists(select 1 from menu_item_servings s where s.menu_item_id=i.id and s.format='BOTTLE');
+select count(*) wines_by_glass_and_bottle from menu_items i join branches b on b.id=i.branch_id where b.slug='tapas-downtown' and exists(select 1 from menu_item_servings s where s.menu_item_id=i.id and s.format='GLASS') and exists(select 1 from menu_item_servings s where s.menu_item_id=i.id and s.format='BOTTLE');
+select sg.name subgroup, count(*) from menu_items i join menu_browse_subgroups sg on sg.id=i.browse_subgroup_id join branches b on b.id=i.branch_id where b.slug='tapas-downtown' and sg.name in ('Bottled beer','Draught','Cider','Sodas','Juices','Water') group by 1 order by 1;
+select count(*) non_whole_prices from menu_items i join branches b on b.id=i.branch_id where b.slug='tapas-downtown' and i.price <> round(i.price);
+\echo '-- stock and recipes'
+select count(*) stock_items, count(distinct unit) units from inventory_items i join branches b on b.id=i.branch_id where b.slug='tapas-downtown';
+select count(distinct r.menu_item_id) recipes, count(*) recipe_lines from recipe_ingredients r join branches b on b.id=r.branch_id where b.slug='tapas-downtown';
+\echo '-- the service in progress'
+select u.first_name as waiter, o.status, count(*) from orders o join users u on u.id=o.user_id join branches b on b.id=o.branch_id where b.slug='tapas-downtown' and o.status not in ('CLOSED','VOIDED') group by 1,2 order by 1,2;
+select count(*) open_tables, count(distinct o.user_id) waiters from orders o join branches b on b.id=o.branch_id where b.slug='tapas-downtown' and o.status not in ('CLOSED','VOIDED');
+select count(*) bill_asked from audit_logs a join orders o on o.id=a.entity_id join branches b on b.id=o.branch_id where b.slug='tapas-downtown' and a.action='ORDER_BILL_REQUESTED';
+select r.status, count(*) as bookings_today from reservations r join branches b on b.id=r.branch_id where b.slug='tapas-downtown' and (r.reservation_at at time zone 'Africa/Kampala')::date = (now() at time zone 'Africa/Kampala')::date group by 1 order by 1;
+select r.reservation_number, r.status, t.label, (r.reservation_at < now()) as in_the_past, exists(select 1 from orders o where o.table_id=r.table_id and o.status not in ('CLOSED','VOIDED')) as table_in_use from reservations r join tables t on t.id=r.table_id join branches b on b.id=r.branch_id where b.slug='tapas-downtown' and r.status='CONFIRMED' order by 1;
+select ts.till_code, ts.status, ts.opening_float, ts.expected_cash from till_sessions ts join branches b on b.id=ts.branch_id where b.slug='tapas-downtown';
+select count(distinct o.id) paid_bills, count(*) payment_rows, sum(p.amount) applied, sum(p.tendered) cash_handed_over, sum(p.change_given) change_given from orders o join payments p on p.order_id=o.id join branches b on b.id=o.branch_id where b.slug='tapas-downtown' and o.status='CLOSED';
+\echo '-- bad states in Tapas Downtown (the R-E1 review queries); each must be 0, the last 2 (two tables with lines added after the send)'
+select count(*) closed_with_unsent_line from orders o join branches vb on vb.id=o.branch_id where vb.slug='tapas-downtown' and o.status='CLOSED' and exists(select 1 from order_items i where i.order_id=o.id and i.sent_at is null);
+select count(*) closed_paid_not_total from orders o join branches vb on vb.id=o.branch_id where vb.slug='tapas-downtown' and o.status='CLOSED' and o.total <> (select coalesce(sum(amount),0) from payments p where p.order_id=o.id and p.status='COMPLETED');
+select count(*) voided_with_payment from orders o join branches vb on vb.id=o.branch_id where vb.slug='tapas-downtown' and o.status='VOIDED' and exists(select 1 from payments p where p.order_id=o.id and p.status='COMPLETED');
+select count(*) occupied_with_no_open_order from tables t join branches vb on vb.id=t.branch_id where vb.slug='tapas-downtown' and t.status='OCCUPIED' and not exists(select 1 from orders o join branches vb on vb.id=o.branch_id where vb.slug='tapas-downtown' and o.table_id=t.id and o.status not in ('CLOSED','VOIDED'));
+select count(*) line_on_two_tickets from (select k.order_item_id from kds_ticket_items k join kds_tickets kt on kt.id=k.ticket_id join branches vb on vb.id=kt.branch_id where vb.slug='tapas-downtown' group by 1 having count(*)>1) x;
+select count(*) sent_station_line_without_ticket from order_items i join menu_items m on m.id=i.menu_item_id join branches vb on vb.id=m.branch_id where vb.slug='tapas-downtown' and i.sent_at is not null and m.station <> 'NONE' and not exists(select 1 from kds_ticket_items k where k.order_item_id=i.id);
+select count(*) order_total_not_live_lines from orders o join branches vb on vb.id=o.branch_id where vb.slug='tapas-downtown' and o.total <> (select coalesce(sum(subtotal),0) from order_items i where i.order_id=o.id and i.voided_at is null);
+select count(*) sent_order_with_unsent_lines_expected_2 from orders o join branches vb on vb.id=o.branch_id where vb.slug='tapas-downtown' and o.status not in ('NEW','CLOSED','VOIDED') and exists(select 1 from order_items i where i.order_id=o.id and i.sent_at is null);
+\echo '-- the same checks on the rest of this database (db:seed demo org; not loaded by demo-venue; see R-E1 S7)'
+select count(*) closed_with_unsent_line from orders o join branches vb on vb.id=o.branch_id where vb.slug<>'tapas-downtown' and o.status='CLOSED' and exists(select 1 from order_items i where i.order_id=o.id and i.sent_at is null);
+select count(*) closed_paid_not_total from orders o join branches vb on vb.id=o.branch_id where vb.slug<>'tapas-downtown' and o.status='CLOSED' and o.total <> (select coalesce(sum(amount),0) from payments p where p.order_id=o.id and p.status='COMPLETED');
+select count(*) voided_with_payment from orders o join branches vb on vb.id=o.branch_id where vb.slug<>'tapas-downtown' and o.status='VOIDED' and exists(select 1 from payments p where p.order_id=o.id and p.status='COMPLETED');
+select count(*) occupied_with_no_open_order from tables t join branches vb on vb.id=t.branch_id where vb.slug<>'tapas-downtown' and t.status='OCCUPIED' and not exists(select 1 from orders o join branches vb on vb.id=o.branch_id where vb.slug<>'tapas-downtown' and o.table_id=t.id and o.status not in ('CLOSED','VOIDED'));
+select count(*) line_on_two_tickets from (select k.order_item_id from kds_ticket_items k join kds_tickets kt on kt.id=k.ticket_id join branches vb on vb.id=kt.branch_id where vb.slug<>'tapas-downtown' group by 1 having count(*)>1) x;
+select count(*) sent_station_line_without_ticket from order_items i join menu_items m on m.id=i.menu_item_id join branches vb on vb.id=m.branch_id where vb.slug<>'tapas-downtown' and i.sent_at is not null and m.station <> 'NONE' and not exists(select 1 from kds_ticket_items k where k.order_item_id=i.id);
+select count(*) order_total_not_live_lines from orders o join branches vb on vb.id=o.branch_id where vb.slug<>'tapas-downtown' and o.total <> (select coalesce(sum(subtotal),0) from order_items i where i.order_id=o.id and i.voided_at is null);
+select count(*) sent_order_with_unsent_lines from orders o join branches vb on vb.id=o.branch_id where vb.slug<>'tapas-downtown' and o.status not in ('NEW','CLOSED','VOIDED') and exists(select 1 from order_items i where i.order_id=o.id and i.sent_at is null);

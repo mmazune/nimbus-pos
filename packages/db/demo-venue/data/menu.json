@@ -1,0 +1,2540 @@
+{
+ "sections": [
+  {
+   "section": "FOOD",
+   "groups": [
+    {
+     "name": "Tapas",
+     "subgroups": [
+      {
+       "name": "Cold tapas",
+       "station": "COLD_KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Marinated olives",
+         12000
+        ],
+        [
+         "Roasted pepper and almond dip",
+         14000
+        ],
+        [
+         "Tomato bread with garlic",
+         12000
+        ],
+        [
+         "Cured beef carpaccio",
+         26000
+        ],
+        [
+         "Smoked fish pâté",
+         22000
+        ],
+        [
+         "Hummus with flatbread",
+         15000
+        ],
+        [
+         "Beetroot and goat cheese bites",
+         18000
+        ],
+        [
+         "Avocado and lime salsa",
+         14000
+        ],
+        [
+         "Pickled vegetable board",
+         13000
+        ],
+        [
+         "Cheese board for two",
+         38000
+        ],
+        [
+         "Tuna tartare",
+         28000
+        ],
+        [
+         "Chickpea and herb salad",
+         14000
+        ]
+       ]
+      },
+      {
+       "name": "Hot tapas",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Garlic prawns",
+         32000
+        ],
+        [
+         "Patatas bravas",
+         15000
+        ],
+        [
+         "Chorizo-style sausage in red wine",
+         24000
+        ],
+        [
+         "Grilled halloumi with honey",
+         22000
+        ],
+        [
+         "Spiced lamb meatballs",
+         26000
+        ],
+        [
+         "Chicken wings with smoked paprika",
+         24000
+        ],
+        [
+         "Fried calamari",
+         28000
+        ],
+        [
+         "Stuffed mushrooms",
+         18000
+        ],
+        [
+         "Charred corn with lime butter",
+         13000
+        ],
+        [
+         "Beef skewer bites",
+         24000
+        ],
+        [
+         "Spinach and cheese parcels",
+         17000
+        ],
+        [
+         "Pan-fried tilapia bites",
+         22000
+        ],
+        [
+         "Pork belly cubes with glaze",
+         26000
+        ],
+        [
+         "Grilled aubergine with yoghurt",
+         16000
+        ],
+        [
+         "Spanish-style omelette wedge",
+         15000
+        ],
+        [
+         "Gambas pil pil",
+         34000
+        ]
+       ]
+      },
+      {
+       "name": "Croquetas and fritters",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Ham croquetas",
+         18000
+        ],
+        [
+         "Mushroom croquetas",
+         16000
+        ],
+        [
+         "Cod fritters",
+         20000
+        ],
+        [
+         "Sweet potato fritters",
+         14000
+        ],
+        [
+         "Cassava chips with chilli salt",
+         12000
+        ],
+        [
+         "Plantain fritters",
+         12000
+        ],
+        [
+         "Chicken and leek croquetas",
+         18000
+        ],
+        [
+         "Pea and mint fritters",
+         13000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Starters and soups",
+     "subgroups": [
+      {
+       "name": "Soups",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Roasted tomato soup",
+         15000
+        ],
+        [
+         "Pumpkin and ginger soup",
+         15000
+        ],
+        [
+         "Chicken and vegetable broth",
+         17000
+        ],
+        [
+         "Seafood chowder",
+         26000
+        ],
+        [
+         "Lentil and coconut soup",
+         15000
+        ]
+       ]
+      },
+      {
+       "name": "Salads",
+       "station": "COLD_KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Garden salad",
+         15000
+        ],
+        [
+         "Caesar-style salad",
+         24000
+        ],
+        [
+         "Grilled chicken salad",
+         28000
+        ],
+        [
+         "Avocado and prawn salad",
+         34000
+        ],
+        [
+         "Roasted beet and orange salad",
+         20000
+        ],
+        [
+         "Quinoa and roast vegetable salad",
+         22000
+        ],
+        [
+         "Greek-style salad",
+         21000
+        ],
+        [
+         "Tuna niçoise-style salad",
+         30000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Grill",
+     "subgroups": [
+      {
+       "name": "Steaks",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        {
+         "name": "Sirloin steak 300 g",
+         "price": 68000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Sauce"
+         ]
+        },
+        {
+         "name": "Fillet steak 250 g",
+         "price": 85000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Sauce"
+         ]
+        },
+        {
+         "name": "Rib-eye steak 350 g",
+         "price": 92000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Sauce"
+         ]
+        },
+        {
+         "name": "T-bone steak 450 g",
+         "price": 98000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Sauce"
+         ]
+        },
+        {
+         "name": "Rump steak 300 g",
+         "price": 58000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Sauce"
+         ]
+        },
+        {
+         "name": "Sharing tomahawk 1 kg",
+         "price": 240000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Sauce"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Chicken",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        {
+         "name": "Half grilled chicken",
+         "price": 42000,
+         "choices": [
+          "Side choice",
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Whole grilled chicken",
+         "price": 78000,
+         "choices": [
+          "Side choice",
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Chicken thigh skewers",
+         "price": 34000,
+         "choices": [
+          "Side choice",
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Lemon and herb chicken breast",
+         "price": 38000,
+         "choices": [
+          "Side choice"
+         ]
+        },
+        {
+         "name": "Chicken schnitzel",
+         "price": 40000,
+         "choices": [
+          "Side choice"
+         ]
+        },
+        {
+         "name": "Peri-style chicken livers",
+         "price": 26000,
+         "choices": [
+          "Spice level"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Fish and seafood",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        {
+         "name": "Whole grilled tilapia",
+         "price": 52000,
+         "choices": [
+          "Side choice"
+         ]
+        },
+        {
+         "name": "Nile perch fillet",
+         "price": 48000,
+         "choices": [
+          "Side choice"
+         ]
+        },
+        [
+         "Grilled king prawns",
+         96000
+        ],
+        [
+         "Seafood platter for two",
+         180000
+        ],
+        [
+         "Pan-seared salmon",
+         88000
+        ],
+        [
+         "Fish and chips",
+         42000
+        ],
+        [
+         "Calamari steak",
+         54000
+        ],
+        [
+         "Mussels in white wine",
+         62000
+        ]
+       ]
+      },
+      {
+       "name": "Skewers",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Beef skewers",
+         36000
+        ],
+        [
+         "Lamb skewers",
+         42000
+        ],
+        [
+         "Goat skewers",
+         34000
+        ],
+        [
+         "Chicken skewers",
+         30000
+        ],
+        [
+         "Vegetable and halloumi skewers",
+         28000
+        ],
+        [
+         "Mixed grill skewer platter",
+         88000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Mains",
+     "subgroups": [
+      {
+       "name": "Pasta and rice",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        {
+         "name": "Spaghetti with tomato and basil",
+         "price": 30000,
+         "choices": [
+          "Add protein",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Creamy mushroom tagliatelle",
+         "price": 34000,
+         "choices": [
+          "Add protein",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Seafood linguine",
+         "price": 52000,
+         "choices": [
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Beef ragù pappardelle",
+         "price": 42000,
+         "choices": [
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Pesto penne",
+         "price": 32000,
+         "choices": [
+          "Add protein",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Chicken and chorizo-style paella",
+         "price": 48000,
+         "choices": [
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Vegetable paella",
+         "price": 36000,
+         "choices": [
+          "Add protein"
+         ]
+        },
+        {
+         "name": "Seafood paella for two",
+         "price": 120000,
+         "choices": [
+          "Leave out"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Stews and curries",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        {
+         "name": "Beef stew with matooke",
+         "price": 38000,
+         "choices": [
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Chicken curry with rice",
+         "price": 36000,
+         "choices": [
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Goat curry with chapati",
+         "price": 42000,
+         "choices": [
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Fish curry with coconut",
+         "price": 44000,
+         "choices": [
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Bean and pumpkin stew",
+         "price": 26000,
+         "choices": [
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Lamb tagine-style stew",
+         "price": 52000,
+         "choices": [
+          "Spice level"
+         ]
+        },
+        {
+         "name": "Vegetable korma-style curry",
+         "price": 30000,
+         "choices": [
+          "Spice level"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Burgers and sandwiches",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        {
+         "name": "Beef burger",
+         "price": 34000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Burger extras",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Double beef burger",
+         "price": 46000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Burger extras",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Grilled chicken burger",
+         "price": 32000,
+         "choices": [
+          "Side choice",
+          "Burger extras",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Crispy fish burger",
+         "price": 32000,
+         "choices": [
+          "Side choice",
+          "Burger extras",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Bean and lentil burger",
+         "price": 28000,
+         "choices": [
+          "Side choice",
+          "Burger extras",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Lamb burger",
+         "price": 40000,
+         "choices": [
+          "How cooked",
+          "Side choice",
+          "Burger extras",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Club sandwich",
+         "price": 30000,
+         "choices": [
+          "Side choice",
+          "Leave out"
+         ]
+        },
+        {
+         "name": "Steak sandwich",
+         "price": 42000,
+         "choices": [
+          "How cooked",
+          "Side choice"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Vegetarian mains",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Stuffed peppers with rice",
+         30000
+        ],
+        [
+         "Aubergine and cheese bake",
+         32000
+        ],
+        [
+         "Mushroom and spinach risotto",
+         34000
+        ],
+        [
+         "Roast vegetable lasagne",
+         34000
+        ],
+        [
+         "Chickpea and spinach curry",
+         28000
+        ],
+        [
+         "Grilled vegetable stack",
+         30000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Sides",
+     "subgroups": [
+      {
+       "name": "Side dishes",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Chips",
+         8000
+        ],
+        [
+         "Sweet potato wedges",
+         9000
+        ],
+        [
+         "Mashed potato",
+         8000
+        ],
+        [
+         "Steamed rice",
+         6000
+        ],
+        [
+         "Side salad",
+         8000
+        ],
+        [
+         "Grilled vegetables",
+         10000
+        ],
+        [
+         "Garlic bread",
+         8000
+        ],
+        [
+         "Chapati",
+         3000
+        ],
+        [
+         "Steamed matooke",
+         8000
+        ],
+        [
+         "Sautéed spinach",
+         9000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Desserts",
+     "subgroups": [
+      {
+       "name": "Desserts",
+       "station": "DESSERT",
+       "itemType": "FOOD",
+       "items": [
+        [
+         "Chocolate lava cake",
+         22000
+        ],
+        [
+         "Crème caramel",
+         18000
+        ],
+        [
+         "Churros with chocolate",
+         18000
+        ],
+        [
+         "Passion fruit cheesecake",
+         20000
+        ],
+        [
+         "Fresh fruit platter",
+         16000
+        ],
+        [
+         "Vanilla ice cream, two scoops",
+         12000
+        ],
+        [
+         "Mango sorbet",
+         12000
+        ],
+        [
+         "Banana fritters with honey",
+         15000
+        ],
+        [
+         "Tiramisu-style coffee cake",
+         22000
+        ],
+        [
+         "Coconut rice pudding",
+         15000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Breakfast",
+     "subgroups": [
+      {
+       "name": "All-day breakfast",
+       "station": "KITCHEN",
+       "itemType": "FOOD",
+       "items": [
+        {
+         "name": "Full breakfast",
+         "price": 38000,
+         "choices": [
+          "Egg style"
+         ]
+        },
+        {
+         "name": "Eggs on toast",
+         "price": 18000,
+         "choices": [
+          "Egg style"
+         ]
+        },
+        {
+         "name": "Rolled chapati egg wrap",
+         "price": 14000,
+         "choices": [
+          "Leave out"
+         ]
+        },
+        [
+         "Pancakes with fruit and honey",
+         22000
+        ],
+        [
+         "Avocado toast",
+         20000
+        ],
+        [
+         "Granola with yoghurt",
+         18000
+        ],
+        {
+         "name": "Breakfast burrito",
+         "price": 26000,
+         "choices": [
+          "Egg style",
+          "Leave out"
+         ]
+        },
+        [
+         "French toast",
+         20000
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "DRINKS",
+   "groups": [
+    {
+     "name": "Spirits",
+     "subgroups": [
+      {
+       "name": "Whisky",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Blended Scotch whisky",
+         "price": 12000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           12000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           21500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           288000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Blended Scotch whisky 12-year",
+         "price": 18000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           18000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           32500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           432000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Single malt whisky 12-year",
+         "price": 26000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           26000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           47000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           624000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Single malt whisky 18-year",
+         "price": 45000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           45000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           81000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           1080000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Irish whiskey",
+         "price": 15000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           15000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           27000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           360000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Bourbon whiskey",
+         "price": 15000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           15000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           27000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           360000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Rye whiskey",
+         "price": 17000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           17000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           30500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           408000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Smoky island malt",
+         "price": 30000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           30000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           54000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           720000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Gin",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "London dry gin",
+         "price": 11000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           11000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           20000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           264000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Juniper-forward craft gin",
+         "price": 16000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           16000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           29000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           384000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Citrus gin",
+         "price": 14000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           14000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           25000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           336000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Pink berry gin",
+         "price": 14000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           14000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           25000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           336000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Navy-strength gin",
+         "price": 18000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           18000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           32500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           432000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Botanical small-batch gin",
+         "price": 20000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           20000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           36000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           480000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Vodka",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "House vodka",
+         "price": 9000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           9000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           16000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           216000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Premium wheat vodka",
+         "price": 15000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           15000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           27000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           360000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Citrus vodka",
+         "price": 12000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           12000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           21500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           288000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Vanilla vodka",
+         "price": 12000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           12000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           21500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           288000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Potato vodka",
+         "price": 16000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           16000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           29000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           384000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Rum",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "White rum",
+         "price": 9000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           9000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           16000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           216000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Golden rum",
+         "price": 11000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           11000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           20000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           264000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Spiced rum",
+         "price": 12000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           12000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           21500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           288000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Dark rum",
+         "price": 13000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           13000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           23500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           312000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Aged rum 8-year",
+         "price": 20000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           20000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           36000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           480000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Tequila",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Silver tequila",
+         "price": 14000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           14000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           25000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           336000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Reposado tequila",
+         "price": 18000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           18000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           32500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           432000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Añejo tequila",
+         "price": 26000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           26000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           47000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           624000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Mezcal",
+         "price": 24000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           24000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           43000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           576000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Brandy and cognac",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "House brandy",
+         "price": 10000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           10000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           18000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           240000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Cognac VS",
+         "price": 24000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           24000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           43000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           576000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Cognac VSOP",
+         "price": 34000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           34000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           61000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           816000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Liqueurs",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Coffee liqueur",
+         "price": 11000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           11000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           20000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           264000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Cream liqueur",
+         "price": 12000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           12000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           21500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           288000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Orange liqueur",
+         "price": 13000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           13000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           23500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           312000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Herbal liqueur",
+         "price": 14000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           14000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           25000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           336000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        },
+        {
+         "name": "Almond liqueur",
+         "price": 12000,
+         "servings": [
+          [
+           "SINGLE",
+           "Tot",
+           12000
+          ],
+          [
+           "DOUBLE",
+           "Double",
+           21500
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           288000
+          ]
+         ],
+         "choices": [
+          "Mixer",
+          "Ice"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Beer and cider",
+     "subgroups": [
+      {
+       "name": "Bottled beer",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "House lager",
+         "price": 7000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 500 ml",
+           7000
+          ]
+         ]
+        },
+        {
+         "name": "Golden lager",
+         "price": 7500,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 500 ml",
+           7500
+          ]
+         ]
+        },
+        {
+         "name": "Light lager",
+         "price": 7000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 330 ml",
+           7000
+          ]
+         ]
+        },
+        {
+         "name": "Amber ale",
+         "price": 9000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 330 ml",
+           9000
+          ]
+         ]
+        },
+        {
+         "name": "Dark stout",
+         "price": 9000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 500 ml",
+           9000
+          ]
+         ]
+        },
+        {
+         "name": "Wheat beer",
+         "price": 9500,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 500 ml",
+           9500
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Draught",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Draught lager",
+         "price": 9000,
+         "servings": [
+          [
+           "PINT",
+           "Pint",
+           9000
+          ],
+          [
+           "HALF_PINT",
+           "Half pint",
+           5500
+          ]
+         ]
+        },
+        {
+         "name": "Draught pale ale",
+         "price": 11000,
+         "servings": [
+          [
+           "PINT",
+           "Pint",
+           11000
+          ],
+          [
+           "HALF_PINT",
+           "Half pint",
+           6500
+          ]
+         ]
+        },
+        {
+         "name": "Draught stout",
+         "price": 11000,
+         "servings": [
+          [
+           "PINT",
+           "Pint",
+           11000
+          ],
+          [
+           "HALF_PINT",
+           "Half pint",
+           6500
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Cider",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Dry apple cider",
+         "price": 9000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 330 ml",
+           9000
+          ]
+         ]
+        },
+        {
+         "name": "Pear cider",
+         "price": 9000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 330 ml",
+           9000
+          ]
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Wine",
+     "subgroups": [
+      {
+       "name": "Red wine",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "House red",
+         "price": 18000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           18000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           85000
+          ]
+         ]
+        },
+        {
+         "name": "Merlot",
+         "price": 22000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           22000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           105000
+          ]
+         ]
+        },
+        {
+         "name": "Cabernet Sauvignon",
+         "price": 24000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           24000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           115000
+          ]
+         ]
+        },
+        {
+         "name": "Shiraz",
+         "price": 24000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           24000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           115000
+          ]
+         ]
+        },
+        {
+         "name": "Pinot noir",
+         "price": 30000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           30000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           145000
+          ]
+         ]
+        },
+        {
+         "name": "Malbec",
+         "price": 28000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           28000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           135000
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "name": "White wine",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "House white",
+         "price": 18000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           18000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           85000
+          ]
+         ]
+        },
+        {
+         "name": "Sauvignon blanc",
+         "price": 22000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           22000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           105000
+          ]
+         ]
+        },
+        {
+         "name": "Chardonnay",
+         "price": 24000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           24000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           115000
+          ]
+         ]
+        },
+        {
+         "name": "Chenin blanc",
+         "price": 20000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           20000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           95000
+          ]
+         ]
+        },
+        {
+         "name": "Riesling",
+         "price": 26000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           26000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           125000
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Rosé",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "House rosé",
+         "price": 18000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           18000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           85000
+          ]
+         ]
+        },
+        {
+         "name": "Dry rosé",
+         "price": 24000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           24000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           115000
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Sparkling",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Sparkling brut",
+         "price": 26000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           26000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           130000
+          ]
+         ]
+        },
+        {
+         "name": "Prosecco-style sparkling",
+         "price": 28000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           28000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           140000
+          ]
+         ]
+        },
+        {
+         "name": "Champagne-method sparkling",
+         "price": 45000,
+         "servings": [
+          [
+           "GLASS",
+           "Glass 175 ml",
+           45000
+          ],
+          [
+           "BOTTLE",
+           "Bottle 750 ml",
+           260000
+          ]
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Cocktails",
+     "subgroups": [
+      {
+       "name": "Classic cocktails",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        [
+         "Mojito",
+         26000
+        ],
+        [
+         "Margarita",
+         28000
+        ],
+        [
+         "Old fashioned",
+         30000
+        ],
+        [
+         "Negroni",
+         30000
+        ],
+        [
+         "Espresso martini",
+         30000
+        ],
+        [
+         "Cosmopolitan",
+         27000
+        ],
+        [
+         "Daiquiri",
+         26000
+        ],
+        [
+         "Whisky sour",
+         28000
+        ],
+        [
+         "Piña colada",
+         28000
+        ],
+        [
+         "Gin and tonic",
+         22000
+        ],
+        [
+         "Moscow mule",
+         26000
+        ],
+        [
+         "Long Island iced tea",
+         34000
+        ]
+       ]
+      },
+      {
+       "name": "Mocktails",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        [
+         "Virgin mojito",
+         15000
+        ],
+        [
+         "Passion fruit cooler",
+         15000
+        ],
+        [
+         "Ginger and lemongrass fizz",
+         15000
+        ],
+        [
+         "Berry lemonade",
+         14000
+        ],
+        [
+         "Tropical punch",
+         16000
+        ],
+        [
+         "Cucumber and mint spritz",
+         14000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Soft drinks",
+     "subgroups": [
+      {
+       "name": "Sodas",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        [
+         "Cola",
+         4000
+        ],
+        [
+         "Diet cola",
+         4000
+        ],
+        [
+         "Orange soda",
+         4000
+        ],
+        [
+         "Lemon-lime soda",
+         4000
+        ],
+        [
+         "Tonic water",
+         4500
+        ],
+        [
+         "Soda water",
+         3500
+        ],
+        [
+         "Ginger ale",
+         4500
+        ],
+        [
+         "Bitter lemon",
+         4500
+        ],
+        [
+         "Ginger beer",
+         5500
+        ],
+        [
+         "Iced tea",
+         6000
+        ]
+       ]
+      },
+      {
+       "name": "Juices",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        [
+         "Fresh passion fruit juice",
+         9000
+        ],
+        [
+         "Fresh pineapple juice",
+         9000
+        ],
+        [
+         "Fresh mango juice",
+         10000
+        ],
+        [
+         "Fresh orange juice",
+         11000
+        ],
+        [
+         "Watermelon juice",
+         9000
+        ],
+        [
+         "Mixed fruit smoothie",
+         14000
+        ]
+       ]
+      },
+      {
+       "name": "Water",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Still water",
+         "price": 3000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 500 ml",
+           3000
+          ],
+          [
+           "CUSTOM",
+           "Bottle 1.5 l",
+           6000
+          ]
+         ]
+        },
+        {
+         "name": "Sparkling water",
+         "price": 5000,
+         "servings": [
+          [
+           "BOTTLE",
+           "Bottle 500 ml",
+           5000
+          ]
+         ]
+        },
+        [
+         "Water jug, filtered",
+         2000
+        ]
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Hot drinks",
+     "subgroups": [
+      {
+       "name": "Coffee and tea",
+       "station": "BAR",
+       "itemType": "DRINK",
+       "items": [
+        {
+         "name": "Espresso",
+         "price": 7000,
+         "choices": [
+          "Coffee extras"
+         ]
+        },
+        {
+         "name": "Americano",
+         "price": 8000,
+         "choices": [
+          "Milk",
+          "Coffee extras"
+         ]
+        },
+        {
+         "name": "Cappuccino",
+         "price": 10000,
+         "choices": [
+          "Milk",
+          "Coffee extras"
+         ]
+        },
+        {
+         "name": "Café latte",
+         "price": 10000,
+         "choices": [
+          "Milk",
+          "Coffee extras"
+         ]
+        },
+        {
+         "name": "Flat white",
+         "price": 10000,
+         "choices": [
+          "Milk",
+          "Coffee extras"
+         ]
+        },
+        {
+         "name": "Mocha",
+         "price": 12000,
+         "choices": [
+          "Milk",
+          "Coffee extras"
+         ]
+        },
+        [
+         "African spiced tea",
+         7000
+        ],
+        [
+         "Black tea",
+         5000
+        ],
+        [
+         "Green tea",
+         6000
+        ],
+        [
+         "Hot chocolate",
+         11000
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

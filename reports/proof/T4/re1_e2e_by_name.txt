@@ -1,0 +1,2 @@
+A 1133 pass 92 fail | B 1138 pass 92 fail
+failed in both: 92 | only A: 0 | only B: 0

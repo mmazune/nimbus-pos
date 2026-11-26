@@ -1,0 +1,24 @@
+## run.sh with nothing in the shell
+demo-venue: refusing: DATABASE_URL is not set (eval "$(tools/test-env.sh)" first)
+exit 1
+
+## run.sh pointed at a remote host
+demo-venue: refusing: DATABASE_URL is not a localhost address
+exit 1
+
+## run.sh on a local database that is not a throwaway one
+demo-venue: refusing: DATABASE_URL does not name a throwaway nimbus_event_* database
+exit 1
+
+## load.ts called directly, remote DIRECT_DATABASE_URL (the guard runs before Prisma loads)
+/home/user/nimbus-pos/packages/db/demo-venue/lib.ts:230
+      throw new Error(`Refusing: ${name} points at host "${host}", which is not localhost.`);
+            ^
+Error: Refusing: DIRECT_DATABASE_URL points at host "10.1.2.3", which is not localhost.
+
+## a second load into the database that already holds the venue
+Refusing: this database already holds the venue (organization "tapas-downtown-demo").
+
+## run.sh when an env file sits where the Prisma CLI looks (proved with DEMO_VENUE_ENV_PROBE on an ordinary empty scratch file; no .env was written)
+demo-venue: refusing: <scratch>/not-an-env-file exists, and the Prisma CLI could prefer it to the address in this shell. Move it away for this run.
+exit 1

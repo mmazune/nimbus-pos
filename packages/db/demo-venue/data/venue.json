@@ -1,0 +1,18 @@
+{
+  "organization": { "name": "Tapas Downtown", "slug": "tapas-downtown-demo" },
+  "branch": {
+    "name": "Tapas Downtown",
+    "code": "TAPAS_DT",
+    "slug": "tapas-downtown",
+    "timezone": "Africa/Kampala",
+    "currencyCode": "UGX",
+    "phone": "+256 700 000 100",
+    "address": "Made-up address for demos: 1 Demo Lane, Kampala"
+  },
+  "areas": [
+    { "name": "Main hall", "prefix": "M", "count": 32, "capacities": [2, 4, 4, 4, 6, 2, 4, 8] },
+    { "name": "Terrace", "prefix": "T", "count": 16, "capacities": [2, 4, 4, 6] },
+    { "name": "Bar", "prefix": "B", "count": 10, "capacities": [2, 2, 3, 4] },
+    { "name": "VIP", "prefix": "V", "count": 6, "capacities": [6, 8, 10, 12, 8, 6] }
+  ]
+}
