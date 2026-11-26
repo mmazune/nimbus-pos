@@ -160,6 +160,10 @@ export function ReceiptsScreen() {
 
   const receipt = detailQ.data;
   const paid = receipt?.payments?.filter((p) => String(p.status ?? "").toUpperCase() === "COMPLETED") ?? [];
+  // money that has actually gone back (approved or completed), not a refund still waiting
+  const givenBack = (billRefundsQ.data ?? [])
+    .filter((r) => ["APPROVED", "COMPLETED"].includes(deriveRefundStatus(r.status).status))
+    .reduce((n, r) => n + toCents(r.amount ?? 0), 0n);
   const lastPaid = paid.map((p) => p.postedAt).filter(Boolean).sort().pop();
 
   const panel: ReactNode = !selectedId ? (
@@ -220,6 +224,14 @@ export function ReceiptsScreen() {
         <Text variant="row">Paid</Text>
         <Text variant="h">{`UGX ${groupCents(toCents(receipt.totals?.paid ?? receipt.totals?.total))}`}</Text>
       </div>
+      {givenBack > 0n ? (
+        <div className="flex items-center justify-between">
+          <Text variant="sup" tone="muted">
+            Kept after refunds given back
+          </Text>
+          <Text variant="body" strong>{`UGX ${groupCents(toCents(receipt.totals?.paid ?? receipt.totals?.total) - givenBack)}`}</Text>
+        </div>
+      ) : null}
       {canRefund ? (
         <Button tone="tonal" icon="lock" onClick={() => setRefunding(true)}>
           Refund

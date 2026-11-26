@@ -184,7 +184,7 @@ test("both roles at 390 × 844 and the supervisor History", async ({ page }) => 
     await rules(page, `${who}-390`);
     await shot(page, `Reservations-${who}-390x844.png`);
   }
-  await page.getByRole("tab", { name: "History" }).click();
+  await page.getByRole("button", { name: "History", exact: true }).click();
   await expect(page.getByRole("button", { name: /Completed|Cancelled|No-show/ }).first()).toBeVisible();
   await rules(page, "supervisor-history-390");
   await shot(page, "Reservations-supervisor-history-390x844.png");

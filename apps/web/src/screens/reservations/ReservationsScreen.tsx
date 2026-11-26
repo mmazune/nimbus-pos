@@ -192,6 +192,13 @@ export function ReservationsScreen({ role }: { role: Role }) {
     title: "Reservations",
     summary: todayQ.data ? (day === today ? summaryLine(todayRows) : `${dayLabel(`${day}T12:00:00`)} · ${lists.arriving.length} booked`) : undefined,
     asAt: todayQ.data ? todayQ.dataUpdatedAt : undefined,
+    // On a phone four choices do not fit the width; History moves to the header.
+    phoneActions:
+      role === "supervisor"
+        ? [view === "history"
+            ? { icon: "today", label: "Back to today", onClick: () => go({ view: "arriving", id: null }) }
+            : { icon: "time", label: "History", onClick: () => go({ view: "history", id: null }) }]
+        : undefined,
   });
 
   function go(next: { view?: ResView; id?: string | null; date?: string | null }) {
@@ -424,7 +431,7 @@ export function ReservationsScreen({ role }: { role: Role }) {
         setNotice(null);
         go({ view: k as ResView, id: null });
       }}
-      options={VIEWS[role].map((v) => ({ key: v, label: wide.phone && v !== "history" ? `${VIEW_WORD[v]} ${lists[v].length}` : counts[v] }))}
+      options={VIEWS[role].filter((v) => !(wide.phone && v === "history")).map((v) => ({ key: v, label: wide.phone && v !== "history" ? `${VIEW_WORD[v]} ${lists[v].length}` : counts[v] }))}
     />
   );
   function stepDay(delta: number) {
@@ -721,7 +728,7 @@ function CreateSheet({
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-kit-12">
+      <div className={["grid gap-kit-12", place === "bottom" ? "grid-cols-1" : "grid-cols-2"].join(" ")}>
         <Field label="Guest's name" value={name} onChange={setName} required error={tried ? errors.name : undefined} />
         <Field label="Phone" value={phone} onChange={setPhone} inputMode="tel" placeholder="+256 700 000 000" />
         <Field label="Guests" value={guests} onChange={setGuests} inputMode="numeric" required error={tried ? errors.guests : undefined} />

@@ -109,6 +109,8 @@ export async function pinSignIn(page: Page, who: Person) {
 export type Rules = {
   viewport: string;
   sideways: number;
+  offEdge: string[];
+  wrappedMoney: string[];
   clipped: string[];
   small: string[];
   tinyText: string[];
@@ -133,6 +135,8 @@ export async function pageRules(page: Page): Promise<Rules> {
     const out = {
       viewport: `${window.innerWidth}x${window.innerHeight}`,
       sideways: document.documentElement.scrollWidth - window.innerWidth,
+      offEdge: [] as string[],
+      wrappedMoney: [] as string[],
       clipped: [] as string[],
       small: [] as string[],
       tinyText: [] as string[],
@@ -152,6 +156,18 @@ export async function pageRules(page: Page): Promise<Rules> {
       const ownText = Array.from(el.childNodes).some((n) => n.nodeType === 3 && (n.textContent ?? "").trim() !== "");
       if (!ownText) continue;
       out.checkedText += 1;
+      const box = el.getBoundingClientRect();
+      // Past the screen edge: an inner element scrolled or pushed sideways (the page itself may not scroll).
+      if (box.right > window.innerWidth + 1 || box.left < -1) out.offEdge.push(`${el.tagName} "${name(el)}" ${Math.round(box.left)}..${Math.round(box.right)}`);
+      // A money figure must sit on one line: "−" or "UGX" alone above the digits reads wrong.
+      for (const n of el.children.length === 0 ? [el as Node] : Array.from(el.childNodes).filter((c) => c.nodeType === 3)) {
+        const t = (n.textContent ?? "").trim().replace(/\s+/g, " ");
+        if (!/^[−-]?\s*(UGX\s*)?[−-]?\s*\d[\d,]*(\.\d+)?$/.test(t) || !/\d{3}/.test(t)) continue;
+        const range = document.createRange();
+        range.selectNodeContents(n);
+        const tops = new Set(Array.from(range.getClientRects()).map((q) => Math.round(q.top)));
+        if (tops.size > 1) out.wrappedMoney.push(`${el.tagName} "${t}"`);
+      }
       if (el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1) out.clipped.push(`${el.tagName} "${name(el)}" ${el.scrollWidth}>${el.clientWidth}`);
       const fs = parseFloat(getComputedStyle(el).fontSize);
       if (fs < 12) out.tinyText.push(`${el.tagName} "${name(el)}" ${fs}px`);
@@ -176,6 +192,8 @@ export function expectRules(r: Rules) {
   expect(r.checkedText, "text elements checked").toBeGreaterThan(5);
   expect(r.checkedTargets, "targets checked").toBeGreaterThan(3);
   expect(r.sideways, "sideways overflow px").toBeLessThanOrEqual(0);
+  expect(r.offEdge, "past the screen edge").toEqual([]);
+  expect(r.wrappedMoney, "money broken across lines").toEqual([]);
   expect(r.clipped, "clipped text").toEqual([]);
   expect(r.small, "targets under 44 px").toEqual([]);
   expect(r.tinyText, "text under 12 px").toEqual([]);

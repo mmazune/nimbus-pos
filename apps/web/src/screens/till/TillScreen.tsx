@@ -53,13 +53,25 @@ const MOVE_WORD: Record<string, string> = {
 };
 const OUT = new Set(["SAFE_DROP", "PAID_OUT", "CASH_PICKUP", "REFUND_PAYOUT"]);
 
+/** "OPENING_FLOAT" → "Opening float". */
+function sentence(code: string) {
+  const words = code.toLowerCase().replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** "11124000" → "11,124,000" while the cashier types. */
+function groupTyped(v: string) {
+  const digits = v.replace(/[^\d]/g, "").replace(/^0+(?=\d)/, "");
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 function Line({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex min-h-kit-target items-center justify-between gap-kit-12">
       <Text variant={strong ? "row" : "sup"} tone={strong ? "text" : "muted"}>
         {label}
       </Text>
-      <Text variant={strong ? "h" : "body"} strong>
+      <Text variant={strong ? "h" : "body"} strong nowrap>
         {value}
       </Text>
     </div>
@@ -199,7 +211,7 @@ export function TillScreen() {
             <Line label="Float at the start" value={ugx(source?.openingFloat)} />
             {remainder !== null ? <Line label="Cash payments in the branch, less refunds" value={`${remainder < 0n ? "− " : "+ "}${groupCents(remainder < 0n ? -remainder : remainder)}`} /> : null}
             {movements.map(([type, m]) => (
-              <Line key={type} label={`${MOVE_WORD[type] ?? type.toLowerCase().replace(/_/g, " ")} · ${m.count} ${m.count === 1 ? "time" : "times"}`} value={`${OUT.has(type) ? "− " : "+ "}${groupCents(m.total)}`} />
+              <Line key={type} label={`${MOVE_WORD[type] ?? sentence(type)} · ${m.count} ${m.count === 1 ? "time" : "times"}`} value={`${OUT.has(type) ? "− " : "+ "}${groupCents(m.total)}`} />
             ))}
             <div className="mt-kit-8 border-t border-kit-line pt-kit-8">
               <Line label="Should be in the drawer" value={expected !== null ? `UGX ${ugx(expected)}` : "Not read yet"} strong />
@@ -249,8 +261,8 @@ export function TillScreen() {
       <Text variant="sup" tone="muted">
         Count the notes and coins, then type the total. Write why if it does not match.
       </Text>
-      <Field label="Cash counted, UGX" value={counted} onChange={setCounted} inputMode="numeric" placeholder="UGX" error={tried && reconcile.reasons.some((r) => /Counted/.test(r)) ? reconcile.reasons.find((r) => /Counted/.test(r)) : undefined} />
-      {variance !== undefined && Math.abs(variance) > 0.01 ? (
+      <Field label="Cash counted, UGX" value={counted} onChange={(v) => setCounted(groupTyped(v))} inputMode="numeric" placeholder="UGX" error={tried && reconcile.reasons.some((r) => /Counted/.test(r)) ? reconcile.reasons.find((r) => /Counted/.test(r)) : undefined} />
+      {counted.trim() && variance !== undefined && Math.abs(variance) > 0.01 ? (
         <>
           <Banner tone="amber" title={`${variance < 0 ? "Short" : "Over"} by UGX ${ugx(Math.abs(variance))}`} />
           <Field label="Why it does not match" value={varianceReason} onChange={setVarianceReason} required error={tried && !varianceReason.trim() ? "Write why." : undefined} />
@@ -385,7 +397,7 @@ function OpenTillCard({ disabled, busy, failure, notice, onOpen }: { disabled: b
           Count the float into the drawer, then type it.
         </Text>
         <Field label="Till" value={code} onChange={setCode} required />
-        <Field label="Float at the start, UGX" value={float} onChange={setFloat} inputMode="numeric" required error={tried && !check.canSubmit ? check.reasons[0] : undefined} />
+        <Field label="Float at the start, UGX" value={float} onChange={(v) => setFloat(groupTyped(v))} inputMode="numeric" required error={tried && !check.canSubmit ? check.reasons[0] : undefined} />
         {notice ? (
           <Text variant="body" tone="green" strong>
             {notice}

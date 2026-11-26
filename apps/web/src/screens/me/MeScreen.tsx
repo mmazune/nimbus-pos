@@ -232,7 +232,7 @@ export function MeScreen({ role }: { role: Role }) {
         <div className="flex items-start justify-between gap-kit-12">
           <Text variant="h">My shift</Text>
           {shiftQ.isLoading ? null : shift ? (
-            <Pill tone={longShift ? "amber" : "green"}>{longShift ? "Needs a review" : "On shift"}</Pill>
+            <Pill tone={longShift ? "amber" : "green"}>{longShift ? "Needs a review" : "Shift open"}</Pill>
           ) : (
             <Pill tone="neutral">Off shift</Pill>
           )}
@@ -262,7 +262,7 @@ export function MeScreen({ role }: { role: Role }) {
                   ? `Clocked out at ${hhmm(todayAttendance?.clockOutAt)}`
                   : clockedIn
                     ? `Clocked in at ${hhmm(todayAttendance?.clockInAt)}`
-                    : "Not clocked in today"}
+                    : "Attendance · not clocked in yet"}
             </Text>
             {attendanceQ.isLoading || clockedOut ? null : (
               <Button tone="text" size="laptop" disabled={clock.isPending} onClick={() => clock.mutate()}>

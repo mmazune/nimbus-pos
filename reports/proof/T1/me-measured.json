@@ -13,6 +13,8 @@
   "waiter-me-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -25,6 +27,8 @@
   "waiter-leave-sheet-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -37,6 +41,8 @@
   "waiter-end-sheet-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -49,42 +55,64 @@
   "cashier-me-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
     "filled": [
       "Log out"
     ],
-    "checkedText": 27,
-    "checkedTargets": 10
+    "checkedText": 26,
+    "checkedTargets": 9
   },
   "supervisor-me-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
     "filled": [
       "Log out"
     ],
-    "checkedText": 24,
+    "checkedText": 21,
     "checkedTargets": 10
   },
   "waiter-me-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
     "filled": [
       "Log out"
     ],
-    "checkedText": 16,
-    "checkedTargets": 6
+    "checkedText": 15,
+    "checkedTargets": 5
   },
   "cashier-me-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 25,
+    "checkedTargets": 8
+  },
+  "supervisor-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -92,18 +120,6 @@
       "Log out"
     ],
     "checkedText": 19,
-    "checkedTargets": 7
-  },
-  "supervisor-me-390": {
-    "viewport": "390x844",
-    "sideways": 0,
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "Log out"
-    ],
-    "checkedText": 16,
-    "checkedTargets": 6
+    "checkedTargets": 8
   }
 }

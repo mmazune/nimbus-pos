@@ -32,6 +32,8 @@
     "rules": {
       "viewport": "1280x800",
       "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
       "clipped": [],
       "small": [],
       "tinyText": [],
@@ -72,6 +74,8 @@
     "rules": {
       "viewport": "1024x768",
       "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
       "clipped": [],
       "small": [],
       "tinyText": [],
@@ -113,6 +117,8 @@
     "rules": {
       "viewport": "1920x1080",
       "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
       "clipped": [],
       "small": [],
       "tinyText": [],
@@ -135,6 +141,8 @@
       {
         "viewport": "390x844",
         "sideways": 0,
+        "offEdge": [],
+        "wrappedMoney": [],
         "clipped": [],
         "small": [],
         "tinyText": [],
@@ -145,6 +153,8 @@
       {
         "viewport": "390x844",
         "sideways": 0,
+        "offEdge": [],
+        "wrappedMoney": [],
         "clipped": [],
         "small": [],
         "tinyText": [],
@@ -168,6 +178,8 @@
     "rules": {
       "viewport": "1280x800",
       "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
       "clipped": [],
       "small": [],
       "tinyText": [],
@@ -190,6 +202,8 @@
     "rules": {
       "viewport": "390x844",
       "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
       "clipped": [],
       "small": [],
       "tinyText": [],
@@ -212,6 +226,8 @@
     "rules": {
       "viewport": "1280x800",
       "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
       "clipped": [],
       "small": [],
       "tinyText": [],
@@ -234,6 +250,8 @@
     "rules": {
       "viewport": "390x844",
       "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
       "clipped": [],
       "small": [],
       "tinyText": [],
@@ -245,6 +263,8 @@
   "search-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -255,6 +275,8 @@
   "search-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],

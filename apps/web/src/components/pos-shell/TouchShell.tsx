@@ -94,6 +94,8 @@ export function withClock(summary: string | undefined, clock: string): string | 
 const ROLE_WORD: Record<TouchRole, string> = { waiter: "Waiter", cashier: "Cashier", supervisor: "Supervisor" };
 
 export type TouchShellProps = {
+  /** A count badge per section key on the bars, e.g. { approvals: 3 }. */
+  counts?: Readonly<Record<string, number>>;
   role: TouchRole;
   children: ReactNode;
   /** One line under the header (a shift that is not open). Wrap it in `TouchNotice`. */
@@ -101,7 +103,7 @@ export type TouchShellProps = {
   idleHandler?: ReactNode;
 };
 
-export function TouchShell({ role, children, notice, idleHandler }: TouchShellProps) {
+export function TouchShell({ role, children, notice, idleHandler, counts }: TouchShellProps) {
   const router = useRouter();
   const { displayName, logout } = useAuth();
   const station = useStationTerminalLabel();
@@ -156,10 +158,10 @@ export function TouchShell({ role, children, notice, idleHandler }: TouchShellPr
           {children}
         </main>
         <div className="relative -z-10 hidden flex-none sm:block" data-touch-bar="terminal">
-          <BottomBar sections={sections} currentKey={current} />
+          <BottomBar sections={sections} currentKey={current} counts={counts} />
         </div>
         <div className="relative -z-10 flex-none sm:hidden" data-touch-bar="phone">
-          <TabBar sections={sections} currentKey={current} />
+          <TabBar sections={sections} currentKey={current} counts={counts} />
         </div>
       </div>
     </TouchHeaderSlot.Provider>

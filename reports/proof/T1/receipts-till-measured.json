@@ -2,6 +2,8 @@
   "receipts-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -12,6 +14,8 @@
   "refund-sheet-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -22,6 +26,8 @@
   "till-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -34,6 +40,8 @@
   "safe-drop-sheet-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -46,6 +54,8 @@
   "close-confirm-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -58,6 +68,8 @@
   "receipts-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -68,16 +80,20 @@
   "receipts-sheet-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 26,
-    "checkedTargets": 10
+    "checkedText": 14,
+    "checkedTargets": 9
   },
   "refund-sheet-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -88,6 +104,8 @@
   "receipts-earlier-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -98,6 +116,11 @@
   "till-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [
+      "P \"− 151,000\"",
+      "H2 \"UGX 149,000\""
+    ],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -106,41 +129,5 @@
     ],
     "checkedText": 23,
     "checkedTargets": 8
-  },
-  "safe-drop-sheet-390": {
-    "viewport": "390x844",
-    "sideways": 0,
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "Record the drop"
-    ],
-    "checkedText": 31,
-    "checkedTargets": 13
-  },
-  "till-variance-390": {
-    "viewport": "390x844",
-    "sideways": 0,
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "Count and close"
-    ],
-    "checkedText": 23,
-    "checkedTargets": 8
-  },
-  "close-confirm-390": {
-    "viewport": "390x844",
-    "sideways": 0,
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "Close the till"
-    ],
-    "checkedText": 33,
-    "checkedTargets": 11
   }
 }

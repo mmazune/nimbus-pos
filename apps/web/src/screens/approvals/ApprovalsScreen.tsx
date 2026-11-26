@@ -62,11 +62,12 @@ function hhmm(iso?: string | null) {
 function day(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" }).format(d);
+  return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" }).format(d).replace(/ /g, "\u00a0");
 }
 
 function person(u?: SupervisorOrderUser | { firstName?: string | null; lastName?: string | null; displayName?: string | null } | null) {
-  return shortName(u ?? null) ?? "";
+  // "Agnes N." stays together on a narrow row
+  return (shortName(u ?? null) ?? "").replace(/ /g, "\u00a0");
 }
 
 /** How long it has waited: "9 min", "2 h 06", then whole days. */
@@ -280,7 +281,14 @@ export function ApprovalsScreen() {
         const paymentState = getPaymentState(paymentsQ.data ?? null);
         const moneyTaken = ["settled", "partially-paid", "refunded"].includes(paymentState);
         const mine = Boolean(user?.id && d.createdBy?.id === user.id);
-        note = moneyTaken ? (
+        const unread = paymentsQ.isError;
+        note = paymentsQ.isLoading ? (
+          <Text variant="sup" tone="muted">
+            Checking whether this bill has taken money…
+          </Text>
+        ) : unread ? (
+          <Banner tone="amber" title="The bill's payments could not be read." detail="Approve waits until they can be checked; decline still works." />
+        ) : moneyTaken ? (
           <Banner tone="amber" title="This bill has taken money." detail="The discount cannot be approved now; it can be declined." />
         ) : mine ? (
           <Text variant="sup" tone="muted">
@@ -293,7 +301,7 @@ export function ApprovalsScreen() {
           </Button>
         );
         primary = (
-          <Button tone="filled" disabled={busy || moneyTaken || paymentsQ.isLoading} onClick={() => void decide(() => approveDiscount(token, branch, item.id), "Discount approved.")}>
+          <Button tone="filled" disabled={busy || moneyTaken || paymentsQ.isLoading || unread} onClick={() => void decide(() => approveDiscount(token, branch, item.id), "Discount approved.")}>
             Approve the discount
           </Button>
         );

@@ -2,6 +2,8 @@
   "approvals-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -12,6 +14,8 @@
   "decline-sheet-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -24,6 +28,8 @@
   "approvals-done-1280": {
     "viewport": "1280x800",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -34,16 +40,20 @@
   "approvals-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 9,
+    "checkedText": 10,
     "checkedTargets": 7
   },
   "approvals-sheet-390": {
     "viewport": "390x844",
     "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
