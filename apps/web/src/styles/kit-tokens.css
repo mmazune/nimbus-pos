@@ -50,6 +50,8 @@
   --kit-shadow-panel-bottom: 0 1px 0 var(--kit-color-line);
   /* keyboard focus: a white ring then a link-blue ring, readable on white and on navy */
   --kit-shadow-focus: 0 0 0 2px var(--kit-color-card), 0 0 0 4px var(--kit-color-link);
+  /* a field with an error: a 2 px red ring */
+  --kit-shadow-error: 0 0 0 2px var(--kit-color-red);
 
   /* ── Radii ────────────────────────────────────────────────────── */
   --kit-radius-card: 20px;
@@ -119,6 +121,8 @@
   --kit-size-key: 100px;
   --kit-size-tile: 108px;
   --kit-size-search-w: 280px;
+  --kit-size-search-w-sm: 240px;   /* Floor-1024 */
+  --kit-size-search-w-lg: 320px;   /* Order-Terminal */
   --kit-size-sheet-wide-gap: 372px; /* the wide sheet stops short of the order column */
   --kit-size-sheet-side: 440px;
   --kit-size-sheet-mid: 760px;
@@ -195,6 +199,8 @@
   --kit-type-mark-size: 17px;    --kit-type-mark-line: 24px;    --kit-type-mark-weight: 800;
   --kit-type-cell-size: 15px;    --kit-type-cell-line: 20px;    --kit-type-cell-weight: 400;
   --kit-type-ticket-no-size: 28px; --kit-type-ticket-no-line: 32px; --kit-type-ticket-no-weight: 800;
+  --kit-type-action-size: 16px;  --kit-type-action-line: 20px;  --kit-type-action-weight: 700;
+  --kit-type-round-label-size: 13px; --kit-type-round-label-line: 18px; --kit-type-round-label-weight: 600;
   --kit-type-ticket-mod-size: 16px; --kit-type-ticket-mod-line: 22px; --kit-type-ticket-mod-weight: 600;
 
   /* ── Motion ───────────────────────────────────────────────────── */
