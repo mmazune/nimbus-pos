@@ -1,0 +1,210 @@
+/*
+ * Nimbus POS kit tokens — U0 (26 Nov 2026).
+ *
+ * Source: design/screens/kit.css (the approved drawings). Every colour, radius,
+ * shadow, size and type style the drawings use is born here and nowhere else.
+ * All values are absolute px on purpose (R10): the kit does NOT follow the
+ * viewport-scaled root font size in globals.css, which stays only for the old
+ * screens. Kit pieces read these through the Tailwind `kit-*` keys
+ * (tailwind.config.ts) and never through the rem-based default scale.
+ *
+ * Additions not written as a rule in kit.css (recorded in reports/U0_READ_BACK.md):
+ * the focus ring and the pressed grounds. Both reuse kit.css colours.
+ */
+:root {
+  /* ── Colour roles ─────────────────────────────────────────────── */
+  --kit-color-canvas: #F2F3F7;
+  --kit-color-card: #FFFFFF;
+  --kit-color-primary: #000033;
+  --kit-color-primary-2: #1E1E52;
+  --kit-color-on-primary: #FFFFFF;
+  --kit-color-on-primary-muted: #C3C5D9;
+  --kit-color-tonal: #E4E6F1;
+  --kit-color-tonal-2: #D5D8EA;
+  --kit-color-field: #ECEEF3;
+  --kit-color-text: #101828;
+  --kit-color-muted: #5A6272;
+  --kit-color-link: #2B56B2;
+  --kit-color-line: #E3E5EA;
+  --kit-color-red: #A8323F;
+  --kit-color-red-t: #FCE9EC;
+  --kit-color-amber: #7A5A0B;
+  --kit-color-amber-t: #FFF3D6;
+  --kit-color-green: #0F6B46;
+  --kit-color-green-t: #E5F5EC;
+  --kit-color-neutral-t: #ECEEF3;
+  /* someone else's open table (kit.css `.tbl.other`) */
+  --kit-color-tile-other: #E9EAF1;
+  /* the flat dim behind a sheet (kit.css `.scrim`) — a flat tint, no blur */
+  --kit-color-scrim: rgb(0 0 51 / 0.42);
+
+  /* ── Depth ────────────────────────────────────────────────────── */
+  --kit-shadow-raised: 0 1px 2px rgb(0 0 51 / 0.06), 0 8px 24px rgb(0 0 51 / 0.07);
+  --kit-shadow-small: 0 1px 2px rgb(0 0 51 / 0.08);
+  --kit-shadow-up: 0 -8px 32px rgb(0 0 51 / 0.16);
+  /* hairline separators drawn as inset shadows (kit.css .row+.row, .foot, .cp, .dt) */
+  --kit-shadow-line-top: inset 0 1px 0 var(--kit-color-line);
+  --kit-shadow-line-bottom: inset 0 -1px 0 var(--kit-color-line);
+  --kit-shadow-line-left: inset 1px 0 0 var(--kit-color-line);
+  --kit-shadow-foot: 0 -1px 0 var(--kit-color-line);
+  --kit-shadow-panel-bottom: 0 1px 0 var(--kit-color-line);
+  /* keyboard focus: a white ring then a link-blue ring, readable on white and on navy */
+  --kit-shadow-focus: 0 0 0 2px var(--kit-color-card), 0 0 0 4px var(--kit-color-link);
+  /* a field with an error: a 2 px red ring */
+  --kit-shadow-error: 0 0 0 2px var(--kit-color-red);
+
+  /* ── Radii ────────────────────────────────────────────────────── */
+  --kit-radius-card: 20px;
+  --kit-radius-card-lg: 16px;   /* laptop card, kitchen ticket, roomy table tile */
+  --kit-radius-tile: 16px;
+  --kit-radius-tile-compact: 14px;
+  --kit-radius-control: 14px;   /* button, field, square action, item, key, banner */
+  --kit-radius-seg: 12px;       /* segmented track, option tile, measure button, search */
+  --kit-radius-seg-button: 9px;
+  --kit-radius-qty: 8px;        /* quantity box on an order line, the app mark */
+  --kit-radius-badge: 12px;
+  --kit-radius-chip: 22px;
+  --kit-radius-sheet: 28px;
+  --kit-radius-progress: 3px;
+  --kit-radius-grab: 2px;
+  --kit-radius-full: 9999px;
+
+  /* ── Sizes (heights, widths, fixed boxes) ─────────────────────── */
+  --kit-size-hairline: 1px;
+  --kit-size-rule: 3px;            /* active rule under a top-bar menu word */
+  --kit-size-grab-h: 4px;
+  --kit-size-progress: 6px;
+  --kit-size-icon-sm: 18px;
+  --kit-size-badge-phone: 18px;
+  --kit-size-icon: 24px;
+  --kit-size-badge: 24px;
+  --kit-size-pill: 24px;
+  --kit-size-divider: 24px;        /* vertical divider in the top bar */
+  --kit-size-qty: 28px;
+  --kit-size-icon-lg: 28px;
+  --kit-size-mark: 28px;
+  --kit-size-search-h: 40px;
+  --kit-size-avatar: 40px;
+  --kit-size-grab-w: 40px;
+  --kit-size-target: 44px;         /* the floor for anything tappable */
+  --kit-size-button-sm: 44px;
+  --kit-size-round-sm: 44px;
+  --kit-size-chip: 44px;
+  --kit-size-seg: 44px;
+  --kit-size-field-sm: 44px;
+  --kit-size-row-cell-c: 48px;
+  --kit-size-round: 48px;
+  --kit-size-option: 48px;
+  --kit-size-measure-h: 48px;
+  --kit-size-stepper-value: 48px;
+  --kit-size-button: 52px;
+  --kit-size-square: 52px;
+  --kit-size-field: 52px;
+  --kit-size-line: 52px;           /* order line minimum */
+  --kit-size-section: 56px;        /* a bar section, terminal and phone */
+  --kit-size-row-s: 56px;
+  --kit-size-cell: 56px;
+  --kit-size-indent-mod: 58px;     /* kitchen ticket modifier indent */
+  --kit-size-app-bar: 60px;        /* laptop top bar, order header */
+  --kit-size-touch-header: 64px;
+  --kit-size-row: 64px;
+  --kit-size-option-tall: 64px;
+  --kit-size-bubble: 64px;
+  --kit-size-action: 72px;
+  --kit-size-bottom-bar: 76px;
+  --kit-size-measure-w: 76px;
+  --kit-size-round-label-w: 76px;
+  --kit-size-tile-compact: 84px;
+  --kit-size-tab-bar: 84px;
+  --kit-size-item: 96px;
+  --kit-size-option-xl: 96px;
+  --kit-size-key: 100px;
+  --kit-size-tile: 108px;
+  --kit-size-search-w: 280px;
+  --kit-size-search-w-sm: 240px;   /* Floor-1024 */
+  --kit-size-search-w-lg: 320px;   /* Order-Terminal */
+  --kit-size-sheet-wide-gap: 372px; /* the wide sheet stops short of the order column */
+  --kit-size-sheet-side: 440px;
+  --kit-size-sheet-mid: 760px;
+
+  /* ── Spacing (gaps and padding, px) ───────────────────────────── */
+  --kit-space-0: 0px;
+  --kit-space-1: 1px;
+  --kit-space-2: 2px;
+  --kit-space-3: 3px;
+  --kit-space-4: 4px;
+  --kit-space-5: 5px;
+  --kit-space-6: 6px;
+  --kit-space-7: 7px;
+  --kit-space-8: 8px;
+  --kit-space-9: 9px;
+  --kit-space-10: 10px;
+  --kit-space-12: 12px;
+  --kit-space-14: 14px;
+  --kit-space-16: 16px;
+  --kit-space-18: 18px;
+  --kit-space-20: 20px;
+  --kit-space-24: 24px;
+  --kit-space-32: 32px;
+  --kit-space-44: 44px; /* the first card overlaps the header band by 44 px */
+
+  /* ── Type ─────────────────────────────────────────────────────── */
+  --kit-font: "Inter Variable", Inter, system-ui, sans-serif;
+  --kit-track-tight: -0.01em;
+  --kit-track-cap: 0.04em;
+  --kit-weight-regular: 400;
+  --kit-weight-semibold: 600;
+  --kit-weight-bold: 700;
+  --kit-weight-extrabold: 800;
+  --kit-opacity-second-line: 0.8; /* the second line inside a tall option tile */
+
+  /* the seven styles */
+  --kit-type-title-size: 28px;   --kit-type-title-line: 34px;   --kit-type-title-weight: 800;
+  --kit-type-h-size: 22px;       --kit-type-h-line: 28px;       --kit-type-h-weight: 700;
+  --kit-type-row-size: 17px;     --kit-type-row-line: 24px;     --kit-type-row-weight: 700;
+  --kit-type-body-size: 16px;    --kit-type-body-line: 22px;    --kit-type-body-weight: 400;
+  --kit-type-sup-size: 14px;     --kit-type-sup-line: 20px;     --kit-type-sup-weight: 400;
+  --kit-type-small-size: 13px;   --kit-type-small-line: 18px;   --kit-type-small-weight: 400;
+  --kit-type-bar-size: 12px;     --kit-type-bar-line: 16px;     --kit-type-bar-weight: 600;
+  /* the three extras */
+  --kit-type-ticket-size: 20px;  --kit-type-ticket-line: 26px;  --kit-type-ticket-weight: 600;
+  --kit-type-key-size: 26px;     --kit-type-key-line: 32px;     --kit-type-key-weight: 700;
+  --kit-type-big-size: 40px;     --kit-type-big-line: 44px;     --kit-type-big-weight: 800;
+  /* kit.css styles outside the seven: laptop page title and the caps label */
+  --kit-type-title-lg-size: 30px; --kit-type-title-lg-line: 36px; --kit-type-title-lg-weight: 800;
+  --kit-type-cap-size: 12px;     --kit-type-cap-line: 16px;     --kit-type-cap-weight: 700;
+  /* component text kit.css sets inside its own rules */
+  --kit-type-tile-no-size: 26px; --kit-type-tile-no-line: 28px; --kit-type-tile-no-weight: 800;
+  --kit-type-tile-no-c-size: 22px; --kit-type-tile-no-c-line: 24px; --kit-type-tile-no-c-weight: 800;
+  --kit-type-tab-no-size: 20px;  --kit-type-tab-no-line: 28px;  --kit-type-tab-no-weight: 800;
+  --kit-type-stat-size: 26px;    --kit-type-stat-line: 32px;    --kit-type-stat-weight: 800;
+  --kit-type-nav-size: 17px;     --kit-type-nav-line: 24px;     --kit-type-nav-weight: 600;
+  --kit-type-nav-on-weight: 800;
+  --kit-type-chip-size: 14px;    --kit-type-chip-line: 20px;    --kit-type-chip-weight: 600;
+  --kit-type-seg-size: 16px;     --kit-type-seg-line: 22px;     --kit-type-seg-weight: 600;
+  --kit-type-button-size: 16px;  --kit-type-button-line: 22px;  --kit-type-button-weight: 700;
+  --kit-type-option-size: 15px;  --kit-type-option-line: 20px;  --kit-type-option-weight: 600;
+  --kit-type-option-lg-size: 18px; --kit-type-option-lg-line: 24px; --kit-type-option-lg-weight: 700;
+  --kit-type-item-size: 16px;    --kit-type-item-line: 20px;    --kit-type-item-weight: 600;
+  --kit-type-measure-size: 14px; --kit-type-measure-line: 18px; --kit-type-measure-weight: 700;
+  --kit-type-measure-price-size: 12px; --kit-type-measure-price-line: 14px; --kit-type-measure-price-weight: 400;
+  --kit-type-price-size: 15px;   --kit-type-price-line: 22px;   --kit-type-price-weight: 600;
+  --kit-type-line-name-size: 16px; --kit-type-line-name-line: 22px; --kit-type-line-name-weight: 600;
+  --kit-type-badge-size: 13px;   --kit-type-badge-line: 16px;   --kit-type-badge-weight: 800;
+  --kit-type-badge-phone-size: 12px; --kit-type-badge-phone-line: 14px; --kit-type-badge-phone-weight: 800;
+  --kit-type-pill-size: 12px;    --kit-type-pill-line: 16px;    --kit-type-pill-weight: 600;
+  --kit-type-label-size: 14px;   --kit-type-label-line: 20px;   --kit-type-label-weight: 600;
+  --kit-type-avatar-size: 14px;  --kit-type-avatar-line: 20px;  --kit-type-avatar-weight: 700;
+  --kit-type-initials-size: 13px; --kit-type-initials-line: 18px; --kit-type-initials-weight: 700;
+  --kit-type-mark-size: 17px;    --kit-type-mark-line: 24px;    --kit-type-mark-weight: 800;
+  --kit-type-cell-size: 15px;    --kit-type-cell-line: 20px;    --kit-type-cell-weight: 400;
+  --kit-type-ticket-no-size: 28px; --kit-type-ticket-no-line: 32px; --kit-type-ticket-no-weight: 800;
+  --kit-type-action-size: 16px;  --kit-type-action-line: 20px;  --kit-type-action-weight: 700;
+  --kit-type-round-label-size: 13px; --kit-type-round-label-line: 18px; --kit-type-round-label-weight: 600;
+  --kit-type-ticket-mod-size: 16px; --kit-type-ticket-mod-line: 22px; --kit-type-ticket-mod-weight: 600;
+
+  /* ── Motion ───────────────────────────────────────────────────── */
+  --kit-ease: cubic-bezier(0.19, 1, 0.22, 1);
+  --kit-duration-press: 120ms;
+  --kit-duration-sheet: 240ms;
+}

@@ -1,0 +1,10 @@
+
+Running 5 tests using 1 worker
+
+  ✓  1 [vp-1440x900] › e2e/kit/kit.spec.ts:79:7 › kit at 1280 × 800 › sizes match the drawings (607ms)
+  ✓  2 [vp-1440x900] › e2e/kit/kit.spec.ts:173:7 › kit at 1280 × 800 › page rules hold at 1280 × 800 (484ms)
+  ✓  3 [vp-1440x900] › e2e/kit/kit.spec.ts:181:7 › kit at 1280 × 800 › roomy wall: 32 tiles fit 1280 × 800 with no scrolling (577ms)
+  ✓  4 [vp-1440x900] › e2e/kit/kit.spec.ts:232:7 › compact wall at 1024 × 768 › 35 compact tiles fit 1024 × 768 with no scrolling (521ms)
+  ✓  5 [vp-1440x900] › e2e/kit/kit.spec.ts:250:7 › kit at 390 × 844 › page rules and phone sizes hold at 390 × 844 (846ms)
+
+  5 passed (3.6s)

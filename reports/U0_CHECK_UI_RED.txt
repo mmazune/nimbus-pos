@@ -1,0 +1,23 @@
+check:ui apps/web/src/components/kit: 27 file(s)
+check:ui apps/web/src/screens: 1 file(s)
+check:ui scanned 28 files with 6 rules; 61 kit colour and type names
+check:ui allowed 0 hit(s) via 0 allow entries
+HIT apps/web/src/screens/__plant__.tsx:2  [colour]  export const colour = { color: "#1E1E52" };
+HIT apps/web/src/screens/__plant__.tsx:3  [arbitrary]  export const arbitrary = "h-[52px]";
+HIT apps/web/src/screens/__plant__.tsx:4  [ellipsis]  export const ellipsis = "truncate";
+HIT apps/web/src/screens/__plant__.tsx:5  [sideways]  export const sideways = "overflow-x-auto";
+HIT apps/web/src/screens/__plant__.tsx:6  [raw-control]  export const rawControl = <button type="button">Send</button>;
+HIT apps/web/src/screens/__plant__.tsx:7  [text-size]  export const textSize = "text-sm";
+check:ui RED: 6 hit(s), 0 problem(s)
+exit 1
+
+== second plant, inside components/kit/
+check:ui apps/web/src/components/kit: 28 file(s)
+check:ui apps/web/src/screens: 0 file(s)
+check:ui scanned 28 files with 6 rules; 61 kit colour and type names
+check:ui allowed 0 hit(s) via 0 allow entries
+HIT apps/web/src/components/kit/__plant__.ts:1  [text-size]  export const a = "text-kit-huge";
+HIT apps/web/src/components/kit/__plant__.ts:2  [colour]  export const b = "rgb(0 0 51)";
+HIT apps/web/src/components/kit/__plant__.ts:3  [ellipsis]  export const c = "md:line-clamp-2";
+check:ui RED: 3 hit(s), 0 problem(s)
+exit 1
