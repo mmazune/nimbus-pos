@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { Prisma, TableStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
+import { areaForNewTable } from '../seating/area-for-table';
 import {
   CreateFloorPlanDto,
   UpdateFloorPlanDto,
@@ -139,10 +140,21 @@ export class FloorService {
       throw new ConflictException(`Table label "${dto.label}" already exists in this branch`);
     }
 
+    let areaId = dto.areaId ?? null;
+    if (areaId) {
+      const area = await this.prisma.area.findFirst({
+        where: { id: areaId, branchId: ctx.branchId },
+      });
+      if (!area) throw new NotFoundException('Area not found in this branch');
+    } else {
+      areaId = await areaForNewTable(this.prisma, ctx, dto.floorPlanId);
+    }
+
     const table = await this.prisma.table.create({
       data: {
         orgId: ctx.organizationId,
         branchId: ctx.branchId,
+        areaId,
         floorPlanId: dto.floorPlanId ?? null,
         label: dto.label,
         capacity: dto.capacity ?? 4,

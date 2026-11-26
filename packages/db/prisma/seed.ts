@@ -2487,6 +2487,37 @@ async function seedFloorPlans(
   return { floorPlanIds, created, skipped };
 }
 
+/**
+ * T2 phase 2 (E3): puts every table that has no area into the area named after its floor plan,
+ * else a "Tables" area per branch, making those areas if needed. Idempotent: it only fills an
+ * empty area_id, and the areas are found by (branch, name).
+ */
+async function assignTableAreas(): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "areas" ("id", "org_id", "branch_id", "name", "kind", "sort_order", "is_active", "created_at", "updated_at")
+    SELECT 'area_fp_' || fp."id", fp."org_id", fp."branch_id", fp."name", 'TABLES', 0, true, NOW(), NOW()
+      FROM "floor_plans" fp
+     WHERE EXISTS (SELECT 1 FROM "tables" t WHERE t."floor_plan_id" = fp."id" AND t."area_id" IS NULL)
+    ON CONFLICT ("branch_id", "name") DO NOTHING`);
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "areas" ("id", "org_id", "branch_id", "name", "kind", "sort_order", "is_active", "created_at", "updated_at")
+    SELECT DISTINCT 'area_br_' || t."branch_id", t."org_id", t."branch_id", 'Tables', 'TABLES'::"AreaKind", 99, true, NOW(), NOW()
+      FROM "tables" t
+     WHERE t."floor_plan_id" IS NULL AND t."area_id" IS NULL
+    ON CONFLICT ("branch_id", "name") DO NOTHING`);
+  const a = await prisma.$executeRawUnsafe(`
+    UPDATE "tables" t SET "area_id" = a."id"
+      FROM "floor_plans" fp, "areas" a
+     WHERE t."floor_plan_id" = fp."id" AND a."branch_id" = fp."branch_id" AND a."name" = fp."name"
+       AND t."area_id" IS NULL`);
+  const b = await prisma.$executeRawUnsafe(`
+    UPDATE "tables" t SET "area_id" = a."id"
+      FROM "areas" a
+     WHERE t."floor_plan_id" IS NULL AND a."branch_id" = t."branch_id" AND a."name" = 'Tables'
+       AND t."area_id" IS NULL`);
+  console.log(`  ✅ Tables put into areas: ${a + b}`);
+}
+
 async function seedTables(
   orgId: string,
   branchCode: string,
@@ -8146,6 +8177,8 @@ async function main(): Promise<void> {
   console.log('── Tables (M5) ──');
   const tablesResult = await seedTables(orgResult.orgId, 'MAIN', floorResult.floorPlanIds);
   console.log(`   Created: ${tablesResult.created}, Skipped: ${tablesResult.skipped}\n`);
+  // T2 phase 2 (E3): every table sits in an area (same rule as the phase 2 migration).
+  await assignTableAreas();
 
   // 14) Seed Categories (M6)
   console.log('── Categories (M6) ──');

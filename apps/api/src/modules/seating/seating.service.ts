@@ -490,15 +490,16 @@ export class SeatingService {
       const joinedHere = await tx.table.count({ where: { joinedToTableId: fromId } });
       if (joinedHere > 0)
         throw new ConflictException('Split the joined tables before moving this one');
+      // Lock order everywhere: orders, then reservations, then tables.
+      const moved = await tx.reservation.updateMany({
+        where: { seatedOrderId: { in: orders.map((o) => o.id) }, status: 'SEATED' },
+        data: { tableId: toId },
+      });
       await this.lockTables(tx, [fromId, toId]);
       await this.assertFree(tx, to);
 
       await tx.order.updateMany({
         where: { id: { in: orders.map((o) => o.id) } },
-        data: { tableId: toId },
-      });
-      const moved = await tx.reservation.updateMany({
-        where: { seatedOrderId: { in: orders.map((o) => o.id) }, status: 'SEATED' },
         data: { tableId: toId },
       });
       await this.occupy(tx, toId);
@@ -559,6 +560,12 @@ export class SeatingService {
         await tx.orderItem.updateMany({
           where: { orderId: source.id },
           data: { orderId: target.id },
+        });
+        // The booking seated on the absorbed bill now rides on the joined bill, so the close
+        // door completes it when that bill is paid (never left SEATED on a voided order).
+        await tx.reservation.updateMany({
+          where: { seatedOrderId: source.id, status: 'SEATED' },
+          data: { seatedOrderId: target.id },
         });
         await tx.order.update({
           where: { id: source.id },
@@ -802,6 +809,10 @@ export class SeatingService {
       let sourceVoided = false;
       const left = await tx.orderItem.count({ where: { orderId } });
       if (left === 0) {
+        await tx.reservation.updateMany({
+          where: { seatedOrderId: orderId, status: 'SEATED' },
+          data: { seatedOrderId: target.id },
+        });
         await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.VOIDED } });
         sourceVoided = true;
         if (locked.tableId) await releaseTableIfIdleInTx(tx, locked.tableId, orderId);

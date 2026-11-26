@@ -113,17 +113,26 @@ export class ShiftsService {
       );
     }
 
-    // T2 phase 2 (E3): a shift does not end while its person still holds open tables; they
-    // are handed over to a colleague first (POST /api/handovers).
-    const openTables = await this.prisma.order.findMany({
-      where: {
-        branchId: ctx.branchId,
-        userId: shift.openedById,
-        tableId: { not: null },
-        status: { notIn: ['CLOSED', 'VOIDED'] },
-      },
-      select: { id: true, table: { select: { id: true, label: true } } },
+    // T2 phase 2 (E3): a waiter's shift does not end while they still hold open tables; they
+    // are handed over to a colleague first (POST /api/handovers). Rule 07 "People": a waiter
+    // goes home with open tables. Cashiers, supervisors and managers are not held back here.
+    const openerRoles = await this.prisma.userRole.findMany({
+      where: { userId: shift.openedById },
+      select: { role: { select: { jobRole: true } } },
     });
+    const openerIsWaiter =
+      openerRoles.length > 0 && openerRoles.every((r) => r.role.jobRole === 'WAITER');
+    const openTables = !openerIsWaiter
+      ? []
+      : await this.prisma.order.findMany({
+          where: {
+            branchId: ctx.branchId,
+            userId: shift.openedById,
+            tableId: { not: null },
+            status: { notIn: ['CLOSED', 'VOIDED'] },
+          },
+          select: { id: true, table: { select: { id: true, label: true } } },
+        });
     if (openTables.length > 0) {
       const tables = [...new Map(openTables.map((o) => [o.table!.id, o.table!])).values()];
       throw new ConflictException({

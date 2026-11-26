@@ -530,4 +530,74 @@ describe('T2 phase 2: A busy Friday (e2e)', () => {
       }),
     ).toBe(5);
   });
+
+  it('a booked table joined onto another, then paid: the booking completes, never left seated', async () => {
+    const a = await f
+      .http()
+      .post('/api/areas')
+      .set(f.as(f.tokens.manager))
+      .send({ name: `Booked ${w.run}` });
+    const b = await f
+      .http()
+      .post(`/api/areas/${a.body.id}/tables`)
+      .set(f.as(f.tokens.manager))
+      .send({ count: 2, firstNumber: 900, seats: 4 });
+    const [host, booked] = b.body.tables;
+    const item = await makeItem(f, 'Booked matoke', 12000, 'KITCHEN');
+    const r = await f
+      .http()
+      .post('/api/reservations')
+      .set(f.as(f.tokens.owner))
+      .send({
+        customerName: 'Party of four',
+        partySize: 4,
+        reservationAt: new Date(Date.now() + 3600_000).toISOString(),
+        source: 'PHONE',
+      });
+    expect(r.status).toBe(201);
+    await f
+      .http()
+      .patch(`/api/reservations/${r.body.id}/confirm`)
+      .set(f.as(f.tokens.owner))
+      .send({});
+    const seated = await f
+      .http()
+      .patch(`/api/reservations/${r.body.id}/seat`)
+      .set(f.as(f.tokens.owner))
+      .send({ tableId: booked.id, createOrder: true });
+    expect(seated.status).toBe(200);
+    const bookedOrder = seated.body.seatedOrderId;
+    await addLine(f, f.tokens.owner, bookedOrder, item.id);
+    expect((await send(f, f.tokens.owner, bookedOrder)).status).toBe(200);
+    const hostOrder = await openOrder(f, f.tokens.owner, host.id);
+    await addLine(f, f.tokens.owner, hostOrder, item.id);
+    expect((await send(f, f.tokens.owner, hostOrder)).status).toBe(200);
+
+    const jn = await f
+      .http()
+      .post(`/api/tables/${host.id}/join`)
+      .set(f.as(f.tokens.supervisor))
+      .send({ tableId: booked.id });
+    expect([jn.status, jn.body.total]).toEqual([200, '24000']);
+    expect(
+      (await f.prisma.reservation.findUniqueOrThrow({ where: { id: r.body.id } })).seatedOrderId,
+    ).toBe(hostOrder);
+    const paid = await f
+      .http()
+      .post(`/api/pos/orders/${hostOrder}/close`)
+      .set(f.as(f.tokens.owner))
+      .send({ payments: [{ method: 'CASH', amount: '24000' }] });
+    expect(paid.status).toBe(200);
+    expect(
+      (await f.prisma.reservation.findUniqueOrThrow({ where: { id: r.body.id } })).status,
+    ).toBe('COMPLETED');
+    const tables = await f.prisma.table.findMany({
+      where: { id: { in: [host.id, booked.id] } },
+      orderBy: { label: 'asc' },
+    });
+    expect(tables.map((t) => [t.status, t.joinedToTableId])).toEqual([
+      ['AVAILABLE', null],
+      ['AVAILABLE', null],
+    ]);
+  });
 });
