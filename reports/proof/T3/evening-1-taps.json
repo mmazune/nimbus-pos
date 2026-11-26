@@ -1,0 +1,9 @@
+{
+  "table": "12",
+  "taps": {
+    "a burger with choices (Grills, Beef burger, Medium, Add)": 4,
+    "a beer from Popular (Popular, Lager)": 2,
+    "a double whisky with cola (Whisky, Double, Cola)": 3
+  },
+  "from": "the open table (after the table tap)"
+}

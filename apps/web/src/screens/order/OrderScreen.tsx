@@ -26,8 +26,11 @@ import { useIsPhone } from "./useIsPhone";
 
 export type OrderScreenProps = {
   role: OrderRole;
-  tableId: string;
-  tableLabel: string;
+  /** null for a takeaway or tableless order opened by id. */
+  tableId: string | null;
+  tableLabel: string | null;
+  /** Open this order (Find bill, Find order, `?orderId=`). */
+  orderId?: string | null;
   seats?: number | null;
   /** "touch": full screen over the shell. "laptop": under the manager's top bar (Order-Laptop). */
   frame?: "touch" | "laptop";
@@ -66,7 +69,7 @@ export type SheetState =
   | null;
 
 export function OrderScreen(props: OrderScreenProps) {
-  const { role, tableId, tableLabel, seats, frame = "touch", trail, onClose, onChanged, reservation, orderingBlocked } = props;
+  const { role, tableId, tableLabel, orderId, seats, frame = "touch", trail, onClose, onChanged, reservation, orderingBlocked } = props;
   const { accessToken, branchId, user } = useAuth();
   const qc = useQueryClient();
   const ctx = useMemo(() => (accessToken && branchId ? { token: accessToken, branchId } : null), [accessToken, branchId]);
@@ -77,7 +80,15 @@ export function OrderScreen(props: OrderScreenProps) {
   const [seating, setSeating] = useState(false);
   const phone = useIsPhone();
 
-  const session = useOrderSession({ ctx, tableId, canReadOthers: rights.canReadOthers, userId: user?.id ?? null, onChanged });
+  const session = useOrderSession({
+    ctx,
+    tableId,
+    orderId,
+    canReadOthers: rights.canReadOthers,
+    canReadPayments: rights.canReadPayments,
+    userId: user?.id ?? null,
+    onChanged,
+  });
   const menuQ = useQuery({
     queryKey: ["order-screen", "menu", branchId],
     enabled: Boolean(ctx),
@@ -96,6 +107,19 @@ export function OrderScreen(props: OrderScreenProps) {
   const [billAsked, setBillAsked] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [toast, setToast] = useState<string | null>(null);
+  // Laptop: the frame sits under the manager's top bar, whose height follows the old root scale.
+  const [barBottom, setBarBottom] = useState<number | null>(null);
+  useEffect(() => {
+    if (frame !== "laptop") return;
+    const measure = () => {
+      const bar = document.querySelector("[data-operational-top-nav]");
+      setBarBottom(bar ? Math.round(bar.getBoundingClientRect().height) : null);
+    };
+    window.scrollTo(0, 0);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [frame]);
 
   useEffect(() => {
     if (!toast) return;
@@ -112,8 +136,9 @@ export function OrderScreen(props: OrderScreenProps) {
     if (menu && !nav) setNav(firstNav(menu));
   }, [menu, nav]);
 
-  const readOnly = Boolean(session.summary);
   const order = session.order;
+  const closed = Boolean(order && (order.status === "CLOSED" || order.status === "VOIDED"));
+  const readOnly = Boolean(session.summary) || closed;
   const summary = session.summary;
   const hasSent = session.lines.some((l) => l.state !== "unsent");
   const localUnsent = session.lines.filter((l) => l.state === "unsent" && !l.serverId);
@@ -261,7 +286,7 @@ export function OrderScreen(props: OrderScreenProps) {
     return othersTable ? [who, openFor(openedAt, now)].filter(Boolean).join(" · ") : [openFor(openedAt, now), who].filter(Boolean).join(" · ");
   })();
 
-  const title = tableTitle(tableLabel);
+  const title = tableLabel ? tableTitle(tableLabel) : order?.number ? `Order ${order.number}` : "Takeaway";
   const sheetPlacement = phone ? "bottom" : "wide";
 
   const commonSheets = (
@@ -362,10 +387,9 @@ export function OrderScreen(props: OrderScreenProps) {
             sameAgain();
             setSheet(null);
           }}
-          onVoidItem={() => {
-            const firstSent = session.lines.find((l) => l.state === "sent");
-            setSheet(firstSent ? { kind: "void", line: firstSent } : null);
-          }}
+          sentLines={rights.canVoidLine ? session.lines.filter((l) => l.state === "sent" && l.serverId) : []}
+          onVoidItem={(line) => setSheet({ kind: "void", line })}
+          hasPayment={session.paidMinor > 0 || !session.paidKnown}
           onDone={async (outcome) => {
             setSheet(null);
             setToast(outcome.message);
@@ -435,7 +459,9 @@ export function OrderScreen(props: OrderScreenProps) {
     paying && order ? (
       <PayPane
         title={title}
-        totalMinor={session.totalMinor}
+        totalMinor={Math.max(0, session.totalMinor - session.paidMinor)}
+        paidMinor={session.paidMinor}
+        ready={session.paidKnown}
         busy={session.busy === "pay"}
         error={session.lastError}
         onPay={session.pay}
@@ -485,6 +511,17 @@ export function OrderScreen(props: OrderScreenProps) {
 
   const menuSide = payPane ? (
     payPane
+  ) : closed && order ? (
+    <div className="flex flex-1 items-center justify-center p-kit-24" data-order-closed>
+      <div className="w-kit-sheet-mid">
+        <Card padding="roomy" label={order.status === "CLOSED" ? "Paid" : "Cancelled"}>
+          <div className="flex flex-col gap-kit-8">
+            <Text variant="h" as="h2">{order.status === "CLOSED" ? "This bill is paid" : "This order was cancelled"}</Text>
+            <Text variant="body" tone="muted">{order.status === "CLOSED" ? "Nothing more can be added. Its receipt is under Receipts." : "Nothing more can be added. Who cancelled it and why are saved."}</Text>
+          </div>
+        </Card>
+      </div>
+    </div>
   ) : reservation && !order && !summary && session.status === "ready" ? (
     <div className="flex flex-1 items-center justify-center p-kit-24" data-order-reserved>
       <div className="w-kit-sheet-mid">
@@ -577,6 +614,7 @@ export function OrderScreen(props: OrderScreenProps) {
   return (
     <div
       className={["flex flex-col bg-kit-canvas font-kit", frame === "laptop" ? "fixed inset-x-kit-0 bottom-kit-0 top-kit-app-bar z-40" : "fixed inset-kit-0 z-50"].join(" ")}
+      style={frame === "laptop" && barBottom !== null ? { top: barBottom } : undefined}
       data-order-screen
       data-order-role={role}
       data-order-table={tableId}

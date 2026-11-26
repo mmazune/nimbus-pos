@@ -15,6 +15,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import {
+  paidOn,
   addLine,
   createOrder,
   deleteLine,
@@ -104,6 +105,10 @@ export type OrderSession = {
   lines: OrderLineModel[];
   unsentCount: number;
   totalMinor: Minor;
+  /** Completed payments on the order (0 until read). */
+  paidMinor: Minor;
+  /** False while the payments read is still loading: money actions wait for it. */
+  paidKnown: boolean;
   count: number;
   busy: string | null;
   add: (input: NewLine) => OrderLineModel;
@@ -130,13 +135,18 @@ function errorText(e: unknown): string {
 
 export function useOrderSession(args: {
   ctx: Ctx | null;
-  tableId: string;
+  /** The table, or null for a takeaway or tableless order opened by id (Find bill, Find order). */
+  tableId: string | null;
+  /** Open this order (from Find bill, Find order or `?orderId=`). */
+  orderId?: string | null;
   canReadOthers: boolean;
+  /** Read posted payments (cashier, supervisor, manager): "to pay" and the payment safety gate. */
+  canReadPayments: boolean;
   userId: string | null;
   /** Called after a change that the floor should see (send, void, pay). */
   onChanged?: () => void;
 }): OrderSession {
-  const { ctx, tableId, canReadOthers, userId, onChanged } = args;
+  const { ctx, tableId, orderId, canReadOthers, canReadPayments, userId, onChanged } = args;
   const qc = useQueryClient();
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [local, setLocal] = useState<OrderLineModel[]>([]);
@@ -149,30 +159,35 @@ export function useOrderSession(args: {
   const openQ = useQuery({
     queryKey: ["order-screen", "open", ctx?.branchId, tableId],
     enabled: Boolean(ctx && tableId),
-    queryFn: () => findOpenOrders(ctx as Ctx, tableId),
+    queryFn: () => findOpenOrders(ctx as Ctx, tableId as string),
     staleTime: 5_000,
   });
-  const openOrders = openQ.data ?? [];
-  const chosen =
-    openOrders.find((o) => o.id === chosenId) ??
-    openOrders.find((o) => o.id === createdIdRef.current) ??
-    openOrders[0] ??
-    null;
-  const mayRead = Boolean(chosen && (canReadOthers || !chosen.waiterId || chosen.waiterId === userId));
+  const openOrders = useMemo(() => openQ.data ?? [], [openQ.data]);
+  const targetId = chosenId ?? createdIdRef.current ?? orderId ?? openOrders[0]?.id ?? null;
+  const chosen = openOrders.find((o) => o.id === targetId) ?? null;
+  // An order opened by id (not in this table's open list) is read when the role may read others'.
+  const mayRead = Boolean(targetId && (chosen ? canReadOthers || !chosen.waiterId || chosen.waiterId === userId : canReadOthers));
 
   const orderQ = useQuery({
-    queryKey: ["order-screen", "order", ctx?.branchId, chosen?.id],
-    enabled: Boolean(ctx && chosen && mayRead),
-    queryFn: () => getOrder(ctx as Ctx, (chosen as OrderSummary).id),
+    queryKey: ["order-screen", "order", ctx?.branchId, targetId],
+    enabled: Boolean(ctx && targetId && mayRead),
+    queryFn: () => getOrder(ctx as Ctx, targetId as string),
     staleTime: 2_000,
   });
 
   const order = mayRead ? orderQ.data ?? null : null;
+  const paidQ = useQuery({
+    queryKey: ["order-screen", "paid", ctx?.branchId, order?.id],
+    enabled: Boolean(ctx && order && canReadPayments),
+    queryFn: () => paidOn(ctx as Ctx, (order as OrderModel).id),
+    staleTime: 2_000,
+  });
   const lines = useMemo(() => [...(order?.lines ?? []), ...local], [order, local]);
 
   const refresh = useCallback(async () => {
     await qc.invalidateQueries({ queryKey: ["order-screen", "open", ctx?.branchId, tableId] });
     await qc.invalidateQueries({ queryKey: ["order-screen", "order", ctx?.branchId] });
+    await qc.invalidateQueries({ queryKey: ["order-screen", "paid", ctx?.branchId] });
   }, [ctx?.branchId, qc, tableId]);
 
   const add = useCallback((input: NewLine) => {
@@ -253,22 +268,23 @@ export function useOrderSession(args: {
     setBusy("send");
     setLastError(null);
     try {
-      let orderId = order?.id ?? createdIdRef.current;
-      if (!orderId) {
+      let targetOrderId = order?.id ?? createdIdRef.current;
+      if (!targetOrderId) {
+        if (!tableId) throw new Error("This order has no table; open it from its table to add items.");
         const created = await createOrder(ctx, tableId);
-        orderId = created.id;
-        createdIdRef.current = orderId;
-        setChosenId(orderId);
+        targetOrderId = created.id;
+        createdIdRef.current = targetOrderId;
+        setChosenId(targetOrderId);
       }
       // Save each line not yet saved, one at a time; a saved line keeps its server id.
       // Lines added while this Send runs are not in `pending` and stay for the next Send.
       const pending = local.filter((l) => !l.serverId);
       const pendingKeys = new Set(pending.map((l) => l.key));
       for (const line of pending) {
-        const saved = await addLine(ctx, orderId, line);
+        const saved = await addLine(ctx, targetOrderId, line);
         setLocal((cur) => cur.map((l) => (l.key === line.key ? { ...l, serverId: saved.serverId } : l)));
       }
-      await sendOrder(ctx, orderId);
+      await sendOrder(ctx, targetOrderId);
       setLocal((cur) => cur.filter((l) => !pendingKeys.has(l.key)));
       createdIdRef.current = null;
       await refresh();
@@ -323,7 +339,8 @@ export function useOrderSession(args: {
   );
 
   const status: SessionStatus =
-    openQ.isLoading || (chosen && mayRead && orderQ.isLoading) ? "loading" : openQ.isError || orderQ.isError ? "error" : "ready";
+    openQ.isLoading || (targetId && mayRead && orderQ.isLoading) ? "loading" : openQ.isError || orderQ.isError ? "error" : "ready";
+  const localMinor = local.reduce((sum, l) => sum + l.lineMinor, 0);
 
   return {
     status,
@@ -334,7 +351,10 @@ export function useOrderSession(args: {
     summary: chosen && !mayRead ? chosen : null,
     lines,
     unsentCount: lines.reduce((s, l) => (l.state === "unsent" ? s + l.quantity : s), 0),
-    totalMinor: linesTotal(lines),
+    // The server's total (after discounts, without voided lines) plus this device's lines not yet saved.
+    totalMinor: order ? order.totalMinor + localMinor : linesTotal(lines),
+    paidMinor: paidQ.data ?? 0,
+    paidKnown: !canReadPayments || paidQ.isSuccess || !order,
     count: chosen && !mayRead ? chosen.itemCount : itemCount(lines),
     busy,
     add,

@@ -23,6 +23,8 @@ export type OrderRights = {
   canTableActions: boolean;
   canDiscount: boolean;
   canVoidOrder: boolean;
+  /** Read posted payments: "to pay" and the payment safety gate. */
+  canReadPayments: boolean;
 };
 
 export function rightsFor(role: OrderRole, permissions: readonly string[]): OrderRights {
@@ -38,6 +40,7 @@ export function rightsFor(role: OrderRole, permissions: readonly string[]): Orde
     canTableActions: lead,
     canDiscount: lead && has("pos:discount:request"),
     canVoidOrder: lead && has("pos:orders:void"),
+    canReadPayments: role !== "waiter" && has("pos:payment:read"),
   };
 }
 

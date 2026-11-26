@@ -14,7 +14,11 @@ import type { PayMethod, PayResult } from "../data/order";
 
 type Props = {
   title: string;
+  /** What is left to pay: the order's total less payments already posted. */
   totalMinor: Minor;
+  paidMinor: Minor;
+  /** False until the posted payments are read; nothing can be taken before. */
+  ready: boolean;
   busy: boolean;
   error: string | null;
   onPay: (payments: Array<{ method: PayMethod; amountMinor: Minor }>) => Promise<PayResult | null>;
@@ -45,7 +49,7 @@ const METHODS: Array<{ key: PayMethod; label: string; second: string; icon: "rev
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "back"];
 
-export function PayPane({ title, totalMinor, busy, error, onPay, onDone }: Props) {
+export function PayPane({ title, totalMinor, paidMinor, ready, busy, error, onPay, onDone }: Props) {
   const [method, setMethod] = useState<PayMethod>("CASH");
   const [typed, setTyped] = useState("");
   const [result, setResult] = useState<{ changeMinor: Minor; method: PayMethod; givenMinor: Minor } | null>(null);
@@ -81,7 +85,7 @@ export function PayPane({ title, totalMinor, busy, error, onPay, onDone }: Props
           <Text variant="body">{`Taken by ${result.method === "CARD" ? "card" : "mobile money"}.`}</Text>
         )}
         <Text variant="sup" tone="muted">{`${title} is free again.`}</Text>
-        <div className="w-kit-sheet-side">
+        <div className="flex w-kit-sheet-side">
           <Button tone="filled" fill onClick={onDone}>
             Back to the floor
           </Button>
@@ -96,7 +100,8 @@ export function PayPane({ title, totalMinor, busy, error, onPay, onDone }: Props
         <div className="flex min-w-kit-0 flex-1 flex-col gap-kit-16">
           <div className="flex flex-col gap-kit-2">
             <Text variant="cap" tone="muted">To pay</Text>
-            <span className="text-kit-big text-kit-text" data-order-to-pay>{formatMoney(due)}</span>
+            <span className="text-kit-big text-kit-text" data-order-to-pay>{ready ? formatMoney(due) : "…"}</span>
+            {paidMinor > 0 ? <Text variant="sup" tone="muted">{`${formatMoney(paidMinor)} already paid`}</Text> : null}
           </div>
           <Text variant="sup" strong>How are they paying?</Text>
           <div className="grid grid-cols-3 gap-kit-8">
@@ -137,9 +142,11 @@ export function PayPane({ title, totalMinor, busy, error, onPay, onDone }: Props
       </div>
       <div className="flex flex-col gap-kit-8">
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
-        <Button tone="filled" fill disabled={busy || short} onClick={take}>
-          {busy ? "Taking payment…" : `Take ${formatMoney(due)} ${method === "CASH" ? "in cash" : method === "CARD" ? "by card" : "by mobile money"}`}
-        </Button>
+        <div className="flex">
+          <Button tone="filled" fill disabled={busy || short || !ready} onClick={take}>
+            {busy ? "Taking payment…" : `Take ${formatMoney(due)} ${method === "CASH" ? "in cash" : method === "CARD" ? "by card" : "by mobile money"}`}
+          </Button>
+        </div>
         <Text variant="small" tone="muted" align="center">{`The till records it and ${title} becomes free. The receipt is under Receipts.`}</Text>
       </div>
     </div>

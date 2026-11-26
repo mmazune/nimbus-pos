@@ -7,13 +7,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { ActionTile, Button, Field, OptionTile, Sheet, Text, type SheetPlacement } from "@/components/kit";
+import { ActionTile, Button, Field, OptionTile, OrderLine, Sheet, Text, type SheetPlacement } from "@/components/kit";
 
-import { askForDiscount, cancelOrder, listFreeTables, moveToTable } from "../data/order";
+import { groupShillings } from "../data/money";
+import { askForDiscount, cancelOrder, choicesText, listFreeTables, moveToTable, type OrderLineModel } from "../data/order";
 import type { OrderRights } from "../data/rights";
 
 type Ctx = { token: string; branchId: string };
-type Step = "menu" | "move" | "discount" | "cancel";
+type Step = "menu" | "move" | "discount" | "cancel" | "voidPick";
 
 type Props = {
   placement: SheetPlacement;
@@ -22,10 +23,14 @@ type Props = {
   rights: OrderRights;
   ctx: Ctx | null;
   orderId: string | null;
-  tableId: string;
+  tableId: string | null;
   canSameAgain: boolean;
   onSameAgain: () => void;
-  onVoidItem: () => void;
+  /** Sent lines that may be voided; the person picks one (never preselected). */
+  sentLines: OrderLineModel[];
+  onVoidItem: (line: OrderLineModel) => void;
+  /** A payment is posted: Discount and Cancel the order are hidden (the API does not check; the old screen did). */
+  hasPayment: boolean;
   /** After a change on the server: the screen re-reads; `leave` when the table no longer holds this order. */
   onDone: (outcome: { leave: boolean; message: string }) => void;
   onClose: () => void;
@@ -34,7 +39,7 @@ type Props = {
 const PERCENTS = [5, 10, 15, 20, 50];
 const DISCOUNT_REASONS = ["Regular guest", "Slow service", "Kitchen error", "Manager’s offer"];
 
-export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, canSameAgain, onSameAgain, onVoidItem, onDone, onClose }: Props) {
+export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, canSameAgain, onSameAgain, sentLines, onVoidItem, hasPayment, onDone, onClose }: Props) {
   const [step, setStep] = useState<Step>("menu");
   const [target, setTarget] = useState<string | null>(null);
   const [percent, setPercent] = useState<number | null>(null);
@@ -45,17 +50,17 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   const tablesQ = useQuery({
     queryKey: ["order-screen", "free-tables", ctx?.branchId, tableId],
     enabled: Boolean(ctx && step === "move"),
-    queryFn: () => listFreeTables(ctx as Ctx, tableId),
+    queryFn: () => listFreeTables(ctx as Ctx, tableId ?? ""),
     staleTime: 5_000,
   });
 
-  const run = async (fn: () => Promise<void>, outcome: { leave: boolean; message: string }) => {
+  const run = async (fn: () => Promise<unknown>, outcome: { leave: boolean; message: string | ((r: unknown) => string) }) => {
     if (!ctx) return;
     setBusy(true);
     setError(null);
     try {
-      await fn();
-      onDone(outcome);
+      const r = await fn();
+      onDone({ leave: outcome.leave, message: typeof outcome.message === "function" ? outcome.message(r) : outcome.message });
     } catch (e) {
       setError(e instanceof Error ? e.message : "That did not go through. Nothing changed.");
     } finally {
@@ -89,7 +94,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   if (step === "discount") {
     return (
       <Sheet placement={placement} title={`Discount on ${title}`} summary="A reason is saved with your name. Above the venue’s limit it waits for approval." onClose={onClose}
-        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!percent || !reason.trim() || busy} onClick={() => run(() => askForDiscount(ctx as Ctx, orderId as string, percent as number, reason.trim()), { leave: false, message: `${percent}% off asked for` })}>{percent ? `Take ${percent}% off` : "Choose how much"}</Button></>}>
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!percent || !reason.trim() || busy} onClick={() => run(() => askForDiscount(ctx as Ctx, orderId as string, percent as number, reason.trim()), { leave: false, message: (status) => (status === "APPROVED" ? `${percent}% off taken` : `${percent}% off is waiting for approval`) })}>{percent ? `Take ${percent}% off` : "Choose how much"}</Button></>}>
         <Text variant="sup" strong>How much</Text>
         <div className="grid grid-cols-5 gap-kit-8">
           {PERCENTS.map((p) => <OptionTile key={p} label={`${p}%`} current={percent === p} onClick={() => setPercent(p)} />)}
@@ -100,6 +105,19 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
         </div>
         <Field label="Or write the reason" value={DISCOUNT_REASONS.includes(reason) ? "" : reason} placeholder="Why this table gets a discount" onChange={setReason} />
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
+  if (step === "voidPick") {
+    return (
+      <Sheet placement={placement} title="Void an item" summary="Tap the line to void." onClose={onClose} footer={<>{back}</>}>
+        <div className="flex flex-col" data-order-void-pick>
+          {sentLines.map((l) => (
+            <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="sent" onClick={() => onVoidItem(l)} />
+          ))}
+        </div>
+        {sentLines.length === 0 ? <Text variant="sup" tone="muted">Nothing has been sent on this table.</Text> : null}
       </Sheet>
     );
   }
@@ -117,12 +135,13 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   return (
     <Sheet placement={placement} title={title} summary={summary} onClose={onClose}>
       <div className="grid grid-cols-1 gap-kit-8 md:grid-cols-2" data-order-actions>
-        {lead ? <ActionTile icon="table" title="Move table" line="To a free table, the order goes with it" onClick={() => { setReason(""); setStep("move"); }} /> : null}
-        {lead && rights.canDiscount ? <ActionTile icon="revenue" title="Discount" line="A reason is saved with your name" onClick={() => { setReason(""); setStep("discount"); }} /> : null}
-        {lead && rights.canVoidLine ? <ActionTile icon="soldOut" title="Void an item" line="Pick the line, say why" onClick={onVoidItem} /> : null}
+        {lead && tableId ? <ActionTile icon="table" title="Move table" line="To a free table, the order goes with it" onClick={() => { setReason(""); setStep("move"); }} /> : null}
+        {lead && rights.canDiscount && !hasPayment ? <ActionTile icon="revenue" title="Discount" line="A reason is saved with your name" onClick={() => { setReason(""); setStep("discount"); }} /> : null}
+        {lead && rights.canVoidLine ? <ActionTile icon="soldOut" title="Void an item" line="Pick the line, say why" onClick={() => setStep("voidPick")} /> : null}
         {canSameAgain ? <ActionTile icon="refresh" title="Same again" line="The drinks of the last round, not sent yet" onClick={onSameAgain} /> : null}
-        {lead && rights.canVoidOrder ? <ActionTile icon="close" title="Cancel the order" line="Everything on this table" danger onClick={() => { setReason(""); setStep("cancel"); }} /> : null}
+        {lead && rights.canVoidOrder && !hasPayment ? <ActionTile icon="close" title="Cancel the order" line="Everything on this table" danger onClick={() => { setReason(""); setStep("cancel"); }} /> : null}
       </div>
+      {hasPayment && lead ? <Text variant="sup" tone="muted">A payment is already posted, so Discount and Cancel the order are not offered.</Text> : null}
       {!lead && !canSameAgain ? <Text variant="sup" tone="muted">Nothing more to do on this table yet.</Text> : null}
     </Sheet>
   );

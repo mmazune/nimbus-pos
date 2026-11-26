@@ -343,10 +343,22 @@ export async function moveToTable(ctx: Ctx, orderId: string, targetTableId: stri
   await apiRequest(`/api/pos/orders/${orderId}/transfer-table`, { ...ctx, method: "POST", body: { targetTableId } });
 }
 
-export async function askForDiscount(ctx: Ctx, orderId: string, percent: number, reason: string): Promise<void> {
-  await apiRequest(`/api/pos/orders/${orderId}/discounts`, { ...ctx, method: "POST", body: { type: "PERCENTAGE", value: percent, reason } });
+/** Returns the discount's status: APPROVED (taken) or PENDING (waiting for approval above the venue's limit). */
+export async function askForDiscount(ctx: Ctx, orderId: string, percent: number, reason: string): Promise<string> {
+  const res = await apiRequest<{ status?: string | null }>(`/api/pos/orders/${orderId}/discounts`, {
+    ...ctx,
+    method: "POST",
+    body: { type: "PERCENTAGE", value: percent, reason },
+  });
+  return res?.status ?? "PENDING";
 }
 
 export async function cancelOrder(ctx: Ctx, orderId: string, reason: string): Promise<void> {
   await apiRequest(`/api/pos/orders/${orderId}/void`, { ...ctx, method: "POST", body: { reason } });
+}
+
+/** Completed payments already posted on the order (the API sums them as `totalPaid`). */
+export async function paidOn(ctx: Ctx, orderId: string): Promise<Minor> {
+  const res = await apiRequest<{ totalPaid?: string | number | null }>(`/api/pos/orders/${orderId}/payments`, ctx);
+  return toMinor(res?.totalPaid) ?? 0;
 }
