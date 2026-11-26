@@ -6,7 +6,7 @@
       "status": 200
     }
   ],
-  "twoLeftSeenAfterMs": 37,
+  "twoLeftSeenAfterMs": 30,
   "A-2-left-1280": {
     "sideways": 0,
     "clipped": [],
@@ -18,7 +18,7 @@
       "height": 800
     }
   },
-  "soldOutSeenAfterMs": 4627,
+  "soldOutSeenAfterMs": 4597,
   "C-sold-out-1280": {
     "sideways": 0,
     "clipped": [],

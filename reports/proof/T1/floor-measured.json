@@ -129,7 +129,7 @@
       "small": [],
       "tinyText": [],
       "filled": [],
-      "checkedText": 352,
+      "checkedText": 350,
       "checkedTargets": 91
     }
   },
@@ -154,8 +154,8 @@
         "small": [],
         "tinyText": [],
         "filled": [],
-        "checkedText": 76,
-        "checkedTargets": 26
+        "checkedText": 72,
+        "checkedTargets": 25
       },
       {
         "viewport": "390x844",
@@ -278,8 +278,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 80,
-    "checkedTargets": 27
+    "checkedText": 74,
+    "checkedTargets": 26
   },
   "search-390": {
     "viewport": "390x844",
@@ -290,7 +290,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 90,
-    "checkedTargets": 31
+    "checkedText": 86,
+    "checkedTargets": 30
   }
 }
