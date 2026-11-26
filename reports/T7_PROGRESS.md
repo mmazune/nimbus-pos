@@ -9,7 +9,8 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 | 3 Order screen states | drawn; 16 of 16 pass after re-review (lowest 22) | see git log |
 | 4 Paying | drawn; 16 of 16 pass (lowest 21); pending Record made inactive until a reference is typed | see git log |
 | 5 Supervisor | drawn; 16 of 16 pass (lowest 20); counts and times made to agree after review | see git log |
-| 6 Kitchen and bar | drawn, measured, under review | see git log |
+| 6 Kitchen and bar | drawn; 10 of 14 passed review 1; the 4 failures redrawn, re-review with group 7 | see git log |
+| 7 Stock | drawn, measured, under review | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -33,4 +34,4 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 (none yet)
 
 ## Next
-Group 7, stock.
+Group 8, manager on a laptop.

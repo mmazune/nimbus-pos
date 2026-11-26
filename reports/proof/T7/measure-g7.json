@@ -1,0 +1,128 @@
+[
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Store-Stock",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Store-Stock-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Store-Receive",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Store-Receive-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Store-Count",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Store-Count-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Take-Out-Terminal",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Take-Out-Terminal-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Request-Received-Short",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Request-Received-Short-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "To-Buy",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "To-Buy-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Stores-Setup",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Stores-Setup-Phone",
+  "size": "390x844"
+ }
+]

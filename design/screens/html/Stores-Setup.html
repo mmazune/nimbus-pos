@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stores set-up</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1440px; height: 900px">
+  <header class="bar">
+    <button class="rb" aria-label="All apps"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="18" cy="6" r="1.3"/><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="12" cy="18" r="1.3"/><circle cx="18" cy="18" r="1.3"/></svg></button><span class="div"></span>
+    <a class="mark" href="#"><i></i>Nimbus POS</a>
+    <nav aria-label="Main"><a href="#">Floor</a><a href="#">Menu</a><a class="on" aria-current="page" href="#">Stock</a><a href="#">Staff</a><a href="#">More</a></nav>
+    <span class="grow"></span>
+    <span class="search"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</span>
+    <button class="rb" aria-label="Alerts"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></button>
+    <span class="clock">Tapas Downtown</span>
+    <button class="who" aria-label="Account">PK</button>
+  </header>  <div class="cp"><span class="crumb">Stock › Settings ›</span><h1 class="t-row">Stores</h1><span class="grow"></span><button class="btn tonal sm"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a store</button><button class="btn sm filled" style="min-width: 120px">Save</button></div>
+  <main class="page" style="flex-direction: row; gap: 20px"><section class="grow vstack g16"><div class="card" style="padding: 20px"><p class="cap" style="padding-bottom: 12px">How stock flows at Tapas Downtown</p>
+      <div class="hstack g16" style="align-items: stretch">
+        <div class="card vstack g4" style="padding: 16px; flex: 1 1 0; background: var(--tonal); box-shadow: none"><p class="t-row">Main store</p><p class="t-sup muted">Deliveries come in here · 64 items</p></div>
+        <span style="display: flex; align-items: center; color: var(--muted)"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <div class="vstack g12" style="flex: 1 1 0"><div class="card vstack g4" style="padding: 16px"><p class="t-row">Kitchen store</p><p class="t-sup muted">Feeds Hot kitchen and Cold kitchen · 38 items</p></div><div class="card vstack g4" style="padding: 16px"><p class="t-row">Bar store</p><p class="t-sup muted">Feeds Bar · 41 items</p></div></div>
+      </div></div><div class="card" style="padding: 16px 20px"><p class="t-sup">One store is a valid set-up, and so is no stock at all. Adding a secondary store between Main and the point stores is a settings change, never a rebuild. Moving stores never changes the books: every move is a row in one ledger.</p></div></section>
+  <aside class="vstack g16" style="width: 420px; flex: none"><div class="card vstack g12" style="padding: 20px"><p class="cap">Kitchen store</p>
+      <div><label class="lab">Name</label><div class="field sm">Kitchen store</div></div>
+      <div><p class="lab">Kind</p><div class="seg fill"><button class="">Main</button><button class="">Secondary</button><button class="on">Point</button></div></div>
+      <div><label class="lab">Fed by</label><div class="field sm">Main store</div></div>
+      <div><p class="lab">Stations that take from it</p><div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><button class="opt" style="background: var(--tonal-2)" aria-pressed="true"><span class="hstack g4"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Hot kitchen</span></button><button class="opt" style="background: var(--tonal-2)" aria-pressed="true"><span class="hstack g4"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Cold kitchen</span></button><button class="opt" aria-pressed="false"><span class="hstack g4">Desserts</span></button></div></div></div>
+      <div class="card vstack g12" style="padding: 20px"><p class="cap">When stock says zero</p><div class="seg fill"><button class="">Off</button><button class="on">Warn</button><button class="">Block</button></div><p class="t-sup muted">Warn: the item shows “check stock” and still sells. The chef can always mark sold out by hand.</p></div></aside></main>
+</div>
+</x-dc>
+</body>
+</html>

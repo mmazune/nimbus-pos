@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>To buy</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">To buy</h1>
+    <span class="clock">Main store · 5 items below minimum · as at 16:30</span>
+    <span class="grow"></span>
+    
+    <span class="name"><b>Joel T.</b> · Store keeper · Main store</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="grow vstack g16"><div class="hstack"><div class="seg"><button class="">All · 5</button><button class="on">Green Valley Farms · 3</button><button class="">City Drinks Depot · 2</button></div></div><div class="card" style="overflow: hidden"><table class="dt c"><thead><tr><th>Item</th><th>Supplier</th><th class="num">On hand</th><th class="num">Minimum</th><th class="num">Fill to</th><th class="num">Suggested</th></tr></thead><tbody><tr><td>Burger buns</td><td>Green Valley Farms</td><td class="num">36</td><td class="num">48</td><td class="num">120</td><td class="num">84 · 7 packs</td></tr><tr><td>Tomatoes</td><td>Green Valley Farms</td><td class="num">1 kg</td><td class="num">6 kg</td><td class="num">20 kg</td><td class="num">19 kg</td></tr><tr><td>Tonic 300 ml</td><td>City Drinks Depot</td><td class="num">18</td><td class="num">24</td><td class="num">96</td><td class="num">78 · 4 crates</td></tr><tr><td>Lager 500 ml</td><td>City Drinks Depot</td><td class="num">−3</td><td class="num">48</td><td class="num">240</td><td class="num">243 · 11 crates</td></tr><tr><td>Lettuce</td><td>Green Valley Farms</td><td class="num">1.5 kg</td><td class="num">2 kg</td><td class="num">6 kg</td><td class="num">4.5 kg</td></tr></tbody></table></div><p class="t-sup muted">An item joins this list when its feeding store falls below the minimum, and leaves it when the delivery is received.</p></section>
+    <aside class="card vstack g12" style="width: 380px; padding: 20px; flex: none"><h2 class="t-h">Order to Green Valley Farms</h2><p class="t-sup muted">3 lines picked from To buy</p>
+      <div class="card" style="box-shadow: none; background: var(--canvas); padding: 4px 16px"><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Burger buns</span><span class="t-body b" style="text-align: right">84 · UGX 67,200</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Tomatoes</span><span class="t-body b" style="text-align: right">19 kg · UGX 87,400</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Lettuce</span><span class="t-body b" style="text-align: right">4.5 kg · UGX 22,500</span></div></div>
+      <div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Expected total, at last price</span><span class="t-body b" style="text-align: right">UGX 177,100</span></div>
+      <p class="t-sup muted">Prices are the last ones paid. The delivery is checked against this order when it comes.</p>
+      <span class="grow"></span><button class="btn filled">Make the order · 3 lines</button></aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13l2-8h12l2 8v6H4z"/><path d="M4 13h5a3 3 0 0 0 6 0h5"/></svg>Requests<span class="nb">3</span></a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>Stock</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M8 10l4 4 4-4M5 19h14"/></svg>Receive</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h4"/></svg>Count</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

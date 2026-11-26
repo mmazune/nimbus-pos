@@ -233,7 +233,7 @@ def banner(text, sub='', right='', tone='amber', icon='warn', style=''):
     bg = {'amber': 'var(--amber-t)', 'red': 'var(--red-t)', 'green': 'var(--green-t)', 'brand': 'var(--tonal)'}[tone]
     fg = {'amber': 'var(--amber)', 'red': 'var(--red)', 'green': 'var(--green)', 'brand': 'var(--primary)'}[tone]
     s = f'<br><span class="t-sup">{sub}</span>' if sub else ''
-    return f'<div class="card hstack" style="padding: 10px 12px 10px 16px; background: {bg}; color: {fg}; box-shadow: none; min-height: 64px{";" + style if style else ""}">{ic(icon)}<span class="grow"><span class="t-body b">{text}</span>{s}</span>{right}</div>'
+    return f'<div class="card hstack" style="padding: 10px 12px 10px 16px; background: {bg}; color: {fg}; box-shadow: none; min-height: 64px; flex: none{";" + style if style else ""}">{ic(icon)}<span class="grow"><span class="t-body b">{text}</span>{s}</span>{right}</div>'
 def toast(text, action='Undo', style=''):
     return f'<div class="toast" role="status" style="{style}"><span class="grow">{text}</span><button class="btn sm textbtn" style="color: var(--on-primary)">{action}</button></div>'
 

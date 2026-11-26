@@ -45,6 +45,7 @@ const path = require('path'); const fs = require('fs');
         let p = el.parentElement;
         while (p && p !== root) { const cs = getComputedStyle(p); if (cs.overflow !== 'visible' || cs.overflowY !== 'visible') { const pr = p.getBoundingClientRect(); if (r.bottom > pr.bottom + 1 || r.right > pr.right + 1) { out.push((el.className || el.tagName) + ' "' + el.textContent.trim().slice(0, 30) + '"'); } break; } p = p.parentElement; }
       }
+      for (const el of root.querySelectorAll('.card,.sheet,.field,.opt,.row,.tk,.tbl,.item,.mrow')) { if (el.closest('[inert]')) continue; const cs = getComputedStyle(el); if (cs.overflow === 'visible' && cs.overflowY === 'visible' && el.scrollHeight > el.clientHeight + 2 && el.clientHeight > 0) out.push('squeezed ' + el.className.split(' ')[0] + ' "' + el.textContent.trim().slice(0, 30) + '"'); }
       return [...new Set(out)].slice(0, 8);
     });
     if (res.hidden.length) res.issues.push('hidden by its box: ' + res.hidden.join(' | '));

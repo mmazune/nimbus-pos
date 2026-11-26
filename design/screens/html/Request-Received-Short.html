@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receive a request, short</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">Store</h1>
+    <span class="clock">Kitchen store · 1 request on its way · as at 16:24</span>
+    <span class="grow"></span>
+    
+    <span class="name"><b>Ruth A.</b> · Chef · Kitchen screen 1</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="grow vstack g16"><div><p class="t-row">Request 0112 · issued by Joel T. at 16:10</p><p class="t-sup muted">Main store to Kitchen store · tap a line if less arrived</p></div><div class="card" style="overflow: hidden"><table class="dt c"><thead><tr><th>Item</th><th class="num">Sent by the store</th><th class="num">Arrived</th><th></th></tr></thead><tbody><tr class="sel"><td>Burger buns</td><td class="num">48 pieces</td><td class="num">36 pieces</td><td><span class="pill p-amber">12 short</span></td></tr><tr><td>Beef mince</td><td class="num">4 kg</td><td class="num">4 kg</td><td><span class="pill p-green">All here</span></td></tr><tr><td>Chips, frozen</td><td class="num">10 kg</td><td class="num">10 kg</td><td><span class="pill p-green">All here</span></td></tr><tr><td>Tomatoes</td><td class="num">3 kg</td><td class="num">3 kg</td><td><span class="pill p-green">All here</span></td></tr></tbody></table></div></section>
+    <aside class="card vstack g12" style="width: 340px; padding: 20px; flex: none"><p class="t-row" style="text-align: center">Your PIN to receive</p><div class="pin " aria-label="2 of 4 digits"><i class="on"></i><i class="on"></i><i></i><i></i></div><div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><button class="key" style="height: 64px">1</button><button class="key" style="height: 64px">2</button><button class="key" style="height: 64px">3</button><button class="key" style="height: 64px">4</button><button class="key" style="height: 64px">5</button><button class="key" style="height: 64px">6</button><button class="key" style="height: 64px">7</button><button class="key" style="height: 64px">8</button><button class="key" style="height: 64px">9</button><button class="key" aria-label="Clear" style="height: 64px; font-size: 17px">Clear</button><button class="key" style="height: 64px">0</button><button class="key" style="height: 64px" aria-label="Delete"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 6H9l-6 6 6 6h12z"/><path d="m12 9 6 6M18 9l-6 6"/></svg></button></div><p class="t-sup muted" style="text-align: center">The 12 buns short stay against this trip. Joel T. and the manager are told.</p></aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Tickets<span class="nb">8</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Done</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m6.5 6.5 11 11"/></svg>Sold out</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>Store<span class="nb">1</span></a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>
