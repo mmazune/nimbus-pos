@@ -1,0 +1,146 @@
+[
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Lock-PIN",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Lock-PIN-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Lock-Wrong-PIN",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Lock-Wrong-PIN-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "PIN-Set-Own",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "PIN-Set-Own-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Shift-Start",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Shift-Start-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Floor-Shift-Not-Started",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Floor-Shift-Not-Started-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Cashier-Floor",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Cashier-Floor-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Floor-Tabs",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Floor-Tabs-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Tab-Name",
+  "size": "1280x800"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Tab-Name-Phone",
+  "size": "390x844"
+ }
+]

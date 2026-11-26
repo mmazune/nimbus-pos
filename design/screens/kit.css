@@ -224,3 +224,10 @@
 .dt.w td:first-child{font-size:15px}
 .bar-s{height:6px;border-radius:3px;background:var(--tonal);overflow:hidden;margin-top:8px}
 .bar-s i{display:block;height:100%;background:var(--primary);border-radius:3px}
+
+/* added by T7, 26 Nov 2026: PIN dots, toast. Nothing above this line was changed. */
+.pin{display:flex;gap:16px;justify-content:center}
+.pin i{width:18px;height:18px;border-radius:50%;background:var(--tonal-2);display:block}
+.pin i.on{background:var(--primary)}
+.pin.bad i.on{background:var(--red)}
+.toast{position:absolute;display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 8px 6px 20px;border-radius:14px;background:var(--primary);color:var(--on-primary);box-shadow:var(--shadow-up);font-size:16px;line-height:22px;font-weight:600}
