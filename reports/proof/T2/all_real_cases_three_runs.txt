@@ -1,0 +1,27 @@
+== run 1 11:20:32
+PASS test/order-truth.e2e-spec.ts (9.026 s)
+PASS test/t2-starters-mains.e2e-spec.ts (15.846 s)
+PASS test/t2-busy-friday.e2e-spec.ts (5.201 s)
+PASS test/e1f-review-probes.e2e-spec.ts (7.011 s)
+PASS test/t2-lamb-chops.e2e-spec.ts (7.613 s)
+PASS test/e1f-fixes.e2e-spec.ts
+PASS test/e1f-review-writers.e2e-spec.ts
+Tests:       54 passed, 54 total
+== run 2 11:21:20
+PASS test/t2-starters-mains.e2e-spec.ts (21.874 s)
+PASS test/order-truth.e2e-spec.ts
+PASS test/t2-lamb-chops.e2e-spec.ts (7.525 s)
+PASS test/e1f-review-probes.e2e-spec.ts (6.796 s)
+PASS test/t2-busy-friday.e2e-spec.ts (5.049 s)
+PASS test/e1f-fixes.e2e-spec.ts
+PASS test/e1f-review-writers.e2e-spec.ts
+Tests:       54 passed, 54 total
+== run 3 11:22:08
+PASS test/t2-starters-mains.e2e-spec.ts (22.558 s)
+PASS test/t2-lamb-chops.e2e-spec.ts (7.387 s)
+PASS test/e1f-review-probes.e2e-spec.ts (7.168 s)
+PASS test/t2-busy-friday.e2e-spec.ts (5.081 s)
+PASS test/e1f-fixes.e2e-spec.ts
+PASS test/order-truth.e2e-spec.ts
+PASS test/e1f-review-writers.e2e-spec.ts
+Tests:       54 passed, 54 total

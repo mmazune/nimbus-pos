@@ -1,0 +1,19 @@
+MUTATION: removed the guard status != READY from KdsService.markReady's updateMany
+    ✕ the whole table (406 ms)
+    - Expected  - 1
+    + Received  + 1
+    -   409,
+    +   201,
+Tests:       1 failed, 2 skipped, 3 total
+    ✕ the whole table (386 ms)
+    - Expected  - 1
+    + Received  + 1
+    -   409,
+    +   201,
+Tests:       1 failed, 2 skipped, 3 total
+    ✕ the whole table (449 ms)
+    - Expected  - 1
+    + Received  + 1
+    -   409,
+    +   201,
+Tests:       1 failed, 2 skipped, 3 total
