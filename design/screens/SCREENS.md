@@ -8,8 +8,8 @@ One row per drawing in `html/` and `png/`. "Built in" is the milestone from `doc
 | `Floor-1024` | 1024 × 768 | Waiter | Floor · small monitor 1024 × 768 · compact tiles | `/waiter/floor` | U1 | drawn |
 | `Floor-1920` | 1920 × 1080 | Supervisor | Floor · large monitor 1920 × 1080 · supervisor · 70 tables | `/supervisor/floor` | U1 | drawn |
 | `Floor-Phone` | 390 × 844 | Waiter | Floor · phone | `/waiter/floor` | U1 | drawn |
-| `Table-Tile` | 1280 × 944 | All | The table tile · every state | `spec, no route` | U0 | drawn |
-| `Nav-Roles` | 1440 × 1010 | All | The bottom bar · role by role | `spec, no route` | U0 and U1 | drawn |
+| `Table-Tile` | 1280 × 944 | All | The table tile · every state | `spec, no route` | U0 | built (kit) |
+| `Nav-Roles` | 1440 × 1010 | All | The bottom bar · role by role | `spec, no route` | U0 and U1 | built (kit) |
 | `Table-Life` | 1440 × 760 | All | The life of a table | `spec, no route` | U2 | drawn |
 | `Order-Empty` | 1280 × 800 | Waiter | Free table · the menu opens at once | `/waiter/floor?tableId=` | U2 | drawn |
 | `Order-Terminal` | 1280 × 800 | Waiter | Table with an order · add more, send | `/waiter/floor?tableId=` | U2 | drawn |

@@ -1,0 +1,10 @@
+{
+  "tiles": 32,
+  "columns": 8,
+  "tileH": 108,
+  "scrollW": 1280,
+  "scrollH": 800,
+  "lastTileBottom": 616,
+  "barTop": 724,
+  "barH": 76
+}

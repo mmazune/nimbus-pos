@@ -1,0 +1,267 @@
+{
+  "bottomBars": [
+    {
+      "frame": 1024,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1280,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1920,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1024,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1280,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1920,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1024,
+      "sections": 5,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1280,
+      "sections": 5,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1920,
+      "sections": 5,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1024,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1280,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1920,
+      "sections": 4,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1024,
+      "sections": 5,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1280,
+      "sections": 5,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    },
+    {
+      "frame": 1920,
+      "sections": 5,
+      "bar": 76,
+      "sectionH": 56,
+      "sectionsEqual": true
+    }
+  ],
+  "phoneBars": [
+    {
+      "w": 390,
+      "h": 84,
+      "sectionH": [
+        56,
+        56,
+        56,
+        56
+      ]
+    },
+    {
+      "w": 390,
+      "h": 84,
+      "sectionH": [
+        56,
+        56,
+        56,
+        56,
+        56
+      ]
+    },
+    {
+      "w": 390,
+      "h": 84,
+      "sectionH": [
+        56,
+        56,
+        56,
+        56,
+        56
+      ]
+    },
+    {
+      "w": 390,
+      "h": 84,
+      "sectionH": [
+        56,
+        56,
+        56,
+        56,
+        56
+      ]
+    }
+  ],
+  "touch-header": {
+    "w": 1280,
+    "h": 64,
+    "radius": 0
+  },
+  "order-header": {
+    "w": 1280,
+    "h": 60,
+    "radius": 0
+  },
+  "tile-roomy": {
+    "w": 146,
+    "h": 108,
+    "radius": 16
+  },
+  "tile-compact": {
+    "w": 170,
+    "h": 84,
+    "radius": 14
+  },
+  "button-touch-filled-idle": {
+    "w": 80,
+    "h": 52,
+    "radius": 14
+  },
+  "button-laptop-filled-idle": {
+    "w": 80,
+    "h": 44,
+    "radius": 14
+  },
+  "chip-idle": {
+    "w": 106,
+    "h": 44,
+    "radius": 22
+  },
+  "option-48": {
+    "w": 306,
+    "h": 48,
+    "radius": 12
+  },
+  "option-64": {
+    "w": 306,
+    "h": 64,
+    "radius": 12
+  },
+  "option-96": {
+    "w": 306,
+    "h": 96,
+    "radius": 12
+  },
+  "item": {
+    "w": 243,
+    "h": 96,
+    "radius": 14
+  },
+  "order-line": {
+    "w": 372,
+    "h": 52,
+    "radius": 0
+  },
+  "round-48-idle": {
+    "w": 48,
+    "h": 48,
+    "radius": 9999
+  },
+  "round-44-idle": {
+    "w": 44,
+    "h": 44,
+    "radius": 9999
+  },
+  "square-idle": {
+    "w": 52,
+    "h": 52,
+    "radius": 14
+  },
+  "key": {
+    "w": 115,
+    "h": 100,
+    "radius": 14
+  },
+  "card": {
+    "w": 1248,
+    "h": 319,
+    "radius": 20
+  },
+  "pill-green": {
+    "w": 45,
+    "h": 24,
+    "radius": 12
+  },
+  "action-tile": {
+    "w": 411,
+    "h": 72,
+    "radius": 14
+  },
+  "segmentedButton": [
+    44,
+    44
+  ],
+  "measureButtons": [
+    {
+      "w": 76,
+      "h": 48
+    },
+    {
+      "w": 76,
+      "h": 48
+    },
+    {
+      "w": 76,
+      "h": 48
+    }
+  ]
+}
