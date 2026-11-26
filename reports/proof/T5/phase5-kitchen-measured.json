@@ -43,49 +43,5 @@
     ],
     "checkedText": 33,
     "checkedTargets": 15
-  },
-  "soldout-1280": {
-    "viewport": "1280x800",
-    "sideways": 0,
-    "offEdge": [],
-    "wrappedMoney": [],
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [],
-    "checkedText": 17,
-    "checkedTargets": 10
-  },
-  "set-number-1280": {
-    "viewport": "1280x800",
-    "sideways": 0,
-    "offEdge": [],
-    "wrappedMoney": [],
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "Set 12 left"
-    ],
-    "checkedText": 27,
-    "checkedTargets": 18
-  },
-  "barTickets": 13,
-  "bar-1280": {
-    "viewport": "1280x800",
-    "sideways": 0,
-    "offEdge": [],
-    "wrappedMoney": [],
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [],
-    "checkedText": 127,
-    "checkedTargets": 18
-  },
-  "kitchenBar": [
-    "Tickets13",
-    "Done",
-    "Sold out"
-  ]
+  }
 }

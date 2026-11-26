@@ -19,8 +19,8 @@
     "left": 0,
     "lowAt": 5,
     "source": "COUNT",
-    "since": "2026-11-26T18:11:02.085Z",
-    "byUserId": "cmwxv9n29005nnhna5jxv458d"
+    "since": "2026-11-26T18:16:31.148Z",
+    "byUserId": "cmwxvgylh005n8vyw8usn2fl3"
   },
   "lamb-third-1280": {
     "sideways": 0,
@@ -111,16 +111,16 @@
     }
   },
   "lamb-390-sentLamb": [
-    true,
-    false
+    false,
+    true
   ],
   "lamb-390-availability": {
     "state": "SOLD_OUT",
     "left": 0,
     "lowAt": 5,
     "source": "COUNT",
-    "since": "2026-11-26T18:11:40.323Z",
-    "byUserId": "cmwxv9n29005nnhna5jxv458d"
+    "since": "2026-11-26T18:17:09.450Z",
+    "byUserId": "cmwxvgylm005u8vywfteomnhy"
   },
   "lamb-third-390": {
     "sideways": 0,

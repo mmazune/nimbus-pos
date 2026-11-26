@@ -129,7 +129,7 @@
       "small": [],
       "tinyText": [],
       "filled": [],
-      "checkedText": 350,
+      "checkedText": 352,
       "checkedTargets": 91
     }
   },
@@ -154,8 +154,8 @@
         "small": [],
         "tinyText": [],
         "filled": [],
-        "checkedText": 72,
-        "checkedTargets": 25
+        "checkedText": 76,
+        "checkedTargets": 26
       },
       {
         "viewport": "390x844",
@@ -172,5 +172,125 @@
         "checkedTargets": 17
       }
     ]
+  },
+  "cashier-1280": {
+    "chrome": {
+      "header": 64,
+      "bar": 76,
+      "sections": [
+        "floor",
+        "receipts",
+        "till",
+        "me"
+      ]
+    },
+    "rules": {
+      "viewport": "1280x800",
+      "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
+      "clipped": [],
+      "small": [],
+      "tinyText": [],
+      "filled": [],
+      "checkedText": 64,
+      "checkedTargets": 24
+    }
+  },
+  "cashier-390": {
+    "chrome": {
+      "header": 106,
+      "bar": 84,
+      "sections": [
+        "floor",
+        "receipts",
+        "till",
+        "me"
+      ]
+    },
+    "rules": {
+      "viewport": "390x844",
+      "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
+      "clipped": [],
+      "small": [],
+      "tinyText": [],
+      "filled": [],
+      "checkedText": 49,
+      "checkedTargets": 19
+    }
+  },
+  "supervisor-1280": {
+    "chrome": {
+      "header": 64,
+      "bar": 76,
+      "sections": [
+        "floor",
+        "reservations",
+        "approvals",
+        "me"
+      ]
+    },
+    "rules": {
+      "viewport": "1280x800",
+      "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
+      "clipped": [],
+      "small": [],
+      "tinyText": [],
+      "filled": [],
+      "checkedText": 64,
+      "checkedTargets": 24
+    }
+  },
+  "supervisor-390": {
+    "chrome": {
+      "header": 106,
+      "bar": 84,
+      "sections": [
+        "floor",
+        "reservations",
+        "approvals",
+        "me"
+      ]
+    },
+    "rules": {
+      "viewport": "390x844",
+      "sideways": 0,
+      "offEdge": [],
+      "wrappedMoney": [],
+      "clipped": [],
+      "small": [],
+      "tinyText": [],
+      "filled": [],
+      "checkedText": 49,
+      "checkedTargets": 19
+    }
+  },
+  "search-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 80,
+    "checkedTargets": 27
+  },
+  "search-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 90,
+    "checkedTargets": 31
   }
 }
