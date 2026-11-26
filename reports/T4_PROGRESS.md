@@ -4,7 +4,7 @@ Branch `t4/review-and-data`, cut from `origin/e1/order-truth` (`19e1eee`). Push 
 `git push -u origin t4/review-and-data` (the branch tracks `origin/e1/order-truth`; a bare push could hit it).
 
 ## Now
-- All four phases done; report `reports/T4_REPORT.md`; final gates `reports/proof/T4/final_gates.txt`. Next: nothing (stop Redis and Postgres started by this session).
+- All four phases done and pushed; report `reports/T4_REPORT.md` (final numbers: 87 red e2e all named, 31 probes 15 red, venue smoke 6/6 three times, 71 rights changes ruled). Session cleanup: Redis (PID 763) and the container Postgres stopped, scratch worktree removed.
 
 ## Phases
 | phase | state | last commit |
