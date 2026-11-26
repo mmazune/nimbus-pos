@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -72,7 +73,10 @@ export class QuickPinService {
       include: {
         memberships: {
           where: { branchId },
-          include: { role: true, branch: { select: { id: true, organizationId: true, status: true } } },
+          include: {
+            role: true,
+            branch: { select: { id: true, organizationId: true, status: true } },
+          },
         },
         userRoles: {
           include: {
@@ -212,7 +216,11 @@ export class QuickPinService {
           select: { id: true, organizationId: true, status: true },
         })) ?? undefined;
     }
-    if (!membership || membership.status !== 'ACTIVE' || (membershipBranch && membershipBranch.status !== 'ACTIVE')) {
+    if (
+      !membership ||
+      membership.status !== 'ACTIVE' ||
+      (membershipBranch && membershipBranch.status !== 'ACTIVE')
+    ) {
       await this.audit.log({
         actorUserId: user.id,
         action: 'QUICK_PIN_BRANCH_DENIED',
@@ -271,186 +279,288 @@ export class QuickPinService {
     return result;
   }
 
-  // ── Issue Quick PIN ──
+  // ── PIN setup by token (T6) ──
+  //
+  // Rule (07-scenarios-and-rules.md, People; CLAUDE.md credential reset): a manager starts a
+  // PIN; nobody ever sets or sees another person's PIN. The manager's action makes a one-time,
+  // short-lived setup token bound to that person and branch. The device that holds it is
+  // handed to the person, who types their own PIN twice (POST /api/auth/pin-setup). No
+  // response, log line or audit row ever carries the PIN; only the token's SHA-256 is stored.
 
+  static readonly PIN_SETUP_TTL_MINUTES = 15;
+
+  static hashSetupToken(plaintext: string): string {
+    return crypto.createHash('sha256').update(plaintext).digest('hex');
+  }
+
+  private resolveTier(
+    jobRoles: JobRole[],
+    current: QuickPinTierValue | null,
+  ): QuickPinTierValue | null {
+    let tier: QuickPinTierValue | null = current;
+    if (!tier) {
+      for (const jr of jobRoles) {
+        const t = resolveQuickPinTier(jr);
+        if (t && (!tier || t === QuickPinTierValue.HIGH_8)) tier = t;
+      }
+    }
+    return tier;
+  }
+
+  /**
+   * Start onboarding (first PIN) or a reset. A reset clears the old PIN at once, so a lost or
+   * known PIN stops working before the person sets a new one. Earlier unused tokens for this
+   * person are invalidated, so only one setup is ever live.
+   */
+  async startPinSetup(
+    targetUserId: string,
+    actorUserId: string,
+    purpose: 'ONBOARDING' | 'RESET',
+    defaultBranchId?: string,
+    meta?: RequestMeta,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: {
+        userRoles: { include: { role: true } },
+        memberships: { where: { status: 'ACTIVE' } },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const jobRoles = user.userRoles.map((ur) => ur.role.jobRole).filter(Boolean) as JobRole[];
+    const tier = this.resolveTier(
+      jobRoles,
+      purpose === 'RESET' ? ((user.pinTier as QuickPinTierValue | null) ?? null) : null,
+    );
+    if (!tier) {
+      throw new BadRequestException('User role is not eligible for quick PIN login');
+    }
+    const pinLength = getPinLengthForTier(tier);
+
+    let branchId = defaultBranchId;
+    if (!branchId) {
+      const m = user.memberships.find((x) => x.isDefaultBranch) || user.memberships[0];
+      if (!m) {
+        throw new BadRequestException('User has no active branch membership');
+      }
+      branchId = m.branchId;
+    }
+
+    // Tenancy: the person must belong to that branch, and the actor to the same organisation
+    // (the identity routes take any user id, so this is checked here for every caller).
+    if (!user.memberships.some((m) => m.branchId === branchId)) {
+      throw new BadRequestException("branchId is not one of this person's branches");
+    }
+    const orgId = user.memberships.find((m) => m.branchId === branchId)!.organizationId;
+    if (actorUserId !== targetUserId) {
+      const actorMember = await this.prisma.membership.findFirst({
+        where: { userId: actorUserId, organizationId: orgId, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (!actorMember) {
+        throw new NotFoundException('User not found');
+      }
+    }
+
+    const now = new Date();
+    const plaintext = `pst_${crypto.randomBytes(24).toString('base64url')}`;
+    const expiresAt = new Date(now.getTime() + QuickPinService.PIN_SETUP_TTL_MINUTES * 60_000);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.pinSetupToken.updateMany({
+        where: { userId: targetUserId, consumedAt: null, invalidatedAt: null },
+        data: { invalidatedAt: now },
+      });
+      await tx.pinSetupToken.create({
+        data: {
+          userId: targetUserId,
+          branchId: branchId!,
+          tokenHash: QuickPinService.hashSetupToken(plaintext),
+          purpose,
+          issuedById: actorUserId,
+          expiresAt,
+        },
+      });
+      await tx.user.update({
+        where: { id: targetUserId },
+        data: {
+          pinLength,
+          pinTier: tier as any,
+          quickPinIssuedAt: now,
+          quickPinIssuedById: actorUserId,
+          // A reset ends the old PIN now: it cannot be used while the new one is pending.
+          ...(purpose === 'RESET'
+            ? {
+                quickPinHash: null,
+                pinLookupHash: null,
+                quickPinEnabled: false,
+                failedPinAttempts: 0,
+                pinLockedUntil: null,
+              }
+            : {}),
+        },
+      });
+    });
+
+    await this.audit.log({
+      actorUserId,
+      action: purpose === 'RESET' ? 'QUICK_PIN_RESET' : 'QUICK_PIN_SETUP_STARTED',
+      entityType: 'user',
+      entityId: targetUserId,
+      metadata: { tier, pinLength, branchId, purpose, expiresAt: expiresAt.toISOString() },
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
+    return {
+      userId: targetUserId,
+      pinLength,
+      tier,
+      branchId,
+      purpose,
+      pinSetup: {
+        setupToken: plaintext,
+        expiresAt,
+        singleUse: true,
+      },
+      message:
+        'Hand the device to the staff member. They type their own PIN; nobody else sees it. The setup link works once and for 15 minutes.',
+    };
+  }
+
+  /** Kept for callers of the old name: issuing a PIN now starts a setup. */
   async issueQuickPin(
     targetUserId: string,
     actorUserId: string,
     defaultBranchId?: string,
     meta?: RequestMeta,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: targetUserId },
-      include: {
-        userRoles: { include: { role: true } },
-        memberships: { where: { status: 'ACTIVE' }, include: { branch: true } },
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Determine tier from user's job roles
-    const jobRoles = user.userRoles.map((ur) => ur.role.jobRole).filter(Boolean) as JobRole[];
-    let tier: QuickPinTierValue | null = null;
-    for (const jr of jobRoles) {
-      const t = resolveQuickPinTier(jr);
-      if (t) {
-        // If user has both high and low roles, prefer higher tier
-        if (!tier || t === QuickPinTierValue.HIGH_8) {
-          tier = t;
-        }
-      }
-    }
-
-    if (!tier) {
-      throw new BadRequestException('User role is not eligible for quick PIN login');
-    }
-
-    const pinLength = getPinLengthForTier(tier);
-
-    // Pick a branch for lookup hash: use provided branchId or user's default/first active membership
-    let branchId = defaultBranchId;
-    if (!branchId) {
-      const defaultMembership =
-        user.memberships.find((m) => m.isDefaultBranch) || user.memberships[0];
-      if (!defaultMembership) {
-        throw new BadRequestException('User has no active branch membership');
-      }
-      branchId = defaultMembership.branchId;
-    }
-
-    // Generate random PIN and ensure uniqueness
-    const { plainPin, pinHash, lookupHash } = await this.generateUniquePin(pinLength, branchId);
-
-    // Update user
-    await this.prisma.user.update({
-      where: { id: targetUserId },
-      data: {
-        quickPinHash: pinHash,
-        pinLookupHash: lookupHash,
-        pinLength,
-        pinTier: tier as any,
-        quickPinEnabled: true,
-        lastPinChangedAt: new Date(),
-        quickPinIssuedAt: new Date(),
-        quickPinIssuedById: actorUserId,
-        failedPinAttempts: 0,
-        pinLockedUntil: null,
-      },
-    });
-
-    await this.audit.log({
-      actorUserId,
-      action: 'QUICK_PIN_ISSUED',
-      entityType: 'user',
-      entityId: targetUserId,
-      metadata: { tier, pinLength, branchId },
-      ipAddress: meta?.ipAddress,
-      userAgent: meta?.userAgent,
-    });
-
-    return {
-      userId: targetUserId,
-      pin: plainPin,
-      pinLength,
-      tier,
-      branchId,
-      message:
-        'Quick PIN issued. Provide this PIN to the staff member securely. It will not be shown again.',
-    };
+    return this.startPinSetup(targetUserId, actorUserId, 'ONBOARDING', defaultBranchId, meta);
   }
 
-  // ── Reset Quick PIN ──
-
+  /** Kept for callers of the old name: resetting clears the old PIN and starts a setup. */
   async resetQuickPin(
     targetUserId: string,
     actorUserId: string,
     defaultBranchId?: string,
     meta?: RequestMeta,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: targetUserId },
-      include: {
-        userRoles: { include: { role: true } },
-        memberships: { where: { status: 'ACTIVE' }, include: { branch: true } },
-      },
-    });
-
+    const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    if (!user.quickPinEnabled && !user.quickPinHash) {
+    if (!user.quickPinEnabled && !user.quickPinHash && !user.pinTier) {
       throw new BadRequestException('User does not have a quick PIN to reset');
     }
+    return this.startPinSetup(targetUserId, actorUserId, 'RESET', defaultBranchId, meta);
+  }
 
-    // Determine tier
-    const jobRoles = user.userRoles.map((ur) => ur.role.jobRole).filter(Boolean) as JobRole[];
-    let tier: QuickPinTierValue | null = user.pinTier as QuickPinTierValue | null;
-    if (!tier) {
-      for (const jr of jobRoles) {
-        const t = resolveQuickPinTier(jr);
-        if (t) {
-          if (!tier || t === QuickPinTierValue.HIGH_8) tier = t;
-        }
+  private async findLiveSetupToken(plaintext: string) {
+    if (typeof plaintext !== 'string' || !plaintext.startsWith('pst_')) {
+      throw new NotFoundException('PIN setup link not found');
+    }
+    const record = await this.prisma.pinSetupToken.findUnique({
+      where: { tokenHash: QuickPinService.hashSetupToken(plaintext) },
+    });
+    if (!record) throw new NotFoundException('PIN setup link not found');
+    if (record.consumedAt) throw new ConflictException('PIN setup link already used');
+    if (record.invalidatedAt) throw new ConflictException('PIN setup link was replaced');
+    if (record.expiresAt < new Date()) throw new ConflictException('PIN setup link has expired');
+    return record;
+  }
+
+  /** Public, token-authenticated: who the setup is for (first name and PIN length only). */
+  async checkPinSetup(plaintext: string) {
+    const record = await this.findLiveSetupToken(plaintext);
+    const user = await this.prisma.user.findUnique({
+      where: { id: record.userId },
+      select: { firstName: true, displayName: true, pinLength: true, isActive: true },
+    });
+    if (!user || !user.isActive) throw new NotFoundException('PIN setup link not found');
+    return {
+      firstName: user.firstName,
+      displayName: user.displayName,
+      pinLength: user.pinLength,
+      purpose: record.purpose,
+      expiresAt: record.expiresAt,
+    };
+  }
+
+  /**
+   * Public, token-authenticated: the person types their own PIN twice. The token is claimed
+   * with a conditional update inside the same transaction that writes the PIN, so two taps
+   * (or two devices) can never both use it.
+   */
+  async completePinSetup(plaintext: string, pin: string, pinConfirm: string, meta?: RequestMeta) {
+    const record = await this.findLiveSetupToken(plaintext);
+    const user = await this.prisma.user.findUnique({ where: { id: record.userId } });
+    if (!user || !user.isActive) throw new NotFoundException('PIN setup link not found');
+    const pinLength = user.pinLength ?? 0;
+
+    if (typeof pin !== 'string' || typeof pinConfirm !== 'string' || pin !== pinConfirm) {
+      throw new BadRequestException({ code: 'PIN_MISMATCH', message: 'The two PINs differ' });
+    }
+    if (!/^[0-9]+$/.test(pin) || pin.length !== pinLength) {
+      throw new BadRequestException({
+        code: 'PIN_FORMAT',
+        message: `The PIN must be ${pinLength} digits`,
+      });
+    }
+    if (/^(\d)\1+$/.test(pin)) {
+      throw new BadRequestException({
+        code: 'PIN_TOO_SIMPLE',
+        message: 'Choose a less simple PIN',
+      });
+    }
+
+    const lookupHash = this.derivePinLookupHash(record.branchId, pin);
+    const clash = await this.prisma.user.findUnique({ where: { pinLookupHash: lookupHash } });
+    if (clash && clash.id !== user.id) {
+      throw new ConflictException({ code: 'PIN_TAKEN', message: 'Choose a different PIN' });
+    }
+    const pinHash = await bcrypt.hash(pin, SALT_ROUNDS);
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.pinSetupToken.updateMany({
+        where: { id: record.id, consumedAt: null, invalidatedAt: null, expiresAt: { gt: now } },
+        data: { consumedAt: now },
+      });
+      if (claimed.count !== 1) {
+        throw new ConflictException('PIN setup link already used');
       }
-    }
-
-    if (!tier) {
-      throw new BadRequestException('User role is not eligible for quick PIN login');
-    }
-
-    const pinLength = getPinLengthForTier(tier);
-
-    let branchId = defaultBranchId;
-    if (!branchId) {
-      const defaultMembership =
-        user.memberships.find((m) => m.isDefaultBranch) || user.memberships[0];
-      if (!defaultMembership) {
-        throw new BadRequestException('User has no active branch membership');
-      }
-      branchId = defaultMembership.branchId;
-    }
-
-    // Generate new PIN
-    const { plainPin, pinHash, lookupHash } = await this.generateUniquePin(pinLength, branchId);
-
-    // Update — old PIN immediately invalidated
-    await this.prisma.user.update({
-      where: { id: targetUserId },
-      data: {
-        quickPinHash: pinHash,
-        pinLookupHash: lookupHash,
-        pinLength,
-        pinTier: tier as any,
-        lastPinChangedAt: new Date(),
-        quickPinIssuedAt: new Date(),
-        quickPinIssuedById: actorUserId,
-        failedPinAttempts: 0,
-        pinLockedUntil: null,
-      },
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          quickPinHash: pinHash,
+          pinLookupHash: lookupHash,
+          quickPinEnabled: true,
+          lastPinChangedAt: now,
+          failedPinAttempts: 0,
+          pinLockedUntil: null,
+        },
+      });
     });
 
     await this.audit.log({
-      actorUserId,
-      action: 'QUICK_PIN_RESET',
+      actorUserId: user.id,
+      action: 'QUICK_PIN_SET_BY_OWNER',
       entityType: 'user',
-      entityId: targetUserId,
-      metadata: { tier, pinLength, branchId },
+      entityId: user.id,
+      metadata: {
+        branchId: record.branchId,
+        purpose: record.purpose,
+        pinLength,
+        startedById: record.issuedById,
+      },
       ipAddress: meta?.ipAddress,
       userAgent: meta?.userAgent,
     });
 
-    return {
-      userId: targetUserId,
-      pin: plainPin,
-      pinLength,
-      tier,
-      branchId,
-      message: 'Quick PIN reset. Old PIN is invalidated. Provide the new PIN securely.',
-    };
+    return { ok: true, userId: user.id, pinLength, nextStep: 'quick-pin-login' };
   }
 
   // ── Update Quick PIN Settings ──
@@ -573,52 +683,6 @@ export class QuickPinService {
     return crypto.createHmac('sha256', this.pinPepper).update(`${branchId}:${pin}`).digest('hex');
   }
 
-  /**
-   * Generate a cryptographically-secure random numeric PIN of the given length.
-   */
-  private generateRandomPin(length: number): string {
-    const max = Math.pow(10, length);
-    let pin: string;
-    do {
-      const bytes = crypto.randomBytes(4);
-      const num = bytes.readUInt32BE(0) % max;
-      pin = num.toString().padStart(length, '0');
-    } while (pin.length !== length);
-    return pin;
-  }
-
-  /**
-   * Generate a unique PIN, ensuring the lookup hash doesn't collide.
-   */
-  private async generateUniquePin(
-    length: number,
-    branchId: string,
-  ): Promise<{ plainPin: string; pinHash: string; lookupHash: string }> {
-    let attempts = 0;
-    const maxAttempts = 20;
-
-    while (attempts < maxAttempts) {
-      const plainPin = this.generateRandomPin(length);
-      const lookupHash = this.derivePinLookupHash(branchId, plainPin);
-
-      // Check uniqueness
-      const existing = await this.prisma.user.findUnique({
-        where: { pinLookupHash: lookupHash },
-      });
-
-      if (!existing) {
-        const pinHash = await bcrypt.hash(plainPin, SALT_ROUNDS);
-        return { plainPin, pinHash, lookupHash };
-      }
-
-      attempts++;
-    }
-
-    throw new BadRequestException(
-      'Unable to generate a unique PIN after maximum attempts. Please try again.',
-    );
-  }
-
   // ── Private: session/token creation ──
 
   private async createSessionAndTokens(
@@ -677,10 +741,13 @@ export class QuickPinService {
 
     // Create access token with short-lived auth claims so every protected
     // request does not reload the full role-permission graph.
-    const accessToken = this.jwt.sign({ sub: user.id, email: user.email, jti, roles, permissions }, {
-      secret: this.accessSecret,
-      expiresIn: this.accessTtl,
-    } as any);
+    const accessToken = this.jwt.sign(
+      { sub: user.id, email: user.email, jti, roles, permissions },
+      {
+        secret: this.accessSecret,
+        expiresIn: this.accessTtl,
+      } as any,
+    );
 
     // Create refresh token
     const refreshTokenRaw = crypto.randomBytes(48).toString('hex');

@@ -1,4 +1,5 @@
-﻿import { PrismaClient, RoleLevel, JobRole } from '@prisma/client';
+﻿import { applyRightsRulings } from './rights-rulings';
+import { PrismaClient, RoleLevel, JobRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -1485,12 +1486,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:workforce:schedules:read',
     'pos:workforce:schedules:create',
     'pos:workforce:coverage-rules:read',
-    // M26: Payroll Engine (Supervisor: read + create adjustments)
-    'pos:payroll:components:read',
-    'pos:payroll:adjustments:read',
-    'pos:payroll:adjustments:create',
-    'pos:payroll:runs:read',
-    'pos:payroll:slips:read',
+    // M26: Payroll — none for Supervisor (T6, R14: payroll is finance; see rights-rulings.ts)
     // M27: Staff Insights (Supervisor: read insights + awards only)
     'pos:staff:insights:read',
     'pos:staff:awards:read',
@@ -1554,8 +1550,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     // M25: Scheduling (Cashier: read-only roster)
     'pos:workforce:templates:read',
     'pos:workforce:schedules:read',
-    // M26: Payroll (Cashier: read own slips only)
-    'pos:payroll:slips:read',
+    // M26: Payroll — own slips at GET /api/payroll/my-slips, no key (T6, rights-rulings.ts)
     // BG4.A: Receipts surface (Cashier: read + reprint + send)
     'pos:receipt:read',
     'pos:receipt:reprint',
@@ -1645,8 +1640,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     // M25: Scheduling (Waiter: read-only roster)
     'pos:workforce:templates:read',
     'pos:workforce:schedules:read',
-    // M26: Payroll (Waiter: read own slips only)
-    'pos:payroll:slips:read',
+    // M26: Payroll — own slips at GET /api/payroll/my-slips, no key (T6, rights-rulings.ts)
     // BG4.A: Receipts surface (Waiter: read + reprint + send)
     'pos:receipt:read',
     'pos:receipt:reprint',
@@ -8132,6 +8126,17 @@ async function main(): Promise<void> {
   console.log('── Role scope tightening (revoke stale perms) ──');
   const staleRevoke = await revokeStaleRolePermissions();
   console.log(`   Revoked: ${staleRevoke.revoked}\n`);
+
+  // 4c) T6 rights rulings: for each key listed in rights-rulings.ts the holders become
+  //     exactly that list (grant missing, revoke the rest). Wins over ROLE_PERM_MATRIX.
+  console.log('── Rights rulings (T6, rights-rulings.ts) ──');
+  const rulings = await applyRightsRulings(prisma);
+  console.log(
+    `   Granted: ${rulings.granted}, Revoked: ${rulings.revoked}` +
+      (rulings.missingKeys.length ? `, keys without a row: ${rulings.missingKeys.join(', ')}` : '') +
+      (rulings.missingRoles.length ? `, roles not found: ${rulings.missingRoles.join(', ')}` : '') +
+      '\n',
+  );
 
   // 5) Seed Demo Users
   console.log('── Users ──');

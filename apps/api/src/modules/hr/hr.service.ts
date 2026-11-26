@@ -395,6 +395,7 @@ export class HrService {
   async listContracts(
     ctx: { branchId: string; organizationId: string },
     query: ListContractsQueryDto,
+    showPay = true,
   ) {
     const orgId = ctx.organizationId;
     const where: any = { orgId };
@@ -418,7 +419,8 @@ export class HrService {
       this.prisma.employmentContract.count({ where }),
     ]);
 
-    return { data, total, skip, take };
+    const shown = showPay ? data : data.map((c) => ({ ...c, salaryAmount: null }));
+    return { data: shown, total, skip, take };
   }
 
   // ── Positions ──

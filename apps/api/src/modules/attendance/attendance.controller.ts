@@ -20,7 +20,7 @@ import { CurrentUser, Permissions, RequireBranchContext } from '../../common/dec
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) { }
+  constructor(private readonly attendanceService: AttendanceService) {}
 
   // ── Attendance Clock ──
 
@@ -42,11 +42,16 @@ export class AttendanceController {
   @Permissions('pos:hr:attendance:read')
   async listAttendance(
     @Query() query: ListAttendanceQueryDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; permissions?: string[] },
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.attendanceService.listAttendance(ctx, query, user.id);
+    return this.attendanceService.listAttendance(
+      ctx,
+      query,
+      user.id,
+      (user.permissions ?? []).includes('pos:hr:employees:read'),
+    );
   }
 
   // ── Leave Requests ──
@@ -69,11 +74,16 @@ export class AttendanceController {
   @Permissions('pos:hr:leave:read')
   async listLeaveRequests(
     @Query() query: ListLeaveQueryDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; permissions?: string[] },
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.attendanceService.listLeaveRequests(ctx, query, user.id);
+    return this.attendanceService.listLeaveRequests(
+      ctx,
+      query,
+      user.id,
+      (user.permissions ?? []).includes('pos:hr:leave:review'),
+    );
   }
 
   @Patch('leave/:id/review')
@@ -111,11 +121,16 @@ export class AttendanceController {
   @Permissions('pos:hr:shift-swaps:read')
   async listShiftSwaps(
     @Query() query: ListShiftSwapsQueryDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; permissions?: string[] },
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.attendanceService.listShiftSwaps(ctx, query, user.id);
+    return this.attendanceService.listShiftSwaps(
+      ctx,
+      query,
+      user.id,
+      (user.permissions ?? []).includes('pos:hr:shift-swaps:approve'),
+    );
   }
 
   @Patch('shift-swaps/:id/approve')

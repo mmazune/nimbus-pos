@@ -119,9 +119,18 @@ export class HrController {
 
   @Get('contracts')
   @Permissions('pos:hr:contracts:read')
-  async listContracts(@Query() query: ListContractsQueryDto, @Req() req: Request) {
+  async listContracts(
+    @Query() query: ListContractsQueryDto,
+    @CurrentUser() user: { id: string; permissions?: string[] },
+    @Req() req: Request,
+  ) {
     const ctx = (req as any).branchContext;
-    return this.hrService.listContracts(ctx, query);
+    // T6: the salary on a contract is compensation; only pos:hr:compensation:read sees it.
+    return this.hrService.listContracts(
+      ctx,
+      query,
+      (user.permissions ?? []).includes('pos:hr:compensation:read'),
+    );
   }
 
   // ── Positions ──

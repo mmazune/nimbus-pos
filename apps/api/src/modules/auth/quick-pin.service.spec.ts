@@ -10,10 +10,16 @@ import * as bcrypt from 'bcrypt';
 describe('QuickPinService', () => {
   let service: QuickPinService;
 
-  const mockPrisma = {
+  const mockPrisma: any = {
     branch: { findUnique: jest.fn() },
     user: { findUnique: jest.fn(), update: jest.fn() },
-    membership: { findUnique: jest.fn() },
+    membership: { findUnique: jest.fn(), findFirst: jest.fn() },
+    pinSetupToken: {
+      updateMany: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    $transaction: jest.fn((fn: any): any => fn(mockPrisma)),
     session: { create: jest.fn() },
     refreshToken: { create: jest.fn() },
   };
@@ -407,96 +413,81 @@ describe('QuickPinService', () => {
     ).rejects.toThrow('Not a member of this branch');
   });
 
-  // ── issueQuickPin: correct length by tier ──
+  // ── T6: issuing or resetting a PIN starts a setup; no PIN is ever returned ──
 
-  it('should issue a 6-digit PIN for a LOW_6 tier user', async () => {
-    mockPrisma.user.findUnique.mockImplementation((args: any) => {
-      if (args.where.id) {
-        return Promise.resolve({
-          id: 'u1',
-          email: 'waiter@demo.local',
-          firstName: 'Demo',
-          lastName: 'Waiter',
-          quickPinEnabled: false,
-          quickPinHash: null,
-          userRoles: [{ role: { id: 'r1', name: 'Waiter', level: 'L1', jobRole: 'WAITER' } }],
-          memberships: [{ branchId: 'b1', isDefaultBranch: true, branch: { id: 'b1' } }],
-        });
-      }
-      // Uniqueness check — return null (no collision)
-      return Promise.resolve(null);
-    });
+  const memberOf = (id: string, jobRole: string, extra: any = {}) => ({
+    id,
+    email: `${id}@demo.local`,
+    firstName: 'Demo',
+    lastName: 'Person',
+    quickPinEnabled: false,
+    quickPinHash: null,
+    userRoles: [{ role: { id: 'r', name: jobRole, level: 'L1', jobRole } }],
+    memberships: [{ branchId: 'b1', organizationId: 'o1', isDefaultBranch: true }],
+    ...extra,
+  });
+
+  it('issuing a PIN to a LOW_6 user returns a setup token, not a PIN', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(memberOf('u1', 'WAITER'));
+    mockPrisma.membership.findFirst.mockResolvedValue({ id: 'm-actor' });
     mockPrisma.user.update.mockResolvedValue({});
 
-    const result = await service.issueQuickPin('u1', 'actor1', 'b1', meta);
+    const result: any = await service.issueQuickPin('u1', 'actor1', 'b1', meta);
 
-    expect(result.pin).toHaveLength(6);
+    expect(result.pin).toBeUndefined();
     expect(result.pinLength).toBe(6);
     expect(result.tier).toBe('LOW_6');
-    expect(/^\d{6}$/.test(result.pin)).toBe(true);
+    expect(result.pinSetup.setupToken).toMatch(/^pst_/);
+    expect(mockPrisma.pinSetupToken.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'u1', branchId: 'b1', purpose: 'ONBOARDING' }),
+      }),
+    );
+    // Only the token's hash is stored.
+    const stored = mockPrisma.pinSetupToken.create.mock.calls[0][0].data;
+    expect(stored.tokenHash).not.toContain(result.pinSetup.setupToken);
+    expect(JSON.stringify(mockAudit.log.mock.calls)).not.toContain(result.pinSetup.setupToken);
   });
 
-  it('should issue an 8-digit PIN for a HIGH_8 tier user', async () => {
-    mockPrisma.user.findUnique.mockImplementation((args: any) => {
-      if (args.where.id) {
-        return Promise.resolve({
-          id: 'u2',
-          email: 'manager@demo.local',
-          firstName: 'Demo',
-          lastName: 'Manager',
-          quickPinEnabled: false,
-          quickPinHash: null,
-          userRoles: [{ role: { id: 'r2', name: 'Manager', level: 'L4', jobRole: 'MANAGER' } }],
-          memberships: [{ branchId: 'b1', isDefaultBranch: true, branch: { id: 'b1' } }],
-        });
-      }
-      return Promise.resolve(null);
-    });
-    mockPrisma.user.update.mockResolvedValue({});
-
-    const result = await service.issueQuickPin('u2', 'actor1', 'b1', meta);
-
-    expect(result.pin).toHaveLength(8);
+  it('a HIGH_8 user gets an 8-digit setup', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(memberOf('u2', 'MANAGER'));
+    mockPrisma.membership.findFirst.mockResolvedValue({ id: 'm-actor' });
+    const result: any = await service.issueQuickPin('u2', 'actor1', 'b1', meta);
     expect(result.pinLength).toBe(8);
     expect(result.tier).toBe('HIGH_8');
-    expect(/^\d{8}$/.test(result.pin)).toBe(true);
   });
 
-  // ── resetQuickPin: invalidates old PIN ──
+  it("an actor outside the person's organisation is refused", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(memberOf('u1', 'WAITER'));
+    mockPrisma.membership.findFirst.mockResolvedValue(null);
+    await expect(service.issueQuickPin('u1', 'actor1', 'b1', meta)).rejects.toThrow(
+      'User not found',
+    );
+  });
 
-  it('should reset PIN, generating a new one with same tier', async () => {
-    mockPrisma.user.findUnique.mockImplementation((args: any) => {
-      if (args.where.id) {
-        return Promise.resolve({
-          id: 'u1',
-          email: 'waiter@demo.local',
-          firstName: 'Demo',
-          lastName: 'Waiter',
-          quickPinEnabled: true,
-          quickPinHash: 'old-hash',
-          pinTier: 'LOW_6',
-          pinLength: 6,
-          userRoles: [{ role: { id: 'r1', name: 'Waiter', level: 'L1', jobRole: 'WAITER' } }],
-          memberships: [{ branchId: 'b1', isDefaultBranch: true, branch: { id: 'b1' } }],
-        });
-      }
-      return Promise.resolve(null);
-    });
+  it('a reset clears the old PIN at once and starts a setup', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(
+      memberOf('u1', 'WAITER', {
+        quickPinEnabled: true,
+        quickPinHash: 'old-hash',
+        pinTier: 'LOW_6',
+        pinLength: 6,
+      }),
+    );
+    mockPrisma.membership.findFirst.mockResolvedValue({ id: 'm-actor' });
     mockPrisma.user.update.mockResolvedValue({});
 
-    const result = await service.resetQuickPin('u1', 'actor1', 'b1', meta);
+    const result: any = await service.resetQuickPin('u1', 'actor1', 'b1', meta);
 
-    expect(result.pin).toHaveLength(6);
-    expect(result.tier).toBe('LOW_6');
-    // Verify the update was called with new hash
+    expect(result.pin).toBeUndefined();
+    expect(result.purpose).toBe('RESET');
     expect(mockPrisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'u1' },
         data: expect.objectContaining({
-          quickPinHash: expect.any(String),
-          pinLookupHash: expect.any(String),
-          failedPinAttempts: 0,
-          pinLockedUntil: null,
+          quickPinHash: null,
+          pinLookupHash: null,
+          quickPinEnabled: false,
         }),
       }),
     );

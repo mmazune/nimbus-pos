@@ -1,0 +1,82 @@
+# baseline at 1604419 (merge of t2+t4), T4 fixed order, fresh seeded db, 2026-11-26T16:36:44Z
+   11 attendance.e2e-spec.ts
+   17 bg7-hms-integration.e2e-spec.ts
+   17 billing.e2e-spec.ts
+    1 e1-review.probes.e2e-spec.ts
+   12 franchise-analytics.e2e-spec.ts
+   13 franchise.e2e-spec.ts
+    1 orders.e2e-spec.ts
+
+
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) PATCH /hr/leave/:id/review should 400 when reviewing an already-reviewed request
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) PATCH /hr/leave/:id/review should approve a pending leave request
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) PATCH /hr/shift-swaps/:id/approve should 400 when reviewing an already-reviewed swap
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) PATCH /hr/shift-swaps/:id/approve should approve a pending shift swap
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) POST /hr/attendance/clock should 409 if employee already clocked out today
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) POST /hr/attendance/clock should clock in an employee
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) POST /hr/attendance/clock should clock out the same employee (toggle)
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) POST /hr/leave should 400 if endsAt before startsAt
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) POST /hr/leave should 409 for overlapping leave
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) POST /hr/leave should create a leave request
+attendance.e2e-spec.ts :: Attendance + Leave + Shift Swaps (e2e) POST /hr/shift-swaps should create a shift swap request
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Access journal writes access logs that surface via /api/hms/access-logs
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Authentication accepts Authorization: ApiKey <key> form
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Authentication rejects request with no key (401)
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Authentication rejects revoked key (401)
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Authentication rejects unknown key (401)
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/accounting/accounts responds 200
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/inventory responds 200
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/menu responds 200
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/orders is paginated and scoped
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/organization returns org + branchScope
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/payments is paginated
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/reservations responds 200
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/sales/summary returns totals
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Read façade GET /api/hms/shifts responds 200
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Tenancy isolation (branch-scoped key) returns same /branches list (single) regardless of any client filter
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Whoami + scope branch-scoped key reports BRANCH scope and lists exactly one branch
+bg7-hms-integration.e2e-spec.ts :: BG7 HMS Integration (e2e) Whoami + scope org-wide key reports ORGANIZATION scope and lists all branches
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E GET /api/billing 200 — owner sees billing overview
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E GET /api/billing/plans 200 — lists active plans
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E GET /api/dev/admins 200 — lists dev admins
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E GET /api/dev/api-keys 200 — lists API keys
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E GET /api/dev/usage 200 — returns usage with plan limits
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E GET /api/dev/webhooks 200 — lists webhooks
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E GET /api/support/sessions 200 — lists support sessions
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E PATCH /api/billing/subscription 200 — update billing cycle
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E PATCH /api/dev/webhooks/:id 200 — updates webhook status
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E PATCH /api/support/sessions/:id/close 200 — closes support session
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E PATCH /api/support/sessions/:id/close 409 — cannot close already-closed session
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E POST /api/dev/api-keys 201 — creates API key and returns plaintext
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E POST /api/dev/api-keys/:id/revoke 200 — revokes API key
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E POST /api/dev/api-keys/:id/revoke 409 — cannot revoke already-revoked key
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E POST /api/dev/webhooks 201 — creates webhook with signing secret
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E POST /api/dev/webhooks 400 — rejects non-HTTPS URL
+billing.e2e-spec.ts :: Billing + Subscription + Dev Portal (M39) – E2E POST /api/support/sessions 201 — opens support session
+e1-review.probes.e2e-spec.ts :: R-E1 probes (e2e) A1 a waiter cannot list the branch payslips (R14: no finance rights for frontline roles)
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/consolidated-finance 200 — owner gets consolidated finance
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/consolidated-finance 200 — with window params
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — COGS drilldown
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — PRIME_COST drilldown returns cogs + labor
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — revenue drilldown returns category + item breakdowns
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 400 — missing branchId
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/financial-comparison 200 — returns comparison with portfolio averages
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/scorecards 200 — returns scorecards with domains and tiers
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E GET /api/franchise/waste-benchmarks 200 — returns waste benchmarks with rankings
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E POST /api/franchise/consolidated-finance/generate 200 — generates snapshot and persists
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E POST /api/franchise/rankings/generate-deep 200 — deterministic: same input gives same rankings
+franchise-analytics.e2e-spec.ts :: Franchise Analytics (M38.1) – E2E POST /api/franchise/rankings/generate-deep 200 — generates all 6 ranking types
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/budgets should filter by branchId
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/budgets should return budget rollups for owner
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/digests should list digest subscriptions
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/overview should return overview for owner
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/procurement-pressure should return procurement pressure for owner
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/rankings should return rankings for owner
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/transfers should list transfers
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) GET /api/franchise/transfers/:id should return 404 for nonexistent transfer
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) PATCH /api/franchise/digests/:id should return 404 for wrong subscription
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) POST /api/franchise/digests should create a digest subscription
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) POST /api/franchise/rankings/generate should generate rankings
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) POST /api/franchise/transfers should create a transfer
+franchise.e2e-spec.ts :: Franchise + Multi-Branch Suite (e2e) POST /api/franchise/transfers should reject same-branch transfer
+orders.e2e-spec.ts :: POS Orders (e2e) POST /api/pos/orders/:id/close — SERVED → CLOSED

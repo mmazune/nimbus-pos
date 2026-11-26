@@ -15,6 +15,7 @@ import {
   ListPayRunsQueryDto,
 } from './dto';
 import { Prisma } from '@prisma/client';
+import { COLLEAGUE_EMPLOYEE_SELECT } from '../../common/projection/people';
 
 @Injectable()
 export class PayrollService {
@@ -586,7 +587,7 @@ export class PayrollService {
 
     const paySlip = await this.prisma.paySlip.findFirst({
       where: { id, orgId, branchId },
-      include: { employee: true, payRun: true },
+      include: { employee: { select: COLLEAGUE_EMPLOYEE_SELECT }, payRun: true },
     });
     if (!paySlip) {
       throw new NotFoundException(`Pay slip "${id}" not found`);
@@ -607,7 +608,7 @@ export class PayrollService {
     const [data, total] = await Promise.all([
       this.prisma.paySlip.findMany({
         where,
-        include: { employee: true, payRun: true },
+        include: { employee: { select: COLLEAGUE_EMPLOYEE_SELECT }, payRun: true },
         orderBy: { createdAt: 'desc' },
         skip: Number(query.skip) || 0,
         take: Number(query.take) || 50,
@@ -616,5 +617,68 @@ export class PayrollService {
     ]);
 
     return { data, total };
+  }
+
+  // ── Own pay slips (T6) ──
+  //
+  // Every employee sees their own slips, and only those: the employee is found by the caller's
+  // user id, never by a query parameter. The branch-wide list above needs
+  // pos:payroll:slips:read, which waiter, cashier and supervisor do not hold (R14).
+
+  private async ownEmployeeId(ctx: { organizationId: string }, userId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { userId, orgId: ctx.organizationId },
+      select: { id: true },
+    });
+    return employee?.id ?? null;
+  }
+
+  async listOwnPaySlips(
+    ctx: { branchId: string; organizationId: string },
+    userId: string,
+    query: { skip?: number; take?: number },
+  ) {
+    const employeeId = await this.ownEmployeeId(ctx, userId);
+    if (!employeeId) return { data: [], total: 0 };
+    const where: Prisma.PaySlipWhereInput = { orgId: ctx.organizationId, employeeId };
+    const take = Math.min(Math.max(Number(query.take) || 50, 1), 100);
+    const [data, total] = await Promise.all([
+      this.prisma.paySlip.findMany({
+        where,
+        include: {
+          employee: { select: COLLEAGUE_EMPLOYEE_SELECT },
+          payRun: {
+            select: { id: true, periodStart: true, periodEnd: true, status: true, paidAt: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: Number(query.skip) || 0,
+        take,
+      }),
+      this.prisma.paySlip.count({ where }),
+    ]);
+    return { data, total };
+  }
+
+  async getOwnPaySlip(
+    ctx: { branchId: string; organizationId: string },
+    userId: string,
+    id: string,
+  ) {
+    const employeeId = await this.ownEmployeeId(ctx, userId);
+    const slip = employeeId
+      ? await this.prisma.paySlip.findFirst({
+          where: { id, orgId: ctx.organizationId, employeeId },
+          include: {
+            employee: { select: COLLEAGUE_EMPLOYEE_SELECT },
+            payRun: {
+              select: { id: true, periodStart: true, periodEnd: true, status: true, paidAt: true },
+            },
+          },
+        })
+      : null;
+    // Someone else's slip and a missing slip answer the same, so an id cannot be probed.
+    if (!slip) throw new NotFoundException(`Pay slip "${id}" not found`);
+    return slip;
   }
 }

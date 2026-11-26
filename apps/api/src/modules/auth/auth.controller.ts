@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Patch, Body, UseGuards, Req, Param, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  Req,
+  Param,
+  HttpCode,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { QuickPinService } from './quick-pin.service';
@@ -16,6 +26,8 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   ForcePasswordChangeDto,
+  PinSetupCheckDto,
+  PinSetupCompleteDto,
 } from './dto';
 import { JwtAuthGuard, PermissionGuard, PlatformAccessGuard } from '../../common/guards';
 import { CurrentUser, Permissions } from '../../common/decorators';
@@ -27,7 +39,7 @@ export class AuthController {
     private readonly quickPinService: QuickPinService,
     private readonly invitationLifecycle: InvitationLifecycleService,
     private readonly passwordLifecycle: PasswordLifecycleService,
-  ) { }
+  ) {}
 
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request) {
@@ -105,6 +117,23 @@ export class AuthController {
   @Post('quick-pin-login')
   async quickPinLogin(@Body() dto: QuickPinLoginDto, @Req() req: Request) {
     return this.quickPinService.quickPinLogin(dto.branchId, dto.pin, dto.platform, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
+  // T6: public and token-authenticated. The person types their own PIN on the device the
+  // manager handed them; the token, never a PIN, is what travels.
+  @Post('pin-setup/check')
+  @HttpCode(200)
+  async pinSetupCheck(@Body() dto: PinSetupCheckDto) {
+    return this.quickPinService.checkPinSetup(dto.setupToken);
+  }
+
+  @Post('pin-setup')
+  @HttpCode(200)
+  async pinSetup(@Body() dto: PinSetupCompleteDto, @Req() req: Request) {
+    return this.quickPinService.completePinSetup(dto.setupToken, dto.pin, dto.pinConfirm, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });

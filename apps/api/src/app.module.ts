@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SecretScrubInterceptor } from './common/interceptors/secret-scrub.interceptor';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -122,6 +124,10 @@ import { HmsIntegrationModule } from './modules/hms-integration';
     HmsIntegrationModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    // T6: no answer ever carries a password, PIN or token hash.
+    { provide: APP_INTERCEPTOR, useClass: SecretScrubInterceptor },
+    AppService,
+  ],
 })
 export class AppModule {}

@@ -20,7 +20,7 @@ export class PayrollController {
   constructor(
     private readonly payrollService: PayrollService,
     private readonly bg3: Bg3ReliabilityService,
-  ) { }
+  ) {}
 
   // ── Pay Components ──
 
@@ -150,6 +150,32 @@ export class PayrollController {
   async getPayRun(@Param('id') id: string, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.payrollService.getPayRun(ctx, id);
+  }
+
+  // ── Own pay slips (T6): any signed-in person, own slips only ──
+
+  @Get('my-slips')
+  async listOwnPaySlips(
+    @Query('skip') skip: string,
+    @Query('take') take: string,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.payrollService.listOwnPaySlips(ctx, user.id, {
+      skip: skip ? Number(skip) : undefined,
+      take: take ? Number(take) : undefined,
+    });
+  }
+
+  @Get('my-slips/:id')
+  async getOwnPaySlip(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.payrollService.getOwnPaySlip(ctx, user.id, id);
   }
 
   // ── Pay Slips ──

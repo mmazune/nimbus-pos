@@ -84,28 +84,39 @@ describe('Quick PIN Login (e2e)', () => {
       .expect(201);
     _managerUserId = managerLogin.body.user.id;
 
-    // Issue fresh PINs so tests are independent of seed state (seed PINs may have been
-    // rotated by a prior e2e run that called issue-quick-pin or reset-quick-pin).
+    // Issue fresh PINs so tests are independent of seed state. T6: issuing a PIN starts a
+    // one-time setup; the person (here, the test) types their own PIN with the token.
+    const setOwnPin = async (body: any): Promise<string> => {
+      const len: number = body.pinLength;
+      const pin = Array.from({ length: len }, (_, i) =>
+        String((i * 7 + 3 + Math.floor(Math.random() * 10)) % 10),
+      ).join('');
+      const r = await request(app.getHttpServer())
+        .post('/api/auth/pin-setup')
+        .send({ setupToken: body.pinSetup.setupToken, pin, pinConfirm: pin });
+      if (r.status !== 200) throw new Error(`pin-setup gave ${r.status} ${JSON.stringify(r.body)}`);
+      return pin;
+    };
     const waiterPinRes = await request(app.getHttpServer())
       .post(`/api/auth/users/${waiterUserId}/issue-quick-pin`)
       .set('Authorization', `Bearer ${ownerAccessToken}`)
       .send({ branchId })
       .expect(201);
-    waiterPin = waiterPinRes.body.pin;
+    waiterPin = await setOwnPin(waiterPinRes.body);
 
     const cashierPinRes = await request(app.getHttpServer())
       .post(`/api/auth/users/${_cashierUserId}/issue-quick-pin`)
       .set('Authorization', `Bearer ${ownerAccessToken}`)
       .send({ branchId })
       .expect(201);
-    cashierPin = cashierPinRes.body.pin;
+    cashierPin = await setOwnPin(cashierPinRes.body);
 
     const managerPinRes = await request(app.getHttpServer())
       .post(`/api/auth/users/${_managerUserId}/issue-quick-pin`)
       .set('Authorization', `Bearer ${ownerAccessToken}`)
       .send({ branchId })
       .expect(201);
-    managerPin = managerPinRes.body.pin;
+    managerPin = await setOwnPin(managerPinRes.body);
   }, 60000);
 
   afterAll(async () => {
@@ -248,7 +259,9 @@ describe('Quick PIN Login (e2e)', () => {
       .send({ branchId })
       .expect(201);
 
-    expect(res.body.pin).toBeDefined();
+    // T6: a setup token, never a PIN.
+    expect(res.body.pin).toBeUndefined();
+    expect(res.body.pinSetup.setupToken).toMatch(/^pst_/);
     expect(res.body.pinLength).toBe(6);
     expect(res.body.tier).toBe('LOW_6');
   }, 30000);
@@ -262,7 +275,8 @@ describe('Quick PIN Login (e2e)', () => {
       .send({ branchId })
       .expect(201);
 
-    expect(res.body.pin).toBeDefined();
+    expect(res.body.pin).toBeUndefined();
+    expect(res.body.purpose).toBe('RESET');
     expect(res.body.pinLength).toBe(6);
   }, 30000);
 

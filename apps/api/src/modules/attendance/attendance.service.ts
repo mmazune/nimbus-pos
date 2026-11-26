@@ -6,6 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma';
+import { COLLEAGUE_EMPLOYEE_SELECT, SAFE_USER_SELECT } from '../../common/projection/people';
 import { AuditService } from '../../common/audit';
 import {
   ClockAttendanceDto,
@@ -170,8 +171,11 @@ export class AttendanceService {
     ctx: { branchId: string; organizationId: string },
     query: ListAttendanceQueryDto,
     actorUserId?: string,
+    branchWide = true,
   ) {
     const { organizationId: orgId, branchId } = ctx;
+    // T6: without the review right a person reads only their own records.
+    if (!branchWide) query = { ...query, mine: true } as ListAttendanceQueryDto;
     const where: Prisma.AttendanceRecordWhereInput = { orgId, branchId };
 
     if (query.mine) {
@@ -191,7 +195,7 @@ export class AttendanceService {
     const [data, total] = await Promise.all([
       this.prisma.attendanceRecord.findMany({
         where,
-        include: { employee: true, policy: true },
+        include: { employee: { select: COLLEAGUE_EMPLOYEE_SELECT }, policy: true },
         orderBy: { attendanceDate: 'desc' },
         skip: Number(query.skip) || 0,
         take: Number(query.take) || 50,
@@ -283,8 +287,11 @@ export class AttendanceService {
     ctx: { branchId: string; organizationId: string },
     query: ListLeaveQueryDto,
     actorUserId?: string,
+    branchWide = true,
   ) {
     const { organizationId: orgId, branchId } = ctx;
+    // T6: without the review right a person reads only their own records.
+    if (!branchWide) query = { ...query, mine: true } as ListLeaveQueryDto;
     const where: Prisma.LeaveRequestWhereInput = { orgId, branchId };
 
     if (query.mine) {
@@ -305,7 +312,11 @@ export class AttendanceService {
     const [data, total] = await Promise.all([
       this.prisma.leaveRequest.findMany({
         where,
-        include: { employee: true, requestedBy: true, reviewedBy: true },
+        include: {
+          employee: { select: COLLEAGUE_EMPLOYEE_SELECT },
+          requestedBy: { select: SAFE_USER_SELECT },
+          reviewedBy: { select: SAFE_USER_SELECT },
+        },
         orderBy: { createdAt: 'desc' },
         skip: Number(query.skip) || 0,
         take: Math.min(Number(query.take) || 50, MAX_LEAVE_PAGE_SIZE),
@@ -514,17 +525,17 @@ export class AttendanceService {
     ctx: { branchId: string; organizationId: string },
     query: ListShiftSwapsQueryDto,
     actorUserId?: string,
+    branchWide = true,
   ) {
     const { organizationId: orgId, branchId } = ctx;
+    // T6: without the review right a person reads only their own records.
+    if (!branchWide) query = { ...query, mine: true } as ListShiftSwapsQueryDto;
     const where: Prisma.ShiftSwapRequestWhereInput = { orgId, branchId };
 
     if (query.mine) {
       const mineId = await this.resolveMineEmployeeId(actorUserId);
       if (!mineId) return { data: [], total: 0 };
-      where.OR = [
-        { requesterEmployeeId: mineId },
-        { targetEmployeeId: mineId },
-      ];
+      where.OR = [{ requesterEmployeeId: mineId }, { targetEmployeeId: mineId }];
     } else if (query.employeeId) {
       where.OR = [
         { requesterEmployeeId: query.employeeId },
@@ -541,7 +552,11 @@ export class AttendanceService {
     const [data, total] = await Promise.all([
       this.prisma.shiftSwapRequest.findMany({
         where,
-        include: { requester: true, target: true, approvedBy: true },
+        include: {
+          requester: { select: COLLEAGUE_EMPLOYEE_SELECT },
+          target: { select: COLLEAGUE_EMPLOYEE_SELECT },
+          approvedBy: { select: SAFE_USER_SELECT },
+        },
         orderBy: { createdAt: 'desc' },
         skip: Number(query.skip) || 0,
         take: Math.min(Number(query.take) || 50, MAX_LEAVE_PAGE_SIZE),

@@ -1513,6 +1513,20 @@ model KdsTicketItem {
     @@map("kds_ticket_items")
 }
 
+/// E1 (corrected by T6) — ticket lines that pre-E1 concurrent sends had put on a second
+/// ticket. Kept whole for the record; taken out of kds_ticket_items so a line has one ticket.
+model KdsTicketItemSetAside {
+    id          String   @id
+    ticketId    String   @map("ticket_id")
+    orderItemId String   @map("order_item_id")
+    createdAt   DateTime @map("created_at")
+    keptId      String   @map("kept_id")
+    setAsideAt  DateTime @default(now()) @map("set_aside_at")
+    reason      String   @default("DUPLICATE_TICKET_LINE")
+
+    @@map("kds_ticket_items_set_aside")
+}
+
 model KdsSlaConfig {
     id           String   @id @default(cuid())
     orgId        String   @map("org_id")
@@ -7188,6 +7202,30 @@ model PasswordResetToken {
     @@index([userId, purpose])
     @@index([expiresAt])
     @@map("password_reset_tokens")
+}
+
+/// T6 — one-time PIN setup token. A manager starts onboarding or a PIN reset; the person
+/// opens it on the POS and types their own PIN twice. The PIN is never in any response,
+/// log or audit row; only this token's SHA-256 is stored. Single use, short-lived.
+model PinSetupToken {
+    id            String          @id @default(cuid())
+    userId        String          @map("user_id")
+    branchId      String          @map("branch_id")
+    tokenHash     String          @unique @map("token_hash")
+    purpose       PinSetupPurpose
+    issuedById    String          @map("issued_by_id")
+    expiresAt     DateTime        @map("expires_at")
+    consumedAt    DateTime?       @map("consumed_at")
+    invalidatedAt DateTime?       @map("invalidated_at")
+    createdAt     DateTime        @default(now()) @map("created_at")
+
+    @@index([userId, consumedAt])
+    @@map("pin_setup_tokens")
+}
+
+enum PinSetupPurpose {
+    ONBOARDING
+    RESET
 }
 
 // ============================================================

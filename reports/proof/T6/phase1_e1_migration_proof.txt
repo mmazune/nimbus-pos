@@ -1,0 +1,29 @@
+test-env: empty database nimbus_event_d955f011 on localhost:5432 (role nimbus_t_d955f011)
+== 1. build the database with the OLD code (migrate deploy + seed at 0af95f8)
+   e1 migration rows before: 0
+== 2. the OLD code sends 30 orders twice at once (its own concurrent-send race)
+   DUP_RESULT orders with a line on two tickets: 28 of 30
+== 3. two more states the old code leaves: a line added after the first send (never ticketed),
+      and a no-station line on a sent order
+   lines on two or more tickets: 28
+   ticket item rows: 59
+== 4. control: the ORIGINAL E1 migration (git 19e1eee) on a copy of this database
+   original: ABORTED — could not create unique index "kds_ticket_items_order_item_id_key"
+== 5. the corrected chain: prisma migrate deploy from this branch
+   Applying migration `20261126000000_e1_order_truth`
+   Applying migration `20261126100000_t2_menu_availability`
+   Applying migration `20261126200000_t2_areas_tabs`
+   Applying migration `20261126300000_t2_tickets`
+   Applying migration `20261127100000_t6_pin_setup_tokens`
+   The following migration(s) have been applied:
+   All migrations have been successfully applied.
+== 6. after
+   lines on two or more tickets: 0
+   rows set aside: 28 (expected 28)
+   set-aside rows whose kept twin is still live: 28
+   ticketed lines whose sent_at = their ticket time: 31 of 31
+   ticketed lines whose sent_at = the order's last update (the old, wrong stamp): 0
+   proof_after_send: unsent
+   proof_no_station: sent
+   lines of NEW orders stamped sent: 0
+   database: nimbus_event_d955f011 (throwaway, localhost)
