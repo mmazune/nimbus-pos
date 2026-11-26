@@ -1,0 +1,13 @@
+final gates on cc33ee3 2026-11-26T18:49:37Z
+api typecheck exit 0
+api build exit 0
+Test Suites: 72 passed, 72 total
+Tests:       1318 passed, 1318 total
+ ✓ Compiled successfully
+Route (pages)                                              Size     First Load JS
++ First Load JS shared by all                              109 kB
+web build: last next build exit 0 (web.sh stops on failure)
+✔ No ESLint warnings or errors
+check:ui green
+verify:web exit 0
+check:event green

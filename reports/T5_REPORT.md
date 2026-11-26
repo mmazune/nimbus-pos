@@ -134,7 +134,51 @@ page's "This frontend currently supports …" sentence is gone.
 
 ## Done-when 8 — SCREENS.md and the look review
 
-__LOOK__
+Three reviews, each by a fresh subagent that built nothing and saw no earlier score (§5A.12, pass 20/24
+with no zero), screenshots beside the drawings [emulation, reviewer]:
+
+| Screen (drawing) | Round 1 | Round 2 | Round 3 |
+|---|---|---|---|
+| Floor with areas and tabs (Floor-Tabs; SCREENS rows Main, Floor-Phone) | 12 fail | 18 fail* | **20** |
+| New tab (Tab-Name) | 17 | **21** | |
+| Order: N left, sold out (Order-Terminal) | 16 | **21** | |
+| Sold-out line and send report (Order-Line-Sold-Out) | 15 | **20** | |
+| Item sheet: allergy, takeaway, hold, guest (Order-Line-Allergy) | 11 fail | **21** | |
+| Fire with undo (Order-Hold-Fire) | 19 | **22** | |
+| Table actions (Supervisor-Table) | 17 | **20** | |
+| Move table (Table-Move) | 15 | **23** | |
+| Join tables (Table-Join) | 18 | 19 | 19 → fixed after (below) |
+| Move a line (Line-Move) | 14 | **23** | |
+| Split by guest / item / amount / evenly | 17 / 16 / 15 / 17 | **21 / 21 / 22 / 22** | |
+| Change waiter (Change-Waiter) | 15 | **22** | |
+| Hand over your tables (Handover-Offer) | 15 | **21** | |
+| Accept a hand-over (Handover-Accept) | 14 | **22** | |
+| Waiter Ready (Waiter-Ready) | 15 | **22** | |
+| Kitchen tickets (Kitchen) | 16 | **20** | |
+| Bar tickets (Bar) | 16 | **20** (reviewer: tentative) | |
+| Kitchen Done (Kitchen-Done) | 14 | **23** | |
+| Kitchen Sold out (Kitchen-Sold-Out) | 14 | **22** | |
+| Set a number (Kitchen-Set-Number) | 15 | **22** | |
+
+\* round 2 scored a stale phone screenshot (its test had not re-run after the fix); round 3 used fresh ones.
+
+What changed between rounds: the item sheet's filled button got its own row on a phone (it was cut at
+390); tab tiles show the note in whole words that fit; sheets leave 32 px above them; the sold-out line
+reads as drawn with a red Remove; kitchen and Ready cards are equal height, item lines larger, the bar
+highlights the section you are on, Ready's age goes amber and red; split totals are money on the right
+with "Each pays" as the big figure; Change waiter marks who has it now; Move and Join show one area at
+a time; the tabs toggle and header say "tabs".
+
+**Join (19/24 in round 3)** — the reviewer's money and wording points were fixed after it scored (the
+three-line breakdown now sits above the grid, "You" on your own tables); it was not scored a fourth
+time, so it is recorded here at **19, under the pass mark** (decision 19). Join is a step inside the
+Supervisor-Table sheet, whose row scores 20. The drawing's "another waiter's table needs a supervisor"
+line is not shown: only supervisors and managers can open Join at all.
+
+SCREENS.md rows set this phase: `Waiter-Ready` built 22/24, `Kitchen` built 20/24; re-scored after
+T5's changes: `Main` and `Floor-Phone` 20/24, `Order-Terminal` 21/24, `Supervisor-Table` 20/24. The T7
+forms (Floor-Tabs, Tab-Name, Table-Move, …, Bar) have no rows in this branch's SCREENS.md (T7 adds them
+on its branch); their scores are the table above.
 
 ## Done-when 9 — the diff
 
@@ -142,7 +186,25 @@ __LOOK__
 
 ## Gates (final, this turn)
 
-__GATES__
+`reports/proof/T5/final_gates.txt` [live]:
+
+```
+final gates on cc33ee3 2026-11-26T18:49:37Z
+api typecheck exit 0
+api build exit 0
+Test Suites: 72 passed, 72 total
+Tests:       1318 passed, 1318 total
+ ✓ Compiled successfully
+Route (pages)                                              Size     First Load JS
++ First Load JS shared by all                              109 kB
+web build: last next build exit 0 (web.sh stops on failure)
+✔ No ESLint warnings or errors
+check:ui green
+verify:web exit 0
+check:event green
+```
+
+`eslint` (no `--fix`) on every changed web file: clean (`next lint` in `verify:web` covers them all). No file under `apps/api` or `packages/db` changed, so the API gates are the merge's, re-run here.
 
 ## Decisions taken
 
@@ -180,7 +242,23 @@ __GATES__
 17. **A production build ran while my own `next start` served the same folder** once; the server was
     restarted by its PIDs, an orphaned `next-server` of mine was stopped by PID, and from then on the
     restart helper records the whole process tree.
-__EXTRA_DECISIONS__
+18. **All browser proofs share one fresh venue per run** (T1's 27, the evening, every T5 spec, in that
+    order). Where one case changes what a later case starts from, the later case sets up its own start
+    through the API as staff would (a waiter starts a shift, the chef puts a dish back on, its own table),
+    never by editing the database.
+19. **Join tables** — see Done-when 8: __JOIN__.
+20. **An API defect found, not fixed (T6's code):** after a `split-items`, the next `POST /api/pos/orders`
+    on the branch answers 500 every time: the child is numbered `ORD-n-S1`, and `generateOrderNumber`
+    takes the newest order's number, reads `n` and proposes `ORD-(n+1)`, which already exists. The T5
+    hand-over case therefore runs before the split case. Reproduce: split items on any bill, then open a
+    new table.
+21. **T1's and T3's proof images were regenerated** by T5's runs on the demo venue (their specs ran here
+    as phase 1's gate) and are committed as such; their reports describe their original fixtures.
+22. **Rule 10 on an open order screen** uses T3's measurer, scoped to the screen and its sheet; T1's page
+    measurer would count the Floor tiles hidden under the full-screen order screen.
+23. **A tab's note on its tile** is shortened to whole words that fit (about 16 letters, no dangling little
+    word); the whole note is kept on the tab.
+24. **Tests run in Kampala time** (T5's own terminals), so the header clock and "since 19:40" agree.
 
 ## Left out, and which milestone brings it
 
