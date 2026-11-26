@@ -482,6 +482,10 @@ export class PosHandoffService {
                             normalPrice: it.normalPrice ?? null,
                             offerBasePrice: it.offerBasePrice ?? null,
                             guest: it.guest ?? null,
+                            // T2 phase 3 (E5): flags and hold travel with the line
+                            allergy: it.allergy ?? null,
+                            takeaway: it.takeaway ?? false,
+                            heldAt: it.heldAt ?? null,
                             metadata: it.metadata
                                 ? (it.metadata as Prisma.InputJsonValue)
                                 : Prisma.JsonNull,
@@ -957,6 +961,10 @@ export class PosHandoffService {
                             normalPrice: it.normalPrice ?? null,
                             offerBasePrice: it.offerBasePrice ?? null,
                             guest: it.guest ?? null,
+                            // T2 phase 3 (E5): flags and hold travel with the line
+                            allergy: it.allergy ?? null,
+                            takeaway: it.takeaway ?? false,
+                            heldAt: it.heldAt ?? null,
                             metadata: it.metadata
                                 ? (it.metadata as Prisma.InputJsonValue)
                                 : Prisma.JsonNull,

@@ -578,6 +578,10 @@ export class SeatingService {
       await tx.order.update({
         where: { id: target.id },
         data: {
+          // T2 phase 3: allergies said at either table stay on every later ticket
+          allergies: {
+            set: [...new Set([...target.allergies, ...(source?.allergies ?? [])])].sort(),
+          },
           metadata: {
             ...meta0,
             joins: [
@@ -665,6 +669,7 @@ export class SeatingService {
               : OrderStatus.NEW,
             serviceType: 'DINE_IN',
             splitFromOrderId: target.id,
+            allergies: target.allergies,
           },
         });
         newOrderId = created.id;
@@ -760,6 +765,7 @@ export class SeatingService {
             status: line.sentAt ? OrderStatus.SENT : OrderStatus.NEW,
             serviceType: 'DINE_IN',
             splitFromOrderId: orderId,
+            allergies: locked.allergies,
           },
         });
         if (line.sentAt) await this.occupy(tx, to.id);
@@ -791,6 +797,9 @@ export class SeatingService {
             normalPrice: line.normalPrice,
             offerBasePrice: line.offerBasePrice,
             guest: line.guest,
+            allergy: line.allergy,
+            takeaway: line.takeaway,
+            heldAt: line.heldAt,
             notes: line.notes,
             metadata: line.metadata ? (line.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
             costUnit: line.costUnit,
@@ -885,6 +894,7 @@ export class SeatingService {
                   : OrderStatus.NEW,
             serviceType: order.serviceType,
             splitFromOrderId: orderId,
+            allergies: order.allergies,
           },
         });
         await tx.orderItem.updateMany({

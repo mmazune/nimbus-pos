@@ -9,8 +9,9 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma, OrderStatus, ShiftStatus, TableStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { KdsService } from '../kds/kds.service';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { randomUUID } from 'crypto';
+import { KdsService, KDS_BEFORE_READ } from '../kds/kds.service';
 import {
   closeOrderInTx,
   completeSeatedReservationsInTx,
@@ -72,6 +73,9 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 };
 
 // E1 — lines may be added, and sent, while the order is in any of these states.
+// T2 phase 3 (E5): a fire can be undone for this long, on the server clock.
+export const FIRE_UNDO_MS = 3000;
+
 const SENDABLE_STATES: OrderStatus[] = [
   OrderStatus.NEW,
   OrderStatus.SENT,
@@ -590,6 +594,9 @@ export class OrdersService {
           normalPrice: linePricing.normalPrice,
           offerBasePrice: linePricing.offerBasePrice,
           guest: dto.guest ?? null,
+          heldAt: dto.hold ? new Date() : null,
+          allergy: dto.allergy?.trim() || null,
+          takeaway: dto.takeaway ?? false,
           notes: dto.notes ?? null,
           metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
           costUnit: linePricing.costUnit,
@@ -599,6 +606,14 @@ export class OrdersService {
         },
       });
       await this.recalcOrderTotals(orderId, tx);
+      // T2 phase 3 (E5): an allergy said at this table is kept for every later round.
+      const allergy = dto.allergy?.trim().toLowerCase();
+      if (allergy && !locked.allergies.includes(allergy)) {
+        await tx.order.update({
+          where: { id: orderId },
+          data: { allergies: { set: [...locked.allergies, allergy] } },
+        });
+      }
       return { item: created, pricing: linePricing };
     });
 
@@ -927,60 +942,117 @@ export class OrdersService {
     }
     await this.assertWaiterShiftOpen(meta.actor, ctx);
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
-      const locked = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
-      if (!SENDABLE_STATES.includes(locked.status)) {
-        throw new ConflictException(`Cannot send items on a ${locked.status} order`);
-      }
+    const sent = await this.prisma.$transaction((tx) =>
+      this.sendInTx(tx, userId, ctx, orderId, { kind: 'send', reason: dto.reason ?? null }, meta),
+    );
+    // A plain send either sends something or throws; null is only for a fire with nothing due.
+    if (!sent) throw new ConflictException('There is nothing new to send on this order.');
+    const result = sent;
+    await this.afterSend(userId, ctx, orderId, result, meta);
+    const sentOrder = await this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    return { ...sentOrder, sent: result.lineIds, skipped: result.skipped, held: result.held };
+  }
 
-      const unsent = await tx.orderItem.findMany({
-        where: { orderId, sentAt: null, voidedAt: null },
-        select: {
-          id: true,
-          menuItemId: true,
-          quantity: true,
-          menuItem: { select: { name: true } },
-        },
-        orderBy: { createdAt: 'asc' },
+  /**
+   * The body of a send, inside the caller's transaction, under the order's row lock.
+   * kind 'send': every unsent live line that is not held (T2 phase 3: Send skips held lines).
+   * kind 'fire': the held lines whose fire has come due (fireAt <= now), and only those.
+   */
+  private async sendInTx(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    mode: { kind: 'send'; reason: string | null } | { kind: 'fire'; now: Date },
+    meta: RequestMeta,
+  ) {
+    await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+    const locked = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+    if (!SENDABLE_STATES.includes(locked.status)) {
+      if (mode.kind === 'fire') return null;
+      throw new ConflictException(`Cannot send items on a ${locked.status} order`);
+    }
+
+    const where: Prisma.OrderItemWhereInput =
+      mode.kind === 'send'
+        ? { orderId, sentAt: null, voidedAt: null, heldAt: null }
+        : {
+            orderId,
+            sentAt: null,
+            voidedAt: null,
+            heldAt: { not: null },
+            fireAt: { lte: mode.now },
+          };
+    const unsent = await tx.orderItem.findMany({
+      where,
+      select: {
+        id: true,
+        menuItemId: true,
+        quantity: true,
+        fireId: true,
+        menuItem: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const held =
+      mode.kind === 'send'
+        ? (
+            await tx.orderItem.findMany({
+              where: { orderId, sentAt: null, voidedAt: null, heldAt: { not: null } },
+              select: { id: true },
+            })
+          ).map((h) => h.id)
+        : [];
+    if (unsent.length === 0) {
+      if (mode.kind === 'fire') return null;
+      throw new ConflictException({
+        code: 'NOTHING_TO_SEND',
+        message: held.length
+          ? 'Only held lines are left. Fire them when the table is ready.'
+          : 'There is nothing new to send on this order.',
       });
-      if (unsent.length === 0) {
-        throw new ConflictException({
-          code: 'NOTHING_TO_SEND',
-          message: 'There is nothing new to send on this order.',
-        });
-      }
+    }
 
-      // T2 phase 1 (E2): sold-out lines are skipped and reported; counted items lose portions
-      // with a guarded update, so two sends racing for the last one cannot both take it.
-      const take = await takeAvailabilityForSend(
-        tx,
-        ctx,
-        orderId,
-        userId,
-        unsent.map((l) => ({
-          id: l.id,
-          menuItemId: l.menuItemId,
-          quantity: l.quantity,
-          name: l.menuItem.name,
-        })),
-      );
-      if (take.sendIds.length === 0) {
-        throw new ConflictException({
-          code: 'NOTHING_SENDABLE',
-          message: `Nothing could be sent: ${[...new Set(take.skipped.map((k) => k.name))].join(', ')} sold out or not enough left.`,
-          skipped: take.skipped,
-        });
-      }
-      const sendSet = new Set(take.sendIds);
-      const lineIds = unsent.filter((l) => sendSet.has(l.id)).map((l) => l.id);
+    // T2 phase 1 (E2): sold-out lines are skipped and reported; counted items lose portions
+    // with a guarded update, so two sends racing for the last one cannot both take it.
+    const take = await takeAvailabilityForSend(
+      tx,
+      ctx,
+      orderId,
+      userId,
+      unsent.map((l) => ({
+        id: l.id,
+        menuItemId: l.menuItemId,
+        quantity: l.quantity,
+        name: l.menuItem.name,
+      })),
+    );
+    if (take.sendIds.length === 0 && mode.kind === 'send') {
+      throw new ConflictException({
+        code: 'NOTHING_SENDABLE',
+        message: `Nothing could be sent: ${[...new Set(take.skipped.map((k) => k.name))].join(', ')} sold out or not enough left.`,
+        skipped: take.skipped,
+      });
+    }
+    const sendSet = new Set(take.sendIds);
+    const lineIds = unsent.filter((l) => sendSet.has(l.id)).map((l) => l.id);
+    if (mode.kind === 'fire' && take.skipped.length > 0) {
+      // A fired line whose dish ran out goes back to held; the order flags it unsendable.
+      await tx.orderItem.updateMany({
+        where: { id: { in: take.skipped.map((k) => k.orderItemId) } },
+        data: { fireAt: null, fireId: null },
+      });
+    }
 
+    let tickets: { id: string; station: string }[] = [];
+    let firstSend = false;
+    if (lineIds.length > 0) {
       await tx.orderItem.updateMany({
         where: { id: { in: lineIds }, sentAt: null },
         data: { sentAt: new Date() },
       });
 
-      const firstSend = locked.status === OrderStatus.NEW;
+      firstSend = locked.status === OrderStatus.NEW;
       if (firstSend) {
         await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.SENT } });
       }
@@ -994,40 +1066,59 @@ export class OrdersService {
         });
       }
 
-      const tickets = await this.kdsService.createTicketsForLines(tx, ctx, orderId, lineIds);
+      const fireId = mode.kind === 'fire' ? (unsent.find((l) => l.fireId)?.fireId ?? null) : null;
+      tickets = await this.kdsService.createTicketsForLines(tx, ctx, orderId, lineIds, { fireId });
+    }
 
-      await tx.auditLog.create({
-        data: {
-          actorUserId: userId,
-          action: 'ORDER_SENT',
-          entityType: 'order',
-          entityId: orderId,
-          metadata: {
-            orgId: ctx.organizationId,
-            branchId: ctx.branchId,
-            previousStatus: locked.status,
-            newStatus: firstSend ? OrderStatus.SENT : locked.status,
-            reason: dto.reason ?? null,
-            lineCount: lineIds.length,
-            orderItemIds: lineIds,
-            ticketIds: tickets.map((t) => t.id),
-            skipped: take.skipped.map((k) => ({ orderItemId: k.orderItemId, reason: k.reason })),
-          },
-          ipAddress: meta.ipAddress ?? null,
-          userAgent: meta.userAgent ?? null,
+    await tx.auditLog.create({
+      data: {
+        actorUserId: userId,
+        action: mode.kind === 'send' ? 'ORDER_SENT' : 'ORDER_FIRE_SENT',
+        entityType: 'order',
+        entityId: orderId,
+        metadata: {
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          previousStatus: locked.status,
+          newStatus: firstSend ? OrderStatus.SENT : locked.status,
+          reason: mode.kind === 'send' ? mode.reason : 'fire',
+          lineCount: lineIds.length,
+          orderItemIds: lineIds,
+          ticketIds: tickets.map((t) => t.id),
+          skipped: take.skipped.map((k) => ({ orderItemId: k.orderItemId, reason: k.reason })),
+          held,
         },
-      });
-      return { lineIds, tickets, firstSend, skipped: take.skipped, changed: take.changedItemIds };
+        ipAddress: meta.ipAddress ?? null,
+        userAgent: meta.userAgent ?? null,
+      },
     });
+    return {
+      lineIds,
+      tickets,
+      firstSend,
+      skipped: take.skipped,
+      changed: take.changedItemIds,
+      held,
+    };
+  }
 
-    this.kdsService.announceTickets(ctx, orderId, result.tickets);
-    this.eventEmitter.emit(ORDER_LINES_SENT, {
-      orderId,
-      branchId: ctx.branchId,
-      orgId: ctx.organizationId,
-      orderItemIds: result.lineIds,
-      ticketIds: result.tickets.map((t) => t.id),
-    } satisfies OrderLinesSentEvent);
+  private async afterSend(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    result: { lineIds: string[]; tickets: { id: string; station: string }[]; changed: string[] },
+    meta: RequestMeta,
+  ) {
+    if (result.tickets.length > 0) this.kdsService.announceTickets(ctx, orderId, result.tickets);
+    if (result.lineIds.length > 0) {
+      this.eventEmitter.emit(ORDER_LINES_SENT, {
+        orderId,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        orderItemIds: result.lineIds,
+        ticketIds: result.tickets.map((t) => t.id),
+      } satisfies OrderLinesSentEvent);
+    }
     if (result.changed.length > 0) {
       this.eventEmitter.emit(MENU_AVAILABILITY_CHANGED, {
         orgId: ctx.organizationId,
@@ -1035,10 +1126,208 @@ export class OrdersService {
         menuItemIds: result.changed,
       } satisfies MenuAvailabilityChangedEvent);
     }
-
     await this.closeIfSettled(userId, ctx, orderId, meta);
-    const sentOrder = await this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
-    return { ...sentOrder, sent: result.lineIds, skipped: result.skipped };
+  }
+
+  // ── Hold and fire (T2 phase 3, E5) ──
+
+  /** A held line waits; Send skips it. Hold or unhold an unsent line. */
+  async setLineHeld(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    itemId: string,
+    held: boolean,
+    meta: RequestMeta,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const line = await tx.orderItem.findFirst({ where: { id: itemId, orderId } });
+      if (!line) throw new NotFoundException('Order item not found');
+      if (line.sentAt || line.voidedAt)
+        throw new ConflictException('Only an unsent line can be held');
+      const updated = await tx.orderItem.update({
+        where: { id: itemId },
+        data: held
+          ? { heldAt: line.heldAt ?? new Date() }
+          : { heldAt: null, fireAt: null, fireId: null },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: held ? 'ORDER_ITEM_HELD' : 'ORDER_ITEM_UNHELD',
+          entityType: 'orderItem',
+          entityId: itemId,
+          metadata: { orgId: ctx.organizationId, branchId: ctx.branchId, orderId },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return updated;
+    });
+  }
+
+  /**
+   * Fire held lines. They go to the kitchen after FIRE_UNDO_MS on the server clock, so the fire
+   * can be undone until then and the kitchen never sees a ticket that is taken back.
+   */
+  async fireOrder(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    itemIds: string[] | undefined,
+    meta: RequestMeta,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
+
+    const res = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const locked = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+      if (!SENDABLE_STATES.includes(locked.status)) {
+        throw new ConflictException(`Cannot fire on a ${locked.status} order`);
+      }
+      const lines = await tx.orderItem.findMany({
+        where: {
+          orderId,
+          sentAt: null,
+          voidedAt: null,
+          heldAt: { not: null },
+          fireAt: null,
+          ...(itemIds?.length ? { id: { in: itemIds } } : {}),
+        },
+        select: { id: true },
+      });
+      if (lines.length === 0) {
+        throw new ConflictException({
+          code: 'NOTHING_TO_FIRE',
+          message: 'There is nothing held to fire.',
+        });
+      }
+      const fireId = randomUUID();
+      const fireAt = new Date(Date.now() + FIRE_UNDO_MS);
+      await tx.orderItem.updateMany({
+        where: { id: { in: lines.map((l) => l.id) }, fireAt: null },
+        data: { fireAt, fireId },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_FIRED',
+          entityType: 'order',
+          entityId: orderId,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            fireId,
+            fireAt: fireAt.toISOString(),
+            orderItemIds: lines.map((l) => l.id),
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return { fireId, fireAt, itemIds: lines.map((l) => l.id) };
+    });
+    // Best effort: send it out as soon as the undo window has passed. Every read of the
+    // kitchen queue, the ready list and the floor also sends out what is due, so a restart
+    // in between loses nothing.
+    const timer = setTimeout(() => {
+      this.releaseDueFires(ctx.branchId, orderId).catch((e) =>
+        this.logger.warn(`fire release for ${orderId} failed: ${String(e)}`),
+      );
+    }, FIRE_UNDO_MS + 50);
+    timer.unref?.();
+    return { ...res, undoUntil: res.fireAt };
+  }
+
+  /** Undo a fire inside its window: the lines go back to held and nothing reaches the kitchen. */
+  async undoFire(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    fireId: string,
+    meta: RequestMeta,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const lines = await tx.orderItem.findMany({ where: { orderId, fireId, sentAt: null } });
+      const now = new Date();
+      if (lines.length === 0 || lines.some((l) => !l.fireAt || l.fireAt <= now)) {
+        throw new ConflictException({
+          code: 'FIRE_TOO_LATE',
+          message: 'Too late to undo: the fire has gone to the kitchen.',
+        });
+      }
+      await tx.orderItem.updateMany({
+        where: { id: { in: lines.map((l) => l.id) }, fireId, sentAt: null },
+        data: { fireAt: null, fireId: null },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_FIRE_UNDONE',
+          entityType: 'order',
+          entityId: orderId,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            fireId,
+            orderItemIds: lines.map((l) => l.id),
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return { undone: true, fireId, itemIds: lines.map((l) => l.id) };
+    });
+  }
+
+  /** The kitchen queue is about to be read: send out the fires that are due first. */
+  @OnEvent(KDS_BEFORE_READ, { promisify: true })
+  async onKdsBeforeRead(payload: { branchId: string }): Promise<void> {
+    await this.releaseDueFires(payload.branchId);
+  }
+
+  /** Sends every fire whose undo window has passed, in this branch (or on one order). */
+  async releaseDueFires(branchId: string, orderId?: string): Promise<number> {
+    const now = new Date();
+    const due = await this.prisma.orderItem.findMany({
+      where: {
+        sentAt: null,
+        voidedAt: null,
+        fireAt: { lte: now },
+        order: { branchId, ...(orderId ? { id: orderId } : {}) },
+      },
+      select: { order: { select: { id: true, orgId: true, userId: true } } },
+      distinct: ['orderId'],
+    });
+    let released = 0;
+    for (const d of due) {
+      const ctx = { branchId, organizationId: d.order.orgId };
+      const result = await this.prisma.$transaction((tx) =>
+        this.sendInTx(tx, d.order.userId, ctx, d.order.id, { kind: 'fire', now }, {}),
+      );
+      if (result) {
+        released += result.lineIds.length;
+        await this.afterSend(d.order.userId, ctx, d.order.id, result, {});
+      }
+    }
+    return released;
   }
 
   async markInKitchen(
@@ -1291,6 +1580,8 @@ export class OrdersService {
             normalPrice: item.normalPrice,
             offerBasePrice: item.offerBasePrice,
             guest: item.guest,
+            allergy: item.allergy,
+            takeaway: item.takeaway,
             notes: item.notes,
             metadata: item.metadata ? (item.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
             costUnit: item.costUnit,

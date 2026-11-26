@@ -26,6 +26,9 @@ describe('KdsService', () => {
         create: jest.fn(),
         update: jest.fn(),
         count: jest.fn(),
+        // T2 phase 3: Ready and recall are guarded updates; the answer is read back
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: jest.fn((...a: any[]) => prisma.kdsTicket.update(...a)),
       },
       kdsTicketItem: { findMany: jest.fn() },
       kdsSlaConfig: {
@@ -36,7 +39,7 @@ describe('KdsService', () => {
     };
 
     audit = { log: jest.fn().mockResolvedValue(undefined) };
-    eventEmitter = { emit: jest.fn() };
+    eventEmitter = { emit: jest.fn(), emitAsync: jest.fn().mockResolvedValue([]) } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

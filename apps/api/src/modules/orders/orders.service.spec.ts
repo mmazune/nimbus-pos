@@ -364,7 +364,10 @@ describe('OrdersService', () => {
       const result = await service.sendOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
 
       expect(prisma.orderItem.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { orderId: 'order-1', sentAt: null, voidedAt: null } }),
+        // T2 phase 3: Send skips held lines
+        expect.objectContaining({
+          where: { orderId: 'order-1', sentAt: null, voidedAt: null, heldAt: null },
+        }),
       );
       expect(prisma.orderItem.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: { in: ['line-1', 'line-2'] }, sentAt: null } }),
@@ -373,10 +376,13 @@ describe('OrdersService', () => {
         where: { id: 'order-1' },
         data: { status: 'SENT' },
       });
-      expect(kdsService.createTicketsForLines).toHaveBeenCalledWith(prisma, mockCtx, 'order-1', [
-        'line-1',
-        'line-2',
-      ]);
+      expect(kdsService.createTicketsForLines).toHaveBeenCalledWith(
+        prisma,
+        mockCtx,
+        'order-1',
+        ['line-1', 'line-2'],
+        { fireId: null },
+      );
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ action: 'ORDER_SENT' }),
       });

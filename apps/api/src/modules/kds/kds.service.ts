@@ -1,10 +1,12 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrepStation } from '@prisma/client';
+import { stationsFor } from '../menu/menu-availability.service';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { ListKdsQueueQueryDto, UpdateKdsSlaDto } from './dto';
@@ -42,6 +44,28 @@ export interface KdsEvent {
   branchId: string;
 }
 
+export const KDS_BEFORE_READ = 'kds.before-read';
+
+export interface KdsActor {
+  id: string;
+  roles?: Array<{ jobRole?: string | null } | null | undefined> | null;
+}
+
+/**
+ * T2 phase 3 (E5): tickets are worked by Chef and Bartender for their own stations, and by
+ * Supervisor, Manager and Owner. Everyone else (waiter, cashier) is refused.
+ */
+export function assertWorksStation(actor: KdsActor, station: string): void {
+  const allowed = stationsFor(actor);
+  if (allowed === null) return;
+  if (!allowed.includes(station as PrepStation)) {
+    throw new ForbiddenException({
+      code: 'NOT_YOUR_STATION',
+      message: `This ticket belongs to the ${station.toLowerCase()} station.`,
+    });
+  }
+}
+
 @Injectable()
 export class KdsService {
   constructor(
@@ -61,6 +85,8 @@ export class KdsService {
     ctx: BranchContext,
     orderId: string,
     orderItemIds: string[],
+    // T2 phase 3 (E5): the fire a ticket came from, if any
+    opts: { fireId?: string | null } = {},
   ): Promise<{ id: string; station: string }[]> {
     const lines = await tx.orderItem.findMany({
       where: { id: { in: orderItemIds }, orderId, voidedAt: null },
@@ -84,6 +110,7 @@ export class KdsService {
           orderId,
           station,
           status: 'QUEUED',
+          fireId: opts.fireId ?? null,
           items: { create: ids.map((orderItemId) => ({ orderItemId })) },
         },
       });
@@ -136,6 +163,15 @@ export class KdsService {
     };
     if (query.station) where.station = query.station;
     if (query.status) where.status = query.status;
+    if (query.orderId) {
+      where.OR = [
+        { orderId: query.orderId },
+        { items: { some: { orderItem: { orderId: query.orderId } } } },
+      ];
+    }
+
+    // T2 phase 3 (E5): fires whose undo window has passed go out before the kitchen reads.
+    await this.eventEmitter.emitAsync(KDS_BEFORE_READ, { branchId: ctx.branchId });
 
     const tickets = await this.prisma.kdsTicket.findMany({
       where,
@@ -146,6 +182,16 @@ export class KdsService {
               include: {
                 menuItem: { select: { id: true, name: true, station: true } },
                 menuItemServing: { select: { id: true, format: true, label: true } },
+                // the line's CURRENT order: after a join, a move or a hand-over this is where
+                // the table and the waiter are read from, not the order the ticket was made for
+                order: {
+                  select: {
+                    id: true,
+                    userId: true,
+                    allergies: true,
+                    table: { select: { id: true, label: true } },
+                  },
+                },
               },
             },
           },
@@ -201,12 +247,26 @@ export class KdsService {
       const remainingSecondsToAmber = Math.max(0, sla.amberSeconds - elapsedSeconds);
       const remainingSecondsToRed = Math.max(0, sla.redSeconds - elapsedSeconds);
 
+      const current = ticket.items[0]?.orderItem.order;
+      const allergies = [
+        ...new Set([
+          ...ticket.items.flatMap((ti) => ti.orderItem.order?.allergies ?? []),
+          ...ticket.items
+            .map((ti) => ti.orderItem.allergy?.toLowerCase())
+            .filter((a): a is string => !!a),
+        ]),
+      ].sort();
       return {
         id: ticket.id,
-        orderId: ticket.orderId,
+        orderId: current?.id ?? ticket.orderId,
+        ticketOrderId: ticket.orderId,
         orderNumber: ticket.order.orderNumber,
         serviceType: ticket.order.serviceType,
-        table: ticket.order.table,
+        table: current?.table ?? ticket.order.table,
+        waiterUserId: current?.userId ?? null,
+        allergies,
+        fireId: ticket.fireId,
+        collectedAt: ticket.collectedAt,
         orderNotes: ticket.order.notes,
         station: ticket.station,
         status: ticket.status,
@@ -230,6 +290,10 @@ export class KdsService {
           menuItemId: ti.orderItem.menuItem.id,
           serving: ti.orderItem.menuItemServing,
           notes: ti.orderItem.notes,
+          // T2 phase 3 (E5): flags carried to the ticket
+          allergy: ti.orderItem.allergy,
+          takeaway: ti.orderItem.takeaway,
+          guest: ti.orderItem.guest,
           // E1 — a voided line stays on the ticket, flagged
           voided: ti.voidedAt !== null,
           voidedAt: ti.voidedAt,
@@ -253,23 +317,30 @@ export class KdsService {
 
   // ── Mark Ready ──
 
-  async markReady(userId: string, ctx: BranchContext, ticketId: string, meta: RequestMeta) {
+  async markReady(
+    userId: string,
+    ctx: BranchContext,
+    ticketId: string,
+    meta: RequestMeta,
+    actor?: KdsActor,
+  ) {
     const ticket = await this.prisma.kdsTicket.findFirst({
       where: { id: ticketId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!ticket) throw new NotFoundException('KDS ticket not found');
+    if (actor) assertWorksStation(actor, ticket.station);
 
     if (ticket.status === 'READY') {
       throw new ConflictException('Ticket is already READY');
     }
 
-    const updated = await this.prisma.kdsTicket.update({
-      where: { id: ticketId },
-      data: {
-        status: 'READY',
-        readyAt: new Date(),
-      },
+    // T2 phase 3 (E5): guarded, so two taps on Ready make one Ready.
+    const claimed = await this.prisma.kdsTicket.updateMany({
+      where: { id: ticketId, status: { not: 'READY' } },
+      data: { status: 'READY', readyAt: new Date(), collectedAt: null, collectedById: null },
     });
+    if (claimed.count !== 1) throw new ConflictException('Ticket is already READY');
+    const updated = await this.prisma.kdsTicket.findUniqueOrThrow({ where: { id: ticketId } });
 
     await this.audit.log({
       actorUserId: userId,
@@ -309,24 +380,36 @@ export class KdsService {
 
   // ── Recall ──
 
-  async recallTicket(userId: string, ctx: BranchContext, ticketId: string, meta: RequestMeta) {
+  async recallTicket(
+    userId: string,
+    ctx: BranchContext,
+    ticketId: string,
+    meta: RequestMeta,
+    actor?: KdsActor,
+  ) {
     const ticket = await this.prisma.kdsTicket.findFirst({
       where: { id: ticketId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!ticket) throw new NotFoundException('KDS ticket not found');
+    if (actor) assertWorksStation(actor, ticket.station);
 
     if (ticket.status !== 'READY') {
       throw new ConflictException('Only READY tickets can be recalled');
     }
 
-    const updated = await this.prisma.kdsTicket.update({
-      where: { id: ticketId },
+    // T2 phase 3 (E5): bring a ticket back from done; it leaves the waiter's Ready list.
+    const claimed = await this.prisma.kdsTicket.updateMany({
+      where: { id: ticketId, status: 'READY' },
       data: {
         status: 'RECALLED',
         recalledAt: new Date(),
         readyAt: null,
+        collectedAt: null,
+        collectedById: null,
       },
     });
+    if (claimed.count !== 1) throw new ConflictException('Only READY tickets can be recalled');
+    const updated = await this.prisma.kdsTicket.findUniqueOrThrow({ where: { id: ticketId } });
 
     await this.audit.log({
       actorUserId: userId,
