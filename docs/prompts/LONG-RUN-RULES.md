@@ -1,8 +1,8 @@
-# Rules for the long runs (T1 to T4), 26 Nov 2026
+# Rules for the long runs (T1 onwards), 26 Nov 2026
 
 The owner, 26 Nov 2026: "They should work autonomously until a goal is achieved… no back and forth… take their time and get a lot done… test the UI, everything. Just let them work."
 
-These rules bind every track prompt (`T1` to `T4`). Where a milestone file a track points to says something else about model, branch or stopping, this file wins.
+These rules bind every track prompt (`T1` onwards). Where a milestone file a track points to says something else about model, branch or stopping, this file wins.
 
 ## How you work
 
@@ -36,3 +36,12 @@ These rules bind every track prompt (`T1` to `T4`). Where a milestone file a tra
 ## When you finish
 
 Write `reports/<TRACK>_REPORT.md`: per phase, the Done-when lines with their proof, the gate outputs, what was left out and which milestone brings it, decisions taken, and anything another track must know. Push. End with a block of 10 lines at most that opens with the verdict and ends `You need to: …`. Then stop.
+
+## Added after the first run
+
+The first four tracks finished their work and then spent turns arguing with the stop check, because two Done-when lines could not both be met as written. So:
+
+21. **When two Done-when lines conflict, or meeting one would mean faking something, the truth wins.** Take the option that fakes nothing and breaks the fewest lines, record it as a numbered decision in your report with the proof, and treat that line as settled. Your goal is: every Done-when line proven, **or settled by a numbered decision**.
+22. **Never repeat yourself to a stop check.** If it objects to something you have already settled by a decision, answer once in one line naming the decision, and end the turn. Do not rerun, rewrite or restate.
+23. **A test outside your folders that tests something you replaced** is yours to update; list each one. A test that fails for a reason not yours is listed, not touched, unless your prompt gives you the test files.
+24. Prove screens on the demo venue (`packages/db/demo-venue/`, loaded into a throwaway database), not on the 20-item seed.
