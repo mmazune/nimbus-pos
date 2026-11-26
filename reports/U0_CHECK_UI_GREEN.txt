@@ -1,0 +1,6 @@
+check:ui apps/web/src/components/kit: 27 file(s)
+check:ui apps/web/src/screens: 0 file(s)
+check:ui scanned 27 files with 6 rules; 61 kit colour and type names
+check:ui allowed 0 hit(s) via 0 allow entries
+check:ui green
+exit 0
