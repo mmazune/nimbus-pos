@@ -113,7 +113,7 @@ describe('PaymentsService', () => {
       'user-1',
       ctx,
       'order-1',
-      { payments: [{ method: 'CASH', amount: 100 }] },
+      { payments: [{ method: 'CASH', amount: '100' }] },
       meta,
     );
 
@@ -145,7 +145,7 @@ describe('PaymentsService', () => {
       'user-1',
       ctx,
       'order-1',
-      { payments: [{ method: 'CASH', amount: 100 }] },
+      { payments: [{ method: 'CASH', amount: '100' }] },
       meta,
     );
 
@@ -177,7 +177,7 @@ describe('PaymentsService', () => {
         'u',
         ctx,
         'order-1',
-        { payments: [{ method: 'CASH', amount: 100000 }] },
+        { payments: [{ method: 'CASH', amount: '100000' }] },
         meta,
       );
 
@@ -198,7 +198,7 @@ describe('PaymentsService', () => {
             'u',
             ctx,
             'order-1',
-            { payments: [{ method: 'CASH', amount: 50 }] },
+            { payments: [{ method: 'CASH', amount: '50' }] },
             meta,
           ),
         ).resolves.toBeDefined();
@@ -212,7 +212,7 @@ describe('PaymentsService', () => {
           'u',
           ctx,
           'order-1',
-          { payments: [{ method: 'CARD', amount: 100000 }] },
+          { payments: [{ method: 'CARD', amount: '100000' }] },
           meta,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -221,7 +221,7 @@ describe('PaymentsService', () => {
           'u',
           ctx,
           'order-1',
-          { payments: [{ method: 'CARD', amount: 90000 }] },
+          { payments: [{ method: 'CARD', amount: '90000' }] },
           meta,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -235,8 +235,8 @@ describe('PaymentsService', () => {
         'order-1',
         {
           payments: [
-            { method: 'CARD', amount: 60000 },
-            { method: 'CASH', amount: 50000 },
+            { method: 'CARD', amount: '60000' },
+            { method: 'CASH', amount: '50000' },
           ],
         },
         meta,
@@ -257,7 +257,7 @@ describe('PaymentsService', () => {
           'u',
           ctx,
           'order-1',
-          { payments: [{ method: 'CASH', amount: 98000 }] },
+          { payments: [{ method: 'CASH', amount: '98000' }] },
           meta,
         ),
       ).rejects.toThrow('Send or remove the unsent items first');
@@ -272,7 +272,7 @@ describe('PaymentsService', () => {
           'u',
           ctx,
           'order-1',
-          { payments: [{ method: 'CASH', amount: 100 }] },
+          { payments: [{ method: 'CASH', amount: '100' }] },
           meta,
         ),
       ).rejects.toThrow(ConflictException);
@@ -284,7 +284,7 @@ describe('PaymentsService', () => {
         'u',
         ctx,
         'order-1',
-        { payments: [{ method: 'CASH', amount: 98000 }] },
+        { payments: [{ method: 'CASH', amount: '98000' }] },
         meta,
       );
       expect(prisma.order.updateMany).toHaveBeenCalledWith(
@@ -334,8 +334,8 @@ describe('PaymentsService', () => {
       'order-1',
       {
         payments: [
-          { method: 'CASH', amount: 80 },
-          { method: 'CARD', amount: 70, transactionId: 'TXN-001' },
+          { method: 'CASH', amount: '80' },
+          { method: 'CARD', amount: '70', transactionId: 'TXN-001' },
         ],
       },
       meta,
@@ -361,7 +361,7 @@ describe('PaymentsService', () => {
         'user-1',
         ctx,
         'order-1',
-        { payments: [{ method: 'CASH', amount: 50 }] },
+        { payments: [{ method: 'CASH', amount: '50' }] },
         meta,
       ),
     ).rejects.toThrow(BadRequestException);
@@ -383,7 +383,7 @@ describe('PaymentsService', () => {
         'user-1',
         ctx,
         'order-1',
-        { payments: [{ method: 'CARD', amount: 120 }] },
+        { payments: [{ method: 'CARD', amount: '120' }] },
         meta,
       ),
     ).rejects.toThrow(BadRequestException);
@@ -404,7 +404,7 @@ describe('PaymentsService', () => {
         'user-1',
         ctx,
         'order-1',
-        { payments: [{ method: 'CASH', amount: 100 }] },
+        { payments: [{ method: 'CASH', amount: '100' }] },
         meta,
       ),
     ).rejects.toThrow(ConflictException);
@@ -425,7 +425,7 @@ describe('PaymentsService', () => {
         'user-1',
         ctx,
         'order-1',
-        { payments: [{ method: 'CASH', amount: 100 }] },
+        { payments: [{ method: 'CASH', amount: '100' }] },
         meta,
       ),
     ).rejects.toThrow(ConflictException);
@@ -439,7 +439,7 @@ describe('PaymentsService', () => {
         'user-1',
         ctx,
         'order-x',
-        { payments: [{ method: 'CASH', amount: 100 }] },
+        { payments: [{ method: 'CASH', amount: '100' }] },
         meta,
       ),
     ).rejects.toThrow(NotFoundException);
@@ -461,7 +461,7 @@ describe('PaymentsService', () => {
         'user-1',
         ctx,
         'order-1',
-        { payments: [{ method: 'MOMO', amount: 100 }] },
+        { payments: [{ method: 'MOMO', amount: '100' }] },
         meta,
       ),
     ).rejects.toThrow(BadRequestException);
@@ -492,7 +492,7 @@ describe('PaymentsService', () => {
       'user-1',
       ctx,
       'order-1',
-      { payments: [{ method: 'MOMO', amount: 100 }] },
+      { payments: [{ method: 'MOMO', amount: '100' }] },
       meta,
     );
 
@@ -515,7 +515,7 @@ describe('PaymentsService', () => {
         'user-1',
         ctx,
         'order-1',
-        { payments: [{ method: 'CASH', amount: 100 }] },
+        { payments: [{ method: 'CASH', amount: '100' }] },
         meta,
       ),
     ).rejects.toThrow(ConflictException);
@@ -543,7 +543,7 @@ describe('PaymentsService', () => {
       'user-1',
       ctx,
       'order-1',
-      { payments: [{ method: 'CASH', amount: 40 }] },
+      { payments: [{ method: 'CASH', amount: '40' }] },
       meta,
     );
 
@@ -572,7 +572,7 @@ describe('PaymentsService', () => {
     const result = await service.createPaymentIntent(
       'user-1',
       ctx,
-      { orderId: 'order-1', provider: 'MTN', amount: 50000, phoneNumber: '+256700000000' },
+      { orderId: 'order-1', provider: 'MTN', amount: '50000', phoneNumber: '+256700000000' },
       meta,
     );
 
@@ -596,7 +596,7 @@ describe('PaymentsService', () => {
       service.createPaymentIntent(
         'user-1',
         ctx,
-        { orderId: 'order-1', provider: 'MTN', amount: 50000, phoneNumber: '256700000000' },
+        { orderId: 'order-1', provider: 'MTN', amount: '50000', phoneNumber: '256700000000' },
         meta,
       ),
     ).rejects.toThrow(ConflictException);
@@ -614,7 +614,7 @@ describe('PaymentsService', () => {
       service.createPaymentIntent(
         'user-1',
         ctx,
-        { orderId: 'order-1', provider: 'AIRTEL', amount: 30000, phoneNumber: '256700000000' },
+        { orderId: 'order-1', provider: 'AIRTEL', amount: '30000', phoneNumber: '256700000000' },
         meta,
       ),
     ).rejects.toThrow(ConflictException);
@@ -627,7 +627,7 @@ describe('PaymentsService', () => {
       service.createPaymentIntent(
         'user-1',
         ctx,
-        { orderId: 'order-x', provider: 'MTN', amount: 50000, phoneNumber: '256700000000' },
+        { orderId: 'order-x', provider: 'MTN', amount: '50000', phoneNumber: '256700000000' },
         meta,
       ),
     ).rejects.toThrow(NotFoundException);
@@ -652,7 +652,7 @@ describe('PaymentsService', () => {
       {
         orderId: 'order-1',
         provider: 'MTN',
-        amount: 50000,
+        amount: '50000',
         phoneNumber: '256700000000',
         idempotencyKey: 'key-1',
       },
@@ -682,7 +682,7 @@ describe('PaymentsService', () => {
     await service.createPaymentIntent(
       'user-1',
       ctx,
-      { orderId: 'order-1', provider: 'MTN', amount: 50000, phoneNumber: '+256700000000' },
+      { orderId: 'order-1', provider: 'MTN', amount: '50000', phoneNumber: '+256700000000' },
       meta,
     );
 
@@ -721,7 +721,7 @@ describe('PaymentsService', () => {
     await service.createPaymentIntent(
       'user-1',
       ctx,
-      { orderId: 'order-1', provider: 'MTN', amount: 50000, phoneNumber: '+256700000000' },
+      { orderId: 'order-1', provider: 'MTN', amount: '50000', phoneNumber: '+256700000000' },
       meta,
     );
 
@@ -993,7 +993,7 @@ describe('PaymentsService', () => {
       {
         orderId: 'order-1',
         method: 'MOMO',
-        amount: 50,
+        amount: '50',
         externalTransactionId: 'MTN-REF-001',
         payerPhone: '256700000000',
       },
@@ -1027,7 +1027,7 @@ describe('PaymentsService', () => {
         {
           orderId: 'order-1',
           method: 'MOMO',
-          amount: 50,
+          amount: '50',
           externalTransactionId: 'MTN-REF-001',
         },
         meta,
@@ -1050,7 +1050,7 @@ describe('PaymentsService', () => {
         {
           orderId: 'order-1',
           method: 'MOMO',
-          amount: 50,
+          amount: '50',
           externalTransactionId: 'MTN-REF-002',
         },
         meta,
@@ -1068,7 +1068,7 @@ describe('PaymentsService', () => {
         {
           orderId: 'order-x',
           method: 'MOMO',
-          amount: 50,
+          amount: '50',
           externalTransactionId: 'MTN-REF-003',
         },
         meta,
@@ -1137,7 +1137,7 @@ describe('PaymentsService', () => {
       {
         orderId: 'order-1',
         method: 'MOMO',
-        amount: 100,
+        amount: '100',
         externalTransactionId: 'MTN-REF-004',
       },
       meta,
@@ -1184,7 +1184,7 @@ describe('PaymentsService', () => {
         'user-1',
         { branchId: 'other-branch', organizationId: 'org-1' },
         'order-1',
-        { payments: [{ method: 'CASH', amount: 100 }] },
+        { payments: [{ method: 'CASH', amount: '100' }] },
         meta,
       ),
     ).rejects.toThrow(NotFoundException);
@@ -1216,7 +1216,7 @@ describe('PaymentsService', () => {
       'user-1',
       ctx,
       'order-1',
-      { payments: [{ method: 'CASH', amount: 50 }] },
+      { payments: [{ method: 'CASH', amount: '50' }] },
       meta,
     );
 
@@ -1252,7 +1252,7 @@ describe('PaymentsService', () => {
       'user-1',
       ctx,
       'order-1',
-      { payments: [{ method: 'CASH', amount: 50 }] },
+      { payments: [{ method: 'CASH', amount: '50' }] },
       meta,
     );
 

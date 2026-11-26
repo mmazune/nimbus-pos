@@ -282,27 +282,24 @@ export class PaymentsService {
       }
       const change = totalHanded.sub(due);
 
-      // The cash row that absorbs the change is the last one; its stored amount is what was
-      // applied to the bill, and `tendered` keeps what was actually handed over.
-      let lastCashIndex = -1;
-      dto.payments.forEach((p, i) => {
-        if (p.method === 'CASH') lastCashIndex = i;
-      });
-      if (change.gt(0)) {
-        const lastCash = new Decimal(dto.payments[lastCashIndex].amount);
-        if (change.gte(lastCash)) {
-          throw new BadRequestException(
-            'The change is larger than the last cash payment. Remove the extra cash payment.',
-          );
-        }
+      // E1F (N2): the change comes out of the cash rows from the last one backwards, so cash
+      // 75,000 + 5,000 on 74,000 gives 6,000 change. Each row's stored amount is what it paid
+      // towards the bill; `tendered` keeps what was handed over and `changeGiven` what came back.
+      const changeByIndex = new Map<number, Decimal>();
+      let changeLeft = change;
+      for (let i = dto.payments.length - 1; i >= 0 && changeLeft.gt(0); i--) {
+        if (dto.payments[i].method !== 'CASH') continue;
+        const take = Decimal.min(changeLeft, new Decimal(dto.payments[i].amount));
+        changeByIndex.set(i, take);
+        changeLeft = changeLeft.sub(take);
       }
 
       const paymentRecords = [];
       for (let i = 0; i < dto.payments.length; i++) {
         const p = dto.payments[i];
         const handed = new Decimal(p.amount);
-        const isChangeRow = change.gt(0) && i === lastCashIndex;
-        const applied = isChangeRow ? handed.sub(change) : handed;
+        const changeHere = changeByIndex.get(i) ?? new Decimal(0);
+        const applied = handed.sub(changeHere);
         const payment = await tx.payment.create({
           data: {
             orgId: ctx.organizationId,
@@ -310,7 +307,7 @@ export class PaymentsService {
             orderId,
             amount: applied,
             tendered: p.method === 'CASH' ? handed : null,
-            changeGiven: p.method === 'CASH' ? (isChangeRow ? change : new Decimal(0)) : null,
+            changeGiven: p.method === 'CASH' ? changeHere : null,
             method: p.method,
             status: PaymentStatus.COMPLETED,
             captureMode: 'ONLINE_PROVIDER',
