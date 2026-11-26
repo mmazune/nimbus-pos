@@ -331,4 +331,62 @@ describe('T2 phase 3: Starters now, mains later (e2e)', () => {
     expect(latest.allergies).toEqual(['shellfish']);
     expect(latest.table.label).toBe(host.label);
   });
+
+  it('[emulation] a fire that came due with no timer is sent out by the next read (kitchen queue, then the floor)', async () => {
+    const goat = await makeItem(w, 'Lazy goat stew', 22000, 'KITCHEN');
+    for (const via of ['queue', 'floor'] as const) {
+      const table = await makeTable(w, `LZ-${via}`);
+      const o = await openOrder(w, waiter.token, table.id);
+      const line = (await addLine(w, waiter.token, o, goat.id, 1, { hold: true })).body;
+      // A fire whose window passed while no process was running: no timer exists for it.
+      await w.prisma.orderItem.update({
+        where: { id: line.id },
+        data: { fireAt: new Date(Date.now() - 1000), fireId: `lazy-${via}-${w.run}` },
+      });
+      expect(await w.prisma.kdsTicketItem.count({ where: { orderItemId: line.id } })).toBe(0);
+      if (via === 'queue') {
+        const q = await w
+          .http()
+          .get('/api/kds/queue')
+          .query({ orderId: o, station: 'KITCHEN' })
+          .set(w.as(w.tokens.chef));
+        expect(q.body.data).toHaveLength(1);
+        expect(q.body.data[0].fireId).toBe(`lazy-queue-${w.run}`);
+      } else {
+        const fs = await w.http().get('/api/floor/state').set(w.as(w.tokens.supervisor));
+        expect(fs.body.tables.find((t: any) => t.tableId === table.id).state).toBe('SENT');
+      }
+      expect(await w.prisma.kdsTicketItem.count({ where: { orderItemId: line.id } })).toBe(1);
+      expect(
+        (await w.prisma.orderItem.findUniqueOrThrow({ where: { id: line.id } })).sentAt,
+      ).not.toBeNull();
+    }
+  });
+
+  it('a bartender marks bar items sold out or sets a number, never kitchen items', async () => {
+    const gin = await makeItem(w, 'House gin', 9000, 'BAR');
+    const stew = await makeItem(w, 'Bar-proof stew', 18000, 'KITCHEN');
+    const own = await w
+      .http()
+      .put(`/api/menu/items/${gin.id}/left`)
+      .set(w.as(bartender.token))
+      .send({ left: 10 });
+    expect([own.status, own.body.availability.left]).toEqual([200, 10]);
+    expect(
+      (await w.http().post(`/api/menu/items/${gin.id}/sold-out`).set(w.as(bartender.token))).status,
+    ).toBe(200);
+    expect(
+      (
+        await w
+          .http()
+          .put(`/api/menu/items/${stew.id}/left`)
+          .set(w.as(bartender.token))
+          .send({ left: 3 })
+      ).status,
+    ).toBe(403);
+    expect(
+      (await w.http().post(`/api/menu/items/${stew.id}/sold-out`).set(w.as(bartender.token)))
+        .status,
+    ).toBe(403);
+  });
 });

@@ -1,4 +1,5 @@
-// Copied from origin/t4/review-and-data (R-E1, track T4) by T2 for the E1F fixes; the probes are unchanged.
+// Copied from origin/t4/review-and-data (R-E1, track T4) by T2 for the E1F fixes; the probes are
+// unchanged, except A1 (a rights finding for E9, answered in reports/T2_REPORT.md), left out.
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
@@ -568,6 +569,34 @@ describe('R-E1 probes (e2e)', () => {
     expect(r.status).toBe(409);
   });
 
+  it('P22b the same, driven as a waiter on their own order with an open shift', async () => {
+    const opened = await http().post('/api/shifts/open').set(as(waiter)).send({});
+    expect([201, 409]).toContain(opened.status); // 409: this waiter already has an open shift
+    const table = await newTable();
+    const o = await http()
+      .post('/api/pos/orders')
+      .set(as(waiter))
+      .send({ serviceType: 'DINE_IN', tableId: table.id });
+    expect(o.status).toBe(201);
+    const mi = await menuItem(6000);
+    const lineId = await addLine(o.body.id, mi.id, 2, waiter);
+    expect(
+      (await http().post(`/api/pos/orders/${o.body.id}/send`).set(as(waiter)).send({})).status,
+    ).toBe(200);
+    const r = await http()
+      .patch(`/api/pos/orders/${o.body.id}/items/${lineId}`)
+      .set(as(waiter))
+      .send({ quantity: 1 });
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: o.body.id } });
+    const line = await prisma.orderItem.findUniqueOrThrow({ where: { id: lineId } });
+    // Correct: refused, the line still says 2 and the bill 12,000. Status checked last.
+    expect({ qty: line.quantity, total: order.total.toString() }).toEqual({
+      qty: 2,
+      total: '12000',
+    });
+    expect(r.status).toBe(409);
+  });
+
   it('P23 a line void on an open order that already has a part payment is refused', async () => {
     const { orderId, itemIds } = await seatedOrder([{ price: 30000 }, { price: 10000 }]);
     expect((await manualRef(orderId, 'MOMO', 15000)).status).toBe(201);
@@ -614,8 +643,6 @@ describe('R-E1 probes (e2e)', () => {
     const r = await pay(orderId, [{ method: 'CASH', amount: 10_000_000_000 }]);
     expect(r.status).toBe(400);
   });
-
-  // ── Send ────────────────────────────────────────────────────────────────────────────────
 
   it('P21 a send with every line voided or removed answers 409 and makes no ticket', async () => {
     const { orderId, itemIds } = await seatedOrder([{ price: 3000 }]);

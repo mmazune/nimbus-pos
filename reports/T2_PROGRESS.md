@@ -4,7 +4,7 @@ Branch `t2/engines`, cut from `rebuild/main` `0af95f8`, `origin/e1/order-truth` 
 DB: throwaway Postgres 16, db `nimbus_event_t2`, role `t2`, localhost; URL set per shell, never in a file.
 
 ## Now
-- Phase 1, E1F, phase 2, phase 3 DONE. Report: reports/T2_REPORT.md. Last step: final full e2e by name, then push.
+- ALL PHASES DONE. Report: reports/T2_REPORT.md. Final full e2e by name done (82 red, all in T4's named groups). Probes refreshed to T4 e26bb73: 30/30.
 
 ## Done
 - Phase 1: workspace (239 items: 185,682 B, 36 ms), offers, sold out / back on / a number left, send hook, void give-back, reset + opening list. Lamb chops e2e 6 tests + Table 12, 3 runs green. Race x20 green; mutation with both guards removed goes red. Seed: 1 key, 5 roles (seeded twice). Migration additive, row counts unchanged.

@@ -1,6 +1,6 @@
 # T2 report: engines for the menu, tables and tickets
 
-Track T2, branch `t2/engines`, cut from `rebuild/main` `0af95f8`, with `origin/e1/order-truth` merged at `c6983c4`. `OrderItem.sentAt` is present. Run on Opus 5.5. `moses-build-standards` was loaded and §0, §1.3 and §6 were read.
+Track T2, branch `t2/engines`, cut from `rebuild/main` `0af95f8`, with `origin/e1/order-truth` merged at `c6983c4`. `OrderItem.sentAt` is present. `moses-build-standards` was loaded and §0, §1.3 and §6 were read.
 
 Database: a throwaway Postgres 16 in this container. The databases are `nimbus_event_t2`, `nimbus_event_t2full`, `nimbus_event_t2p2` and `nimbus_event_t2final`, all on `localhost`, with URLs set in the shell only. Neon was never touched. No `.env*` file was read. Test staff are made at load time with random passwords that are never printed.
 
@@ -8,11 +8,13 @@ Grades: **[live]** run here and seen; **[emulation]** a real state written by SQ
 
 ## Verdict
 
-All three phases are built, and so are the E1 review fixes. Every Done-when line holds except the one exception below.
+All three phases are built, and so are the E1 review fixes. Every Done-when line holds except the two exceptions below.
 
-The four real cases pass three runs in a row, 54 of 54 tests each [live]. All 29 E1 review probes are green [live].
+The four real cases pass three runs in a row, 54 of 54 tests each [live]. The E1 review probes, refreshed to T4 `e26bb73`, are 30 of 30 green [live].
 
-**Exception:** the full e2e suite is not 0 failed. Every red test in it is a failure named in T4's baseline (see Gates).
+**Exceptions:**
+- The full e2e suite is not 0 failed. Every red test in it is a failure named in T4's baseline (see Gates).
+- eslint is not clean on `pos-handoff.service.ts`. It has 30 more errors than at E1, all on lines I added, which follow that file's own 4-space style (as E1 did). Every other changed file is clean.
 
 ## Phase 1: the menu in one call, offers, sold out and a number left (E2)
 
@@ -49,6 +51,7 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
 
 - **Before:** 16 of 27 green.
 - **After:** 29 of 29, including the second push's N2 and S6 (`reports/proof/T2/e1f_probes_before_after.txt`) [live].
+- **Last check:** against T4 `e26bb73`, which adds P22b (a waiter editing their own sent line). It is green through the B1 fix: **30 of 30**. A1 is left out of my copy and answered below [live].
 - **Commits:** `fix(e1f): close the R-E1 blockers…` and `fix(e1f): N2 … S6 …`. There are two because the review was pushed again after my first fix commit, and I never force-push.
 
 | id | done | proof |
@@ -119,6 +122,7 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
   - Fire goes out **after a 3-second undo window on the server clock**. It is released by a timer, and by every read of the kitchen queue, the Ready list and the floor, so a restart loses nothing.
   - So the kitchen never sees a ticket that is taken back, and E1's one-ticket-per-line index holds.
   - An undo after the window is 409. A second fire is 409 [live].
+  - The release on read without a timer is proven by writing a past `fireAt` directly. The kitchen queue, then the floor state, send the line out with exactly one ticket item [emulation].
 - **Allergy and takeaway on a line**, carried to the ticket.
   - The allergy is also kept on the order, so later rounds on the table show it, including after a join.
   - Allergy, takeaway and hold are copied by the void split, both `pos-handoff` copies and the line move [live].
@@ -137,6 +141,8 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
   - a second round of lagers makes a second bar ticket;
   - the mains bumped by mistake are brought back, then after a change of waiter Ready reaches the new waiter.
   - Further tests: a late table, a not-sent table, a double fire, undo against the fire going out at the 3-second line, and the allergy across a join [live].
+- **Bartender availability** (phase 1 rights): a bartender sets a number and marks sold out on a bar item, and gets 403 on a kitchen item [live].
+- The Starters spec ends with 6 tests; its three final runs are 6 of 6 each (`phase3_starters_three_runs_final.txt`) [live].
 - **Mutation control:** removing the guard from Ready's update turns the double-Ready race red in 3 of 3 runs (`phase3_mutation_ready_guard.txt`) [live].
 
 ## Done when (T2)
@@ -149,7 +155,7 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
    - Phase 2: no grant (one data step that puts tables into areas).
    - Phase 3: none.
    - The E1F S7 data fix stamps `sentAt` on sent demo lines.
-   - No other grant changed [live].
+   - No other grant changed. The whole diff is in `seed_diff_all_phases.txt`: 6 permission lines, all of them the one key and its five grants [live].
 5. **Review findings** in my files are fixed with their probes passing (29 of 29), or answered (B5, S1, A1) [live].
 6. **Gates:** API typecheck 0, build 0, unit **1,318 passed / 72 suites, 0 failed**, `pnpm check:event` green.
    - eslint has 0 errors on every new file and on every changed file that was clean at base.
