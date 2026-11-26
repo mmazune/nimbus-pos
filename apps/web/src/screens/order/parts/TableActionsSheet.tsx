@@ -186,23 +186,24 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     const chosen = othersQ.data?.find((o) => o.tableId === target);
     const sum = totalMinor + (chosen?.totalMinor ?? 0);
     return (
-      <Sheet placement={placement} title={`Join ${title} with another`} summary={`${formatMoney(totalMinor)} · pick the table to join to ${title}`} onClose={onClose}
+      <Sheet placement={placement} title={`Join ${title} with another`} summary={`Pick the table to join to ${title}`} onClose={onClose}
         footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinTables(ctx as Ctx, tableId as string, target as string), { leave: false, message: `${chosen?.tableLabel} joined to ${title}: one bill` })}>{chosen ? `Join 2 tables · ${formatMoney(sum)}` : "Choose a table"}</Button></>}>
-        {chosen ? (
-          <RowGroup>
-            <Row size="settings" title={title} trailing={<Text variant="sup">{formatMoney(totalMinor)}</Text>} />
-            <Row size="settings" title={chosen.tableLabel} trailing={<Text variant="sup">{formatMoney(chosen.totalMinor)}</Text>} />
-            <Row size="settings" title={`One bill on ${title}`} line={`${chosen.tableLabel} shows “Joined to ${title}” until paid; split them again any time`} trailing={<Text variant="row">{formatMoney(sum)}</Text>} />
-          </RowGroup>
-        ) : null}
         {areaChips((id) => (othersQ.data ?? []).filter((o) => o.tableId && o.tableId !== tableId && areaOfTable(o.tableId) === id).length)}
         <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3" data-order-join>
           {(othersQ.data ?? [])
             .filter((o) => o.tableId && o.tableId !== tableId && (!areaId || areaOfTable(o.tableId) === areaId))
             .map((o) => (
-              <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterId && o.waiterId === userId ? "You" : o.waiterName, o.totalMinor > 0 ? formatMoney(o.totalMinor) : "Nothing yet"].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
+              <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterId && o.waiterId === userId ? "You" : o.waiterName, o.totalMinor > 0 ? groupShillings(o.totalMinor) : "Nothing yet"].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
             ))}
         </div>
+        {chosen ? (
+          <div className="flex flex-col gap-kit-8 rounded-kit-control bg-kit-canvas px-kit-16 py-kit-12" data-join-summary>
+            <div className="flex items-baseline justify-between"><Text variant="body">{title}</Text><Text variant="row">{formatMoney(totalMinor)}</Text></div>
+            <div className="flex items-baseline justify-between"><Text variant="body">{chosen.tableLabel}</Text><Text variant="row">{formatMoney(chosen.totalMinor)}</Text></div>
+            <div className="flex items-baseline justify-between shadow-kit-line-top pt-kit-8"><Text variant="row">{`One bill on ${title}`}</Text><Text variant="h">{formatMoney(sum)}</Text></div>
+            <Text variant="sup" tone="muted">{`${chosen.tableLabel} shows “Joined to ${title}” until the bill is paid.`}</Text>
+          </div>
+        ) : null}
         {othersQ.data && othersQ.data.length === 0 ? <Text variant="sup" tone="muted">No other table has an open order.</Text> : null}
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
       </Sheet>
