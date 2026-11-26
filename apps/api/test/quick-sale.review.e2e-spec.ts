@@ -877,9 +877,11 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       console.log(
         `C10 quick-sale orders: ${row.sales} (fixture night: ${row.night}); amount<>total: ${row.mismatched}; not one payment: ${row.not_one_payment}`,
       );
-      // Control: H1's 200-sale fixture night (test/quick-sale.e2e-spec.ts) must have been run
-      // on this database first; its clientSaleIds start with "night-".
-      expect(Number(row.night)).toBeGreaterThanOrEqual(200);
+      // Control: the check must have rows to look at. T6 (T4 C1): it used to require H1's
+      // 200-sale night from another file (quick-sale.e2e-spec.ts) to have run first, so the
+      // result depended on Jest's order. The sales this spec makes itself are enough; the night
+      // is counted when present (row.night) and checked by the same two invariants.
+      expect(Number(row.sales)).toBeGreaterThan(0);
       expect(Number(row.mismatched)).toBe(0);
       expect(Number(row.not_one_payment)).toBe(0);
     });
@@ -1135,7 +1137,12 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       for (const k of ['r2idx', 'r2tills', 'r2fp']) {
         await makeBranch(orgId, k);
         await prisma.membership.create({
-          data: { userId: cashier.id, organizationId: orgId, branchId: branch[k], roleId: role.roleId },
+          data: {
+            userId: cashier.id,
+            organizationId: orgId,
+            branchId: branch[k],
+            roleId: role.roleId,
+          },
         });
       }
     }, 60000);
@@ -1316,7 +1323,9 @@ describe('H1-R review probes: quick sale (e2e)', () => {
             });
             results.push(`${orderNumber.slice(0, 14)}(${orderNumber.length}):ok`);
           } catch (e) {
-            results.push(`${orderNumber.slice(0, 14)}(${orderNumber.length}):FAIL ${(e as Error).message.split('\n').pop()}`);
+            results.push(
+              `${orderNumber.slice(0, 14)}(${orderNumber.length}):FAIL ${(e as Error).message.split('\n').pop()}`,
+            );
           }
         }
         // eslint-disable-next-line no-console
@@ -1339,9 +1348,15 @@ describe('H1-R review probes: quick sale (e2e)', () => {
           select: { roleId: true },
         });
         await prisma.membership.create({
-          data: { userId: cashier.id, organizationId: orgId, branchId: branch.r2idx2, roleId: role.roleId },
+          data: {
+            userId: cashier.id,
+            organizationId: orgId,
+            branchId: branch.r2idx2,
+            roleId: role.roleId,
+          },
         });
-        for (const n of ['ORD-', 'ORD-abc', 'ORD-1e5', 'ORD-12 34', '']) await insertOrder('r2idx2', n);
+        for (const n of ['ORD-', 'ORD-abc', 'ORD-1e5', 'ORD-12 34', ''])
+          await insertOrder('r2idx2', n);
         const r = await post(cashier.token, 'r2idx2', sale(cid('r2-idx2')));
         expect(r.status).toBe(200);
         expect(r.body.order.orderNumber).toBe('ORD-000001');
@@ -1356,13 +1371,26 @@ describe('H1-R review probes: quick sale (e2e)', () => {
           const n = `ORD-${Array.from({ length: digits }, () => randomInt(0, 10)).join('')}`;
           try {
             await prisma.order.create({
-              data: { orgId, branchId: branch.r2idx2, userId: cashier.id, orderNumber: n, serviceType: 'TAKEAWAY', status: 'CLOSED' },
+              data: {
+                orgId,
+                branchId: branch.r2idx2,
+                userId: cashier.id,
+                orderNumber: n,
+                serviceType: 'TAKEAWAY',
+                status: 'CLOSED',
+              },
             });
             out.push(`${digits}:ok`);
           } catch (e) {
             const m = (e as Error).message;
-            const which = /order_number_numeric_idx/.test(m) ? 'numeric idx' : /branch_id_order_number_key|orders_branch_id_order_number/.test(m) ? 'unique idx' : 'other';
-            out.push(`${digits}:FAIL(${which}) ${m.split('\n').filter(Boolean).pop()?.slice(0, 160)}`);
+            const which = /order_number_numeric_idx/.test(m)
+              ? 'numeric idx'
+              : /branch_id_order_number_key|orders_branch_id_order_number/.test(m)
+                ? 'unique idx'
+                : 'other';
+            out.push(
+              `${digits}:FAIL(${which}) ${m.split('\n').filter(Boolean).pop()?.slice(0, 160)}`,
+            );
           }
         }
         // eslint-disable-next-line no-console
@@ -1387,7 +1415,12 @@ describe('H1-R review probes: quick sale (e2e)', () => {
           select: { roleId: true },
         });
         await prisma.membership.create({
-          data: { userId: cashier.id, organizationId: orgId, branchId: branch.r2cap, roleId: role.roleId },
+          data: {
+            userId: cashier.id,
+            organizationId: orgId,
+            branchId: branch.r2cap,
+            roleId: role.roleId,
+          },
         });
         const at = await tryInsert('r2cap', 131072);
         const over = await tryInsert('r2cap', 131073);
@@ -1406,7 +1439,9 @@ describe('H1-R review probes: quick sale (e2e)', () => {
           .set('X-Branch-Id', branch.a)
           .send({ serviceType: 'TAKEAWAY' });
         // eslint-disable-next-line no-console
-        console.log(`R2-3 restaurant create: HTTP ${r.status} ${r.body?.orderNumber ?? JSON.stringify(r.body).slice(0, 200)}`);
+        console.log(
+          `R2-3 restaurant create: HTTP ${r.status} ${r.body?.orderNumber ?? JSON.stringify(r.body).slice(0, 200)}`,
+        );
         expect(r.status).toBe(201);
         expect(r.body.orderNumber).toMatch(/^ORD-\d+$/);
       });
@@ -1421,25 +1456,49 @@ describe('H1-R review probes: quick sale (e2e)', () => {
           const r = await post(
             cashier.token,
             'r2tills',
-            sale(cid(`r2-tc-${v.trim()}-${v.length}`), { tillCode: v, payment: { method: 'CASH' } }),
+            sale(cid(`r2-tc-${v.trim()}-${v.length}`), {
+              tillCode: v,
+              payment: { method: 'CASH' },
+            }),
           );
           expect(r.status).toBe(200);
-          expect(r.body.order.tillCode ?? (await prisma.order.findUniqueOrThrow({ where: { id: r.body.order.id } })).tillCode).toBe('DRK-03');
+          expect(
+            r.body.order.tillCode ??
+              (await prisma.order.findUniqueOrThrow({ where: { id: r.body.order.id } })).tillCode,
+          ).toBe('DRK-03');
         }
         expect(await expectedCash('r2tills', t.id, 10000)).toBe(10000 + 2 * 8000);
-        await prisma.tillSession.update({ where: { id: t.id }, data: { status: 'CLOSED', closedAt: new Date() } });
+        await prisma.tillSession.update({
+          where: { id: t.id },
+          data: { status: 'CLOSED', closedAt: new Date() },
+        });
       });
 
       it('S-1: with DRK-03 open, opening "drk-03" is refused, or the same cash is not counted by both', async () => {
         await prisma.shift.create({
-          data: { orgId, branchId: branch.r2tills, shiftNumber: `H1R2-dup-${RUN}`, openedById: cashier.id },
+          data: {
+            orgId,
+            branchId: branch.r2tills,
+            shiftNumber: `H1R2-dup-${RUN}`,
+            openedById: cashier.id,
+          },
         });
         const meta = { ipAddress: '127.0.0.1', userAgent: 'h1r2' };
-        const up = await tills.openTill(cashier.id, ctxOf('r2tills'), { tillCode: 'DRK-03', openingFloat: 0 }, meta);
+        const up = await tills.openTill(
+          cashier.id,
+          ctxOf('r2tills'),
+          { tillCode: 'DRK-03', openingFloat: 0 },
+          meta,
+        );
         let lowerId: string | null = null;
         let lowerErr = '';
         try {
-          const low = await tills.openTill(cashier.id, ctxOf('r2tills'), { tillCode: 'drk-03', openingFloat: 0 }, meta);
+          const low = await tills.openTill(
+            cashier.id,
+            ctxOf('r2tills'),
+            { tillCode: 'drk-03', openingFloat: 0 },
+            meta,
+          );
           lowerId = low.id;
         } catch (e) {
           lowerErr = (e as Error).message;
@@ -1471,7 +1530,10 @@ describe('H1-R review probes: quick sale (e2e)', () => {
         const lines: string[] = [];
         const spies = [
           ...(['log', 'warn', 'error', 'debug', 'verbose', 'fatal'] as const)
-            .filter((m) => typeof (Logger.prototype as unknown as Record<string, unknown>)[m] === 'function')
+            .filter(
+              (m) =>
+                typeof (Logger.prototype as unknown as Record<string, unknown>)[m] === 'function',
+            )
             .map((m) =>
               jest.spyOn(Logger.prototype, m as 'log').mockImplementation((...a: unknown[]) => {
                 lines.push(JSON.stringify(a));
@@ -1509,9 +1571,15 @@ describe('H1-R review probes: quick sale (e2e)', () => {
       }
 
       const slip: [string, Record<string, unknown>][] = [
-        ['externalTransactionId on a card sale', { payment: { ...visa, externalTransactionId: 'MP123456' } }],
+        [
+          'externalTransactionId on a card sale',
+          { payment: { ...visa, externalTransactionId: 'MP123456' } },
+        ],
         ['payerPhone on a card sale', { payment: { ...visa, payerPhone: '+256700000123' } }],
-        ['externalTransactionId on a cash sale', { payment: { method: 'CASH', externalTransactionId: 'MP123456' } }],
+        [
+          'externalTransactionId on a cash sale',
+          { payment: { method: 'CASH', externalTransactionId: 'MP123456' } },
+        ],
         ['payerPhone on a cash sale', { payment: { method: 'CASH', payerPhone: '+256700000123' } }],
       ];
       for (const [label, over] of slip) {

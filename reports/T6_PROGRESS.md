@@ -27,6 +27,7 @@ Phase 3: full e2e run in Jest's own order and T4's order; fix faults, update spe
 - D10 Requests for approval: new table approval_requests; answer by PIN on the asking device (requester's session + approver PIN, 5 tries) or from Approvals; climb worked out on read (no queue); settings approvalClimbMinutes 3, tillVarianceLimit 10000, businessDayEndsHour 5 (Kampala).
 - D11 Refund: the bill's day is the payment's createdAt (orders have no close time). Manager/owner at once; supervisor at once same business day; later → PENDING + MANAGER request. Amount threshold rule replaced. Declined → new RefundStatus DECLINED.
 - D12 Till over/short above the limit: someone other than the operator with the answer right signs as they count; else RECONCILED with closedAt null until signed; declined → OPEN to count again.
+- D14 Phase 3: specs that tested replaced behaviour updated (bg3/shifts-tills chef→accountant for the no-shift-right check; refunds by day; orders pays its total; attendance acts as each employee's own user with a published roster; quick-sale.review C10 needs only its own sales; bg1-onboarding uses its own user). Quarantine: billing, franchise, franchise-analytics, bg7-hms (keys forbidden by CLAUDE.md).
 - D13 allowedActions on GET /api/pos/orders/:id, derived from the route keys + order state; no 'ask to void' (no request kind for it yet).
 
 ## Left out

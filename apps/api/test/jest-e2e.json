@@ -12,5 +12,12 @@
     },
     "testTimeout": 120000,
     "maxWorkers": 1,
-    "testSequencer": "./support/e2e-sequencer.js"
+    "testSequencer": "./support/e2e-sequencer.js",
+    "testPathIgnorePatterns": [
+        "/node_modules/",
+        "/test/billing.e2e-spec.ts",
+        "/test/franchise.e2e-spec.ts",
+        "/test/franchise-analytics.e2e-spec.ts",
+        "/test/bg7-hms-integration.e2e-spec.ts"
+    ]
 }

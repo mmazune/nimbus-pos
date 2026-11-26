@@ -49,7 +49,7 @@ describe('Shifts & Tills (e2e)', () => {
     // Login as chef (read-only)
     const chefLogin = await request(app.getHttpServer())
       .post('/api/auth/login')
-      .send({ email: 'chef@demo.local', password: 'Chef#123' });
+      .send({ email: 'accountant@demo.local', password: 'Accountant#123' }); // T6: chefs now start shifts (rights matrix); the accountant does not
     chefToken = chefLogin.body.accessToken;
 
     // Get branch ID

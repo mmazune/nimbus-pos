@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma';
+import * as bcrypt from 'bcrypt';
 
 /**
  * M24 Attendance + Leave + Shift Swaps e2e tests.
@@ -14,6 +15,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
   let prisma: PrismaService;
   let ownerToken: string;
   let chefToken: string;
+  let selfToken1: string;
   let branchId: string;
 
   // IDs captured during tests
@@ -70,12 +72,55 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
       branchId = branch!.id;
     }
 
-    // Get two existing employees from seed
-    const employees = await prisma.employee.findMany({ take: 2 });
-    if (employees.length >= 2) {
-      employeeId1 = employees[0].id;
-      employeeId2 = employees[1].id;
+    // T6 (T4 F2): a person clocks, asks for leave and asks for a swap only for their OWN
+    // linked employee profile (attendance.service.ts, a deliberate rule). So this spec makes two
+    // staff of its own, each signed in as themselves; the owner reviews and approves.
+    const role = await prisma.role.findUniqueOrThrow({ where: { name: 'Waiter' } });
+    const run = Date.now().toString(36);
+    const selfTokens: string[] = [];
+    const ids: string[] = [];
+    for (const n of [1, 2]) {
+      const email = `m24.self${n}.${run}@example.test`;
+      const password = `M24-${run}-${n}#Aa`;
+      const user = await prisma.user.create({
+        data: {
+          email,
+          passwordHash: await bcrypt.hash(password, 4),
+          firstName: `Self${n}`,
+          lastName: 'M24',
+        },
+      });
+      await prisma.userRole.create({ data: { userId: user.id, roleId: role.id } });
+      const org = await prisma.branch.findUniqueOrThrow({ where: { id: branchId } });
+      await prisma.membership.create({
+        data: {
+          userId: user.id,
+          organizationId: org.organizationId,
+          branchId,
+          roleId: role.id,
+          isDefaultBranch: true,
+        },
+      });
+      const emp = await prisma.employee.create({
+        data: {
+          orgId: org.organizationId,
+          branchId,
+          userId: user.id,
+          employeeCode: `M24-${run}-${n}`,
+          firstName: `Self${n}`,
+          lastName: 'M24',
+          hireDate: new Date('2026-01-05'),
+          employmentType: 'PERMANENT',
+        },
+      });
+      ids.push(emp.id);
+      const login = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email, password });
+      selfTokens.push(login.body.accessToken);
     }
+    [employeeId1, employeeId2] = ids;
+    [selfToken1] = selfTokens;
   }, 60000);
 
   afterAll(async () => {
@@ -208,7 +253,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
 
       const res = await request(app.getHttpServer())
         .post('/api/hr/attendance/clock')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           employeeId: employeeId1,
@@ -227,7 +272,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should clock out the same employee (toggle)', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/hr/attendance/clock')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           employeeId: employeeId1,
@@ -241,7 +286,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should 409 if employee already clocked out today', async () => {
       await request(app.getHttpServer())
         .post('/api/hr/attendance/clock')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({ employeeId: employeeId1 })
         .expect(409);
@@ -250,7 +295,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should 404 for non-existent employee', async () => {
       await request(app.getHttpServer())
         .post('/api/hr/attendance/clock')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({ employeeId: 'non-existent-id' })
         .expect(404);
@@ -259,7 +304,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should 400 when employeeId is missing', async () => {
       await request(app.getHttpServer())
         .post('/api/hr/attendance/clock')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({})
         .expect(400);
@@ -312,7 +357,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
 
       const res = await request(app.getHttpServer())
         .post('/api/hr/leave')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           employeeId: employeeId1,
@@ -332,7 +377,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should 400 if endsAt before startsAt', async () => {
       await request(app.getHttpServer())
         .post('/api/hr/leave')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           employeeId: employeeId1,
@@ -352,7 +397,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/api/hr/leave')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           employeeId: employeeId1,
@@ -366,7 +411,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should 404 for non-existent employee', async () => {
       await request(app.getHttpServer())
         .post('/api/hr/leave')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           employeeId: 'non-existent-id',
@@ -446,10 +491,47 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should create a shift swap request', async () => {
       const shiftDate = new Date();
       shiftDate.setDate(shiftDate.getDate() + 10);
+      // T6: a swap is only for a shift the requester holds on a published roster (the service
+      // checks it), so this spec puts both of its staff on one.
+      const day = new Date(shiftDate.toISOString().split('T')[0]);
+      const org = await prisma.branch.findUniqueOrThrow({ where: { id: branchId } });
+      const tpl = await prisma.shiftTemplate.create({
+        data: {
+          orgId: org.organizationId,
+          branchId,
+          code: `M24-${Date.now().toString(36)}`,
+          name: 'M24 evening',
+          startsAtTime: '17:00',
+          endsAtTime: '23:00',
+        } as any,
+      });
+      const schedule = await prisma.schedule.create({
+        data: {
+          orgId: org.organizationId,
+          branchId,
+          name: 'M24 swap week',
+          dateFrom: day,
+          dateTo: day,
+          status: 'PUBLISHED',
+          publishedAt: new Date(),
+        },
+      });
+      for (const employeeId of [employeeId1, employeeId2]) {
+        await prisma.scheduleAssignment.create({
+          data: {
+            orgId: org.organizationId,
+            branchId,
+            scheduleId: schedule.id,
+            shiftTemplateId: tpl.id,
+            employeeId,
+            shiftDate: day,
+          },
+        });
+      }
 
       const res = await request(app.getHttpServer())
         .post('/api/hr/shift-swaps')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           requesterEmployeeId: employeeId1,
@@ -469,7 +551,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should 400 when requester equals target', async () => {
       await request(app.getHttpServer())
         .post('/api/hr/shift-swaps')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           requesterEmployeeId: employeeId1,
@@ -482,7 +564,7 @@ describe('Attendance + Leave + Shift Swaps (e2e)', () => {
     it('should 404 for non-existent requester', async () => {
       await request(app.getHttpServer())
         .post('/api/hr/shift-swaps')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Authorization', `Bearer ${selfToken1}`)
         .set('X-Branch-Id', branchId)
         .send({
           requesterEmployeeId: 'non-existent-id',

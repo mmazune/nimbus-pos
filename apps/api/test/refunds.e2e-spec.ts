@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/common/prisma';
 
 /**
  * M14 Refunds + Post-Close Voids e2e tests.
@@ -220,28 +221,31 @@ describe('Refunds (e2e)', () => {
 
   // ── 6. Create high-value refund (PENDING) ──
 
-  it('POST /pos/orders/:id/refunds — high-value refund goes to PENDING', async () => {
-    // Create a large refund that exceeds the default 5000 threshold
-    // First we need a larger payment — use the same order's payment
+  it("POST /pos/orders/:id/refunds — a supervisor's refund on a bill paid on an earlier day goes to PENDING (T6)", async () => {
+    // T6 (07-scenarios-and-rules.md, Money): the rule is the business day, not an amount. A
+    // supervisor refunds at once on the day the bill was paid; on a later day a manager answers.
+    const prisma = app.get(PrismaService);
+    await prisma.payment.update({
+      where: { id: paymentId },
+      data: { createdAt: new Date(Date.now() - 2 * 24 * 3600_000) },
+    });
+    const sup = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: 'supervisor@demo.local', password: 'Supervisor#123' })
+      .expect(201);
     const res = await request(app.getHttpServer())
       .post(`/api/pos/orders/${closedOrderId}/refunds`)
-      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('Authorization', `Bearer ${sup.body.accessToken}`)
       .set('X-Branch-Id', branchId)
       .send({
         paymentId,
-        amount: 5001,
-        reason: 'High value refund test',
-      });
-
-    // It may be 201 (PENDING if amount > threshold) or 400 (if payment is too small)
-    // Handle both cases
-    if (res.status === 201) {
-      expect(res.body.status).toBe('PENDING');
-      pendingRefundId = res.body.id;
-    } else {
-      // Payment was too small for 5001 refund — skip approval test
-      expect(res.status).toBe(400);
-    }
+        amount: 1000,
+        reason: 'Earlier-day refund test',
+      })
+      .expect(201);
+    expect(res.body.status).toBe('PENDING');
+    expect(res.body.needs).toBe('MANAGER');
+    pendingRefundId = res.body.id;
   });
 
   // ── 7. Approve Refund ──

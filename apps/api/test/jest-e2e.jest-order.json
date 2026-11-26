@@ -1,0 +1,23 @@
+{
+    "moduleFileExtensions": [
+        "js",
+        "json",
+        "ts"
+    ],
+    "rootDir": ".",
+    "testEnvironment": "node",
+    "testRegex": ".e2e-spec.ts$",
+    "transform": {
+        "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "testTimeout": 120000,
+    "maxWorkers": 1,
+    "testSequencer": "./support/jest-own-order-sequencer.js",
+    "testPathIgnorePatterns": [
+        "/node_modules/",
+        "/test/billing.e2e-spec.ts",
+        "/test/franchise.e2e-spec.ts",
+        "/test/franchise-analytics.e2e-spec.ts",
+        "/test/bg7-hms-integration.e2e-spec.ts"
+    ]
+}

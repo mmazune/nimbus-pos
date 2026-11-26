@@ -1,0 +1,16 @@
+{
+    "moduleFileExtensions": [
+        "js",
+        "json",
+        "ts"
+    ],
+    "rootDir": ".",
+    "testEnvironment": "node",
+    "testRegex": "(billing|franchise|franchise-analytics|bg7-hms-integration)\\.e2e-spec\\.ts$",
+    "transform": {
+        "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "testTimeout": 120000,
+    "maxWorkers": 1,
+    "testSequencer": "./support/e2e-sequencer.js"
+}

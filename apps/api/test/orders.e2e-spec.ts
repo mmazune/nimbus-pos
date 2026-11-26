@@ -259,11 +259,17 @@ describe('POS Orders (e2e)', () => {
   }, 30000);
 
   it('POST /api/pos/orders/:id/close — SERVED → CLOSED', async () => {
+    // T6 (T4 F4): pay the order's own total, not a fixed 9,999 on whatever the seed lists first.
+    const current = await request(app.getHttpServer())
+      .get(`/api/pos/orders/${orderId}`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('X-Branch-Id', branchId)
+      .expect(200);
     const res = await request(app.getHttpServer())
       .post(`/api/pos/orders/${orderId}/close`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('X-Branch-Id', branchId)
-      .send({ payments: [{ method: 'CASH', amount: 9999 }] })
+      .send({ payments: [{ method: 'CASH', amount: String(current.body.total) }] })
       .expect(200);
 
     expect(res.body.order.status).toBe('CLOSED');
