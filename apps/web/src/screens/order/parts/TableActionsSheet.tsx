@@ -188,14 +188,6 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     return (
       <Sheet placement={placement} title={`Join ${title} with another`} summary={`${formatMoney(totalMinor)} · pick the table to join to ${title}`} onClose={onClose}
         footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinTables(ctx as Ctx, tableId as string, target as string), { leave: false, message: `${chosen?.tableLabel} joined to ${title}: one bill` })}>{chosen ? `Join 2 tables · ${formatMoney(sum)}` : "Choose a table"}</Button></>}>
-        {areaChips((id) => (othersQ.data ?? []).filter((o) => o.tableId && o.tableId !== tableId && areaOfTable(o.tableId) === id).length)}
-        <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3" data-order-join>
-          {(othersQ.data ?? [])
-            .filter((o) => o.tableId && o.tableId !== tableId && (!areaId || areaOfTable(o.tableId) === areaId))
-            .map((o) => (
-              <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterName, o.totalMinor > 0 ? formatMoney(o.totalMinor) : "Nothing yet"].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
-            ))}
-        </div>
         {chosen ? (
           <RowGroup>
             <Row size="settings" title={title} trailing={<Text variant="sup">{formatMoney(totalMinor)}</Text>} />
@@ -203,6 +195,14 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
             <Row size="settings" title={`One bill on ${title}`} line={`${chosen.tableLabel} shows “Joined to ${title}” until paid; split them again any time`} trailing={<Text variant="row">{formatMoney(sum)}</Text>} />
           </RowGroup>
         ) : null}
+        {areaChips((id) => (othersQ.data ?? []).filter((o) => o.tableId && o.tableId !== tableId && areaOfTable(o.tableId) === id).length)}
+        <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3" data-order-join>
+          {(othersQ.data ?? [])
+            .filter((o) => o.tableId && o.tableId !== tableId && (!areaId || areaOfTable(o.tableId) === areaId))
+            .map((o) => (
+              <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterId && o.waiterId === userId ? "You" : o.waiterName, o.totalMinor > 0 ? formatMoney(o.totalMinor) : "Nothing yet"].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
+            ))}
+        </div>
         {othersQ.data && othersQ.data.length === 0 ? <Text variant="sup" tone="muted">No other table has an open order.</Text> : null}
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
       </Sheet>

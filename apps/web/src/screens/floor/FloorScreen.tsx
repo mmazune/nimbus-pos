@@ -159,7 +159,9 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
     ? undefined
     : whose === "mine"
       ? `${mineCount} ${mineCount === 1 ? "table is" : "tables are"} yours`
-      : `${areaName} · ${openCount(areaTiles)} of ${areaTiles.length} ${noun} open`;
+      : noun === "tabs"
+        ? `${areaName} · ${openCount(areaTiles)} open`
+        : `${areaName} · ${openCount(areaTiles)} of ${areaTiles.length} ${noun} open`;
 
   const summaryShort = isLoading || !source || whose === "mine"
     ? summary
@@ -325,8 +327,8 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
             value={whose}
             onChange={(k) => setWhosePick(k as "mine" | "all")}
             options={[
-              { key: "mine", label: `My tables · ${mineCount}` },
-              { key: "all", label: "All tables" },
+              { key: "mine", label: `My ${tabsArea ? "tabs" : "tables"} · ${tabsArea ? mineTiles.filter((t) => t.isTab).length : mineCount}` },
+              { key: "all", label: tabsArea ? "All tabs" : "All tables" },
             ]}
           />
         ) : null}
