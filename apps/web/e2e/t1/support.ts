@@ -124,7 +124,17 @@ export type Rules = {
  * under 12 px, at most one filled button. Hidden elements are skipped.
  * "Filled" = a button whose ground is the kit primary, outside the header and bars.
  */
+/** Let colour fades and sheet slides finish, so a proof never catches a half-drawn state. */
+export async function settle(page: Page) {
+  await page.evaluate(() => Promise.all(document
+        .getAnimations()
+        // a spinner runs forever; only wait for the ones that end
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined))));
+}
+
 export async function pageRules(page: Page): Promise<Rules> {
+  await settle(page);
   return page.evaluate(() => {
     const primary = getComputedStyle(document.documentElement).getPropertyValue("--kit-color-primary").trim();
     const probe = document.createElement("i");
@@ -205,6 +215,7 @@ export function saveJson(name: string, value: unknown) {
 }
 
 export async function shot(page: Page, name: string) {
+  await settle(page);
   await page.screenshot({ path: join(PROOF, name) });
 }
 
