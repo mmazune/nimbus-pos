@@ -1,0 +1,38 @@
+## planted faults (copy of the data with five faults)
+demo-venue validator: <scratch>/venue_bad
+  people             21
+  tables             64
+  areas              4
+  menuItems          245
+  itemsWithChoices   83
+  servings           157
+  stockItems         149
+  recipes            57
+  openTables         17
+  bookingsToday      9
+  paidBills          4
+  recipe cost as % of price: lowest 8.3, median 20.8, highest 45.2
+RED: 5 error(s)
+  - person owner1: phone +256 772 123 456 is outside +256 700 000 xxx
+  - duplicate menu item: "Cola"
+  - item Lemon squash price: 4999.5 is not a whole UGX amount ≥ 500
+  - item: "Coca cola zero" contains brand word "coca"
+  - recipe Beef burger: unknown stock sku MEAT-DOES-NOT-EXIST
+validator exit code: 1
+
+## the real data
+demo-venue validator: packages/db/demo-venue/data
+  people             21
+  tables             64
+  areas              4
+  menuItems          242
+  itemsWithChoices   83
+  servings           157
+  stockItems         149
+  recipes            57
+  openTables         17
+  bookingsToday      9
+  paidBills          4
+  recipe cost as % of price: lowest 9.3, median 20.8, highest 45.2
+GREEN: 0 errors
+validator exit code: 0

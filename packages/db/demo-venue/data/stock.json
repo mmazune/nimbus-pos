@@ -1,5 +1,1343 @@
 [
-  { "sku": "MEAT-SIRLOIN", "name": "Beef sirloin", "unit": "kg", "category": "Meat", "unitCost": 34000, "reorderLevel": 4, "reorderQty": 15 },
-  { "sku": "VEG-POTATO", "name": "Potatoes", "unit": "kg", "category": "Vegetables", "unitCost": 2500, "reorderLevel": 20, "reorderQty": 50 },
-  { "sku": "DAIRY-BUTTER", "name": "Butter", "unit": "kg", "category": "Dairy", "unitCost": 28000, "reorderLevel": 2, "reorderQty": 10 }
+ {
+  "sku": "MEAT-SIRLOIN",
+  "name": "Beef sirloin",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 34000,
+  "reorderLevel": 4,
+  "reorderQty": 15
+ },
+ {
+  "sku": "MEAT-FILLET",
+  "name": "Beef fillet",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 48000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "MEAT-RIBEYE",
+  "name": "Beef rib-eye",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 42000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "MEAT-TBONE",
+  "name": "Beef T-bone",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 36000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "MEAT-RUMP",
+  "name": "Beef rump",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 28000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "MEAT-TOMAHAWK",
+  "name": "Beef tomahawk",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 52000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "MEAT-MINCE",
+  "name": "Beef mince",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 22000,
+  "reorderLevel": 5,
+  "reorderQty": 20
+ },
+ {
+  "sku": "MEAT-STEW",
+  "name": "Beef stewing cuts",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 20000,
+  "reorderLevel": 5,
+  "reorderQty": 20
+ },
+ {
+  "sku": "MEAT-LAMB",
+  "name": "Lamb leg",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 38000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "MEAT-LAMBMINCE",
+  "name": "Lamb mince",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 34000,
+  "reorderLevel": 2,
+  "reorderQty": 8
+ },
+ {
+  "sku": "MEAT-GOAT",
+  "name": "Goat meat",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 26000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "MEAT-PORKBELLY",
+  "name": "Pork belly",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 24000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "MEAT-HAM",
+  "name": "Cooked ham",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 36000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "MEAT-SAUSAGE",
+  "name": "Spiced pork sausage",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 30000,
+  "reorderLevel": 2,
+  "reorderQty": 8
+ },
+ {
+  "sku": "MEAT-BACON",
+  "name": "Bacon",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 40000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "MEAT-CURED",
+  "name": "Cured beef",
+  "unit": "kg",
+  "category": "Meat",
+  "unitCost": 60000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "POUL-WHOLE",
+  "name": "Whole chicken",
+  "unit": "pc",
+  "category": "Poultry",
+  "unitCost": 22000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "POUL-BREAST",
+  "name": "Chicken breast",
+  "unit": "kg",
+  "category": "Poultry",
+  "unitCost": 26000,
+  "reorderLevel": 4,
+  "reorderQty": 15
+ },
+ {
+  "sku": "POUL-THIGH",
+  "name": "Chicken thigh",
+  "unit": "kg",
+  "category": "Poultry",
+  "unitCost": 20000,
+  "reorderLevel": 4,
+  "reorderQty": 15
+ },
+ {
+  "sku": "POUL-WINGS",
+  "name": "Chicken wings",
+  "unit": "kg",
+  "category": "Poultry",
+  "unitCost": 18000,
+  "reorderLevel": 4,
+  "reorderQty": 15
+ },
+ {
+  "sku": "POUL-LIVER",
+  "name": "Chicken livers",
+  "unit": "kg",
+  "category": "Poultry",
+  "unitCost": 14000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "POUL-EGG",
+  "name": "Eggs",
+  "unit": "pc",
+  "category": "Poultry",
+  "unitCost": 500,
+  "reorderLevel": 120,
+  "reorderQty": 360
+ },
+ {
+  "sku": "FISH-TILAPIA",
+  "name": "Whole tilapia",
+  "unit": "pc",
+  "category": "Fish",
+  "unitCost": 14000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "FISH-PERCH",
+  "name": "Nile perch fillet",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 28000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "FISH-SALMON",
+  "name": "Salmon fillet",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 95000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "FISH-PRAWN",
+  "name": "King prawns",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 70000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "FISH-SQUID",
+  "name": "Squid",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 42000,
+  "reorderLevel": 2,
+  "reorderQty": 8
+ },
+ {
+  "sku": "FISH-MUSSEL",
+  "name": "Mussels",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 36000,
+  "reorderLevel": 2,
+  "reorderQty": 8
+ },
+ {
+  "sku": "FISH-TUNA",
+  "name": "Tuna loin",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 60000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "FISH-COD",
+  "name": "Salted cod",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 55000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "FISH-SMOKED",
+  "name": "Smoked fish",
+  "unit": "kg",
+  "category": "Fish",
+  "unitCost": 32000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "VEG-POTATO",
+  "name": "Potatoes",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 2500,
+  "reorderLevel": 20,
+  "reorderQty": 50
+ },
+ {
+  "sku": "VEG-SWEETPOT",
+  "name": "Sweet potatoes",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 2500,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "VEG-CASSAVA",
+  "name": "Cassava",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 2000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "VEG-MATOOKE",
+  "name": "Matooke",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 1500,
+  "reorderLevel": 20,
+  "reorderQty": 60
+ },
+ {
+  "sku": "VEG-PLANTAIN",
+  "name": "Plantain",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 2500,
+  "reorderLevel": 8,
+  "reorderQty": 25
+ },
+ {
+  "sku": "VEG-TOMATO",
+  "name": "Tomatoes",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 4000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "VEG-ONION",
+  "name": "Red onions",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 3500,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "VEG-GARLIC",
+  "name": "Garlic",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 14000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "VEG-GINGER",
+  "name": "Ginger",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 8000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "VEG-CHILLI",
+  "name": "Fresh chillies",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 8000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "VEG-PEPPER",
+  "name": "Sweet peppers",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 9000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "VEG-MUSHROOM",
+  "name": "Button mushrooms",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 18000,
+  "reorderLevel": 2,
+  "reorderQty": 8
+ },
+ {
+  "sku": "VEG-SPINACH",
+  "name": "Spinach",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 5000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "VEG-LETTUCE",
+  "name": "Lettuce",
+  "unit": "pc",
+  "category": "Vegetables",
+  "unitCost": 3000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "VEG-CUCUMBER",
+  "name": "Cucumbers",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 3500,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "VEG-CARROT",
+  "name": "Carrots",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 3000,
+  "reorderLevel": 6,
+  "reorderQty": 20
+ },
+ {
+  "sku": "VEG-AUBERGINE",
+  "name": "Aubergines",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 5000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "VEG-PUMPKIN",
+  "name": "Pumpkin",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 2500,
+  "reorderLevel": 6,
+  "reorderQty": 20
+ },
+ {
+  "sku": "VEG-BEET",
+  "name": "Beetroot",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 4000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "VEG-CORN",
+  "name": "Sweet corn cobs",
+  "unit": "pc",
+  "category": "Vegetables",
+  "unitCost": 1500,
+  "reorderLevel": 20,
+  "reorderQty": 60
+ },
+ {
+  "sku": "VEG-AVOCADO",
+  "name": "Avocados",
+  "unit": "pc",
+  "category": "Vegetables",
+  "unitCost": 1500,
+  "reorderLevel": 30,
+  "reorderQty": 90
+ },
+ {
+  "sku": "VEG-PEA",
+  "name": "Garden peas",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 9000,
+  "reorderLevel": 2,
+  "reorderQty": 8
+ },
+ {
+  "sku": "VEG-LEEK",
+  "name": "Leeks",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 8000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "VEG-HERBS",
+  "name": "Fresh herbs, mixed",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 20000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "VEG-MINT",
+  "name": "Fresh mint",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 22000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "VEG-LEMONGRASS",
+  "name": "Lemongrass",
+  "unit": "kg",
+  "category": "Vegetables",
+  "unitCost": 9000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "FRUIT-LEMON",
+  "name": "Lemons",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 6000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "FRUIT-LIME",
+  "name": "Limes",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 7000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "FRUIT-ORANGE",
+  "name": "Oranges",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 4500,
+  "reorderLevel": 8,
+  "reorderQty": 25
+ },
+ {
+  "sku": "FRUIT-PASSION",
+  "name": "Passion fruit",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 6000,
+  "reorderLevel": 6,
+  "reorderQty": 20
+ },
+ {
+  "sku": "FRUIT-PINEAPPLE",
+  "name": "Pineapples",
+  "unit": "pc",
+  "category": "Fruit",
+  "unitCost": 4000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "FRUIT-MANGO",
+  "name": "Mangoes",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 4000,
+  "reorderLevel": 8,
+  "reorderQty": 25
+ },
+ {
+  "sku": "FRUIT-WATERMELON",
+  "name": "Watermelon",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 2000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "FRUIT-BANANA",
+  "name": "Sweet bananas",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 3000,
+  "reorderLevel": 6,
+  "reorderQty": 20
+ },
+ {
+  "sku": "FRUIT-BERRY",
+  "name": "Mixed berries, frozen",
+  "unit": "kg",
+  "category": "Fruit",
+  "unitCost": 30000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "FRUIT-COCONUT",
+  "name": "Coconut milk",
+  "unit": "l",
+  "category": "Fruit",
+  "unitCost": 9000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "DAIRY-BUTTER",
+  "name": "Butter",
+  "unit": "kg",
+  "category": "Dairy",
+  "unitCost": 28000,
+  "reorderLevel": 2,
+  "reorderQty": 10
+ },
+ {
+  "sku": "DAIRY-MILK",
+  "name": "Full cream milk",
+  "unit": "l",
+  "category": "Dairy",
+  "unitCost": 3000,
+  "reorderLevel": 20,
+  "reorderQty": 60
+ },
+ {
+  "sku": "DAIRY-LOWFAT",
+  "name": "Low fat milk",
+  "unit": "l",
+  "category": "Dairy",
+  "unitCost": 3200,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "DAIRY-OAT",
+  "name": "Oat milk",
+  "unit": "l",
+  "category": "Dairy",
+  "unitCost": 14000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "DAIRY-CREAM",
+  "name": "Cooking cream",
+  "unit": "l",
+  "category": "Dairy",
+  "unitCost": 16000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "DAIRY-CHEDDAR",
+  "name": "Cheddar cheese",
+  "unit": "kg",
+  "category": "Dairy",
+  "unitCost": 45000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "DAIRY-HALLOUMI",
+  "name": "Halloumi cheese",
+  "unit": "kg",
+  "category": "Dairy",
+  "unitCost": 62000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "DAIRY-GOAT",
+  "name": "Goat cheese",
+  "unit": "kg",
+  "category": "Dairy",
+  "unitCost": 70000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "DAIRY-PARMESAN",
+  "name": "Hard grating cheese",
+  "unit": "kg",
+  "category": "Dairy",
+  "unitCost": 90000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "DAIRY-FETA",
+  "name": "Feta-style cheese",
+  "unit": "kg",
+  "category": "Dairy",
+  "unitCost": 48000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "DAIRY-YOGHURT",
+  "name": "Natural yoghurt",
+  "unit": "l",
+  "category": "Dairy",
+  "unitCost": 8000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "DAIRY-ICECREAM",
+  "name": "Vanilla ice cream",
+  "unit": "l",
+  "category": "Dairy",
+  "unitCost": 18000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "DAIRY-CREAMCHEESE",
+  "name": "Cream cheese",
+  "unit": "kg",
+  "category": "Dairy",
+  "unitCost": 40000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "DRY-RICE",
+  "name": "Long grain rice",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 5000,
+  "reorderLevel": 20,
+  "reorderQty": 50
+ },
+ {
+  "sku": "DRY-PAELLA",
+  "name": "Paella rice",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 12000,
+  "reorderLevel": 5,
+  "reorderQty": 15
+ },
+ {
+  "sku": "DRY-ARBORIO",
+  "name": "Risotto rice",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 14000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "DRY-SPAGHETTI",
+  "name": "Spaghetti",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 7000,
+  "reorderLevel": 5,
+  "reorderQty": 20
+ },
+ {
+  "sku": "DRY-PENNE",
+  "name": "Penne",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 7000,
+  "reorderLevel": 5,
+  "reorderQty": 20
+ },
+ {
+  "sku": "DRY-TAGLIATELLE",
+  "name": "Tagliatelle",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 9000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "DRY-FLOUR",
+  "name": "Wheat flour",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 3500,
+  "reorderLevel": 20,
+  "reorderQty": 50
+ },
+ {
+  "sku": "DRY-BREADCRUMB",
+  "name": "Breadcrumbs",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 6000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "DRY-SUGAR",
+  "name": "Sugar",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 4500,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "DRY-HONEY",
+  "name": "Honey",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 18000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "DRY-LENTIL",
+  "name": "Red lentils",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 7000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "DRY-CHICKPEA",
+  "name": "Chickpeas",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 7000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "DRY-BEANS",
+  "name": "Dry beans",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 5000,
+  "reorderLevel": 5,
+  "reorderQty": 15
+ },
+ {
+  "sku": "DRY-QUINOA",
+  "name": "Quinoa",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 28000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "DRY-OATS",
+  "name": "Rolled oats",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 8000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "DRY-ALMOND",
+  "name": "Almonds",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 45000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "DRY-CHOC",
+  "name": "Dark cooking chocolate",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 40000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "DRY-COFFEE",
+  "name": "Coffee beans",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 60000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "DRY-TEA",
+  "name": "Black tea leaves",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 15000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "DRY-GREENTEA",
+  "name": "Green tea leaves",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 40000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "DRY-COCOA",
+  "name": "Cocoa powder",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 30000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "DRY-SPICE",
+  "name": "Mixed spices",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 25000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "DRY-PAPRIKA",
+  "name": "Smoked paprika",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 40000,
+  "reorderLevel": 1,
+  "reorderQty": 2
+ },
+ {
+  "sku": "DRY-CURRY",
+  "name": "Curry powder",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 22000,
+  "reorderLevel": 1,
+  "reorderQty": 4
+ },
+ {
+  "sku": "DRY-SALT",
+  "name": "Salt",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 1500,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "DRY-PEPPERCORN",
+  "name": "Black peppercorns",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 35000,
+  "reorderLevel": 1,
+  "reorderQty": 2
+ },
+ {
+  "sku": "DRY-STOCK",
+  "name": "Stock powder",
+  "unit": "kg",
+  "category": "Dry goods",
+  "unitCost": 18000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "BAKE-BUN",
+  "name": "Brioche burger buns",
+  "unit": "pc",
+  "category": "Bakery",
+  "unitCost": 1200,
+  "reorderLevel": 60,
+  "reorderQty": 180
+ },
+ {
+  "sku": "BAKE-BREAD",
+  "name": "Sliced bread loaf",
+  "unit": "pc",
+  "category": "Bakery",
+  "unitCost": 6000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "BAKE-BAGUETTE",
+  "name": "Baguette",
+  "unit": "pc",
+  "category": "Bakery",
+  "unitCost": 4000,
+  "reorderLevel": 10,
+  "reorderQty": 30
+ },
+ {
+  "sku": "BAKE-CHAPATI",
+  "name": "Chapati",
+  "unit": "pc",
+  "category": "Bakery",
+  "unitCost": 800,
+  "reorderLevel": 60,
+  "reorderQty": 180
+ },
+ {
+  "sku": "BAKE-FLATBREAD",
+  "name": "Flatbread",
+  "unit": "pc",
+  "category": "Bakery",
+  "unitCost": 1500,
+  "reorderLevel": 30,
+  "reorderQty": 90
+ },
+ {
+  "sku": "BAKE-TORTILLA",
+  "name": "Large tortillas",
+  "unit": "pc",
+  "category": "Bakery",
+  "unitCost": 1800,
+  "reorderLevel": 30,
+  "reorderQty": 90
+ },
+ {
+  "sku": "OIL-VEG",
+  "name": "Vegetable oil",
+  "unit": "l",
+  "category": "Oils and sauces",
+  "unitCost": 7500,
+  "reorderLevel": 20,
+  "reorderQty": 40
+ },
+ {
+  "sku": "OIL-OLIVE",
+  "name": "Olive oil",
+  "unit": "l",
+  "category": "Oils and sauces",
+  "unitCost": 38000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "SAUCE-TOMATO",
+  "name": "Tomato passata",
+  "unit": "l",
+  "category": "Oils and sauces",
+  "unitCost": 9000,
+  "reorderLevel": 6,
+  "reorderQty": 20
+ },
+ {
+  "sku": "SAUCE-MAYO",
+  "name": "Mayonnaise",
+  "unit": "kg",
+  "category": "Oils and sauces",
+  "unitCost": 14000,
+  "reorderLevel": 3,
+  "reorderQty": 10
+ },
+ {
+  "sku": "SAUCE-VINEGAR",
+  "name": "Red wine vinegar",
+  "unit": "l",
+  "category": "Oils and sauces",
+  "unitCost": 12000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "SAUCE-SOY",
+  "name": "Soy sauce",
+  "unit": "l",
+  "category": "Oils and sauces",
+  "unitCost": 14000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "SAUCE-PESTO",
+  "name": "Basil pesto",
+  "unit": "kg",
+  "category": "Oils and sauces",
+  "unitCost": 45000,
+  "reorderLevel": 1,
+  "reorderQty": 3
+ },
+ {
+  "sku": "OLIVE-JAR",
+  "name": "Green olives",
+  "unit": "kg",
+  "category": "Oils and sauces",
+  "unitCost": 30000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "PICKLE-JAR",
+  "name": "Pickled vegetables",
+  "unit": "kg",
+  "category": "Oils and sauces",
+  "unitCost": 16000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "BAR-SCOTCH",
+  "name": "Blended Scotch whisky, house",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 90,
+  "reorderLevel": 3000,
+  "reorderQty": 9000
+ },
+ {
+  "sku": "BAR-MALT12",
+  "name": "Single malt 12-year",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 210,
+  "reorderLevel": 1500,
+  "reorderQty": 4500
+ },
+ {
+  "sku": "BAR-GIN",
+  "name": "London dry gin, house",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 80,
+  "reorderLevel": 3000,
+  "reorderQty": 9000
+ },
+ {
+  "sku": "BAR-VODKA",
+  "name": "House vodka",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 60,
+  "reorderLevel": 3000,
+  "reorderQty": 9000
+ },
+ {
+  "sku": "BAR-WHITERUM",
+  "name": "White rum",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 60,
+  "reorderLevel": 2250,
+  "reorderQty": 6750
+ },
+ {
+  "sku": "BAR-DARKRUM",
+  "name": "Dark rum",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 90,
+  "reorderLevel": 1500,
+  "reorderQty": 4500
+ },
+ {
+  "sku": "BAR-TEQUILA",
+  "name": "Silver tequila",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 110,
+  "reorderLevel": 1500,
+  "reorderQty": 4500
+ },
+ {
+  "sku": "BAR-COFFEELIQ",
+  "name": "Coffee liqueur",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 85,
+  "reorderLevel": 750,
+  "reorderQty": 2250
+ },
+ {
+  "sku": "BAR-ORANGELIQ",
+  "name": "Orange liqueur",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 100,
+  "reorderLevel": 750,
+  "reorderQty": 2250
+ },
+ {
+  "sku": "BAR-VERMOUTH",
+  "name": "Sweet vermouth",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 50,
+  "reorderLevel": 750,
+  "reorderQty": 2250
+ },
+ {
+  "sku": "BAR-BITTER",
+  "name": "Bitter red aperitif",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 90,
+  "reorderLevel": 750,
+  "reorderQty": 2250
+ },
+ {
+  "sku": "BAR-BITTERS",
+  "name": "Aromatic bitters",
+  "unit": "ml",
+  "category": "Spirits",
+  "unitCost": 120,
+  "reorderLevel": 100,
+  "reorderQty": 300
+ },
+ {
+  "sku": "BAR-LAGER",
+  "name": "House lager, bottle 500 ml",
+  "unit": "pc",
+  "category": "Beer",
+  "unitCost": 3200,
+  "reorderLevel": 72,
+  "reorderQty": 240
+ },
+ {
+  "sku": "BAR-STOUT",
+  "name": "Dark stout, bottle 500 ml",
+  "unit": "pc",
+  "category": "Beer",
+  "unitCost": 4200,
+  "reorderLevel": 48,
+  "reorderQty": 144
+ },
+ {
+  "sku": "BAR-KEGLAGER",
+  "name": "Draught lager keg",
+  "unit": "l",
+  "category": "Beer",
+  "unitCost": 6500,
+  "reorderLevel": 30,
+  "reorderQty": 100
+ },
+ {
+  "sku": "BAR-REDWINE",
+  "name": "House red, bottle 750 ml",
+  "unit": "pc",
+  "category": "Wine",
+  "unitCost": 38000,
+  "reorderLevel": 12,
+  "reorderQty": 36
+ },
+ {
+  "sku": "BAR-WHITEWINE",
+  "name": "House white, bottle 750 ml",
+  "unit": "pc",
+  "category": "Wine",
+  "unitCost": 38000,
+  "reorderLevel": 12,
+  "reorderQty": 36
+ },
+ {
+  "sku": "MIX-COLA",
+  "name": "Cola, can 330 ml",
+  "unit": "pc",
+  "category": "Mixers",
+  "unitCost": 1600,
+  "reorderLevel": 96,
+  "reorderQty": 288
+ },
+ {
+  "sku": "MIX-TONIC",
+  "name": "Tonic water, can 330 ml",
+  "unit": "pc",
+  "category": "Mixers",
+  "unitCost": 1900,
+  "reorderLevel": 96,
+  "reorderQty": 288
+ },
+ {
+  "sku": "MIX-SODA",
+  "name": "Soda water, can 330 ml",
+  "unit": "pc",
+  "category": "Mixers",
+  "unitCost": 1300,
+  "reorderLevel": 96,
+  "reorderQty": 288
+ },
+ {
+  "sku": "MIX-GINGERBEER",
+  "name": "Ginger beer, can 330 ml",
+  "unit": "pc",
+  "category": "Mixers",
+  "unitCost": 2200,
+  "reorderLevel": 48,
+  "reorderQty": 144
+ },
+ {
+  "sku": "MIX-SYRUP",
+  "name": "Sugar syrup",
+  "unit": "l",
+  "category": "Mixers",
+  "unitCost": 6000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "MIX-CREAMCOCO",
+  "name": "Coconut cream",
+  "unit": "l",
+  "category": "Mixers",
+  "unitCost": 14000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "MIX-PINEJUICE",
+  "name": "Pineapple juice, packed",
+  "unit": "l",
+  "category": "Mixers",
+  "unitCost": 7000,
+  "reorderLevel": 4,
+  "reorderQty": 12
+ },
+ {
+  "sku": "MIX-CRANBERRY",
+  "name": "Cranberry juice, packed",
+  "unit": "l",
+  "category": "Mixers",
+  "unitCost": 12000,
+  "reorderLevel": 2,
+  "reorderQty": 6
+ },
+ {
+  "sku": "BAR-ICE",
+  "name": "Ice",
+  "unit": "kg",
+  "category": "Mixers",
+  "unitCost": 800,
+  "reorderLevel": 40,
+  "reorderQty": 120
+ },
+ {
+  "sku": "WATER-500",
+  "name": "Still water, bottle 500 ml",
+  "unit": "pc",
+  "category": "Mixers",
+  "unitCost": 800,
+  "reorderLevel": 120,
+  "reorderQty": 360
+ }
 ]

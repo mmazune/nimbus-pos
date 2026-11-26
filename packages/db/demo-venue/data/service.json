@@ -1,16 +1,644 @@
 {
-  "shifts": [ { "by": "waiter1", "openedMinutesAgo": 300 }, { "by": "cashier1", "openedMinutesAgo": 290 } ],
-  "till": { "code": "TILL-1", "operator": "cashier1", "openedBy": "supervisor1", "openingFloat": 200000, "openedMinutesAgo": 285 },
-  "openTables": [
-    { "table": "M01", "waiter": "waiter1", "state": "bill-asked", "minutesAgo": 95, "seatedBooking": "b1",
-      "lines": [["Sirloin steak 300 g", 1, null, ["Medium rare"]], ["Blended Scotch whisky", 2, "Double"]] },
-    { "table": "M02", "waiter": "waiter1", "state": "not-sent", "minutesAgo": 3, "lines": [["Cola", 2]] }
-  ],
-  "paidBills": [
-    { "table": "M03", "waiter": "waiter1", "minutesAgo": 200, "lines": [["Marinated olives", 2]], "payments": [["CASH", 25000]] }
-  ],
-  "bookings": [
-    { "key": "b1", "customerName": "Hall party", "phone": "+256 700 000 201", "partySize": 2, "minutesFromNow": -100, "status": "SEATED", "table": "M01", "source": "PHONE" },
-    { "key": "b2", "customerName": "Late pair", "phone": "+256 700 000 202", "partySize": 2, "minutesFromNow": -40, "status": "CONFIRMED", "table": "M05", "source": "WHATSAPP" }
-  ]
+ "shifts": [
+  {
+   "by": "waiter1",
+   "openedMinutesAgo": 300
+  },
+  {
+   "by": "waiter2",
+   "openedMinutesAgo": 295
+  },
+  {
+   "by": "waiter3",
+   "openedMinutesAgo": 240
+  },
+  {
+   "by": "cashier1",
+   "openedMinutesAgo": 305
+  },
+  {
+   "by": "supervisor1",
+   "openedMinutesAgo": 310
+  },
+  {
+   "by": "bartender1",
+   "openedMinutesAgo": 298
+  },
+  {
+   "by": "chef1",
+   "openedMinutesAgo": 330
+  }
+ ],
+ "till": {
+  "code": "TILL-1",
+  "operator": "cashier1",
+  "openedBy": "supervisor1",
+  "openingFloat": 200000,
+  "openedMinutesAgo": 304
+ },
+ "openTables": [
+  {
+   "table": "M01",
+   "waiter": "waiter1",
+   "state": "bill-asked",
+   "minutesAgo": 131,
+   "seatedBooking": "seated-hall",
+   "lines": [
+    [
+     "Sirloin steak 300 g",
+     1,
+     null,
+     [
+      "Medium rare",
+      "Chips",
+      "Peppercorn sauce"
+     ]
+    ],
+    [
+     "Half grilled chicken",
+     1,
+     null,
+     [
+      "Sweet potato wedges",
+      "Mild"
+     ]
+    ],
+    [
+     "Merlot",
+     1,
+     "Bottle 750 ml"
+    ],
+    [
+     "Still water",
+     2,
+     "Bottle 500 ml"
+    ]
+   ]
+  },
+  {
+   "table": "M04",
+   "waiter": "waiter1",
+   "state": "served",
+   "minutesAgo": 118,
+   "lines": [
+    [
+     "Beef burger",
+     2,
+     null,
+     [
+      "Medium",
+      "Chips",
+      "Extra cheese"
+     ]
+    ],
+    [
+     "House lager",
+     3,
+     "Bottle 500 ml"
+    ],
+    [
+     "Patatas bravas",
+     1
+    ]
+   ]
+  },
+  {
+   "table": "M07",
+   "waiter": "waiter1",
+   "state": "ready",
+   "minutesAgo": 64,
+   "lines": [
+    [
+     "Garlic prawns",
+     1
+    ],
+    [
+     "Fried calamari",
+     1
+    ],
+    [
+     "Gin and tonic",
+     2
+    ]
+   ]
+  },
+  {
+   "table": "M09",
+   "waiter": "waiter1",
+   "state": "sent",
+   "minutesAgo": 22,
+   "lines": [
+    [
+     "Chicken curry with rice",
+     2,
+     null,
+     [
+      "Medium heat"
+     ]
+    ],
+    [
+     "Fresh passion fruit juice",
+     2
+    ]
+   ]
+  },
+  {
+   "table": "M12",
+   "waiter": "waiter1",
+   "state": "not-sent",
+   "minutesAgo": 4,
+   "lines": [
+    [
+     "Cola",
+     2
+    ],
+    [
+     "Marinated olives",
+     1
+    ]
+   ]
+  },
+  {
+   "table": "M15",
+   "waiter": "waiter1",
+   "state": "sent-with-new-lines",
+   "minutesAgo": 47,
+   "lines": [
+    [
+     "Fish and chips",
+     2
+    ],
+    [
+     "Draught lager",
+     2,
+     "Pint"
+    ]
+   ],
+   "newLines": [
+    [
+     "Draught lager",
+     2,
+     "Pint"
+    ],
+    [
+     "Chips",
+     1
+    ]
+   ]
+  },
+  {
+   "table": "T02",
+   "waiter": "waiter2",
+   "state": "bill-asked",
+   "minutesAgo": 143,
+   "lines": [
+    [
+     "Whole grilled tilapia",
+     2,
+     null,
+     [
+      "Steamed rice"
+     ]
+    ],
+    [
+     "Fresh mango juice",
+     2
+    ],
+    [
+     "Chocolate lava cake",
+     2
+    ]
+   ]
+  },
+  {
+   "table": "T04",
+   "waiter": "waiter2",
+   "state": "in-kitchen",
+   "minutesAgo": 38,
+   "lines": [
+    [
+     "Rib-eye steak 350 g",
+     1,
+     null,
+     [
+      "Medium",
+      "Mashed potato",
+      "Mushroom sauce"
+     ]
+    ],
+    [
+     "Fillet steak 250 g",
+     1,
+     null,
+     [
+      "Rare",
+      "Side salad"
+     ]
+    ],
+    [
+     "Cabernet Sauvignon",
+     2,
+     "Glass 175 ml"
+    ]
+   ]
+  },
+  {
+   "table": "T06",
+   "waiter": "waiter2",
+   "state": "sent",
+   "minutesAgo": 17,
+   "lines": [
+    [
+     "Mojito",
+     2
+    ],
+    [
+     "Hummus with flatbread",
+     1
+    ],
+    [
+     "Ham croquetas",
+     1
+    ]
+   ]
+  },
+  {
+   "table": "T09",
+   "waiter": "waiter2",
+   "state": "not-sent",
+   "minutesAgo": 6,
+   "lines": [
+    [
+     "Cappuccino",
+     2,
+     null,
+     [
+      "Oat milk"
+     ]
+    ],
+    [
+     "Passion fruit cheesecake",
+     1
+    ]
+   ]
+  },
+  {
+   "table": "T11",
+   "waiter": "waiter2",
+   "state": "ready",
+   "minutesAgo": 55,
+   "lines": [
+    [
+     "Goat curry with chapati",
+     2,
+     null,
+     [
+      "Hot"
+     ]
+    ],
+    [
+     "Dark stout",
+     2,
+     "Bottle 500 ml"
+    ]
+   ]
+  },
+  {
+   "table": "B03",
+   "waiter": "waiter2",
+   "state": "sent",
+   "minutesAgo": 12,
+   "lines": [
+    [
+     "Blended Scotch whisky",
+     2,
+     "Double",
+     [
+      "With cola"
+     ]
+    ],
+    [
+     "Chicken wings with smoked paprika",
+     1
+    ]
+   ]
+  },
+  {
+   "table": "V02",
+   "waiter": "waiter3",
+   "state": "in-kitchen",
+   "minutesAgo": 72,
+   "seatedBooking": "seated-vip",
+   "lines": [
+    [
+     "Sharing tomahawk 1 kg",
+     1,
+     null,
+     [
+      "Medium rare",
+      "Chips",
+      "Chimichurri"
+     ]
+    ],
+    [
+     "Seafood platter for two",
+     1
+    ],
+    [
+     "Single malt whisky 12-year",
+     1,
+     "Bottle 750 ml"
+    ],
+    [
+     "Sparkling water",
+     4,
+     "Bottle 500 ml"
+    ]
+   ]
+  },
+  {
+   "table": "V04",
+   "waiter": "waiter3",
+   "state": "served",
+   "minutesAgo": 98,
+   "lines": [
+    [
+     "Seafood paella for two",
+     1
+    ],
+    [
+     "House white",
+     1,
+     "Bottle 750 ml"
+    ],
+    [
+     "Garden salad",
+     2
+    ]
+   ]
+  },
+  {
+   "table": "V05",
+   "waiter": "waiter3",
+   "state": "in-kitchen",
+   "minutesAgo": 33,
+   "lines": [
+    [
+     "Lamb burger",
+     2,
+     null,
+     [
+      "Medium well",
+      "Chips",
+      "No onion"
+     ]
+    ],
+    [
+     "Negroni",
+     2
+    ]
+   ]
+  },
+  {
+   "table": "M20",
+   "waiter": "waiter3",
+   "state": "not-sent",
+   "minutesAgo": 2,
+   "lines": [
+    [
+     "House lager",
+     4,
+     "Bottle 500 ml"
+    ]
+   ]
+  },
+  {
+   "table": "M22",
+   "waiter": "waiter3",
+   "state": "sent-with-new-lines",
+   "minutesAgo": 51,
+   "lines": [
+    [
+     "Beef stew with matooke",
+     2,
+     null,
+     [
+      "Mild"
+     ]
+    ],
+    [
+     "Fresh pineapple juice",
+     2
+    ]
+   ],
+   "newLines": [
+    [
+     "Crème caramel",
+     2
+    ]
+   ]
+  }
+ ],
+ "paidBills": [
+  {
+   "table": "M03",
+   "waiter": "waiter1",
+   "minutesAgo": 236,
+   "lines": [
+    [
+     "Marinated olives",
+     2
+    ],
+    [
+     "Grilled chicken salad",
+     2
+    ],
+    [
+     "House red",
+     1,
+     "Bottle 750 ml"
+    ]
+   ],
+   "payments": [
+    [
+     "CASH",
+     170000
+    ]
+   ]
+  },
+  {
+   "table": "T01",
+   "waiter": "waiter2",
+   "minutesAgo": 221,
+   "seatedBooking": "done-lunch",
+   "lines": [
+    [
+     "Club sandwich",
+     2,
+     null,
+     [
+      "Chips"
+     ]
+    ],
+    [
+     "Iced tea",
+     2
+    ]
+   ],
+   "payments": [
+    [
+     "CARD",
+     72000
+    ]
+   ]
+  },
+  {
+   "table": "B01",
+   "waiter": "waiter2",
+   "minutesAgo": 207,
+   "lines": [
+    [
+     "Espresso martini",
+     2
+    ],
+    [
+     "Margarita",
+     1
+    ]
+   ],
+   "payments": [
+    [
+     "MOMO",
+     88000
+    ]
+   ]
+  },
+  {
+   "table": "M10",
+   "waiter": "waiter1",
+   "minutesAgo": 189,
+   "lines": [
+    [
+     "Spaghetti with tomato and basil",
+     1,
+     null,
+     [
+      "Grilled chicken"
+     ]
+    ],
+    [
+     "Pesto penne",
+     1
+    ],
+    [
+     "Soda water",
+     2
+    ]
+   ],
+   "payments": [
+    [
+     "CARD",
+     40000
+    ],
+    [
+     "CASH",
+     40000
+    ]
+   ]
+  }
+ ],
+ "bookings": [
+  {
+   "key": "seated-hall",
+   "customerName": "Kato family",
+   "phone": "+256 700 000 201",
+   "partySize": 4,
+   "minutesFromNow": -135,
+   "status": "SEATED",
+   "table": "M01",
+   "source": "PHONE"
+  },
+  {
+   "key": "seated-vip",
+   "customerName": "Birthday party, VIP",
+   "phone": "+256 700 000 202",
+   "partySize": 8,
+   "minutesFromNow": -75,
+   "status": "SEATED",
+   "table": "V02",
+   "source": "WHATSAPP",
+   "note": "Birthday cake brought by the guests"
+  },
+  {
+   "key": "done-lunch",
+   "customerName": "Lunch pair",
+   "phone": "+256 700 000 203",
+   "partySize": 2,
+   "minutesFromNow": -225,
+   "status": "COMPLETED",
+   "table": "T01",
+   "source": "INSTAGRAM"
+  },
+  {
+   "key": "late",
+   "customerName": "Late arrival, party of three",
+   "phone": "+256 700 000 204",
+   "partySize": 3,
+   "minutesFromNow": -35,
+   "status": "CONFIRMED",
+   "table": "V03",
+   "source": "PHONE",
+   "note": "Running late: booked for 35 minutes ago, not seated"
+  },
+  {
+   "key": "table-in-use",
+   "customerName": "Window table request",
+   "phone": "+256 700 000 205",
+   "partySize": 4,
+   "minutesFromNow": 15,
+   "status": "CONFIRMED",
+   "table": "M04",
+   "source": "PHONE",
+   "note": "Booked table M04 still has an open bill"
+  },
+  {
+   "key": "later-confirmed",
+   "customerName": "Team dinner",
+   "phone": "+256 700 000 206",
+   "partySize": 6,
+   "minutesFromNow": 90,
+   "status": "CONFIRMED",
+   "table": "V01",
+   "source": "MANUAL"
+  },
+  {
+   "key": "pending",
+   "customerName": "Terrace enquiry",
+   "phone": "+256 700 000 207",
+   "partySize": 2,
+   "minutesFromNow": 120,
+   "status": "PENDING",
+   "table": "T08",
+   "source": "WHATSAPP"
+  },
+  {
+   "key": "cancelled",
+   "customerName": "Cancelled pair",
+   "phone": "+256 700 000 208",
+   "partySize": 2,
+   "minutesFromNow": 45,
+   "status": "CANCELLED",
+   "source": "PHONE"
+  },
+  {
+   "key": "no-show",
+   "customerName": "No-show trio",
+   "phone": "+256 700 000 209",
+   "partySize": 3,
+   "minutesFromNow": -60,
+   "status": "NO_SHOW",
+   "table": "T05",
+   "source": "PHONE"
+  }
+ ]
 }

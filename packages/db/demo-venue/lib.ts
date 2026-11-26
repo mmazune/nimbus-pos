@@ -431,6 +431,20 @@ export function validate(d: VenueData): ValidationReport {
       }
     }
   };
+  const billOf = (lines: LineRow[]) =>
+    lines.reduce((sum, [name, qty, serving, opts]) => {
+      const item = itemByName.get(name);
+      if (!item) return sum;
+      const base = serving ? item.servings.find((s) => s[1] === serving)?.[2] ?? item.price : item.price;
+      const delta = (opts ?? []).reduce((n, o) => {
+        for (const c of item.choices) {
+          const op = groupByName.get(c)?.options.find((x) => x[0] === o);
+          if (op) return n + op[1];
+        }
+        return n;
+      }, 0);
+      return sum + (base + delta) * qty;
+    }, 0);
   const usedTables = new Set<string>();
   for (const t of service.openTables) {
     const where = `open table ${t.table}`;
@@ -459,6 +473,16 @@ export function validate(d: VenueData): ValidationReport {
       if (!METHODS.includes(m)) err(`${where}: method ${m}`);
       wholeUgx(`${where} payment`, amount, 500);
     }
+    // The close route's rules: everything handed over covers the bill; non-cash never exceeds
+    // it; any change comes out of the last cash row (payments.service.ts closeOrderWithPayment).
+    const bill = billOf(p.lines);
+    const handed = p.payments.reduce((n, [, a]) => n + a, 0);
+    const nonCash = p.payments.filter(([m]) => m !== 'CASH').reduce((n, [, a]) => n + a, 0);
+    const cashRows = p.payments.filter(([m]) => m === 'CASH');
+    if (handed < bill) err(`${where}: ${handed} handed over on a bill of ${bill}`);
+    if (nonCash > bill) err(`${where}: non-cash ${nonCash} is more than the bill ${bill}`);
+    if (handed > bill && (!cashRows.length || cashRows[cashRows.length - 1][1] <= handed - bill))
+      err(`${where}: change ${handed - bill} is not covered by the last cash payment`);
     if (p.seatedBooking) {
       const b = bookingKeys.get(p.seatedBooking);
       if (!b || b.status !== 'COMPLETED' || b.table !== p.table) err(`${where}: booking ${p.seatedBooking} is not COMPLETED at this table`);
