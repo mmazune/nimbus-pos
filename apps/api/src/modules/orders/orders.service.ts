@@ -9,8 +9,29 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma, OrderStatus, ShiftStatus, TableStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
-import { KdsService } from '../kds/kds.service';
-import { ReservationsService } from '../reservations/reservations.service';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { randomUUID } from 'crypto';
+import { KdsService, KDS_BEFORE_READ } from '../kds/kds.service';
+import {
+  closeOrderInTx,
+  completeSeatedReservationsInTx,
+  releaseTableIfIdleInTx,
+} from './order-close';
+import {
+  giveBackForVoid,
+  MENU_AVAILABILITY_CHANGED,
+  MenuAvailabilityChangedEvent,
+  takeAvailabilityForSend,
+  availabilityView,
+} from '../menu/availability-engine';
+import {
+  ORDER_CLOSED,
+  ORDER_LINES_SENT,
+  ORDER_LINE_VOIDED,
+  OrderClosedEvent,
+  OrderLinesSentEvent,
+  OrderLineVoidedEvent,
+} from './order-events';
 import {
   ActorLike,
   assertWaiterOrderOwnership,
@@ -23,6 +44,7 @@ import {
   UpdateOrderItemDto,
   TransitionOrderDto,
   ListOrdersQueryDto,
+  VoidOrderItemDto,
 } from './dto';
 
 interface BranchContext {
@@ -50,6 +72,18 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   CLOSED: [],
 };
 
+// E1 — lines may be added, and sent, while the order is in any of these states.
+// T2 phase 3 (E5): a fire can be undone for this long, on the server clock.
+export const FIRE_UNDO_MS = 3000;
+
+const SENDABLE_STATES: OrderStatus[] = [
+  OrderStatus.NEW,
+  OrderStatus.SENT,
+  OrderStatus.IN_KITCHEN,
+  OrderStatus.READY,
+  OrderStatus.SERVED,
+];
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -58,8 +92,8 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly kdsService: KdsService,
-    private readonly reservationsService: ReservationsService,
-  ) { }
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   // ── Order Number Generation ──
   // Format: ORD-XXXXXX, branch-scoped, sequential, concurrency-safe via DB
@@ -118,30 +152,6 @@ export class OrdersService {
     await this.prisma.table.updateMany({
       where: { id: tableId, status: { not: TableStatus.OCCUPIED } },
       data: { status: TableStatus.OCCUPIED },
-    });
-  }
-
-  /**
-   * Auto-release: when an order moves to a terminal state (CLOSED/VOIDED)
-   * and no other active dine-in orders remain on the table, return the
-   * table to AVAILABLE so it can be re-seated.
-   */
-  private async autoReleaseTableIfIdle(
-    tableId: string | null | undefined,
-    excludeOrderId: string,
-  ): Promise<void> {
-    if (!tableId) return;
-    const activeOnTable = await this.prisma.order.count({
-      where: {
-        tableId,
-        id: { not: excludeOrderId },
-        status: { notIn: [OrderStatus.CLOSED, OrderStatus.VOIDED] },
-      },
-    });
-    if (activeOnTable > 0) return;
-    await this.prisma.table.updateMany({
-      where: { id: tableId, status: TableStatus.OCCUPIED },
-      data: { status: TableStatus.AVAILABLE },
     });
   }
 
@@ -218,7 +228,28 @@ export class OrdersService {
 
     if (!order) throw new NotFoundException('Order not found');
     if (actor) assertWaiterOrderOwnership(actor, order);
-    return order;
+
+    // T2 phase 1 (E2): an unsent line whose item is sold out is flagged; Send will skip it.
+    const unsentItemIds = [
+      ...new Set(order.items.filter((i) => !i.sentAt && !i.voidedAt).map((i) => i.menuItemId)),
+    ];
+    const rows = unsentItemIds.length
+      ? await this.prisma.menuItemAvailability.findMany({
+          where: { menuItemId: { in: unsentItemIds } },
+        })
+      : [];
+    const byItem = new Map(rows.map((r) => [r.menuItemId, availabilityView(r)]));
+    return {
+      ...order,
+      items: order.items.map((i) => {
+        const view = !i.sentAt && !i.voidedAt ? byItem.get(i.menuItemId) : undefined;
+        return {
+          ...i,
+          unsendable: view?.state === 'SOLD_OUT',
+          ...(view?.state === 'SOLD_OUT' ? { unsendableReason: 'SOLD_OUT' } : {}),
+        };
+      }),
+    };
   }
 
   // ── List Orders ──
@@ -233,7 +264,8 @@ export class OrdersService {
       orgId: ctx.organizationId,
     };
     if (query.status) where.status = query.status as OrderStatus;
-    if (query.serviceType) where.serviceType = query.serviceType as Prisma.OrderWhereInput['serviceType'];
+    if (query.serviceType)
+      where.serviceType = query.serviceType as Prisma.OrderWhereInput['serviceType'];
     if (query.tableId) where.tableId = query.tableId;
 
     // Waiter MVP: support userId filter with literal `me`
@@ -245,7 +277,9 @@ export class OrdersService {
     // Waiter MVP: support excludeStatus to hide e.g. NEW drafts
     if (query.excludeStatus && query.excludeStatus.length > 0) {
       where.status = {
-        ...(typeof where.status === 'string' ? { equals: where.status } : (where.status as object) || {}),
+        ...(typeof where.status === 'string'
+          ? { equals: where.status }
+          : (where.status as object) || {}),
         notIn: query.excludeStatus as OrderStatus[],
       } as Prisma.EnumOrderStatusFilter;
     }
@@ -278,9 +312,13 @@ export class OrdersService {
     modifierMeta?: Record<string, unknown>,
     // Optional transaction client (H1). Existing callers omit it and keep using db.
     client?: Prisma.TransactionClient,
+    // T2 phase 1 (E2): an offer price agreed when the line was added stays on later edits.
+    lockedOfferBase?: Decimal | string | null,
   ): Promise<{
     price: Decimal;
     subtotal: Decimal;
+    normalPrice: Decimal | null;
+    offerBasePrice: Decimal | null;
     costUnit: Decimal | null;
     costTotal: Decimal | null;
     marginTotal: Decimal | null;
@@ -301,6 +339,16 @@ export class OrdersService {
 
     // Determine base price from serving or item
     let unitPrice = menuItem.price;
+    // T2 phase 1 (E2): offers. The offer replaces the item's own price; a chosen serving keeps
+    // its serving price. The normal price is kept beside the line.
+    let offerBase: Decimal | null = null;
+    if (!menuItemServingId) {
+      if (lockedOfferBase !== undefined && lockedOfferBase !== null) {
+        offerBase = new Decimal(lockedOfferBase);
+      } else if (menuItem.isOffer && menuItem.offerPrice !== null) {
+        offerBase = new Decimal(menuItem.offerPrice);
+      }
+    }
 
     if (menuItemServingId) {
       const serving = menuItem.servings.find((s) => s.id === menuItemServingId);
@@ -322,7 +370,9 @@ export class OrdersService {
       const selectedModifiers = (modifierMeta as any).selectedModifiers as {
         modifierOptionId: string;
       }[];
-      const optionIds = [...new Set(selectedModifiers.map((m) => m.modifierOptionId).filter(Boolean))];
+      const optionIds = [
+        ...new Set(selectedModifiers.map((m) => m.modifierOptionId).filter(Boolean)),
+      ];
       if (optionIds.length > 0) {
         const assignedGroups = await db.menuItemOnGroup.findMany({
           where: { itemId: menuItem.id },
@@ -330,7 +380,10 @@ export class OrdersService {
         });
         const assignedGroupIds = new Set(assignedGroups.map((assignment) => assignment.groupId));
         const options = await db.modifierOption.findMany({
-          where: { id: { in: optionIds }, group: { branchId: ctx.branchId, orgId: ctx.organizationId } },
+          where: {
+            id: { in: optionIds },
+            group: { branchId: ctx.branchId, orgId: ctx.organizationId },
+          },
           include: { group: { select: { id: true, isActive: true } } },
         });
         if (options.length !== optionIds.length) {
@@ -359,7 +412,8 @@ export class OrdersService {
       }
     }
 
-    const effectivePrice = new Decimal(unitPrice).add(modifierDelta);
+    const normalUnit = new Decimal(unitPrice).add(modifierDelta);
+    const effectivePrice = offerBase ? offerBase.add(modifierDelta) : normalUnit;
     const lineSubtotal = effectivePrice.mul(quantity);
 
     // Compute cost snapshot from M8 recipes
@@ -423,6 +477,8 @@ export class OrdersService {
     return {
       price: effectivePrice.toDecimalPlaces(2),
       subtotal: lineSubtotal.toDecimalPlaces(2),
+      normalPrice: offerBase ? normalUnit.toDecimalPlaces(2) : null,
+      offerBasePrice: offerBase ? offerBase.toDecimalPlaces(2) : null,
       costUnit,
       costTotal,
       marginTotal,
@@ -432,9 +488,12 @@ export class OrdersService {
 
   // ── Recalculate Order Totals ──
 
-  private async recalcOrderTotals(orderId: string): Promise<void> {
-    const items = await this.prisma.orderItem.findMany({
-      where: { orderId },
+  // T2 phase 2: public so the seating moves recompute totals the same way.
+  async recalcOrderTotals(orderId: string, client?: Prisma.TransactionClient): Promise<void> {
+    const db = client ?? this.prisma;
+    // E1 — a voided line stays on the order for the record but leaves the totals.
+    const items = await db.orderItem.findMany({
+      where: { orderId, voidedAt: null },
       select: { subtotal: true },
     });
 
@@ -444,7 +503,7 @@ export class OrdersService {
     }
 
     // M12: Compute discount from latest approved discount
-    const approvedDiscount = await this.prisma.discount.findFirst({
+    const approvedDiscount = await db.discount.findFirst({
       where: { orderId, status: 'APPROVED' },
       orderBy: { approvedAt: 'desc' },
     });
@@ -460,7 +519,7 @@ export class OrdersService {
 
     const total = Decimal.max(subtotal.sub(discountAmount), new Decimal(0));
 
-    await this.prisma.order.update({
+    await db.order.update({
       where: { id: orderId },
       data: {
         subtotal: subtotal.toDecimalPlaces(2),
@@ -486,38 +545,77 @@ export class OrdersService {
     if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
     await this.assertWaiterShiftOpen(meta.actor, ctx);
 
-    if (order.status === 'CLOSED' || order.status === 'VOIDED') {
-      throw new ConflictException(`Cannot add items to a ${order.status} order`);
-    }
-
     const quantity = dto.quantity ?? 1;
 
-    const pricing = await this.computeLinePricing(
-      ctx,
-      dto.menuItemId,
-      dto.menuItemServingId,
-      quantity,
-      dto.metadata as Record<string, unknown> | undefined,
-    );
+    // E1F (B2): the status is judged under the order's row lock, and the line and the new
+    // totals are written in the same transaction, so a line cannot land on an order that a
+    // payment is closing at that moment.
+    const { item, pricing } = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const locked = await tx.order.findFirst({
+        where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+      });
+      if (!locked) throw new NotFoundException('Order not found');
+      if (locked.status === 'CLOSED' || locked.status === 'VOIDED') {
+        throw new ConflictException(`Cannot add items to a ${locked.status} order`);
+      }
 
-    const item = await this.prisma.orderItem.create({
-      data: {
-        orderId,
-        menuItemId: dto.menuItemId,
-        menuItemServingId: dto.menuItemServingId ?? null,
+      // T2 phase 1 (E2): a sold-out item cannot be added; its button is grey for everyone.
+      const availability = await tx.menuItemAvailability.findUnique({
+        where: { menuItemId: dto.menuItemId },
+        select: { state: true, since: true },
+      });
+      if (availability?.state === 'SOLD_OUT') {
+        throw new ConflictException({
+          code: 'ITEM_SOLD_OUT',
+          message: 'This item is sold out.',
+          menuItemId: dto.menuItemId,
+          since: availability.since,
+        });
+      }
+
+      const linePricing = await this.computeLinePricing(
+        ctx,
+        dto.menuItemId,
+        dto.menuItemServingId,
         quantity,
-        price: pricing.price,
-        subtotal: pricing.subtotal,
-        notes: dto.notes ?? null,
-        metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
-        costUnit: pricing.costUnit,
-        costTotal: pricing.costTotal,
-        marginTotal: pricing.marginTotal,
-        marginPct: pricing.marginPct,
-      },
-    });
+        dto.metadata as Record<string, unknown> | undefined,
+        tx,
+      );
 
-    await this.recalcOrderTotals(orderId);
+      const created = await tx.orderItem.create({
+        data: {
+          orderId,
+          menuItemId: dto.menuItemId,
+          menuItemServingId: dto.menuItemServingId ?? null,
+          quantity,
+          price: linePricing.price,
+          subtotal: linePricing.subtotal,
+          normalPrice: linePricing.normalPrice,
+          offerBasePrice: linePricing.offerBasePrice,
+          guest: dto.guest ?? null,
+          heldAt: dto.hold ? new Date() : null,
+          allergy: dto.allergy?.trim() || null,
+          takeaway: dto.takeaway ?? false,
+          notes: dto.notes ?? null,
+          metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+          costUnit: linePricing.costUnit,
+          costTotal: linePricing.costTotal,
+          marginTotal: linePricing.marginTotal,
+          marginPct: linePricing.marginPct,
+        },
+      });
+      await this.recalcOrderTotals(orderId, tx);
+      // T2 phase 3 (E5): an allergy said at this table is kept for every later round.
+      const allergy = dto.allergy?.trim().toLowerCase();
+      if (allergy && !locked.allergies.includes(allergy)) {
+        await tx.order.update({
+          where: { id: orderId },
+          data: { allergies: { set: [...locked.allergies, allergy] } },
+        });
+      }
+      return { item: created, pricing: linePricing };
+    });
 
     await this.audit.log({
       actorUserId: userId,
@@ -567,6 +665,16 @@ export class OrdersService {
       where: { id: itemId, orderId },
     });
     if (!existingItem) throw new NotFoundException('Order item not found');
+    if (existingItem.voidedAt) {
+      throw new ConflictException('This item was voided and cannot be changed');
+    }
+    // E1F (B1): a sent line is changed only by a void (pos:order:item:void, with a reason).
+    if (existingItem.sentAt) {
+      throw new ConflictException({
+        code: 'ITEM_ALREADY_SENT',
+        message: 'This item was already sent. Ask a supervisor to void it instead.',
+      });
+    }
 
     const quantity = dto.quantity ?? existingItem.quantity;
     const metadata =
@@ -580,6 +688,8 @@ export class OrdersService {
       existingItem.menuItemServingId,
       quantity,
       metadata as Record<string, unknown> | undefined,
+      undefined,
+      existingItem.offerBasePrice,
     );
 
     const updated = await this.prisma.orderItem.update({
@@ -593,6 +703,8 @@ export class OrdersService {
             : undefined,
         price: pricing.price,
         subtotal: pricing.subtotal,
+        normalPrice: pricing.normalPrice,
+        offerBasePrice: pricing.offerBasePrice,
         costUnit: pricing.costUnit,
         costTotal: pricing.costTotal,
         marginTotal: pricing.marginTotal,
@@ -648,6 +760,12 @@ export class OrdersService {
       where: { id: itemId, orderId },
     });
     if (!item) throw new NotFoundException('Order item not found');
+    if (item.sentAt) {
+      throw new ConflictException({
+        code: 'ITEM_ALREADY_SENT',
+        message: 'This item was already sent. Ask a supervisor to void it instead.',
+      });
+    }
 
     await this.prisma.orderItem.delete({ where: { id: itemId } });
     await this.recalcOrderTotals(orderId);
@@ -668,7 +786,56 @@ export class OrdersService {
       userAgent: meta.userAgent,
     });
 
+    await this.closeIfSettled(userId, ctx, orderId, meta);
     return { deleted: true };
+  }
+
+  /**
+   * E1F (S9): money that arrived while lines were still unsent leaves the order open; once
+   * the last unsent line is sent or removed and the payments cover the bill, it closes here,
+   * through the close door, so it never sits paid and open with no way out.
+   */
+  private async closeIfSettled(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    meta: RequestMeta,
+  ): Promise<void> {
+    const paidRows = await this.prisma.payment.count({ where: { orderId, status: 'COMPLETED' } });
+    if (paidRows === 0) return;
+    const closed = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const order = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+      if (
+        order.status === OrderStatus.NEW ||
+        order.status === OrderStatus.CLOSED ||
+        order.status === OrderStatus.VOIDED
+      )
+        return null;
+      const lines = await tx.orderItem.findMany({
+        where: { orderId, voidedAt: null },
+        select: { sentAt: true },
+      });
+      if (lines.length === 0 || lines.some((l) => !l.sentAt)) return null;
+      const paid = await tx.payment.aggregate({
+        where: { orderId, status: 'COMPLETED' },
+        _sum: { amount: true },
+      });
+      if (new Decimal(paid._sum.amount ?? 0).lt(order.total)) return null;
+      return closeOrderInTx(tx, {
+        orderId,
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        userId,
+        source: 'auto-settle',
+        auditAction: 'ORDER_AUTO_SETTLED',
+        auditMetadata: { trigger: 'settled_after_lines_sent_or_removed' },
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+    });
+    if (closed?.event)
+      this.eventEmitter.emit(ORDER_CLOSED, closed.event satisfies OrderClosedEvent);
   }
 
   // ── State Transitions ──
@@ -701,44 +868,35 @@ export class OrdersService {
 
     this.validateTransition(order.status, targetStatus);
 
+    // E1 — closing goes through the one close door (table, reservation, audit, all in one
+    // transaction). It writes its own audit row, so this method returns straight after it.
+    if (targetStatus === OrderStatus.CLOSED) {
+      const closed = await this.prisma.$transaction((tx) =>
+        closeOrderInTx(tx, {
+          orderId,
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          userId,
+          source: 'transition',
+          auditAction,
+          auditMetadata: { previousStatus: order.status, reason: reason ?? null },
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+        }),
+      );
+      if (closed.event)
+        this.eventEmitter.emit(ORDER_CLOSED, closed.event satisfies OrderClosedEvent);
+      return this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    }
+
     const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: targetStatus },
     });
 
-    // Waiter MVP — auto-occupy on SENT; auto-release on CLOSED.
+    // Waiter MVP — auto-occupy on SENT.
     if (targetStatus === OrderStatus.SENT && order.serviceType === 'DINE_IN') {
       await this.autoOccupyTable(order.tableId);
-    }
-    if (targetStatus === OrderStatus.CLOSED) {
-      await this.autoReleaseTableIfIdle(order.tableId, orderId);
-
-      // Prompt 4A — canonical order-close reservation reconciliation. A SEATED
-      // reservation explicitly linked via seatedOrderId is auto-completed here,
-      // at the single order-close choke point (never in Cashier frontend code).
-      // The order close remains canonical: completion runs after the committed
-      // status change and is retry-safe/idempotent (conditional update, no
-      // duplicate event). Failure is logged for visibility, never swallowed
-      // silently, and never rolls back the order close.
-      try {
-        const completedReservationId = await this.reservationsService.completeForClosedOrder(
-          orderId,
-          ctx,
-          userId,
-          meta,
-        );
-        if (completedReservationId) {
-          this.logger.log(
-            `Order ${orderId} close auto-completed reservation ${completedReservationId}`,
-          );
-        }
-      } catch (err) {
-        this.logger.error(
-          `Order ${orderId} closed but linked reservation auto-completion failed: ${
-            (err as Error)?.message ?? err
-          }. Reservation may remain SEATED and can be completed manually.`,
-        );
-      }
     }
 
     await this.audit.log({
@@ -760,6 +918,13 @@ export class OrdersService {
     return updated;
   }
 
+  /**
+   * E1 — send by line. Stamps every line that is not yet sent and not voided, moves
+   * NEW → SENT the first time (later sends leave the status alone) and makes kitchen/bar
+   * tickets for exactly the lines just sent. Everything happens under a row lock on the
+   * order, and `kds_ticket_items.order_item_id` is unique, so a doubled or retried send
+   * cannot ticket a line twice: the second one finds nothing unsent and answers 409.
+   */
   async sendOrder(
     userId: string,
     ctx: BranchContext,
@@ -767,21 +932,402 @@ export class OrdersService {
     dto: TransitionOrderDto,
     meta: RequestMeta,
   ) {
-    const order = await this.transitionOrder(
-      userId,
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) {
+      assertWaiterOrderOwnership(meta.actor, order);
+      assertWaiterTransitionAllowed(meta.actor, OrderStatus.SENT);
+    }
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
+
+    const sent = await this.prisma.$transaction((tx) =>
+      this.sendInTx(tx, userId, ctx, orderId, { kind: 'send', reason: dto.reason ?? null }, meta),
+    );
+    // A plain send either sends something or throws; null is only for a fire with nothing due.
+    if (!sent) throw new ConflictException('There is nothing new to send on this order.');
+    const result = sent;
+    await this.afterSend(userId, ctx, orderId, result, meta);
+    const sentOrder = await this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    return { ...sentOrder, sent: result.lineIds, skipped: result.skipped, held: result.held };
+  }
+
+  /**
+   * The body of a send, inside the caller's transaction, under the order's row lock.
+   * kind 'send': every unsent live line that is not held (T2 phase 3: Send skips held lines).
+   * kind 'fire': the held lines whose fire has come due (fireAt <= now), and only those.
+   */
+  private async sendInTx(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    mode: { kind: 'send'; reason: string | null } | { kind: 'fire'; now: Date },
+    meta: RequestMeta,
+  ) {
+    await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+    const locked = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+    if (!SENDABLE_STATES.includes(locked.status)) {
+      if (mode.kind === 'fire') return null;
+      throw new ConflictException(`Cannot send items on a ${locked.status} order`);
+    }
+
+    const where: Prisma.OrderItemWhereInput =
+      mode.kind === 'send'
+        ? { orderId, sentAt: null, voidedAt: null, heldAt: null }
+        : {
+            orderId,
+            sentAt: null,
+            voidedAt: null,
+            heldAt: { not: null },
+            fireAt: { lte: mode.now },
+          };
+    const unsent = await tx.orderItem.findMany({
+      where,
+      select: {
+        id: true,
+        menuItemId: true,
+        quantity: true,
+        fireId: true,
+        menuItem: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const held =
+      mode.kind === 'send'
+        ? (
+            await tx.orderItem.findMany({
+              where: { orderId, sentAt: null, voidedAt: null, heldAt: { not: null } },
+              select: { id: true },
+            })
+          ).map((h) => h.id)
+        : [];
+    if (unsent.length === 0) {
+      if (mode.kind === 'fire') return null;
+      throw new ConflictException({
+        code: 'NOTHING_TO_SEND',
+        message: held.length
+          ? 'Only held lines are left. Fire them when the table is ready.'
+          : 'There is nothing new to send on this order.',
+      });
+    }
+
+    // T2 phase 1 (E2): sold-out lines are skipped and reported; counted items lose portions
+    // with a guarded update, so two sends racing for the last one cannot both take it.
+    const take = await takeAvailabilityForSend(
+      tx,
       ctx,
       orderId,
-      OrderStatus.SENT,
-      'ORDER_SENT',
-      meta,
-      dto.reason,
+      userId,
+      unsent.map((l) => ({
+        id: l.id,
+        menuItemId: l.menuItemId,
+        quantity: l.quantity,
+        name: l.menuItem.name,
+      })),
     );
+    if (take.sendIds.length === 0 && mode.kind === 'send') {
+      throw new ConflictException({
+        code: 'NOTHING_SENDABLE',
+        message: `Nothing could be sent: ${[...new Set(take.skipped.map((k) => k.name))].join(', ')} sold out or not enough left.`,
+        skipped: take.skipped,
+      });
+    }
+    const sendSet = new Set(take.sendIds);
+    const lineIds = unsent.filter((l) => sendSet.has(l.id)).map((l) => l.id);
+    if (mode.kind === 'fire' && take.skipped.length > 0) {
+      // A fired line whose dish ran out goes back to held; the order flags it unsendable.
+      await tx.orderItem.updateMany({
+        where: { id: { in: take.skipped.map((k) => k.orderItemId) } },
+        data: { fireAt: null, fireId: null },
+      });
+    }
 
-    // M11: Create KDS tickets grouped by station. Ticket creation is intentionally
-    // best-effort here so a slow KDS write never traps the waiter in "Sending".
-    void this.kdsService.createTicketsForOrder(userId, ctx, orderId, meta).catch(() => undefined);
+    let tickets: { id: string; station: string }[] = [];
+    let firstSend = false;
+    if (lineIds.length > 0) {
+      await tx.orderItem.updateMany({
+        where: { id: { in: lineIds }, sentAt: null },
+        data: { sentAt: new Date() },
+      });
 
-    return order;
+      firstSend = locked.status === OrderStatus.NEW;
+      if (firstSend) {
+        await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.SENT } });
+      }
+      // E1F (S10): the table is occupied inside the send, under its row lock, so a close that
+      // commits right after cannot be overtaken by a late "occupied".
+      if (firstSend && locked.serviceType === 'DINE_IN' && locked.tableId) {
+        await tx.$queryRaw`SELECT "id" FROM "tables" WHERE "id" = ${locked.tableId} FOR UPDATE`;
+        await tx.table.updateMany({
+          where: { id: locked.tableId, status: { not: TableStatus.OCCUPIED } },
+          data: { status: TableStatus.OCCUPIED },
+        });
+      }
+
+      const fireId = mode.kind === 'fire' ? (unsent.find((l) => l.fireId)?.fireId ?? null) : null;
+      tickets = await this.kdsService.createTicketsForLines(tx, ctx, orderId, lineIds, { fireId });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: userId,
+        action: mode.kind === 'send' ? 'ORDER_SENT' : 'ORDER_FIRE_SENT',
+        entityType: 'order',
+        entityId: orderId,
+        metadata: {
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          previousStatus: locked.status,
+          newStatus: firstSend ? OrderStatus.SENT : locked.status,
+          reason: mode.kind === 'send' ? mode.reason : 'fire',
+          lineCount: lineIds.length,
+          orderItemIds: lineIds,
+          ticketIds: tickets.map((t) => t.id),
+          skipped: take.skipped.map((k) => ({ orderItemId: k.orderItemId, reason: k.reason })),
+          held,
+        },
+        ipAddress: meta.ipAddress ?? null,
+        userAgent: meta.userAgent ?? null,
+      },
+    });
+    return {
+      lineIds,
+      tickets,
+      firstSend,
+      skipped: take.skipped,
+      changed: take.changedItemIds,
+      held,
+    };
+  }
+
+  private async afterSend(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    result: { lineIds: string[]; tickets: { id: string; station: string }[]; changed: string[] },
+    meta: RequestMeta,
+  ) {
+    if (result.tickets.length > 0) this.kdsService.announceTickets(ctx, orderId, result.tickets);
+    if (result.lineIds.length > 0) {
+      this.eventEmitter.emit(ORDER_LINES_SENT, {
+        orderId,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        orderItemIds: result.lineIds,
+        ticketIds: result.tickets.map((t) => t.id),
+      } satisfies OrderLinesSentEvent);
+    }
+    if (result.changed.length > 0) {
+      this.eventEmitter.emit(MENU_AVAILABILITY_CHANGED, {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        menuItemIds: result.changed,
+      } satisfies MenuAvailabilityChangedEvent);
+    }
+    await this.closeIfSettled(userId, ctx, orderId, meta);
+  }
+
+  // ── Hold and fire (T2 phase 3, E5) ──
+
+  /** A held line waits; Send skips it. Hold or unhold an unsent line. */
+  async setLineHeld(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    itemId: string,
+    held: boolean,
+    meta: RequestMeta,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const line = await tx.orderItem.findFirst({ where: { id: itemId, orderId } });
+      if (!line) throw new NotFoundException('Order item not found');
+      if (line.sentAt || line.voidedAt)
+        throw new ConflictException('Only an unsent line can be held');
+      const updated = await tx.orderItem.update({
+        where: { id: itemId },
+        data: held
+          ? { heldAt: line.heldAt ?? new Date() }
+          : { heldAt: null, fireAt: null, fireId: null },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: held ? 'ORDER_ITEM_HELD' : 'ORDER_ITEM_UNHELD',
+          entityType: 'orderItem',
+          entityId: itemId,
+          metadata: { orgId: ctx.organizationId, branchId: ctx.branchId, orderId },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return updated;
+    });
+  }
+
+  /**
+   * Fire held lines. They go to the kitchen after FIRE_UNDO_MS on the server clock, so the fire
+   * can be undone until then and the kitchen never sees a ticket that is taken back.
+   */
+  async fireOrder(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    itemIds: string[] | undefined,
+    meta: RequestMeta,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    await this.assertWaiterShiftOpen(meta.actor, ctx);
+
+    const res = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const locked = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+      if (!SENDABLE_STATES.includes(locked.status)) {
+        throw new ConflictException(`Cannot fire on a ${locked.status} order`);
+      }
+      const lines = await tx.orderItem.findMany({
+        where: {
+          orderId,
+          sentAt: null,
+          voidedAt: null,
+          heldAt: { not: null },
+          fireAt: null,
+          ...(itemIds?.length ? { id: { in: itemIds } } : {}),
+        },
+        select: { id: true },
+      });
+      if (lines.length === 0) {
+        throw new ConflictException({
+          code: 'NOTHING_TO_FIRE',
+          message: 'There is nothing held to fire.',
+        });
+      }
+      const fireId = randomUUID();
+      const fireAt = new Date(Date.now() + FIRE_UNDO_MS);
+      await tx.orderItem.updateMany({
+        where: { id: { in: lines.map((l) => l.id) }, fireAt: null },
+        data: { fireAt, fireId },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_FIRED',
+          entityType: 'order',
+          entityId: orderId,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            fireId,
+            fireAt: fireAt.toISOString(),
+            orderItemIds: lines.map((l) => l.id),
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return { fireId, fireAt, itemIds: lines.map((l) => l.id) };
+    });
+    // Best effort: send it out as soon as the undo window has passed. Every read of the
+    // kitchen queue, the ready list and the floor also sends out what is due, so a restart
+    // in between loses nothing.
+    const timer = setTimeout(() => {
+      this.releaseDueFires(ctx.branchId, orderId).catch((e) =>
+        this.logger.warn(`fire release for ${orderId} failed: ${String(e)}`),
+      );
+    }, FIRE_UNDO_MS + 50);
+    timer.unref?.();
+    return { ...res, undoUntil: res.fireAt };
+  }
+
+  /** Undo a fire inside its window: the lines go back to held and nothing reaches the kitchen. */
+  async undoFire(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    fireId: string,
+    meta: RequestMeta,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const lines = await tx.orderItem.findMany({ where: { orderId, fireId, sentAt: null } });
+      const now = new Date();
+      if (lines.length === 0 || lines.some((l) => !l.fireAt || l.fireAt <= now)) {
+        throw new ConflictException({
+          code: 'FIRE_TOO_LATE',
+          message: 'Too late to undo: the fire has gone to the kitchen.',
+        });
+      }
+      await tx.orderItem.updateMany({
+        where: { id: { in: lines.map((l) => l.id) }, fireId, sentAt: null },
+        data: { fireAt: null, fireId: null },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_FIRE_UNDONE',
+          entityType: 'order',
+          entityId: orderId,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            fireId,
+            orderItemIds: lines.map((l) => l.id),
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return { undone: true, fireId, itemIds: lines.map((l) => l.id) };
+    });
+  }
+
+  /** The kitchen queue is about to be read: send out the fires that are due first. */
+  @OnEvent(KDS_BEFORE_READ, { promisify: true })
+  async onKdsBeforeRead(payload: { branchId: string }): Promise<void> {
+    await this.releaseDueFires(payload.branchId);
+  }
+
+  /** Sends every fire whose undo window has passed, in this branch (or on one order). */
+  async releaseDueFires(branchId: string, orderId?: string): Promise<number> {
+    const now = new Date();
+    const due = await this.prisma.orderItem.findMany({
+      where: {
+        sentAt: null,
+        voidedAt: null,
+        fireAt: { lte: now },
+        order: { branchId, ...(orderId ? { id: orderId } : {}) },
+      },
+      select: { order: { select: { id: true, orgId: true, userId: true } } },
+      distinct: ['orderId'],
+    });
+    let released = 0;
+    for (const d of due) {
+      const ctx = { branchId, organizationId: d.order.orgId };
+      const result = await this.prisma.$transaction((tx) =>
+        this.sendInTx(tx, d.order.userId, ctx, d.order.id, { kind: 'fire', now }, {}),
+      );
+      if (result) {
+        released += result.lineIds.length;
+        await this.afterSend(d.order.userId, ctx, d.order.id, result, {});
+      }
+    }
+    return released;
   }
 
   async markInKitchen(
@@ -838,24 +1384,6 @@ export class OrdersService {
     );
   }
 
-  async closeOrder(
-    userId: string,
-    ctx: BranchContext,
-    orderId: string,
-    dto: TransitionOrderDto,
-    meta: RequestMeta,
-  ) {
-    return this.transitionOrder(
-      userId,
-      ctx,
-      orderId,
-      OrderStatus.CLOSED,
-      'ORDER_CLOSED',
-      meta,
-      dto.reason,
-    );
-  }
-
   async voidOrder(
     userId: string,
     ctx: BranchContext,
@@ -872,52 +1400,278 @@ export class OrdersService {
       assertWaiterTransitionAllowed(meta.actor, 'VOIDED');
     }
 
-    this.validateTransition(order.status, 'VOIDED');
+    // E1F (B4, S2, S3, S8): judged and written under the order's row lock, in the lock order
+    // order -> reservation -> table that the close door uses.
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const locked = await tx.order.findFirst({
+        where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+      });
+      if (!locked) throw new NotFoundException('Order not found');
 
-    // Post-kitchen voids require a reason
-    const postKitchen = ['IN_KITCHEN', 'READY'].includes(order.status);
-    if (postKitchen && !dto.reason) {
-      throw new BadRequestException('Post-kitchen void requires a reason');
-    }
+      // Ruling R-a (default taken): an order left open at zero after its last line was
+      // voided may be voided from SERVED too, so it is never stuck on the table.
+      const zeroServed = locked.status === OrderStatus.SERVED && new Decimal(locked.total).eq(0);
+      if (!zeroServed) this.validateTransition(locked.status, 'VOIDED');
 
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: OrderStatus.VOIDED },
-    });
+      const postKitchen = ['IN_KITCHEN', 'READY'].includes(locked.status);
+      if (postKitchen && !dto.reason) {
+        throw new BadRequestException('Post-kitchen void requires a reason');
+      }
 
-    // Waiter MVP — released voided dine-in tables
-    if (order.serviceType === 'DINE_IN') {
-      await this.autoReleaseTableIfIdle(order.tableId, orderId);
-    }
+      const paid = await tx.payment.count({ where: { orderId, status: 'COMPLETED' } });
+      if (paid > 0) {
+        throw new ConflictException({
+          code: 'ORDER_HAS_PAYMENT',
+          message: 'This order already has a payment, so it cannot be voided.',
+        });
+      }
 
-    await this.audit.log({
-      actorUserId: userId,
-      action: 'ORDER_VOIDED',
-      entityType: 'order',
-      entityId: orderId,
-      metadata: {
+      const claimed = await tx.order.updateMany({
+        where: { id: orderId, status: locked.status },
+        data: { status: OrderStatus.VOIDED },
+      });
+      if (claimed.count !== 1) throw new ConflictException('The order changed; try again');
+
+      // Ruling R-c (default taken): a seated reservation on a voided order is completed.
+      const completed = await completeSeatedReservationsInTx(tx, {
         orgId: ctx.organizationId,
         branchId: ctx.branchId,
-        previousStatus: order.status,
-        postKitchenVoid: postKitchen,
-        reason: dto.reason ?? null,
-      },
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
+        orderId,
+        actorUserId: userId,
+        auditUserId: userId,
+        source: 'order-void',
+        message: 'Reservation completed because its order was voided',
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+
+      const tableFreed =
+        locked.serviceType === 'DINE_IN' && locked.tableId
+          ? await releaseTableIfIdleInTx(tx, locked.tableId, orderId)
+          : false;
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_VOIDED',
+          entityType: 'order',
+          entityId: orderId,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            previousStatus: locked.status,
+            postKitchenVoid: postKitchen,
+            zeroTotalVoid: zeroServed,
+            reason: dto.reason ?? null,
+            tableFreed,
+            completedReservationIds: completed,
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return tx.order.findUniqueOrThrow({ where: { id: orderId } });
     });
 
-    return updated;
+    return result;
+  }
+
+  // ── Void one line (E1) ──
+  //
+  // A sent line is never deleted: it stays on the order with who, when, why and whether it
+  // was made, leaves the totals, and shows as voided on its ticket. Part of a quantity splits
+  // the line in two. Refused: a line never sent (remove it instead), an order that is closed or
+  // voided, an order that already has a posted payment. Voiding a voided line changes nothing.
+  async voidOrderItem(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    itemId: string,
+    dto: VoidOrderItemDto,
+    meta: RequestMeta,
+  ) {
+    if (dto.reason === 'OTHER' && !dto.note?.trim()) {
+      throw new BadRequestException('A note is required when the reason is OTHER');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const order = await tx.order.findFirst({
+        where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+      });
+      if (!order) throw new NotFoundException('Order not found');
+      if (order.status === OrderStatus.CLOSED || order.status === OrderStatus.VOIDED) {
+        throw new ConflictException(`Cannot void items on a ${order.status} order`);
+      }
+
+      const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId } });
+      if (!item) throw new NotFoundException('Order item not found');
+      if (item.voidedAt) return { item, unchanged: true, event: null as string | null };
+      if (!item.sentAt) {
+        throw new BadRequestException({
+          code: 'ITEM_NOT_SENT',
+          message: 'This item was never sent. Remove it instead.',
+        });
+      }
+
+      const posted = await tx.payment.count({ where: { orderId, status: 'COMPLETED' } });
+      if (posted > 0) {
+        throw new ConflictException({
+          code: 'ORDER_HAS_PAYMENT',
+          message: 'This order already has a payment, so a line cannot be voided.',
+        });
+      }
+      // E1F (S11): a payment already asked of the guest's phone would settle the old total.
+      const pendingIntents = await tx.paymentIntent.count({
+        where: { orderId, status: { in: ['PENDING', 'REQUIRES_ACTION'] } },
+      });
+      if (pendingIntents > 0) {
+        throw new ConflictException({
+          code: 'PAYMENT_PENDING',
+          message:
+            'A mobile-money payment is waiting on this order. Cancel it before voiding a line.',
+        });
+      }
+
+      const voidQty = dto.quantity ?? item.quantity;
+      if (voidQty > item.quantity) {
+        throw new BadRequestException(`Quantity cannot be more than ${item.quantity}`);
+      }
+
+      const now = new Date();
+      const voidFields = {
+        voidedAt: now,
+        voidedById: userId,
+        voidReason: dto.reason,
+        voidNote: dto.note?.trim() || null,
+        wasMade: dto.wasMade,
+      };
+
+      let voided = item;
+      if (voidQty === item.quantity) {
+        voided = await tx.orderItem.update({ where: { id: itemId }, data: voidFields });
+        await tx.kdsTicketItem.updateMany({
+          where: { orderItemId: itemId },
+          data: { voidedAt: now, voidReason: dto.reason, wasMade: dto.wasMade },
+        });
+      } else {
+        // Split: the original keeps what is still wanted; a new line carries the voided part.
+        const remaining = item.quantity - voidQty;
+        const unit = new Decimal(item.price);
+        await tx.orderItem.update({
+          where: { id: itemId },
+          data: {
+            quantity: remaining,
+            subtotal: unit.mul(remaining).toDecimalPlaces(2),
+            costTotal: item.costUnit
+              ? new Decimal(item.costUnit).mul(remaining).toDecimalPlaces(2)
+              : null,
+          },
+        });
+        voided = await tx.orderItem.create({
+          data: {
+            orderId,
+            menuItemId: item.menuItemId,
+            menuItemServingId: item.menuItemServingId,
+            quantity: voidQty,
+            price: item.price,
+            subtotal: unit.mul(voidQty).toDecimalPlaces(2),
+            normalPrice: item.normalPrice,
+            offerBasePrice: item.offerBasePrice,
+            guest: item.guest,
+            allergy: item.allergy,
+            takeaway: item.takeaway,
+            notes: item.notes,
+            metadata: item.metadata ? (item.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+            costUnit: item.costUnit,
+            costTotal: item.costUnit
+              ? new Decimal(item.costUnit).mul(voidQty).toDecimalPlaces(2)
+              : null,
+            sentAt: item.sentAt,
+            ...voidFields,
+          },
+        });
+        // The voided part shows on the same ticket as the line it came from.
+        const ticketItem = await tx.kdsTicketItem.findFirst({ where: { orderItemId: itemId } });
+        if (ticketItem) {
+          await tx.kdsTicketItem.create({
+            data: {
+              ticketId: ticketItem.ticketId,
+              orderItemId: voided.id,
+              voidedAt: now,
+              voidReason: dto.reason,
+              wasMade: dto.wasMade,
+            },
+          });
+        }
+      }
+
+      await this.recalcOrderTotals(orderId, tx);
+
+      // T2 phase 1 (E2): "not made" gives the portions back to the number, if there is one.
+      const gaveBack =
+        dto.wasMade === false
+          ? await giveBackForVoid(tx, ctx, item.menuItemId, voidQty, userId, orderId, voided.id)
+          : false;
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_ITEM_VOIDED',
+          entityType: 'orderItem',
+          entityId: voided.id,
+          metadata: {
+            orderId,
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            sourceItemId: itemId,
+            menuItemId: item.menuItemId,
+            quantityVoided: voidQty,
+            quantityBefore: item.quantity,
+            reason: dto.reason,
+            note: dto.note?.trim() || null,
+            wasMade: dto.wasMade,
+            amountRemoved: new Decimal(item.price).mul(voidQty).toDecimalPlaces(2).toString(),
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return {
+        item: voided,
+        unchanged: false,
+        event: voided.id as string | null,
+        gaveBack: gaveBack ? item.menuItemId : null,
+      };
+    });
+    if ('gaveBack' in result && result.gaveBack) {
+      this.eventEmitter.emit(MENU_AVAILABILITY_CHANGED, {
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        menuItemIds: [result.gaveBack],
+      } satisfies MenuAvailabilityChangedEvent);
+    }
+
+    const order = await this.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { id: true, subtotal: true, discount: true, total: true, status: true },
+    });
+    if (result.event) {
+      this.eventEmitter.emit(ORDER_LINE_VOIDED, {
+        orderId,
+        branchId: ctx.branchId,
+        orgId: ctx.organizationId,
+        orderItemId: result.event,
+      } satisfies OrderLineVoidedEvent);
+    }
+    return { item: result.item, order, unchanged: result.unchanged };
   }
 
   // ── Request Bill (Waiter MVP) ──
   // Records an explicit "bill requested" audit event so the cashier flow can
   // pick it up later. Does NOT mutate payment state or order status.
-  async requestBill(
-    userId: string,
-    ctx: BranchContext,
-    orderId: string,
-    meta: RequestMeta,
-  ) {
+  async requestBill(userId: string, ctx: BranchContext, orderId: string, meta: RequestMeta) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });

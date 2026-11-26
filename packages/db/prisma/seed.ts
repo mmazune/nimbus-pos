@@ -152,6 +152,7 @@ const PERMISSIONS_DATA = [
   // M6 menu + tax permissions
   { action: 'pos:menu:read', description: 'Read menu categories and items' },
   { action: 'pos:menu:write', description: 'Create/update menu categories and items' },
+  { action: 'pos:menu:availability:write', description: 'Mark a menu item sold out or back on, or set a number left (T2 phase 1 / E2)' },
   { action: 'pos:tax:read', description: 'Read tax categories' },
   { action: 'pos:tax:write', description: 'Create/update tax categories' },
   // M8 recipe + cost permissions
@@ -469,6 +470,7 @@ const PERMISSIONS_DATA = [
   { action: 'pos:order:merge', description: 'Merge two open POS orders — POST /api/pos/orders/merge. Source becomes VOIDED with mergedIntoOrderId pointing at the target' },
   { action: 'pos:order:transfer', description: 'Transfer an open POS order to another table or server — POST /api/pos/orders/:id/transfer-table or /transfer-server' },
   { action: 'pos:order:move-items', description: 'Move selected items between two open POS orders — POST /api/pos/orders/:id/move-items' },
+  { action: 'pos:order:item:void', description: 'Void one sent line of an open POS order — POST /api/orders/:orderId/items/:itemId/void (E1)' },
   // BG5 — Device / Printer / Terminal Registry
   { action: 'devices:read', description: 'Read device registry (list / detail / history) and printer route configuration' },
   { action: 'devices:write', description: 'Activate (register) a new operational device — POST /api/devices/activate or /api/devices/kds/register' },
@@ -681,6 +683,8 @@ const C21_ACCOUNTING_FINANCE_MANAGER_READ: string[] = [
 
 const ROLE_PERM_MATRIX: Record<string, string[]> = {
   Owner: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'identity:user:write',
     'identity:session:read',
@@ -936,6 +940,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:order:split',
     'pos:order:merge',
     'pos:order:transfer',
+    'pos:order:item:void',
     'pos:order:move-items',
     // BG5: Device / Printer / Terminal Registry (Owner: full)
     'devices:read',
@@ -954,6 +959,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     ...C21_ACCOUNTING_FINANCE_ALL,
   ],
   Manager: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'identity:user:write',
     'identity:session:read',
@@ -1212,6 +1219,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'pos:order:split',
     'pos:order:merge',
     'pos:order:transfer',
+    'pos:order:item:void',
     'pos:order:move-items',
     // BG5: Device / Printer / Terminal Registry (Manager: full)
     'devices:read',
@@ -1330,6 +1338,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     ...C21_ACCOUNTING_FINANCE_ALL,
   ],
   Supervisor: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'identity:session:read',
     'identity:access-matrix:read',
@@ -1366,6 +1376,7 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     // transfer-server endpoint therefore becomes API-reachable for Supervisor but
     // has no UI; it is audit-logged and requires an active same-branch membership.
     'pos:order:transfer',
+    'pos:order:item:void',
     'pos:kds:read',
     'pos:kds:write',
     'pos:kds:sla:write',
@@ -1558,6 +1569,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'devices:read',
   ],
   Chef: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'tenancy:branch:read',
     'pos:floor:read',
@@ -1644,6 +1657,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'devices:read',
   ],
   Bartender: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'tenancy:branch:read',
     'pos:floor:read',
@@ -2470,6 +2485,37 @@ async function seedFloorPlans(
   }
 
   return { floorPlanIds, created, skipped };
+}
+
+/**
+ * T2 phase 2 (E3): puts every table that has no area into the area named after its floor plan,
+ * else a "Tables" area per branch, making those areas if needed. Idempotent: it only fills an
+ * empty area_id, and the areas are found by (branch, name).
+ */
+async function assignTableAreas(): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "areas" ("id", "org_id", "branch_id", "name", "kind", "sort_order", "is_active", "created_at", "updated_at")
+    SELECT 'area_fp_' || fp."id", fp."org_id", fp."branch_id", fp."name", 'TABLES', 0, true, NOW(), NOW()
+      FROM "floor_plans" fp
+     WHERE EXISTS (SELECT 1 FROM "tables" t WHERE t."floor_plan_id" = fp."id" AND t."area_id" IS NULL)
+    ON CONFLICT ("branch_id", "name") DO NOTHING`);
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "areas" ("id", "org_id", "branch_id", "name", "kind", "sort_order", "is_active", "created_at", "updated_at")
+    SELECT DISTINCT 'area_br_' || t."branch_id", t."org_id", t."branch_id", 'Tables', 'TABLES'::"AreaKind", 99, true, NOW(), NOW()
+      FROM "tables" t
+     WHERE t."floor_plan_id" IS NULL AND t."area_id" IS NULL
+    ON CONFLICT ("branch_id", "name") DO NOTHING`);
+  const a = await prisma.$executeRawUnsafe(`
+    UPDATE "tables" t SET "area_id" = a."id"
+      FROM "floor_plans" fp, "areas" a
+     WHERE t."floor_plan_id" = fp."id" AND a."branch_id" = fp."branch_id" AND a."name" = fp."name"
+       AND t."area_id" IS NULL`);
+  const b = await prisma.$executeRawUnsafe(`
+    UPDATE "tables" t SET "area_id" = a."id"
+      FROM "areas" a
+     WHERE t."floor_plan_id" IS NULL AND a."branch_id" = t."branch_id" AND a."name" = 'Tables'
+       AND t."area_id" IS NULL`);
+  console.log(`  ✅ Tables put into areas: ${a + b}`);
 }
 
 async function seedTables(
@@ -4397,6 +4443,14 @@ const ORDERS_SEED: OrderSeed[] = [
   },
 ];
 
+const SEEDED_SENT_STATES: OrderStatus[] = [
+  OrderStatus.SENT,
+  OrderStatus.IN_KITCHEN,
+  OrderStatus.READY,
+  OrderStatus.SERVED,
+  OrderStatus.CLOSED,
+];
+
 async function seedOrders(
   orgId: string,
   branchCode: string,
@@ -4417,7 +4471,16 @@ async function seedOrders(
     const existing = await prisma.order.findUnique({
       where: { branchId_orderNumber: { branchId: branch.id, orderNumber: order.orderNumber } },
     });
+    // E1F (S7): an order past NEW has had its lines sent; stamp them so it can be paid and is
+    // never ticketed twice. Idempotent: it only fills a line whose sent_at is still empty.
+    const wasSent = SEEDED_SENT_STATES.includes(order.status);
     if (existing) {
+      if (wasSent) {
+        await prisma.orderItem.updateMany({
+          where: { orderId: existing.id, sentAt: null, voidedAt: null },
+          data: { sentAt: existing.createdAt },
+        });
+      }
       console.log(`  ⏭  Order "${order.orderNumber}" already exists — skipped`);
       skipped++;
       continue;
@@ -4497,6 +4560,7 @@ async function seedOrders(
             quantity: i.quantity,
             price: i.price,
             subtotal: i.subtotal,
+            sentAt: wasSent ? new Date() : null,
           })),
         },
       },
@@ -8113,6 +8177,8 @@ async function main(): Promise<void> {
   console.log('── Tables (M5) ──');
   const tablesResult = await seedTables(orgResult.orgId, 'MAIN', floorResult.floorPlanIds);
   console.log(`   Created: ${tablesResult.created}, Skipped: ${tablesResult.skipped}\n`);
+  // T2 phase 2 (E3): every table sits in an area (same rule as the phase 2 migration).
+  await assignTableAreas();
 
   // 14) Seed Categories (M6)
   console.log('── Categories (M6) ──');

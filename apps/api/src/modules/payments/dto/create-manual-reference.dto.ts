@@ -1,12 +1,5 @@
-import {
-  IsString,
-  IsNumber,
-  IsOptional,
-  IsEnum,
-  IsDateString,
-  Min,
-  MaxLength,
-} from 'class-validator';
+import { IsMoney } from '../../../common/validation/is-money';
+import { IsString, IsOptional, IsEnum, IsDateString, MaxLength } from 'class-validator';
 
 export class CreateManualReferencePaymentDto {
   @IsString()
@@ -22,9 +15,9 @@ export class CreateManualReferencePaymentDto {
   @MaxLength(50)
   provider?: string;
 
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  amount!: number;
+  // E1F (S5, S6): a decimal string, at most 2 decimals, never above the DECIMAL(12,2) column
+  @IsMoney({ min: '0.01', max: '9999999999.99' })
+  amount!: string;
 
   @IsString()
   @MaxLength(200)

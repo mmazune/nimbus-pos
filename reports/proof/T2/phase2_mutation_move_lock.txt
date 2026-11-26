@@ -1,0 +1,7 @@
+MUTATION: removed lockTables(tx, [fromId, toId]) from SeatingService.moveTable
+    ✕ races: two parties moved onto one free table at once, and two bulk adds of the same numbers (218 ms)
+    - Expected  - 1
+    + Received  + 1
+    -   409,
+    +   200,
+Tests:       1 failed, 3 skipped, 4 total

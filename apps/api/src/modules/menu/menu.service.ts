@@ -309,6 +309,9 @@ export class MenuService {
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
         metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : undefined,
+        isOffer: dto.isOffer ?? false,
+        offerPrice: dto.offerPrice ?? null,
+        offerNote: dto.offerNote ?? null,
       },
       include: {
         category: { select: { id: true, name: true } },
@@ -484,6 +487,9 @@ export class MenuService {
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.metadata !== undefined) data.metadata = dto.metadata as Prisma.InputJsonValue;
+    if (dto.isOffer !== undefined) data.isOffer = dto.isOffer;
+    if (dto.offerPrice !== undefined) data.offerPrice = dto.offerPrice;
+    if (dto.offerNote !== undefined) data.offerNote = dto.offerNote;
 
     const updated = await this.prisma.menuItem.update({
       where: { id },

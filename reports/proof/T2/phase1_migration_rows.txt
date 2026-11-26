@@ -1,0 +1,9 @@
+rows orders|order_items|tables|menu_items|kds_tickets
+before: 28|26|19|32|16
+63 migrations found in prisma/migrations
+Applying migration `20261126100000_t2_menu_availability`
+The following migration(s) have been applied:
+migrations/
+    └─ migration.sql
+All migrations have been successfully applied.
+after:  28|26|19|32|16

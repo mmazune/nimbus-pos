@@ -20,6 +20,7 @@ import {
   UpdateOrderItemDto,
   TransitionOrderDto,
   ListOrdersQueryDto,
+  VoidOrderItemDto,
 } from './dto';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
@@ -31,7 +32,27 @@ type WaiterActor = ActorLike & { id: string; email?: string };
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) { }
+  constructor(private readonly ordersService: OrdersService) {}
+
+  // E1F (review ruling 4): the line void under the same prefix as every other order route.
+  // The first path, /api/orders/:orderId/items/:itemId/void, stays so no caller breaks.
+  @Post(':id/items/:itemId/void')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('pos:order:item:void')
+  async voidOrderItem(
+    @Param('id') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: VoidOrderItemDto,
+    @CurrentUser() user: WaiterActor,
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.ordersService.voidOrderItem(user.id, ctx, orderId, itemId, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      actor: user,
+    });
+  }
 
   @Post()
   @Permissions('pos:orders:write')
@@ -61,11 +82,7 @@ export class OrdersController {
 
   @Get(':id')
   @Permissions('pos:orders:read')
-  async getOrder(
-    @Param('id') id: string,
-    @CurrentUser() user: WaiterActor,
-    @Req() req: Request,
-  ) {
+  async getOrder(@Param('id') id: string, @CurrentUser() user: WaiterActor, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.ordersService.getOrder(ctx, id, user);
   }
@@ -218,6 +235,36 @@ export class OrdersController {
   ) {
     const ctx = (req as any).branchContext;
     return this.ordersService.voidOrder(user.id, ctx, id, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      actor: user,
+    });
+  }
+}
+
+/**
+ * E1 — void one sent line. `POST /api/orders/:orderId/items/:itemId/void`.
+ * Separate from `pos/orders` so the path is exactly the one the contract names. Needs
+ * `pos:order:item:void` (Owner, Manager, Supervisor); a waiter or cashier gets 403.
+ */
+@Controller('orders')
+@UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
+@RequireBranchContext()
+export class OrderItemVoidController {
+  constructor(private readonly ordersService: OrdersService) {}
+
+  @Post(':orderId/items/:itemId/void')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('pos:order:item:void')
+  async voidOrderItem(
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: VoidOrderItemDto,
+    @CurrentUser() user: WaiterActor,
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.ordersService.voidOrderItem(user.id, ctx, orderId, itemId, dto, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
       actor: user,

@@ -26,6 +26,11 @@ export class CreateTableDto {
   @IsString()
   floorPlanId?: string;
 
+  // T2 phase 2 (E3): the area the table sits in; without one it goes into its floor plan's area
+  @IsOptional()
+  @IsString()
+  areaId?: string;
+
   @IsOptional()
   @IsEnum(TableStatus)
   status?: TableStatus;

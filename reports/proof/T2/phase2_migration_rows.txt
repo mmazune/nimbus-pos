@@ -1,0 +1,7 @@
+rows orders|order_items|tables|reservations|floor_plans
+before: 636|1116|588|139|3
+Applying migration `20261126200000_t2_areas_tabs`
+All migrations have been successfully applied.
+after:  636|1116|588|139|3
+tables without an area: 0
+areas made: E2E Updated mwxda9lb(1), Main Dining(12), Patio(3), Tables(572)

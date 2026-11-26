@@ -24,6 +24,12 @@ describe('FloorService', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
       },
+      // T2 phase 2: a new table goes into an area (found here)
+      area: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'area-1' }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'area-1' }),
+        create: jest.fn().mockResolvedValue({ id: 'area-1' }),
+      },
       table: {
         create: jest.fn(),
         findMany: jest.fn(),
