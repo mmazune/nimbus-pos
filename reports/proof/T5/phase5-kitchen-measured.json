@@ -70,7 +70,7 @@
     "checkedText": 27,
     "checkedTargets": 18
   },
-  "barTickets": 13,
+  "barTickets": 12,
   "bar-1280": {
     "viewport": "1280x800",
     "sideways": 0,
@@ -80,11 +80,11 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 127,
-    "checkedTargets": 18
+    "checkedText": 121,
+    "checkedTargets": 17
   },
   "kitchenBar": [
-    "Tickets13",
+    "Tickets12",
     "Done",
     "Sold out"
   ]

@@ -130,6 +130,16 @@ for (const size of SIZES) {
 
     // Two waiters each put the last one and a soft drink on, then send at the same moment.
     const soft = await softDrink();
+    // Each table's bill is opened first, one after the other: two bills created at the same instant
+    // can collide on the API's order number (a 500, decision 20's class, T6), which is not this race.
+    for (const [t, label] of [[B, tables[1]], [C, tables[2]]] as const) {
+      await addItem(t.page, soft.group, soft.name, "Drinks");
+      await send(t.page);
+      await expect.poll(async () => Boolean(await openOrderOn(label)), { timeout: 10_000 }).toBe(true);
+      await t.page.getByRole("tab", { name: "Food" }).click();
+      await t.page.getByRole("button", { name: "Grill", exact: true }).first().click();
+      await expect(lamb(t.page)).toHaveAttribute("aria-label", /1 left/, { timeout: 10_000 });
+    }
     for (const t of [B, C]) {
       await lamb(t.page).click();
       await addItem(t.page, soft.group, soft.name, "Drinks");
