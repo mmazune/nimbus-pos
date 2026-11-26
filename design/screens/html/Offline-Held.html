@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Not connected, held orders</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS, home"><i></i></a>
+    <h1 class="t-h">Floor</h1>
+    <span class="clock">Main hall · 17 of 32 tables open · as at 20:34</span>
+    <span class="grow"></span>
+    <span class="pill p-red">Not connected</span>
+    <span class="name"><b>Amina K.</b> · Waiter · Terminal 01</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 32px 16px; gap: 12px">
+    <div class="card hstack" style="padding: 10px 12px 10px 16px; background: var(--red-t); color: var(--red); box-shadow: none; min-height: 64px; flex: none"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M9 17a4 4 0 0 1 6 0"/><path d="M3 3l18 18"/></svg><span class="grow"><span class="t-body b">Not connected · 3 orders held on this terminal</span><br><span class="t-sup">Keep taking orders. Held lines send themselves once, never twice, when the line is back. Payments by card and mobile money wait.</span></span><span class="pill p-red">Since 20:31</span></div>
+    <div class="hstack" style="justify-content: space-between"><div class="hstack g8" role="tablist" aria-label="Areas"><button class="chip on" role="tab">Main hall <span class="n">32</span></button><button class="chip" role="tab">Terrace <span class="n">16</span></button><button class="chip" role="tab">Bar <span class="n">10</span></button><button class="chip" role="tab">VIP <span class="n">6</span></button><button class="chip" role="tab">Tabs <span class="n">6</span></button></div><div class="seg"><button class="">My tables · 6</button><button class="on">All tables</button></div></div>
+    <div class="floor" style="grid-template-columns: repeat(8, minmax(0, 1fr))">
+      <button class="tbl free"><span class="top"><span class="no">1</span><span class="pill p-green">Free</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      <button class="tbl"><span class="top"><span class="no">2</span><span class="pill p-brand">Open</span></span><span class="mid">4 guests · 42 min</span><span class="bot"><span class="who">You</span><span class="amt">86,000</span></span></button>
+      <button class="tbl other"><span class="top"><span class="no">3</span><span class="pill p-neutral">Open</span></span><span class="mid">2 guests · 18 min</span><span class="bot"><span class="who">Brian O.</span><span class="amt">54,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">4</span><span class="pill p-green">Free</span></span><span class="mid">2 seats</span><span class="bot"></span></button>
+      <button class="tbl other"><span class="top"><span class="no">5</span><span class="pill p-amber">Bill</span></span><span class="mid">6 guests · 1 h 20</span><span class="bot"><span class="who">Grace N.</span><span class="amt">132,000</span></span></button>
+      <button class="tbl"><span class="top"><span class="no">6</span><span class="pill p-red">Late</span></span><span class="mid">Food 26 min late</span><span class="bot"><span class="who">You</span><span class="amt">61,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">7</span><span class="pill p-neutral">Reserved</span></span><span class="mid">20:00 · 6 guests</span><span class="bot"></span></button>
+      <button class="tbl free"><span class="top"><span class="no">8</span><span class="pill p-green">Free</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      <button class="tbl"><span class="top"><span class="no">9</span><span class="pill p-red">Held</span></span><span class="mid">1 item held</span><span class="bot"><span class="who">You</span><span class="amt">24,000</span></span></button>
+      <button class="tbl other"><span class="top"><span class="no">10</span><span class="pill p-neutral">Open</span></span><span class="mid">5 guests · 51 min</span><span class="bot"><span class="who">David S.</span><span class="amt">118,500</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">11</span><span class="pill p-green">Free</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      <button class="tbl"><span class="top"><span class="no">12</span><span class="pill p-amber">Bill</span></span><span class="mid">3 guests · 1 h 05</span><span class="bot"><span class="who">You</span><span class="amt">98,000</span></span></button>
+      <button class="tbl other"><span class="top"><span class="no">13</span><span class="pill p-neutral">Open</span></span><span class="mid">4 guests · 33 min</span><span class="bot"><span class="who">Grace N.</span><span class="amt">72,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">14</span><span class="pill p-green">Free</span></span><span class="mid">6 seats</span><span class="bot"></span></button>
+      <button class="tbl free"><span class="top"><span class="no">15</span><span class="pill p-neutral">Cleaning</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      <button class="tbl other"><span class="top"><span class="no">16</span><span class="pill p-neutral">Open</span></span><span class="mid">2 guests · 27 min</span><span class="bot"><span class="who">Brian O.</span><span class="amt">38,000</span></span></button>
+      <button class="tbl"><span class="top"><span class="no">17</span><span class="pill p-red">Held</span></span><span class="mid">2 items held</span><span class="bot"><span class="who">You</span><span class="amt">45,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">18</span><span class="pill p-green">Free</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      <button class="tbl other"><span class="top"><span class="no">19</span><span class="pill p-red">Late</span></span><span class="mid">Food 31 min late</span><span class="bot"><span class="who">David S.</span><span class="amt">66,000</span></span></button>
+      <button class="tbl other"><span class="top"><span class="no">20</span><span class="pill p-neutral">Open</span></span><span class="mid">3 guests · 40 min</span><span class="bot"><span class="who">Grace N.</span><span class="amt">59,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">21</span><span class="pill p-neutral">Reserved</span></span><span class="mid">20:30 · 4 guests</span><span class="bot"></span></button>
+      <button class="tbl free"><span class="top"><span class="no">22</span><span class="pill p-green">Free</span></span><span class="mid">2 seats</span><span class="bot"></span></button>
+      <button class="tbl"><span class="top"><span class="no">23</span><span class="pill p-red">Held</span></span><span class="mid">3 items held</span><span class="bot"><span class="who">You</span><span class="amt">19,000</span></span></button>
+      <button class="tbl other"><span class="top"><span class="no">24</span><span class="pill p-neutral">Open</span></span><span class="mid">4 guests · 22 min</span><span class="bot"><span class="who">Brian O.</span><span class="amt">81,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">25</span><span class="pill p-green">Free</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      <button class="tbl other"><span class="top"><span class="no">26</span><span class="pill p-neutral">Open</span></span><span class="mid">2 guests · 12 min</span><span class="bot"><span class="who">David S.</span><span class="amt">27,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">27</span><span class="pill p-green">Free</span></span><span class="mid">8 seats</span><span class="bot"></span></button>
+      <button class="tbl other"><span class="top"><span class="no">28</span><span class="pill p-amber">Bill</span></span><span class="mid">4 guests · 1 h 34</span><span class="bot"><span class="who">Grace N.</span><span class="amt">164,000</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">29</span><span class="pill p-green">Free</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      <button class="tbl other"><span class="top"><span class="no">30</span><span class="pill p-neutral">Open</span></span><span class="mid">6 guests · 48 min</span><span class="bot"><span class="who">Brian O.</span><span class="amt">143,500</span></span></button>
+      <button class="tbl free"><span class="top"><span class="no">31</span><span class="pill p-green">Free</span></span><span class="mid">2 seats</span><span class="bot"></span></button>
+      <button class="tbl free"><span class="top"><span class="no">32</span><span class="pill p-green">Free</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+    </div>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Reservations</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 9V6M10 6h4"/></svg>Ready<span class="nb">2</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

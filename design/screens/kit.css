@@ -231,3 +231,4 @@
 .pin i.on{background:var(--primary)}
 .pin.bad i.on{background:var(--red)}
 .toast{position:absolute;display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 8px 6px 20px;border-radius:14px;background:var(--primary);color:var(--on-primary);box-shadow:var(--shadow-up);font-size:16px;line-height:22px;font-weight:600}
+.skel{display:block;border-radius:8px;background:var(--neutral-t)}
