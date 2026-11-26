@@ -49,7 +49,7 @@ function itemsFor(menu: MenuWorkspace, section: MenuSection | undefined, nav: Me
   return (sub ? sub.itemIds : group.itemIds).map((id) => menu.items[id]).filter(Boolean);
 }
 
-function ItemGrid({ items, onPick, disabled }: { items: MenuItem[]; onPick: Props["onPick"]; disabled?: boolean }) {
+function ItemGrid({ items, onPick, disabled, wide }: { items: MenuItem[]; onPick: Props["onPick"]; disabled?: boolean; wide?: boolean }) {
   const measured = items.filter((i) => i.servings.length > 1);
   const single = items.filter((i) => i.servings.length <= 1);
   return (
@@ -70,7 +70,7 @@ function ItemGrid({ items, onPick, disabled }: { items: MenuItem[]; onPick: Prop
         </div>
       ) : null}
       {single.length ? (
-        <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3 xl:grid-cols-4" data-order-items>
+        <div className={["grid grid-cols-2 gap-kit-8 md:grid-cols-3", wide ? "xl:grid-cols-5" : "xl:grid-cols-4"].join(" ")} data-order-items>
           {single.map((item) => (
             <ItemTile
               key={item.id}
@@ -129,7 +129,7 @@ export function MenuPane(props: Props) {
           ) : results.length === 0 ? (
             <Text variant="sup" tone="muted">{`Nothing on the menu matches “${query.trim()}”.`}</Text>
           ) : (
-            <ItemGrid items={results} onPick={onPick} disabled={disabled} />
+            <ItemGrid items={results} onPick={onPick} disabled={disabled} wide={density === "laptop"} />
           )}
         </div>
       ) : (
@@ -172,7 +172,7 @@ export function MenuPane(props: Props) {
             </div>
           ) : null}
 
-          <ItemGrid items={itemsFor(menu, section, nav)} onPick={onPick} disabled={disabled} />
+          <ItemGrid items={itemsFor(menu, section, nav)} onPick={onPick} disabled={disabled} wide={density === "laptop"} />
         </>
       )}
       {mixer ? (

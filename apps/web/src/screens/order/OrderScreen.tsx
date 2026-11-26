@@ -7,12 +7,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Banner, Button, Card, KitIcon, OrderHeader, Pill, Sheet, SquareAction, Text } from "@/components/kit";
+import { ActionTile, Banner, Button, Card, KitIcon, OrderHeader, Pill, Sheet, SquareAction, Text } from "@/components/kit";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 import { loadItemChoices, loadMenu, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
 import { formatMoney } from "./data/money";
-import { hasOpenTill, sentRounds, type LineChoice, type OrderLineModel } from "./data/order";
+import { hasOpenTill, sentRounds, takeOverWithSupervisorPin, type LineChoice, type OrderLineModel } from "./data/order";
+import { TakeOverSheet } from "./parts/TakeOverSheet";
 import { filledAction, rightsFor, type OrderRole } from "./data/rights";
 import { unitPriceOf, useOrderSession } from "./data/useOrderSession";
 import { ItemSheet, type ItemSheetResult } from "./parts/ItemSheet";
@@ -66,6 +67,7 @@ export type SheetState =
   | { kind: "actions"; step?: ActionStep }
   | { kind: "bill" }
   | { kind: "orders" }
+  | { kind: "takeover" }
   | null;
 
 export function OrderScreen(props: OrderScreenProps) {
@@ -427,6 +429,21 @@ export function OrderScreen(props: OrderScreenProps) {
           </Text>
         </Sheet>
       ) : null}
+      {sheet?.kind === "takeover" && summary && ctx && user?.id ? (
+        <TakeOverSheet
+          placement={phone ? "bottom" : "middle"}
+          title={title}
+          fromName={waiterName}
+          onClose={() => setSheet(null)}
+          onTakeOver={async (pin) => {
+            await takeOverWithSupervisorPin(ctx, summary.id, pin, user.id);
+            setSheet(null);
+            setToast(`${title} is yours now`);
+            await session.refresh();
+            onChanged?.();
+          }}
+        />
+      ) : null}
       {sheet?.kind === "orders" ? (
         <Sheet placement={sheetPlacement} title={`${session.openOrders.length} open orders on ${title}`} summary="Choose the one to show." onClose={() => setSheet(null)}>
           <div className="flex flex-col gap-kit-8">
@@ -480,6 +497,21 @@ export function OrderScreen(props: OrderScreenProps) {
         }}
       />
     ) : null;
+
+  // Kitchen tickets carry no prices. Price each line from the menu, and show those prices only
+  // when they add up exactly to the order's own total; otherwise they stay blank.
+  const panelLines = useMemo(() => {
+    if (!summary || !menu || !session.lines.some((l) => l.priceKnown === false)) return session.lines;
+    const priced = session.lines.map((l) => {
+      const item = menu.items[l.menuItemId];
+      const serving = item?.servings.find((sv) => sv.id === l.servingId);
+      const unit = serving ? serving.priceMinor : item?.priceMinor;
+      return unit === undefined ? null : { ...l, unitMinor: unit, lineMinor: unit * l.quantity, priceKnown: true };
+    });
+    if (priced.some((l) => l === null)) return session.lines;
+    const sum = priced.reduce((acc, l) => (l && l.state !== "voided" ? acc + l.lineMinor : acc), 0);
+    return sum === summary.totalMinor ? (priced as OrderLineModel[]) : session.lines;
+  }, [menu, session.lines, summary]);
 
   if (phone && frame === "touch") {
     return (
@@ -556,19 +588,15 @@ export function OrderScreen(props: OrderScreenProps) {
     </div>
   ) : readOnly ? (
     <div className="flex flex-1 items-center justify-center p-kit-24" data-order-other>
-      <div className="w-kit-sheet-mid">
+      <div className="w-kit-sheet-side">
         <Card padding="roomy" label={`This is ${waiterName ?? "another waiter"}’s table`}>
           <div className="flex flex-col gap-kit-12">
             <span className="flex h-kit-bubble w-kit-bubble items-center justify-center rounded-kit-full bg-kit-tonal text-kit-primary" aria-hidden="true">
               <KitIcon name="lock" />
             </span>
             <Text variant="h" as="h2">{`This is ${waiterName ?? "another waiter"}’s table`}</Text>
-            <Text variant="body" tone="muted">You can see the order total. To add or change items, the table has to be yours. A supervisor can move it to you.</Text>
-            <div className="flex">
-              <Button tone="filled" fill onClick={onClose}>
-                Back to the floor
-              </Button>
-            </div>
+            <Text variant="body" tone="muted">You can see the order. To add or change items, the table has to be yours.</Text>
+            <ActionTile icon="lock" title="Take it over" line="Needs a supervisor PIN" onClick={() => setSheet({ kind: "takeover" })} />
           </div>
         </Card>
       </div>
@@ -606,14 +634,14 @@ export function OrderScreen(props: OrderScreenProps) {
   const panel = (
     <OrderPanel
       title={paying ? "Bill" : "Order"}
-      lines={session.lines}
+      lines={panelLines}
       count={session.count}
       totalMinor={readOnly && summary ? summary.totalMinor : session.totalMinor}
       discountMinor={order?.discountMinor ?? 0}
       unsentCount={session.unsentCount}
       filled={filled}
       busy={session.busy}
-      linesHidden={readOnly}
+      linesHidden={readOnly && session.lines.length === 0}
       onLine={readOnly ? undefined : openLine}
       onSend={doSend}
       onPrintBill={printBill}

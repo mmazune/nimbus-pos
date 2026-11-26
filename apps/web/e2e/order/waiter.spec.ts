@@ -203,14 +203,29 @@ test("another waiter's table: read only, as drawn", async ({ page }) => {
   await expect(other).toBeVisible();
   await expect(other.getByText("This is Grace A.’s table")).toBeVisible();
   const panel = page.locator("[data-order-panel]");
-  await expect(panel.getByText("2 lines")).toBeVisible();
+  // The lines, as the kitchen sees them (the order read is refused to a waiter).
+  await expect(panel.getByText("3 items")).toBeVisible();
+  await expect(panel.getByRole("button", { name: /^2 Lager 500 ml/ })).toBeVisible();
+  await expect(panel.getByRole("button", { name: /^1 Chips/ })).toBeVisible();
   await expect(panel.locator("[data-order-total]")).toHaveText("UGX 20,000");
   await expect(panel.getByRole("button", { name: /Send|Print bill|Take payment/ })).toHaveCount(0);
-  await expect(other.getByRole("button", { name: "Back to the floor" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: /^2 Lager 500 ml, 12,000/ })).toBeVisible();
+  await expect(panel.getByText("The lines as the kitchen has them")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Search the whole menu" })).toHaveCount(0);
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(PROOF, "built-Order-Other-1280x800.png") });
   expectRule10(await measurePage(page), "Order-Other 1280");
+
+  // Take it over with a supervisor's PIN, typed by the supervisor on this device.
+  await other.getByRole("button", { name: /Take it over/ }).click();
+  const pinSheet = page.locator("[data-order-pin]");
+  await expect(pinSheet).toBeVisible();
+  for (const d of v.people.supervisor.pin) await page.getByRole("dialog").getByRole("button", { name: d, exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Take it over" }).click();
+  await expect(page.locator("[data-order-other]")).toHaveCount(0);
+  await expect(page.locator("[data-order-menu]")).toBeVisible();
+  const mine = (await api(v.managerToken, "GET", `/api/pos/orders/${created.id}`)).json;
+  expect(mine.userId).toBe(v.people.waiter.userId);
   const cashierToken = await pinToken(v.people.cashier.pin);
   await api(cashierToken, "POST", `/api/pos/orders/${created.id}/close`, { payments: [{ method: "CASH", amount: 20000 }] });
 });

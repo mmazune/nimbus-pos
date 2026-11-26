@@ -100,7 +100,7 @@ export function OrderPanel(props: Props) {
               <Text variant="cap" tone="muted">Not sent</Text>
             </div>
             {unsent.map((l) => (
-              <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="notSent" onClick={onLine ? () => onLine(l) : undefined} />
+              <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={l.priceKnown === false ? "" : groupShillings(l.lineMinor)} state="notSent" onClick={onLine ? () => onLine(l) : undefined} />
             ))}
           </section>
         ) : null}
@@ -122,7 +122,7 @@ export function OrderPanel(props: Props) {
                   quantity={l.quantity}
                   name={l.name}
                   choices={[choicesText(l), l.state === "voided" ? "Voided" : ""].filter(Boolean).join(" · ") || undefined}
-                  price={groupShillings(l.lineMinor)}
+                  price={l.priceKnown === false ? "" : groupShillings(l.lineMinor)}
                   state={l.state === "voided" ? "voided" : "sent"}
                   onClick={sentTappable && l.state === "sent" && onLine ? () => onLine(l) : undefined}
                 />
@@ -131,6 +131,11 @@ export function OrderPanel(props: Props) {
           </section>
         ))}
 
+        {lines.some((l) => l.priceKnown === false) ? (
+          <div className="px-kit-16 pt-kit-8">
+            <Text variant="small" tone="muted">The lines as the kitchen has them. The total is the order’s own.</Text>
+          </div>
+        ) : null}
         {linesHidden ? (
           <div className="px-kit-16 pt-kit-8">
             <Text variant="sup" tone="muted">Only the waiter on this table sees its lines.</Text>

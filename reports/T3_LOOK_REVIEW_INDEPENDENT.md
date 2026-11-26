@@ -1,70 +1,67 @@
-Independent review, 26 Nov 2026: a fresh reviewer that built nothing and was given no guidance on what to set aside.
+Independent review (round 3), 26 Nov 2026: a fresh reviewer that built nothing, saw no earlier review, and was given no guidance on what to set aside.
 
-Source: `reports/proof/T3/compare-<Name>.png` (drawing left, build right). For Cashier-Pay the compare image shrinks the build, so I also looked at the full-size `evening-1-4-cashier-pay-before.png` and `evening-1-5-cashier-paid.png`. I did not mark down names, tables, prices or how many menu items there are, because the build uses test data.
+Sources: `design/screens/README.md` and the ten `reports/proof/T3/compare-<Name>.png` images (drawing on the left, build on the right). Differences in names, tables and prices were not marked down. A screen passes at 20 of 24 with no zero.
 
-Points: 1 one obvious action · 2 controls told apart · 3 nothing cut or squeezed · 4 type · 5 surfaces and depth · 6 colour with meaning · 7 spacing and edges · 8 navigation · 9 lists and rows · 10 numbers · 11 few words · 12 brand finish and fidelity to the drawing. Pass means 20 of 24 or more, with no zero.
+Points: 1 one obvious action · 2 controls told apart · 3 nothing cut or squeezed · 4 type · 5 surfaces and depth · 6 colour with meaning · 7 spacing and edges · 8 navigation · 9 lists and rows · 10 numbers · 11 few words · 12 brand finish and fidelity to the drawing
 
 | Screen | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | Total | Result |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Order-Empty | 2 | 2 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 1 | 21 | Pass |
-| Order-Terminal | 2 | 2 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 1 | 21 | Pass |
-| Order-Other | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 2 | 1 | 2 | 2 | 0 | 20 | **Fail** (a zero) |
-| Order-Laptop | 2 | 2 | 2 | 1 | 2 | 2 | 1 | 1 | 2 | 2 | 1 | 1 | 19 | **Fail** |
-| Order-Phone | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 1 | 1 | 20 | Pass (just) |
+| Order-Empty | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 22 | Pass |
+| Order-Terminal | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 22 | Pass |
+| Order-Other | 1 | 2 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 0 | 20 | Fail (one zero) |
+| Order-Laptop | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 1 | 22 | Pass |
+| Order-Phone | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 22 | Pass |
 | Order-Phone-Check | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 2 | 23 | Pass |
 | Order-Phone-Item | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 2 | 22 | Pass |
 | Supervisor-Table | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 1 | 22 | Pass |
-| Supervisor-Void | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 23 | Pass |
-| Cashier-Pay | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 23 | Pass |
+| Supervisor-Void | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 24 | Pass |
+| Cashier-Pay | 2 | 2 | 1 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 1 | 21 | Pass |
 
-## Differences, worst first
+## Differences, worst first (up to 3 per screen)
 
-**Order-Empty**
-1. Some category chips wrap onto two lines ("Popular food", "Small Plates"). In the drawing every chip label sits on one line.
-2. A "How many 2 3 4 5 6" row has been added beside the Food/Drinks tabs. It is not in the drawing, and it makes the top of the menu busier.
-3. The back arrow and the chip grid's rhythm differ from the drawing: chips are a fixed width with uneven gaps, where the drawing has an even 8-column grid.
+**Order-Empty (22, pass)**
+1. Category chips wrap onto two lines ("Popular food", "Small Plates"). The drawing's chips are one line each, so these look squeezed.
+2. The build adds a "How many 2 3 4 5 6" chip row beside Food/Drinks. It is not in the drawing.
+3. The category chips run as one short row, where the drawing has an even grid of equal-width chips.
 
-**Order-Terminal**
-1. The footer has no "…" (more) button. The drawing has three controls: …, Print bill, Send. The build shows only Print bill and Send.
-2. The "Add a mixer" row (Cola, Soda water, Tonic, …) under the drinks list is missing.
-3. The chips wrap onto two lines ("Coffee & Tea", "Zero-Proof Bar"), and the same extra "How many" row as Order-Empty appears here.
+**Order-Terminal (22, pass)**
+1. The "⋯" more button next to Print bill is gone from the footer. The drawing has three footer controls.
+2. Category chips wrap ("Coffee & Tea", "Zero-Proof Bar"), and the "How many" row is added again.
+3. The "Add a mixer" strip under the drinks list is missing.
 
-**Order-Other**
-1. The drawing's two choices, "Ask Brian O." and "Take it over (needs a supervisor PIN)", are gone. A single filled "Back to the floor" button replaces them, so the screen no longer offers a way to take the table.
-2. The order panel lists no lines, only the words "Only the waiter on this table sees its lines". There is also no Print bill button, although the drawing shows the lines and Print bill as the main action.
-3. The lock card is stretched to about twice the drawing's width. Its button runs the full width of the card, and a large empty space is left around it.
+**Order-Other (20, fail: zero on point 12)**
+1. The filled **Print bill** button under the total is missing. In the drawing it is the screen's main action, so the footer now has no action at all.
+2. The "Ask Brian O. / Sends him a request" choice is missing. Only "Take it over" remains, so two of the drawing's three actions are gone.
+3. With no button, the total sits low in a large empty footer band. The body copy also drops "and print the bill".
 
-**Order-Laptop**
-1. The top bar is the Manager module bar (Overview, Operations, Staff, Reports, Accounting, Settings, Me), with a clock, a branch picker and a user block. The drawing's bar reads Floor, Menu, Stock, Staff, More, with a search box and a bell. The breadcrumb also loses "Main hall".
-2. The menu search is a labelled form field: the heading "Search the whole menu" over the placeholder "Name or first letters". The drawing has one compact search pill with an icon, so the build says the same thing twice and floats the field away from the tabs.
-3. The tiny "MANAGER" role label in the top bar looks smaller than the 12 px floor. A "Same again" link has also been added to the order header.
+**Order-Laptop (22, pass)**
+1. The search field is a labelled box ("Search the whole menu" above, "Name or first letters" inside) that floats apart from the Food/Drinks row. The drawing has one compact inline search pill.
+2. The shell differs from the drawing: a Manager module bar (Overview/Operations/…, clock, branch and user menus) replaces the drawing's Floor/Menu/Stock/Staff bar with its bell.
+3. The breadcrumb loses its middle step ("Floor › Main hall ›" becomes "Floor ›"), and a "Same again" link is added that the drawing does not have.
 
-**Order-Phone**
-1. The header has no "…" button on the right, so actions on the table are not reachable from this screen the way the drawing intends.
-2. The search is a label ("Search the whole menu") plus a placeholder ("Name or initials"), with no search icon. The drawing has one search pill with an icon.
-3. The chips run 3 to a row instead of 4, "Zero-Proof Bar" wraps onto two lines, and the drawing's "More · 9" overflow chip is missing.
+**Order-Phone (22, pass)**
+1. The "⋯" button in the header is gone. Only the back button is left.
+2. Categories are a 3-column grid with "Zero-Proof Bar" wrapping onto two lines. The drawing has 4 columns ending in "More · 9".
+3. The search is a labelled field ("Search the whole menu" plus "Name or initials"), not the drawing's single pill with an icon. That adds words and height.
 
-**Order-Phone-Check**
-1. The divider line above Total is missing, so the total does not read as a separate footer.
-2. The sheet starts lower than in the drawing and leaves less room for the list, so more of the screen behind it shows.
-3. Otherwise it is faithful: the section labels, quantity badges, bold not-sent lines and buttons all match.
+**Order-Phone-Check (23, pass)**
+1. There is no divider line or separated footer above Total. The total runs straight on from the sent list, so the footer feels cramped against the rows.
+2. The sheet starts lower and covers less of the screen than the drawing. That is minor.
 
-**Order-Phone-Item**
-1. The quantity "1" between the − and + buttons is regular weight and small. In the drawing it is a bold, larger number.
-2. The hints are wordier than the drawing. "Leave out" carries the hint "up to 3, if they want", copied from Extras, which reads oddly for leaving things out. The note field has a label above its placeholder, where the drawing has a placeholder only.
-3. The sheet fills nearly the whole height with tighter gaps. The drawing leaves air above the footer.
+**Order-Phone-Item (22, pass)**
+1. In the stepper, the quantity "1" is small and light. In the drawing it is a bold, larger figure.
+2. Hint copy is repeated: "up to 3, if they want" appears on both Extras and Leave out. An extra "Note for the kitchen" label also sits above a field whose placeholder already says it.
+3. The subtitle loses "· with chips". That is minor and may be down to the data.
 
-**Supervisor-Table**
-1. The action set is different. "Send to kitchen again" has become "Same again", and "Table status" has been added. That makes nine tiles, so one sits alone with an empty slot beside it.
-2. The sheet is much larger than the drawing's. It covers the order panel almost entirely and uses different icons, for example a pin for Join tables.
-3. Behind the scrim, the chips wrap onto two lines ("Popular food") and the extra "How many" row shows.
+**Supervisor-Table (22, pass)**
+1. There are seven actions, so the last tile ("Table status") sits alone with a hole beside it. The drawing has a full grid of eight.
+2. The action set differs from the drawing: "Send to kitchen again" is gone, and "Same again" and "Table status" are added.
+3. "Join tables" uses a map-pin icon, which does not mean "join". The drawing uses a merge glyph.
 
-**Supervisor-Void**
-1. The screen behind the sheet repeats the chip wrapping ("Popular food", "Small Plates").
-2. A "Same again" link has been added to the order panel behind the sheet.
-3. The sheet itself matches the drawing closely: segment, reasons, the "1 of 1" stepper, the note, the audit line, and "Keep the item" next to the one filled Void button.
+**Supervisor-Void (24, pass)**
+1. No material difference. The layout, words, sizes and the single filled button all match. The selected reason differs only because a different choice was made.
 
-**Cashier-Pay**
-1. The fourth payment method, "Split (Two ways or more)", is missing. The build offers only Cash, Mobile money and Card.
-2. The header subtitle drops the guest count: "Table 12 · served by Brian K." against the drawing's "Table 12 · 3 guests · served by …".
-3. On the paid screen, the Bill column still offers "Print bill" and shows nothing to say the bill is paid. The footer note is also longer than the drawing's: "Your till counts the cash … The receipt is under Receipts."
+**Cashier-Pay (21, pass)**
+1. The fourth payment method, **Split / Two ways or more**, is missing. Only Cash, Mobile money and Card show.
+2. The left column is compressed. The "To pay" amount and the method tiles are smaller than the drawing's big amount and tall tiles. The tile subtitles and the note under the pay button look close to the 12 px floor. I could not measure them at this image's reduced scale.
+3. The keypad's last key is a backspace glyph where the drawing has an undo arrow. The paid-state screen next to it has no drawing to compare against.

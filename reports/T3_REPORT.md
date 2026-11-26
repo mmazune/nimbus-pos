@@ -128,24 +128,34 @@ Saved in `reports/proof/T3/gates.txt`, run on the final code after the last chan
 - The API is untouched, so its gates are E1's (`reports/E1_REPORT.md`).
 
 ## Look review [emulation, reviewer]
-**The scores in `SCREENS.md` come from an independent review** (`reports/T3_LOOK_REVIEW_INDEPENDENT.md`): a fresh subagent that built nothing, had seen no earlier review, and was given no guidance on what to set aside. Each score is out of 24; a pass is 20 with no zero.
+**The scores in `SCREENS.md` come from an independent review** (`reports/T3_LOOK_REVIEW_INDEPENDENT.md`, round 3): a fresh subagent that built nothing, saw no earlier review, and was given no guidance on what to set aside. Each score is out of 24; a pass is 20 with no zero.
 
-| Screen | Score | Result |
-|---|---|---|
-| Order-Empty | 21 | pass |
-| Order-Terminal | 21 | pass |
-| Order-Other | 20 | **fail** (fidelity 0) |
-| Order-Laptop | 19 | **fail** |
-| Order-Phone | 20 | pass |
-| Order-Phone-Check | 23 | pass |
-| Order-Phone-Item | 22 | pass |
-| Supervisor-Table | 22 | pass |
-| Supervisor-Void | 23 | pass |
-| Cashier-Pay | 23 | pass |
+| Screen | Round 1 | Round 2 | Round 3 (recorded) |
+|---|---|---|---|
+| Order-Empty | 21 | 22 | **22** pass |
+| Order-Terminal | 21 | 22 | **22** pass |
+| Order-Other | 20 fail | 19 fail | **20 fail** (one zero: fidelity) |
+| Order-Laptop | 19 fail | 22 | **22** pass |
+| Order-Phone | 20 | 21 | **22** pass |
+| Order-Phone-Check | 23 | 23 | **23** pass |
+| Order-Phone-Item | 22 | 21 | **22** pass |
+| Supervisor-Table | 22 | 21 | **22** pass |
+| Supervisor-Void | 23 | 24 | **24** pass |
+| Cashier-Pay | 23 | 22 | **21** pass |
 
-- **Order-Other fails on fidelity** because "Ask Brian O.", "Take it over", the read-only order lines and Print bill are not on the built screen. The API gives a waiter none of them: there is no endpoint for the two requests, and it refuses both the read and the bill request on another waiter's order (rule 13: left out, never faked).
-- **Order-Laptop fails** mainly on the top bar: the build sits under the shared manager top bar (D-MGRTOPNAV, `pos-shell`, not T3's), not the drawn Floor/Menu/Stock bar. The search is also a labelled field rather than a pill.
-- An earlier review (`reports/T3_LOOK_REVIEW.md`) scored 20–24 after a re-score I led by naming the gaps to set aside. It is kept for the record but **not used**.
+Each round was scored by a different fresh reviewer, after each round's fixes.
+- **Order-Laptop**, from round 1 to round 2: the breadcrumb and an Open pill, and five items across.
+- **Order-Other**, between rounds 2 and 3:
+  - "Take it over" works: a supervisor enters their own PIN on the waiter's device. That makes a one-off supervisor session for the existing transfer-server call, which is logged out at once; the PIN is never stored.
+  - The other waiter's lines are read from the kitchen tickets, priced from the menu only when the prices add up to the order's own total.
+
+**Order-Other still fails on one zero, and it cannot pass on this track.** The drawn filled Print bill and "Ask Brian O." have no API a waiter can use on another waiter's order:
+- the bill request is refused (`assertWaiterOrderOwnership`);
+- there is no "ask the waiter" endpoint.
+
+Building either would mean a dead or faked control (rule 13), and `apps/api` is outside T3's folders (rule 20). The fix is an API change: a waiter-safe bill request and a request-to-waiter endpoint. It goes to T2 or the joining-up prompt, and the screen then needs two buttons.
+
+The first review (`reports/T3_LOOK_REVIEW.md`), with a re-score I led, is kept for the record and not used.
 
 ## Differences from the drawings (and why)
 - **Icons:** the drawings' stand-in icons are drawn with names from the Phosphor registry. I cannot add names, because `pos-shell` is not mine. Move table uses `table`, Join tables `serviceArea`, Change waiter `staff`, Split bill `count`, Discount `revenue`, Void an item `soldOut`, Cancel the order `close`, Same again `refresh`, Table status `table`.
@@ -157,9 +167,10 @@ Saved in `reports/proof/T3/gates.txt`, run on the final code after the last chan
 - **The laptop search** is a labelled field in the menu, not a pill. The grid has four columns, not five.
 - **No guest counts in the header.** They are not in the data. Time open and the waiter's short name show instead.
 - **Order-Other:**
-  - "Ask Brian O." and "Take it over" have no endpoint.
+  - "Take it over" is built: a supervisor enters their PIN, and it calls the existing transfer-server route.
+  - "Ask Brian O." has no endpoint.
   - There is no Print bill: the API refuses a waiter's bill request on another's order.
-  - The order column shows the number of **lines** and the total, not the lines: the API refuses the read.
+  - The lines come from the kitchen tickets, because the order read is refused. They are priced from the menu only when the prices add up to the order's own total; otherwise the price is blank and a line says so.
 - **Supervisor-Table:** "Send to kitchen again" has no endpoint, so "Same again" stands in its place. Split bill says "Equal parts, recorded for the cashier", because the API only records the allocation. Table status is added.
 - **Cashier-Pay:**
   - "Split" is left out.

@@ -15,6 +15,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import {
+  linesFromKitchen,
   paidOn,
   addLine,
   createOrder,
@@ -184,12 +185,23 @@ export function useOrderSession(args: {
     queryFn: () => paidOn(ctx as Ctx, (order as OrderModel).id),
     staleTime: 2_000,
   });
-  const lines = useMemo(() => [...(order?.lines ?? []), ...local], [order, local]);
+  // Another waiter's table: the order read is refused, so the lines come from the kitchen's tickets.
+  const kitchenQ = useQuery({
+    queryKey: ["order-screen", "kitchen", ctx?.branchId, targetId],
+    enabled: Boolean(ctx && targetId && chosen && !mayRead),
+    queryFn: () => linesFromKitchen(ctx as Ctx, targetId as string),
+    staleTime: 5_000,
+  });
+  const lines = useMemo(
+    () => (chosen && !mayRead ? kitchenQ.data ?? [] : [...(order?.lines ?? []), ...local]),
+    [chosen, mayRead, order, local, kitchenQ.data],
+  );
 
   const refresh = useCallback(async () => {
     await qc.invalidateQueries({ queryKey: ["order-screen", "open", ctx?.branchId, tableId] });
     await qc.invalidateQueries({ queryKey: ["order-screen", "order", ctx?.branchId] });
     await qc.invalidateQueries({ queryKey: ["order-screen", "paid", ctx?.branchId] });
+    await qc.invalidateQueries({ queryKey: ["order-screen", "kitchen", ctx?.branchId] });
   }, [ctx?.branchId, qc, tableId]);
 
   const add = useCallback((input: NewLine) => {
@@ -357,7 +369,7 @@ export function useOrderSession(args: {
     totalMinor: order ? order.totalMinor + localMinor : linesTotal(lines),
     paidMinor: paidQ.data ?? 0,
     paidKnown: !canReadPayments || paidQ.isSuccess || !order,
-    count: chosen && !mayRead ? chosen.itemCount : itemCount(lines),
+    count: chosen && !mayRead && !kitchenQ.data?.length ? chosen.itemCount : itemCount(lines),
     busy,
     add,
     setQuantity,

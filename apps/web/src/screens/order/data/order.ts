@@ -36,6 +36,8 @@ export type OrderLineModel = {
   station: string | null;
   voidReason: string | null;
   wasMade: boolean | null;
+  /** false when the line came from a kitchen ticket, which carries no price. */
+  priceKnown?: boolean;
 };
 
 export type OrderModel = {
@@ -426,4 +428,86 @@ export type TableStatus = (typeof TABLE_STATUSES)[number];
 
 export async function setTableStatus(ctx: Ctx, tableId: string, status: TableStatus): Promise<void> {
   await apiRequest(`/api/tables/${tableId}/status`, { ...ctx, method: "PATCH", body: { status } });
+}
+
+/**
+ * Another waiter's lines, as the kitchen sees them. The order read refuses a waiter
+ * (`assertWaiterOrderOwnership`), but `pos:kds:read` lists every ticket with its
+ * order lines; this keeps the lines of one order. Sent lines only (unsent lines
+ * have no ticket). Stopgap until a waiter-readable order view exists (T2).
+ */
+export async function linesFromKitchen(ctx: Ctx, orderId: string): Promise<OrderLineModel[]> {
+  type Item = {
+    orderItemId?: string;
+    quantity?: number;
+    menuItemName?: string | null;
+    menuItemId?: string | null;
+    serving?: { id?: string; label?: string | null } | null;
+    notes?: string | null;
+    voided?: boolean;
+    voidReason?: string | null;
+    wasMade?: boolean | null;
+  };
+  type Ticket = { orderId?: string; station?: string; createdAt?: string; items?: Item[] };
+  const seen = new Map<string, OrderLineModel>();
+  const pageSize = 200;
+  for (let page = 1; page <= 20; page += 1) {
+    const res = await apiRequest<{ data?: Ticket[]; total?: number }>(`/api/kds/queue?page=${page}&pageSize=${pageSize}`, ctx);
+    const rows = res.data ?? [];
+    for (const t of rows) {
+      if (t.orderId !== orderId) continue;
+      // One Send makes one ticket per station a few milliseconds apart: group them by the minute.
+      const sentAt = t.createdAt ? `${t.createdAt.slice(0, 16)}:00.000Z` : null;
+      for (const it of t.items ?? []) {
+        if (!it.orderItemId) continue;
+        const label = it.serving?.label && it.serving.label.toLowerCase() !== "standard" ? it.serving.label : null;
+        seen.set(it.orderItemId, {
+          key: it.orderItemId,
+          serverId: it.orderItemId,
+          menuItemId: it.menuItemId ?? "",
+          servingId: it.serving?.id ?? null,
+          name: (it.menuItemName ?? "").trim() || "Item",
+          servingLabel: label,
+          choices: [],
+          note: it.notes ?? "",
+          quantity: it.quantity ?? 1,
+          unitMinor: 0,
+          lineMinor: 0,
+          state: it.voided ? "voided" : "sent",
+          sentAt,
+          station: t.station ?? null,
+          voidReason: it.voidReason ?? null,
+          wasMade: it.wasMade ?? null,
+          priceKnown: false,
+        });
+      }
+    }
+    if (rows.length < pageSize || page * pageSize >= (res.total ?? 0)) break;
+  }
+  return [...seen.values()];
+}
+
+/**
+ * "Take it over": a supervisor enters their own PIN on this device. That PIN opens a
+ * one-off supervisor session used for this single transfer-server call, which is then
+ * logged out. The PIN is never stored, logged or sent anywhere else.
+ */
+export async function takeOverWithSupervisorPin(ctx: Ctx, orderId: string, pin: string, toUserId: string): Promise<void> {
+  const login = await apiRequest<{ accessToken?: string }>("/api/auth/quick-pin-login", {
+    method: "POST",
+    branchId: ctx.branchId,
+    body: { branchId: ctx.branchId, pin, platform: "POS_DESKTOP" },
+  });
+  const supervisor = login.accessToken;
+  if (!supervisor) throw new Error("That PIN did not sign in.");
+  try {
+    await apiRequest(`/api/pos/orders/${orderId}/transfer-server`, {
+      method: "POST",
+      token: supervisor,
+      branchId: ctx.branchId,
+      body: { targetUserId: toUserId, reason: "Taken over with a supervisor PIN" },
+    });
+  } finally {
+    await apiRequest("/api/auth/logout", { method: "POST", token: supervisor, branchId: ctx.branchId, body: {} }).catch(() => undefined);
+  }
 }
