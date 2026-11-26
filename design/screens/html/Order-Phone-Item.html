@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Order screen, phone, an item with choices</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 390px; height: 844px">
+  <header class="band" style="padding-bottom: 16px">
+    <div class="hstack">
+      <span class="rb"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></span>
+      <div class="grow">
+        <p class="t-h">Table 12</p>
+        <p class="t-sup" style="color: var(--on-primary-muted)">3 guests · open 1 h 05</p>
+      </div>
+    </div>
+  </header>
+  <div class="body"></div>
+  <div class="scrim"></div>
+
+  <section class="sheet" style="top: 96px; gap: 14px" aria-label="Beef burger">
+    <span class="grab"></span>
+    <div class="hstack">
+      <div class="grow">
+        <h1 class="t-h">Beef burger</h1>
+        <p class="t-sup muted">UGX 28,000 · with chips</p>
+      </div>
+      <a class="close" href="Order-Phone.html" aria-label="Close"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a>
+    </div>
+
+    <div>
+      <div class="hstack g8" style="margin-bottom: 8px"><span class="t-row">How cooked</span><span class="pill p-neutral">Pick one</span></div>
+      <div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))">
+        <button class="opt">Rare</button>
+        <button class="opt on" aria-pressed="true">Medium</button>
+        <button class="opt">Well done</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="hstack g8" style="margin-bottom: 8px"><span class="t-row">Extras</span><span class="t-sup muted">if they want</span></div>
+      <div class="optgrid" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+        <button class="opt on" aria-pressed="true">Cheese · 3,000</button>
+        <button class="opt">Bacon · 5,000</button>
+        <button class="opt">Fried egg · 2,000</button>
+        <button class="opt">Avocado · 4,000</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="hstack g8" style="margin-bottom: 8px"><span class="t-row">Leave out</span></div>
+      <div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))">
+        <button class="opt on" aria-pressed="true">Onions</button>
+        <button class="opt">Tomato</button>
+        <button class="opt">Sauce</button>
+      </div>
+    </div>
+
+    <div class="field ph">Note for the kitchen</div>
+
+    <div class="hstack g12" style="margin-top: auto">
+      <div class="hstack g8">
+        <button class="round tonal" aria-label="One fewer"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+        <span class="t-h" style="width: 28px; text-align: center">1</span>
+        <button class="round tonal" aria-label="One more"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
+      <button class="btn filled grow">Add · UGX 31,000</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>

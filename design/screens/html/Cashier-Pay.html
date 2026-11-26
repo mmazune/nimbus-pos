@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cashier, take payment</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar">
+    <a class="back" href="Order-Terminal.html"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>Table 12</a>
+    <h1 class="t-h">Take payment</h1>
+    <span class="clock">Table 12 · 3 guests · served by Amina K.</span>
+    <span class="grow"></span>
+    
+    <span class="who" title="Signed in">SM</span>
+  </header>
+  <div class="ord" style="grid-template-columns: minmax(0, 1fr) 372px">
+    <main class="menu" style="gap: 20px; padding: 20px 24px">
+      <div class="hstack g24" style="align-items: stretch">
+        <div class="grow vstack" style="justify-content: space-between">
+          <div><p class="cap">To pay</p><p class="big" style="margin-top: 4px">UGX 98,000</p></div>
+          <div><p class="lab">How are they paying?</p>
+            <div class="optgrid" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><button class="opt xl on"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span>Cash</span><small>Notes and coins</small></button><button class="opt xl"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 17h2"/></svg><span>Mobile money</span><small>On their phone</small></button><button class="opt xl"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg><span>Card</span><small>Card machine</small></button><button class="opt xl"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="7" height="14" rx="1.5"/><rect x="13" y="5" width="7" height="14" rx="1.5"/></svg><span>Split</span><small>Two ways or more</small></button></div></div>
+          <div><p class="lab">Cash given</p>
+            <div class="optgrid" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><button class="opt lg">Exact</button><button class="opt lg on">100,000</button><button class="opt lg">150,000</button><button class="opt lg">200,000</button></div></div>
+          <div class="card hstack" style="padding: 18px 20px; background: var(--green-t); box-shadow: none; justify-content: space-between">
+            <span class="t-row" style="color: var(--green)">Change to give</span><span class="big" style="color: var(--green)">UGX 2,000</span>
+          </div>
+        </div>
+        <div class="vstack g12" style="width: 320px; flex: none">
+          <div class="field" style="height: 64px; justify-content: flex-end; font-size: 26px; line-height: 32px; font-weight: 700">100,000</div>
+          <div class="optgrid" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><button class="key">1</button><button class="key">2</button><button class="key">3</button><button class="key">4</button><button class="key">5</button><button class="key">6</button><button class="key">7</button><button class="key">8</button><button class="key">9</button><button class="key">000</button><button class="key">0</button><button class="key" aria-label="Delete"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2"/></svg></button></div>
+        </div>
+      </div>
+      <span class="grow"></span>
+      <div class="vstack g8">
+        <button class="btn filled" style="height: 64px; font-size: 18px">Take UGX 98,000 in cash</button>
+        <p class="t-small muted" style="text-align: center">The receipt prints, the till records the cash and table 12 becomes free.</p>
+      </div>
+    </main>
+    <aside class="check" aria-label="Bill">
+      <div class="hstack" style="padding: 16px 16px 8px; justify-content: space-between"><h2 class="t-h">Bill</h2><span class="t-sup muted">8 items</span></div>
+      <p class="cap" style="padding: 8px 16px 4px">Sent 20:15</p><button class="line sent"><span class="q">2</span><span class="grow"><span class="nm">Lager 500 ml</span></span><span class="pr">12,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Blended Scotch</span><br><span class="sub">Double · Cola</span></span><span class="pr">15,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Cola 300 ml</span></span><span class="pr">3,000</span></button><div class="hr" style="margin: 8px 16px"></div><p class="cap" style="padding: 8px 16px 4px">Sent 19:42</p><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Beef burger</span><br><span class="sub">Medium · No onions</span></span><span class="pr">28,000</span></button><button class="line sent"><span class="q">2</span><span class="grow"><span class="nm">Chips</span></span><span class="pr">16,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Chicken wings</span></span><span class="pr">24,000</span></button>
+      <span class="grow"></span>
+      <div class="hr"></div>
+      <div class="tot" style="padding: 14px 16px 4px"><span class="t-row">Total</span><span class="t-h">UGX 98,000</span></div>
+      <div class="hstack g8" style="padding: 12px 16px 16px"><button class="btn tonal" style="flex: 1 1 0; padding: 0 12px">Print bill</button></div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

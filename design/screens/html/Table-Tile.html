@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The table tile, every state</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 944px" data-spec="true">
+  <main class="page" style="padding: 28px 32px; gap: 20px">
+    <div>
+      <h1 class="t-title-lg">The table tile</h1>
+      <p class="t-sup muted">One tile for every role. It answers four things at a glance: which table, what state, whose it is, how long and how much.</p>
+    </div>
+
+    <div class="vstack g8">
+      <p class="cap">Roomy · 108 px tall · used when the whole area fits the screen</p>
+      <div class="floor" style="grid-template-columns: repeat(8, minmax(0, 1fr))">
+        <button class="tbl free"><span class="top"><span class="no">4</span><span class="pill p-green">Free</span></span><span class="mid">2 seats</span><span class="bot"></span></button>
+        <button class="tbl"><span class="top"><span class="no">2</span><span class="pill p-brand">Open</span></span><span class="mid">4 guests · 42 min</span><span class="bot"><span class="who">You</span><span class="amt">86,000</span></span></button>
+        <button class="tbl other"><span class="top"><span class="no">3</span><span class="pill p-neutral">Open</span></span><span class="mid">2 guests · 18 min</span><span class="bot"><span class="who">Brian O.</span><span class="amt">54,000</span></span></button>
+        <button class="tbl"><span class="top"><span class="no">23</span><span class="pill p-amber">Not sent</span></span><span class="mid">3 items not sent</span><span class="bot"><span class="who">You</span><span class="amt">19,000</span></span></button>
+        <button class="tbl"><span class="top"><span class="no">6</span><span class="pill p-red">Late</span></span><span class="mid">Food 26 min late</span><span class="bot"><span class="who">You</span><span class="amt">61,000</span></span></button>
+        <button class="tbl"><span class="top"><span class="no">12</span><span class="pill p-amber">Bill</span></span><span class="mid">3 guests · 1 h 05</span><span class="bot"><span class="who">You</span><span class="amt">97,500</span></span></button>
+        <button class="tbl free"><span class="top"><span class="no">7</span><span class="pill p-neutral">Reserved</span></span><span class="mid">20:00 · 6 guests</span><span class="bot"></span></button>
+        <button class="tbl free"><span class="top"><span class="no">15</span><span class="pill p-neutral">Cleaning</span></span><span class="mid">4 seats</span><span class="bot"></span></button>
+      </div>
+      <div class="floor" style="grid-template-columns: repeat(8, minmax(0, 1fr))">
+        <p class="note"><span class="b">Free.</span> Tap to start an order.</p>
+        <p class="note"><span class="b">Open, yours.</span> White card, "You" in bold. Tap to add to it.</p>
+        <p class="note"><span class="b">Open, someone else's.</span> Flat and tinted, their name. A waiter can look, not change.</p>
+        <p class="note"><span class="b">Not sent.</span> Items are on the order but the kitchen has not got them.</p>
+        <p class="note"><span class="b">Late.</span> Food or drinks have passed the venue's time limit.</p>
+        <p class="note"><span class="b">Bill.</span> The bill is printed and waiting for payment.</p>
+        <p class="note"><span class="b">Reserved.</span> Shows the time and party. Tap to seat them.</p>
+        <p class="note"><span class="b">Cleaning.</span> Not ready yet. Supervisors can free it.</p>
+      </div>
+    </div>
+
+    <div class="hstack g24" style="align-items: flex-start">
+      <div class="vstack g8" style="width: 600px; flex: none">
+        <p class="cap">Compact · 84 px tall · used when the area does not fit, and on phones</p>
+        <div class="floor c" style="grid-template-columns: repeat(4, minmax(0, 1fr))">
+          <button class="tbl free"><span class="top"><span class="no">4</span><span class="pill p-green">Free</span></span><span class="bot"><span class="muted">2 seats</span></span></button>
+          <button class="tbl"><span class="top"><span class="no">2</span><span class="pill p-brand">Open</span></span><span class="bot"><span class="who">You</span><span class="muted">42 min</span></span></button>
+          <button class="tbl other"><span class="top"><span class="no">3</span><span class="pill p-neutral">Open</span></span><span class="bot"><span class="who">Brian O.</span><span class="muted">18 min</span></span></button>
+          <button class="tbl"><span class="top"><span class="no">6</span><span class="pill p-red">Late</span></span><span class="bot"><span class="who">You</span><span class="muted">26 min</span></span></button>
+        </div>
+        <p class="cap" style="margin-top: 12px">A tab · for guests with no table, on busy nights</p>
+        <div class="floor" style="grid-template-columns: repeat(4, minmax(0, 1fr))">
+          <button class="tbl"><span class="top"><span class="no" style="font-size: 20px">Tab 3</span><span class="pill p-brand">Open</span></span><span class="mid">Standing · 1 h 04</span><span class="bot"><span class="who">You</span><span class="amt">54,000</span></span></button>
+          <button class="tbl new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New tab</button>
+          <p class="note" style="grid-column: span 2; align-self: center">A tab works like a table with no seat. It gets the next number, lives in the Tabs area and closes when it is paid. The venue can open as many as it needs.</p>
+        </div>
+        <p class="cap" style="margin-top: 12px">What is on the tile</p>
+        <div class="card pad">
+          <p class="t-sup"><span class="b">Table name</span>, 26 px extra-bold: the thing staff look for first.</p>
+          <p class="t-sup"><span class="b">State</span>, always a word in a pill. Red, amber and green mean a state and nothing else.</p>
+          <p class="t-sup"><span class="b">Guests and time open</span>, then <span class="b">who has it</span> and <span class="b">the total</span> in shillings.</p>
+          <p class="t-sup muted">Never on a tile: a guest's name, an order number, a code.</p>
+        </div>
+      </div>
+
+      <div class="vstack g8 grow">
+        <p class="cap">How many tables fit with no scrolling</p>
+        <div class="card">
+          <table class="dt">
+            <thead><tr><th>Screen</th><th class="num">Roomy tiles</th><th class="num">Compact tiles</th></tr></thead>
+            <tbody>
+              <tr><td>Small monitor · 1024 × 768</td><td class="num">24</td><td class="num">35</td></tr>
+              <tr><td>Tablet or terminal · 1280 × 800</td><td class="num">32</td><td class="num">54</td></tr>
+              <tr><td>Laptop screen · 1366 × 768</td><td class="num">32</td><td class="num">45</td></tr>
+              <tr><td>Laptop · 1440 × 900</td><td class="num">45</td><td class="num">70</td></tr>
+              <tr><td>Big monitor · 1920 × 1080</td><td class="num">84</td><td class="num">117</td></tr>
+              <tr><td>Phone · 390 × 844</td><td class="num" colspan="2">15 a screen, then scrolls down</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card pad">
+          <p class="t-row">The rule for a 60-table venue</p>
+          <p class="t-sup">The floor shows one area at a time, so a venue with 64 tables in four areas never scrolls on a tablet. "All areas" fits on a big monitor. Where an area is bigger than the screen, tiles go compact first, then the area scrolls down. Nothing ever scrolls sideways.</p>
+          <p class="t-sup" style="margin-top: 8px">A waiter opens on "My tables", so their own six or eight tables are always on the first screen.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Waiter, Me</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS"><i></i></a>
+    <h1 class="t-h">Me</h1>
+    <span class="clock">Amina K. · Waiter · Tapas Downtown</span>
+    <span class="grow"></span>
+    <span class="name"><b>Amina K.</b> · Waiter · Terminal 01</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="card vstack g12" style="flex: 1 1 0; padding: 20px">
+      <div class="hstack"><h2 class="t-h grow">My shift</h2><span class="pill p-green">On shift</span></div>
+      <p class="big">3 h 40</p><p class="t-sup muted">Started 16:02 at Terminal 01 · Tapas Downtown</p>
+      <span class="grow"></span>
+      <button class="btn tonal">End my shift</button>
+    </section>
+    <section class="card vstack g12" style="flex: 1 1 0; padding: 20px">
+      <h2 class="t-h">My day</h2>
+      <div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Sales so far</span><span class="t-body b" style="text-align: right">UGX 1,240,000</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Tables served</span><span class="t-body b" style="text-align: right">11</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Open now</span><span class="t-body b" style="text-align: right">6 tables</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Items voided</span><span class="t-body b" style="text-align: right">1</span></div>
+      <span class="grow"></span>
+      <p class="t-small muted">Only your own numbers show here.</p>
+    </section>
+    <section class="vstack g16" style="flex: 1 1 0">
+      <div class="card" style="overflow: hidden"><p class="cap" style="padding: 16px 16px 8px">My requests</p>
+        <div class="row s"><span class="grow"><span class="t-body b">Leave, 12 to 14 Dec</span><br><span class="t-sup muted">Asked 20 Nov</span></span><span class="pill p-amber">Waiting</span></div>
+        <div class="row s"><span class="grow"><span class="t-body b">Swap with Brian O.</span><br><span class="t-sup muted">Sat 28 Nov, evening</span></span><span class="pill p-green">Approved</span></div>
+        <div class="hstack g8" style="padding: 12px 16px 16px"><button class="btn sm tonal grow">Ask for leave</button><button class="btn sm tonal grow">Ask to swap</button></div>
+      </div>
+      <span class="grow"></span>
+      <button class="btn tonal">Change my PIN</button>
+      <button class="btn filled">Log out</button>
+    </section>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Reservations</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 9V6M10 6h4"/></svg>Ready<span class="nb">2</span></a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

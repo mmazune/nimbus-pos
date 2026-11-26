@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reservations, waiter</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS"><i></i></a>
+    <h1 class="t-h">Reservations</h1>
+    <span class="clock">Today · 7 still to come · 1 late · as at 19:42</span>
+    <span class="grow"></span>
+    <span class="name"><b>Amina K.</b> · Waiter · Terminal 01</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="grow vstack g16">
+      <div class="hstack" style="justify-content: space-between"><div class="seg"><button class="on">Arriving · 7</button><button>Seated · 4</button></div></div>
+      <div class="card" style="overflow: hidden"><button class="row" style="width: 100%; min-height: 76px;"><span class="t-h" style="width: 76px">19:30</span><span class="grow"><span class="t-row">P. Achieng</span><br><span class="t-sup muted">2 guests · Table 22</span></span><span class="pill p-red">Late 12 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px; background: var(--canvas);"><span class="t-h" style="width: 76px">19:45</span><span class="grow"><span class="t-row">J. Mukasa</span><br><span class="t-sup muted">6 guests · Table 5</span></span><span class="pill p-amber">Table still in use</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="t-h" style="width: 76px">20:00</span><span class="grow"><span class="t-row">R. Namara</span><br><span class="t-sup muted">6 guests · Table 7</span></span><span class="pill p-neutral">In 18 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="t-h" style="width: 76px">20:30</span><span class="grow"><span class="t-row">S. Okello</span><br><span class="t-sup muted">4 guests · Table 21</span></span><span class="pill p-neutral">In 48 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="t-h" style="width: 76px">20:30</span><span class="grow"><span class="t-row">D. Ssali</span><br><span class="t-sup muted">8 guests · Table 27</span></span><span class="pill p-neutral">In 48 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="t-h" style="width: 76px">21:00</span><span class="grow"><span class="t-row">M. Atim</span><br><span class="t-sup muted">2 guests · No table yet</span></span><span class="pill p-amber">Needs a table</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="t-h" style="width: 76px">21:15</span><span class="grow"><span class="t-row">T. Byaruhanga</span><br><span class="t-sup muted">4 guests · VIP 2</span></span><span class="pill p-neutral">In 1 h 33</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button></div>
+    </section>
+    <aside class="card vstack g12" style="width: 420px; padding: 20px; flex: none">
+      <div class="hstack" style="align-items: flex-start"><div class="grow"><h2 class="t-h">J. Mukasa</h2><p class="t-sup muted">19:45 · 6 guests · booked by phone</p></div><span class="pill p-amber">Table still in use</span></div>
+      <div style="background: var(--amber-t); border-radius: 14px; padding: 12px 14px"><p class="t-body b" style="color: var(--amber)">Table 5 is not free</p><p class="t-sup" style="color: var(--amber)">Open 1 h 20 · Grace N. · bill printed 19:31</p></div>
+      <div><p class="lab">Free now, seats 6 or more</p>
+        <div class="optgrid" style="grid-template-columns: 1fr 1fr"><button class="opt tall on">Table 14<small>6 seats · Main hall</small></button><button class="opt tall">T3<small>6 seats · Terrace</small></button><button class="opt tall">V1<small>8 seats · VIP</small></button><button class="opt tall">Wait for table 5<small>Keep the booking</small></button></div></div>
+      <div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Note</span><span class="t-body b" style="text-align: right">Birthday. Wants a quiet corner.</span></div></div>
+      <span class="grow"></span>
+      <p class="t-small muted">To change or cancel a booking, ask a supervisor.</p>
+      <button class="btn filled">Seat at table 14</button>
+    </aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Reservations</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 9V6M10 6h4"/></svg>Ready<span class="nb">2</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

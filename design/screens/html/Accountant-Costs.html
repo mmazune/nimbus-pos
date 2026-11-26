@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Accountant, item costs</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1440px; height: 900px">
+  <header class="bar">
+    <button class="rb" aria-label="All apps"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="18" cy="6" r="1.3"/><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="12" cy="18" r="1.3"/><circle cx="18" cy="18" r="1.3"/></svg></button><span class="div"></span>
+    <a class="mark" href="#"><i></i>Nimbus POS</a>
+    <nav aria-label="Main"><a class="on" aria-current="page" href="#">Costs</a><a href="#">Stock value</a><a href="#">Purchases</a><a href="#">Reports</a></nav>
+    <span class="grow"></span>
+    <span class="search"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</span>
+    <button class="rb" aria-label="Alerts"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></button>
+    <span class="clock">Tapas Downtown</span>
+    <button class="who" aria-label="Account">DW</button>
+  </header>
+  <div class="cp"><h1 class="t-row">Item costs</h1><span class="t-sup muted">214 items · as at 26 Nov, 09:10</span><span class="grow"></span><span class="field sm ph" style="width: 300px"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Find an item</span></div>
+  <main class="page" style="flex-direction: row; gap: 20px">
+    <section class="grow vstack g16">
+      <div class="hstack g8"><button class="chip on">All <span class="n">214</span></button><button class="chip">No cost yet <span class="n">12</span></button><button class="chip">Cost changed this week <span class="n">5</span></button><button class="chip">Margin under 30% <span class="n">8</span></button></div>
+      <div class="card" style="overflow: hidden"><table class="dt"><thead><tr><th>Item</th><th>How it is sold</th><th>Unit</th><th class="num">Cost, UGX</th><th class="num">Sells for</th><th class="num">Margin</th></tr></thead><tbody><tr class="sel"><td>Beef mince</td><td class="muted">Ingredient</td><td class="muted">kg</td><td class="num">18,000</td><td class="num">Used in 6 items</td><td class="num"></td></tr><tr><td>Burger bun</td><td class="muted">Ingredient</td><td class="muted">piece</td><td class="num">800</td><td class="num">Used in 4 items</td><td class="num"></td></tr><tr><td>Chicken wings</td><td class="muted">Ingredient</td><td class="muted">kg</td><td class="num">14,000</td><td class="num">Used in 2 items</td><td class="num"></td></tr><tr><td>Cooking oil</td><td class="muted">Ingredient</td><td class="muted">litre</td><td class="num">9,000</td><td class="num">Used in 31 items</td><td class="num"></td></tr><tr><td>Fresh tilapia</td><td class="muted">Ingredient</td><td class="muted">kg</td><td class="num"><span class="pill p-amber">No cost yet</span></td><td class="num">Used in 3 items</td><td class="num"></td></tr><tr><td>Lager 500 ml</td><td class="muted">As bought</td><td class="muted">bottle</td><td class="num">3,800</td><td class="num">6,000</td><td class="num">37%</td></tr><tr><td>Cola 300 ml</td><td class="muted">As bought</td><td class="muted">bottle</td><td class="num">1,400</td><td class="num">3,000</td><td class="num">53%</td></tr><tr><td>Water 500 ml</td><td class="muted">As bought</td><td class="muted">bottle</td><td class="num">900</td><td class="num">2,000</td><td class="num">55%</td></tr><tr><td>Blended Scotch 750 ml</td><td class="muted">Measure · 25 tots</td><td class="muted">bottle</td><td class="num">100,000</td><td class="num">8,000 a tot</td><td class="num">50%</td></tr><tr><td>Single malt 12, 750 ml</td><td class="muted">Measure · 25 tots</td><td class="muted">bottle</td><td class="num">180,000</td><td class="num">16,000 a tot</td><td class="num">55%</td></tr></tbody></table></div>
+      <p class="t-small muted">Showing 10 of 214. The same items the manager set up; only you set what they cost.</p>
+    </section>
+    <aside class="card vstack g12" style="width: 420px; flex: none; padding: 20px">
+      <div><h2 class="t-h">Beef mince</h2><p class="t-sup muted">Ingredient · counted in kg · Kitchen store and Main store</p></div>
+      <div><p class="cap">Cost now</p><p class="big" style="margin-top: 4px">UGX 18,000</p><p class="t-sup muted">a kg · the average of what is in store</p></div>
+      <div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">In store</span><span class="t-body b" style="text-align: right">40 kg · worth UGX 720,000</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Bought 24 Nov</span><span class="t-body b" style="text-align: right">20 kg at 18,500 a kg</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Bought 17 Nov</span><span class="t-body b" style="text-align: right">20 kg at 17,500 a kg</span></div></div>
+      <div><p class="cap" style="padding-bottom: 4px">Where it goes</p><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Beef burger</span><span class="t-body b" style="text-align: right">150 g · UGX 2,700</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Spaghetti bolognese</span><span class="t-body b" style="text-align: right">120 g · UGX 2,160</span></div><p class="t-small muted">and 4 more items</p></div>
+      <span class="grow"></span>
+      <div><label class="lab">Set the cost yourself, a kg</label><div class="field">UGX 18,000</div></div>
+      <button class="btn filled">Save cost</button>
+    </aside>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

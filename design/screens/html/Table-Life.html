@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The life of a table</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1440px; height: 760px">
+  <div class="page" style="padding: 28px 40px; gap: 16px">
+    <div><h1 class="t-title">The life of a table</h1><p class="t-body muted" style="margin-top: 4px">One tap on a table always opens the same full screen. What changes is the state of the table and what your role may do.</p></div>
+    <div class="card" style="overflow: hidden"><table class="dt w"><thead><tr><th style="width: 170px">The table is</th><th style="width: 210px">The tile shows</th><th>A waiter taps it</th><th>A cashier taps it</th><th>A supervisor taps it</th><th style="width: 210px">What moves it on</th></tr></thead><tbody><tr><td>Free</td><td>Number, seats, “Free”</td><td>The menu opens at once. Nothing is saved until Send.</td><td>The same</td><td>The same</td><td>First Send</td></tr><tr><td>Reserved</td><td>“Reserved”, time, party size</td><td>The booking: seat here or at another free table</td><td>The same</td><td>The same, plus change or cancel</td><td>Seat guests</td></tr><tr><td>Open, not sent</td><td>“Not sent”, how many items</td><td>The order: add, change, Send</td><td>The bill is not ready: Send comes first</td><td>The same as the waiter</td><td>Send. Tickets go out, stock leaves the store</td></tr><tr><td>Open, sent</td><td>Waiter, guests, time, amount</td><td>Add more, Print bill</td><td>Take payment</td><td>Void, discount, move, join, split</td><td>The kitchen taps Ready</td></tr><tr><td>Ready</td><td>“Ready”, minutes waiting</td><td>Also listed under Ready: Collected</td><td>The same as open</td><td>The same as open</td><td>Collected</td></tr><tr><td>Late</td><td>“Late”, minutes over</td><td>The same as open</td><td>The same as open</td><td>The same, and it shows first on their floor</td><td>Ready, or a void with a reason</td></tr><tr><td>Bill printed</td><td>“Bill”, amount</td><td>Can still add; the bill prints again</td><td>Take payment</td><td>Void and discount need a reason</td><td>Payment in full</td></tr><tr><td>Paid</td><td>“Cleaning” until someone taps Clean</td><td>Clean: the table is free</td><td>The bill is under Receipts</td><td>Refund comes as an approval</td><td>Clean</td></tr><tr><td>Someone else’s table</td><td>Flat grey tile, their name</td><td>Look, print the bill, ask to take over</td><td>Take payment</td><td>Everything</td><td>—</td></tr></tbody></table></div>
+    <p class="t-sup muted">A manager sees what a supervisor sees. A tab for standing guests lives the same life, without “Reserved” and “Cleaning”.</p>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

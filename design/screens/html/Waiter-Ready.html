@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Waiter, ready to collect</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS"><i></i></a>
+    <h1 class="t-h">Ready</h1>
+    <span class="clock">2 orders waiting to be collected · as at 19:58</span>
+    <span class="grow"></span>
+    <span class="name"><b>Amina K.</b> · Waiter · Terminal 01</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="grow vstack g16">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; height: 312px"><div class="card vstack g8" style="padding: 16px"><div class="hstack"><h2 class="t-h grow">Table 6</h2><span class="pill p-amber">Ready 4 min</span></div><p class="t-sup muted">Hot kitchen · on the pass</p><div><div class="line" style="padding: 6px 0; min-height: 0"><span class="q">2</span><span class="grow nm">Beef burger</span></div><div class="line" style="padding: 6px 0; min-height: 0"><span class="q">1</span><span class="grow nm">Chips</span></div><div class="line" style="padding: 6px 0; min-height: 0"><span class="q">1</span><span class="grow nm">Chicken wings</span></div></div><span class="grow"></span><button class="btn filled">Collected</button></div><div class="card vstack g8" style="padding: 16px"><div class="hstack"><h2 class="t-h grow">Table 17</h2><span class="pill p-green">Ready 1 min</span></div><p class="t-sup muted">Main bar</p><div><div class="line" style="padding: 6px 0; min-height: 0"><span class="q">2</span><span class="grow nm">Lager 500 ml</span></div><div class="line" style="padding: 6px 0; min-height: 0"><span class="q">1</span><span class="grow nm">House red, glass</span></div></div><span class="grow"></span><button class="btn tonal">Collected</button></div></div>
+      <p class="t-small muted">A table also shows “Ready” on the Floor. This list is the same thing in the order it came out.</p>
+    </section>
+    <aside class="card" style="width: 420px; flex: none; align-self: flex-start; overflow: hidden"><p class="cap" style="padding: 16px 16px 8px">Collected in the last hour</p><div class="row s"><span class="grow"><span class="t-body b">Table 2</span><br><span class="t-sup muted">Hot kitchen · 2 items</span></span><span class="t-sup muted">Collected 19:31</span></div><div class="row s"><span class="grow"><span class="t-body b">Table 9</span><br><span class="t-sup muted">Main bar · 3 items</span></span><span class="t-sup muted">Collected 19:24</span></div><div class="row s"><span class="grow"><span class="t-body b">Table 23</span><br><span class="t-sup muted">Hot kitchen · 4 items</span></span><span class="t-sup muted">Collected 19:12</span></div><div class="row s"><span class="grow"><span class="t-body b">Table 17</span><br><span class="t-sup muted">Main bar · 2 items</span></span><span class="t-sup muted">Collected 19:05</span></div></aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Reservations</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 9V6M10 6h4"/></svg>Ready<span class="nb">2</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

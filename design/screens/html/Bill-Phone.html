@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bill, phone, a waiter prints the bill</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 390px; height: 844px">
+  <header class="band" style="padding-bottom: 60px">
+    <div class="hstack">
+      <a class="rb" href="Order-Phone-Check.html" aria-label="Back to the order"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></a>
+      <div class="grow">
+        <h1 class="t-h">Bill</h1>
+        <p class="t-sup" style="color: var(--on-primary-muted)">Table 12 · 3 guests · everything sent</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="body" style="margin-top: -44px; padding-top: 0">
+    <div class="card" style="padding: 20px 16px 16px">
+      <p class="t-row" style="text-align: center">Tapas Downtown</p>
+      <p class="t-small muted" style="text-align: center">Table 12 · Amina K. · 26 Nov 2026, 20:47</p>
+      <div class="hr" style="margin: 14px 0 6px"></div>
+      <div class="line" style="padding: 6px 0; min-height: 0"><span class="t-body" style="width: 24px">2</span><span class="grow t-body">Lager 500 ml</span><span class="pr">12,000</span></div>
+      <div class="line" style="padding: 6px 0; min-height: 0"><span class="t-body" style="width: 24px">1</span><span class="grow t-body">Blended Scotch, double, cola</span><span class="pr">15,000</span></div>
+      <div class="line" style="padding: 6px 0; min-height: 0"><span class="t-body" style="width: 24px">1</span><span class="grow t-body">Cola 300 ml</span><span class="pr">3,000</span></div>
+      <div class="line" style="padding: 6px 0; min-height: 0"><span class="t-body" style="width: 24px">1</span><span class="grow t-body">Beef burger</span><span class="pr">28,000</span></div>
+      <div class="line" style="padding: 6px 0; min-height: 0"><span class="t-body" style="width: 24px">2</span><span class="grow t-body">Chips</span><span class="pr">16,000</span></div>
+      <div class="line" style="padding: 6px 0; min-height: 0"><span class="t-body" style="width: 24px">1</span><span class="grow t-body">Chicken wings</span><span class="pr">24,000</span></div>
+      <div class="hr" style="margin: 6px 0 12px"></div>
+      <div class="tot"><span class="t-row">Total</span><span class="t-h">UGX 98,000</span></div>
+      <p class="t-small muted" style="margin-top: 8px">This is a bill, not a receipt. The cashier gives the receipt when it is paid.</p>
+    </div>
+
+    <div class="card">
+      <button class="row s" style="width: 100%"><span class="grow"><span class="t-body b">Printer</span><br><span class="t-sup muted">Front desk printer</span></span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+      <button class="row s" style="width: 100%"><span class="grow"><span class="t-body b">Split this bill</span><br><span class="t-sup muted">By guest, by item or by amount</span></span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <button class="btn filled grow"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/></svg>Print bill · UGX 98,000</button>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>

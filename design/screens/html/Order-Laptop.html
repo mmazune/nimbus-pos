@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Order screen, manager on a laptop</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1440px; height: 900px">
+  <header class="bar">
+    <button class="rb" aria-label="All apps"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="18" cy="6" r="1.3"/><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="12" cy="18" r="1.3"/><circle cx="18" cy="18" r="1.3"/></svg></button><span class="div"></span>
+    <a class="mark" href="#"><i></i>Nimbus POS</a>
+    <nav aria-label="Main"><a class="on" aria-current="page" href="#">Floor</a><a href="#">Menu</a><a href="#">Stock</a><a href="#">Staff</a><a href="#">More</a></nav>
+    <span class="grow"></span>
+    <span class="search"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</span>
+    <button class="rb" aria-label="Alerts"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></button>
+    <span class="clock">Tapas Downtown</span>
+    <button class="who" aria-label="Account">PK</button>
+  </header>
+  <div class="cp">
+    <span class="crumb">Floor › Main hall ›</span><h1 class="t-row">Table 12</h1><span class="pill p-brand">Open</span>
+    <span class="t-sup muted">3 guests · open 1 h 05 · Amina K.</span>
+    <span class="grow"></span>
+    <button class="btn sm tonal">Move table</button><button class="btn sm tonal">Split bill</button><button class="btn sm tonal">Discount</button>
+    <button class="round sm tonal" aria-label="More table actions"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+  </div>
+  <div class="ord" style="grid-template-columns: minmax(0, 1fr) 400px">
+    <main class="menu">
+      <div class="hstack" style="justify-content: space-between">
+        <div class="seg" role="tablist" aria-label="Menu">
+          <button class="on" style="min-width: 140px">Food</button>
+          <button class="" style="min-width: 140px">Drinks</button>
+        </div><span class="field sm ph" style="width: 320px"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search the whole menu</span>
+      </div>
+      <div class="optgrid" style="grid-template-columns: repeat(8, minmax(0, 1fr))"><button class="opt">Popular</button><button class="opt">Offers</button><button class="opt">Starters</button><button class="opt">Soups</button><button class="opt">Salads</button><button class="opt on">Mains</button><button class="opt">Grills</button><button class="opt">Burgers</button><button class="opt">Pizza</button><button class="opt">Pasta</button><button class="opt">Local</button><button class="opt">Sides</button><button class="opt">Kids</button><button class="opt">Desserts</button><button class="opt">Breakfast</button><button class="opt">Extras</button></div>
+      <div class="items" style="grid-template-columns: repeat(5, minmax(0, 1fr))"><button class="item"><b>Grilled tilapia</b><span>38,000</span></button><button class="item"><b>Goat stew</b><span>26,000</span></button><button class="item"><b>Chicken curry</b><span>27,000</span></button><button class="item"><b>Chicken luwombo</b><span>30,000</span></button><button class="item"><b>Matooke and beef</b><span>22,000</span></button><button class="item"><b>Pepper steak</b><span>45,000</span></button><button class="item"><b>Pork ribs</b><span>35,000</span></button><button class="item"><b>Fish and chips</b><span>32,000</span></button><button class="item"><b>Beef stew</b><span>24,000</span></button><button class="item"><b>Half grilled chicken</b><span>30,000</span></button><button class="item"><b>Whole grilled chicken</b><span>55,000</span></button><button class="item off"><b>Lamb chops</b><span>Sold out</span></button><button class="item"><b>Fish curry</b><span>34,000</span></button><button class="item"><b>Vegetable curry</b><span>20,000</span></button><button class="item"><b>Beef stir-fry</b><span>28,000</span></button><button class="item"><b>Chicken stir-fry</b><span>27,000</span></button><button class="item"><b>Pork chops</b><span>33,000</span></button><button class="item"><b>T-bone steak</b><span>52,000</span></button><button class="item"><b>Fish fillet</b><span>36,000</span></button><button class="item"><b>Beans and rice</b><span>14,000</span></button><button class="item"><b>Chicken pilau</b><span>25,000</span></button><button class="item"><b>Beef pilau</b><span>26,000</span></button><button class="item"><b>Whole fried tilapia</b><span>42,000</span></button></div>
+    </main>
+    <aside class="check" aria-label="Order">
+      <div class="hstack" style="padding: 16px 16px 8px; justify-content: space-between"><h2 class="t-h">Order</h2><span class="t-sup muted">8 items</span></div>
+      <p class="cap" style="padding: 8px 16px 4px">Sent 20:15</p><button class="line sent"><span class="q">2</span><span class="grow"><span class="nm">Lager 500 ml</span></span><span class="pr">12,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Blended Scotch</span><br><span class="sub">Double · Cola</span></span><span class="pr">15,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Cola 300 ml</span></span><span class="pr">3,000</span></button><div class="hr" style="margin: 8px 16px"></div><p class="cap" style="padding: 8px 16px 4px">Sent 19:42</p><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Beef burger</span><br><span class="sub">Medium · No onions</span></span><span class="pr">28,000</span></button><button class="line sent"><span class="q">2</span><span class="grow"><span class="nm">Chips</span></span><span class="pr">16,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Chicken wings</span></span><span class="pr">24,000</span></button>
+      <span class="grow"></span>
+      <div class="hr"></div>
+      <div class="tot" style="padding: 14px 16px 4px"><span class="t-row">Total</span><span class="t-h">UGX 98,000</span></div>
+      <div class="hstack g8" style="padding: 12px 16px 16px"><button class="btn tonal" style="flex: 1 1 0; padding: 0 12px">Print bill</button><button class="btn filled" style="flex: 1.4 1 0; padding: 0 12px">Take payment</button></div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

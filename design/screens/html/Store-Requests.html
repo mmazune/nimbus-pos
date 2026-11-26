@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Store keeper, requests</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS"><i></i></a>
+    <h1 class="t-h">Requests</h1>
+    <span class="clock">Main store · 3 waiting · oldest 22 min · as at 19:42</span>
+    <span class="grow"></span>
+    <span class="name"><b>Joel T.</b> · Store keeper · Main store</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="vstack g16" style="width: 420px; flex: none"><div class="seg fill"><button class="on">Open · 5</button><button>Done today · 9</button></div><div class="card" style="overflow: hidden"><button class="row" style="width: 100%; min-height: 76px; background: var(--canvas);"><span class="grow"><span class="t-row">Hot kitchen</span><br><span class="t-sup muted">Ruth A. · 5 items · asked 19:20</span></span><span class="pill p-amber">Waiting 22 min</span></button><button class="row" style="width: 100%; min-height: 76px;"><span class="grow"><span class="t-row">Main bar</span><br><span class="t-sup muted">Isaac B. · 8 items · asked 19:31</span></span><span class="pill p-amber">Waiting 11 min</span></button><button class="row" style="width: 100%; min-height: 76px;"><span class="grow"><span class="t-row">Terrace bar</span><br><span class="t-sup muted">Isaac B. · 3 items · asked 19:38</span></span><span class="pill p-amber">Waiting 4 min</span></button><button class="row" style="width: 100%; min-height: 76px;"><span class="grow"><span class="t-row">Hot kitchen</span><br><span class="t-sup muted">6 items · issued 18:05</span></span><span class="pill p-neutral">Not received yet</span></button><button class="row" style="width: 100%; min-height: 76px;"><span class="grow"><span class="t-row">Main bar</span><br><span class="t-sup muted">12 items · issued 17:40</span></span><span class="pill p-red">Received 2 short</span></button></div></section>
+    <section class="card grow vstack" style="overflow: hidden">
+      <div class="hstack" style="padding: 16px 20px 12px"><div class="grow"><h2 class="t-h">Hot kitchen</h2><p class="t-sup muted">Asked by Ruth A. at 19:20 · goes from Main store to Kitchen store</p></div><span class="pill p-amber">Waiting 22 min</span></div>
+      <table class="dt"><thead><tr><th>Item</th><th>Unit</th><th class="num">Asked</th><th class="num">In store</th><th class="num" style="width: 220px">Give</th></tr></thead><tbody><tr><td>Cooking oil</td><td class="muted">litres</td><td class="num">5</td><td class="num">22</td><td><div class="step" style="justify-content: flex-end"><button class="round sm tonal" aria-label="Less"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><b>5</b><button class="round sm tonal" aria-label="More"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></td></tr><tr><td>Beef mince</td><td class="muted">kg</td><td class="num">3</td><td class="num">40</td><td><div class="step" style="justify-content: flex-end"><button class="round sm tonal" aria-label="Less"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><b>3</b><button class="round sm tonal" aria-label="More"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></td></tr><tr><td>Burger buns<span class="pill p-amber" style="margin-left: 8px">12 short</span></td><td class="muted">pieces</td><td class="num">48</td><td class="num">36</td><td><div class="step" style="justify-content: flex-end"><button class="round sm tonal" aria-label="Less"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><b>36</b><button class="round sm tonal" aria-label="More"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></td></tr><tr><td>Potatoes</td><td class="muted">kg</td><td class="num">20</td><td class="num">150</td><td><div class="step" style="justify-content: flex-end"><button class="round sm tonal" aria-label="Less"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><b>20</b><button class="round sm tonal" aria-label="More"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></td></tr><tr><td>Chicken wings</td><td class="muted">kg</td><td class="num">5</td><td class="num">12</td><td><div class="step" style="justify-content: flex-end"><button class="round sm tonal" aria-label="Less"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><b>5</b><button class="round sm tonal" aria-label="More"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></td></tr></tbody></table>
+      <span class="grow"></span>
+      <div class="hr"></div>
+      <div class="hstack" style="padding: 14px 20px 16px"><p class="t-small muted grow">Ruth A. confirms with her PIN when it arrives. What you give leaves Main store now.</p><button class="btn textbtn danger">Decline</button><button class="btn filled" style="min-width: 220px">Issue 5 items</button></div>
+    </section>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13l2-8h12l2 8v6H4z"/><path d="M4 13h5a3 3 0 0 0 6 0h5"/></svg>Requests<span class="nb">3</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>Stock</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10M8 10l4 4 4-4M5 19h14"/></svg>Receive</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h4"/></svg>Count</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

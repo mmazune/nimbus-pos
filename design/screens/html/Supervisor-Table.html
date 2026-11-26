@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Same table, supervisor, table actions</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar">
+    <a class="back" href="Main.html"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>Floor</a>
+    <h1 class="t-h">Table 12</h1>
+    <span class="clock">Amina K.’s table · 3 guests · open 1 h 05</span>
+    <span class="grow"></span>
+    <span class="search" style="width: 320px"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search the whole menu</span>
+    <span class="who" title="Signed in">GN</span>
+  </header>
+  <div class="ord" style="grid-template-columns: minmax(0, 1fr) 372px" inert>
+    <main class="menu">
+      <div class="hstack" style="justify-content: space-between">
+        <div class="seg" role="tablist" aria-label="Menu">
+          <button class="on" style="min-width: 140px">Food</button>
+          <button class="" style="min-width: 140px">Drinks</button>
+        </div>
+      </div>
+      <div class="optgrid" style="grid-template-columns: repeat(8, minmax(0, 1fr))"><button class="opt on">Popular</button><button class="opt">Offers</button><button class="opt">Starters</button><button class="opt">Soups</button><button class="opt">Salads</button><button class="opt">Mains</button><button class="opt">Grills</button><button class="opt">Burgers</button><button class="opt">Pizza</button><button class="opt">Pasta</button><button class="opt">Local</button><button class="opt">Sides</button><button class="opt">Kids</button><button class="opt">Desserts</button><button class="opt">Breakfast</button><button class="opt">Extras</button></div>
+      <div class="items" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><button class="item"><b>Beef burger</b><span>28,000</span></button><button class="item"><b>Chicken wings</b><span>24,000</span></button><button class="item"><b>Chips</b><span>8,000</span></button><button class="item"><b>Goat stew</b><span>26,000</span></button><button class="item"><b>Grilled tilapia</b><span>38,000</span></button><button class="item"><b>Chicken curry</b><span>27,000</span></button><button class="item"><b>Pork ribs</b><span>35,000</span></button><button class="item"><b>Beef samosas</b><span>12,000</span></button><button class="item"><b>Margherita pizza</b><span>30,000</span></button><button class="item"><b>Club sandwich</b><span>25,000</span></button><button class="item"><b>Greek salad</b><span>20,000</span></button><button class="item"><b>Fish and chips</b><span>32,000</span></button><button class="item"><b>Rolex</b><span>9,000</span></button><button class="item"><b>Matooke and beef</b><span>22,000</span></button><button class="item"><b>Chicken luwombo</b><span>30,000</span></button><button class="item"><b>Spring rolls</b><span>12,000</span></button><button class="item"><b>Pepper steak</b><span>45,000</span></button><button class="item"><b>Spaghetti bolognese</b><span>27,000</span></button><button class="item"><b>Fruit platter</b><span>15,000</span></button><button class="item"><b>Chocolate cake</b><span>14,000</span></button></div>
+    </main>
+    <aside class="check" aria-label="Order">
+      <div class="hstack" style="padding: 16px 16px 8px; justify-content: space-between"><h2 class="t-h">Order</h2><span class="t-sup muted">8 items</span></div>
+      <p class="cap" style="padding: 8px 16px 4px">Sent 20:15</p><button class="line sent"><span class="q">2</span><span class="grow"><span class="nm">Lager 500 ml</span></span><span class="pr">12,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Blended Scotch</span><br><span class="sub">Double · Cola</span></span><span class="pr">15,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Cola 300 ml</span></span><span class="pr">3,000</span></button><div class="hr" style="margin: 8px 16px"></div><p class="cap" style="padding: 8px 16px 4px">Sent 19:42</p><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Beef burger</span><br><span class="sub">Medium · No onions</span></span><span class="pr">28,000</span></button><button class="line sent"><span class="q">2</span><span class="grow"><span class="nm">Chips</span></span><span class="pr">16,000</span></button><button class="line sent"><span class="q">1</span><span class="grow"><span class="nm">Chicken wings</span></span><span class="pr">24,000</span></button>
+      <span class="grow"></span>
+      <div class="hr"></div>
+      <div class="tot" style="padding: 14px 16px 4px"><span class="t-row">Total</span><span class="t-h">UGX 98,000</span></div>
+      <div class="hstack g8" style="padding: 12px 16px 16px"><button class="sq tonal" aria-label="Table actions"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button><button class="btn filled" style="flex: 1 1 0; padding: 0 12px">Print bill</button></div>
+    </aside>
+  </div>
+  <div class="scrim"></div>
+  <section class="sheet mid" aria-label="Table actions">
+    <span class="grab"></span>
+    <div class="hstack">
+      <div class="grow"><h2 class="t-h">Table 12</h2><p class="t-sup muted">Amina K. · 3 guests · open 1 h 05 · UGX 98,000</p></div>
+      <a class="close" href="Order-Terminal.html" aria-label="Close"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a>
+    </div>
+    <div class="optgrid" style="grid-template-columns: 1fr 1fr">
+      <button class="act "><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="grow"><b>Move table</b><small>To a free table, the order goes with it</small></span></button><button class="act "><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v5a5 5 0 0 0 5 5v6M17 4v5a5 5 0 0 1-5 5"/></svg><span class="grow"><b>Join tables</b><small>Put two tables on one bill</small></span></button><button class="act "><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5"/></svg><span class="grow"><b>Change waiter</b><small>Give this table to someone else</small></span></button><button class="act "><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="7" height="14" rx="1.5"/><rect x="13" y="5" width="7" height="14" rx="1.5"/></svg><span class="grow"><b>Split bill</b><small>By guest, by item or by amount</small></span></button><button class="act "><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/><path d="M19 5 5 19"/></svg><span class="grow"><b>Discount</b><small>A reason is saved with your name</small></span></button><button class="act "><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m6.5 6.5 11 11"/></svg><span class="grow"><b>Void an item</b><small>Pick the line, say why</small></span></button><button class="act "><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span class="grow"><b>Send to kitchen again</b><small>Prints the order once more</small></span></button><button class="act danger"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span class="grow"><b>Cancel the order</b><small>Everything on this table</small></span></button>
+    </div>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>

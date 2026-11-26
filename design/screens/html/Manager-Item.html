@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Manager, a menu item and its recipe</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1440px; height: 900px">
+  <header class="bar">
+    <button class="rb" aria-label="All apps"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="18" cy="6" r="1.3"/><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="12" cy="18" r="1.3"/><circle cx="18" cy="18" r="1.3"/></svg></button><span class="div"></span>
+    <a class="mark" href="#"><i></i>Nimbus POS</a>
+    <nav aria-label="Main"><a href="#">Floor</a><a class="on" aria-current="page" href="#">Menu</a><a href="#">Stock</a><a href="#">Staff</a><a href="#">More</a></nav>
+    <span class="grow"></span>
+    <span class="search"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</span>
+    <button class="rb" aria-label="Alerts"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></button>
+    <span class="clock">Tapas Downtown</span>
+    <button class="who" aria-label="Account">PK</button>
+  </header>
+  <div class="cp"><span class="crumb">Menu › Food › Burgers ›</span><h1 class="t-row">Beef burger</h1><span class="pill p-green">On the menu</span><span class="grow"></span><button class="btn sm textbtn">Discard changes</button><button class="btn sm filled" style="min-width: 140px">Save item</button></div>
+  <main class="page" style="flex-direction: row; gap: 20px">
+    <section class="card grow vstack g16" style="padding: 20px">
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1.4fr 1.2fr; gap: 12px"><div style=""><label class="lab">Name on the menu</label><div class="field">Beef burger</div></div><div style=""><label class="lab">Price</label><div class="field">UGX 28,000</div></div><div style=""><label class="lab">Menu and group</label><div class="field">Food › Burgers</div></div><div style=""><label class="lab">Order goes to</label><div class="field">Hot kitchen</div></div></div>
+      <div><p class="lab">How is it sold?</p><div class="optgrid" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><button class="opt tall">As bought<small>A bottle, a packet</small></button><button class="opt tall">A measure<small>Tot, glass, scoop</small></button><button class="opt tall on">Made from a recipe<small>Uses ingredients</small></button><button class="opt tall">Not tracked<small>No stock is counted</small></button></div></div>
+      <div class="vstack grow">
+        <div class="hstack" style="justify-content: space-between"><p class="lab" style="margin: 0">Recipe for 1 burger</p><button class="btn sm textbtn"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add an ingredient</button></div>
+        <table class="dt c"><thead><tr><th>Ingredient</th><th class="num">Amount</th><th>Unit</th><th class="num">Cost, UGX</th><th></th></tr></thead><tbody><tr><td>Beef mince</td><td class="num">150</td><td class="muted">g</td><td class="num">2,700</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Beef mince" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Burger bun</td><td class="num">1</td><td class="muted">piece</td><td class="num">800</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Burger bun" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Cheese slice</td><td class="num">1</td><td class="muted">piece</td><td class="num">600</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Cheese slice" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Lettuce</td><td class="num">20</td><td class="muted">g</td><td class="num">100</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Lettuce" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Tomato</td><td class="num">30</td><td class="muted">g</td><td class="num">150</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Tomato" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Cooking oil</td><td class="num">10</td><td class="muted">ml</td><td class="num">90</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Cooking oil" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Chips, frozen</td><td class="num">180</td><td class="muted">g</td><td class="num">1,260</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Chips, frozen" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Cost to make one</td><td></td><td></td><td class="num b">5,700</td><td></td></tr></tbody></table>
+      </div>
+    </section>
+    <aside class="vstack g16" style="width: 420px; flex: none">
+      <div class="card" style="padding: 16px 20px"><p class="cap" style="padding-bottom: 6px">Cost and margin</p><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Sells for</span><span class="t-body b" style="text-align: right">UGX 28,000</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Costs to make</span><span class="t-body b" style="text-align: right">UGX 5,700</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Left over</span><span class="t-body b" style="text-align: right">UGX 22,300 · 80%</span></div><p class="t-small muted" style="padding-top: 6px">Ingredient costs come from the accountant, as at 24 Nov.</p></div>
+      <div class="card" style="overflow: hidden"><p class="cap" style="padding: 16px 20px 6px">Choices the guest can make</p>
+        <button class="row s" style="width: 100%; padding: 8px 20px"><span class="grow"><span class="t-body b">How cooked</span><br><span class="t-sup muted">Pick one · 3 choices</span></span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+        <button class="row s" style="width: 100%; padding: 8px 20px"><span class="grow"><span class="t-body b">Extras</span><br><span class="t-sup muted">Any · 4 choices, each uses stock</span></span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+        <button class="row s" style="width: 100%; padding: 8px 20px"><span class="grow"><span class="t-body b">Leave out</span><br><span class="t-sup muted">Any · 3 choices</span></span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button></div>
+      <div class="card" style="padding: 16px 20px"><p class="cap" style="padding-bottom: 6px">Stock</p><p class="t-sup">When a waiter sends a burger, these amounts leave <b>Kitchen store</b>. A void marked “not made” puts them back.</p></div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

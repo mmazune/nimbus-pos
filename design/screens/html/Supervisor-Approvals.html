@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Supervisor, approvals</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar tall">
+    <a class="mark solo" href="#" aria-label="Nimbus POS"><i></i></a>
+    <h1 class="t-h">Approvals</h1>
+    <span class="clock">4 waiting · oldest 9 min · as at 19:56</span>
+    <span class="grow"></span>
+    <span class="name"><b>Grace N.</b> · Supervisor · Front desk</span>
+    <button class="rb" aria-label="Lock the screen"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  </header>
+  <main class="page" style="padding: 16px 24px; flex-direction: row; gap: 20px">
+    <section class="grow vstack g16">
+      <div class="hstack"><div class="seg"><button class="on">Waiting · 4</button><button>Done today · 11</button></div></div>
+      <div class="card" style="overflow: hidden"><button class="row" style="width: 100%; min-height: 76px; background: var(--canvas);"><span class="av"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m6.5 6.5 11 11"/></svg></span><span class="grow"><span class="t-row">Void · Table 12</span><br><span class="t-sup muted">1 Chicken wings · UGX 24,000 · Amina K.</span></span><span class="t-sup muted">2 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="av"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/><path d="M19 5 5 19"/></svg></span><span class="grow"><span class="t-row">Discount · Table 19</span><br><span class="t-sup muted">10% · UGX 6,600 · David S.</span></span><span class="t-sup muted">5 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="av"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span><span class="grow"><span class="t-row">Refund · Bill 0409</span><br><span class="t-sup muted">UGX 12,000 · Sarah M.</span></span><span class="t-sup muted">9 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%; min-height: 76px;"><span class="av"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5"/></svg></span><span class="grow"><span class="t-row">Take over · Table 3</span><br><span class="t-sup muted">Amina K. asks for Brian O.’s table</span></span><span class="t-sup muted">1 min</span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button></div>
+      <p class="t-small muted">A waiter can also hand you the terminal: you type your PIN on their screen and it is approved on the spot.</p>
+    </section>
+    <aside class="card vstack g8" style="width: 420px; flex: none; padding: 20px">
+      <h2 class="t-h">Void 1 Chicken wings</h2><p class="t-sup muted">Table 12 · UGX 24,000 · bill becomes UGX 74,000</p>
+      <div style="margin-top: 8px"><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Asked by</span><span class="t-body b" style="text-align: right">Amina K. · 19:54</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Reason</span><span class="t-body b" style="text-align: right">Guest changed their mind</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Was it made?</span><span class="t-body b" style="text-align: right">Yes, it is waste</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Sent to the kitchen</span><span class="t-body b" style="text-align: right">19:42</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Amina K. today</span><span class="t-body b" style="text-align: right">2 voids · UGX 31,000</span></div></div>
+      <span class="grow"></span>
+      <button class="btn textbtn danger">Decline</button>
+      <button class="btn filled">Approve the void</button>
+    </aside>
+  </main>
+  <nav class="navbar" aria-label="Main">
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Floor</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg>Reservations</a>
+    <a class="on" aria-current="page" href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="m9 12 2 2 4-4"/></svg>Approvals<span class="nb">4</span></a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5"/></svg>Team</a>
+    <a href="#"><svg class="ic l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Me</a>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

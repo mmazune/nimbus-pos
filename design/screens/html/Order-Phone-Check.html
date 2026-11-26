@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Order screen, phone, the order</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 390px; height: 844px">
+  <header class="band" style="padding-bottom: 16px">
+    <div class="hstack">
+      <span class="rb"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></span>
+      <div class="grow">
+        <p class="t-h">Table 12</p>
+        <p class="t-sup" style="color: var(--on-primary-muted)">3 guests · open 1 h 05</p>
+      </div>
+    </div>
+  </header>
+  <div class="body"></div>
+  <div class="scrim"></div>
+
+  <section class="sheet" style="top: 72px; padding: 10px 0 0" aria-label="Order for table 12">
+    <span class="grab"></span>
+    <div class="hstack" style="padding: 0 20px">
+      <div class="grow">
+        <h1 class="t-h">Order</h1>
+        <p class="t-sup muted">Table 12 · 8 items</p>
+      </div>
+      <a class="close" href="Order-Phone.html" aria-label="Back to the menu"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a>
+    </div>
+
+    <div class="grow" style="overflow: hidden">
+      <p class="cap" style="padding: 4px 20px">Not sent · tap a line to change it</p>
+      <button class="line" style="width: 100%; padding: 10px 20px"><span class="q">2</span><span class="grow"><span class="nm">Lager 500 ml</span></span><span class="pr">12,000</span></button>
+      <button class="line" style="width: 100%; padding: 10px 20px"><span class="q">1</span><span class="grow"><span class="nm">Blended Scotch</span><br><span class="sub">Double · Cola</span></span><span class="pr">15,000</span></button>
+      <button class="line" style="width: 100%; padding: 10px 20px"><span class="q">1</span><span class="grow"><span class="nm">Cola 300 ml</span></span><span class="pr">3,000</span></button>
+
+      <div class="hr" style="margin: 8px 20px"></div>
+      <p class="cap" style="padding: 8px 20px 4px">Sent 19:42 · in the kitchen</p>
+      <button class="line sent" style="width: 100%; padding: 10px 20px"><span class="q">1</span><span class="grow"><span class="nm">Beef burger</span><br><span class="sub">Medium · No onions</span></span><span class="pr">28,000</span></button>
+      <button class="line sent" style="width: 100%; padding: 10px 20px"><span class="q">2</span><span class="grow"><span class="nm">Chips</span></span><span class="pr">16,000</span></button>
+      <button class="line sent" style="width: 100%; padding: 10px 20px"><span class="q">1</span><span class="grow"><span class="nm">Chicken wings</span></span><span class="pr">24,000</span></button>
+    </div>
+
+    <div>
+      <div class="hr"></div>
+      <div class="tot" style="padding: 14px 20px 2px">
+        <span class="t-row">Total</span>
+        <span class="t-h">UGX 98,000</span>
+      </div>
+      <div class="hstack g12" style="padding: 12px 16px 20px">
+        <a class="btn tonal" href="Bill-Phone.html" style="flex: 1 1 0">Print bill</a>
+        <button class="btn filled" style="flex: 2 1 0">Send 4 items</button>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>
