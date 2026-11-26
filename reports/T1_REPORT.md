@@ -6,7 +6,15 @@ Everything below ran in this container: a throwaway Postgres 16 (`nimbus_t1_*`, 
 Grades: **[live]** = driven in Chromium against the running app and API · **[code]** = read in the code · **[asserted]** = stated, not measured.
 
 ## Verdict
-All six phases are done. Ten screens are built to their drawings and pass the look review; the lowest scores are Floor-Phone and Supervisor-Approvals at 20/24. The scores were given before the last drawing fixes. Where a drawing still differs, the difference is listed with its reason (Done-when 3). `pnpm verify:web` and the web build are green. The T1 suite passed 27/27, three runs in a row. The regression suite is 157 passed, 2 failed, 2 skipped, against a baseline of 151 / 7 / 3; both failures also failed at baseline. Product code stays inside T1's paths. Old specs in other test folders were updated and listed (Done-when 6 and 7).
+All six phases are done. Ten screens are built to their drawings and pass the look review; the lowest scores are Floor-Phone and Supervisor-Approvals at 20/24, given before the last drawing fixes. `pnpm verify:web` and the web build are green. The T1 suite passed 27/27, three runs in a row. The regression suite is 157 passed, 2 failed, 2 skipped, against a baseline of 151 / 7 / 3; both failures also failed at baseline.
+
+Two lines are met only as written, and the owner should judge them:
+- **Done-when 3** says "with the left-out parts listed". Two drawn texts are left out and listed, because showing them would be false here. A live test proves each:
+  - "A supervisor signs any difference" (Till): no sign-off exists. A cash-variance alert only fires above a threshold.
+  - "· needs a supervisor" (Refund): small refunds complete at once.
+
+  The header's drawn station name shows when the station is named (proven live). Nothing else differs.
+- **Done-when 7:** all product code is inside T1's paths. Done-when 6 required old specs in five other test folders to be updated, and they are listed. T1's ownership list names no test folders, so the two lines pull against each other there.
 
 ## Phase 1 — Shell and Floor (U1 Done-when 1–10)
 | # | Line | Proof |
