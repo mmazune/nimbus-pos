@@ -38,6 +38,17 @@ export type OrderLineModel = {
   wasMade: boolean | null;
   /** false when the line came from a kitchen ticket, which carries no price. */
   priceKnown?: boolean;
+  /** Not sent, and its item is sold out: it cannot go (T2 `unsendable`). */
+  unsendable?: boolean;
+  /** Held back (starters now, mains later): Send skips it until it is fired. */
+  held?: boolean;
+  /** Fired and inside its 3-second undo window: goes to the kitchen at `fireAt`. */
+  fireAt?: string | null;
+  fireId?: string | null;
+  /** An allergy said for this line ("nuts"); the kitchen sees it in red. */
+  allergy?: string | null;
+  takeaway?: boolean;
+  guest?: number | null;
 };
 
 export type OrderModel = {
@@ -90,6 +101,13 @@ type ApiLine = {
   wasMade?: boolean | null;
   menuItem?: { id: string; name?: string | null; station?: string | null } | null;
   menuItemServing?: { id: string; label?: string | null; format?: string | null } | null;
+  unsendable?: boolean | null;
+  heldAt?: string | null;
+  fireAt?: string | null;
+  fireId?: string | null;
+  allergy?: string | null;
+  takeaway?: boolean | null;
+  guest?: number | null;
 };
 
 type ApiUser = { id?: string | null; firstName?: string | null; lastName?: string | null } | null;
@@ -158,6 +176,13 @@ export function mapLine(raw: ApiLine): OrderLineModel {
     station: raw.menuItem?.station ?? null,
     voidReason: raw.voidReason ?? null,
     wasMade: raw.wasMade ?? null,
+    unsendable: Boolean(raw.unsendable) && !raw.sentAt && !raw.voidedAt,
+    held: Boolean(raw.heldAt) && !raw.sentAt && !raw.fireAt,
+    fireAt: !raw.sentAt ? raw.fireAt ?? null : null,
+    fireId: raw.fireId ?? null,
+    allergy: raw.allergy?.trim() || null,
+    takeaway: Boolean(raw.takeaway),
+    guest: raw.guest ?? null,
   };
 }
 
@@ -285,8 +310,43 @@ export async function deleteLine(ctx: Ctx, orderId: string, serverId: string): P
   await apiRequest(`/api/pos/orders/${orderId}/items/${serverId}`, { ...ctx, method: "DELETE" });
 }
 
-export async function sendOrder(ctx: Ctx, orderId: string): Promise<void> {
-  await apiRequest(`/api/pos/orders/${orderId}/send`, { ...ctx, method: "POST", body: {} });
+/** A line Send could not send (T2): its item sold out, or fewer left than asked for. */
+export type SkippedLine = { name: string; quantity: number; reason: "SOLD_OUT" | "NOT_ENOUGH_LEFT" | string; left?: number | null };
+
+export type SendReport = { skipped: SkippedLine[]; held: number; sent: number };
+
+/** The code the API puts at the top of a refusal ("ITEM_SOLD_OUT", "NOTHING_SENDABLE", …). */
+export function serverCode(e: unknown): string | null {
+  const d = e && typeof e === "object" && "details" in e ? (e as { details?: unknown }).details : null;
+  return d && typeof d === "object" && typeof (d as { code?: unknown }).code === "string" ? (d as { code: string }).code : null;
+}
+
+function skippedOf(raw: unknown): SkippedLine[] {
+  return Array.isArray(raw)
+    ? raw.map((k: { name?: string; quantity?: number; reason?: string; left?: number | null }) => ({
+        name: k.name ?? "An item",
+        quantity: k.quantity ?? 1,
+        reason: k.reason ?? "SOLD_OUT",
+        left: k.left ?? null,
+      }))
+    : [];
+}
+
+/** Send: the server sends what it can, skips what sold out and says which (never all or nothing). */
+export async function sendOrder(ctx: Ctx, orderId: string): Promise<SendReport> {
+  try {
+    const res = await apiRequest<{ sent?: unknown[]; skipped?: unknown; held?: unknown[] }>(`/api/pos/orders/${orderId}/send`, {
+      ...ctx,
+      method: "POST",
+      body: {},
+    });
+    return { skipped: skippedOf(res?.skipped), held: res?.held?.length ?? 0, sent: res?.sent?.length ?? 0 };
+  } catch (e) {
+    if (serverCode(e) === "NOTHING_SENDABLE") {
+      return { skipped: skippedOf((e as { details?: { skipped?: unknown } }).details?.skipped), held: 0, sent: 0 };
+    }
+    throw e;
+  }
 }
 
 export type VoidReason =

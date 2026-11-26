@@ -20,7 +20,8 @@ import {
 import { FloorScreen } from "@/screens/floor/FloorScreen";
 import { errorWords } from "@/screens/shared/words";
 import { loadAllActiveOrders, loadAreas } from "@/screens/floor/floor-data";
-import { loadWaiterMenuWorkspace } from "@/lib/waiter/order-api";
+import { loadMenu } from "@/screens/order/data/menu";
+import { menuKey } from "@/screens/order/data/useMenu";
 import { seatReservation } from "@/lib/waiter/reservation-api";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
 
@@ -102,9 +103,10 @@ export function WaiterFloorScreen() {
   useEffect(() => {
     if (!accessToken || !branchId) return;
 
+    // The order screen's menu (one workspace call), warmed so a table tap opens the menu at once.
     void queryClient.prefetchQuery({
-      queryKey: ["waiter", "menu-workspace", branchId],
-      queryFn: () => loadWaiterMenuWorkspace(accessToken, branchId),
+      queryKey: menuKey(branchId),
+      queryFn: () => loadMenu(accessToken, branchId),
       staleTime: 5 * 60_000,
     });
   }, [accessToken, branchId, queryClient]);

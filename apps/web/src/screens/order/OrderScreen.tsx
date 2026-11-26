@@ -10,7 +10,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActionTile, Banner, Button, Card, KitIcon, OrderHeader, Pill, Sheet, SquareAction, Text } from "@/components/kit";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
-import { loadItemChoices, loadMenu, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
+import { loadItemChoices, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
+import { useMenu } from "./data/useMenu";
 import { formatMoney } from "./data/money";
 import { hasOpenTill, sentRounds, takeOverWithSupervisorPin, type LineChoice, type OrderLineModel } from "./data/order";
 import { TakeOverSheet } from "./parts/TakeOverSheet";
@@ -91,12 +92,7 @@ export function OrderScreen(props: OrderScreenProps) {
     userId: user?.id ?? null,
     onChanged,
   });
-  const menuQ = useQuery({
-    queryKey: ["order-screen", "menu", branchId],
-    enabled: Boolean(ctx),
-    queryFn: () => loadMenu(ctx!.token, ctx!.branchId),
-    staleTime: 5 * 60_000,
-  });
+  const menuQ = useMenu(ctx);
   const menu = menuQ.data;
   const tillQ = useQuery({
     queryKey: ["order-screen", "till", branchId, user?.id],
@@ -166,12 +162,13 @@ export function OrderScreen(props: OrderScreenProps) {
 
   const choicesOf = useCallback(
     (itemId: string) =>
-      qc.fetchQuery({
+      // The workspace carries each item's choices; the per-item read is only for an item it did not have.
+      menu?.items[itemId]?.choices ? Promise.resolve(menu.items[itemId].choices as MenuChoiceGroup[]) : qc.fetchQuery({
         queryKey: ["order-screen", "choices", branchId, itemId],
         queryFn: () => loadItemChoices(ctx!.token, ctx!.branchId, itemId),
         staleTime: 10 * 60_000,
       }),
-    [branchId, ctx, qc],
+    [branchId, ctx, menu, qc],
   );
 
   const [choiceError, setChoiceError] = useState<string | null>(null);
@@ -203,14 +200,16 @@ export function OrderScreen(props: OrderScreenProps) {
   );
 
   // "Add a mixer" under a measured drink just added (drawing Order-Terminal).
+  const lastItemId = session.lines.find((l) => l.key === lastAddedKey)?.menuItemId ?? "none";
+  const knownChoices = menu?.items[lastItemId]?.choices ?? null;
   const mixerGroupQ = useQuery({
-    queryKey: ["order-screen", "choices", branchId, session.lines.find((l) => l.key === lastAddedKey)?.menuItemId ?? "none"],
-    enabled: Boolean(ctx && lastAddedKey && session.lines.some((l) => l.key === lastAddedKey)),
-    queryFn: () => loadItemChoices(ctx!.token, ctx!.branchId, session.lines.find((l) => l.key === lastAddedKey)!.menuItemId),
+    queryKey: ["order-screen", "choices", branchId, lastItemId],
+    enabled: Boolean(ctx && lastAddedKey && !knownChoices && session.lines.some((l) => l.key === lastAddedKey)),
+    queryFn: () => loadItemChoices(ctx!.token, ctx!.branchId, lastItemId),
     staleTime: 10 * 60_000,
   });
   const lastLine = session.lines.find((l) => l.key === lastAddedKey && l.state === "unsent" && !l.serverId) ?? null;
-  const mixerGroup = mixerGroupQ.data?.find((g) => MIXER.test(g.name)) ?? null;
+  const mixerGroup = (knownChoices ?? mixerGroupQ.data)?.find((g) => MIXER.test(g.name)) ?? null;
   const mixer: MixerOffer | null =
     lastLine && mixerGroup
       ? { line: lastLine, group: mixerGroup, currentOptionId: lastLine.choices.find((c) => c.groupId === mixerGroup.id)?.optionId ?? null }
@@ -484,6 +483,14 @@ export function OrderScreen(props: OrderScreenProps) {
       {session.lastError && !sheet ? (
         <Banner tone="red" title="That did not go through" detail={session.lastError} action={{ label: "Close", onClick: session.clearError }} />
       ) : null}
+      {session.sendReport ? (
+        <Banner
+          tone="amber"
+          title={`Not sent: ${session.sendReport.skipped.map((k) => `${k.quantity} ${k.name}`).join(", ")}`}
+          detail={`${session.sendReport.skipped.some((k) => k.reason === "NOT_ENOUGH_LEFT") ? "Sold out or not enough left." : "Sold out."}${session.sendReport.sent > 0 ? " The rest went to the kitchen." : ""}`}
+          action={{ label: "Close", onClick: session.clearSendReport }}
+        />
+      ) : null}
       {choiceError ? <Banner tone="amber" title="Choices not loaded" detail={choiceError} action={{ label: "Close", onClick: () => setChoiceError(null) }} /> : null}
       {session.openOrders.length > 1 ? (
         <Banner tone="amber" title={`${session.openOrders.length} open orders on this table`} detail="This screen shows one at a time." action={{ label: "Choose", onClick: () => setSheet({ kind: "orders" }) }} />
@@ -513,7 +520,7 @@ export function OrderScreen(props: OrderScreenProps) {
 
   // Kitchen tickets carry no prices. Price each line from the menu, and show those prices only
   // when they add up exactly to the order's own total; otherwise they stay blank.
-  const panelLines = useMemo(() => {
+  const pricedLines = useMemo(() => {
     if (!summary || !menu || !session.lines.some((l) => l.priceKnown === false)) return session.lines;
     const priced = session.lines.map((l) => {
       const item = menu.items[l.menuItemId];
@@ -525,6 +532,19 @@ export function OrderScreen(props: OrderScreenProps) {
     const sum = priced.reduce((acc, l) => (l && l.state !== "voided" ? acc + l.lineMinor : acc), 0);
     return sum === summary.totalMinor ? (priced as OrderLineModel[]) : session.lines;
   }, [menu, session.lines, summary]);
+  // A line not sent whose item has since sold out cannot go: red, with Remove (T5, from the menu poll).
+  const shownLines = useMemo(
+    () =>
+      pricedLines.map((l) =>
+        l.state === "unsent" && (l.unsendable || menu?.items[l.menuItemId]?.availability.state === "soldOut") ? { ...l, unsendable: true } : l,
+      ),
+    [menu, pricedLines],
+  );  // What Send can actually send, and the total without lines that cannot go.
+  const blocked = shownLines.filter((l) => l.state === "unsent" && l.unsendable);
+  const sendableCount = session.unsentCount - blocked.reduce((n, l) => n + l.quantity, 0);
+  const shownTotal = session.totalMinor - blocked.filter((l) => !l.serverId).reduce((n, l) => n + l.lineMinor, 0);
+  const viewSession = useMemo(() => ({ ...session, unsentCount: sendableCount, totalMinor: shownTotal }), [session, sendableCount, shownTotal]);
+
 
   if (phone && frame === "touch") {
     return (
@@ -535,7 +555,7 @@ export function OrderScreen(props: OrderScreenProps) {
         menuStatus={menuQ.status}
         nav={nav}
         onNav={setNav}
-        session={session}
+        session={viewSession}
         rights={rights}
         readOnly={readOnly}
         othersName={othersTable ? waiterName : null}
@@ -647,15 +667,16 @@ export function OrderScreen(props: OrderScreenProps) {
   const panel = (
     <OrderPanel
       title={paying ? "Bill" : "Order"}
-      lines={panelLines}
+      lines={shownLines}
       count={session.count}
-      totalMinor={readOnly && summary ? summary.totalMinor : session.totalMinor}
+      totalMinor={readOnly && summary ? summary.totalMinor : shownTotal}
       discountMinor={order?.discountMinor ?? 0}
-      unsentCount={session.unsentCount}
+      unsentCount={sendableCount}
       filled={filled}
       busy={session.busy}
       linesHidden={readOnly && session.lines.length === 0}
       onLine={readOnly ? undefined : openLine}
+      onRemove={readOnly ? undefined : (l) => session.remove(l.key)}
       onSend={doSend}
       onPrintBill={printBill}
       onTakePayment={() => setPaying(true)}

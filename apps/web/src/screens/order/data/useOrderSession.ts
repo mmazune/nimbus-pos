@@ -28,7 +28,9 @@ import {
   payAndClose,
   requestBill,
   sendOrder,
+  serverCode,
   voidLine,
+  type SendReport,
   type LineChoice,
   type OrderLineModel,
   type OrderModel,
@@ -124,6 +126,9 @@ export type OrderSession = {
   pay: (payments: Array<{ method: PayMethod; amountMinor: Minor }>) => Promise<PayResult | null>;
   lastError: string | null;
   clearError: () => void;
+  /** What the last Send could not send, by name (sold out or not enough left). */
+  sendReport: SendReport | null;
+  clearSendReport: () => void;
   refresh: () => Promise<void>;
 };
 
@@ -153,6 +158,7 @@ export function useOrderSession(args: {
   const [local, setLocal] = useState<OrderLineModel[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [sendReport, setSendReport] = useState<SendReport | null>(null);
   /** The id of an order this device created whose first Send has not finished. */
   const createdIdRef = useRef<string | null>(null);
   const lockRef = useRef(false);
@@ -292,18 +298,34 @@ export function useOrderSession(args: {
       }
       // Save each line not yet saved, one at a time; a saved line keeps its server id.
       // Lines added while this Send runs are not in `pending` and stay for the next Send.
+      // A line whose item sold out since it was tapped is refused here (ITEM_SOLD_OUT): it stays on
+      // this device, red, and the rest still go (T2: never all or nothing).
       const pending = local.filter((l) => !l.serverId);
-      const pendingKeys = new Set(pending.map((l) => l.key));
+      const savedKeys = new Set<string>();
+      const refused: SendReport["skipped"] = [];
       for (const line of pending) {
-        const saved = await addLine(ctx, targetOrderId, line);
-        setLocal((cur) => cur.map((l) => (l.key === line.key ? { ...l, serverId: saved.serverId } : l)));
+        try {
+          const saved = await addLine(ctx, targetOrderId, line);
+          savedKeys.add(line.key);
+          setLocal((cur) => cur.map((l) => (l.key === line.key ? { ...l, serverId: saved.serverId } : l)));
+        } catch (e) {
+          if (serverCode(e) !== "ITEM_SOLD_OUT") throw e;
+          refused.push({ name: line.name, quantity: line.quantity, reason: "SOLD_OUT" });
+          setLocal((cur) => cur.map((l) => (l.key === line.key ? { ...l, unsendable: true } : l)));
+        }
       }
-      await sendOrder(ctx, targetOrderId);
-      setLocal((cur) => cur.filter((l) => !pendingKeys.has(l.key)));
+      const serverUnsent = (order?.lines ?? []).some((l) => l.state === "unsent" && !l.held);
+      const report: SendReport =
+        savedKeys.size > 0 || serverUnsent ? await sendOrder(ctx, targetOrderId) : { skipped: [], held: 0, sent: 0 };
+      report.skipped = [...refused, ...report.skipped];
+      setLocal((cur) => cur.filter((l) => !savedKeys.has(l.key)));
       createdIdRef.current = null;
+      setSendReport(report.skipped.length ? report : null);
+      // Something ran out under us: read the menu's changes now rather than at the next poll.
+      if (report.skipped.length) void qc.refetchQueries({ queryKey: ["order-screen", "menu-changes", ctx.branchId] });
       await refresh();
       onChanged?.();
-      return true;
+      return report.skipped.length === 0;
     } catch (e) {
       // Lines already saved stay saved (their server id is kept); a retry sends the rest.
       setLocal((cur) => cur.filter((l) => !l.serverId));
@@ -314,7 +336,7 @@ export function useOrderSession(args: {
       lockRef.current = false;
       setBusy(null);
     }
-  }, [ctx, local, onChanged, order?.id, refresh, tableId]);
+  }, [ctx, local, onChanged, order?.id, order?.lines, qc, refresh, tableId]);
 
   const voidOne = useCallback(
     async (line: OrderLineModel, body: { reason: VoidReason; wasMade: boolean; quantity?: number; note?: string }) => {
@@ -383,6 +405,8 @@ export function useOrderSession(args: {
     pay,
     lastError,
     clearError: () => setLastError(null),
+    sendReport,
+    clearSendReport: () => setSendReport(null),
     refresh,
   };
 }

@@ -1,6 +1,6 @@
 import { FOCUS, MOTION, TAP, focusLook, type KitDemo } from "./states";
 
-export type OrderLineState = "notSent" | "sent" | "voided";
+export type OrderLineState = "notSent" | "sent" | "voided" | "soldOut";
 
 export type OrderLineProps = {
   quantity: number;
@@ -16,11 +16,14 @@ export type OrderLineProps = {
   demo?: KitDemo;
 };
 
-const WORD: Record<OrderLineState, string> = { notSent: "not sent", sent: "sent", voided: "voided" };
+const WORD: Record<OrderLineState, string> = { notSent: "not sent", sent: "sent", voided: "voided", soldOut: "sold out, cannot be sent" };
 
-/** One line of an order: not sent, sent (quieter), voided (struck through, never deleted — R6). */
+/**
+ * One line of an order: not sent, sent (quieter), voided (struck through, never deleted — R6),
+ * or not sent with its item sold out (red, T5): it cannot go, and the screen offers Remove beside it.
+ */
 export function OrderLine({ quantity, name, choices, price, state, flush = false, onClick, demo }: OrderLineProps) {
-  const sentish = state !== "notSent";
+  const sentish = state === "sent" || state === "voided";
   return (
     <button
       type="button"
@@ -48,14 +51,21 @@ export function OrderLine({ quantity, name, choices, price, state, flush = false
         <span
           className={[
             "text-kit-line-name",
-            state === "sent" ? "font-kit-regular text-kit-text" : state === "voided" ? "font-kit-regular text-kit-muted line-through" : "text-kit-text",
+            state === "sent"
+              ? "font-kit-regular text-kit-text"
+              : state === "voided"
+                ? "font-kit-regular text-kit-muted line-through"
+                : state === "soldOut"
+                  ? "text-kit-red"
+                  : "text-kit-text",
           ].join(" ")}
         >
           {name}
         </span>
         {choices ? <span className="text-kit-small text-kit-muted">{choices}</span> : null}
+        {state === "soldOut" ? <span className="text-kit-small text-kit-red">Sold out, it cannot be sent</span> : null}
       </span>
-      <span className={["whitespace-nowrap text-kit-price", state === "voided" ? "text-kit-muted line-through" : "text-kit-text"].join(" ")}>
+      <span className={["whitespace-nowrap text-kit-price", state === "voided" ? "text-kit-muted line-through" : state === "soldOut" ? "text-kit-red" : "text-kit-text"].join(" ")}>
         {price}
       </span>
     </button>

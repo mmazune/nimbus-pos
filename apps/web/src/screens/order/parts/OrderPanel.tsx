@@ -34,6 +34,8 @@ type Props = {
   /** Lines cannot be read (another waiter's table): only the count and total show. */
   linesHidden?: boolean;
   onLine?: (line: OrderLineModel) => void;
+  /** Remove a not-sent line (offered beside a line whose item sold out). */
+  onRemove?: (line: OrderLineModel) => void;
   onSend: () => void;
   onPrintBill: () => void;
   onTakePayment: () => void;
@@ -52,7 +54,7 @@ export function sendLabel(n: number) {
 }
 
 export function OrderPanel(props: Props) {
-  const { lines, count, totalMinor, discountMinor = 0, unsentCount, filled, busy, linesHidden, onLine, onSend, onPrintBill, onTakePayment, onMore, onSameAgain, canSameAgain, sentTappable, notice, billMode } = props;
+  const { lines, count, totalMinor, discountMinor = 0, unsentCount, filled, busy, linesHidden, onLine, onRemove, onSend, onPrintBill, onTakePayment, onMore, onSameAgain, canSameAgain, sentTappable, notice, billMode } = props;
   const unsent = lines.filter((l) => l.state === "unsent");
   const rounds = sentRounds(lines);
   const empty = lines.length === 0 && !linesHidden;
@@ -99,9 +101,22 @@ export function OrderPanel(props: Props) {
             <div className="px-kit-16 pb-kit-4 pt-kit-8">
               <Text variant="cap" tone="muted">Not sent</Text>
             </div>
-            {unsent.map((l) => (
-              <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={l.priceKnown === false ? "" : groupShillings(l.lineMinor)} state="notSent" onClick={onLine ? () => onLine(l) : undefined} />
-            ))}
+            {unsent.map((l) =>
+              l.unsendable ? (
+                <div key={l.key} className="flex items-center gap-kit-8 pr-kit-16" data-order-line-soldout>
+                  <div className="min-w-0 flex-1">
+                    <OrderLine quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={l.priceKnown === false ? "" : groupShillings(l.lineMinor)} state="soldOut" />
+                  </div>
+                  {onRemove ? (
+                    <Button tone="text" size="laptop" onClick={() => onRemove(l)}>
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                <OrderLine key={l.key} quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={l.priceKnown === false ? "" : groupShillings(l.lineMinor)} state="notSent" onClick={onLine ? () => onLine(l) : undefined} />
+              ),
+            )}
           </section>
         ) : null}
 

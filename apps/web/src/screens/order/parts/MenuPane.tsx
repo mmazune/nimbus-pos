@@ -6,7 +6,7 @@
 import { Chip, Field, ItemTile, MeasureRow, OptionTile, Segmented, Text } from "@/components/kit";
 
 import type { MenuChoiceGroup, MenuItem, MenuSection, MenuServing, MenuWorkspace } from "../data/menu";
-import { searchMenu } from "../data/menu";
+import { searchMenu, soldSince } from "../data/menu";
 import { groupShillings } from "../data/money";
 import type { OrderLineModel } from "../data/order";
 
@@ -61,6 +61,8 @@ function ItemGrid({ items, onPick, disabled, wide }: { items: MenuItem[]; onPick
               key={item.id}
               name={item.name}
               measures={item.servings.map((s) => ({ key: s.id, label: s.label, price: groupShillings(s.priceMinor) }))}
+              soldOut={item.availability.state === "soldOut" ? (soldSince(item) ? `Sold out since ${soldSince(item)}` : "Sold out") : undefined}
+              left={item.availability.state === "low" ? item.availability.left : undefined}
               onPick={(key) => {
                 if (disabled) return;
                 onPick(item, item.servings.find((s) => s.id === key) ?? null);
@@ -77,6 +79,7 @@ function ItemGrid({ items, onPick, disabled, wide }: { items: MenuItem[]; onPick
               name={item.name}
               price={groupShillings(item.servings[0]?.priceMinor ?? item.priceMinor)}
               soldOut={item.availability.state === "soldOut"}
+              soldOutSince={soldSince(item)}
               left={item.availability.state === "low" ? item.availability.left : undefined}
               onClick={() => {
                 if (disabled || item.availability.state === "soldOut") return;

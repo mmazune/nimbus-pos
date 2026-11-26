@@ -8,7 +8,7 @@ import { useState, type ReactNode } from "react";
 import { Button, Chip, Field, ItemTile, MeasureRow, OptionTile, OrderLine, RoundAction, Segmented, Sheet, Text } from "@/components/kit";
 
 import type { MenuItem, MenuServing, MenuWorkspace } from "../data/menu";
-import { searchMenu } from "../data/menu";
+import { searchMenu, soldSince } from "../data/menu";
 import { formatMoney, groupShillings } from "../data/money";
 import { choicesText, sentRounds, type OrderLineModel } from "../data/order";
 import type { FilledAction, OrderRights } from "../data/rights";
@@ -58,6 +58,8 @@ function Items({ items, onPick }: { items: MenuItem[]; onPick: Props["onPick"] }
           key={item.id}
           name={item.name}
           measures={item.servings.map((s) => ({ key: s.id, label: s.label, price: groupShillings(s.priceMinor) }))}
+          soldOut={item.availability.state === "soldOut" ? (soldSince(item) ? `Sold out since ${soldSince(item)}` : "Sold out") : undefined}
+          left={item.availability.state === "low" ? item.availability.left : undefined}
           onPick={(key) => onPick(item, item.servings.find((s) => s.id === key) ?? null)}
         />
       ))}
@@ -69,6 +71,7 @@ function Items({ items, onPick }: { items: MenuItem[]; onPick: Props["onPick"] }
               name={item.name}
               price={groupShillings(item.servings[0]?.priceMinor ?? item.priceMinor)}
               soldOut={item.availability.state === "soldOut"}
+              soldOutSince={soldSince(item)}
               left={item.availability.state === "low" ? item.availability.left : undefined}
               onClick={() => item.availability.state !== "soldOut" && onPick(item, item.servings[0] ?? null)}
             />
@@ -101,7 +104,10 @@ export function PhoneOrderScreen(p: Props) {
       ? (nav?.subgroupId ? group.subgroups.find((s) => s.id === nav.subgroupId)?.itemIds ?? group.itemIds : group.itemIds).map((id) => (menu as MenuWorkspace).items[id]).filter(Boolean)
       : [];
 
-  const unsent = session.lines.filter((l) => l.state === "unsent");
+  // A line not sent whose item has since sold out is red, with Remove (T5).
+  const unsent = session.lines
+    .filter((l) => l.state === "unsent")
+    .map((l) => (l.unsendable || p.menu?.items[l.menuItemId]?.availability.state === "soldOut" ? { ...l, unsendable: true } : l));
   const rounds = sentRounds(session.lines);
   const status = session.order?.status;
   const roundWord = status === "READY" ? "Ready" : status === "IN_KITCHEN" || status === "SENT" ? "In the kitchen" : status === "SERVED" ? "Served" : null;
@@ -227,9 +233,18 @@ export function PhoneOrderScreen(p: Props) {
             {unsent.length ? (
               <section aria-label="Not sent">
                 <div className="pb-kit-4 pt-kit-4"><Text variant="cap" tone="muted">Not sent · tap a line to change it</Text></div>
-                {unsent.map((l) => (
-                  <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="notSent" onClick={() => { setOrderOpen(false); p.onLine(l); }} />
-                ))}
+                {unsent.map((l) =>
+                  l.unsendable ? (
+                    <div key={l.key} className="flex items-center gap-kit-8" data-order-line-soldout>
+                      <div className="min-w-0 flex-1">
+                        <OrderLine flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="soldOut" />
+                      </div>
+                      <Button tone="text" onClick={() => session.remove(l.key)}>Remove</Button>
+                    </div>
+                  ) : (
+                    <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="notSent" onClick={() => { setOrderOpen(false); p.onLine(l); }} />
+                  ),
+                )}
               </section>
             ) : null}
             {rounds.map((r, i) => (

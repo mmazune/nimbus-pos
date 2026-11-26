@@ -10,8 +10,10 @@ import { toMinor, type Minor } from "./money";
 
 export type MenuAvailability =
   | { state: "available" }
+  /** A counted-down number set by the kitchen or bar: shown as "3 left". */
   | { state: "low"; left: number }
-  | { state: "soldOut" };
+  /** `since`: when it was marked (ISO), shown as "since 19:40". */
+  | { state: "soldOut"; since?: string | null };
 
 export type MenuServing = { id: string; label: string; priceMinor: Minor; isDefault: boolean };
 
@@ -33,6 +35,8 @@ export type MenuItem = {
   /** First letter of each word, lower case: "Blended Scotch" → "bs". */
   initials: string;
   priceMinor: Minor;
+  /** On offer: the usual price, shown struck beside the offer price (the server prices the line). */
+  normalPriceMinor?: Minor;
   station: string | null;
   sectionKey: string | null;
   groupId: string | null;
@@ -61,6 +65,8 @@ export type MenuSection = { key: string; label: string; groups: MenuGroup[] };
 export type MenuWorkspace = {
   sections: MenuSection[];
   items: Record<string, MenuItem>;
+  /** The server's version of this answer (`GET /api/menu/workspace`, its ETag). */
+  version?: string;
 };
 
 // ── API shapes (today's routes) ──
@@ -251,18 +257,163 @@ export function searchMenu(menu: MenuWorkspace, query: string, limit = 24): Menu
   return hits.slice(0, limit).map((h) => h.item);
 }
 
+// ── The workspace (T2 `GET /api/menu/workspace`): the whole menu in one call ──
+
+export type ApiAvailability = {
+  state?: "AVAILABLE" | "LOW" | "SOLD_OUT" | string | null;
+  left?: number | null;
+  since?: string | null;
+};
+
+type ApiWorkspaceItem = {
+  id: string;
+  name?: string | null;
+  initials?: string | null;
+  section?: string | null;
+  groupId?: string | null;
+  subgroupId?: string | null;
+  station?: string | null;
+  price?: string | number | null;
+  offer?: { price?: string | number | null; note?: string | null } | null;
+  servings?: ApiServing[] | null;
+  choiceGroups?: ApiChoiceGroup[] | null;
+  availability?: ApiAvailability | null;
+};
+
+export type ApiWorkspace = {
+  version?: string;
+  sections?: Array<{
+    section: string;
+    popular?: string[] | null;
+    offers?: string[] | null;
+    groups?: Array<{
+      id: string;
+      name?: string | null;
+      sortOrder?: number | null;
+      itemIds?: string[] | null;
+      subgroups?: Array<{ id: string; name?: string | null; sortOrder?: number | null; itemIds?: string[] | null }> | null;
+    }> | null;
+    ungroupedItemIds?: string[] | null;
+  }> | null;
+  items?: ApiWorkspaceItem[] | null;
+};
+
+/** The server's availability, as the tile shows it: any number left reads "N left"; sold out says since when. */
+export function toAvailability(a: ApiAvailability | null | undefined): MenuAvailability {
+  if (!a) return { state: "available" };
+  if (a.state === "SOLD_OUT") return { state: "soldOut", since: a.since ?? null };
+  if (typeof a.left === "number") return { state: "low", left: a.left };
+  return { state: "available" };
+}
+
+const uniq = (ids: string[]) => [...new Set(ids)];
+
+/**
+ * Builds the screen's menu from the workspace answer. Popular and Offers come from the server:
+ * a group a manager named "Popular…" or "Offers…" is pinned first (R3), then the server's own list
+ * (sales over 14 days, or menu order when there are none; items on offer).
+ */
+export function buildFromWorkspace(api: ApiWorkspace): MenuWorkspace {
+  const items: Record<string, MenuItem> = {};
+  for (const raw of api.items ?? []) {
+    const name = (raw.name ?? "").trim() || "Unnamed item";
+    const normal = toMinor(raw.price) ?? 0;
+    const offer = raw.offer?.price !== undefined && raw.offer?.price !== null ? toMinor(raw.offer.price) : null;
+    items[raw.id] = {
+      id: raw.id,
+      name,
+      initials: (raw.initials ?? "").trim() || initialsOf(name),
+      priceMinor: offer ?? normal,
+      ...(offer !== null && offer !== normal ? { normalPriceMinor: normal } : {}),
+      station: raw.station ?? null,
+      sectionKey: raw.section ?? null,
+      groupId: raw.groupId ?? null,
+      subgroupId: raw.subgroupId ?? null,
+      servings: (raw.servings ?? [])
+        .filter((v) => v.isActive !== false)
+        .sort(bySort)
+        .map((v) => ({ id: v.id, label: servingLabel(v), priceMinor: toMinor(v.price) ?? 0, isDefault: Boolean(v.isDefault) })),
+      choices: buildChoices({ id: raw.id, modifierGroups: raw.choiceGroups ?? [] }),
+      availability: toAvailability(raw.availability),
+    };
+  }
+  const known = (ids: readonly string[] | null | undefined) => (ids ?? []).filter((id) => items[id]);
+  const sections: MenuSection[] = (api.sections ?? []).map((sec) => {
+    const named = (sec.groups ?? []).map((g) => ({ ...g, name: (g.name ?? "").trim() || "Group" }));
+    const pinned = (kind: MenuGroupKind) => named.filter((g) => groupKind(g.name) === kind).flatMap((g) => known(g.itemIds));
+    const groups: MenuGroup[] = [];
+    const popular = uniq([...pinned("popular"), ...known(sec.popular)]);
+    if (popular.length) groups.push({ id: `popular:${sec.section}`, name: "Popular", kind: "popular", itemIds: popular, subgroups: [] });
+    const offers = uniq([...pinned("offers"), ...known(sec.offers)]);
+    if (offers.length) groups.push({ id: `offers:${sec.section}`, name: "Offers", kind: "offers", itemIds: offers, subgroups: [] });
+    for (const g of named.filter((x) => groupKind(x.name) === "plain").sort(bySort)) {
+      const itemIds = known(g.itemIds);
+      if (!itemIds.length) continue;
+      groups.push({
+        id: g.id,
+        name: g.name,
+        kind: "plain",
+        itemIds,
+        subgroups: (g.subgroups ?? [])
+          .slice()
+          .sort(bySort)
+          .map((sg) => ({ id: sg.id, name: (sg.name ?? "").trim() || "More", itemIds: known(sg.itemIds) }))
+          .filter((sg) => sg.itemIds.length > 0),
+      });
+    }
+    const loose = known(sec.ungroupedItemIds);
+    if (loose.length) groups.push({ id: `more:${sec.section}`, name: "More", kind: "plain", itemIds: loose, subgroups: [] });
+    return { key: sec.section, label: sectionLabel(sec.section), groups };
+  });
+  const order = (k: string) => (k === "FOOD" ? 0 : k === "DRINKS" ? 1 : 2);
+  sections.sort((a, b) => order(a.key) - order(b.key));
+  return { sections: sections.filter((x) => x.groups.length > 0), items, version: api.version };
+}
+
 // ── Loading ──
 
+/** The whole menu in one call (T2 `GET /api/menu/workspace`). */
 export async function loadMenu(token: string, branchId: string): Promise<MenuWorkspace> {
-  const [navigation, catalog] = await Promise.all([
-    apiRequest<ApiNavSection[]>("/api/menu/navigation?activeOnly=true", { token, branchId }),
-    apiRequest<ApiCatalog>("/api/menu/catalog", { token, branchId }),
-  ]);
-  return buildMenuWorkspace(navigation ?? [], catalog ?? {});
+  return buildFromWorkspace(await apiRequest<ApiWorkspace>("/api/menu/workspace", { token, branchId }));
+}
+
+/** Items whose availability changed after `since` (T2 `GET /api/menu/availability?since=`). */
+export async function loadAvailabilityChanges(
+  token: string,
+  branchId: string,
+  since: string,
+): Promise<{ cursor: string; items: Array<{ menuItemId: string; availability: ApiAvailability }> }> {
+  const res = await apiRequest<{ cursor?: string; items?: Array<{ menuItemId: string; availability: ApiAvailability }> }>(
+    `/api/menu/availability?since=${encodeURIComponent(since)}`,
+    { token, branchId },
+  );
+  return { cursor: res.cursor ?? since, items: res.items ?? [] };
+}
+
+/** A copy of the menu with changed availability applied (the same object when nothing changed). */
+export function applyAvailability(menu: MenuWorkspace, changes: ReadonlyArray<{ menuItemId: string; availability: ApiAvailability }>): MenuWorkspace {
+  let next: Record<string, MenuItem> | null = null;
+  for (const c of changes) {
+    const item = (next ?? menu.items)[c.menuItemId];
+    if (!item) continue;
+    const availability = toAvailability(c.availability);
+    if (JSON.stringify(availability) === JSON.stringify(item.availability)) continue;
+    next = next ?? { ...menu.items };
+    next[c.menuItemId] = { ...item, availability };
+  }
+  return next ? { ...menu, items: next } : menu;
 }
 
 /** One request per item, on first tap, then cached by the caller. */
 export async function loadItemChoices(token: string, branchId: string, itemId: string): Promise<MenuChoiceGroup[]> {
   const detail = await apiRequest<ApiItemDetail>(`/api/menu/items/${itemId}`, { token, branchId });
   return buildChoices(detail);
+}
+
+/** "19:40" (Kampala time) for a sold-out item that says when, else undefined. */
+export function soldSince(item: MenuItem): string | undefined {
+  if (item.availability.state !== "soldOut" || !item.availability.since) return undefined;
+  const d = new Date(item.availability.since);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Africa/Kampala" }).format(d);
 }
