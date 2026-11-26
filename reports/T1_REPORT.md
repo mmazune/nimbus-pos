@@ -6,7 +6,7 @@ Everything below ran in this container: a throwaway Postgres 16 (`nimbus_t1_*`, 
 Grades: **[live]** = driven in Chromium against the running app and API · **[code]** = read in the code · **[asserted]** = stated, not measured.
 
 ## Verdict
-All six phases are done. Ten screens are built to their drawings and all pass the look review; the lowest scores are Floor-Phone and Supervisor-Approvals at 20/24. `pnpm verify:web` and the web build are green. The T1 suite passed 24/24, three runs in a row. The regression suite is 157 passed, 2 failed, 2 skipped, against a baseline of 151 / 7 / 3; both failures also failed at baseline. The diff stays inside T1's paths.
+All six phases are done. Ten screens are built to their drawings and pass the look review; the lowest scores are Floor-Phone and Supervisor-Approvals at 20/24. The scores were given before the last drawing fixes. Where a drawing still differs, the difference is listed with its reason (Done-when 3). `pnpm verify:web` and the web build are green. The T1 suite passed 24/24, three runs in a row. The regression suite is 157 passed, 2 failed, 2 skipped, against a baseline of 151 / 7 / 3; both failures also failed at baseline. Product code stays inside T1's paths. Old specs in other test folders were updated and listed (Done-when 6 and 7).
 
 ## Phase 1 — Shell and Floor (U1 Done-when 1–10)
 | # | Line | Proof |
@@ -25,7 +25,36 @@ All six phases are done. Ten screens are built to their drawings and all pass th
 ## T1 Done-when
 1. **Phase 1's ten lines hold** — the table above.
 2. **Reservations** [live] `e2e/t1/reservations.spec.ts`. The waiter seats a booking that is late, at another free table that fits (`Reservations-Waiter-seated-1280x800.png`). The supervisor creates, confirms, moves (change table), cancels with a reason, and completes a booking (`Reservations-Supervisor-new-`, `-cancel-`, `-1280x800.png`). Drawing beside build: `reports/proof/T1/compare/Reservations-{Waiter,Supervisor}-vs-built.png`.
-3. **Me, Receipts, Till, Approvals match their drawings** — beside builds in `reports/proof/T1/compare/`; screens driven in `me.spec.ts`, `receipts-till.spec.ts` (a real bill of 5 × 42,000, a pending refund of 160,000 above the 150,000 demo limit, a safe drop, a count that is short, closing and reopening the till) and `approvals.spec.ts` (discount declined with a reason, leave approved, swap declined, alert resolved; who and when shown). Left-out parts are listed below.
+3. **Me, Receipts, Till and Approvals match their drawings.** The beside-builds are in `reports/proof/T1/compare/`. The screens are driven in:
+   - `me.spec.ts`;
+   - `receipts-till.spec.ts`: a real bill of 5 × 42,000; a pending refund of 160,000, above the 150,000 demo limit; a safe drop; a short count; closing and reopening the till. The drawer lines are checked to add up to "Should be in the drawer".
+   - `approvals.spec.ts`: a discount declined with a reason, leave approved, a swap declined, an alert resolved, with who and when shown.
+
+   A separate reviewer listed every difference in layout, sizes and words: `reports/T1_DRAWING_DIFF.md`. It found 26 that the screen files could fix. They were fixed:
+   - **Me:**
+     - the pill reads "On shift";
+     - a leave reads "Leave, 12 to 14 Dec" (the month once), and a swap shows its weekday;
+     - request rows are 56 px and "Ask for leave" is 44 px;
+     - gaps are 12 px, the caption is padded as drawn, and My day figures are 16 px bold.
+   - **Receipts:**
+     - the search field has a hidden label, a search icon and the drawing's placeholder, and is top-aligned with the tabs;
+     - bill lines are 52 px with a 28 px quantity box.
+   - **Till:** the action row spans the width; the field label reads "Cash counted".
+   - **Approvals:** queue rows are 76 px; a percentage discount shows its money; the detail heading names the action ("UGX 21,000 off bill 000060").
+
+   Kept on purpose, with reasons:
+   - Fact and drawer lines stay 44 px tall, not 40: rule 10's target size, and the kit has no 40 px row size.
+   - The status pill in the Approvals detail stays: it is the only place Done today shows the outcome.
+   - Till explains a difference with "Write why if it does not match", not "A supervisor signs any difference": closing a till takes a written reason, and no route records a sign-off.
+   - Me keeps "Needs a review" (the shift is flagged) and "Off shift" beside "On shift".
+
+   Needs a shared file T1 does not own:
+   - the side panel is 440 px, not 420 (`kit-tokens.css` has no 420);
+   - Row titles are 16 px where Approvals draws 17;
+   - some icon glyphs differ from the drawing;
+   - the header says "Terminal 01" (no route names a station).
+
+   The left-out parts (data or route missing) are in the list below.
 4. **No permission key, route or endpoint on any reachable screen** [live] `e2e/t1/sweep.spec.ts`. It covers every section of the three roles, the hidden cashier Queue, and the "not your role" guards, at 1280 × 800 and 390 × 844, with a wider ban list: API, v1, stub, endpoint, backend, MVP, adapter, build-step names, broken values, raw status codes. One sentence is listed, not fixed. It contains "backend", is beyond Done-when 4's three items, and lives in `lib/cashier/payment-validation.ts`, outside T1's paths: "Cash close is available only when the backend order status is Served." It shows on the hidden Queue.
 **The A2 list** (`docs/direction/research/A2_frontend_as_built.md` §6, the developer wording found on screen):
 - **Gone with the old screens:**

@@ -189,10 +189,10 @@ export function ReceiptsScreen() {
       <Text variant="cap" tone="muted">
         Paid
       </Text>
-      <div className="flex min-h-0 flex-col gap-kit-8 overflow-y-auto">
+      <div className="flex min-h-0 flex-col overflow-y-auto">
         {(receipt.items ?? []).map((l, i) => (
-          <div key={l.id ?? i} className="flex items-start gap-kit-12">
-            <span className="flex h-kit-badge min-w-kit-badge flex-none items-center justify-center rounded-kit-qty bg-kit-tonal px-kit-6 text-kit-small font-kit-bold text-kit-primary">
+          <div key={l.id ?? i} className="flex min-h-kit-line items-center gap-kit-12">
+            <span className="flex h-kit-qty min-w-kit-qty flex-none items-center justify-center rounded-kit-qty bg-kit-tonal px-kit-6 text-kit-small font-kit-bold text-kit-primary">
               {String(l.quantity ?? 1)}
             </span>
             <span className="min-w-0 flex-1">
@@ -262,9 +262,9 @@ export function ReceiptsScreen() {
   const emptyWords = listQ.isLoading ? "Reading the bills…" : listQ.isError ? errorText(listQ.error) : q ? "No bill matches that." : when === "today" ? "No bill has been paid today yet." : "No earlier bills.";
 
   const top = (
-    <div className="flex flex-col gap-kit-12 sm:flex-row sm:items-end">
+    <div className="flex flex-col gap-kit-12 sm:flex-row sm:items-start">
       <div className="min-w-0 flex-1">
-        <Field label="Find a bill" value={query} onChange={setQuery} placeholder="Bill number, table or amount" inputMode="search" />
+        <Field label="Find a bill" search value={query} onChange={setQuery} placeholder="Find a bill by number, table or amount" inputMode="search" />
       </div>
       <Segmented
         label="Which bills"

@@ -70,6 +70,22 @@ async function loadMyOrdersToday(token: string, branchId: string, userId: string
   return rows.filter((o) => (o.createdAt ? new Date(o.createdAt).getTime() : 0) >= since);
 }
 
+/** "12 to 14 Dec" (the month once), "30 Nov to 2 Dec", or one day. */
+function dayRange(from?: string | null, to?: string | null) {
+  const a = dayShort(from);
+  const b = dayShort(to);
+  if (!a || !b || a === b) return a;
+  const [da, ...ma] = a.split(" ");
+  return ma.join(" ") === b.split(" ").slice(1).join(" ") ? `${da} to ${b}` : `${a} to ${b}`;
+}
+
+/** "Sat 28 Nov". */
+function dayWeek(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" }).format(d);
+}
+
 function dayShort(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -102,7 +118,9 @@ function Fact({ label, value }: { label: string; value: string }) {
       <Text variant="sup" tone="muted">
         {label}
       </Text>
-      <Text variant="row">{value}</Text>
+      <Text variant="body" strong>
+        {value}
+      </Text>
     </div>
   );
 }
@@ -213,26 +231,26 @@ export function MeScreen({ role }: { role: Role }) {
   const requests: ReactNode[] = [];
   for (const l of leaveQ.data?.data ?? []) {
     const pill = requestPill(l.status);
-    const span = l.startsAt ? `${dayShort(l.startsAt)}${l.endsAt && dayShort(l.endsAt) !== dayShort(l.startsAt) ? ` to ${dayShort(l.endsAt)}` : ""}` : "";
+    const span = dayRange(l.startsAt, l.endsAt);
     requests.push(
-      <Row key={`l-${l.id}`} title={`Leave${span ? `, ${span}` : ""}`} line={`Asked ${dayShort((l as { createdAt?: string | null }).createdAt) || dayShort(l.startsAt)}`} trailing={<Pill tone={pill.tone}>{pill.word}</Pill>} />,
+      <Row key={`l-${l.id}`} size="settings" title={`Leave${span ? `, ${span}` : ""}`} line={`Asked ${dayShort((l as { createdAt?: string | null }).createdAt) || dayShort(l.startsAt)}`} trailing={<Pill tone={pill.tone}>{pill.word}</Pill>} />,
     );
   }
   for (const s of swapQ.data?.data ?? []) {
     const pill = requestPill(s.status);
     const who = s.target ? shortName({ firstName: s.target.firstName, lastName: s.target.lastName }) : undefined;
     requests.push(
-      <Row key={`s-${s.id}`} title={who ? `Swap with ${who}` : "Shift swap"} line={s.shiftDate ? dayShort(s.shiftDate) : undefined} trailing={<Pill tone={pill.tone}>{pill.word}</Pill>} />,
+      <Row key={`s-${s.id}`} size="settings" title={who ? `Swap with ${who}` : "Shift swap"} line={s.shiftDate ? dayWeek(s.shiftDate) : undefined} trailing={<Pill tone={pill.tone}>{pill.word}</Pill>} />,
     );
   }
 
   const shiftCard = (
     <Card padding="roomy" label="My shift">
-      <div className={["flex flex-col gap-kit-8", wide.phone ? "" : "min-h-full"].join(" ")}>
+      <div className={["flex flex-col gap-kit-12", wide.phone ? "" : "min-h-full"].join(" ")}>
         <div className="flex items-start justify-between gap-kit-12">
           <Text variant="h">My shift</Text>
           {shiftQ.isLoading ? null : shift ? (
-            <Pill tone={longShift ? "amber" : "green"}>{longShift ? "Needs a review" : "Shift open"}</Pill>
+            <Pill tone={longShift ? "amber" : "green"}>{longShift ? "Needs a review" : "On shift"}</Pill>
           ) : (
             <Pill tone="neutral">Off shift</Pill>
           )}
@@ -289,7 +307,7 @@ export function MeScreen({ role }: { role: Role }) {
 
   const dayCard = (
     <Card padding="roomy" label="My day">
-      <div className={["flex flex-col gap-kit-4", wide.phone ? "" : "min-h-full"].join(" ")}>
+      <div className={["flex flex-col gap-kit-12", wide.phone ? "" : "min-h-full"].join(" ")}>
         <Text variant="h">My day</Text>
         {dayQ.isLoading ? (
           <Text variant="body" tone="muted">
@@ -317,7 +335,7 @@ export function MeScreen({ role }: { role: Role }) {
   const requestsCard = (
     <Card label="My requests">
       <div className="flex flex-col pt-kit-16">
-        <div className="px-kit-16 pb-kit-4">
+        <div className="px-kit-16 pb-kit-8">
           <Text variant="cap" tone="muted">
             My requests
           </Text>
@@ -331,8 +349,8 @@ export function MeScreen({ role }: { role: Role }) {
             </Text>
           </div>
         )}
-        <div className="flex gap-kit-8 p-kit-16">
-          <Button tone="tonal" fill disabled={!employeeId} onClick={() => setAsking(true)}>
+        <div className="flex gap-kit-8 px-kit-16 pb-kit-16 pt-kit-12">
+          <Button tone="tonal" size="laptop" fill disabled={!employeeId} onClick={() => setAsking(true)}>
             Ask for leave
           </Button>
         </div>

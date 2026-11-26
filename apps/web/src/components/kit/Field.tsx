@@ -1,5 +1,6 @@
 import { useId } from "react";
 
+import { KitIcon } from "./KitIcon";
 import { FOCUS_FORCED, type KitDemo } from "./states";
 
 export type FieldProps = {
@@ -15,20 +16,28 @@ export type FieldProps = {
   required?: boolean;
   disabled?: boolean;
   demo?: "focus";
+  /** A search field as drawn: the label read by screen readers only, a search icon inside. */
+  search?: boolean;
 };
 
 /** Filled field, no outline at rest, a 2 px focus ring; the label above at 14 px semi-bold. */
-export function Field({ label, value, placeholder, onChange, size = "touch", inputMode = "text", hint, error, required, disabled, demo }: FieldProps & { demo?: KitDemo }) {
+export function Field({ label, value, placeholder, onChange, size = "touch", inputMode = "text", hint, error, required, disabled, demo, search = false }: FieldProps & { demo?: KitDemo }) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
   const describedBy = [hint ? hintId : "", error ? errorId : ""].filter(Boolean).join(" ") || undefined;
   return (
     <div className="flex flex-col font-kit">
-      <label htmlFor={id} className="mb-kit-6 block text-kit-label text-kit-text">
+      <label htmlFor={id} className={search ? "sr-only" : "mb-kit-6 block text-kit-label text-kit-text"}>
         {label}
         {required ? <span className="text-kit-muted"> · Required</span> : null}
       </label>
+      <span className="relative block">
+      {search ? (
+        <span className="pointer-events-none absolute inset-y-kit-0 left-kit-14 flex items-center text-kit-muted">
+          <KitIcon name="search" size="inButton" />
+        </span>
+      ) : null}
       <input
         id={id}
         value={value}
@@ -41,13 +50,15 @@ export function Field({ label, value, placeholder, onChange, size = "touch", inp
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={[
-          "w-full rounded-kit-control bg-kit-field px-kit-14 text-kit-body text-kit-text outline-none placeholder:text-kit-muted focus-visible:shadow-kit-focus focus:shadow-kit-focus",
+          "w-full rounded-kit-control bg-kit-field text-kit-body text-kit-text outline-none placeholder:text-kit-muted focus-visible:shadow-kit-focus focus:shadow-kit-focus",
+          search ? "pl-kit-44 pr-kit-14" : "px-kit-14",
           size === "touch" ? "h-kit-field" : "h-kit-field-sm",
           disabled ? "cursor-not-allowed text-kit-muted" : "",
           error ? "shadow-kit-error" : "",
           demo === "focus" ? FOCUS_FORCED : "",
         ].join(" ")}
       />
+      </span>
       {hint ? (
         <p id={hintId} className="mt-kit-6 text-kit-small text-kit-muted">
           {hint}

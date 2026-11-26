@@ -226,7 +226,7 @@ export function TillScreen() {
   );
 
   const actions = isOpen ? (
-    <div className="grid grid-cols-1 gap-kit-12 sm:grid-cols-3">
+    <div className="flex gap-kit-12">
       <Button tone="tonal" fill onClick={() => { setFailure(null); setPending("safeDrop"); }}>
         Drop to the safe
       </Button>
@@ -264,7 +264,7 @@ export function TillScreen() {
       <Text variant="sup" tone="muted">
         Count the notes and coins, then type the total. Write why if it does not match.
       </Text>
-      <Field label="Cash counted, UGX" value={counted} onChange={(v) => setCounted(groupTyped(v))} inputMode="numeric" placeholder="UGX" error={tried && reconcile.reasons.some((r) => /Counted/.test(r)) ? reconcile.reasons.find((r) => /Counted/.test(r)) : undefined} />
+      <Field label="Cash counted" value={counted} onChange={(v) => setCounted(groupTyped(v))} inputMode="numeric" placeholder="UGX" error={tried && reconcile.reasons.some((r) => /Counted/.test(r)) ? reconcile.reasons.find((r) => /Counted/.test(r)) : undefined} />
       {counted.trim() && variance !== undefined && Math.abs(variance) > 0.01 ? (
         <>
           <Banner tone="amber" title={`${variance < 0 ? "Short" : "Over"} by UGX ${ugx(Math.abs(variance))}`} />

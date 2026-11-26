@@ -8,7 +8,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 30,
+    "checkedText": 29,
     "checkedTargets": 11
   },
   "refund-sheet-1280": {
@@ -22,7 +22,7 @@
     "filled": [
       "Ask for the refund"
     ],
-    "checkedText": 41,
+    "checkedText": 40,
     "checkedTargets": 17
   },
   "till-drawer-lines": [
@@ -81,7 +81,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 612,
+    "checkedText": 611,
     "checkedTargets": 208
   },
   "receipts-sheet-390": {
@@ -93,7 +93,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 14,
+    "checkedText": 13,
     "checkedTargets": 9
   },
   "refund-sheet-390": {
@@ -107,7 +107,7 @@
     "filled": [
       "Ask for the refund"
     ],
-    "checkedText": 23,
+    "checkedText": 22,
     "checkedTargets": 14
   },
   "receipts-earlier-390": {
@@ -119,7 +119,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 13,
+    "checkedText": 12,
     "checkedTargets": 9
   },
   "till-390": {

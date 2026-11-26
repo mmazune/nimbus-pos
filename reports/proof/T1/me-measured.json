@@ -105,8 +105,8 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 25,
-    "checkedTargets": 8
+    "checkedText": 16,
+    "checkedTargets": 6
   },
   "supervisor-me-390": {
     "viewport": "390x844",
@@ -119,7 +119,7 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 19,
+    "checkedText": 23,
     "checkedTargets": 8
   }
 }

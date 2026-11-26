@@ -108,11 +108,23 @@ function statusPill(s: string) {
 }
 
 /** The row's title and line, in plain words. */
-function describe(item: ApprovalQueueItem): { title: string; line: string } {
+function describe(item: ApprovalQueueItem): { title: string; line: string; heading?: string } {
   if (item.domain === "discount") {
     const d = item.raw as SupervisorPendingDiscount;
-    const kind = String(d.type ?? "").toUpperCase() === "PERCENTAGE" ? `${Number(d.value ?? 0)}%` : `UGX ${groupCents(toCents(d.value ?? 0))}`;
-    return { title: `Discount · bill ${(d.order?.orderNumber ?? "").replace(/^ORD-/, "")}`, line: [kind, person(d.createdBy)].filter(Boolean).join(" · ") };
+    const pct = String(d.type ?? "").toUpperCase() === "PERCENTAGE";
+    // a percentage also shows what it comes to on the bill before (whole cents, BigInt)
+    const off = pct
+      ? d.order?.subtotal !== undefined && d.order?.subtotal !== null
+        ? (toCents(d.order.subtotal) * toCents(d.value ?? 0)) / 10000n
+        : null
+      : toCents(d.value ?? 0);
+    const kind = [pct ? `${Number(d.value ?? 0)}%` : "", off !== null ? `UGX ${groupCents(off)}` : ""].filter(Boolean).join(" · ");
+    const bill = (d.order?.orderNumber ?? "").replace(/^ORD-/, "");
+    return {
+      title: `Discount · bill ${bill}`,
+      line: [kind, person(d.createdBy)].filter(Boolean).join(" · "),
+      heading: `${off !== null ? `UGX ${groupCents(off)}` : `${Number(d.value ?? 0)}%`} off bill ${bill}`,
+    };
   }
   if (item.domain === "leave") {
     const l = item.raw as SupervisorLeaveRequest;
@@ -263,7 +275,7 @@ export function ApprovalsScreen() {
   }
 
   function panel(item: ApprovalQueueItem): ReactNode {
-    const { title, line } = describe(item);
+    const { title, line, heading } = describe(item);
     const status = String(item.status).toUpperCase();
     const pill = statusPill(status);
     const facts: Array<[string, string]> = [];
@@ -379,7 +391,7 @@ export function ApprovalsScreen() {
         <div className="flex items-start gap-kit-12">
           <div className="min-w-0 flex-1">
             <Text variant="h" as="h2">
-              {title}
+              {heading ?? title}
             </Text>
             <Text variant="sup" tone="muted">
               {line}
@@ -433,6 +445,7 @@ export function ApprovalsScreen() {
             const d = describe(i);
             return (
               <Row
+                size="tall"
                 key={key(i)}
                 icon={ICON[i.domain]}
                 title={d.title}
