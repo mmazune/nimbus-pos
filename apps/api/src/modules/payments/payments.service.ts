@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
-import { Prisma, OrderStatus, PaymentStatus, PaymentIntentStatus } from '@prisma/client';
+import { Prisma, PaymentStatus, PaymentIntentStatus } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
@@ -18,6 +18,8 @@ import {
   CreateManualReferencePaymentDto,
 } from './dto';
 import { randomUUID } from 'crypto';
+import { closeOrderInTx } from '../orders/order-close';
+import { ORDER_CLOSED } from '../orders/order-events';
 
 interface BranchContext {
   branchId: string;
@@ -30,8 +32,8 @@ interface RequestMeta {
   userAgent?: string;
 }
 
-// States from which an order can be closed with payment
-const CLOSABLE_STATES: string[] = ['SERVED'];
+// E1 — states in which a payment is accepted: once the order has been sent, up to served.
+const PAYABLE_ORDER_STATES: string[] = ['SENT', 'IN_KITCHEN', 'READY', 'SERVED'];
 
 // States from which a payment intent can be created
 const PAYABLE_STATES: string[] = ['NEW', 'SENT', 'IN_KITCHEN', 'READY', 'SERVED'];
@@ -73,13 +75,18 @@ export class PaymentsService {
 
   // ── Helpers ──
 
-  async getOutstandingBalance(orderId: string, branchId: string): Promise<Decimal> {
-    const order = await this.prisma.order.findFirst({
+  async getOutstandingBalance(
+    orderId: string,
+    branchId: string,
+    client?: Prisma.TransactionClient,
+  ): Promise<Decimal> {
+    const db = client ?? this.prisma;
+    const order = await db.order.findFirst({
       where: { id: orderId, branchId },
     });
     if (!order) return new Decimal(0);
 
-    const payments = await this.prisma.payment.findMany({
+    const payments = await db.payment.findMany({
       where: { orderId, branchId, status: PaymentStatus.COMPLETED },
     });
 
@@ -94,30 +101,35 @@ export class PaymentsService {
     userId?: string,
     meta?: RequestMeta,
   ): Promise<boolean> {
-    const order = await this.prisma.order.findFirst({ where: { id: orderId, branchId } });
-    if (!order || order.status === 'CLOSED' || order.status === 'VOIDED') return false;
+    // E1 — the balance check and the close happen in one transaction, through the one close door.
+    const settled = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      const order = await tx.order.findFirst({ where: { id: orderId, branchId } });
+      if (!order || order.status === 'CLOSED' || order.status === 'VOIDED') return null;
 
-    const outstanding = await this.getOutstandingBalance(orderId, branchId);
-    if (outstanding.lte(0)) {
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.CLOSED },
-      });
+      const outstanding = await this.getOutstandingBalance(orderId, branchId, tx);
+      if (outstanding.gt(0)) return { order, outstanding, closed: null };
 
-      await this.audit.log({
-        actorUserId: userId ?? null,
-        action: 'ORDER_AUTO_SETTLED',
-        entityType: 'order',
-        entityId: orderId,
-        metadata: {
-          branchId,
+      const closed = await closeOrderInTx(tx, {
+        orderId,
+        orgId: order.orgId,
+        branchId,
+        userId: userId ?? null,
+        source: 'auto-settle',
+        auditAction: 'ORDER_AUTO_SETTLED',
+        auditMetadata: {
           orderTotal: order.total.toString(),
           trigger: 'auto_settle_balance_zero',
         },
         ipAddress: meta?.ipAddress,
         userAgent: meta?.userAgent,
       });
+      return { order, outstanding, closed };
+    });
+    if (!settled) return false;
 
+    if (settled.closed) {
+      if (settled.closed.event) this.eventEmitter.emit(ORDER_CLOSED, settled.closed.event);
       this.emitEvent({
         eventType: 'ORDER_AUTO_SETTLED',
         orderId,
@@ -132,12 +144,44 @@ export class PaymentsService {
     this.emitEvent({
       eventType: 'ORDER_BALANCE_UPDATED',
       orderId,
-      status: order.status,
-      remainingBalance: outstanding.toFixed(2),
+      status: settled.order.status,
+      remainingBalance: settled.outstanding.toFixed(2),
       at: new Date().toISOString(),
       branchId,
     });
     return false;
+  }
+
+  /**
+   * E1 — a payment is accepted only when the order has been sent, has at least one line that
+   * is not voided, and has no line still waiting to be sent. Called inside the transaction,
+   * under the order row lock, so a line cannot be added or voided between check and write.
+   */
+  private async assertOrderPayable(
+    db: Prisma.TransactionClient,
+    order: { id: string; status: string },
+  ): Promise<void> {
+    if (!PAYABLE_ORDER_STATES.includes(order.status)) {
+      throw new ConflictException(
+        `Cannot take payment on an order in ${order.status} state. The order must be sent first.`,
+      );
+    }
+    const lines = await db.orderItem.findMany({
+      where: { orderId: order.id, voidedAt: null },
+      select: { sentAt: true },
+    });
+    if (lines.length === 0) {
+      throw new ConflictException({
+        code: 'ORDER_HAS_NO_ITEMS',
+        message: 'There is nothing on this order to pay for.',
+      });
+    }
+    if (lines.some((l) => l.sentAt === null)) {
+      throw new ConflictException({
+        code: 'UNSENT_ITEMS',
+        message: 'Send or remove the unsent items first',
+      });
+    }
   }
 
   private emitEvent(event: PaymentEvent) {
@@ -153,32 +197,16 @@ export class PaymentsService {
     dto: CloseOrderDto,
     meta: RequestMeta,
   ) {
-    const order = await this.prisma.order.findFirst({
+    const found = await this.prisma.order.findFirst({
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
-      include: { payments: true },
+      select: { id: true },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!found) throw new NotFoundException('Order not found');
 
-    if (!CLOSABLE_STATES.includes(order.status)) {
-      throw new ConflictException(
-        `Cannot close order in ${order.status} state. Order must be SERVED.`,
-      );
-    }
-
-    const orderTotal = new Decimal(order.total);
-    const alreadyPaid = order.payments
-      .filter((p) => p.status === 'COMPLETED')
-      .reduce((sum, p) => sum.add(new Decimal(p.amount)), new Decimal(0));
-
-    let totalNewPaid = new Decimal(0);
-    let hasCash = false;
     for (const p of dto.payments) {
       if (new Decimal(p.amount).lte(0)) {
         throw new BadRequestException('Payment amounts must be positive');
       }
-      totalNewPaid = totalNewPaid.add(new Decimal(p.amount));
-      if (p.method === 'CASH') hasCash = true;
-
       if (p.method === 'MOMO') {
         const succeededIntent = await this.prisma.paymentIntent.findFirst({
           where: { orderId, branchId: ctx.branchId, status: PaymentIntentStatus.SUCCEEDED },
@@ -205,30 +233,72 @@ export class PaymentsService {
       );
     }
 
-    const totalCovered = alreadyPaid.add(totalNewPaid);
-    const changeDue = totalCovered.sub(orderTotal);
-
-    if (changeDue.gt(0) && !hasCash) {
-      throw new BadRequestException(
-        'Overpayment is only allowed when CASH is included (change due is returned for cash)',
-      );
-    }
-
-    if (totalCovered.lt(orderTotal)) {
-      throw new BadRequestException(
-        `Insufficient payment: order total is ${orderTotal.toFixed(2)} but only ${totalCovered.toFixed(2)} covered`,
-      );
-    }
-
     const result = await this.prisma.$transaction(async (tx) => {
+      // Lock the order, then judge everything against the locked state.
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      const order = await tx.order.findFirst({
+        where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+        include: { payments: true },
+      });
+      if (!order) throw new NotFoundException('Order not found');
+      await this.assertOrderPayable(tx, order);
+
+      const orderTotal = new Decimal(order.total);
+      const alreadyPaid = order.payments
+        .filter((p) => p.status === 'COMPLETED')
+        .reduce((sum, p) => sum.add(new Decimal(p.amount)), new Decimal(0));
+      const due = Decimal.max(orderTotal.sub(alreadyPaid), new Decimal(0));
+
+      // Cash may be more than is owed; every other method must fit what is left.
+      const nonCash = dto.payments
+        .filter((p) => p.method !== 'CASH')
+        .reduce((sum, p) => sum.add(new Decimal(p.amount)), new Decimal(0));
+      const cashHanded = dto.payments
+        .filter((p) => p.method === 'CASH')
+        .reduce((sum, p) => sum.add(new Decimal(p.amount)), new Decimal(0));
+
+      if (nonCash.gt(due)) {
+        throw new BadRequestException(
+          'Overpayment is only allowed when CASH is included (change due is returned for cash)',
+        );
+      }
+      const totalHanded = nonCash.add(cashHanded);
+      if (totalHanded.lt(due)) {
+        throw new BadRequestException(
+          `Insufficient payment: ${due.toFixed(2)} is still owed but only ${totalHanded.toFixed(2)} was offered`,
+        );
+      }
+      const change = totalHanded.sub(due);
+
+      // The cash row that absorbs the change is the last one; its stored amount is what was
+      // applied to the bill, and `tendered` keeps what was actually handed over.
+      let lastCashIndex = -1;
+      dto.payments.forEach((p, i) => {
+        if (p.method === 'CASH') lastCashIndex = i;
+      });
+      if (change.gt(0)) {
+        const lastCash = new Decimal(dto.payments[lastCashIndex].amount);
+        if (change.gte(lastCash)) {
+          throw new BadRequestException(
+            'The change is larger than the last cash payment. Remove the extra cash payment.',
+          );
+        }
+      }
+
       const paymentRecords = [];
-      for (const p of dto.payments) {
+      for (let i = 0; i < dto.payments.length; i++) {
+        const p = dto.payments[i];
+        const handed = new Decimal(p.amount);
+        const isChangeRow = change.gt(0) && i === lastCashIndex;
+        const applied = isChangeRow ? handed.sub(change) : handed;
         const payment = await tx.payment.create({
           data: {
             orgId: ctx.organizationId,
             branchId: ctx.branchId,
             orderId,
-            amount: p.amount,
+            amount: applied,
+            tendered: p.method === 'CASH' ? handed : null,
+            changeGiven: p.method === 'CASH' ? (isChangeRow ? change : new Decimal(0)) : null,
             method: p.method,
             status: PaymentStatus.COMPLETED,
             captureMode: 'ONLINE_PROVIDER',
@@ -241,31 +311,30 @@ export class PaymentsService {
         paymentRecords.push(payment);
       }
 
-      const closedOrder = await tx.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.CLOSED },
-      });
-
-      return { order: closedOrder, payments: paymentRecords };
-    });
-
-    await this.audit.log({
-      actorUserId: userId,
-      action: 'ORDER_PAID_AND_CLOSED',
-      entityType: 'order',
-      entityId: orderId,
-      metadata: {
+      const totalCovered = alreadyPaid.add(due);
+      const closed = await closeOrderInTx(tx, {
+        orderId,
         orgId: ctx.organizationId,
         branchId: ctx.branchId,
-        orderTotal: orderTotal.toFixed(2),
-        totalPaid: totalCovered.toFixed(2),
-        changeDue: changeDue.gt(0) ? changeDue.toFixed(2) : '0.00',
-        paymentCount: dto.payments.length,
-        methods: dto.payments.map((p) => p.method),
-      },
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
+        userId,
+        source: 'payment',
+        auditAction: 'ORDER_PAID_AND_CLOSED',
+        auditMetadata: {
+          orderTotal: orderTotal.toFixed(2),
+          totalPaid: totalCovered.toFixed(2),
+          cashHandedOver: cashHanded.toFixed(2),
+          changeDue: change.toFixed(2),
+          paymentCount: dto.payments.length,
+          methods: dto.payments.map((p) => p.method),
+        },
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+
+      return { closed, payments: paymentRecords, orderTotal, totalCovered, change, cashHanded };
     });
+
+    const closedOrder = await this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
 
     for (const payment of result.payments) {
       await this.audit.log({
@@ -281,6 +350,8 @@ export class PaymentsService {
           branchId: ctx.branchId,
           method: payment.method,
           amount: payment.amount.toString(),
+          tendered: payment.tendered?.toString() ?? null,
+          changeGiven: payment.changeGiven?.toString() ?? null,
           status: payment.status,
         },
         ipAddress: meta.ipAddress,
@@ -288,6 +359,7 @@ export class PaymentsService {
       });
     }
 
+    if (result.closed.event) this.eventEmitter.emit(ORDER_CLOSED, result.closed.event);
     this.emitEvent({
       eventType: 'ORDER_AUTO_SETTLED',
       orderId,
@@ -298,11 +370,14 @@ export class PaymentsService {
     });
 
     return {
-      order: result.order,
+      order: closedOrder,
       payments: result.payments,
-      orderTotal: orderTotal.toFixed(2),
-      totalPaid: totalCovered.toFixed(2),
-      changeDue: changeDue.gt(0) ? changeDue.toFixed(2) : '0.00',
+      orderTotal: result.orderTotal.toFixed(2),
+      totalPaid: result.totalCovered.toFixed(2),
+      cashHandedOver: result.cashHanded.toFixed(2),
+      changeDue: result.change.toFixed(2),
+      change: result.change.toFixed(2),
+      tableFreed: result.closed.tableFreed,
     };
   }
 
@@ -782,9 +857,8 @@ export class PaymentsService {
     });
     if (!order) throw new NotFoundException('Order not found');
 
-    if (['VOIDED'].includes(order.status)) {
-      throw new ConflictException(`Cannot add payment to ${order.status} order`);
-    }
+    // E1 — same gate as the cash close: sent, at least one live line, nothing left unsent.
+    await this.prisma.$transaction((tx) => this.assertOrderPayable(tx, order));
 
     // Dedupe by externalTransactionId
     const existing = await this.prisma.payment.findFirst({
