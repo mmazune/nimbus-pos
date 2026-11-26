@@ -9,10 +9,10 @@ moses-build-standards loaded.
 | 2 rights matrix | done | (this commit) |
 | 3 test run | done | 23038f0 (four runs 0 failed) |
 | 4 stock moves | done | (this commit) |
-| 5 stores | - | - |
+| 5 stores | done | (this commit) |
 
 ## Next
-Phase 5: stores chain, minimum/fill-to, requests (ask/issue/receive with PIN), deliveries + average cost, To buy, blind counts. Then final four runs, report.
+Final: four full runs on final code, rights walk, report. Optional 03 s6 item 3 not started.
 
 ## Decisions taken
 - D1 E1 migration: duplicate ticket lines are copied whole to kds_ticket_items_set_aside, then removed from the live table (prompt: remove; rule 17: nothing lost).
@@ -33,6 +33,11 @@ Phase 5: stores chain, minimum/fill-to, requests (ask/issue/receive with PIN), d
 - D17 Ledger append-only by trigger (UPDATE/DELETE raise).
 - D18 Servings fault: one resolver (recipeRowsForLine) for line cost, recipe cost and stock: a serving with its own rows uses them, else base rows; extras add theirs. Line cost uses costPerBase x amountBase when the item has a kind.
 - D19 Waste above wasteValueLimit (50,000) by someone without the answer right needs a supervisor PIN (someone else); a supervisor alone may.
+- D20 Stores: one MAIN made per branch on first use; SECONDARY feeds from MAIN; POINT feeds from MAIN or SECONDARY; stations link to a store (else MAIN).
+- D21 Receive: the receiver types their own PIN; the PIN's owner must hold pos:store:request. Short = issued − received, valued at the issue cost; the trip stays open until a count of the receiving store with that item closes.
+- D22 Moving average over the item's on-hand across the branch's stores; nothing (or less) on hand takes the new price. Cost changed: > costChangePct (10%) from the order's price, else from the average.
+- D23 Count limit per line = max(countVariancePct (2%) of the value used from that store in the last 30 days, countVarianceValue 20,000); the manager's note is written by someone with pos:approvals:answer-manager. Blind: the counter sees no books while the count is open; managers do.
+- Left out: LOW_STOCK / REQUEST_WAITING alert rows (no alerts table, E10); count tasks; auto-send of suggestions; 'their store' scoping (no store on the membership).
 - D13 allowedActions on GET /api/pos/orders/:id, derived from the route keys + order state; no 'ask to void' (no request kind for it yet).
 
 ## Left out

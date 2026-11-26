@@ -441,7 +441,7 @@ export class StockService {
   async opening(
     ctx: Ctx,
     callerId: string,
-    dto: { inventoryItemId: string; amount: string; unit: string },
+    dto: { inventoryItemId: string; amount: string; unit: string; storeId?: string },
   ) {
     const item = await this.prisma.inventoryItem.findFirst({
       where: { id: dto.inventoryItemId, branchId: ctx.branchId },
@@ -450,7 +450,10 @@ export class StockService {
     const amount = toBase(dto.amount, dto.unit, item.stockKind);
     if (amount <= 0) throw new BadRequestException('Opening stock is a positive amount');
     return this.prisma.$transaction(async (tx) => {
-      const store = await this.mainStore(tx, ctx);
+      const store = dto.storeId
+        ? await tx.store.findFirst({ where: { id: dto.storeId, branchId: ctx.branchId } })
+        : await this.mainStore(tx, ctx);
+      if (!store) throw new NotFoundException('Store not found in this branch');
       return this.move(tx, ctx, {
         storeId: store.id,
         inventoryItemId: item.id,

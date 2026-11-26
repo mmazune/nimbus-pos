@@ -389,6 +389,15 @@ const PERMISSIONS_DATA = [
   { action: 'pos:stock:take-out', description: 'Take out of stock with a fixed reason, or record we found more — POST /api/stock/take-out, /api/stock/found (a supervisor PIN above the venue value limit)' },
   { action: 'pos:stock:remake', description: 'Remake a sent dish: its ingredients leave stock again — POST /api/pos/orders/:orderId/lines/:itemId/remake' },
   { action: 'pos:cost:write', description: 'Set the cost of a stock item — PUT /api/stock/items/:id/cost' },
+  // T6 phase 5 — stores (03-stock-stores-availability.md section 11)
+  { action: 'pos:store:setup', description: 'Set up the chain of stores and which station takes from which — POST /api/stores, PUT /api/stores/stations/:station' },
+  { action: 'pos:store:levels:write', description: 'Set an item\'s minimum and fill-to in a store — PUT /api/stores/:storeId/levels/:itemId' },
+  { action: 'pos:store:request', description: 'Ask the feeding store and receive with your PIN — POST /api/store-requests, /:id/receive, /:id/not-arrived' },
+  { action: 'pos:store:issue', description: 'Issue or decline a store request — POST /api/store-requests/:id/issue, /:id/decline' },
+  { action: 'pos:stock:count', description: 'Open, save and close a stock count — /api/stock-counts' },
+  { action: 'pos:purchasing:read', description: 'See what to buy — GET /api/to-buy' },
+  { action: 'pos:purchasing:write', description: 'Turn To buy lines into a purchase order — POST /api/purchase-orders' },
+  { action: 'pos:delivery:receive', description: 'Receive a delivery (with or without an order); moves the average cost — POST /api/deliveries' },
   // M27: Staff Insights + Awards + Promotion Suggestions
   { action: 'pos:staff:insights:read', description: 'View staff insight snapshots' },
   { action: 'pos:staff:awards:create', description: 'Create staff awards' },

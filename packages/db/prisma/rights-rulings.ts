@@ -63,6 +63,40 @@ export const RIGHTS_RULINGS: Record<string, RightsRuling> = {
     why: '03 section 11: set a cost — accountant yes; manager under R14; never waiter, cashier or supervisor.',
   },
 
+  // ── Phase 5: stores (new keys; 03 section 11) ──
+  'pos:store:setup': {
+    holders: ['Owner', 'Manager'],
+    why: '03 section 2: the venue sets its chain; manager.',
+  },
+  'pos:store:levels:write': {
+    holders: ['Owner', 'Manager', 'Stock Manager'],
+    why: '03 section 11: set minimum and fill-to — store keeper (their store) and manager.',
+  },
+  'pos:store:request': {
+    holders: ['Owner', 'Manager', 'Chef', 'Bartender'],
+    why: '03 section 11: ask the store, receive — chef, bartender (their store), manager.',
+  },
+  'pos:store:issue': {
+    holders: ['Owner', 'Manager', 'Stock Manager'],
+    why: '03 section 11: issue — store keeper (their store), manager.',
+  },
+  'pos:stock:count': {
+    holders: ['Owner', 'Manager', 'Stock Manager'],
+    why: '03 section 11: count — store keeper (their store), manager.',
+  },
+  'pos:purchasing:read': {
+    holders: ['Owner', 'Manager', 'Stock Manager', 'Accountant'],
+    why: '03 section 9: To buy is seen by the store keeper and the manager; the accountant sees cost. Never waiter, cashier or supervisor (R14).',
+  },
+  'pos:purchasing:write': {
+    holders: ['Owner', 'Manager'],
+    why: '03 section 9: the manager turns To buy lines into a purchase order.',
+  },
+  'pos:delivery:receive': {
+    holders: ['Owner', 'Manager', 'Stock Manager'],
+    why: '03 section 11: receive a delivery — store keeper and manager.',
+  },
+
   // ── Phase 2: every other key whose holders rights-matrix.json changes (generated from its
   // `proposed` holders; the 35 keys with no permission row are ruled on in DEFERRED_KEYS) ──
   'alerts:channel:write': {

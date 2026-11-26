@@ -815,6 +815,11 @@ model OrgSettings {
     businessDayEndsHour       Int      @default(5) @map("business_day_ends_hour")
     // T6 — taking out of stock above this value needs a supervisor's PIN (01-decisions waiting point 6).
     wasteValueLimit           Decimal  @default(50000) @map("waste_value_limit") @db.Decimal(12, 2)
+    // T6 phase 5 — a count line differing by more than the larger of these needs the manager's
+    // note; a delivery priced more than costChangePct away from expected goes on "Cost changed".
+    countVariancePct          Decimal  @default(2) @map("count_variance_pct") @db.Decimal(5, 2)
+    countVarianceValue        Decimal  @default(20000) @map("count_variance_value") @db.Decimal(12, 2)
+    costChangePct             Decimal  @default(10) @map("cost_change_pct") @db.Decimal(5, 2)
     createdAt                 DateTime @default(now()) @map("created_at")
     updatedAt                 DateTime @updatedAt @map("updated_at")
 
@@ -7585,6 +7590,9 @@ model StoreLevel {
     storeId         String   @map("store_id")
     inventoryItemId String   @map("inventory_item_id")
     onHand          Int      @default(0) @map("on_hand")
+    // T6 phase 5 — below minimum the item joins the store's suggestion, up to fillTo.
+    minimum         Int?
+    fillTo          Int?     @map("fill_to")
     updatedAt       DateTime @updatedAt @map("updated_at")
 
     @@unique([storeId, inventoryItemId])
@@ -7618,4 +7626,182 @@ model StockMovement {
     @@index([orderItemId])
     @@index([refType, refId])
     @@map("stock_movements")
+}
+
+// ── T6 phase 5: stores ──
+
+enum StoreRequestStatus {
+    REQUESTED
+    ISSUED
+    RECEIVED
+    RECEIVED_SHORT
+    DECLINED
+    NOT_ARRIVED
+}
+
+enum StockCountKind {
+    SPOT
+    FULL
+    BAR_SHIFT
+}
+
+enum StockCountStatus {
+    OPEN
+    CLOSED
+}
+
+/// T6 — a store asks the store that feeds it: REQUESTED -> ISSUED -> RECEIVED (or RECEIVED_SHORT,
+/// DECLINED, NOT_ARRIVED). What was issued and not received stays on the request as a loss on
+/// that trip until a count of the receiving store closes it.
+model StoreRequest {
+    id            String             @id @default(cuid())
+    orgId         String             @map("org_id")
+    branchId      String             @map("branch_id")
+    fromStoreId   String             @map("from_store_id")
+    toStoreId     String             @map("to_store_id")
+    status        StoreRequestStatus @default(REQUESTED)
+    suggested     Boolean            @default(false)
+    note          String?
+    requestedById String             @map("requested_by_id")
+    issuedById    String?            @map("issued_by_id")
+    issuedAt      DateTime?          @map("issued_at")
+    receivedById  String?            @map("received_by_id")
+    receivedAt    DateTime?          @map("received_at")
+    resolvedAt    DateTime?          @map("resolved_at")
+    resolvedByCountId String?        @map("resolved_by_count_id")
+    createdAt     DateTime           @default(now()) @map("created_at")
+    updatedAt     DateTime           @updatedAt @map("updated_at")
+
+    lines StoreRequestLine[]
+
+    @@index([branchId, status])
+    @@map("store_requests")
+}
+
+model StoreRequestLine {
+    id              String  @id @default(cuid())
+    requestId       String  @map("request_id")
+    inventoryItemId String  @map("inventory_item_id")
+    requested       Int
+    issued          Int?
+    received        Int?
+    shortBy         Int?    @map("short_by")
+    shortValue      Decimal? @map("short_value") @db.Decimal(14, 2)
+    unitCost        Decimal? @map("unit_cost") @db.Decimal(18, 6)
+
+    request StoreRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+    @@index([requestId])
+    @@map("store_request_lines")
+}
+
+/// T6 — a simple purchase order: supplier, lines, expected price.
+model PurchaseOrder {
+    id           String   @id @default(cuid())
+    orgId        String   @map("org_id")
+    branchId     String   @map("branch_id")
+    supplierName String   @map("supplier_name")
+    status       String   @default("OPEN")
+    createdById  String   @map("created_by_id")
+    createdAt    DateTime @default(now()) @map("created_at")
+    updatedAt    DateTime @updatedAt @map("updated_at")
+
+    lines PurchaseOrderLine[]
+
+    @@index([branchId])
+    @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+    id                  String  @id @default(cuid())
+    purchaseOrderId     String  @map("purchase_order_id")
+    inventoryItemId     String  @map("inventory_item_id")
+    amount              Int
+    expectedCostPerBase Decimal @map("expected_cost_per_base") @db.Decimal(18, 6)
+
+    purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+
+    @@index([purchaseOrderId])
+    @@map("purchase_order_lines")
+}
+
+/// T6 — goods arriving, against an order or with none. Each line writes RECEIVE and moves the
+/// item's moving weighted average cost.
+model Delivery {
+    id              String   @id @default(cuid())
+    orgId           String   @map("org_id")
+    branchId        String   @map("branch_id")
+    storeId         String   @map("store_id")
+    purchaseOrderId String?  @map("purchase_order_id")
+    supplierName    String?  @map("supplier_name")
+    receivedById    String   @map("received_by_id")
+    createdAt       DateTime @default(now()) @map("created_at")
+
+    lines DeliveryLine[]
+
+    @@index([branchId])
+    @@map("deliveries")
+}
+
+model DeliveryLine {
+    id                  String   @id @default(cuid())
+    deliveryId          String   @map("delivery_id")
+    inventoryItemId     String   @map("inventory_item_id")
+    amount              Int
+    orderedAmount       Int?     @map("ordered_amount")
+    outcome             String
+    costPerBase         Decimal  @map("cost_per_base") @db.Decimal(18, 6)
+    expectedCostPerBase Decimal? @map("expected_cost_per_base") @db.Decimal(18, 6)
+    averageBefore       Decimal  @map("average_before") @db.Decimal(18, 6)
+    averageAfter        Decimal  @map("average_after") @db.Decimal(18, 6)
+    costChanged         Boolean  @default(false) @map("cost_changed")
+    changePct           Decimal? @map("change_pct") @db.Decimal(9, 2)
+
+    delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+    @@index([deliveryId])
+    @@index([inventoryItemId, costChanged])
+    @@map("delivery_lines")
+}
+
+/// T6 — a count. Blind by default; each line compares with the books at the second it is saved,
+/// so selling goes on. Closing writes COUNT_ADJUST rows; a difference above the venue's limit
+/// needs the manager's note first.
+model StockCount {
+    id          String           @id @default(cuid())
+    orgId       String           @map("org_id")
+    branchId    String           @map("branch_id")
+    storeId     String           @map("store_id")
+    kind        StockCountKind
+    status      StockCountStatus @default(OPEN)
+    blind       Boolean          @default(true)
+    openedById  String           @map("opened_by_id")
+    closedById  String?          @map("closed_by_id")
+    closedAt    DateTime?        @map("closed_at")
+    managerNote String?          @map("manager_note")
+    managerNoteById String?      @map("manager_note_by_id")
+    createdAt   DateTime         @default(now()) @map("created_at")
+    updatedAt   DateTime         @updatedAt @map("updated_at")
+
+    lines StockCountLine[]
+
+    @@index([branchId, status])
+    @@map("stock_counts")
+}
+
+model StockCountLine {
+    id              String    @id @default(cuid())
+    countId         String    @map("count_id")
+    inventoryItemId String    @map("inventory_item_id")
+    counted         Int?
+    bookAtSave      Int?      @map("book_at_save")
+    difference      Int?
+    value           Decimal?  @db.Decimal(14, 2)
+    savedAt         DateTime? @map("saved_at")
+    savedById       String?   @map("saved_by_id")
+
+    count StockCount @relation(fields: [countId], references: [id], onDelete: Restrict)
+
+    @@unique([countId, inventoryItemId])
+    @@map("stock_count_lines")
 }

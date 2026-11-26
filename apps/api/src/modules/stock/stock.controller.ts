@@ -39,6 +39,13 @@ export class AmountDto {
   note?: string;
 }
 
+export class OpeningDto extends AmountDto {
+  /** Defaults to the branch's main store. */
+  @IsOptional()
+  @IsString()
+  storeId?: string;
+}
+
 export class TakeOutDto extends AmountDto {
   @IsIn(Object.keys(TAKE_OUT_REASONS))
   reason!: TakeOutReason;
@@ -149,7 +156,7 @@ export class StockController {
 
   @Post('stock/opening')
   @Permissions('pos:inventory:write')
-  opening(@Body() dto: AmountDto, @CurrentUser() u: Me, @Req() req: Request) {
+  opening(@Body() dto: OpeningDto, @CurrentUser() u: Me, @Req() req: Request) {
     return this.stock.opening((req as any).branchContext, u.id, dto);
   }
 
