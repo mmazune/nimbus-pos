@@ -25,6 +25,11 @@
     "checkedText": 41,
     "checkedTargets": 17
   },
+  "till-drawer-lines": [
+    "Float at the start\n\n250,000",
+    "Cash payments in the branch, less refunds\n\n+ 10,875,500",
+    "Should be in the drawer\n\nUGX 11,125,500"
+  ],
   "till-1280": {
     "viewport": "1280x800",
     "sideways": 0,
@@ -128,7 +133,7 @@
     "filled": [
       "Count and close"
     ],
-    "checkedText": 20,
+    "checkedText": 18,
     "checkedTargets": 7
   },
   "safe-drop-sheet-390": {
@@ -142,7 +147,7 @@
     "filled": [
       "Record the drop"
     ],
-    "checkedText": 28,
+    "checkedText": 26,
     "checkedTargets": 12
   },
   "till-variance-390": {
@@ -156,7 +161,7 @@
     "filled": [
       "Count and close"
     ],
-    "checkedText": 23,
+    "checkedText": 21,
     "checkedTargets": 8
   },
   "close-confirm-390": {
@@ -170,7 +175,7 @@
     "filled": [
       "Close the till"
     ],
-    "checkedText": 33,
+    "checkedText": 31,
     "checkedTargets": 11
   }
 }

@@ -46,7 +46,11 @@ All six phases are done. Ten screens are built to their drawings and all pass th
   - the constant "Terminal 01" (`pos-shell/station.ts` reads a station label if one is set; no route sets one).
 5. **Rule 10 at 1280 × 800 and 390 × 844** [live] every `rules(...)` call in e2e/t1 checks: no sideways page scroll, no element past the screen edge, no money broken across lines, no cut text, no target under 44 px, no text under 12 px, at most one filled button. The sheets are measured open. All counts are 0 in `*-measured.json`.
 6. **`verify:web` and the web build green; no baseline-passing spec fails except the updated, listed ones** — see Gates.
-7. **Diff inside T1's paths** — see Gates.
+7. **Diff inside T1's paths.** Product code is inside what T1 owns; see Gates for the file list. Read this together with the spec edits:
+   - T1's ownership list names no test folders.
+   - Outside `e2e/t1`, the diff also edits old specs in `cashier-floor`, `manager-shell` (one frontline case), `supervisor-prompt3`, `supervisor-reservations` and `supervisor-approvals`. Those specs drove the old shell, nav and screens that T1 replaced.
+   - Done-when 6 allows them ("except the ones you updated and list"), U1 Done-when 9 allows `apps/web` as a whole, and every one is listed under "Specs changed".
+   - If test folders count as someone else's, these edits are the one place the diff leaves T1's list.
 8. **`SCREENS.md` rows say built, with their score** — ten rows, below.
 
 ## Look review (separate reviewer, built nothing; §5A.12, pass 20/24, no zero)

@@ -111,6 +111,16 @@ test("cashier drops cash to the safe, counts and closes the till, and opens a ne
   }
   await expect(page.getByText("Should be in the drawer")).toBeVisible();
   await expect(page.getByText("Cash payments in the branch, less refunds")).toBeVisible();
+  // the float is counted once: no "Opening float" movement beside "Float at the start",
+  // and the lines add up to "Should be in the drawer" (whole shillings, as BigInt)
+  const drawer = page.getByRole("region", { name: "Cash in the drawer" });
+  await expect(drawer.getByText(/^Opening float/)).toHaveCount(0);
+  const lines = await drawer.locator("div.flex.items-center.justify-between").allInnerTexts();
+  const money = (t: string) => BigInt(t.replace(/[^\d]/g, "") || "0") * (/[−-]\s*[\dU]/.test(t.split("\n").pop() ?? "") ? -1n : 1n);
+  const shouldBe = lines.find((l) => l.startsWith("Should be in the drawer")) ?? "";
+  const parts = lines.filter((l) => !l.startsWith("Should be in the drawer")).map((l) => money(l.split("\n").pop() ?? ""));
+  expect(parts.reduce((a, b) => a + b, 0n), `drawer lines: ${lines.join(" | ")}`).toBe(money(shouldBe.split("\n").pop() ?? ""));
+  measured["till-drawer-lines"] = lines;
   await rules(page, "till-1280");
   await shot(page, "Cashier-Till-1280x800.png");
 

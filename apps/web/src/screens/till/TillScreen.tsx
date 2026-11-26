@@ -117,6 +117,9 @@ export function TillScreen() {
     const byType = new Map<string, { total: bigint; count: number }>();
     for (const m of source?.cashMovements ?? []) {
       const t = String(m?.type ?? "").toUpperCase();
+      // The float is its own line ("Float at the start"); the server counts it once, from
+      // till.openingFloat, never from this movement. Listing it again counted it twice.
+      if (t === "OPENING_FLOAT") continue;
       const prev = byType.get(t) ?? { total: 0n, count: 0 };
       byType.set(t, { total: prev.total + toCents(m?.amount ?? 0), count: prev.count + 1 });
     }

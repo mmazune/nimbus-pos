@@ -89,7 +89,9 @@ export function TableTile({ name, state, others = false, density, detail, who, a
     >
       <span className="flex items-start justify-between gap-kit-6">
         {parts.prefix ? (
-          <span className="flex min-w-0 flex-col">
+          // roomy: prefix small above the number; compact and phone (84 px tall): on one line,
+          // or the number, the prefix and the pill do not fit
+          <span className={roomy ? "flex min-w-0 flex-col" : "flex min-w-0 items-baseline gap-kit-4"}>
             <span className="whitespace-nowrap text-kit-bar text-kit-muted">{parts.prefix}</span>
             <span className={["whitespace-nowrap", roomy ? "text-kit-tile-no" : "text-kit-tile-no-c"].join(" ")}>{parts.number}</span>
           </span>

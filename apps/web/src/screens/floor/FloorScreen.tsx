@@ -13,6 +13,7 @@ import {
   TableTile,
   Text,
 } from "@/components/kit";
+import { splitTableName } from "@/components/kit/TableTile";
 import type { OperationalIconName } from "@/components/pos-shell/role-icons";
 import { useTouchHeader } from "@/components/pos-shell/TouchShell";
 
@@ -129,11 +130,13 @@ export function FloorScreen({ role, source, readAt, viewer, isLoading, error, on
   const shown = whose === "mine" ? mineTiles : areaTiles;
   const areaName = area === ALL_AREAS ? "All areas" : (areas.find((a) => a.key === area)?.name ?? "");
 
+  // an area of bar tabs ("Tab 1"…) counts tabs, not tables
+  const noun = areaTiles.length && areaTiles.every((t) => splitTableName(t.label).prefix?.toLowerCase() === "tab") ? "tabs" : "tables";
   const summary = isLoading || !source
     ? undefined
     : whose === "mine"
       ? `${mineCount} ${mineCount === 1 ? "table is" : "tables are"} yours`
-      : `${areaName} · ${openCount(areaTiles)} of ${areaTiles.length} tables open`;
+      : `${areaName} · ${openCount(areaTiles)} of ${areaTiles.length} ${noun} open`;
 
   const summaryShort = isLoading || !source || whose === "mine"
     ? summary
