@@ -23,5 +23,103 @@
     ],
     "checkedText": 30,
     "checkedTargets": 10
+  },
+  "waiter-leave-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Send the request"
+    ],
+    "checkedText": 42,
+    "checkedTargets": 20
+  },
+  "waiter-end-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "End my shift"
+    ],
+    "checkedText": 38,
+    "checkedTargets": 13
+  },
+  "cashier-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 25,
+    "checkedTargets": 10
+  },
+  "supervisor-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 25,
+    "checkedTargets": 10
+  },
+  "waiter-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 16,
+    "checkedTargets": 6
+  },
+  "cashier-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 23,
+    "checkedTargets": 8
+  },
+  "supervisor-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 16,
+    "checkedTargets": 6
   }
 }

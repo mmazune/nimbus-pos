@@ -55,7 +55,7 @@ async function openMainHall(page: Page, who: "waiter" | "cashier" | "supervisor"
   await pinSignIn(page, who);
   await page.goto(`/${who}/floor`);
   await expect(page.locator("[data-floor-grid]")).toBeVisible();
-  if (who === "waiter") await page.getByRole("tab", { name: "All tables" }).click();
+  if (who === "waiter") await page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
   await page.getByRole("button", { name: /^Main hall/ }).click();
   await expect(page.locator("[data-floor-tile]")).toHaveCount(32);
 }
@@ -142,7 +142,7 @@ test("waiter, 390 × 844: the phone floor, tab bar 84, three across, Tab 3 fits"
   expectRules(r1);
   await shot(page, "Floor-Phone-390x844-waiter.png");
   // the Tabs area, three across: "Tab 3" shows "Tab" small above a large 3
-  await page.getByRole("tab", { name: "All tables" }).click();
+  await page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
   for (let i = 0; i < 6; i += 1) {
     if ((await page.getByRole("button", { name: /^Tabs/ }).count()) > 0) break;
     await page.getByRole("button", { name: "Next area" }).click();
@@ -174,7 +174,7 @@ test("tapping a table opens what it opened before, for each role", async ({ page
       await page.goBack();
       await expect(page.locator("[data-order-screen]")).toHaveCount(0);
       await page.reload();
-      await page.getByRole("tab", { name: "All tables" }).click();
+      await page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
       await page.getByRole("button", { name: /^Main hall/ }).click();
       await expect(page.locator(`[data-floor-table-id="${tableId}"]`)).toHaveAttribute("data-floor-tile", "free");
     }

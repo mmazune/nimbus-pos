@@ -96,7 +96,7 @@ test("waiter seats a late booking at another free table (1280 × 800)", async ({
   const tables = await apiCall<Array<{ id: string; label: string }>>("manager", "/tables");
   const seatedId = tables.find((t) => tableWord(t.label) === label)?.id;
   await page.goto("/waiter/floor");
-  await page.getByRole("tab", { name: "All tables" }).click();
+  await page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
   // every area the floor shows (the demo venue's, and any a fixture added), until the table is on screen
   const chips = page.getByRole("group", { name: "Areas" }).getByRole("button");
   for (let i = 0; i < (await chips.count()); i += 1) {

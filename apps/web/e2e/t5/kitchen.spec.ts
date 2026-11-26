@@ -136,6 +136,7 @@ test("a bartender signs in with a PIN and lands on the bar screen, bar tickets o
   await pinSignIn(B.page, "bartender1");
   await expect(B.page).toHaveURL(/\/kitchen$/);
   await expect(B.page.locator("[data-touch-shell]")).toContainText("Bar");
+  await expect(B.page.locator("[data-kitchen-tickets], [data-kitchen-screen] section[aria-label='No tickets']").first()).toBeVisible({ timeout: 20_000 });
   // Every ticket on the bartender's screen is a bar ticket (checked against the server's queue).
   const ids = await B.page.locator("[data-kitchen-ticket]").evaluateAll((els) => els.map((e) => e.getAttribute("data-kitchen-ticket")));
   const bar = (await api<{ data: Json[] }>((await as("manager1")).token, "GET", "/kds/queue?station=BAR&pageSize=100")).data.map((t) => t.id);

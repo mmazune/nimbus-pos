@@ -302,6 +302,8 @@ export function shortNote(note: string, max = 16): string {
     if (next.length > max) break;
     out = next;
   }
+  // No dangling little word at the end ("Friday, by" reads as cut).
+  out = out.replace(/(\s+(by|at|the|of|near|and|in|on|a|to))+$/i, "");
   return (out || note.slice(0, max)).replace(/[,;:.]+$/, "");
 }
 

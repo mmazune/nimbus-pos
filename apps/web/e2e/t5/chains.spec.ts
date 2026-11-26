@@ -43,8 +43,13 @@ async function addItem(page: Page, group: string, name: string, section: "Food" 
 
 /** The unsent lines: the terminal panel, or the phone's order sheet. */
 async function orderLines(page: Page) {
-  const open = page.getByRole("button", { name: /^Order · \d+/ });
-  if (await open.count()) await open.click();
+  // On a phone the order is a sheet behind "Order · n"; wait for the screen to have it, then open it.
+  if ((page.viewportSize()?.width ?? 1280) < 640) {
+    const open = page.getByRole("button", { name: /^Order · \d+/ });
+    await expect(open).toBeVisible({ timeout: 15_000 });
+    await open.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  }
   return page.locator("[data-order-lines]").last();
 }
 
@@ -275,7 +280,7 @@ for (const size of SIZES) {
     const W = await terminal(browser, size.vp);
     await pinSignIn(W.page, "waiter1");
     await W.page.goto("/waiter/floor");
-    await W.page.getByRole("tab", { name: "All tables" }).click();
+    await W.page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
     if (size.tag === "1280") await W.page.getByRole("button", { name: /^Tabs/ }).click();
     else for (let i = 0; i < 8 && !(await W.page.getByRole("button", { name: "New tab" }).count()); i += 1) await W.page.getByRole("button", { name: "Next area" }).click();
     await W.page.getByRole("button", { name: "New tab" }).click();

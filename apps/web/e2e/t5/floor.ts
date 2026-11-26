@@ -16,7 +16,7 @@ export async function tapTable(page: Page, tableId: string, how: "click" | "tap"
         if (await tile.isVisible()) break;
       }
     } else {
-      const all = page.getByRole("tab", { name: "All tables" });
+      const all = page.getByRole("tab", { name: /^All (tables|tabs)$/ });
       if (await all.count()) await all.first().click();
       for (let i = 0; i < 12 && !(await tile.isVisible()); i += 1) {
         const next = page.getByRole("button", { name: "Next area" });

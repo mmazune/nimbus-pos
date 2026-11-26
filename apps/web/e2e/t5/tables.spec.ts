@@ -45,7 +45,7 @@ test("the Floor reads areas from the server; the Tabs area and New tab open a na
   const W = await terminal(browser);
   await pinSignIn(W.page, "waiter1");
   await W.page.goto("/waiter/floor");
-  await W.page.getByRole("tab", { name: "All tables" }).click();
+  await W.page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
   const chips = W.page.getByRole("group", { name: "Areas" }).getByRole("button");
   const names = (await chips.allTextContents()).map((t) => t.replace(/\d+$/, "").trim());
   log.areaChips = names;
@@ -67,7 +67,7 @@ test("the Floor reads areas from the server; the Tabs area and New tab open a na
   await expect(W.page.getByRole("heading", { name: /^Tab \d+/ })).toBeVisible();
   // Back on the Floor the tab tile carries its note.
   await W.page.getByRole("button", { name: "Floor", exact: true }).first().click();
-  await W.page.getByRole("tab", { name: "All tables" }).click();
+  await W.page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
   await W.page.getByRole("button", { name: /^Tabs/ }).click();
   await expect(W.page.locator("[data-floor-tile]").filter({ hasText: "Red cap by bar" })).toHaveCount(1);
   await rule10(W.page, "tabs-area-1280", log);
@@ -291,7 +291,7 @@ test("phone, 390 × 844: the Tabs area and the actions sheet fit", async ({ brow
   const P = await terminal(browser, { width: 390, height: 844 });
   await pinSignIn(P.page, "waiter1");
   await P.page.goto("/waiter/floor");
-  await P.page.getByRole("tab", { name: "All tables" }).click();
+  await P.page.getByRole("tab", { name: /^All (tables|tabs)$/ }).click();
   for (let i = 0; i < 8 && !(await P.page.getByRole("button", { name: "New tab" }).count()); i += 1) {
     await P.page.getByRole("button", { name: "Next area" }).click();
   }
