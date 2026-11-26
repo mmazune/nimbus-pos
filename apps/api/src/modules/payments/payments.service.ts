@@ -103,12 +103,24 @@ export class PaymentsService {
   ): Promise<boolean> {
     // E1 — the balance check and the close happen in one transaction, through the one close door.
     const settled = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${branchId} FOR UPDATE`;
       const order = await tx.order.findFirst({ where: { id: orderId, branchId } });
       if (!order || order.status === 'CLOSED' || order.status === 'VOIDED') return null;
 
       const outstanding = await this.getOutstandingBalance(orderId, branchId, tx);
       if (outstanding.gt(0)) return { order, outstanding, closed: null };
+
+      // E1F (S9, ruling R-d default): money that covers the bill does not close an order that
+      // was never sent or still has unsent lines. The money stays recorded and the order stays
+      // open; it closes when the last line is sent or removed (OrdersService.closeIfSettled).
+      if (!PAYABLE_ORDER_STATES.includes(order.status)) return { order, outstanding, closed: null };
+      const live = await tx.orderItem.findMany({
+        where: { orderId, voidedAt: null },
+        select: { sentAt: true },
+      });
+      if (live.length === 0 || live.some((l) => l.sentAt === null)) {
+        return { order, outstanding, closed: null };
+      }
 
       const closed = await closeOrderInTx(tx, {
         orderId,
@@ -235,7 +247,7 @@ export class PaymentsService {
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Lock the order, then judge everything against the locked state.
-      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
       const order = await tx.order.findFirst({
         where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
         include: { payments: true },
@@ -852,45 +864,59 @@ export class PaymentsService {
     dto: CreateManualReferencePaymentDto,
     meta: RequestMeta,
   ) {
-    const order = await this.prisma.order.findFirst({
-      where: { id: dto.orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
-    });
-    if (!order) throw new NotFoundException('Order not found');
+    // E1F (B3, S4): the gate, the balance check and the payment row are one transaction under
+    // the order's row lock, so a reference cannot be posted on an order a close is finishing.
+    const payment = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${dto.orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const order = await tx.order.findFirst({
+        where: { id: dto.orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+      });
+      if (!order) throw new NotFoundException('Order not found');
 
-    // E1 — same gate as the cash close: sent, at least one live line, nothing left unsent.
-    await this.prisma.$transaction((tx) => this.assertOrderPayable(tx, order));
+      // E1 — same gate as the cash close: sent, at least one live line, nothing left unsent.
+      await this.assertOrderPayable(tx, order);
 
-    // Dedupe by externalTransactionId
-    const existing = await this.prisma.payment.findFirst({
-      where: {
-        orderId: dto.orderId,
-        branchId: ctx.branchId,
-        externalTransactionId: dto.externalTransactionId,
-      },
-    });
-    if (existing) {
-      throw new ConflictException(
-        `A payment with transaction ID "${dto.externalTransactionId}" already exists for this order`,
-      );
-    }
+      // Dedupe by externalTransactionId
+      const existing = await tx.payment.findFirst({
+        where: {
+          orderId: dto.orderId,
+          branchId: ctx.branchId,
+          externalTransactionId: dto.externalTransactionId,
+        },
+      });
+      if (existing) {
+        throw new ConflictException(
+          `A payment with transaction ID "${dto.externalTransactionId}" already exists for this order`,
+        );
+      }
 
-    const payment = await this.prisma.payment.create({
-      data: {
-        orgId: ctx.organizationId,
-        branchId: ctx.branchId,
-        orderId: dto.orderId,
-        amount: dto.amount,
-        method: dto.method,
-        status: PaymentStatus.COMPLETED,
-        captureMode: 'MANUAL_REFERENCE',
-        verificationStatus: 'UNVERIFIED',
-        externalTransactionId: dto.externalTransactionId,
-        payerPhone: dto.payerPhone ?? null,
-        postedAt: dto.postedAt ? new Date(dto.postedAt) : new Date(),
-        enteredById: userId,
-        verificationNote: dto.note ?? null,
-        metadata: { provider: dto.provider ?? null, captureMode: 'MANUAL_REFERENCE' },
-      },
+      // Ruling R-b (default taken): a manual reference (never cash) must fit what is left.
+      const amount = new Decimal(String(dto.amount));
+      const due = await this.getOutstandingBalance(dto.orderId, ctx.branchId, tx);
+      if (amount.gt(due)) {
+        throw new BadRequestException(
+          `This amount (${amount.toFixed(2)}) is more than is left to pay (${due.toFixed(2)}).`,
+        );
+      }
+
+      return tx.payment.create({
+        data: {
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          orderId: dto.orderId,
+          amount,
+          method: dto.method,
+          status: PaymentStatus.COMPLETED,
+          captureMode: 'MANUAL_REFERENCE',
+          verificationStatus: 'UNVERIFIED',
+          externalTransactionId: dto.externalTransactionId,
+          payerPhone: dto.payerPhone ?? null,
+          postedAt: dto.postedAt ? new Date(dto.postedAt) : new Date(),
+          enteredById: userId,
+          verificationNote: dto.note ?? null,
+          metadata: { provider: dto.provider ?? null, captureMode: 'MANUAL_REFERENCE' },
+        },
+      });
     });
 
     await this.audit.log({

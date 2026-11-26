@@ -46,6 +46,10 @@ describe('OrdersService', () => {
         updateMany: jest.fn(),
       },
       payment: { count: jest.fn().mockResolvedValue(0) },
+      // E1F (S11): no mobile-money payment waiting
+      paymentIntent: { count: jest.fn().mockResolvedValue(0) },
+      // E1F (S8, N1): no reservation seated on these orders
+      reservation: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $queryRaw: jest.fn().mockResolvedValue([]),
       table: {
@@ -472,7 +476,7 @@ describe('OrdersService', () => {
         userId: 'u',
       });
       prisma.order.findUniqueOrThrow.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
-      prisma.reservation = { findFirst: jest.fn().mockResolvedValue(null), updateMany: jest.fn() };
+      prisma.reservation = { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() };
 
       const result = await (service as any).transitionOrder(
         'user-1',
@@ -656,18 +660,33 @@ describe('OrdersService', () => {
   // ── Void ──
 
   describe('voidOrder', () => {
+    // E1F (B4): judged and written under the order lock; the audit row is written in the
+    // same transaction, so the assertion reads auditLog.create instead of audit.log.
+    beforeEach(() => {
+      prisma.order.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.order.findUniqueOrThrow.mockResolvedValue({ id: 'order-1', status: 'VOIDED' });
+    });
+
     it('should void a NEW order without reason', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'NEW' });
-      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'VOIDED' });
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'NEW',
+        total: new Decimal(0),
+      });
 
       const result = await service.voidOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
       expect(result.status).toBe('VOIDED');
-      expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'ORDER_VOIDED' }));
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ action: 'ORDER_VOIDED' }),
+      });
     });
 
     it('should void IN_KITCHEN order with reason', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'IN_KITCHEN' });
-      prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'VOIDED' });
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'IN_KITCHEN',
+        total: new Decimal(9000),
+      });
 
       const result = await service.voidOrder(
         'user-1',
@@ -680,7 +699,11 @@ describe('OrdersService', () => {
     });
 
     it('should reject post-kitchen void without reason', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'IN_KITCHEN' });
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'IN_KITCHEN',
+        total: new Decimal(9000),
+      });
 
       await expect(service.voidOrder('user-1', mockCtx, 'order-1', {}, mockMeta)).rejects.toThrow(
         BadRequestException,
@@ -688,7 +711,35 @@ describe('OrdersService', () => {
     });
 
     it('should reject void from SERVED', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'SERVED' });
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'SERVED',
+        total: new Decimal(9000),
+      });
+
+      await expect(service.voidOrder('user-1', mockCtx, 'order-1', {}, mockMeta)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('E1F ruling R-a: a SERVED order left at zero may be voided', async () => {
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'SERVED',
+        total: new Decimal(0),
+      });
+
+      const result = await service.voidOrder('user-1', mockCtx, 'order-1', {}, mockMeta);
+      expect(result.status).toBe('VOIDED');
+    });
+
+    it('E1F (B4): an order with a completed payment is not voided', async () => {
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'SENT',
+        total: new Decimal(9000),
+      });
+      prisma.payment.count.mockResolvedValueOnce(1);
 
       await expect(service.voidOrder('user-1', mockCtx, 'order-1', {}, mockMeta)).rejects.toThrow(
         ConflictException,
@@ -696,7 +747,11 @@ describe('OrdersService', () => {
     });
 
     it('should reject void from CLOSED', async () => {
-      prisma.order.findFirst.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
+      prisma.order.findFirst.mockResolvedValue({
+        id: 'order-1',
+        status: 'CLOSED',
+        total: new Decimal(9000),
+      });
 
       await expect(service.voidOrder('user-1', mockCtx, 'order-1', {}, mockMeta)).rejects.toThrow(
         ConflictException,

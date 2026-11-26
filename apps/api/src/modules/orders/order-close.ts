@@ -97,60 +97,23 @@ export async function closeOrderInTx(
     throw new ConflictException(`Cannot close an order in ${order.status} state`);
   }
 
-  // Free the table only when nothing else open sits on it. The table row is locked first so
-  // two orders closing on one table at the same moment cannot both see the other as open.
-  let tableFreed = false;
-  if (order.tableId) {
-    await tx.$queryRaw`SELECT "id" FROM "tables" WHERE "id" = ${order.tableId} FOR UPDATE`;
-    const stillOpen = await tx.order.count({
-      where: { tableId: order.tableId, id: { not: orderId }, status: OPEN_FILTER },
-    });
-    if (stillOpen === 0) {
-      const freed = await tx.table.updateMany({
-        where: { id: order.tableId, status: TableStatus.OCCUPIED },
-        data: { status: TableStatus.AVAILABLE },
-      });
-      tableFreed = freed.count > 0;
-    }
-  }
-
-  // A reservation linked by seatedOrderId and still SEATED completes, once.
-  let completedReservationId: string | null = null;
-  const reservation = await tx.reservation.findFirst({
-    where: { seatedOrderId: orderId, orgId, branchId, status: ReservationStatus.SEATED },
-    select: { id: true, reservationNumber: true },
+  // Lock order everywhere: order (claimed above), then reservation, then table (E1F, S2/P8).
+  const completedIds = await completeSeatedReservationsInTx(tx, {
+    orgId,
+    branchId,
+    orderId,
+    actorUserId: input.userId ?? order.userId,
+    auditUserId: input.userId ?? null,
+    source: 'order-close',
+    message: 'Reservation auto-completed on order close',
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
   });
-  if (reservation) {
-    const done = await tx.reservation.updateMany({
-      where: { id: reservation.id, status: ReservationStatus.SEATED },
-      data: {
-        status: ReservationStatus.COMPLETED,
-        completedAt: new Date(),
-        updatedById: input.userId ?? undefined,
-      },
-    });
-    if (done.count === 1) {
-      completedReservationId = reservation.id;
-      await tx.reservationEvent.create({
-        data: {
-          orgId,
-          branchId,
-          reservationId: reservation.id,
-          type: ReservationEventType.COMPLETED,
-          // an automatic close (provider callback) has no person: the order's owner stands in
-          actorUserId: input.userId ?? order.userId,
-          message: 'Reservation auto-completed on order close',
-          metadata: { source: 'order-close', orderId },
-        },
-      });
-      await audit(tx, input, 'RESERVATION_COMPLETED', 'Reservation', reservation.id, {
-        branchId,
-        reservationNumber: reservation.reservationNumber,
-        source: 'order-close',
-        orderId,
-      });
-    }
-  }
+  const completedReservationId = completedIds[0] ?? null;
+
+  const tableFreed = order.tableId
+    ? await releaseTableIfIdleInTx(tx, order.tableId, orderId)
+    : false;
 
   await audit(tx, input, input.auditAction, 'order', orderId, {
     orgId,
@@ -159,6 +122,7 @@ export async function closeOrderInTx(
     closedVia: input.source,
     tableFreed,
     completedReservationId,
+    ...(completedIds.length > 1 ? { completedReservationIds: completedIds } : {}),
     ...(input.auditMetadata ?? {}),
   });
 
@@ -175,4 +139,99 @@ export async function closeOrderInTx(
       completedReservationId,
     },
   };
+}
+
+/**
+ * The one place a table goes back to AVAILABLE after an order ends (W2): the table row is
+ * locked first, so two orders ending on one table at the same moment cannot both see the
+ * other as open. Called by the close door, the whole-order void and the table moves.
+ */
+export async function releaseTableIfIdleInTx(
+  tx: Prisma.TransactionClient,
+  tableId: string,
+  excludeOrderId: string | null,
+): Promise<boolean> {
+  await tx.$queryRaw`SELECT "id" FROM "tables" WHERE "id" = ${tableId} FOR UPDATE`;
+  const stillOpen = await tx.order.count({
+    where: {
+      tableId,
+      ...(excludeOrderId ? { id: { not: excludeOrderId } } : {}),
+      status: OPEN_FILTER,
+    },
+  });
+  if (stillOpen > 0) return false;
+  const freed = await tx.table.updateMany({
+    where: { id: tableId, status: TableStatus.OCCUPIED },
+    data: { status: TableStatus.AVAILABLE },
+  });
+  return freed.count > 0;
+}
+
+/**
+ * Every reservation still SEATED on this order completes, once each (N1: a bad link that
+ * points two reservations at one order leaves none behind). Used by the close door
+ * (source order-close) and the whole-order void (source order-void, ruling R-c).
+ */
+export async function completeSeatedReservationsInTx(
+  tx: Prisma.TransactionClient,
+  input: {
+    orgId: string;
+    branchId: string;
+    orderId: string;
+    actorUserId: string;
+    auditUserId: string | null;
+    source: 'order-close' | 'order-void';
+    message: string;
+    ipAddress?: string;
+    userAgent?: string;
+  },
+): Promise<string[]> {
+  const { orgId, branchId, orderId } = input;
+  const seated = await tx.reservation.findMany({
+    where: { seatedOrderId: orderId, orgId, branchId, status: ReservationStatus.SEATED },
+    select: { id: true, reservationNumber: true },
+    orderBy: { id: 'asc' },
+  });
+  const done: string[] = [];
+  for (const r of seated) {
+    const res = await tx.reservation.updateMany({
+      where: { id: r.id, status: ReservationStatus.SEATED },
+      data: {
+        status: ReservationStatus.COMPLETED,
+        completedAt: new Date(),
+        updatedById: input.auditUserId ?? undefined,
+      },
+    });
+    if (res.count !== 1) continue;
+    done.push(r.id);
+    await tx.reservationEvent.create({
+      data: {
+        orgId,
+        branchId,
+        reservationId: r.id,
+        type: ReservationEventType.COMPLETED,
+        // an automatic close (provider callback) has no person: the order's owner stands in
+        actorUserId: input.actorUserId,
+        message: input.message,
+        metadata: { source: input.source, orderId },
+      },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorUserId: input.auditUserId,
+        action: 'RESERVATION_COMPLETED',
+        entityType: 'Reservation',
+        entityId: r.id,
+        metadata: {
+          branchId,
+          reservationNumber: r.reservationNumber,
+          source: input.source,
+          orderId,
+        },
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      },
+    });
+  }
+  return done;
 }

@@ -40,6 +40,11 @@ describe('closeOrderInTx', () => {
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $queryRaw: jest.fn().mockResolvedValue([]),
     };
+    // E1F (N1): the close door reads every SEATED reservation; the mock delegates to findFirst
+    tx.reservation.findMany = jest.fn(async (...a: any[]) => {
+      const r = await tx.reservation.findFirst(...a);
+      return r ? [r] : [];
+    });
   });
 
   it('closes only an order that is still open (guarded write)', async () => {

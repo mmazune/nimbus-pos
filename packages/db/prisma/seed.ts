@@ -4412,6 +4412,14 @@ const ORDERS_SEED: OrderSeed[] = [
   },
 ];
 
+const SEEDED_SENT_STATES: OrderStatus[] = [
+  OrderStatus.SENT,
+  OrderStatus.IN_KITCHEN,
+  OrderStatus.READY,
+  OrderStatus.SERVED,
+  OrderStatus.CLOSED,
+];
+
 async function seedOrders(
   orgId: string,
   branchCode: string,
@@ -4432,7 +4440,16 @@ async function seedOrders(
     const existing = await prisma.order.findUnique({
       where: { branchId_orderNumber: { branchId: branch.id, orderNumber: order.orderNumber } },
     });
+    // E1F (S7): an order past NEW has had its lines sent; stamp them so it can be paid and is
+    // never ticketed twice. Idempotent: it only fills a line whose sent_at is still empty.
+    const wasSent = SEEDED_SENT_STATES.includes(order.status);
     if (existing) {
+      if (wasSent) {
+        await prisma.orderItem.updateMany({
+          where: { orderId: existing.id, sentAt: null, voidedAt: null },
+          data: { sentAt: existing.createdAt },
+        });
+      }
       console.log(`  ⏭  Order "${order.orderNumber}" already exists — skipped`);
       skipped++;
       continue;
@@ -4512,6 +4529,7 @@ async function seedOrders(
             quantity: i.quantity,
             price: i.price,
             subtotal: i.subtotal,
+            sentAt: wasSent ? new Date() : null,
           })),
         },
       },

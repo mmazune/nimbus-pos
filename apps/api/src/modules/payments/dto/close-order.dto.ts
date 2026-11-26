@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
   ValidateNested,
   ArrayMinSize,
   MaxLength,
@@ -19,6 +20,8 @@ export class CloseOrderPaymentDto {
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
+  // E1F (S5): the column is DECIMAL(12,2); anything larger is a 400, never a 500.
+  @Max(9_999_999_999.99)
   amount!: number;
 
   @IsOptional()

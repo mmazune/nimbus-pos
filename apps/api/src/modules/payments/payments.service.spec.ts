@@ -35,7 +35,15 @@ describe('PaymentsService', () => {
         findMany: jest.fn().mockResolvedValue([{ sentAt: new Date() }]),
       },
       table: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
-      reservation: { findFirst: jest.fn().mockResolvedValue(null), updateMany: jest.fn() },
+      reservation: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        // E1F (N1): the close door reads every SEATED reservation; delegate to findFirst
+        findMany: jest.fn(async (...a: any[]) => {
+          const r = await prisma.reservation.findFirst(...a);
+          return r ? [r] : [];
+        }),
+        updateMany: jest.fn(),
+      },
       reservationEvent: { create: jest.fn() },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $queryRaw: jest.fn().mockResolvedValue([]),
@@ -1079,6 +1087,12 @@ describe('PaymentsService', () => {
         total: new Decimal(100),
       })
       .mockResolvedValueOnce({
+        // E1F (S4): getOutstandingBalance for the balance check, inside the transaction
+        id: 'order-1',
+        branchId: 'branch-1',
+        total: new Decimal(100),
+      })
+      .mockResolvedValueOnce({
         // getOutstandingBalance #1
         id: 'order-1',
         branchId: 'branch-1',
@@ -1112,9 +1126,9 @@ describe('PaymentsService', () => {
       captureMode: 'MANUAL_REFERENCE',
       verificationStatus: 'UNVERIFIED',
     });
-    prisma.payment.findMany.mockResolvedValue([
-      { id: 'pay-manual-1', status: 'COMPLETED', amount: new Decimal(100) },
-    ]);
+    prisma.payment.findMany
+      .mockResolvedValueOnce([]) // E1F (S4): nothing paid yet when the balance is checked
+      .mockResolvedValue([{ id: 'pay-manual-1', status: 'COMPLETED', amount: new Decimal(100) }]);
     prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CLOSED' });
 
     const result = await service.createManualReferencePayment(

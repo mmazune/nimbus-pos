@@ -34,6 +34,26 @@ type WaiterActor = ActorLike & { id: string; email?: string };
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) { }
 
+  // E1F (review ruling 4): the line void under the same prefix as every other order route.
+  // The first path, /api/orders/:orderId/items/:itemId/void, stays so no caller breaks.
+  @Post(':id/items/:itemId/void')
+  @HttpCode(HttpStatus.OK)
+  @Permissions('pos:order:item:void')
+  async voidOrderItem(
+    @Param('id') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: VoidOrderItemDto,
+    @CurrentUser() user: WaiterActor,
+    @Req() req: Request,
+  ) {
+    const ctx = (req as any).branchContext;
+    return this.ordersService.voidOrderItem(user.id, ctx, orderId, itemId, dto, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      actor: user,
+    });
+  }
+
   @Post()
   @Permissions('pos:orders:write')
   async createOrder(

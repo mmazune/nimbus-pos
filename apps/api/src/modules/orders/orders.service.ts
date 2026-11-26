@@ -11,7 +11,11 @@ import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { KdsService } from '../kds/kds.service';
-import { closeOrderInTx } from './order-close';
+import {
+  closeOrderInTx,
+  completeSeatedReservationsInTx,
+  releaseTableIfIdleInTx,
+} from './order-close';
 import {
   giveBackForVoid,
   MENU_AVAILABILITY_CHANGED,
@@ -144,30 +148,6 @@ export class OrdersService {
     await this.prisma.table.updateMany({
       where: { id: tableId, status: { not: TableStatus.OCCUPIED } },
       data: { status: TableStatus.OCCUPIED },
-    });
-  }
-
-  /**
-   * Auto-release: when an order moves to a terminal state (CLOSED/VOIDED)
-   * and no other active dine-in orders remain on the table, return the
-   * table to AVAILABLE so it can be re-seated.
-   */
-  private async autoReleaseTableIfIdle(
-    tableId: string | null | undefined,
-    excludeOrderId: string,
-  ): Promise<void> {
-    if (!tableId) return;
-    const activeOnTable = await this.prisma.order.count({
-      where: {
-        tableId,
-        id: { not: excludeOrderId },
-        status: { notIn: [OrderStatus.CLOSED, OrderStatus.VOIDED] },
-      },
-    });
-    if (activeOnTable > 0) return;
-    await this.prisma.table.updateMany({
-      where: { id: tableId, status: TableStatus.OCCUPIED },
-      data: { status: TableStatus.AVAILABLE },
     });
   }
 
@@ -563,54 +543,65 @@ export class OrdersService {
     if (meta.actor) assertWaiterOrderOwnership(meta.actor, order);
     await this.assertWaiterShiftOpen(meta.actor, ctx);
 
-    if (order.status === 'CLOSED' || order.status === 'VOIDED') {
-      throw new ConflictException(`Cannot add items to a ${order.status} order`);
-    }
-
     const quantity = dto.quantity ?? 1;
 
-    // T2 phase 1 (E2): a sold-out item cannot be added; its button is grey for everyone.
-    const availability = await this.prisma.menuItemAvailability.findUnique({
-      where: { menuItemId: dto.menuItemId },
-      select: { state: true, since: true },
-    });
-    if (availability?.state === 'SOLD_OUT') {
-      throw new ConflictException({
-        code: 'ITEM_SOLD_OUT',
-        message: 'This item is sold out.',
-        menuItemId: dto.menuItemId,
-        since: availability.since,
+    // E1F (B2): the status is judged under the order's row lock, and the line and the new
+    // totals are written in the same transaction, so a line cannot land on an order that a
+    // payment is closing at that moment.
+    const { item, pricing } = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const locked = await tx.order.findFirst({
+        where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
       });
-    }
+      if (!locked) throw new NotFoundException('Order not found');
+      if (locked.status === 'CLOSED' || locked.status === 'VOIDED') {
+        throw new ConflictException(`Cannot add items to a ${locked.status} order`);
+      }
 
-    const pricing = await this.computeLinePricing(
-      ctx,
-      dto.menuItemId,
-      dto.menuItemServingId,
-      quantity,
-      dto.metadata as Record<string, unknown> | undefined,
-    );
+      // T2 phase 1 (E2): a sold-out item cannot be added; its button is grey for everyone.
+      const availability = await tx.menuItemAvailability.findUnique({
+        where: { menuItemId: dto.menuItemId },
+        select: { state: true, since: true },
+      });
+      if (availability?.state === 'SOLD_OUT') {
+        throw new ConflictException({
+          code: 'ITEM_SOLD_OUT',
+          message: 'This item is sold out.',
+          menuItemId: dto.menuItemId,
+          since: availability.since,
+        });
+      }
 
-    const item = await this.prisma.orderItem.create({
-      data: {
-        orderId,
-        menuItemId: dto.menuItemId,
-        menuItemServingId: dto.menuItemServingId ?? null,
+      const linePricing = await this.computeLinePricing(
+        ctx,
+        dto.menuItemId,
+        dto.menuItemServingId,
         quantity,
-        price: pricing.price,
-        subtotal: pricing.subtotal,
-        normalPrice: pricing.normalPrice,
-        offerBasePrice: pricing.offerBasePrice,
-        notes: dto.notes ?? null,
-        metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
-        costUnit: pricing.costUnit,
-        costTotal: pricing.costTotal,
-        marginTotal: pricing.marginTotal,
-        marginPct: pricing.marginPct,
-      },
-    });
+        dto.metadata as Record<string, unknown> | undefined,
+        tx,
+      );
 
-    await this.recalcOrderTotals(orderId);
+      const created = await tx.orderItem.create({
+        data: {
+          orderId,
+          menuItemId: dto.menuItemId,
+          menuItemServingId: dto.menuItemServingId ?? null,
+          quantity,
+          price: linePricing.price,
+          subtotal: linePricing.subtotal,
+          normalPrice: linePricing.normalPrice,
+          offerBasePrice: linePricing.offerBasePrice,
+          notes: dto.notes ?? null,
+          metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+          costUnit: linePricing.costUnit,
+          costTotal: linePricing.costTotal,
+          marginTotal: linePricing.marginTotal,
+          marginPct: linePricing.marginPct,
+        },
+      });
+      await this.recalcOrderTotals(orderId, tx);
+      return { item: created, pricing: linePricing };
+    });
 
     await this.audit.log({
       actorUserId: userId,
@@ -662,6 +653,13 @@ export class OrdersService {
     if (!existingItem) throw new NotFoundException('Order item not found');
     if (existingItem.voidedAt) {
       throw new ConflictException('This item was voided and cannot be changed');
+    }
+    // E1F (B1): a sent line is changed only by a void (pos:order:item:void, with a reason).
+    if (existingItem.sentAt) {
+      throw new ConflictException({
+        code: 'ITEM_ALREADY_SENT',
+        message: 'This item was already sent. Ask a supervisor to void it instead.',
+      });
     }
 
     const quantity = dto.quantity ?? existingItem.quantity;
@@ -774,7 +772,56 @@ export class OrdersService {
       userAgent: meta.userAgent,
     });
 
+    await this.closeIfSettled(userId, ctx, orderId, meta);
     return { deleted: true };
+  }
+
+  /**
+   * E1F (S9): money that arrived while lines were still unsent leaves the order open; once
+   * the last unsent line is sent or removed and the payments cover the bill, it closes here,
+   * through the close door, so it never sits paid and open with no way out.
+   */
+  private async closeIfSettled(
+    userId: string,
+    ctx: BranchContext,
+    orderId: string,
+    meta: RequestMeta,
+  ): Promise<void> {
+    const paidRows = await this.prisma.payment.count({ where: { orderId, status: 'COMPLETED' } });
+    if (paidRows === 0) return;
+    const closed = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const order = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+      if (
+        order.status === OrderStatus.NEW ||
+        order.status === OrderStatus.CLOSED ||
+        order.status === OrderStatus.VOIDED
+      )
+        return null;
+      const lines = await tx.orderItem.findMany({
+        where: { orderId, voidedAt: null },
+        select: { sentAt: true },
+      });
+      if (lines.length === 0 || lines.some((l) => !l.sentAt)) return null;
+      const paid = await tx.payment.aggregate({
+        where: { orderId, status: 'COMPLETED' },
+        _sum: { amount: true },
+      });
+      if (new Decimal(paid._sum.amount ?? 0).lt(order.total)) return null;
+      return closeOrderInTx(tx, {
+        orderId,
+        orgId: ctx.organizationId,
+        branchId: ctx.branchId,
+        userId,
+        source: 'auto-settle',
+        auditAction: 'ORDER_AUTO_SETTLED',
+        auditMetadata: { trigger: 'settled_after_lines_sent_or_removed' },
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+    });
+    if (closed?.event)
+      this.eventEmitter.emit(ORDER_CLOSED, closed.event satisfies OrderClosedEvent);
   }
 
   // ── State Transitions ──
@@ -882,7 +929,7 @@ export class OrdersService {
     await this.assertWaiterShiftOpen(meta.actor, ctx);
 
     const result = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
       const locked = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
       if (!SENDABLE_STATES.includes(locked.status)) {
         throw new ConflictException(`Cannot send items on a ${locked.status} order`);
@@ -938,6 +985,15 @@ export class OrdersService {
       if (firstSend) {
         await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.SENT } });
       }
+      // E1F (S10): the table is occupied inside the send, under its row lock, so a close that
+      // commits right after cannot be overtaken by a late "occupied".
+      if (firstSend && locked.serviceType === 'DINE_IN' && locked.tableId) {
+        await tx.$queryRaw`SELECT "id" FROM "tables" WHERE "id" = ${locked.tableId} FOR UPDATE`;
+        await tx.table.updateMany({
+          where: { id: locked.tableId, status: { not: TableStatus.OCCUPIED } },
+          data: { status: TableStatus.OCCUPIED },
+        });
+      }
 
       const tickets = await this.kdsService.createTicketsForLines(tx, ctx, orderId, lineIds);
 
@@ -965,9 +1021,6 @@ export class OrdersService {
       return { lineIds, tickets, firstSend, skipped: take.skipped, changed: take.changedItemIds };
     });
 
-    if (result.firstSend && order.serviceType === 'DINE_IN') {
-      await this.autoOccupyTable(order.tableId);
-    }
     this.kdsService.announceTickets(ctx, orderId, result.tickets);
     this.eventEmitter.emit(ORDER_LINES_SENT, {
       orderId,
@@ -984,6 +1037,7 @@ export class OrdersService {
       } satisfies MenuAvailabilityChangedEvent);
     }
 
+    await this.closeIfSettled(userId, ctx, orderId, meta);
     const sentOrder = await this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
     return { ...sentOrder, sent: result.lineIds, skipped: result.skipped };
   }
@@ -1058,41 +1112,81 @@ export class OrdersService {
       assertWaiterTransitionAllowed(meta.actor, 'VOIDED');
     }
 
-    this.validateTransition(order.status, 'VOIDED');
+    // E1F (B4, S2, S3, S8): judged and written under the order's row lock, in the lock order
+    // order -> reservation -> table that the close door uses.
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
+      const locked = await tx.order.findFirst({
+        where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
+      });
+      if (!locked) throw new NotFoundException('Order not found');
 
-    // Post-kitchen voids require a reason
-    const postKitchen = ['IN_KITCHEN', 'READY'].includes(order.status);
-    if (postKitchen && !dto.reason) {
-      throw new BadRequestException('Post-kitchen void requires a reason');
-    }
+      // Ruling R-a (default taken): an order left open at zero after its last line was
+      // voided may be voided from SERVED too, so it is never stuck on the table.
+      const zeroServed = locked.status === OrderStatus.SERVED && new Decimal(locked.total).eq(0);
+      if (!zeroServed) this.validateTransition(locked.status, 'VOIDED');
 
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: OrderStatus.VOIDED },
-    });
+      const postKitchen = ['IN_KITCHEN', 'READY'].includes(locked.status);
+      if (postKitchen && !dto.reason) {
+        throw new BadRequestException('Post-kitchen void requires a reason');
+      }
 
-    // Waiter MVP — released voided dine-in tables
-    if (order.serviceType === 'DINE_IN') {
-      await this.autoReleaseTableIfIdle(order.tableId, orderId);
-    }
+      const paid = await tx.payment.count({ where: { orderId, status: 'COMPLETED' } });
+      if (paid > 0) {
+        throw new ConflictException({
+          code: 'ORDER_HAS_PAYMENT',
+          message: 'This order already has a payment, so it cannot be voided.',
+        });
+      }
 
-    await this.audit.log({
-      actorUserId: userId,
-      action: 'ORDER_VOIDED',
-      entityType: 'order',
-      entityId: orderId,
-      metadata: {
+      const claimed = await tx.order.updateMany({
+        where: { id: orderId, status: locked.status },
+        data: { status: OrderStatus.VOIDED },
+      });
+      if (claimed.count !== 1) throw new ConflictException('The order changed; try again');
+
+      // Ruling R-c (default taken): a seated reservation on a voided order is completed.
+      const completed = await completeSeatedReservationsInTx(tx, {
         orgId: ctx.organizationId,
         branchId: ctx.branchId,
-        previousStatus: order.status,
-        postKitchenVoid: postKitchen,
-        reason: dto.reason ?? null,
-      },
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
+        orderId,
+        actorUserId: userId,
+        auditUserId: userId,
+        source: 'order-void',
+        message: 'Reservation completed because its order was voided',
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+
+      const tableFreed =
+        locked.serviceType === 'DINE_IN' && locked.tableId
+          ? await releaseTableIfIdleInTx(tx, locked.tableId, orderId)
+          : false;
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: userId,
+          action: 'ORDER_VOIDED',
+          entityType: 'order',
+          entityId: orderId,
+          metadata: {
+            orgId: ctx.organizationId,
+            branchId: ctx.branchId,
+            previousStatus: locked.status,
+            postKitchenVoid: postKitchen,
+            zeroTotalVoid: zeroServed,
+            reason: dto.reason ?? null,
+            tableFreed,
+            completedReservationIds: completed,
+          },
+          ipAddress: meta.ipAddress ?? null,
+          userAgent: meta.userAgent ?? null,
+        },
+      });
+      return tx.order.findUniqueOrThrow({ where: { id: orderId } });
     });
 
-    return updated;
+    return result;
   }
 
   // ── Void one line (E1) ──
@@ -1114,7 +1208,7 @@ export class OrdersService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "branch_id" = ${ctx.branchId} FOR UPDATE`;
       const order = await tx.order.findFirst({
         where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
       });
@@ -1138,6 +1232,17 @@ export class OrdersService {
         throw new ConflictException({
           code: 'ORDER_HAS_PAYMENT',
           message: 'This order already has a payment, so a line cannot be voided.',
+        });
+      }
+      // E1F (S11): a payment already asked of the guest's phone would settle the old total.
+      const pendingIntents = await tx.paymentIntent.count({
+        where: { orderId, status: { in: ['PENDING', 'REQUIRES_ACTION'] } },
+      });
+      if (pendingIntents > 0) {
+        throw new ConflictException({
+          code: 'PAYMENT_PENDING',
+          message:
+            'A mobile-money payment is waiting on this order. Cancel it before voiding a line.',
         });
       }
 
