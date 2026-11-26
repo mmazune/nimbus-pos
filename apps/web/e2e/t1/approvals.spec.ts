@@ -68,6 +68,10 @@ test("supervisor declines a discount, approves leave, declines a swap, resolves 
   await expect(panel).toContainText(`Regular guest ${stamp}`);
   await expect(panel.getByRole("button", { name: "Approve the discount" })).toBeEnabled();
   await rules(page, "approvals-1280");
+  // the side panel is the drawing's 420 px
+  const box = await page.locator("[data-panel-width]").boundingBox();
+  measured["panel-width-1280"] = box?.width;
+  expect(Math.round(box?.width ?? 0)).toBe(420);
   await shot(page, "Supervisor-Approvals-1280x800.png");
   await panel.getByRole("button", { name: "Decline" }).click();
   const why = page.getByRole("dialog", { name: "Decline the discount" });

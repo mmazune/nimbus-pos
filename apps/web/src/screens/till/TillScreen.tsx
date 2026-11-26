@@ -376,7 +376,7 @@ export function TillScreen() {
         {drawer}
         {actions}
       </section>
-      <aside className="flex w-kit-sheet-side flex-none flex-col rounded-kit-card bg-kit-card p-kit-20 shadow-kit-raised" aria-label="Close the till">
+      <aside className="box-content flex w-kit-sheet-wide-gap flex-none flex-col rounded-kit-card bg-kit-card px-kit-24 py-kit-20 shadow-kit-raised" data-panel-width="420" aria-label="Close the till">
         {closePanel}
       </aside>
       {dropSheet}

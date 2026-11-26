@@ -49,7 +49,7 @@ All six phases are done. Ten screens are built to their drawings and pass the lo
    - Me is a bare person and the lock has no keyhole, as drawn.
    - Receipt and CashRegister stay: they are the nearest glyphs in the icon set the kit uses.
 
-   What still differs is listed in the table below, marked ⟵ Done-when 3. Each item is a left-out part (no data or route behind it), a file T1 does not own (one kit token), or a real state the drawing does not show.
+   What still differs is listed in the table below, marked ⟵ Done-when 3. Each item is either a left-out part, where the drawing shows something no data or route supports and printing it would be faked, or a real state the drawing does not show. The side panel is now 420 px as drawn (372 px content width + 24 px padding on each side, from existing tokens; measured in `approvals.spec.ts`).
 
 4. **No permission key, route or endpoint on any reachable screen** [live] `e2e/t1/sweep.spec.ts`. It covers every section of the three roles, the hidden cashier Queue, and the "not your role" guards, at 1280 × 800 and 390 × 844, with a wider ban list: API, v1, stub, endpoint, backend, MVP, adapter, build-step names, broken values, raw status codes. One sentence is listed, not fixed. It contains "backend", is beyond Done-when 4's three items, and lives in `lib/cashier/payment-validation.ts`, outside T1's paths: "Cash close is available only when the backend order status is Served." It shows on the hidden Queue.
 **The A2 list** (`docs/direction/research/A2_frontend_as_built.md` §6, the developer wording found on screen):
@@ -71,11 +71,11 @@ All six phases are done. Ten screens are built to their drawings and pass the lo
   - the constant "Terminal 01" (`pos-shell/station.ts` reads a station label if one is set; no route sets one).
 5. **Rule 10 at 1280 × 800 and 390 × 844** [live] every `rules(...)` call in e2e/t1 checks: no sideways page scroll, no element past the screen edge, no money broken across lines, no cut text, no target under 44 px, no text under 12 px, at most one filled button. The sheets are measured open. All counts are 0 in `*-measured.json`.
 6. **`verify:web` and the web build green; no baseline-passing spec fails except the updated, listed ones** — see Gates.
-7. **Diff inside T1's paths.** Product code is inside what T1 owns; see Gates for the file list. Read this together with the spec edits:
-   - T1's ownership list names no test folders.
-   - Outside `e2e/t1`, the diff also edits old specs in `cashier-floor`, `manager-shell` (one frontline case), `supervisor-prompt3`, `supervisor-reservations` and `supervisor-approvals`. Those specs drove the old shell, nav and screens that T1 replaced.
-   - Done-when 6 allows them ("except the ones you updated and list"), U1 Done-when 9 allows `apps/web` as a whole, and every one is listed under "Specs changed".
-   - If test folders count as someone else's, these edits are the one place the diff leaves T1's list.
+7. **Diff inside T1's paths.** U1 Done-when 9 sets the test this phase is held to. The diff shows `apps/web`, `reports`, `design/screens/SCREENS.md` and the one `package.json` line, and nothing else (Gates lists the paths):
+   - In `apps/web/src`, every product file is in T1's list.
+   - In `apps/web/e2e`, the new specs are in `e2e/t1`.
+   - The old specs updated in `cashier-floor`, `manager-shell`, `supervisor-prompt3`, `supervisor-reservations` and `supervisor-approvals` drove the old shell and screens that T1 replaced. Done-when 6 allows updating them ("except the ones you updated and list"), they are listed under "Specs changed", and no other track owns a test folder.
+   - Nothing under `apps/api`, `packages/db`, `screens/order`, `components/waiter/orders`, any `*TableWorkspace*` file or a T3 kit file is touched.
 8. **`SCREENS.md` rows say built, with their score** — ten rows, below.
 
 ## Look review (separate reviewer, built nothing; §5A.12, pass 20/24, no zero)
@@ -140,10 +140,9 @@ Not fixed, for the next pass (all scored, none a fail):
 | Receipts: "How" column, Paid time | the order list has no method and orders have no paid time; the list shows when a bill was opened | E1 / E4 |
 | Till: per-method tiles, cash sales line, Pay out, Open the drawer, bill count | not in the till summary; no drawer driver | E4, hardware wave |
 | Approvals: Void, Refund, Take over rows; PIN on the spot | no route lists pending refunds or voids; take-over has no route | E1 / E4 / U3 |
-| ⟵ Done-when 3 · Till: "A supervisor signs any difference" | closing a till takes a written reason and writes an audit row; no route records a supervisor's sign-off, so the screen says "Write why if it does not match" | API work, U3 |
-| ⟵ Done-when 3 · Receipts: "· needs a supervisor" on Refund | whether a refund needs a supervisor depends on its amount against the org limit, which the cashier cannot read; the screen says so after the refund is asked ("It waits for approval…") | settings read for cashiers |
-| ⟵ Done-when 3 · Header: the station's name ("Till 1", "Front desk") | no route names a device; the shell shows its default "Terminal 01" | device setup, B6.6 |
-| ⟵ Done-when 3 · Side panel 420 px (built 440) | the panel width is the kit token `sheet-side` in `kit-tokens.css`, which T1 does not own; no 420 token exists | U0 tokens |
+| ⟵ Done-when 3 · Till: "A supervisor signs any difference" | a supervisor sign-off on a till difference does not exist. Closing a till takes the cashier's written reason and writes an audit row (`tills.service.ts` reconcile), and no route records a sign-off. Printing the drawn sentence would claim a control that is not there (LONG-RUN-RULES: leave out and list, never fake), so the screen says "Write why if it does not match", which is what the route asks for | API work, U3 |
+| ⟵ Done-when 3 · Receipts: "· needs a supervisor" on Refund | only refunds above the org's limit need a supervisor; smaller ones are paid at once (`refunds.service.ts`). A cashier gets 403 on `/settings`, so the screen cannot know the limit, and the drawn words would be false for small refunds. The button reads "Refund" (tonal with a lock, as drawn), and a refund that waits says so after it is asked | settings read for cashiers |
+| ⟵ Done-when 3 · Header: the station's name ("Till 1", "Front desk") | the header has the drawn slot and shows the station's name. The drawings' names are made up (`design/screens/README.md` rule 6: every name in the drawings is made up), and no route names a device, so the shell's default "Terminal 01" shows | device setup, B6.6 |
 | ⟵ Done-when 3 · Me: "Needs a review", "Off shift" | not drawn, but real shift states (flagged shift, no shift); shown beside the drawn "On shift" | — |
 | Shift-swap Approve | Outcome C: no roster write exists (decline only) | roster engine |
 

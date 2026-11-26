@@ -567,7 +567,7 @@ export function ApprovalsScreen() {
         <div className="min-h-0 flex-1 overflow-y-auto">{list}</div>
         {historyPager}
       </section>
-      <aside className="flex w-kit-sheet-side flex-none flex-col rounded-kit-card bg-kit-card p-kit-20 shadow-kit-raised" aria-label="Request">
+      <aside className="box-content flex w-kit-sheet-wide-gap flex-none flex-col rounded-kit-card bg-kit-card px-kit-24 py-kit-20 shadow-kit-raised" data-panel-width="420" aria-label="Request">
         {selected ? (
           panel(selected)
         ) : (
