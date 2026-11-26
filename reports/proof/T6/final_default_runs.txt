@@ -1,0 +1,18 @@
+# Final default e2e runs at 98c4186, fresh throwaway database each, 2026-11-26
+## T4 fixed order (test:e2e), runs 1-4 (labelled ft4a fjesta ft4b fjestb: all four used ./test/jest-e2e.json)
+== ft4a (./test/jest-e2e.json)
+suites 65 tests 1293 passed 1287 failed 0 pending 6
+== fjesta (./test/jest-e2e.json)
+suites 65 tests 1293 passed 1287 failed 0 pending 6
+== ft4b (./test/jest-e2e.json)
+suites 65 tests 1293 passed 1287 failed 0 pending 6
+== fjestb (./test/jest-e2e.json)
+suites 65 tests 1293 passed 1287 failed 0 pending 6
+ALLDONE
+## Jest's own order (test:e2e:jest-order), runs 1-2
+== gjest1 (./test/jest-e2e.jest-order.json)
+suites 65 tests 1293 passed 1287 failed 0 pending 6
+== gjest2 (./test/jest-e2e.jest-order.json)
+suites 65 tests 1293 passed 1287 failed 0 pending 6
+first files: ['quick-sale.review.e2e-spec.ts', 'accounts-payable.e2e-spec.ts', 'accounting-branch-scoping.e2e-spec.ts', 'e1-review.probes.e2e-spec.ts']
+

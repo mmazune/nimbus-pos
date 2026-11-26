@@ -1,8 +1,8 @@
-# T6 rights walk — 2026-11-26T17:22:17.669Z
+# T6 rights walk — 2026-11-26T17:52:39.172Z
 screen paths found in apps/web/src: 160
-API routes registered: 619
-routes walked (have a permission key, matched to a screen path): 240
-requests made (routes × 9 roles): 2160
+API routes registered: 640
+routes walked (have a permission key, matched to a screen path): 249
+requests made (routes × 9 roles): 2241
 mismatches: 0
 screen paths with no matching route (3):
   /api/settings/*
@@ -205,6 +205,15 @@ walked:
   GET /api/reservations/:id/events  [pos:reservation:read]
   PATCH /api/reservations/:id/no-show  [pos:reservation:no-show]
   PATCH /api/reservations/:id/seat  [pos:reservation:seat]
+  GET /api/stores  [pos:stock:read]
+  POST /api/stores  [pos:store:setup]
+  GET /api/store-requests  [pos:stock:read]
+  POST /api/store-requests  [pos:store:request]
+  POST /api/purchase-orders  [pos:purchasing:write]
+  POST /api/deliveries  [pos:delivery:receive]
+  GET /api/to-buy  [pos:purchasing:read]
+  GET /api/cost-changes  [pos:cost:read]
+  POST /api/stock-counts  [pos:stock:count]
   POST /api/orgs  [tenancy:org:write]
   GET /api/billing  [billing:read]
   GET /api/settings  [tenancy:org:read]
