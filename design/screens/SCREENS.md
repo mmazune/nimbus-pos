@@ -39,5 +39,8 @@ One row per drawing in `html/` and `png/`. "Built in" is the milestone from `doc
 | `Manager-Phone-Approve` | 390 × 844 | Manager | Manager · phone · approve a void | `/manager/approvals/[id] (new)` | U7 | drawn |
 | `Owner-Phone-Today` | 390 × 844 | Owner | Owner · phone · all branches | `/owner/today (new)` | U7 | drawn |
 | `Accountant-Phone-Costs` | 390 × 844 | Accountant | Accountant · phone · no cost yet | `/accounting/costs` | U7, needs E8 | drawn |
+| `Kitchen-Store` | 1280 × 800 | Chef | Kitchen · store running low, request written | `/kitchen/store` (new) | U6, needs E7 and E10 | drawn |
+| `Chef-Waste-Phone` | 390 × 844 | Chef | Chef · phone · take out of stock | `/kitchen/store/take-out` (new) | U6, needs E6 | drawn |
+| `Manager-Waste-Report` | 1440 × 900 | Manager | Manager · waste and sold out report | `/manager/reports/waste` (new) | U9, needs E11 | drawn |
 
 Not drawn yet (about 120 to 150 boards): PIN login and lock; start and end of shift; new tab; move, join, split and discount sheets; mobile money, card and split payment; paid and receipt states; supervisor Team and Me; cashier floor and Me; bar screen; kitchen Done and Sold out; store Stock, Receive and Count; new, edit, cancel and no-show reservation; history; manager laptop Today, menu list, stock, staff, reports, settings; owner and accountant laptop screens; phone versions of the rest; empty, loading, error and offline states. No screen is built before its drawing is in this folder.

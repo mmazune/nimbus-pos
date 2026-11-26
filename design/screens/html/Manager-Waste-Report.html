@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Manager, waste and sold out report</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1440px; height: 900px">
+  <header class="bar">
+    <button class="rb" aria-label="All apps"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="18" cy="6" r="1.3"/><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="12" cy="18" r="1.3"/><circle cx="18" cy="18" r="1.3"/></svg></button><span class="div"></span>
+    <a class="mark" href="#"><i></i>Nimbus POS</a>
+    <nav aria-label="Main"><a href="#">Floor</a><a href="#">Menu</a><a class="on" aria-current="page" href="#">Stock</a><a href="#">Staff</a><a href="#">More</a></nav>
+    <span class="grow"></span>
+    <span class="search"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</span>
+    <button class="rb" aria-label="Alerts"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></button>
+    <span class="clock">Tapas Downtown</span>
+    <button class="who" aria-label="Account">PK</button>
+  </header>
+  <div class="cp"><span class="crumb">Stock › Reports ›</span><h1 class="t-row">Waste and sold out</h1><span class="t-sup muted">Mon 16 to Sun 22 Nov</span><span class="grow"></span><button class="chip">Today</button><button class="chip">This week</button><button class="chip on">Last week</button><button class="chip">This month</button><button class="btn sm tonal">Download</button></div>
+  <main class="page" style="flex-direction: row; gap: 20px">
+    <section class="grow vstack g16">
+      <div class="card"><div class="tilerow" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><div class="stat"><span class="t-sup muted">Thrown away</span><b>411,400</b><span class="t-small muted">7 entries</span></div><div class="stat"><span class="t-sup muted">Staff meals</span><b>96,000</b><span class="t-small muted">counted apart</span></div><div class="stat"><span class="t-sup muted">Missing</span><b>31,800</b><span class="t-small muted">2 entries, both counted</span></div><div class="stat"><span class="t-sup muted">Count differences</span><b>−58,200</b><span class="t-small muted">3 items over the limit</span></div></div></div>
+      <div class="card" style="overflow: hidden"><table class="dt"><thead><tr><th>Thrown away, biggest first</th><th>Why</th><th class="num">How much</th><th class="num">Cost, UGX</th><th>Who</th><th>When</th></tr></thead><tbody><tr><td>Chicken wings</td><td class="muted">Spoiled or expired</td><td class="num">6 kg</td><td class="num">84,000</td><td class="muted">Ruth A.</td><td class="muted">Mon 08:10</td></tr><tr><td>Beef mince</td><td class="muted">Spoiled or expired</td><td class="num">4.5 kg</td><td class="num">81,000</td><td class="muted">Ruth A.</td><td class="muted">Thu 07:55</td></tr><tr><td>Cooking oil</td><td class="muted">Burnt or dropped</td><td class="num">8 litres</td><td class="num">72,000</td><td class="muted">Ruth A.</td><td class="muted">Wed 21:40</td></tr><tr><td>Potatoes</td><td class="muted">Spoiled or expired</td><td class="num">20 kg</td><td class="num">50,000</td><td class="muted">Joel T.</td><td class="muted">Tue 09:30</td></tr><tr><td>Burger bun</td><td class="muted">Spoiled or expired</td><td class="num">60 pieces</td><td class="num">48,000</td><td class="muted">Ruth A.</td><td class="muted">Wed 08:05</td></tr><tr><td>Lager 500 ml</td><td class="muted">Broken</td><td class="num">12 bottles</td><td class="num">45,600</td><td class="muted">Isaac B.</td><td class="muted">Sat 23:15</td></tr><tr><td>Cola 300 ml</td><td class="muted">Broken</td><td class="num">22 bottles</td><td class="num">30,800</td><td class="muted">Joel T.</td><td class="muted">Fri 11:20</td></tr></tbody></table></div>
+    </section>
+    <aside class="vstack g16" style="width: 420px; flex: none">
+      <div class="card" style="overflow: hidden"><p class="cap" style="padding: 16px 20px 6px">Sold out that week · sales it probably cost</p><div class="row s" style="padding: 8px 20px"><span class="grow"><span class="t-body b">Lamb chops</span><br><span class="t-sup muted">Tue 19:20 to close · 3 h 40</span></span><span class="t-sup" style="text-align: right">about 144,000</span></div><div class="row s" style="padding: 8px 20px"><span class="grow"><span class="t-body b">Grilled tilapia</span><br><span class="t-sup muted">Fri 20:05 to 21:10 · 1 h 05</span></span><span class="t-sup" style="text-align: right">about 76,000</span></div><div class="row s" style="padding: 8px 20px"><span class="grow"><span class="t-body b">Single malt 12</span><br><span class="t-sup muted">Sat 22:30 to close · 1 h 30</span></span><span class="t-sup" style="text-align: right">no estimate yet</span></div><p class="t-small muted" style="padding: 8px 20px 16px">An estimate from what each dish usually sells at that hour. Shown once four weeks of sales exist.</p></div>
+      <div class="card" style="padding: 16px 20px"><p class="cap" style="padding-bottom: 6px">By reason</p><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Spoiled or expired</span><span class="t-body b" style="text-align: right">UGX 263,000</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Burnt or dropped</span><span class="t-body b" style="text-align: right">UGX 72,000</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Broken</span><span class="t-body b" style="text-align: right">UGX 76,400</span></div></div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

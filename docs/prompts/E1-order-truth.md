@@ -44,6 +44,8 @@ Write `reports/E1_READ_BACK.md`, 60 lines at most: the order states and every pl
 
 **d. Void one line.** `POST /api/orders/:orderId/items/:itemId/void` with `reason` (one of `GUEST_CHANGED_MIND`, `WRONG_ITEM`, `KITCHEN_RAN_OUT`, `TOOK_TOO_LONG`, `GUEST_COMPLAINT`, `OTHER`), `note` (required with `OTHER`), `wasMade` (true or false, required) and an optional `quantity`. It needs the new key `pos:order:item:void`, seeded for Owner, Manager and Supervisor and nobody else. The line stays in the order with who, when, why and `wasMade`; it leaves the totals; its ticket item shows as voided. Part of a quantity splits the line in two. Refuse a line that was never sent (400, "Remove it instead"; the waiter's existing remove stays as it is), an order that is closed or voided, and an order that has a posted payment (409). Voiding an already voided line returns it unchanged. Voiding the last line leaves the order open at zero. Audit row every time. Tests: supervisor voids the wings and the bill becomes 74,000; a waiter and a cashier get 403. Commit.
 
+After each send, each line void and each close has committed, emit `order.lines.sent`, `order.line.voided` and `order.closed` on the app's existing event emitter, carrying ids only. Nothing listens yet; stock, availability and alerts will (see `docs/direction/02-life-cycles.md`). One unit test per event.
+
 Then write the e2e test **"Table 12's evening"**: the four steps above in order, on a table with a seated reservation, ending with the order closed, UGX 2,000 change, the table free, the reservation complete, two ticket sets (kitchen at step 1, bar at step 2) and no stock or web code touched.
 
 ## Not in it
