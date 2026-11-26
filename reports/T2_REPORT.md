@@ -12,9 +12,9 @@ All three phases are built, and so are the E1 review fixes. Every Done-when line
 
 The four real cases pass three runs in a row, 54 of 54 tests each [live]. The E1 review probes, refreshed to T4 `e26bb73`, are 30 of 30 green [live].
 
-**Exceptions:**
-- The full e2e suite is not 0 failed. Every red test in it is a failure named in T4's baseline (see Gates).
-- eslint is not clean on `pos-handoff.service.ts`. It has 30 more errors than at E1, all on lines I added, which follow that file's own 4-space style (as E1 did). Every other changed file is clean.
+**eslint is now clean** on all 50 files T2 changed, with 0 errors (`eslint_changed_files_final.txt`). `pos-handoff.service.ts`, `orders.controller.ts`, `inventory.controller.ts` and `app.module.ts` were formatted whole with Prettier (layout only; with whitespace ignored the `pos-handoff` diff is line wrapping). Unit tests, build and the `pos-handoff` e2e suite are unchanged.
+
+**One exception, proven unreachable inside the rules:** the full e2e suite is not 0 failed. On the last fresh run (after the F3 fix below) **72 of 1,282 fail**: F1 59, F2 11, F4 1, C1 1. C2 (9 more) bites only when Jest happens to run `bg1-onboarding` earlier; before F3 the run was 82 of 1,279 (`full_e2e_final.txt`). Each remaining group needs something rule 14, 17, 20 or Done-when 4 forbids T2 to do; see "Why the full e2e suite cannot be 0 failed here". On T4's own tree, with T4's sequencer, it is 83 red (`reports/proof/T4/e2e_t4_run3.txt` on `t4/review-and-data`).
 
 ## Phase 1: the menu in one call, offers, sold out and a number left (E2)
 
@@ -158,10 +158,7 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
    - No other grant changed. The whole diff is in `seed_diff_all_phases.txt`: 6 permission lines, all of them the one key and its five grants [live].
 5. **Review findings** in my files are fixed with their probes passing (29 of 29), or answered (B5, S1, A1) [live].
 6. **Gates:** API typecheck 0, build 0, unit **1,318 passed / 72 suites, 0 failed**, `pnpm check:event` green.
-   - eslint has 0 errors on every new file and on every changed file that was clean at base.
-   - Two files carry their own base errors:
-     - `pos-handoff.service.ts` went from 858 at E1 to 888. The 30 new errors are only on my added lines, which follow that file's 4-space style, as E1 did.
-     - `app.module.ts` has 1, which was already there and is untouched, to keep merges clean [live].
+   - eslint: **0 errors on all 50 files T2 changed** (`eslint_changed_files_final.txt`) [live].
 7. **`git diff --stat`.**
    - `c6983c4..HEAD` (T2's own commits): 74 files, all in `apps/api/src`, `apps/api/test` (new files, plus unit specs beside the code), `packages/db/prisma` and `reports`. None of T4's e2e tests or helpers was edited.
    - `origin/e1/order-truth...HEAD` also shows `apps/web`, `tools` and `docs`. Those come from the base `rebuild/main` (U0), not from T2's commits (`done_when_7_diff_stat.txt`) [live].
@@ -175,9 +172,20 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
 | API build `nest build` | exit 0 [live] |
 | Unit `jest` | 1,318 passed, 72 suites, 0 failed (base 1,309 / 71) [live] |
 | `pnpm check:event` | green [live] |
-| eslint on changed files (called directly, no `--fix` script) | 0 errors on new files and on files clean at base [live] |
+| eslint on changed files (called directly, no `--fix` script) | 0 errors across all 50 changed files [live] |
 | Four real cases + E1F + probes, three runs | 54 / 54, three times [live] |
-| Full e2e, fresh migrated and seeded db, Jest's own order | **1,279 tests: 1,197 passed, 82 failed.** Every failure is in a group T4 named: F1 59, F2 11, F3 1, F4 1, C1 1, and C2 9 (tenancy 4, plus E1's Table 12 spec, which logs in as the reset demo cashier, 5). All T2 and E1F specs pass inside this run. Before T2 (T4 run A, same order rules): 92 failed (`full_e2e_final.txt`) [live] |
+| Full e2e, fresh migrated and seeded db, Jest's own order | **1,282 tests: 1,210 passed, 72 failed**, all in T4's named groups F1 (59), F2 (11), F4 (1) and C1 (1). F3 is fixed by T2. All T2 and E1F specs pass inside the run. T4 run A before T2: 92 failed; T4's own tree with its sequencer: 83 (`full_e2e_final.txt`) [live] |
+
+## Why the full e2e suite cannot be 0 failed here
+
+| group (tests) | cause (T4 `docs/reviews/e2e-baseline.md`) | what would fix it | why T2 may not |
+|---|---|---|---|
+| F1: billing 17, franchise 13, franchise-analytics 12, bg7-hms-integration 17 | guard keys with no permission row, or no grant | add 22+ permission rows and grants to the seed | Done-when 4 limits the seed diff to the grants this prompt names; T4: "the seed change itself is a separate, authorised step" |
+| F2: attendance 11 | the spec acts for other employees; the service allows self-service only (a deliberate rule) | edit the spec, or build a manager-on-behalf path | the spec is an existing test helper/spec that T4 is repairing (prompt: "do not edit theirs"); a new path is a feature outside T2's phases |
+| F3: control-plane 1 | two training answers disagree | **fixed here**: the BG3 simulator answer now also carries M42's `inTraining`, `simulated`, `sessionId` (additive; `bg3-reliability` still green) | — [live] |
+| F4: orders 1 | the spec pays a fixed 9,999 on a dearer seeded item | edit the spec | existing spec (T4's to repair) |
+| C1: quick-sale.review C10 1 | depends on `quick-sale.e2e` running first | the e2e sequencer | the e2e configuration is T4's (prompt: never touch it) |
+| C2: tenancy 4, order-truth 5 | `bg1-onboarding` resets `cashier@demo.local`'s password, so later cashier logins get 401 | the sequencer, or that spec resetting a user it made | T4's configuration and an existing spec. T2's own specs avoid it: they make their own cashier |
 
 ## Endpoints for T3 and T1
 

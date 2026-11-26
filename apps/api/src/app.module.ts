@@ -124,4 +124,4 @@ import { HmsIntegrationModule } from './modules/hms-integration';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,16 +1,11 @@
-Full e2e at 7e672c1 on a fresh migrated + seeded db (nimbus_event_t2final), Jest default order (no T4 sequencer).
-total 1279, passed 1197, failed 82
-
-T2 and E1F specs inside this run: t2-starters-mains.e2e-spec.ts 4/4; t2-lamb-chops.e2e-spec.ts 6/6; e1f-review-probes.e2e-spec.ts 26/26; t2-busy-friday.e2e-spec.ts 5/5; e1f-fixes.e2e-spec.ts 5/5; e1f-review-writers.e2e-spec.ts 3/3
-
-Every failure belongs to a group named in T4 docs/reviews/e2e-baseline.md:
-  F1 unseeded keys: billing 17, franchise 13, franchise-analytics 12, bg7-hms-integration 17
-  F2 attendance 11 · F3 control-plane 1 · F4 orders close 9,999 1 · C1 quick-sale.review C10 1
-  C2 (bg1-onboarding resets the demo cashier password): tenancy 4, order-truth 5 (E1 spec, logs in as cashier@demo.local)
+Full e2e at 8100891+wt (F3 fixed) on a fresh migrated + seeded db, Jest default order (no T4 sequencer).
+total 1282, passed 1210, failed 72
+by suite: {"orders.e2e-spec.ts":1,"quick-sale.review.e2e-spec.ts":1,"attendance.e2e-spec.ts":11,"franchise.e2e-spec.ts":13,"billing.e2e-spec.ts":17,"franchise-analytics.e2e-spec.ts":12,"bg7-hms-integration.e2e-spec.ts":17}
+T2 and E1F specs inside this run: t2-starters-mains.e2e-spec.ts 6/6; t2-lamb-chops.e2e-spec.ts 6/6; e1f-review-probes.e2e-spec.ts 27/27; t2-busy-friday.e2e-spec.ts 5/5; e1f-fixes.e2e-spec.ts 5/5; e1f-review-writers.e2e-spec.ts 3/3
+Groups (T4 docs/reviews/e2e-baseline.md): F1 billing/franchise/franchise-analytics/bg7; F2 attendance; F4 orders close 9,999; C1 quick-sale.review C10; C2 tenancy + order-truth (reset demo cashier). F3 control-plane is fixed by T2.
 
   orders.e2e-spec.ts › POS Orders (e2e) POST /api/pos/orders/:id/close — SERVED → CLOSED
   quick-sale.review.e2e-spec.ts › H1-R review probes: quick sale (e2e) C10: Payment.amount = Order.total on every quick-sale row in this database no quick-sale order has a payment that differs from its total, or other than one payment
-  control-plane.e2e-spec.ts › M42 Control Plane (e2e) x-training-session-id short-circuits inventory adjustment (no real row persisted)
   attendance.e2e-spec.ts › Attendance + Leave + Shift Swaps (e2e) POST /hr/attendance/clock should clock in an employee
   attendance.e2e-spec.ts › Attendance + Leave + Shift Swaps (e2e) POST /hr/attendance/clock should clock out the same employee (toggle)
   attendance.e2e-spec.ts › Attendance + Leave + Shift Swaps (e2e) POST /hr/attendance/clock should 409 if employee already clocked out today
@@ -35,18 +30,6 @@ Every failure belongs to a group named in T4 docs/reviews/e2e-baseline.md:
   franchise.e2e-spec.ts › Franchise + Multi-Branch Suite (e2e) POST /api/franchise/digests should create a digest subscription
   franchise.e2e-spec.ts › Franchise + Multi-Branch Suite (e2e) GET /api/franchise/digests should list digest subscriptions
   franchise.e2e-spec.ts › Franchise + Multi-Branch Suite (e2e) PATCH /api/franchise/digests/:id should return 404 for wrong subscription
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/consolidated-finance 200 — owner gets consolidated finance
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/consolidated-finance 200 — with window params
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E POST /api/franchise/consolidated-finance/generate 200 — generates snapshot and persists
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/financial-comparison 200 — returns comparison with portfolio averages
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/waste-benchmarks 200 — returns waste benchmarks with rankings
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/scorecards 200 — returns scorecards with domains and tiers
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E POST /api/franchise/rankings/generate-deep 200 — generates all 6 ranking types
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E POST /api/franchise/rankings/generate-deep 200 — deterministic: same input gives same rankings
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 400 — missing branchId
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — revenue drilldown returns category + item breakdowns
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — COGS drilldown
-  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — PRIME_COST drilldown returns cogs + labor
   billing.e2e-spec.ts › Billing + Subscription + Dev Portal (M39) – E2E GET /api/billing 200 — owner sees billing overview
   billing.e2e-spec.ts › Billing + Subscription + Dev Portal (M39) – E2E GET /api/billing/plans 200 — lists active plans
   billing.e2e-spec.ts › Billing + Subscription + Dev Portal (M39) – E2E PATCH /api/billing/subscription 200 — update billing cycle
@@ -64,6 +47,18 @@ Every failure belongs to a group named in T4 docs/reviews/e2e-baseline.md:
   billing.e2e-spec.ts › Billing + Subscription + Dev Portal (M39) – E2E PATCH /api/support/sessions/:id/close 200 — closes support session
   billing.e2e-spec.ts › Billing + Subscription + Dev Portal (M39) – E2E PATCH /api/support/sessions/:id/close 409 — cannot close already-closed session
   billing.e2e-spec.ts › Billing + Subscription + Dev Portal (M39) – E2E GET /api/dev/admins 200 — lists dev admins
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/consolidated-finance 200 — owner gets consolidated finance
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/consolidated-finance 200 — with window params
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E POST /api/franchise/consolidated-finance/generate 200 — generates snapshot and persists
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/financial-comparison 200 — returns comparison with portfolio averages
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/waste-benchmarks 200 — returns waste benchmarks with rankings
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/scorecards 200 — returns scorecards with domains and tiers
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E POST /api/franchise/rankings/generate-deep 200 — generates all 6 ranking types
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E POST /api/franchise/rankings/generate-deep 200 — deterministic: same input gives same rankings
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 400 — missing branchId
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — revenue drilldown returns category + item breakdowns
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — COGS drilldown
+  franchise-analytics.e2e-spec.ts › Franchise Analytics (M38.1) – E2E GET /api/franchise/drilldown 200 — PRIME_COST drilldown returns cogs + labor
   bg7-hms-integration.e2e-spec.ts › BG7 HMS Integration (e2e) Authentication rejects request with no key (401)
   bg7-hms-integration.e2e-spec.ts › BG7 HMS Integration (e2e) Authentication rejects unknown key (401)
   bg7-hms-integration.e2e-spec.ts › BG7 HMS Integration (e2e) Authentication rejects revoked key (401)
@@ -81,12 +76,3 @@ Every failure belongs to a group named in T4 docs/reviews/e2e-baseline.md:
   bg7-hms-integration.e2e-spec.ts › BG7 HMS Integration (e2e) Read façade GET /api/hms/accounting/accounts responds 200
   bg7-hms-integration.e2e-spec.ts › BG7 HMS Integration (e2e) Access journal writes access logs that surface via /api/hms/access-logs
   bg7-hms-integration.e2e-spec.ts › BG7 HMS Integration (e2e) Tenancy isolation (branch-scoped key) returns same /branches list (single) regardless of any client filter
-  order-truth.e2e-spec.ts › E1 order truth (e2e) Table 12's evening
-  order-truth.e2e-spec.ts › E1 order truth (e2e) 100,000 cash on a 98,000 bill: 2,000 change, order closed, table freed
-  order-truth.e2e-spec.ts › E1 order truth (e2e) two open orders on one table: closing one leaves the table occupied
-  order-truth.e2e-spec.ts › E1 order truth (e2e) void rules: never-sent line, part quantity, OTHER needs a note, payment blocks a void
-  order-truth.e2e-spec.ts › E1 order truth (e2e) two sends fired together: exactly one succeeds, the lines are ticketed once
-  tenancy.e2e-spec.ts › Tenancy (e2e) POST /api/orgs/:orgId/branches — cashier (no tenancy:branch:write) → 403
-  tenancy.e2e-spec.ts › Tenancy (e2e) GET /api/branches — returns only scoped results
-  tenancy.e2e-spec.ts › Tenancy (e2e) GET /api/branch-test — non-member user → 403
-  tenancy.e2e-spec.ts › Tenancy (e2e) POST /api/.../memberships — cashier → 403 (no tenancy:membership:manage)

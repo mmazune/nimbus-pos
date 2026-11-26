@@ -32,7 +32,7 @@ type WaiterActor = ActorLike & { id: string; email?: string };
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
 @RequireBranchContext()
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) { }
+  constructor(private readonly ordersService: OrdersService) {}
 
   // E1F (review ruling 4): the line void under the same prefix as every other order route.
   // The first path, /api/orders/:orderId/items/:itemId/void, stays so no caller breaks.
@@ -82,11 +82,7 @@ export class OrdersController {
 
   @Get(':id')
   @Permissions('pos:orders:read')
-  async getOrder(
-    @Param('id') id: string,
-    @CurrentUser() user: WaiterActor,
-    @Req() req: Request,
-  ) {
+  async getOrder(@Param('id') id: string, @CurrentUser() user: WaiterActor, @Req() req: Request) {
     const ctx = (req as any).branchContext;
     return this.ordersService.getOrder(ctx, id, user);
   }
