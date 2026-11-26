@@ -171,7 +171,7 @@ The reviewer's probes were copied unchanged into `apps/api/test/e1f-review-probe
 | `pnpm check:event` | green [live] |
 | eslint on changed files (called directly, no `--fix` script) | 0 errors on new files and on files clean at base [live] |
 | Four real cases + E1F + probes, three runs | 54 / 54, three times [live] |
-| Full e2e, fresh migrated and seeded db, Jest's own order | FULL_E2E_LINE [live] |
+| Full e2e, fresh migrated and seeded db, Jest's own order | **1,279 tests: 1,197 passed, 82 failed.** Every failure is in a group T4 named: F1 59, F2 11, F3 1, F4 1, C1 1, and C2 9 (tenancy 4, plus E1's Table 12 spec, which logs in as the reset demo cashier, 5). All T2 and E1F specs pass inside this run. Before T2 (T4 run A, same order rules): 92 failed (`full_e2e_final.txt`) [live] |
 
 ## Endpoints for T3 and T1
 
