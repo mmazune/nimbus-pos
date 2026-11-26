@@ -1,0 +1,32 @@
+== validate the data files
+demo-venue validator: /home/user/nimbus-pos/packages/db/demo-venue/data
+  people             21
+  tables             64
+  areas              4
+  menuItems          242
+  itemsWithChoices   83
+  servings           157
+  stockItems         149
+  recipes            57
+  openTables         17
+  bookingsToday      9
+  paidBills          4
+  recipe cost as % of price: lowest 9.3, median 20.8, highest 45.2
+GREEN: 0 errors
+== migrate (prisma migrate deploy)
+   the guarded database holds the E1 migration
+== seed roles and permissions (db:seed; it also makes its own small demo org)
+== load Tapas Downtown
+Tapas Downtown loaded:
+  tables           64
+  people           21
+  menuItems        242
+  stockItems       149
+  recipes          57
+  orderLines       56
+  kitchenTickets   38
+  payments         5
+  paidBills        4
+  openTables       17
+  bookingsToday    9
+  key          role           email                                    password               PIN

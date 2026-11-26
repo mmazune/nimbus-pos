@@ -13,6 +13,7 @@
 | E1, Jest's own order | 55 | 1,230 | 1,138 | **92** — the same 92 names as base | [live] |
 | T4 (E1 + fixed order + the R-E1 probes), run 2 | 57 | 1,257 | 1,174 | **83** = 72 pre-existing + 11 R-E1 probes | [live] |
 | T4, run 3 (fresh clone, same command) | 57 | 1,257 | 1,174 | **83** — the same 83 names as run 2 (`reports/proof/T4/e2e_t4_run3.txt`) | [live] |
+| T4 HEAD, final (fresh clone; 6 venue-smoke tests skipped without a loaded venue) | 58 | 1,267 | 1,174 | **87** = the 83 of run 2 + 4 probes added since (P22b, N2, A1, S6) (`reports/proof/T4/e2e_final_vs_run2.txt`) | [live] |
 
 **The owner's "166 of 166" is the three quick-sale specs**, not the whole suite: `quick-sale.e2e`, `quick-sale.h1f.e2e` and `quick-sale.review.e2e` hold exactly 166 tests. Here they are 166 of 166 when `quick-sale.e2e` runs first, and 165 of 166 on a fresh database when Jest happens to start with the review spec (C1). The rest of the suite was never 0-red on any machine recorded in the repo (`CLAUDE.md` logs 98–121 red under older numbering).
 
@@ -33,9 +34,9 @@ Not a cause here: missing services (Redis was up; nothing called an outside host
 | F2 | `attendance` (11) | **Stale test against a deliberate rule.** The service lets a person clock, request leave or request a swap only for their **own** linked employee profile (`attendance.service.ts:55-57`, `:222-226`, `:415-419`). The spec signs in as Owner and acts for two arbitrary seeded employees (`attendance.e2e-spec.ts:76-81`), so 7 tests get 403 and the 4 that review what they created get 404. Either the spec must act as each employee's own user, or a manager-on-behalf path must exist (ruling for T2; the Manager B3-F3 note already says leave/swap creation is self-service only). | spec `:76-81`, `:200-290` | run `attendance` alone on a fresh clone: 11 red [live] |
 | F3 | `control-plane` (1) | **Two training short-circuits disagree on the answer.** With `x-training-session-id`, `POST /api/inventory/adjustments` now returns the BG3 simulator's shape `{id: 'sim-adj-…', status: 'SIMULATED'}` (`inventory.controller.ts:41-66`), not M42's `{inTraining: true, simulated: true, sessionId}` (`controlplane.service.ts:100-110`) that the spec and the M42 Postman collection expect. One contract must be chosen. | `inventory.controller.ts:41-66`; spec `control-plane.e2e-spec.ts:269-283` | run `control-plane` alone: `res.body.inTraining` is `undefined` [live] |
 | F4 | `orders` (1) | **Stale test data.** "close — SERVED → CLOSED" pays a fixed 9,999 cash on whatever menu item the seed lists first (`orders.e2e-spec.ts:70`, `:266`); that item now costs more, so the close is 400 "Insufficient payment". The spec should pay the order's own total. | spec `:70`, `:266` | run `orders` alone: 400 [live] |
-| F5 | `e1-review.probes` (12), `e1-review.writers` (2) | The R-E1 review's red probes: faults in E1 (B1–B4, S2–S6, S8, N1, N2), plus `A1` (phase 4: waiters and cashiers read every payslip in the branch). The runs above predate N2, S6 and A1 (11 red then). | see `docs/reviews/e1-order-truth.md`, `docs/direction/10-people-and-access.md` section 7 | those specs [live] |
+| F5 | `e1-review.probes` (13), `e1-review.writers` (2) | The R-E1 review's red probes: faults in E1 (B1 twice, B2–B4, S2–S6, S8, N1, N2), plus `A1` (phase 4: waiters and cashiers read every payslip in the branch). Runs 2 and 3 predate P22b, N2, S6 and A1. | see `docs/reviews/e1-order-truth.md`, `docs/direction/10-people-and-access.md` section 7 | those specs [live] |
 
-## Every red test by name (T4 run 2)
+## Every red test by name (T4 HEAD, final run: 87 = 72 pre-existing + 15 review probes)
 
 #### `attendance.e2e-spec.ts` (11)
 - Attendance + Leave + Shift Swaps (e2e) POST /hr/attendance/clock should clock in an employee — Error: expected 201 "Created", got 403 "Forbidden"
@@ -91,7 +92,7 @@ Not a cause here: missing services (Redis was up; nothing called an outside host
 #### `control-plane.e2e-spec.ts` (1)
 - M42 Control Plane (e2e) x-training-session-id short-circuits inventory adjustment (no real row persisted) — Expected: true
 
-#### `e1-review.probes.e2e-spec.ts` (10)
+#### `e1-review.probes.e2e-spec.ts` (13)
 - R-E1 probes (e2e) P5 a line added while a cash close is in flight must not land on the closed order — Expected: 409
 - R-E1 probes (e2e) P6 a manual-reference payment racing a cash close must not post money on the closed order — Expected: 409
 - R-E1 probes (e2e) P7 a whole-order void racing a cash close must not void a paid order — Expected: 409
@@ -99,11 +100,15 @@ Not a cause here: missing services (Redis was up; nothing called an outside host
 - R-E1 probes (e2e) P11 a voided order leaves no reservation SEATED behind — Expected: not "SEATED"
 - R-E1 probes (e2e) P15 a non-cash manual reference above the balance is refused — Expected: 400
 - R-E1 probes (e2e) P20 the last line voided: the order is left open at zero and still has a way out — Expected: true
-- R-E1 probes (e2e) P22 the item-edit route (pos:orders:write, which waiters hold) cannot lower a sent line — Expected: 409
+- R-E1 probes (e2e) P22 the item-edit route (pos:orders:write, which waiters hold) cannot lower a sent line — - Expected  - 2
+- R-E1 probes (e2e) P22b the same, driven as a waiter on their own order with an open shift — - Expected  - 2
 - R-E1 probes (e2e) P24 a reservation linked to a different order is not completed by this close — - Expected  - 1
+- R-E1 probes (e2e) N2 two cash rows whose last is smaller than the change still settle (75,000 + 5,000 on 74,000) — Expected: 200
 - R-E1 probes (e2e) P25 cash beyond the column limit is a 400, never a 500 — Expected: 400
+- R-E1 probes (e2e) A1 a waiter cannot list the branch payslips (R14: no finance rights for frontline roles) — - Expected  - 2
 
-#### `e1-review.writers.e2e-spec.ts` (1)
+#### `e1-review.writers.e2e-spec.ts` (2)
+- R-E1 writers probe (static) S6 money arrives as a string decimal, never a JS number, on the payment DTOs — - Expected  - 1
 - R-E1 writers probe (static) W2 only the close door frees a table to AVAILABLE (the audited manual floor action aside) — - Expected  - 1
 
 #### `franchise-analytics.e2e-spec.ts` (12)

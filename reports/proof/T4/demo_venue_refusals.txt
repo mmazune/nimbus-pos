@@ -18,3 +18,7 @@ Error: Refusing: DIRECT_DATABASE_URL points at host "10.1.2.3", which is not loc
 
 ## a second load into the database that already holds the venue
 Refusing: this database already holds the venue (organization "tapas-downtown-demo").
+
+## run.sh when an env file sits where the Prisma CLI looks (proved with DEMO_VENUE_ENV_PROBE on an ordinary empty scratch file; no .env was written)
+demo-venue: refusing: <scratch>/not-an-env-file exists, and the Prisma CLI could prefer it to the address in this shell. Move it away for this run.
+exit 1

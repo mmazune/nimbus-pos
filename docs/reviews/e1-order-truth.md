@@ -13,7 +13,7 @@ Probes (kept whether green or red; a red probe is a fault that is present):
 
 Races are made deterministic, not left to timing: the probe holds the row lock of the reservation linked to the order, so a payment that reaches the close door has claimed the order and waits there; the second request is fired into that window (see the file header).
 
-Probe run on a fresh clone, E1 tree: **29 tests, 16 green, 13 red** (P5, P6, P7, P8, P11, P15, P20, P22, P24, P25, N2, W2, S6) [live]. Findings without a probe, and why: S9 (needs a signed provider webhook; no sandbox here), S10 (a window of milliseconds between two statements; not forceable without editing product code), S11 (needs a live MoMo intent), N3 (a lock with no observable effect); each is graded [code].
+Probe run on a fresh clone, E1 tree: **31 tests, 16 green, 15 red** (P5, P6, P7, P8, P11, P15, P20, P22, P22b, P24, P25, N2, A1, W2, S6) [live] (`reports/proof/T4/re1_probes_run.txt`; A1 belongs to phase 4, `docs/direction/10-people-and-access.md` section 7). Findings without a probe, and why: S9 (needs a signed provider webhook; no sandbox here), S10 (a window of milliseconds between two statements; not forceable without editing product code), S11 (needs a live MoMo intent), N3 (a lock with no observable effect); each is graded [code].
 
 ## Findings, most serious first
 
