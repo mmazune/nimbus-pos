@@ -2369,7 +2369,7 @@
     "Manager",
     "Cashier"
    ],
-   "ruling": "01-decisions 'waiting for the owner' 2: a supervisor takes payment: default no."
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
   },
   "pos:orders:read": {
    "current": [
@@ -2416,7 +2416,13 @@
    ],
    "hasPermissionRow": true,
    "usedByGuard": true,
-   "description": "Cancel pending MOMO payment intents"
+   "description": "Cancel pending MOMO payment intents",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
   },
   "pos:payment:close": {
    "current": [
@@ -2427,7 +2433,13 @@
    ],
    "hasPermissionRow": true,
    "usedByGuard": false,
-   "description": "Close orders with payment"
+   "description": "Close orders with payment",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
   },
   "pos:payment:create": {
    "current": [
@@ -2439,7 +2451,13 @@
    ],
    "hasPermissionRow": true,
    "usedByGuard": false,
-   "description": "Create payment records on orders"
+   "description": "Create payment records on orders",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
   },
   "pos:payment:intent": {
    "current": [
@@ -2451,7 +2469,13 @@
    ],
    "hasPermissionRow": true,
    "usedByGuard": true,
-   "description": "Create/cancel MOMO payment intents"
+   "description": "Create/cancel MOMO payment intents",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
   },
   "pos:payment:manual-reference": {
    "current": [
@@ -2467,10 +2491,9 @@
    "proposed": [
     "Owner",
     "Manager",
-    "Supervisor",
     "Cashier"
    ],
-   "ruling": "R5/R9: a waiter sends and prints the bill; payment, refunds and the till belong to cashier, supervisor (refund same day) and manager."
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
   },
   "pos:payment:override": {
    "current": [

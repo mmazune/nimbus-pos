@@ -98,6 +98,18 @@ run('Tapas Downtown demo venue (smoke through the API)', () => {
     ).toBe('OCCUPIED');
   });
 
+  it("the API's own till sum agrees with the loaded till (float plus cash sales)", async () => {
+    const cashier = await tokenFor('cashier1');
+    const active = await http().get('/api/tills/active').set(as(cashier));
+    expect(active.status).toBe(200);
+    const till = Array.isArray(active.body) ? active.body[0] : active.body;
+    expect(till?.id).toBeTruthy();
+    const summary = await http().get(`/api/tills/${till.id}/summary`).set(as(cashier));
+    expect(summary.status).toBe(200);
+    const stored = await prisma.tillSession.findUniqueOrThrow({ where: { id: till.id } });
+    expect(Number(summary.body.computedExpectedCash)).toBe(Number(stored.expectedCash));
+  });
+
   it('a cashier takes cash on a bill-asked table: change given, table free, booking complete', async () => {
     const cashier = await tokenFor('cashier1');
     const order = await openOrderAt('M01'); // "bill asked", with a seated booking

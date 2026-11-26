@@ -22,12 +22,31 @@ case "$(node -e 'console.log(new URL(process.env.DATABASE_URL).pathname.slice(1)
   *) echo "demo-venue: refusing: DATABASE_URL does not name a throwaway nimbus_event_* database" >&2; exit 1 ;;
 esac
 
+# The Prisma CLI (migrate, and the seed's client) can take its address from an env file beside the
+# schema even when one is set in the shell (CLAUDE.md, B5.4). Refuse if such a file exists: its
+# existence is checked, its contents are never read.
+# DEMO_VENUE_ENV_PROBE adds one more path, only to prove this refusal without writing an env file.
+for f in "$db_dir/.env" "$db_dir/prisma/.env" "$root/.env" ${DEMO_VENUE_ENV_PROBE:+"$DEMO_VENUE_ENV_PROBE"}; do
+  if [ -e "$f" ]; then
+    echo "demo-venue: refusing: ${f#$root/} exists, and the Prisma CLI could prefer it to the address in this shell. Move it away for this run." >&2
+    exit 1
+  fi
+done
+
 cd "$db_dir"
 pnpm_() { corepack pnpm@8.15.0 "$@"; }
+# Ask the guarded database itself, through the address in this shell, never through Prisma's lookup.
+psql_here() { psql "${DATABASE_URL%%\?*}" -X -tA -c "$1"; }
 echo "== validate the data files"
 pnpm_ exec ts-node --project tsconfig.seed.json demo-venue/validate.ts
 echo "== migrate (prisma migrate deploy)"
 pnpm_ exec prisma migrate deploy >/dev/null
+# Proof that the migration reached THIS database (not one an env file named): E1's row is there.
+if [ "$(psql_here "select count(*) from _prisma_migrations where migration_name = '20261126000000_e1_order_truth' and finished_at is not null")" != "1" ]; then
+  echo "demo-venue: refusing: the guarded database has no finished E1 migration after migrate deploy" >&2
+  exit 1
+fi
+echo "   the guarded database holds the E1 migration"
 echo "== seed roles and permissions (db:seed; it also makes its own small demo org)"
 pnpm_ db:seed >/dev/null
 echo "== load Tapas Downtown"

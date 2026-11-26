@@ -12,9 +12,9 @@ Sources: `01-decisions.md` (R14), `07-scenarios-and-rules.md` (People, Money, Se
 
 | Role | How the person is created today | Signs in with |
 |---|---|---|
-| Owner | Made when the organisation is made (client onboarding wizard, `POST /api/onboarding/…`, needs `onboarding:write`); the seed makes demo owners. [code] | email + password (no PIN: `EXCLUDED_FROM_QUICK_PIN`, `quick-pin.constants.ts:40`) |
+| Owner | Made when the organisation is made: `POST /api/orgs` gives the person who creates it a membership with the Owner role (`tenancy.service.ts:139-143`); the client onboarding wizard (`/api/onboarding/…`, `onboarding:write`) completes the set-up. The seed makes demo owners. [code] | email + password (no PIN: `EXCLUDED_FROM_QUICK_PIN`, `quick-pin.constants.ts:40`) |
 | Manager, Accountant | Invited by email: `POST /api/onboarding/invitations` (`onboarding:invitation:write`, Owner and Manager); the person accepts with a token, `POST /api/auth/invitations/accept`, and sets their own password. Only these two roles can be invited (`client-onboarding.service.ts:30`). [code] | email + password; Manager also an 8-digit PIN; Accountant no PIN |
-| Supervisor | `POST /api/hr/frontline-staff/onboard` with `roleName` (`hr:frontline-staff:create`, Owner and Manager), then a PIN issued by a manager. [code] | 8-digit PIN on the POS, or email + password |
+| Supervisor | `POST /api/hr/frontline-staff/onboard` with `roleName: "Supervisor"` (`hr:frontline-staff:create`, Owner and Manager). The route takes any active role by name (`frontline-staff-onboarding.service.ts:59-63`) and refuses a PIN only for a role not eligible for one (`:88-95`); a supervisor's 8-digit PIN is issued by a manager. [code] | 8-digit PIN on the POS, or email + password |
 | Cashier, Waiter, Bartender, Chef, Store keeper (role "Stock Manager") | `POST /api/hr/frontline-staff/onboard`: one call makes the user, the employee, the membership and, for these PIN-first roles (`FRONTLINE_PIN_FIRST_ROLES`), a 6-digit PIN. [code] | 6-digit PIN on `POS_DESKTOP` (`quick-pin-login`) |
 
 Every person is a `User` (sign-in) plus an `Employee` (the HR record) plus one `Membership` per branch
@@ -77,9 +77,9 @@ this file (`rights-matrix.json`).
 |---|---|---|---|
 | Owner | 277 | 304 | Holds every seeded right except the two that are not role rights (section 7); gains the 27 venue keys of section 6. |
 | Manager | 261 | 303 | **R14 breach 1**: lacks 15 seeded rights beyond `pos:hr:compensation:read` (section 7). Gains them and the 27 venue keys of section 6. |
-| Supervisor | 134 | 125 | **R14 breach 2**: five payroll rights. Takes payment (`pos:orders:close`; `01` waiting point 2 defaults to no). Writes recipes and holds `pos:inventory:write` and `pos:cost:read` (section 11: no). Keeps void of a sent line, discount approve, refund approve, `pos:inventory:adjust` (take out of stock; the PIN-above-a-limit rule is E6). |
+| Supervisor | 134 | 120 | **R14 breach 2**: five payroll rights. Takes payment (`pos:orders:close`, `pos:payment:close`, `create`, `intent`, `manual-reference`, `cancel`; `01` waiting point 2 defaults to no; keeps `pos:payment:override` for the 07 method change by PIN). Writes recipes and holds `pos:inventory:write` and `pos:cost:read` (section 11: no). Keeps void of a sent line, discount approve, refund approve, `pos:inventory:adjust` (take out of stock; the PIN-above-a-limit rule is E6). |
 | Cashier | 63 | 61 | **R14 breach 2**: `pos:payroll:slips:read` (branch-wide payslips). Can create a refund (`07`: same day supervisor, later manager). |
-| Waiter | 51 | 45 | **R14 breach 2**: `pos:payroll:slips:read`. Holds payment and till rights (`pos:payment:manual-reference`, `pos:till:open`, `pos:till:reconcile`, `pos:till:safe-drop`) and `pos:refund:create`; R5/R9 give a waiter Send and Print bill only. Can lower a sent line's quantity through the item edit (R-E1 B1), a void without the right. |
+| Waiter | 51 | 43 | **R14 breach 2**: `pos:payroll:slips:read`. Holds payment and till rights (`pos:payment:create`, `intent`, `manual-reference`, `pos:till:open`, `pos:till:reconcile`, `pos:till:safe-drop`) and `pos:refund:create`; R5/R9 give a waiter Send and Print bill only. Can lower a sent line's quantity on their own order through the item edit (R-E1 B1, probe P22b as a waiter with an open shift [live]), a void without the right. |
 | Bartender | 17 | 20 | No shift rights; cannot see recipes (section 11: see). Station-scoped stock actions (sold out, take out, ask the store) have no keys yet (E2, E6, E7). |
 | Chef | 19 | 20 | No shift rights; holds `pos:cost:read` (section 11: chefs do not see cost or margin). Same missing station keys as bartender. |
 | Store keeper (Stock Manager) | 7 | 9 | No shift rights. Holds inventory read/write/adjust for every store: section 11 says "their store"; store scoping needs a store on the membership (E7). |
@@ -104,8 +104,12 @@ Every key that changes, with today's and the proposed holders:
 | `pos:hr:attendance-policy:update` | Owner | Owner, Manager | R14: Manager has every right except pos:hr:compensation:read. |
 | `pos:hr:compensation:create` | Owner | Owner, Manager | R14: Manager has every right except pos:hr:compensation:read. (Owner-only today; owner to confirm, see the R14 section.) |
 | `pos:inventory:write` | Owner, Manager, Supervisor, Stock Manager | Owner, Manager, Stock Manager | 03 section 11: issue, receive, count and set minimums: store keeper and manager; not supervisor. |
-| `pos:orders:close` | Owner, Manager, Supervisor, Cashier | Owner, Manager, Cashier | 01-decisions 'waiting for the owner' 2: a supervisor takes payment: default no. |
-| `pos:payment:manual-reference` | Owner, Manager, Supervisor, Cashier, Waiter | Owner, Manager, Supervisor, Cashier | R5/R9: a waiter sends and prints the bill; payment, refunds and the till belong to cashier, supervisor (refund same day) and manager. |
+| `pos:orders:close` | Owner, Manager, Supervisor, Cashier | Owner, Manager, Cashier | Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count). |
+| `pos:payment:cancel` | Owner, Manager, Supervisor, Cashier | Owner, Manager, Cashier | Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count). |
+| `pos:payment:close` | Owner, Manager, Supervisor, Cashier | Owner, Manager, Cashier | Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count). |
+| `pos:payment:create` | Owner, Manager, Supervisor, Cashier, Waiter | Owner, Manager, Cashier | Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count). |
+| `pos:payment:intent` | Owner, Manager, Supervisor, Cashier, Waiter | Owner, Manager, Cashier | Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count). |
+| `pos:payment:manual-reference` | Owner, Manager, Supervisor, Cashier, Waiter | Owner, Manager, Cashier | Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count). |
 | `pos:payroll:adjustments:create` | Owner, Manager, Supervisor | Owner, Manager | R14: payroll is finance; Supervisor never holds it. |
 | `pos:payroll:adjustments:read` | Owner, Manager, Supervisor, Accountant | Owner, Manager, Accountant | R14: payroll is finance; Supervisor never holds it. |
 | `pos:payroll:components:read` | Owner, Manager, Supervisor, Accountant | Owner, Manager, Accountant | R14: payroll is finance; Supervisor never holds it. |
@@ -202,9 +206,13 @@ nobody holds). The other **15 are breaches**, each held today by Owner only:
 Also against line 1: the 27 venue keys of section 6 have no row, so Manager (and Owner) cannot hold them.
 
 **Line 2 — Waiter, cashier and supervisor never get accounting or procurement rights. Breached
-through payroll.** No frontline role holds any `accounting:*`, `pos:accounting:*`, `finance:*`,
-`procurement:*`, AP, AR, bank, budget, ledger or supplier key [live, query]. But payroll is finance,
-and they hold:
+through payroll.** Checked two ways [live]: by key name (no frontline role holds any `accounting:*`,
+`pos:accounting:*`, `finance:*`, `procurement:*`, AP, AR, bank, budget, ledger or supplier key), and by
+module: every key that guards a route in `accounting`, `accounts-payable`, `accounts-receivable`,
+`bank-rec`, `budget`, `ledger` and `payroll` (65 keys), and every route whose path names a supplier,
+purchase, vendor or cost, intersected with the Waiter, Cashier and Supervisor grants. The only hits
+are the payroll keys below and Supervisor's `pos:cost:read` (the recipe cost route
+`/api/recipes/:menuItemId/cost`; ruled off under section 11). Payroll is finance, and they hold:
 
 | role | payroll keys |
 |---|---|

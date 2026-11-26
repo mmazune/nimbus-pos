@@ -636,7 +636,7 @@ async function main() {
         }
       }
 
-      await tx.tillSession.create({
+      const tillSession = await tx.tillSession.create({
         data: {
           ...scope,
           shiftId: tillShift,
@@ -649,6 +649,19 @@ async function main() {
           status: 'OPEN',
         },
       });
+      // As tills.service.ts openTill writes it: the float is a cash movement on the session.
+      await tx.cashMovement.create({
+        data: {
+          ...scope,
+          tillSessionId: tillSession.id,
+          shiftId: tillShift,
+          type: 'OPENING_FLOAT',
+          amount: D(till.openingFloat),
+          reason: 'Opening float',
+          createdById: userByKey.get(till.openedBy)!,
+          createdAt: ago(till.openedMinutesAgo),
+        },
+      });
 
       // ── Bookings for today, numbered in the order they were taken ──
       let resSeq = 0;
@@ -657,7 +670,7 @@ async function main() {
         const at = new Date(now + bk.minutesFromNow * 60_000);
         const taken = ago(600 - resSeq * 13); // later numbers taken later: the generator reads the newest
         const seatedOrderId = orderByBooking.get(bk.key) ?? null;
-        await tx.reservation.create({
+        const res = await tx.reservation.create({
           data: {
             ...scope,
             reservationNumber: `RES-${String(++resSeq).padStart(6, '0')}`,
@@ -680,6 +693,28 @@ async function main() {
             createdAt: taken,
           },
         });
+        // One event per step the booking went through, as reservations.service.ts writes them.
+        const actor = userByKey.get(service.till.openedBy)!;
+        const steps: [string, Date, string][] = [['CREATED', taken, 'Reservation created']];
+        if (bk.status !== 'PENDING') steps.push(['CONFIRMED', taken, 'Reservation confirmed']);
+        if (bk.status === 'SEATED' || bk.status === 'COMPLETED')
+          steps.push(['SEATED', at, 'Guests seated']);
+        if (bk.status === 'COMPLETED')
+          steps.push(['COMPLETED', ago(30), 'Reservation auto-completed on order close']);
+        if (bk.status === 'CANCELLED') steps.push(['CANCELLED', ago(120), 'Guest cancelled']);
+        if (bk.status === 'NO_SHOW') steps.push(['NO_SHOW', ago(20), 'Marked no-show']);
+        for (const [type, when, message] of steps)
+          await tx.reservationEvent.create({
+            data: {
+              ...scope,
+              reservationId: res.id,
+              type: type as never,
+              actorUserId: actor,
+              message,
+              metadata: { source: 'demo-venue' },
+              createdAt: when,
+            },
+          });
         bump('bookingsToday');
       }
     },
