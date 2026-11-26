@@ -70,7 +70,7 @@ for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
       if (!(await tile.count())) continue;
       await tile.first().click();
       await check(S.page, `${action.source} sheet`, hits);
-      await S.page.getByRole("dialog").getByRole("button", { name: "Back" }).first().click();
+      await S.page.getByRole("dialog").getByRole("button", { name: /^(Back|Cancel)$/ }).first().click(); // Join closes with Cancel (drawing Table-Join)
     }
     await S.ctx.close();
     await as("waiter1");

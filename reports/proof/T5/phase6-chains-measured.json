@@ -1,4 +1,138 @@
 {
+  "lamb-loser-1280": {
+    "sideways": 0,
+    "clipped": [],
+    "smallTargets": [],
+    "smallText": [],
+    "filled": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    }
+  },
+  "lamb-1280-sentLamb": [
+    true,
+    false
+  ],
+  "lamb-1280-availability": {
+    "state": "SOLD_OUT",
+    "left": 0,
+    "lowAt": 5,
+    "source": "COUNT",
+    "since": "2026-11-26T19:23:30.038Z",
+    "byUserId": "cmwxxv0x6005n2gn36zmn99h9"
+  },
+  "lamb-third-1280": {
+    "sideways": 0,
+    "clipped": [],
+    "smallTargets": [],
+    "smallText": [],
+    "filled": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    }
+  },
+  "starters-1280-dishes": {
+    "starter": {
+      "name": "Garlic prawns",
+      "group": "Tapas"
+    },
+    "main": {
+      "name": "Grilled king prawns",
+      "group": "Grill"
+    }
+  },
+  "starters-line-sheet-1280": {
+    "sideways": 0,
+    "clipped": [],
+    "smallTargets": [],
+    "smallText": [],
+    "filled": 1,
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    }
+  },
+  "ready-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 72,
+    "checkedTargets": 17
+  },
+  "starters-1280-afterUndo": {
+    "heldAt": true,
+    "sentAt": null,
+    "fireAt": null
+  },
+  "friday-offer-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Offer 9 tables to Brian O."
+    ],
+    "checkedText": 59,
+    "checkedTargets": 16
+  },
+  "friday-accept-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Accept 9 tables"
+    ],
+    "checkedText": 79,
+    "checkedTargets": 25
+  },
+  "lamb-loser-390": {
+    "sideways": 0,
+    "clipped": [],
+    "smallTargets": [],
+    "smallText": [],
+    "filled": 0,
+    "viewport": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "lamb-390-sentLamb": [
+    true,
+    false
+  ],
+  "lamb-390-availability": {
+    "state": "SOLD_OUT",
+    "left": 0,
+    "lowAt": 5,
+    "source": "COUNT",
+    "since": "2026-11-26T19:24:08.087Z",
+    "byUserId": "cmwxxv0x6005n2gn36zmn99h9"
+  },
+  "lamb-third-390": {
+    "sideways": 0,
+    "clipped": [],
+    "smallTargets": [],
+    "smallText": [],
+    "filled": 0,
+    "viewport": {
+      "width": 390,
+      "height": 844
+    }
+  },
   "starters-390-dishes": {
     "starter": {
       "name": "Garlic prawns",
@@ -62,7 +196,7 @@
     "filled": [
       "Accept 3 tables"
     ],
-    "checkedText": 115,
-    "checkedTargets": 37
+    "checkedText": 119,
+    "checkedTargets": 38
   }
 }

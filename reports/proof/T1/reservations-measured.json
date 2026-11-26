@@ -50,8 +50,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 29,
-    "checkedTargets": 11
+    "checkedText": 8,
+    "checkedTargets": 6
   },
   "supervisor-390": {
     "viewport": "390x844",
@@ -62,7 +62,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 31,
+    "checkedText": 33,
     "checkedTargets": 17
   },
   "supervisor-history-390": {
