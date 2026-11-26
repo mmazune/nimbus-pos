@@ -147,6 +147,7 @@ test("Table 12's evening", async ({ browser }) => {
   await sPanel.getByRole("button", { name: "More for this table" }).click();
   await sup.waitForTimeout(400);
   await sup.screenshot({ path: join(PROOF, `evening-${RUN}-2-supervisor-table-actions.png`) });
+  expectRule10(await measurePage(sup), "supervisor table actions 1280");
   await sup.getByRole("button", { name: /Void an item/ }).click();
   await sup.locator("[data-order-void-pick]").getByRole("button", { name: /Chicken wings/ }).click();
   const vs = sup.locator("[data-order-void-sheet]");
@@ -156,6 +157,7 @@ test("Table 12's evening", async ({ browser }) => {
   await expect(vs.getByText("The bill becomes UGX 74,000.")).toBeVisible();
   await sup.waitForTimeout(400);
   await sup.screenshot({ path: join(PROOF, `evening-${RUN}-3-supervisor-void.png`) });
+  expectRule10(await measurePage(sup), "supervisor void 1280");
   await sup.getByRole("button", { name: "Void 1 item · UGX 24,000" }).click();
   await expect(vs).toHaveCount(0);
   await expect(sPanel.locator("[data-order-total]")).toHaveText("UGX 74,000");

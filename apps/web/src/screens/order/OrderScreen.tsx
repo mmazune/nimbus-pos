@@ -7,7 +7,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Banner, Button, Card, KitIcon, OrderHeader, Sheet, SquareAction, Text } from "@/components/kit";
+import { Banner, Button, Card, KitIcon, OrderHeader, Pill, Sheet, SquareAction, Text } from "@/components/kit";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 import { loadItemChoices, loadMenu, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
@@ -557,6 +557,11 @@ export function OrderScreen(props: OrderScreenProps) {
             </span>
             <Text variant="h" as="h2">{`This is ${waiterName ?? "another waiter"}’s table`}</Text>
             <Text variant="body" tone="muted">You can see the order total. To add or change items, the table has to be yours. A supervisor can move it to you.</Text>
+            <div className="flex">
+              <Button tone="filled" fill onClick={onClose}>
+                Back to the floor
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
@@ -625,9 +630,10 @@ export function OrderScreen(props: OrderScreenProps) {
       {frame === "laptop" ? (
         <div className="flex h-kit-row flex-none items-center gap-kit-12 bg-kit-card px-kit-32 shadow-kit-panel-bottom" data-order-laptop-bar>
           <Button tone="text" size="laptop" onClick={back}>
-            {trail ?? "Floor"}
+            {`${trail ?? "Floor"} ›`}
           </Button>
           <Text variant="row" as="h1">{title}</Text>
+          {order && !closed ? <Pill tone="brand">{order.status === "READY" ? "Ready" : "Open"}</Pill> : null}
           <Text variant="sup" tone="muted">{context}</Text>
           <span className="flex-1" />
           {rights.canTableActions && order && !readOnly ? (

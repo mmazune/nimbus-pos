@@ -1,0 +1,219 @@
+# Done-when 10 (26 Nov 2026)
+
+## Literal: git diff --stat origin/e1/order-truth...HEAD
+(merge base = 19e1eee, the e1/order-truth tip; so this also lists rebuild/main's own commits since 27790c1 — the U0 kit, its gallery and check:ui, the prompts — which this branch was cut from, not T3's work)
+ apps/web/e2e/kit/kit.spec.ts                       |  273 ++++
+ apps/web/e2e/order/actions.spec.ts                 |  194 +++
+ apps/web/e2e/order/data.spec.ts                    |  137 ++
+ apps/web/e2e/order/evening.spec.ts                 |  208 +++
+ apps/web/e2e/order/fixture.ts                      |  342 +++++
+ apps/web/e2e/order/phone.spec.ts                   |   87 ++
+ apps/web/e2e/order/waiter.spec.ts                  |  216 +++
+ .../cashier/floor/CashierFloorScreen.tsx           |  113 +-
+ .../floor/OperationalTableWorkspaceFrame.tsx       |   33 -
+ apps/web/src/components/floor/index.ts             |    1 -
+ apps/web/src/components/kit-gallery/Frame.tsx      |   69 +
+ apps/web/src/components/kit-gallery/Walls.tsx      |   69 +
+ apps/web/src/components/kit-gallery/samples.ts     |   64 +
+ apps/web/src/components/kit/ActionTile.tsx         |   49 +
+ apps/web/src/components/kit/Banner.tsx             |   35 +
+ apps/web/src/components/kit/BottomBar.tsx          |  124 ++
+ apps/web/src/components/kit/Button.tsx             |  160 ++
+ apps/web/src/components/kit/Card.tsx               |   26 +
+ apps/web/src/components/kit/Chip.tsx               |   41 +
+ apps/web/src/components/kit/Field.tsx              |   63 +
+ apps/web/src/components/kit/HeaderBand.tsx         |   34 +
+ apps/web/src/components/kit/ItemTile.tsx           |   43 +
+ apps/web/src/components/kit/Key.tsx                |   37 +
+ apps/web/src/components/kit/KitIcon.tsx            |   35 +
+ apps/web/src/components/kit/MeasureRow.tsx         |   43 +
+ apps/web/src/components/kit/OptionTile.tsx         |   51 +
+ apps/web/src/components/kit/OrderHeader.tsx        |   52 +
+ apps/web/src/components/kit/OrderLine.tsx          |   63 +
+ apps/web/src/components/kit/Pill.tsx               |   23 +
+ apps/web/src/components/kit/Row.tsx                |   62 +
+ apps/web/src/components/kit/Segmented.tsx          |   59 +
+ apps/web/src/components/kit/Sheet.tsx              |   74 +
+ apps/web/src/components/kit/Stepper.tsx            |   26 +
+ apps/web/src/components/kit/Switcher.tsx           |   40 +
+ apps/web/src/components/kit/TableTile.tsx          |  134 ++
+ apps/web/src/components/kit/Text.tsx               |   83 +
+ apps/web/src/components/kit/TouchHeader.tsx        |   68 +
+ apps/web/src/components/kit/index.ts               |   40 +
+ apps/web/src/components/kit/sections.ts            |   82 +
+ apps/web/src/components/kit/states.ts              |   17 +
+ .../manager/operations/ManagerTablesScreen.tsx     |  128 +-
+ .../src/components/pos-shell/role-icon-config.ts   |   31 +
+ apps/web/src/components/pos-shell/role-icons.ts    |   38 +
+ .../supervisor/floor/SupervisorFloorScreen.tsx     |   64 +-
+ .../floor/SupervisorTableControlWorkspace.tsx      | 1016 -------------
+ apps/web/src/components/supervisor/floor/index.ts  |    1 -
+ .../components/waiter/floor/WaiterFloorScreen.tsx  |  113 +-
+ .../waiter/floor/WaiterOwnershipBlockedPanel.tsx   |   48 -
+ .../waiter/floor/WaiterTableWorkspace.tsx          |  277 ----
+ apps/web/src/components/waiter/floor/index.ts      |    2 -
+ .../waiter/orders/WaiterNewOrderScreen.tsx         |  189 ---
+ .../waiter/orders/WaiterOrderBuilderScreen.tsx     | 1608 --------------------
+ .../waiter/orders/WaiterOrdersQueueScreen.tsx      |  429 ------
+ apps/web/src/components/waiter/orders/index.ts     |    3 -
+ apps/web/src/pages/kit.tsx                         |  653 ++++++++
+ apps/web/src/screens/README.md                     |    3 +
+ apps/web/src/screens/order/OrderScreen.tsx         |  672 ++++++++
+ apps/web/src/screens/order/data/menu.ts            |  267 ++++
+ apps/web/src/screens/order/data/money.ts           |   62 +
+ apps/web/src/screens/order/data/order.ts           |  416 +++++
+ apps/web/src/screens/order/data/rights.ts          |   57 +
+ apps/web/src/screens/order/data/useOrderSession.ts |  376 +++++
+ apps/web/src/screens/order/parts/ItemSheet.tsx     |  127 ++
+ apps/web/src/screens/order/parts/MenuPane.tsx      |  190 +++
+ apps/web/src/screens/order/parts/OrderPanel.tsx    |  165 ++
+ apps/web/src/screens/order/parts/PayPane.tsx       |  154 ++
+ .../src/screens/order/parts/TableActionsSheet.tsx  |  226 +++
+ apps/web/src/screens/order/parts/VoidSheet.tsx     |  121 ++
+ .../src/screens/order/phone/PhoneOrderScreen.tsx   |  258 ++++
+ apps/web/src/screens/order/useIsPhone.ts           |   16 +
+ apps/web/src/styles/globals.css                    |    2 +
+ apps/web/src/styles/kit-tokens.css                 |  210 +++
+ apps/web/tailwind.config.ts                        |   56 +
+ design/screens/SCREENS.md                          |    4 +-
+ docs/direction/09-architect-handover.md            |    2 +-
+ docs/prompts/E2-menu-and-availability.md           |    5 +-
+ docs/prompts/LONG-RUN-RULES.md                     |   38 +
+ docs/prompts/RE1-review-order-truth.md             |   11 +-
+ docs/prompts/REBUILD.md                            |   40 +-
+ docs/prompts/T1-screens-shell-floor-sections.md    |   35 +
+ docs/prompts/T2-engines-menu-tables-tickets.md     |   54 +
+ docs/prompts/T3-order-screen.md                    |   46 +
+ docs/prompts/T4-review-tests-demo-venue.md         |   38 +
+ docs/prompts/U1-shell-and-floor.md                 |    9 +-
+ package.json                                       |    3 +-
+ reports/T3_PROGRESS.md                             |   35 +
+ reports/T3_READ_BACK.md                            |   47 +
+ reports/U0_CHECK_UI_GREEN.txt                      |    6 +
+ reports/U0_CHECK_UI_RED.txt                        |   23 +
+ reports/U0_PLAYWRIGHT.txt                          |   10 +
+ reports/U0_READ_BACK.md                            |   36 +
+ reports/U0_REPORT.md                               |   96 ++
+ reports/U0_TOKEN_COVERAGE.txt                      |    3 +
+ reports/proof/T3/built-Order-Empty-1280x800.png    |  Bin 0 -> 90057 bytes
+ reports/proof/T3/built-Order-Laptop-1440x900.png   |  Bin 0 -> 114745 bytes
+ reports/proof/T3/built-Order-Other-1280x800.png    |  Bin 0 -> 41036 bytes
+ reports/proof/T3/built-Order-Phone-390x844.png     |  Bin 0 -> 36090 bytes
+ .../proof/T3/built-Order-Phone-Check-390x844.png   |  Bin 0 -> 53684 bytes
+ .../proof/T3/built-Order-Phone-Item-390x844.png    |  Bin 0 -> 58336 bytes
+ reports/proof/T3/built-Order-Terminal-1280x800.png |  Bin 0 -> 75010 bytes
+ .../T3/evening-1-1-waiter-before-second-send.png   |  Bin 0 -> 75111 bytes
+ .../T3/evening-1-2-supervisor-table-actions.png    |  Bin 0 -> 145397 bytes
+ reports/proof/T3/evening-1-3-supervisor-void.png   |  Bin 0 -> 125802 bytes
+ .../proof/T3/evening-1-4-cashier-pay-before.png    |  Bin 0 -> 105217 bytes
+ reports/proof/T3/evening-1-5-cashier-paid.png      |  Bin 0 -> 72740 bytes
+ reports/proof/T3/evening-1-taps.json               |   12 +
+ .../T3/evening-2-1-waiter-before-second-send.png   |  Bin 0 -> 75182 bytes
+ .../T3/evening-2-2-supervisor-table-actions.png    |  Bin 0 -> 145497 bytes
+ reports/proof/T3/evening-2-3-supervisor-void.png   |  Bin 0 -> 126319 bytes
+ .../proof/T3/evening-2-4-cashier-pay-before.png    |  Bin 0 -> 105353 bytes
+ reports/proof/T3/evening-2-5-cashier-paid.png      |  Bin 0 -> 72882 bytes
+ reports/proof/T3/evening-2-taps.json               |   12 +
+ .../T3/evening-3-1-waiter-before-second-send.png   |  Bin 0 -> 75071 bytes
+ .../T3/evening-3-2-supervisor-table-actions.png    |  Bin 0 -> 145360 bytes
+ reports/proof/T3/evening-3-3-supervisor-void.png   |  Bin 0 -> 125995 bytes
+ .../proof/T3/evening-3-4-cashier-pay-before.png    |  Bin 0 -> 105142 bytes
+ reports/proof/T3/evening-3-5-cashier-paid.png      |  Bin 0 -> 72660 bytes
+ reports/proof/T3/evening-3-runs.txt                |   12 +
+ reports/proof/T3/evening-3-taps.json               |   12 +
+ reports/proof/T3/free-table-network.json           |   56 +
+ reports/proof/T3/rights-matrix.txt                 |   15 +
+ reports/proof/T3/two-sends-network.json            |  180 +++
+ .../U0/compare-wall-compact-vs-Floor-1024.png      |  Bin 0 -> 230470 bytes
+ reports/proof/U0/compare-wall-roomy-vs-Main.png    |  Bin 0 -> 284635 bytes
+ reports/proof/U0/kit-1280-top.png                  |  Bin 0 -> 95106 bytes
+ reports/proof/U0/kit-390-sheets.png                |  Bin 0 -> 67643 bytes
+ reports/proof/U0/kit-390-tabbars.png               |  Bin 0 -> 62870 bytes
+ reports/proof/U0/kit-390-tiles.png                 |  Bin 0 -> 137821 bytes
+ reports/proof/U0/kit-390-top.png                   |  Bin 0 -> 65519 bytes
+ reports/proof/U0/measured-1280.json                |  267 ++++
+ reports/proof/U0/rules-1280.json                   |    8 +
+ reports/proof/U0/rules-390.json                    |    8 +
+ reports/proof/U0/wall-compact-1024x768.png         |  Bin 0 -> 128130 bytes
+ reports/proof/U0/wall-compact.json                 |   10 +
+ reports/proof/U0/wall-roomy-1280x800.png           |  Bin 0 -> 156534 bytes
+ reports/proof/U0/wall-roomy.json                   |   10 +
+ tools/check-ui.allow.json                          |    1 +
+ tools/check-ui.mjs                                 |  154 ++
+ 138 files changed, 8733 insertions(+), 3913 deletions(-)
+
+## T3's own work: git diff --stat 6d433e8..HEAD (6d433e8 = the E1 merge commit on this branch)
+ apps/web/e2e/order/actions.spec.ts                 |  194 +++
+ apps/web/e2e/order/data.spec.ts                    |  137 ++
+ apps/web/e2e/order/evening.spec.ts                 |  208 +++
+ apps/web/e2e/order/fixture.ts                      |  342 +++++
+ apps/web/e2e/order/phone.spec.ts                   |   87 ++
+ apps/web/e2e/order/waiter.spec.ts                  |  216 +++
+ .../cashier/floor/CashierFloorScreen.tsx           |  113 +-
+ .../floor/OperationalTableWorkspaceFrame.tsx       |   33 -
+ apps/web/src/components/floor/index.ts             |    1 -
+ apps/web/src/components/kit/OptionTile.tsx         |    2 +-
+ apps/web/src/components/kit/OrderHeader.tsx        |    6 +-
+ apps/web/src/components/kit/OrderLine.tsx          |    7 +-
+ apps/web/src/components/kit/Sheet.tsx              |    7 +-
+ .../manager/operations/ManagerTablesScreen.tsx     |  128 +-
+ .../supervisor/floor/SupervisorFloorScreen.tsx     |   64 +-
+ .../floor/SupervisorTableControlWorkspace.tsx      | 1016 -------------
+ apps/web/src/components/supervisor/floor/index.ts  |    1 -
+ .../components/waiter/floor/WaiterFloorScreen.tsx  |  113 +-
+ .../waiter/floor/WaiterOwnershipBlockedPanel.tsx   |   48 -
+ .../waiter/floor/WaiterTableWorkspace.tsx          |  277 ----
+ apps/web/src/components/waiter/floor/index.ts      |    2 -
+ .../waiter/orders/WaiterNewOrderScreen.tsx         |  189 ---
+ .../waiter/orders/WaiterOrderBuilderScreen.tsx     | 1608 --------------------
+ .../waiter/orders/WaiterOrdersQueueScreen.tsx      |  429 ------
+ apps/web/src/components/waiter/orders/index.ts     |    3 -
+ apps/web/src/screens/order/OrderScreen.tsx         |  672 ++++++++
+ apps/web/src/screens/order/data/menu.ts            |  267 ++++
+ apps/web/src/screens/order/data/money.ts           |   62 +
+ apps/web/src/screens/order/data/order.ts           |  416 +++++
+ apps/web/src/screens/order/data/rights.ts          |   57 +
+ apps/web/src/screens/order/data/useOrderSession.ts |  376 +++++
+ apps/web/src/screens/order/parts/ItemSheet.tsx     |  127 ++
+ apps/web/src/screens/order/parts/MenuPane.tsx      |  190 +++
+ apps/web/src/screens/order/parts/OrderPanel.tsx    |  165 ++
+ apps/web/src/screens/order/parts/PayPane.tsx       |  154 ++
+ .../src/screens/order/parts/TableActionsSheet.tsx  |  226 +++
+ apps/web/src/screens/order/parts/VoidSheet.tsx     |  121 ++
+ .../src/screens/order/phone/PhoneOrderScreen.tsx   |  258 ++++
+ apps/web/src/screens/order/useIsPhone.ts           |   16 +
+ reports/T3_PROGRESS.md                             |   35 +
+ reports/T3_READ_BACK.md                            |   47 +
+ reports/proof/T3/built-Order-Empty-1280x800.png    |  Bin 0 -> 90057 bytes
+ reports/proof/T3/built-Order-Laptop-1440x900.png   |  Bin 0 -> 114745 bytes
+ reports/proof/T3/built-Order-Other-1280x800.png    |  Bin 0 -> 41036 bytes
+ reports/proof/T3/built-Order-Phone-390x844.png     |  Bin 0 -> 36090 bytes
+ .../proof/T3/built-Order-Phone-Check-390x844.png   |  Bin 0 -> 53684 bytes
+ .../proof/T3/built-Order-Phone-Item-390x844.png    |  Bin 0 -> 58336 bytes
+ reports/proof/T3/built-Order-Terminal-1280x800.png |  Bin 0 -> 75010 bytes
+ .../T3/evening-1-1-waiter-before-second-send.png   |  Bin 0 -> 75111 bytes
+ .../T3/evening-1-2-supervisor-table-actions.png    |  Bin 0 -> 145397 bytes
+ reports/proof/T3/evening-1-3-supervisor-void.png   |  Bin 0 -> 125802 bytes
+ .../proof/T3/evening-1-4-cashier-pay-before.png    |  Bin 0 -> 105217 bytes
+ reports/proof/T3/evening-1-5-cashier-paid.png      |  Bin 0 -> 72740 bytes
+ reports/proof/T3/evening-1-taps.json               |   12 +
+ .../T3/evening-2-1-waiter-before-second-send.png   |  Bin 0 -> 75182 bytes
+ .../T3/evening-2-2-supervisor-table-actions.png    |  Bin 0 -> 145497 bytes
+ reports/proof/T3/evening-2-3-supervisor-void.png   |  Bin 0 -> 126319 bytes
+ .../proof/T3/evening-2-4-cashier-pay-before.png    |  Bin 0 -> 105353 bytes
+ reports/proof/T3/evening-2-5-cashier-paid.png      |  Bin 0 -> 72882 bytes
+ reports/proof/T3/evening-2-taps.json               |   12 +
+ .../T3/evening-3-1-waiter-before-second-send.png   |  Bin 0 -> 75071 bytes
+ .../T3/evening-3-2-supervisor-table-actions.png    |  Bin 0 -> 145360 bytes
+ reports/proof/T3/evening-3-3-supervisor-void.png   |  Bin 0 -> 125995 bytes
+ .../proof/T3/evening-3-4-cashier-pay-before.png    |  Bin 0 -> 105142 bytes
+ reports/proof/T3/evening-3-5-cashier-paid.png      |  Bin 0 -> 72660 bytes
+ reports/proof/T3/evening-3-runs.txt                |   12 +
+ reports/proof/T3/evening-3-taps.json               |   12 +
+ reports/proof/T3/free-table-network.json           |   56 +
+ reports/proof/T3/rights-matrix.txt                 |   15 +
+ reports/proof/T3/two-sends-network.json            |  180 +++
+ 70 files changed, 4820 insertions(+), 3899 deletions(-)
+
+## apps/api and packages/db since the E1 merge (must be empty)
+(end)

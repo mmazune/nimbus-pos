@@ -1,0 +1,20 @@
+# T3 gates, 2026-11-26T10:52:54Z, HEAD de37868 + working tree
+## web typecheck
+exit 0
+## web lint (next lint, no --fix)
+✔ No ESLint warnings or errors
+exit 0
+## web build
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+(exit 0, run above in this turn)
+## check:ui
+check:ui allowed 0 hit(s) via 0 allow entries
+check:ui green
+## check:event
+check:event green
+## e2e/order on the production build
+21 passed (see run log); evening x3 in evening-3-runs.txt
+## unit tests
+the web package has no unit runner (test script is a stub); data-layer unit tests run in e2e/order/data.spec.ts: 10 passed

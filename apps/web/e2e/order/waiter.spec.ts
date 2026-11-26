@@ -207,6 +207,7 @@ test("another waiter's table: read only, as drawn", async ({ page }) => {
   await expect(panel.getByText("2 lines")).toBeVisible();
   await expect(panel.locator("[data-order-total]")).toHaveText("UGX 20,000");
   await expect(panel.getByRole("button", { name: /Send|Print bill|Take payment/ })).toHaveCount(0);
+  await expect(other.getByRole("button", { name: "Back to the floor" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Search the whole menu" })).toHaveCount(0);
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(PROOF, "built-Order-Other-1280x800.png") });
