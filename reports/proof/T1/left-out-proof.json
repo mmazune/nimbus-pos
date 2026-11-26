@@ -1,0 +1,7 @@
+{
+  "station": "Till\nSarah N. · Cashier · Till 1",
+  "reconcileWithSignOff": "POST /tills/no-such-till/reconcile → 400 {\"message\":[\"property supervisorId should not exist\",\"property signedBy should not exist\"],\"error\":\"Bad Request\",\"statusCode\":400}",
+  "cashierSettings": "GET /settings → 403 {\"message\":\"Insufficient permissions\",\"error\":\"Forbidden\",\"statusCode\":403}",
+  "orgLimit": "150000",
+  "smallRefund": "COMPLETED"
+}

@@ -1,12 +1,12 @@
 {
   "myDay": {
     "before": {
-      "sales": "UGX 9,905,200",
-      "served": "29"
-    },
-    "after": {
       "sales": "UGX 9,947,200",
       "served": "30"
+    },
+    "after": {
+      "sales": "UGX 9,989,200",
+      "served": "31"
     },
     "orderTotal": "42000"
   },
@@ -105,8 +105,8 @@
     "filled": [
       "Log out"
     ],
-    "checkedText": 16,
-    "checkedTargets": 6
+    "checkedText": 19,
+    "checkedTargets": 7
   },
   "supervisor-me-390": {
     "viewport": "390x844",
