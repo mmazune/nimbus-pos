@@ -140,7 +140,8 @@ export async function pageRules(page: Page): Promise<Rules> {
     const visible = (el: Element) => {
       const cs = getComputedStyle(el);
       const r = (el as HTMLElement).getBoundingClientRect();
-      return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0;
+      // 1 px boxes are screen-reader-only labels (sr-only), hidden from sight on purpose.
+      return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 1 && r.height > 1;
     };
     const name = (el: Element) => ((el.getAttribute("aria-label") ?? el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 40));
     for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("*"))) {
@@ -157,7 +158,9 @@ export async function pageRules(page: Page): Promise<Rules> {
       out.checkedTargets += 1;
       if (!["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName) && el.scrollHeight > el.clientHeight + 1) out.clipped.push(`${el.tagName} "${name(el)}" taller ${el.scrollHeight}>${el.clientHeight}`);
       if (el.offsetWidth < 44 || el.offsetHeight < 44) out.small.push(`${el.tagName} "${name(el)}" ${el.offsetWidth}x${el.offsetHeight}`);
-      if (el.tagName === "BUTTON" && !el.closest("header, nav") && getComputedStyle(el).backgroundColor === primaryRgb) out.filled.push(name(el));
+      // A chosen chip or option (aria-pressed / aria-selected) is a selection, not an action button.
+      const chosen = el.getAttribute("aria-pressed") === "true" || el.getAttribute("aria-selected") === "true";
+      if (el.tagName === "BUTTON" && !chosen && !el.closest("header, nav") && getComputedStyle(el).backgroundColor === primaryRgb) out.filled.push(name(el));
     }
     return out;
   });

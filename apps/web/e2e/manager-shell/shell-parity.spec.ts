@@ -66,17 +66,18 @@ test.describe("Manager shared-shell parity (top nav)", () => {
     ["cashier", /\/cashier\/floor/],
     ["supervisor", /\/supervisor\/floor/],
   ] as const) {
-    test(`${role} still renders the byte-identical bottom-nav shell (header, no top nav, no switcher)`, async ({ page }) => {
+    // T1 (26 Nov 2026, R8/R13): the touch roles moved to the kit touch shell (TouchHeader with
+    // Lock, kit BottomBar). The manager's top bar is untouched; the touch roles still never get it.
+    test(`${role} renders the kit touch shell (header, bottom bar, no top nav, no switcher)`, async ({ page }) => {
       await uiLogin(page, role);
       await page.waitForURL(landing, { timeout: 30_000 });
-      await expect(page.locator("[data-operational-shell]")).toHaveAttribute("data-operational-shell-nav", "bottom");
-      await expect(page.locator("[data-operational-header]")).toBeVisible();
-      await expect(page.locator("[data-operational-bottom-nav]")).toBeVisible();
+      await expect(page.locator(`[data-touch-shell="${role}"]`)).toBeVisible();
+      await expect(page.locator("[data-touch-header] header:visible").first()).toBeVisible();
+      await expect(page.locator("[data-touch-bar] nav:visible").first()).toBeVisible();
       await expect(page.locator("[data-operational-top-nav]")).toHaveCount(0);
       await expect(branchSwitcher(page)).toHaveCount(0);
       await expect(page.locator("[data-manager-branch-switcher]")).toHaveCount(0);
-      await expect(page.getByLabel(/current time/i)).toBeVisible();
-      await expect(page.getByRole("button", { name: /log out/i }).first()).toBeVisible();
+      await expect(page.getByRole("button", { name: /lock the screen/i }).first()).toBeVisible();
     });
   }
 });

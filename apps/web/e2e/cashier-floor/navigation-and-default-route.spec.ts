@@ -6,15 +6,15 @@ import { uiLogin } from "../supervisor-prompt3/fixtures";
  * Prompt C1 — Cashier Floor-first navigation + default routing.
  */
 test.describe("Cashier navigation + default route", () => {
-  test("login lands on /cashier/floor with nav Floor/Till/Me (no Queue/Receipts/Orders)", async ({ page }) => {
+  // T1 (26 Nov 2026, decision R9): Receipts is back in the cashier bar; Queue and Orders stay out.
+  test("login lands on /cashier/floor with nav Floor/Receipts/Till/Me (no Queue/Orders)", async ({ page }) => {
     await uiLogin(page, "cashier");
     await page.waitForURL(/\/cashier\/floor/, { timeout: 30_000 });
 
-    for (const label of ["Floor", "Till", "Me"]) {
+    for (const label of ["Floor", "Receipts", "Till", "Me"]) {
       await expect(page.getByRole("link", { name: new RegExp(`^${label}$`, "i") }).first()).toBeVisible();
     }
     await expect(page.getByRole("link", { name: /^queue$/i })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /^receipts$/i })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /^orders$/i })).toHaveCount(0);
     await expect(page.locator("body")).not.toContainText(/Cannot reach Nimbus API/i);
   });

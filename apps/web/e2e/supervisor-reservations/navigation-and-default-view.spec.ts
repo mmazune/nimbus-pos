@@ -20,8 +20,8 @@ test.describe("Supervisor Reservations — navigation & default view", () => {
     await expect(page.getByRole("tab", { name: /^all$/i })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /^orders$/i })).toHaveCount(0);
 
-    // Primary create action is present.
-    await expect(page.getByRole("button", { name: /create reservation/i })).toBeVisible();
+    // Primary create action is present (T1: "New reservation", as drawn).
+    await expect(page.getByRole("button", { name: "New reservation" })).toBeVisible();
   });
 
   test("view + selection persist in the URL across reload and Back", async ({ page }) => {
@@ -38,9 +38,10 @@ test.describe("Supervisor Reservations — navigation & default view", () => {
 
   test("arriving day navigation updates the date in the URL", async ({ page }) => {
     await gotoReservations(page);
+    // T1: a kit Switcher (‹ day ›); tapping the day's name returns to today.
     await page.getByRole("button", { name: /next day/i }).click();
     await expect(page).toHaveURL(/date=\d{4}-\d{2}-\d{2}/);
-    await page.getByRole("button", { name: /^today$/i }).click();
+    await page.getByRole("button", { name: /booked$/ }).click();
     await expect(page).not.toHaveURL(/date=/);
   });
 });

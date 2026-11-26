@@ -15,7 +15,7 @@ test.describe("Cashier C2 responsive", () => {
     await page.goto(`/cashier/floor?tableId=${tableId}&orderId=${orderId}`);
     await expect(page.locator("[data-operational-workspace]")).toBeVisible({ timeout: 25_000 });
     await expectNoHorizontalOverflow(page);
-    await expect(page.locator("[data-operational-bottom-nav]")).toBeVisible();
+    await expect(page.locator("[data-touch-bar] nav:visible").first() /* T1: kit bar replaces the old bottom nav */).toBeVisible();
   });
 
   test("the Find bill dialog fits the viewport", async ({ page }) => {

@@ -36,7 +36,7 @@
       "small": [],
       "tinyText": [],
       "filled": [],
-      "checkedText": 150,
+      "checkedText": 153,
       "checkedTargets": 45
     }
   },
@@ -76,7 +76,7 @@
       "small": [],
       "tinyText": [],
       "filled": [],
-      "checkedText": 133,
+      "checkedText": 136,
       "checkedTargets": 45
     }
   },
@@ -119,7 +119,7 @@
       "filled": [
         "All areas70"
       ],
-      "checkedText": 272,
+      "checkedText": 275,
       "checkedTargets": 84
     }
   },
@@ -141,8 +141,8 @@
         "small": [],
         "tinyText": [],
         "filled": [],
-        "checkedText": 58,
-        "checkedTargets": 25
+        "checkedText": 67,
+        "checkedTargets": 28
       },
       {
         "viewport": "390x844",

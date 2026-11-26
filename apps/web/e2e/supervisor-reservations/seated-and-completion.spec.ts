@@ -8,8 +8,7 @@ import {
   apiSeatReservation,
   gotoReservations,
   openReservationByName,
-  uiLogin,
-} from "./fixtures";
+  uiLogin, shownName } from "./fixtures";
 
 test.describe.serial("Supervisor Reservations — seated & manual completion", () => {
   let token: string;
@@ -33,24 +32,20 @@ test.describe.serial("Supervisor Reservations — seated & manual completion", (
     await page.getByRole("tab", { name: /seated/i }).click();
     await openReservationByName(page, res.customerName);
 
-    await page.getByRole("button", { name: /mark visit complete/i }).click();
-    const dialog = page.getByRole("dialog", { name: /mark visit complete/i });
-    // Truthful: does not close an order or collect payment.
-    await expect(dialog.getByText(/does not/i)).toBeVisible();
-    await dialog.getByRole("button", { name: /mark complete/i }).click();
-
-    await expect(page.getByText(/visit completed/i).first()).toBeVisible();
+    // T1 (26 Nov 2026): the Reservations screen was rebuilt to the drawing Reservations-Supervisor; same endpoints and transitions.
+    await page.getByRole("button", { name: "Complete booking" }).click();
+    await expect(page.getByText("Booking completed.").first()).toBeVisible();
 
     // It leaves Seated and appears in History as COMPLETED.
     await page.getByRole("tab", { name: /seated/i }).click();
-    await expect(page.getByRole("button", { name: new RegExp(res.customerName, "i") })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: new RegExp(shownName(res.customerName), "i") })).toHaveCount(0);
 
     await page.getByRole("tab", { name: /history/i }).click();
     await openReservationByName(page, res.customerName);
     // Assert the terminal read-only state in the detail workspace (unambiguous — avoids the
     // hidden <option>Completed</option> in the terminal-status filter dropdown).
-    await expect(page.getByText(/this reservation is completed/i)).toBeVisible();
+    await expect(page.locator("[data-res-panel]").getByText("Completed", { exact: true })).toBeVisible();
     // Terminal record → no active lifecycle actions.
-    await expect(page.getByRole("button", { name: /mark visit complete/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Complete booking" })).toHaveCount(0);
   });
 });

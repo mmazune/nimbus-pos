@@ -13,7 +13,7 @@ test.describe("Cashier Floor responsive", () => {
       await page.goto(path);
       await page.waitForURL(new RegExp(path.replace(/\//g, "\\/")));
       await expectNoHorizontalOverflow(page);
-      await expect(page.locator("[data-operational-bottom-nav]")).toBeVisible();
+      await expect(page.locator("[data-touch-bar] nav:visible").first() /* T1: kit bar replaces the old bottom nav */).toBeVisible();
     }
   });
 

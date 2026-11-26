@@ -1,0 +1,66 @@
+{
+  "waiter-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Seat at table 35"
+    ],
+    "checkedText": 79,
+    "checkedTargets": 25
+  },
+  "supervisor-create-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Create booking"
+    ],
+    "checkedText": 77,
+    "checkedTargets": 35
+  },
+  "supervisor-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 85,
+    "checkedTargets": 34
+  },
+  "waiter-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 8,
+    "checkedTargets": 5
+  },
+  "supervisor-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 61,
+    "checkedTargets": 24
+  },
+  "supervisor-history-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 91,
+    "checkedTargets": 29
+  }
+}

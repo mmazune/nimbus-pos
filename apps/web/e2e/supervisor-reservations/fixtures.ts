@@ -93,16 +93,42 @@ export async function gotoReservations(page: Page) {
   await expect(page.getByRole("tab", { name: /arriving/i })).toBeVisible();
 }
 
-/** Open a reservation's detail workspace by its (marked) guest name. */
+/**
+ * The kit Reservations screen (T1, 26 Nov 2026) shows a guest as "P. Confirm 123"
+ * (first initial, then the rest), as the drawing does.
+ */
+export function shownName(name: string): string {
+  return name.trim().replace(/^(\S)\S*\s+/, "$1. ");
+}
+
+/** Open a reservation's side panel by its (marked) guest name. */
 export async function openReservationByName(page: Page, name: string) {
-  // Narrow the current view to the target first — the list can be long, so a page-local
-  // search keeps the freshly-created reservation reliably on-screen before we click it.
-  const search = page.getByRole("searchbox").first();
-  if (await search.isVisible().catch(() => false)) {
-    await search.fill(name);
-  }
-  const row = page.getByRole("button", { name: new RegExp(name, "i") }).first();
+  const shown = shownName(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const row = page.getByRole("button", { name: new RegExp(shown, "i") }).first();
   await expect(row).toBeVisible();
   await row.click();
-  await expect(page.getByRole("heading", { name: new RegExp(name, "i") })).toBeVisible();
+  await expect(page.getByRole("heading", { name: new RegExp(shown, "i") })).toBeVisible();
+}
+
+/**
+ * T1 (26 Nov 2026): the kit Reservations screen offers only tables that are free
+ * now and seat the party. A test that seats creates its own free QA table through
+ * the manager's API (no password is written here: it reuses the configured one).
+ */
+export async function apiCreateQaTable(capacity = 4): Promise<{ id: string; label: string }> {
+  const login = await fetch(`${CFG.api}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: process.env.PW_MANAGER_EMAIL || "manager@nimbus.demo",
+      password: process.env.PW_MANAGER_PASSWORD || CFG.supervisor.password,
+    }),
+  }).then((r) => r.json());
+  const label = `QA ${Date.now().toString(36).slice(-5)}`;
+  const res = await fetch(`${CFG.api}/api/tables`, {
+    method: "POST",
+    headers: h(login.accessToken),
+    body: JSON.stringify({ label, capacity }),
+  });
+  return res.json();
 }

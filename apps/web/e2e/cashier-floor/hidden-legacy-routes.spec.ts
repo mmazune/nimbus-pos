@@ -23,13 +23,14 @@ test.describe("Cashier hidden compatibility routes", () => {
     await expect(page.locator("body")).not.toContainText(/Cannot reach Nimbus API/i);
   });
 
-  test("no shell nav link points to Queue or Receipts on any Cashier surface", async ({ page }) => {
+  // T1 (26 Nov 2026, decision R9): Receipts is a bar section again; only Queue stays hidden.
+  test("no shell nav link points to Queue on any Cashier surface; Receipts is in the bar", async ({ page }) => {
     await uiLogin(page, "cashier");
     for (const path of ["/cashier/floor", "/cashier/till", "/cashier/me"]) {
       await page.goto(path);
       await page.waitForURL(new RegExp(path.replace(/\//g, "\\/")));
       await expect(page.getByRole("link", { name: /^queue$/i })).toHaveCount(0);
-      await expect(page.getByRole("link", { name: /^receipts$/i })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: /^receipts$/i }).first()).toBeVisible();
     }
   });
 });

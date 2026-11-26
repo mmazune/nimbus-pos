@@ -95,7 +95,7 @@ function Grid({ tiles, layout, phone, onOpen }: { tiles: readonly FloorTile[]; l
       data-floor-columns={phone ? 3 : layout.columns}
     >
       {tiles.map((t) => (
-        <div key={t.id} data-floor-tile={t.state} data-floor-table-id={t.id}>
+        <div key={t.id} data-floor-tile={t.state} data-floor-table-id={t.id} data-operational-table-id={t.id}>
           <Tile tile={t} density={density} onOpen={onOpen} />
         </div>
       ))}

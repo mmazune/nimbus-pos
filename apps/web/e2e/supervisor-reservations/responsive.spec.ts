@@ -18,13 +18,13 @@ test.describe("Supervisor Reservations — responsive", () => {
   });
 
   test("the create dialog fits within the viewport", async ({ page }) => {
-    await page.getByRole("button", { name: /create reservation/i }).click();
-    await expect(page.getByRole("dialog", { name: /create reservation/i })).toBeVisible();
+    await page.getByRole("button", { name: "New reservation" }).click();
+    await expect(page.getByRole("dialog", { name: "New reservation" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 
   test("bottom navigation does not cover the primary action", async ({ page }) => {
-    const create = page.getByRole("button", { name: /create reservation/i });
+    const create = page.getByRole("button", { name: "New reservation" });
     await expect(create).toBeVisible();
     const box = await create.boundingBox();
     const viewport = page.viewportSize();

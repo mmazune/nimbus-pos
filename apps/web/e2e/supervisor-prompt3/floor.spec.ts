@@ -16,8 +16,8 @@ test.describe("Supervisor Floor shell + navigation (locked decisions)", () => {
     await uiLogin(page, "supervisor");
     await page.waitForURL(/\/supervisor\/floor/);
 
-    // Shared OperationalFloor toolbar has a search box.
-    await expect(page.getByRole("searchbox").or(page.getByPlaceholder(/search/i)).first()).toBeVisible();
+    // T1 (26 Nov 2026): the kit Floor's search lives in the header ("Find a table").
+    await expect(page.getByRole("button", { name: /find a table/i }).first()).toBeVisible();
     // Find order sibling control (Supervisor-only, above the shared Floor).
     await expect(page.getByRole("button", { name: /find order/i }).first()).toBeVisible();
     // No API error banner.
