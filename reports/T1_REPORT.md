@@ -68,7 +68,17 @@ Not fixed, for the next pass (all scored, none a fail):
 - Approvals has no "bill after" figure.
 
 ## Gates (final)
-GATES_PLACEHOLDER
+| Gate | Result |
+|---|---|
+| `pnpm verify:web` (web lint, typecheck, `check:ui`) | exit 0: "No ESLint warnings or errors", "check:ui green" (40 files, 0 allowed hits) |
+| Web typecheck | exit 0 |
+| Web build (`next build`) | exit 0 (final build after the last screen change) |
+| Web unit tests | none exist (the `test` script is a stub), so 0 failed |
+| `pnpm check:event` | green (1368 files, 1 pre-existing allow entry) |
+| `git diff --check` | clean |
+| T1 e2e, three runs in a row on a fresh fixture DB each run | 24 passed · 24 passed · 24 passed (`reports/proof/T1/e2e-t1-three-runs-final.txt`) |
+| Regression, the baseline folders at vp-1440x900 | 154 passed, 2 failed, 5 skipped (`reports/proof/T1/regression-final.txt`). Baseline: 151 / 7 / 3. The 2 failures are baseline failures in manager-shell (`navigation-and-landing.spec.ts:96`, `:121`; not T1's surface). The 5 skips are the specs' own skips when the shared demo DB has no pending leave, alert or swap left; 3 of them skipped at baseline for the same reason. |
+| `git diff --stat rebuild/main...HEAD` | 251 files. Outside `apps/web`: `reports/**`, `design/screens/SCREENS.md` (Status cells of T1's ten rows only), and root `package.json` (+1 line `verify:web`). Inside `apps/web`: T1 paths only — `pos-shell`, `floor`, role folders outside the workspaces and order files, `screens/{floor,reservations,me,receipts,till,approvals,shared}`, the pages for those routes, kit header/bars/tile/row/segmented/text/touch header and the new kit `ListTable`, and `e2e`. No `*TableWorkspace*`, `components/waiter/orders`, `screens/order`, T3 kit file, `apps/api` or `packages/db` file is touched. |
 
 ## Left out, and why (nothing faked)
 | What | Why | Brought by |

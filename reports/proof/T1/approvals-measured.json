@@ -7,7 +7,9 @@
     "clipped": [],
     "small": [],
     "tinyText": [],
-    "filled": [],
+    "filled": [
+      "Approve the discount"
+    ],
     "checkedText": 38,
     "checkedTargets": 16
   },
@@ -46,8 +48,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 9,
-    "checkedTargets": 7
+    "checkedText": 16,
+    "checkedTargets": 9
   },
   "approvals-sheet-390": {
     "viewport": "390x844",

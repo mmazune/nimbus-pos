@@ -19,7 +19,9 @@
     "clipped": [],
     "small": [],
     "tinyText": [],
-    "filled": [],
+    "filled": [
+      "Ask for the refund"
+    ],
     "checkedText": 41,
     "checkedTargets": 17
   },
@@ -97,7 +99,9 @@
     "clipped": [],
     "small": [],
     "tinyText": [],
-    "filled": [],
+    "filled": [
+      "Ask for the refund"
+    ],
     "checkedText": 23,
     "checkedTargets": 14
   },
