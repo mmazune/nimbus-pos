@@ -152,6 +152,7 @@ const PERMISSIONS_DATA = [
   // M6 menu + tax permissions
   { action: 'pos:menu:read', description: 'Read menu categories and items' },
   { action: 'pos:menu:write', description: 'Create/update menu categories and items' },
+  { action: 'pos:menu:availability:write', description: 'Mark a menu item sold out or back on, or set a number left (T2 phase 1 / E2)' },
   { action: 'pos:tax:read', description: 'Read tax categories' },
   { action: 'pos:tax:write', description: 'Create/update tax categories' },
   // M8 recipe + cost permissions
@@ -682,6 +683,8 @@ const C21_ACCOUNTING_FINANCE_MANAGER_READ: string[] = [
 
 const ROLE_PERM_MATRIX: Record<string, string[]> = {
   Owner: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'identity:user:write',
     'identity:session:read',
@@ -956,6 +959,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     ...C21_ACCOUNTING_FINANCE_ALL,
   ],
   Manager: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'identity:user:write',
     'identity:session:read',
@@ -1333,6 +1338,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     ...C21_ACCOUNTING_FINANCE_ALL,
   ],
   Supervisor: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'identity:session:read',
     'identity:access-matrix:read',
@@ -1562,6 +1569,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'devices:read',
   ],
   Chef: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'tenancy:branch:read',
     'pos:floor:read',
@@ -1648,6 +1657,8 @@ const ROLE_PERM_MATRIX: Record<string, string[]> = {
     'devices:read',
   ],
   Bartender: [
+    // T2 phase 1 (E2): sold out, back on, a number left
+    'pos:menu:availability:write',
     'identity:user:read',
     'tenancy:branch:read',
     'pos:floor:read',

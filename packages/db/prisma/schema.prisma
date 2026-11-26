@@ -972,12 +972,18 @@ model MenuItem {
     sortOrder        Int          @default(0) @map("sort_order")
     isActive         Boolean      @default(true) @map("is_active")
     metadata         Json?
+    // T2 phase 1 (E2) — offers of the day
+    isOffer          Boolean      @default(false) @map("is_offer")
+    offerPrice       Decimal?     @map("offer_price") @db.Decimal(10, 2)
+    offerNote        String?      @map("offer_note")
     createdAt        DateTime     @default(now()) @map("created_at")
     updatedAt        DateTime     @updatedAt @map("updated_at")
 
     organization      Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
     branch            Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
     category          Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    availability      MenuItemAvailability?
+    availabilityLogs  MenuAvailabilityLog[]
     taxCategory       TaxCategory?        @relation(fields: [taxCategoryId], references: [id], onDelete: SetNull)
     browseGroup       MenuBrowseGroup?    @relation(fields: [browseGroupId], references: [id], onDelete: SetNull)
     browseSubgroup    MenuBrowseSubgroup? @relation(fields: [browseSubgroupId], references: [id], onDelete: SetNull)
@@ -1401,6 +1407,9 @@ model OrderItem {
     voidReason        OrderItemVoidReason?   @map("void_reason")
     voidNote          String?                @map("void_note")
     wasMade           Boolean?               @map("was_made")
+    // T2 phase 1 (E2) — an offer line keeps the normal unit price beside it
+    normalPrice       Decimal?               @map("normal_price") @db.Decimal(10, 2)
+    offerBasePrice    Decimal?               @map("offer_base_price") @db.Decimal(10, 2)
     createdAt         DateTime @default(now()) @map("created_at")
     updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -7236,4 +7245,73 @@ model PrinterRoute {
     @@index([branchId, routeType])
     @@index([printerId])
     @@map("printer_routes")
+}
+
+// ── T2 phase 1 (E2): sold out, back on, a number left ──
+
+enum MenuAvailabilityState {
+    AVAILABLE
+    SOLD_OUT
+}
+
+enum MenuAvailabilitySource {
+    MANUAL
+    COUNT
+}
+
+enum MenuAvailabilityChange {
+    SOLD_OUT
+    AVAILABLE
+    SET_LEFT
+    TAKEN
+    LOW
+    GIVEN_BACK
+    RESET
+}
+
+/// One row per menu item (a menu item belongs to one branch): the hand-set state and the counted-down number.
+model MenuItemAvailability {
+    id         String                 @id @default(cuid())
+    orgId      String                 @map("org_id")
+    branchId   String                 @map("branch_id")
+    menuItemId String                 @unique @map("menu_item_id")
+    state      MenuAvailabilityState  @default(AVAILABLE)
+    source     MenuAvailabilitySource @default(MANUAL)
+    left       Int?
+    lowAt      Int                    @default(5) @map("low_at")
+    since      DateTime               @default(now())
+    byUserId   String?                @map("by_user_id")
+    createdAt  DateTime               @default(now()) @map("created_at")
+    updatedAt  DateTime               @updatedAt @map("updated_at")
+
+    menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+    @@index([branchId])
+    @@map("menu_item_availability")
+}
+
+/// Append-only: every change of a menu item's availability (the sold-out log).
+model MenuAvailabilityLog {
+    id          String                  @id @default(cuid())
+    orgId       String                  @map("org_id")
+    branchId    String                  @map("branch_id")
+    menuItemId  String                  @map("menu_item_id")
+    change      MenuAvailabilityChange
+    fromState   MenuAvailabilityState   @map("from_state")
+    toState     MenuAvailabilityState   @map("to_state")
+    source      MenuAvailabilitySource
+    leftBefore  Int?                    @map("left_before")
+    leftAfter   Int?                    @map("left_after")
+    byUserId    String?                 @map("by_user_id")
+    orderId     String?                 @map("order_id")
+    orderItemId String?                 @map("order_item_id")
+    batchId     String?                 @map("batch_id")
+    createdAt   DateTime                @default(now()) @map("created_at")
+
+    menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+    @@index([branchId, createdAt])
+    @@index([menuItemId, createdAt])
+    @@index([batchId])
+    @@map("menu_availability_logs")
 }
