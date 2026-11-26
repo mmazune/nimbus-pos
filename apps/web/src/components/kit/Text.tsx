@@ -61,10 +61,16 @@ export type TextProps = {
   align?: "start" | "end" | "center";
   as?: ElementType;
   id?: string;
+  /** Keep on one line. A money figure ("− UGX 151,000") always does. */
+  nowrap?: boolean;
   children: ReactNode;
 };
 
-export function Text({ variant, tone, strong = false, align = "start", as, id, children }: TextProps) {
+/** "UGX 18,500", "− 151,000", "+ UGX 2,000": a sign or currency must never sit alone on a line. */
+const MONEY = /^[−+-]?\s*(UGX\s*)?[−+-]?\s*\d[\d,]*(\.\d+)?$/;
+
+export function Text({ variant, tone, strong = false, align = "start", as, id, nowrap = false, children }: TextProps) {
+  const oneLine = nowrap || (typeof children === "string" && MONEY.test(children.trim()));
   const Tag = as ?? (variant === "title" || variant === "titleLg" ? "h1" : variant === "h" ? "h2" : "p");
   return (
     <Tag
@@ -75,6 +81,7 @@ export function Text({ variant, tone, strong = false, align = "start", as, id, c
         tone ? TONE[tone] : "",
         strong ? "font-kit-bold" : "",
         align === "end" ? "text-right" : align === "center" ? "text-center" : "text-left",
+        oneLine ? "whitespace-nowrap flex-none" : "",
       ].join(" ")}
     >
       {children}

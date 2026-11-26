@@ -9,7 +9,7 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function SupervisorFloorPage() {
   return (
-    <SupervisorShell>
+    <SupervisorShell bare>
       <SupervisorFloorScreen />
     </SupervisorShell>
   );

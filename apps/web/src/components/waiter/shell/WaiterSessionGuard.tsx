@@ -41,7 +41,7 @@ export function WaiterSessionGuard({ children }: WaiterSessionGuardProps) {
       <main className="flex min-h-screen items-center justify-center bg-page p-8">
         <BlockedState
           title="Waiter workspace only"
-          description="This frontend MVP currently supports waiter workspace only."
+          description="Sign in with a waiter PIN to use it."
           action={
             <Button
               variant="secondary"

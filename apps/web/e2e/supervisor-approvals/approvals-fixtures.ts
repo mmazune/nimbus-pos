@@ -59,7 +59,9 @@ export async function apiCreatePendingDiscount(): Promise<{ discountId: string; 
 
   // Add items until the subtotal comfortably exceeds the 5000 threshold.
   let subtotal = 0;
-  for (let i = 0; i < 6 && subtotal <= 5000; i += 1) {
+  // T1: the demo org's approval limit is UGX 150,000 (org_settings), not the 5,000 default,
+  // so the bill must pass it for the discount to wait for approval.
+  for (let i = 0; i < 8 && subtotal <= 160000; i += 1) {
     await fetch(`${CFG.api}/api/pos/orders/${orderId}/items`, {
       method: "POST",
       headers: h(token),
@@ -72,13 +74,31 @@ export async function apiCreatePendingDiscount(): Promise<{ discountId: string; 
   const discount = await fetch(`${CFG.api}/api/pos/orders/${orderId}/discounts`, {
     method: "POST",
     headers: h(token),
-    body: JSON.stringify({ type: "FIXED", value: Math.max(5001, Math.floor(subtotal)), reason: "P5B1-QA pending discount" }),
+    body: JSON.stringify({ type: "FIXED", value: Math.min(160000, Math.floor(subtotal)), reason: "P5B1-QA pending discount" }),
   }).then((r) => r.json());
 
   return { discountId: discount.id as string, orderId };
 }
 
 /** First seeded (P5B2-QA) anomaly id currently in the given status, or null. */
+/**
+ * A pending leave request from the waiter, so the leave specs never depend on demo rows
+ * that an earlier spec in this folder has already decided. Dates are far ahead and vary
+ * per call so two requests never overlap.
+ */
+export async function apiCreatePendingLeave(reason: string): Promise<void> {
+  const token = await apiLogin("waiter");
+  const me = await fetch(`${CFG.api}/api/auth/me`, { headers: h(token) }).then((r) => r.json());
+  const offset = 400 + Math.floor(Math.random() * 3000);
+  const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+  const res = await fetch(`${CFG.api}/api/hr/leave`, {
+    method: "POST",
+    headers: h(token),
+    body: JSON.stringify({ employeeId: me?.employee?.id, leaveType: "ANNUAL", startsAt: `${day(offset)}T00:00:00.000Z`, endsAt: `${day(offset)}T23:59:00.000Z`, reason }),
+  });
+  if (!res.ok) throw new Error(`leave request not created: ${res.status}`);
+}
+
 export async function apiFirstAnomalyId(status: "OPEN" | "ACKNOWLEDGED"): Promise<string | null> {
   const token = await apiLogin("supervisor");
   const res = await fetch(`${CFG.api}/api/analytics/anomalies?status=${status}&limit=50`, { headers: h(token) }).then(
@@ -91,49 +111,52 @@ export async function apiFirstAnomalyId(status: "OPEN" | "ACKNOWLEDGED"): Promis
 
 /** Deep-link straight to a specific approval's detail (deterministic, no queue navigation). */
 export async function openApprovalDetail(page: Page, domain: string, id: string) {
-  await page.goto(`/supervisor/approvals?domain=${domain}&selDomain=${domain}&selId=${id}`);
-  // The detail only mounts once the bounded needs-action query resolves — give the (possibly
-  // cold-starting) query headroom before asserting the workspace opened.
+  await page.goto(`/supervisor/approvals?id=${domain}:${id}`);
   await page.waitForLoadState("networkidle").catch(() => {});
-  await expect(page.getByRole("button", { name: /back to list/i })).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator("[data-approval]")).toBeVisible({ timeout: 45_000 });
 }
 
-/** Navigate to Approvals via the UI nav (not a hard goto) and wait for it to settle. */
+/** The Approvals page, on Waiting. */
 export async function gotoApprovals(page: Page) {
   await page.goto("/supervisor/approvals");
   await expect(page).toHaveURL(/\/supervisor\/approvals/);
-  await expect(page.getByRole("tab", { name: /needs action/i })).toBeVisible();
-  await page.waitForLoadState("networkidle").catch(() => {});
+  // the count in the tab appears once every list has been read, so a row count after it is real
+  await expect(page.getByRole("tab", { name: /^Waiting · \d+/ })).toBeVisible({ timeout: 30_000 });
 }
 
-/** Filter the queue to a domain by clicking its chip. */
+const WORD: Record<string, string> = { discounts: "Discount", leave: "Leave", "shift swaps": "Shift swap", anomalies: "Alert" };
+
+/** T1: no domain chips any more; the rows of one kind are those whose title starts with its word. */
+export function domainRows(page: Page, label: RegExp) {
+  const key = label.source.replace(/[\^$]/g, "").toLowerCase();
+  const word = WORD[key] ?? key;
+  return page.getByRole("button", { name: new RegExp(`^${word} · `) });
+}
+
+/** Kept for older callers: a no-op, there is nothing to filter by. */
 export async function filterDomain(page: Page, label: RegExp) {
-  await page.getByRole("button", { name: label }).click();
+  void page;
+  void label;
 }
 
-/** The queue list of clickable rows. */
+/** Every row of the list on screen. */
 export function queueRows(page: Page) {
-  return page.getByRole("list", { name: /approval queue/i }).getByRole("button");
+  return page.locator("section[aria-label='Waiting'], section[aria-label='Done today'], section[aria-label='History']").getByRole("button");
 }
 
-/**
- * Click through queue rows until the detail panel exposes a button matching `action`.
- * Returns true if found within `max` rows. Used to locate an OPEN anomaly (Acknowledge) or a
- * PENDING shift-swap (Reject) deterministically regardless of queue order.
- */
-export async function selectRowWithAction(page: Page, action: RegExp, max = 8): Promise<boolean> {
-  const rows = queueRows(page);
+export async function selectRowWithAction(page: Page, action: RegExp, max = 8, rows = queueRows(page)): Promise<boolean> {
   const n = Math.min(await rows.count(), max);
   for (let i = 0; i < n; i += 1) {
     await rows.nth(i).click();
-    const btn = page.getByRole("button", { name: action });
-    if (await btn.count()) {
-      try {
-        await btn.first().waitFor({ state: "visible", timeout: 4000 });
-        return true;
-      } catch {
-        /* keep scanning */
-      }
+    // wait for the panel to draw before asking whether it has the action (count() does not wait)
+    const panel = page.locator("[data-approval]");
+    await panel.first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+    const btn = panel.getByRole("button", { name: action });
+    try {
+      await btn.first().waitFor({ state: "visible", timeout: 4000 });
+      return true;
+    } catch {
+      /* keep scanning */
     }
   }
   return false;

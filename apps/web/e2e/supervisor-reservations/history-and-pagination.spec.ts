@@ -10,24 +10,17 @@ test.describe("Supervisor Reservations — history & pagination", () => {
     await expect(page).toHaveURL(/view=history/);
   });
 
-  test("history exposes terminal filters and no active lifecycle actions", async ({ page }) => {
-    // Terminal status filter is present.
-    await expect(page.getByRole("combobox").first()).toBeVisible();
-
-    // Date range controls exist for history.
-    await expect(page.getByRole("textbox", { name: "From" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "To" })).toBeVisible();
-
-    // Selecting the first history row (if any) shows a read-only workspace.
-    const firstRow = page.getByRole("region", { name: /reservation views|/ }).locator("button");
-    const rows = page.locator("#supervisor-reservation-list-region li button");
+  // T1 (26 Nov 2026): the Reservations screen was rebuilt to the drawing Reservations-Supervisor; same endpoints and transitions.
+  // The drawing has no history filters (status, from/to); they were removed and are listed in the T1 report.
+  test("history shows finished bookings and no active lifecycle actions", async ({ page }) => {
+    const rows = page.getByRole("region", { name: "History" }).getByRole("button");
     if (await rows.count()) {
+      await expect(rows.first()).toContainText(/Completed|Cancelled|No-show/);
       await rows.first().click();
-      // A terminal (history) reservation opens a read-only workspace — assert that
-      // directly rather than counting action buttons across the whole page.
-      await expect(page.getByText(/it is read-only/i)).toBeVisible();
+      const panel = page.locator("[data-res-panel]");
+      await expect(panel).toBeVisible();
+      await expect(panel.getByRole("button", { name: /Confirm booking|Seat at|Cancel booking|Complete booking|No-show|Change table/ })).toHaveCount(0);
     }
-    void firstRow;
   });
 
   test("pagination controls keep view + page state in the URL", async ({ page }) => {

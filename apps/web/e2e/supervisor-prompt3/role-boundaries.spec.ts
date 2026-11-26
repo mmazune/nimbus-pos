@@ -13,11 +13,11 @@ test.describe("Cross-role boundaries", () => {
   test("Cashier lands on Cashier Floor with the Cashier nav (Floor/Till/Me)", async ({ page }) => {
     await uiLogin(page, "cashier");
     await page.waitForURL(/\/cashier\/floor/, { timeout: 30_000 });
-    for (const label of ["Floor", "Till", "Me"]) {
+    // T1 (26 Nov 2026, decision R9): Receipts is a bar section again; Queue stays a hidden route.
+    for (const label of ["Floor", "Receipts", "Till", "Me"]) {
       await expect(page.getByRole("link", { name: new RegExp(`^${label}$`, "i") }).first()).toBeVisible();
     }
     await expect(page.getByRole("link", { name: /^queue$/i })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /^receipts$/i })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /find order/i })).toHaveCount(0);
   });
 

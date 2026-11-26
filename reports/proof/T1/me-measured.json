@@ -1,0 +1,125 @@
+{
+  "myDay": {
+    "before": {
+      "sales": "UGX 9,947,200",
+      "served": "30"
+    },
+    "after": {
+      "sales": "UGX 9,989,200",
+      "served": "31"
+    },
+    "orderTotal": "42000"
+  },
+  "waiter-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 28,
+    "checkedTargets": 9
+  },
+  "waiter-leave-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Send the request"
+    ],
+    "checkedText": 40,
+    "checkedTargets": 19
+  },
+  "waiter-end-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "End my shift"
+    ],
+    "checkedText": 36,
+    "checkedTargets": 12
+  },
+  "cashier-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 27,
+    "checkedTargets": 10
+  },
+  "supervisor-me-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 22,
+    "checkedTargets": 10
+  },
+  "waiter-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 24,
+    "checkedTargets": 7
+  },
+  "cashier-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 19,
+    "checkedTargets": 7
+  },
+  "supervisor-me-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Log out"
+    ],
+    "checkedText": 19,
+    "checkedTargets": 8
+  }
+}

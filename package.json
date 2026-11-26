@@ -24,7 +24,8 @@
         "db:demo:import": "corepack pnpm@8.15.0 --filter @nimbus-pos/db db:demo:import",
         "db:studio": "pnpm --filter @nimbus-pos/db db:studio",
         "check:event": "node tools/check-event.mjs",
-        "check:ui": "node tools/check-ui.mjs"
+        "check:ui": "node tools/check-ui.mjs",
+        "verify:web": "pnpm --filter @nimbus-pos/web lint && pnpm --filter @nimbus-pos/web typecheck && node tools/check-ui.mjs"
     },
     "devDependencies": {
         "prettier": "^3.2.5",

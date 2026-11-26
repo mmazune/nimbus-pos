@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { OperationalFloor } from "@/components/floor/OperationalFloor";
 import { Button, ErrorState } from "@/components/ui";
 import { OrderScreen } from "@/screens/order/OrderScreen";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
@@ -12,7 +11,15 @@ import {
   normalizeWaiterTables,
   type WaiterTableViewModel,
 } from "@/lib/waiter/floor-model";
-import { loadWaiterFloorData, type WaiterFloorData } from "@/lib/waiter/floor-api";
+import {
+  listWaiterOperationalReservations,
+  listWaiterTables,
+  type WaiterFloorData,
+  type WaiterOrderApi as FloorWaiterOrder,
+} from "@/lib/waiter/floor-api";
+import { FloorScreen } from "@/screens/floor/FloorScreen";
+import { errorWords } from "@/screens/shared/words";
+import { loadAllActiveOrders } from "@/screens/floor/floor-data";
 import { loadWaiterMenuWorkspace } from "@/lib/waiter/order-api";
 import { seatReservation } from "@/lib/waiter/reservation-api";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
@@ -49,20 +56,20 @@ function getErrorCopy(error: unknown) {
 
     return {
       title: "Could not load floor",
-      description: error.message,
+      description: errorWords(error),
     };
   }
 
   return {
     title: "Could not load floor",
-    description: error instanceof Error ? error.message : "Try again when the connection is stable.",
+    description: errorWords(error, "Try again when the connection is stable."),
   };
 }
 
 export function WaiterFloorScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { accessToken, branchId, branchName, clearSession, user } = useAuth();
+  const { accessToken, branchId, clearSession, user } = useAuth();
   const activeShift = useActiveShift();
   const [selectionOverride, setSelectionOverride] = useState<string | null>();
   const selectionPushedRef = useRef(false);
@@ -70,9 +77,19 @@ export function WaiterFloorScreen() {
   const floorQuery = useQuery({
     queryKey: ["waiter", "floor", branchId],
     enabled: Boolean(accessToken && branchId),
-    queryFn: () => loadWaiterFloorData(accessToken as string, branchId as string),
+    queryFn: async (): Promise<WaiterFloorData> => {
+      const token = accessToken as string;
+      const branch = branchId as string;
+      const [tables, activeOrders, reservations] = await Promise.all([
+        listWaiterTables(token, branch),
+        loadAllActiveOrders<FloorWaiterOrder>(token, branch),
+        listWaiterOperationalReservations(token, branch),
+      ]);
+      return { tables, activeOrders, reservations };
+    },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
@@ -103,6 +120,7 @@ export function WaiterFloorScreen() {
   );
 
   const shiftIsOpen = Boolean(activeShift.data);
+  const viewer = useMemo(() => ({ userId: user?.id, ownership: "waiter" as const }), [user?.id]);
   const routeTableId = typeof router.query.tableId === "string" ? router.query.tableId : undefined;
   const selectedTableId = selectionOverride === undefined ? routeTableId : selectionOverride || undefined;
   useEffect(() => {
@@ -181,16 +199,18 @@ export function WaiterFloorScreen() {
         </div>
       ) : null}
 
-      <OperationalFloor
-        branchName={branchName}
-        readinessLabel={shiftIsOpen ? "Shift open" : "Shift not started"}
-        readinessTone={shiftIsOpen ? "success" : "warning"}
-        tables={tables}
+      <FloorScreen
+        role="waiter"
+        source={floorQuery.data}
+        readAt={floorQuery.dataUpdatedAt}
+        viewer={viewer}
         isLoading={floorQuery.isLoading}
         error={errorCopy}
-        selectedTableId={selectedTableId}
-        onSelectTable={handleSelectTable}
         onRetry={() => void floorQuery.refetch()}
+        onOpenTable={(tableId) => {
+          const table = tables.find((entry) => entry.id === tableId);
+          if (table) handleSelectTable(table);
+        }}
       />
 
       {selectedAction && selectedTable ? (

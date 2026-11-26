@@ -7,14 +7,13 @@ import { uiLogin } from "../supervisor-prompt3/fixtures";
  * direct URL, never in navigation, never redirected, never mounted on Floor.
  */
 test.describe("Cashier legacy compatibility routes", () => {
-  test("Queue and Receipts still render by direct URL and are absent from nav", async ({ page }) => {
+  // T1 (26 Nov 2026, decision R9): Receipts is in the bar again; Queue stays a hidden route.
+  test("Queue and Receipts still render by direct URL; Queue is absent from nav", async ({ page }) => {
     await uiLogin(page, "cashier");
     await page.waitForURL(/\/cashier\/floor/);
 
     // Not in navigation.
-    for (const label of ["Queue", "Receipts"]) {
-      await expect(page.getByRole("link", { name: new RegExp(`^${label}$`, "i") })).toHaveCount(0);
-    }
+    await expect(page.getByRole("link", { name: /^queue$/i })).toHaveCount(0);
 
     await page.goto("/cashier/queue");
     await expect(page).toHaveURL(/\/cashier\/queue/);
@@ -25,10 +24,10 @@ test.describe("Cashier legacy compatibility routes", () => {
     await expect(page.locator("body")).not.toContainText(/404|not found/i);
   });
 
-  test("nav is exactly Floor / Till / Me", async ({ page }) => {
+  test("nav is exactly Floor / Receipts / Till / Me", async ({ page }) => {
     await uiLogin(page, "cashier");
     await page.waitForURL(/\/cashier\/floor/);
-    for (const label of ["Floor", "Till", "Me"]) {
+    for (const label of ["Floor", "Receipts", "Till", "Me"]) {
       await expect(page.getByRole("link", { name: new RegExp(`^${label}$`, "i") }).first()).toBeVisible();
     }
   });

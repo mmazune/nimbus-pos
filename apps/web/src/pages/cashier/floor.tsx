@@ -9,7 +9,7 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function CashierFloorPage() {
   return (
-    <CashierShell>
+    <CashierShell bare>
       <CashierFloorScreen />
     </CashierShell>
   );

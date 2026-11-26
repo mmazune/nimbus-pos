@@ -25,13 +25,15 @@ test.describe.serial("Supervisor Reservations — privacy & boundaries", () => {
     void phone;
 
     await gotoReservations(page);
-    // The list region must not render a raw email address.
-    const listRegion = page.locator("#supervisor-reservation-list-region");
+    // T1 (26 Nov 2026): the Reservations screen was rebuilt to the drawing Reservations-Supervisor; same endpoints and transitions.
+    // The list must not render a raw email address or the phone.
+    const listRegion = page.getByRole("region", { name: "Arriving" });
     await expect(listRegion.getByText(/@/)).toHaveCount(0);
+    await expect(listRegion.getByText("+256700000000")).toHaveCount(0);
 
-    // Contact detail appears only in the selected workspace.
+    // The phone appears only in the selected booking's panel.
     await openReservationByName(page, res.customerName);
-    await expect(page.getByText(/guest contact/i)).toBeVisible();
+    await expect(page.locator("[data-res-panel]").getByText("+256700000000")).toBeVisible();
   });
 
   test("no out-of-scope surfaces (payment, deposit recording, order close)", async ({ page }) => {

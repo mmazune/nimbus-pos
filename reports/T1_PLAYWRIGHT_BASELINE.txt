@@ -1,0 +1,369 @@
+
+Running 161 tests using 1 worker
+
+  ✓    1 [vp-1440x900] › e2e/cashier-floor/cross-role-c2-regression.spec.ts:10:7 › Cashier C2 cross-role regression › Waiter table selection opens the menu/order flow, not a Cashier bill workspace (1.1s)
+  ✓    2 [vp-1440x900] › e2e/cashier-floor/cross-role-c2-regression.spec.ts:22:7 › Cashier C2 cross-role regression › Supervisor table selection opens the control workspace, not a Cashier bill workspace (893ms)
+  ✓    3 [vp-1440x900] › e2e/cashier-floor/cross-role-c2-regression.spec.ts:29:7 › Cashier C2 cross-role regression › Cashier nav and Floor are Cashier-only (no Supervisor/Waiter controls) (936ms)
+  ✓    4 [vp-1440x900] › e2e/cashier-floor/find-bill-foundation.spec.ts:12:7 › Cashier Find bill › opens a bounded lookup and routes a result into the settlement workspace (1.6s)
+  ✓    5 [vp-1440x900] › e2e/cashier-floor/find-bill-foundation.spec.ts:31:7 › Cashier Find bill › Find bill is not present for Waiter or Supervisor (1.6s)
+  ✓    6 [vp-1440x900] › e2e/cashier-floor/hidden-legacy-routes.spec.ts:10:7 › Cashier hidden compatibility routes › /cashier/queue still loads directly (not redirected) (1.1s)
+  ✓    7 [vp-1440x900] › e2e/cashier-floor/hidden-legacy-routes.spec.ts:18:7 › Cashier hidden compatibility routes › /cashier/receipts still loads directly (not redirected) (967ms)
+  ✓    8 [vp-1440x900] › e2e/cashier-floor/hidden-legacy-routes.spec.ts:26:7 › Cashier hidden compatibility routes › no shell nav link points to Queue or Receipts on any Cashier surface (1.0s)
+  ✓    9 [vp-1440x900] › e2e/cashier-floor/legacy-compatibility-regression.spec.ts:10:7 › Cashier legacy compatibility routes › Queue and Receipts still render by direct URL and are absent from nav (921ms)
+  ✓   10 [vp-1440x900] › e2e/cashier-floor/legacy-compatibility-regression.spec.ts:28:7 › Cashier legacy compatibility routes › nav is exactly Floor / Till / Me (774ms)
+  ✓   11 [vp-1440x900] › e2e/cashier-floor/navigation-and-default-route.spec.ts:9:7 › Cashier navigation + default route › login lands on /cashier/floor with nav Floor/Till/Me (no Queue/Receipts/Orders) (825ms)
+  ✓   12 [vp-1440x900] › e2e/cashier-floor/navigation-and-default-route.spec.ts:22:7 › Cashier navigation + default route › bare /cashier redirects to /cashier/floor (818ms)
+  ✓   13 [vp-1440x900] › e2e/cashier-floor/navigation-and-default-route.spec.ts:30:7 › Cashier navigation + default route › Floor nav item is active/current on the Floor route (778ms)
+  ✓   14 [vp-1440x900] › e2e/cashier-floor/payment-state-readonly.spec.ts:12:7 › Cashier payment state (read-only) › an unpaid bill shows a truthful, action-free payment state (1.2s)
+  ✓   15 [vp-1440x900] › e2e/cashier-floor/performance-request-count.spec.ts:11:7 › Cashier Floor request budget › default Floor load makes no receipt-history or per-table payment request (3.3s)
+  ✓   16 [vp-1440x900] › e2e/cashier-floor/request-count-c2.spec.ts:12:7 › Cashier C2 request budget › opening a table bill stays within the budget (3.2s)
+  ✓   17 [vp-1440x900] › e2e/cashier-floor/request-count-c3.spec.ts:43:7 › Cashier settlement request budget (C3) › a close mutation triggers only narrow, bounded re-reads (4.4s)
+  ✓   18 [vp-1440x900] › e2e/cashier-floor/responsive-c2.spec.ts:12:7 › Cashier C2 responsive › the settlement workspace does not overflow and keeps the bottom nav (1.2s)
+  ✓   19 [vp-1440x900] › e2e/cashier-floor/responsive-c2.spec.ts:21:7 › Cashier C2 responsive › the Find bill dialog fits the viewport (866ms)
+  ✓   20 [vp-1440x900] › e2e/cashier-floor/responsive.spec.ts:10:7 › Cashier Floor responsive › no horizontal overflow on Floor / Till / Me and the bottom nav is present (1.0s)
+  ✓   21 [vp-1440x900] › e2e/cashier-floor/responsive.spec.ts:20:7 › Cashier Floor responsive › selected-table bill workspace does not overflow horizontally (978ms)
+  ✓   22 [vp-1440x900] › e2e/cashier-floor/role-boundaries.spec.ts:11:7 › Cashier role boundaries › Cashier Floor exposes no Supervisor/Waiter order-control affordances (851ms)
+  ✓   23 [vp-1440x900] › e2e/cashier-floor/role-boundaries.spec.ts:19:7 › Cashier role boundaries › selecting a Cashier table opens the bill workspace, not a menu or control workspace (899ms)
+  ✓   24 [vp-1440x900] › e2e/cashier-floor/role-boundaries.spec.ts:29:7 › Cashier role boundaries › Waiter nav remains Floor/Reservations/Me (unchanged) (782ms)
+  ✓   25 [vp-1440x900] › e2e/cashier-floor/role-boundaries.spec.ts:37:7 › Cashier role boundaries › Supervisor nav remains Floor/Reservations/Approvals/Me (unchanged) (830ms)
+  ✓   26 [vp-1440x900] › e2e/cashier-floor/selected-bill-url-state.spec.ts:11:7 › Cashier selected-bill URL state › refresh restores the selected bill; Back returns to Floor (1.4s)
+  ✓   27 [vp-1440x900] › e2e/cashier-floor/selected-bill-url-state.spec.ts:28:7 › Cashier selected-bill URL state › invalid orderId fails safe without showing another bill (896ms)
+  ✓   28 [vp-1440x900] › e2e/cashier-floor/settlement-fail-closed.spec.ts:22:7 › Cashier settlement — fail closed › an unavailable payment summary blocks payment and split without claiming unpaid (2.6s)
+  ✓   29 [vp-1440x900] › e2e/cashier-floor/settlement-fail-closed.spec.ts:48:7 › Cashier settlement — fail closed › a closed bill exposes no settlement control (2.0s)
+  ✓   30 [vp-1440x900] › e2e/cashier-floor/settlement-fail-closed.spec.ts:75:7 › Cashier settlement — fail closed › a non-SERVED bill states the cash-close precondition instead of offering it (1.4s)
+  ✓   31 [vp-1440x900] › e2e/cashier-floor/settlement-partial-payment.spec.ts:26:7 › Cashier settlement — partial payment then remainder › a partial reference payment leaves a canonical remaining balance that cash then closes (2.7s)
+  ✓   32 [vp-1440x900] › e2e/cashier-floor/settlement-payment-cash-close.spec.ts:25:7 › Cashier settlement — cash payment and close › a full cash payment closes the bill and the workspace tells the truth (2.4s)
+  ✓   33 [vp-1440x900] › e2e/cashier-floor/settlement-split-execution.spec.ts:17:7 › Cashier settlement — split execution › an equal split records a truthful allocation the cashier can then part-pay (2.0s)
+  ✓   34 [vp-1440x900] › e2e/cashier-floor/settlement-workspace-scope.spec.ts:17:7 › Cashier settlement workspace scope › shows the canonical sections and no out-of-scope controls (1.4s)
+  ✓   35 [vp-1440x900] › e2e/cashier-floor/shared-floor-parity.spec.ts:11:7 › Cashier shared Floor parity › shared toolbar (search + status filters) and table grid render (906ms)
+  ✓   36 [vp-1440x900] › e2e/cashier-floor/shared-floor-parity.spec.ts:23:7 › Cashier shared Floor parity › Cashier exposes its Find bill sibling but not Supervisor's Find order (C2) (841ms)
+  ✓   37 [vp-1440x900] › e2e/cashier-floor/shared-floor-parity.spec.ts:32:7 › Cashier shared Floor parity › Floor cards expose no guest phone/email/receipt reference (791ms)
+  ✓   38 [vp-1440x900] › e2e/cashier-floor/split-child-selection.spec.ts:13:7 › Cashier split / multi-bill representation › distinct payable bills are individually selectable (1.5s)
+  ✓   39 [vp-1440x900] › e2e/cashier-floor/table-selection-routing.spec.ts:17:7 › Cashier table selection routing › selecting a table writes tableId and opens a read-only bill workspace (1.0s)
+  ✓   40 [vp-1440x900] › e2e/cashier-floor/table-selection-routing.spec.ts:31:7 › Cashier table selection routing › refresh preserves the selected table (1.1s)
+  ✓   41 [vp-1440x900] › e2e/cashier-floor/table-selection-routing.spec.ts:43:7 › Cashier table selection routing › Back clears selection, Forward restores it (1.0s)
+  ✓   42 [vp-1440x900] › e2e/cashier-floor/table-selection-routing.spec.ts:57:7 › Cashier table selection routing › invalid/cross-branch tableId fails safe (Table unavailable, no crash) (950ms)
+  ✓   43 [vp-1440x900] › e2e/cashier-floor/tableless-takeaway-selection.spec.ts:11:7 › Cashier tableless / takeaway bill › a takeaway bill opens by orderId with no tableId (1.6s)
+  ✓   44 [vp-1440x900] › e2e/cashier-floor/till-and-me-regression.spec.ts:9:7 › Cashier Till + Me regression › Till is reachable from the shell nav (1.1s)
+  ✓   45 [vp-1440x900] › e2e/cashier-floor/till-and-me-regression.spec.ts:18:7 › Cashier Till + Me regression › Me is reachable and shows shared logout (1.2s)
+  ✓   46 [vp-1440x900] › e2e/cashier-floor/till-readiness.spec.ts:11:7 › Cashier settlement readiness › shows shift/till readiness with an Open Till link and no auto-navigation (1.4s)
+  ✓   47 [vp-1440x900] › e2e/cashier-floor/zero-one-multiple-bill-resolution.spec.ts:11:7 › Cashier table→bill resolution › exactly one payable bill auto-resolves into the settlement workspace (1.3s)
+  ✓   48 [vp-1440x900] › e2e/cashier-floor/zero-one-multiple-bill-resolution.spec.ts:23:7 › Cashier table→bill resolution › multiple payable bills show an explicit selector (no silent first-pick) (1.4s)
+  ✓   49 [vp-1440x900] › e2e/kit/kit.spec.ts:79:7 › kit at 1280 × 800 › sizes match the drawings (599ms)
+  ✓   50 [vp-1440x900] › e2e/kit/kit.spec.ts:173:7 › kit at 1280 × 800 › page rules hold at 1280 × 800 (575ms)
+  ✓   51 [vp-1440x900] › e2e/kit/kit.spec.ts:181:7 › kit at 1280 × 800 › roomy wall: 32 tiles fit 1280 × 800 with no scrolling (609ms)
+  ✓   52 [vp-1440x900] › e2e/kit/kit.spec.ts:232:7 › compact wall at 1024 × 768 › 35 compact tiles fit 1024 × 768 with no scrolling (523ms)
+  ✓   53 [vp-1440x900] › e2e/kit/kit.spec.ts:250:7 › kit at 390 × 844 › page rules and phone sizes hold at 390 × 844 (844ms)
+  ✓   54 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:16:7 › Manager Operations — tables (shared floor, read-only) › renders the SHARED operational floor, unforked (994ms)
+  ✓   55 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:44:7 › Manager Operations — tables (shared floor, read-only) › selecting a table opens a read-only panel with no table mutation (1.1s)
+  ✓   56 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:71:7 › Manager Operations — tables (shared floor, read-only) › discloses that there is no branch-wide tills or shifts list (898ms)
+  ✓   57 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:77:7 › Manager Operations — tables (shared floor, read-only) › the floor snapshot is exactly three bounded, branch-scoped reads (2.3s)
+  ✓   58 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:98:7 › Manager Operations — reservations (read-only) › renders the active scope with no lifecycle action (1.1s)
+  ✓   59 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:116:7 › Manager Operations — reservations (read-only) › switching to history is a real server read (1.1s)
+  ✓   60 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:130:7 › Manager Operations — reservations (read-only) › guest contact details never reach the page (908ms)
+  ✓   61 [vp-1440x900] › e2e/manager-operations/tables-and-reservations.spec.ts:165:7 › Manager Operations — reservations (read-only) › every reservation read is bounded and branch-scoped (847ms)
+  ✓   62 [vp-1440x900] › e2e/manager-shell/branch-switcher.spec.ts:17:7 › Manager branch switcher › lists the manager's four active branch memberships (787ms)
+  ✓   63 [vp-1440x900] › e2e/manager-shell/branch-switcher.spec.ts:31:7 › Manager branch switcher › the switcher has an accessible label (675ms)
+  ✓   64 [vp-1440x900] › e2e/manager-shell/branch-switcher.spec.ts:37:7 › Manager branch switcher › switching branch persists across a reload (971ms)
+  ✓   65 [vp-1440x900] › e2e/manager-shell/branch-switcher.spec.ts:59:7 › Manager branch switcher › switching branch changes X-Branch-Id on subsequent API requests (858ms)
+  ✓   66 [vp-1440x900] › e2e/manager-shell/branch-switcher.spec.ts:97:7 › Manager branch switcher › the readiness strip reflects the selected branch (839ms)
+  ✓   67 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:14:7 › Manager top-nav navigation + landing › manager login lands on /manager/overview (766ms)
+  ✓   68 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:21:7 › Manager top-nav navigation + landing › the module bar is exactly Overview/Operations/Staff/Reports/Accounting/Settings/Me (817ms)
+  ✓   69 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:38:7 › Manager top-nav navigation + landing › Overview and Me navigate directly — no dropdown (999ms)
+  ✓   70 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:73:9 › Manager top-nav navigation + landing › Operations opens a dropdown and navigates through its real link (1.1s)
+  ✓   71 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:73:9 › Manager top-nav navigation + landing › Staff opens a dropdown and navigates through its real link (1.1s)
+  ✓   72 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:73:9 › Manager top-nav navigation + landing › Reports opens a dropdown and navigates through its real link (1.1s)
+  ✓   73 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:73:9 › Manager top-nav navigation + landing › Settings opens a dropdown and navigates through its real link (1.0s)
+  ✘   74 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:96:7 › Manager top-nav navigation + landing › not-yet rows inside a dropdown are inert, never a live link (15.8s)
+  ✓   75 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:114:7 › Manager top-nav navigation + landing › bare /manager redirects to /manager/overview (940ms)
+  ✘   76 [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:121:7 › Manager top-nav navigation + landing › foundation pages state the boundary instead of showing fabricated data (15.8s)
+  ✓   77 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:16:9 › Manager role boundaries › waiter cannot open /manager/overview (954ms)
+  ✓   78 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:16:9 › Manager role boundaries › cashier cannot open /manager/overview (874ms)
+  ✓   79 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:16:9 › Manager role boundaries › supervisor cannot open /manager/overview (862ms)
+  ✓   80 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:36:7 › Manager role boundaries › /login?reason=manager_only states the manager-only boundary (359ms)
+  ✓   81 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:54:9 › Manager role boundaries › manager cannot open the waiter workspace (880ms)
+  ✓   82 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:54:9 › Manager role boundaries › manager cannot open the cashier workspace (825ms)
+  ✓   83 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:54:9 › Manager role boundaries › manager cannot open the supervisor workspace (941ms)
+  ✓   84 [vp-1440x900] › e2e/manager-shell/role-boundaries.spec.ts:62:7 › Manager role boundaries › the manager workspace exposes no operational write affordance in M-P1 (1.8s)
+  ✓   85 [vp-1440x900] › e2e/manager-shell/shell-parity.spec.ts:12:7 › Manager shared-shell parity (top nav) › manager renders the shared shell regions, the top nav, and the brand logomark (1.0s)
+  ✓   86 [vp-1440x900] › e2e/manager-shell/shell-parity.spec.ts:35:7 › Manager shared-shell parity (top nav) › no manager surface overflows horizontally at 1024x768 (1.5s)
+  ✓   87 [vp-1440x900] › e2e/manager-shell/shell-parity.spec.ts:45:7 › Manager shared-shell parity (top nav) › OD-4: below the xl breakpoint the module bar collapses to a single Menu control (891ms)
+  ✓   88 [vp-1440x900] › e2e/manager-shell/shell-parity.spec.ts:69:9 › Manager shared-shell parity (top nav) › waiter still renders the byte-identical bottom-nav shell (header, no top nav, no switcher) (847ms)
+  ✓   89 [vp-1440x900] › e2e/manager-shell/shell-parity.spec.ts:69:9 › Manager shared-shell parity (top nav) › cashier still renders the byte-identical bottom-nav shell (header, no top nav, no switcher) (860ms)
+  ✓   90 [vp-1440x900] › e2e/manager-shell/shell-parity.spec.ts:69:9 › Manager shared-shell parity (top nav) › supervisor still renders the byte-identical bottom-nav shell (header, no top nav, no switcher) (827ms)
+  ✓   91 [vp-1440x900] › e2e/manager-shell/topnav-keyboard.spec.ts:13:7 › Manager top-nav keyboard operation › ArrowRight/ArrowLeft/Home/End move focus across the menubar (roving tabindex) (907ms)
+  ✓   92 [vp-1440x900] › e2e/manager-shell/topnav-keyboard.spec.ts:35:7 › Manager top-nav keyboard operation › Enter/Space opens a dropdown, ArrowDown moves through items, Escape returns focus to the trigger (951ms)
+  ✓   93 [vp-1440x900] › e2e/manager-shell/topnav-keyboard.spec.ts:58:7 › Manager top-nav keyboard operation › clicking outside a dropdown closes it (959ms)
+  ✓   94 [vp-1440x900] › e2e/manager-shell/topnav-keyboard.spec.ts:70:7 › Manager top-nav keyboard operation › a route change closes any open dropdown (933ms)
+  ✓   95 [vp-1440x900] › e2e/manager-shell/topnav-keyboard.spec.ts:86:7 › Manager top-nav keyboard operation › the identity/logout menu is fully keyboard operable (994ms)
+  ✓   96 [vp-1440x900] › e2e/supervisor-approvals/all-domains-consolidated.spec.ts:7:7 › Approvals — consolidated four-domain closure › all four domains filter cleanly across Needs action (1.9s)
+  ✓   97 [vp-1440x900] › e2e/supervisor-approvals/all-domains-consolidated.spec.ts:27:7 › Approvals — consolidated four-domain closure › Resolved omits discounts but supports leave / shift-swap / anomaly (1.6s)
+  -   98 [vp-1440x900] › e2e/supervisor-approvals/anomaly-acknowledge-resolve.spec.ts:12:7 › Approvals — anomaly acknowledge + resolve › full lifecycle: acknowledge (stays actionable) then resolve (note required)
+  ✓   99 [vp-1440x900] › e2e/supervisor-approvals/anomaly-acknowledge-resolve.spec.ts:38:7 › Approvals — anomaly acknowledge + resolve › resolve confirmation is truthful about not mutating the underlying record (1.9s)
+  -  100 [vp-1440x900] › e2e/supervisor-approvals/anomaly-acknowledge-resolve.spec.ts:53:7 › Approvals — anomaly acknowledge + resolve › acknowledge confirmation says the anomaly stays actionable
+  ✓  101 [vp-1440x900] › e2e/supervisor-approvals/cross-role-visibility.spec.ts:11:7 › Approvals — cross-role visibility › Cashier has its own nav and no Approvals (807ms)
+  ✓  102 [vp-1440x900] › e2e/supervisor-approvals/cross-role-visibility.spec.ts:18:7 › Approvals — cross-role visibility › Waiter has no Approvals and no decision controls (877ms)
+  ✘  103 [vp-1440x900] › e2e/supervisor-approvals/discount-approve-reject.spec.ts:7:7 › Approvals — discount decisions › approve a pending discount → toast + terminal state (16.5s)
+  ✘  104 [vp-1440x900] › e2e/supervisor-approvals/discount-approve-reject.spec.ts:28:7 › Approvals — discount decisions › reject a pending discount requires a reason → toast (16.6s)
+  ✘  105 [vp-1440x900] › e2e/supervisor-approvals/discount-self-approval.spec.ts:7:7 › Approvals — discount self-approval › a self-requested discount shows a truthful self-approval notice (16.8s)
+  ✓  106 [vp-1440x900] › e2e/supervisor-approvals/filters-pagination-routing.spec.ts:7:7 › Approvals — filters, routing & URL state › scope + domain changes are reflected in the URL and survive refresh (1.9s)
+  ✓  107 [vp-1440x900] › e2e/supervisor-approvals/filters-pagination-routing.spec.ts:32:7 › Approvals — filters, routing & URL state › Resolved/History omit the Discounts domain (no branch-wide endpoint) (1.5s)
+  ✓  108 [vp-1440x900] › e2e/supervisor-approvals/filters-pagination-routing.spec.ts:46:7 › Approvals — filters, routing & URL state › forcing discount history via URL shows a truthful order-scoped notice (867ms)
+  ✓  109 [vp-1440x900] › e2e/supervisor-approvals/filters-pagination-routing.spec.ts:52:7 › Approvals — filters, routing & URL state › History exposes a date-range toolbar that maps to URL params (858ms)
+  ✓  110 [vp-1440x900] › e2e/supervisor-approvals/identity-and-privacy.spec.ts:10:7 › Approvals — identity & privacy › row titles are names/types, never raw ids, and no PII leaks (1.3s)
+  -  111 [vp-1440x900] › e2e/supervisor-approvals/leave-approve-reject.spec.ts:12:7 › Approvals — leave decisions › approve a pending leave request → toast + row leaves the queue
+  ✘  112 [vp-1440x900] › e2e/supervisor-approvals/leave-approve-reject.spec.ts:33:7 › Approvals — leave decisions › reject a pending leave request → toast (16.5s)
+  ✓  113 [vp-1440x900] › e2e/supervisor-approvals/navigation-and-default-queue.spec.ts:7:7 › Approvals — navigation & default queue › defaults to Needs action / All, keeps four-tab nav, no Orders (1.5s)
+  ✓  114 [vp-1440x900] › e2e/supervisor-approvals/navigation-and-default-queue.spec.ts:34:7 › Approvals — navigation & default queue › empty selection shows the placeholder detail (1.4s)
+  ✓  115 [vp-1440x900] › e2e/supervisor-approvals/prompt3-prompt4-regression.spec.ts:7:7 › Approvals — Prompt 3 / Prompt 4 regression › Floor still loads with no Orders tab (896ms)
+  ✓  116 [vp-1440x900] › e2e/supervisor-approvals/prompt3-prompt4-regression.spec.ts:15:7 › Approvals — Prompt 3 / Prompt 4 regression › Reservations still loads with the Arriving view (962ms)
+  ✓  117 [vp-1440x900] › e2e/supervisor-approvals/prompt3-prompt4-regression.spec.ts:22:7 › Approvals — Prompt 3 / Prompt 4 regression › Waiter has no Approvals access (804ms)
+  ✓  118 [vp-1440x900] › e2e/supervisor-approvals/resolved-history.spec.ts:7:7 › Approvals — resolved & history › Resolved scope loads terminal decisions or a truthful empty state (1.6s)
+  ✓  119 [vp-1440x900] › e2e/supervisor-approvals/resolved-history.spec.ts:21:7 › Approvals — resolved & history › History scope is lazy and paginated with an empty state (890ms)
+  ✓  120 [vp-1440x900] › e2e/supervisor-approvals/responsive-closure.spec.ts:9:9 › Approvals — responsive closure (shift-swap + anomaly) › ^shift swaps$ detail + dialog have no horizontal overflow (1.6s)
+  ✓  121 [vp-1440x900] › e2e/supervisor-approvals/responsive-closure.spec.ts:9:9 › Approvals — responsive closure (shift-swap + anomaly) › ^anomalies$ detail + dialog have no horizontal overflow (1.6s)
+  ✓  122 [vp-1440x900] › e2e/supervisor-approvals/responsive.spec.ts:8:7 › Approvals — responsive › no horizontal overflow on queue and on an open detail (1.4s)
+  ✓  123 [vp-1440x900] › e2e/supervisor-approvals/shift-swap-reject.spec.ts:11:7 › Approvals — shift-swap (Outcome C) › pending shift-swap detail shows no Approve control + a truthful notice (1.4s)
+  ✘  124 [vp-1440x900] › e2e/supervisor-approvals/shift-swap-reject.spec.ts:27:7 › Approvals — shift-swap (Outcome C) › rejecting a shift-swap records the decision and changes no schedule (16.5s)
+  ✓  125 [vp-1440x900] › e2e/supervisor-approvals/smoke.spec.ts:15:7 › Supervisor Approvals — route smoke (Prompt 5A) › Approvals route loads, renders, keeps four-tab nav, and no console error (1.5s)
+  ✓  126 [vp-1440x900] › e2e/supervisor-approvals/smoke.spec.ts:50:7 › Supervisor Approvals — route smoke (Prompt 5A) › Prompt 3 Floor and Prompt 4 Reservations still load (regression) (1.1s)
+  ✓  127 [vp-1440x900] › e2e/supervisor-prompt3/find-lookup.spec.ts:5:7 › Find order + legacy route handling › legacy /supervisor/orders redirects into Floor (no Orders page, no loop) (761ms)
+  ✓  128 [vp-1440x900] › e2e/supervisor-prompt3/find-lookup.spec.ts:13:7 › Find order + legacy route handling › legacy /supervisor/orders?tableId=... preserves context into Floor (726ms)
+  ✓  129 [vp-1440x900] › e2e/supervisor-prompt3/find-lookup.spec.ts:21:7 › Find order + legacy route handling › Find order dialog accepts input and shows a bounded result area (871ms)
+  ✓  130 [vp-1440x900] › e2e/supervisor-prompt3/floor.spec.ts:5:7 › Supervisor Floor shell + navigation (locked decisions) › lands on Floor with 4-tab nav (Floor/Reservations/Approvals/Me), NO Orders tab (777ms)
+  ✓  131 [vp-1440x900] › e2e/supervisor-prompt3/floor.spec.ts:15:7 › Supervisor Floor shell + navigation (locked decisions) › shared Floor surface renders (toolbar search + table grid) and the Supervisor-only Find order control is present (777ms)
+  ✓  132 [vp-1440x900] › e2e/supervisor-prompt3/floor.spec.ts:27:7 › Supervisor Floor shell + navigation (locked decisions) › Find order opens a modal dialog and can be dismissed (811ms)
+  ✓  133 [vp-1440x900] › e2e/supervisor-prompt3/regression.spec.ts:5:7 › Cross-role regression (shared shell/Floor not broken by Prompt 3) › Waiter Floor loads with the Waiter nav (Floor/Reservations/Me) (807ms)
+  ✓  134 [vp-1440x900] › e2e/supervisor-prompt3/regression.spec.ts:17:7 › Cross-role regression (shared shell/Floor not broken by Prompt 3) › Cashier surfaces load: Floor (default) + Till nav, Queue/Receipts by direct URL (1.1s)
+  ✓  135 [vp-1440x900] › e2e/supervisor-prompt3/responsive.spec.ts:6:7 › Responsive viewport matrix — no horizontal overflow, controls reachable › Supervisor Floor fits the viewport and header + bottom nav are reachable (816ms)
+  ✓  136 [vp-1440x900] › e2e/supervisor-prompt3/responsive.spec.ts:14:7 › Responsive viewport matrix — no horizontal overflow, controls reachable › Find order dialog stays within the viewport (868ms)
+  ✓  137 [vp-1440x900] › e2e/supervisor-prompt3/responsive.spec.ts:22:7 › Responsive viewport matrix — no horizontal overflow, controls reachable › Selected order workspace fits the viewport (1.2s)
+  ✓  138 [vp-1440x900] › e2e/supervisor-prompt3/role-boundaries.spec.ts:5:7 › Cross-role boundaries › Waiter lands on Waiter Floor with no Supervisor Find order / order actions (790ms)
+  ✓  139 [vp-1440x900] › e2e/supervisor-prompt3/role-boundaries.spec.ts:13:7 › Cross-role boundaries › Cashier lands on Cashier Floor with the Cashier nav (Floor/Till/Me) (813ms)
+  ✓  140 [vp-1440x900] › e2e/supervisor-prompt3/role-boundaries.spec.ts:24:7 › Cross-role boundaries › Waiter cannot reach the Supervisor Floor workspace (guard blocks with an access-required state) (752ms)
+  ✓  141 [vp-1440x900] › e2e/supervisor-prompt3/workspace-actions.spec.ts:9:7 › Supervisor order workspace — action availability + Request bill through the UI › workspace opens for a selected order and shows the in-scope action controls (no payment-collection/close/refund) (1.1s)
+  ✓  142 [vp-1440x900] › e2e/supervisor-prompt3/workspace-actions.spec.ts:22:7 › Supervisor order workspace — action availability + Request bill through the UI › Request bill fires the mutation and settles cleanly (no permanent pending, no error) (1.2s)
+  ✓  143 [vp-1440x900] › e2e/supervisor-reservations/arriving-actions.spec.ts:23:7 › Supervisor Reservations — arriving actions › confirm a PENDING reservation (1.1s)
+  ✓  144 [vp-1440x900] › e2e/supervisor-reservations/arriving-actions.spec.ts:37:7 › Supervisor Reservations — arriving actions › assign a table then seat, and confirm no-show is unavailable once seated (1.6s)
+  ✓  145 [vp-1440x900] › e2e/supervisor-reservations/arriving-actions.spec.ts:60:7 › Supervisor Reservations — arriving actions › cancel requires a reason (1.2s)
+  ✓  146 [vp-1440x900] › e2e/supervisor-reservations/attention.spec.ts:16:7 › Supervisor Reservations — attention › an overdue PENDING reservation surfaces in Attention with an operational reason (1.5s)
+  ✓  147 [vp-1440x900] › e2e/supervisor-reservations/create-reservation.spec.ts:11:7 › Supervisor Reservations — create › rejects a missing guest name (1.3s)
+  ✓  148 [vp-1440x900] › e2e/supervisor-reservations/create-reservation.spec.ts:28:7 › Supervisor Reservations — create › rejects a past time via the native date-input constraint (1.3s)
+  ✓  149 [vp-1440x900] › e2e/supervisor-reservations/create-reservation.spec.ts:42:7 › Supervisor Reservations — create › creates a valid reservation and opens its detail (1.4s)
+  ✓  150 [vp-1440x900] › e2e/supervisor-reservations/history-and-pagination.spec.ts:13:7 › Supervisor Reservations — history & pagination › history exposes terminal filters and no active lifecycle actions (1.3s)
+  ✓  151 [vp-1440x900] › e2e/supervisor-reservations/history-and-pagination.spec.ts:33:7 › Supervisor Reservations — history & pagination › pagination controls keep view + page state in the URL (1.0s)
+  ✓  152 [vp-1440x900] › e2e/supervisor-reservations/navigation-and-default-view.spec.ts:10:7 › Supervisor Reservations — navigation & default view › defaults to Arriving with the four views and no Orders tab (1.2s)
+  ✓  153 [vp-1440x900] › e2e/supervisor-reservations/navigation-and-default-view.spec.ts:27:7 › Supervisor Reservations — navigation & default view › view + selection persist in the URL across reload and Back (1.3s)
+  ✓  154 [vp-1440x900] › e2e/supervisor-reservations/navigation-and-default-view.spec.ts:39:7 › Supervisor Reservations — navigation & default view › arriving day navigation updates the date in the URL (1.1s)
+  ✓  155 [vp-1440x900] › e2e/supervisor-reservations/privacy-and-boundaries.spec.ts:22:7 › Supervisor Reservations — privacy & boundaries › rows do not expose full phone/email; detail does (1.1s)
+  ✓  156 [vp-1440x900] › e2e/supervisor-reservations/privacy-and-boundaries.spec.ts:37:7 › Supervisor Reservations — privacy & boundaries › no out-of-scope surfaces (payment, deposit recording, order close) (892ms)
+  ✓  157 [vp-1440x900] › e2e/supervisor-reservations/responsive.spec.ts:12:7 › Supervisor Reservations — responsive › no horizontal overflow across views (971ms)
+  ✓  158 [vp-1440x900] › e2e/supervisor-reservations/responsive.spec.ts:20:7 › Supervisor Reservations — responsive › the create dialog fits within the viewport (870ms)
+  ✓  159 [vp-1440x900] › e2e/supervisor-reservations/responsive.spec.ts:26:7 › Supervisor Reservations — responsive › bottom navigation does not cover the primary action (879ms)
+  ✓  160 [vp-1440x900] › e2e/supervisor-reservations/seated-and-completion.spec.ts:25:7 › Supervisor Reservations — seated & manual completion › manual complete moves a SEATED reservation to History (1.9s)
+  ✓  161 [vp-1440x900] › e2e/supervisor-reservations/waiter-visibility.spec.ts:8:7 › Supervisor → Waiter visibility › a Supervisor-created reservation appears in Waiter Reservations (2.2s)
+
+
+  1) [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:96:7 › Manager top-nav navigation + landing › not-yet rows inside a dropdown are inert, never a live link 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('menu').getByText(/^B6$/).first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByRole('menu').getByText(/^B6$/).first()
+
+
+      108 |     await expect(page.getByRole("menu").getByRole("link", { name: /^Branch profile$/ })).toHaveCount(0);
+      109 |     // Every not-yet Settings row is tagged "B6".
+    > 110 |     await expect(page.getByRole("menu").getByText(/^B6$/).first()).toBeVisible();
+          |                                                                    ^
+      111 |     await expect(page.getByRole("menu").getByText(/^B6$/)).toHaveCount(6);
+      112 |   });
+      113 |
+        at /tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/manager-shell/navigation-and-landing.spec.ts:110:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    e2e/.evidence/test-output/manager-shell-navigation-a-27bd4-are-inert-never-a-live-link-vp-1440x900/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: e2e/.evidence/test-output/manager-shell-navigation-a-27bd4-are-inert-never-a-live-link-vp-1440x900/error-context.md
+
+  2) [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:121:7 › Manager top-nav navigation + landing › foundation pages state the boundary instead of showing fabricated data 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/This surface is not built yet/i)
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByText(/This surface is not built yet/i)
+
+
+      124 |     // Overview graduated at B2, Operations and Staff at B3, Reports at B4.
+      125 |     await page.goto("/manager/settings");
+    > 126 |     await expect(page.getByText(/This surface is not built yet/i)).toBeVisible();
+          |                                                                    ^
+      127 |     // Track B2 re-tagged the not-yet badges from the superseded M-P* numbering to
+      128 |     // the canonical Track B phases, matching the labels the top-nav tree already uses.
+      129 |     await expect(page.getByText(/Live data arrives in B6/i)).toBeVisible();
+        at /tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/manager-shell/navigation-and-landing.spec.ts:126:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    e2e/.evidence/test-output/manager-shell-navigation-a-d852a--of-showing-fabricated-data-vp-1440x900/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: e2e/.evidence/test-output/manager-shell-navigation-a-d852a--of-showing-fabricated-data-vp-1440x900/error-context.md
+
+  3) [vp-1440x900] › e2e/supervisor-approvals/discount-approve-reject.spec.ts:7:7 › Approvals — discount decisions › approve a pending discount → toast + terminal state 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('list', { name: /approval queue/i }).getByRole('button').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByRole('list', { name: /approval queue/i }).getByRole('button').first()
+
+
+      11 |     await page.waitForLoadState("networkidle").catch(() => {});
+      12 |
+    > 13 |     await expect(queueRows(page).first()).toBeVisible();
+         |                                           ^
+      14 |     await queueRows(page).first().click();
+      15 |
+      16 |     // Detail loads with an Approve action (fresh unpaid order → not payment-blocked).
+        at /tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/supervisor-approvals/discount-approve-reject.spec.ts:13:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    e2e/.evidence/test-output/supervisor-approvals-disco-a039e-ount-→-toast-terminal-state-vp-1440x900/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: e2e/.evidence/test-output/supervisor-approvals-disco-a039e-ount-→-toast-terminal-state-vp-1440x900/error-context.md
+
+  4) [vp-1440x900] › e2e/supervisor-approvals/discount-approve-reject.spec.ts:28:7 › Approvals — discount decisions › reject a pending discount requires a reason → toast 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('list', { name: /approval queue/i }).getByRole('button').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByRole('list', { name: /approval queue/i }).getByRole('button').first()
+
+
+      32 |     await page.waitForLoadState("networkidle").catch(() => {});
+      33 |
+    > 34 |     await expect(queueRows(page).first()).toBeVisible();
+         |                                           ^
+      35 |     await queueRows(page).first().click();
+      36 |
+      37 |     await page.getByRole("button", { name: /^reject$/i }).click();
+        at /tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/supervisor-approvals/discount-approve-reject.spec.ts:34:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    e2e/.evidence/test-output/supervisor-approvals-disco-28805-t-requires-a-reason-→-toast-vp-1440x900/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: e2e/.evidence/test-output/supervisor-approvals-disco-28805-t-requires-a-reason-→-toast-vp-1440x900/error-context.md
+
+  5) [vp-1440x900] › e2e/supervisor-approvals/discount-self-approval.spec.ts:7:7 › Approvals — discount self-approval › a self-requested discount shows a truthful self-approval notice 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('list', { name: /approval queue/i }).getByRole('button').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 15000ms
+      - waiting for getByRole('list', { name: /approval queue/i }).getByRole('button').first()
+
+
+      12 |     await page.waitForLoadState("networkidle").catch(() => {});
+      13 |
+    > 14 |     await expect(queueRows(page).first()).toBeVisible();
+         |                                           ^
+      15 |     await queueRows(page).first().click();
+      16 |
+      17 |     // Truthful governance copy — approval is permitted but recorded.
+        at /tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/supervisor-approvals/discount-self-approval.spec.ts:14:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    e2e/.evidence/test-output/supervisor-approvals-disco-9d552-uthful-self-approval-notice-vp-1440x900/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: e2e/.evidence/test-output/supervisor-approvals-disco-9d552-uthful-self-approval-notice-vp-1440x900/error-context.md
+
+  6) [vp-1440x900] › e2e/supervisor-approvals/leave-approve-reject.spec.ts:33:7 › Approvals — leave decisions › reject a pending leave request → toast 
+
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for getByRole('list', { name: /approval queue/i }).getByRole('button').first()
+
+
+      39 |     const countBefore = await queueRows(page).count();
+      40 |     test.skip(countBefore === 0, "No pending leave on this branch");
+    > 41 |     await queueRows(page).first().click();
+         |                                   ^
+      42 |
+      43 |     await page.getByRole("button", { name: /^reject$/i }).click();
+      44 |     const dialog = page.getByRole("dialog");
+        at /tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/supervisor-approvals/leave-approve-reject.spec.ts:41:35
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    e2e/.evidence/test-output/supervisor-approvals-leave-4ab5e-nding-leave-request-→-toast-vp-1440x900/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: e2e/.evidence/test-output/supervisor-approvals-leave-4ab5e-nding-leave-request-→-toast-vp-1440x900/error-context.md
+
+  7) [vp-1440x900] › e2e/supervisor-approvals/shift-swap-reject.spec.ts:27:7 › Approvals — shift-swap (Outcome C) › rejecting a shift-swap records the decision and changes no schedule 
+
+    TimeoutError: locator.click: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for getByRole('list', { name: /approval queue/i }).getByRole('button').nth(1)
+
+
+       at supervisor-approvals/approvals-fixtures.ts:128
+
+      126 |   const n = Math.min(await rows.count(), max);
+      127 |   for (let i = 0; i < n; i += 1) {
+    > 128 |     await rows.nth(i).click();
+          |                       ^
+      129 |     const btn = page.getByRole("button", { name: action });
+      130 |     if (await btn.count()) {
+      131 |       try {
+        at selectRowWithAction (/tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/supervisor-approvals/approvals-fixtures.ts:128:23)
+        at /tmp/claude-0/-home-user-nimbus-pos/1ff09f3a-2a58-5d7a-9337-b9996f09a1d5/scratchpad/base/apps/web/e2e/supervisor-approvals/shift-swap-reject.spec.ts:33:19
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    e2e/.evidence/test-output/supervisor-approvals-shift-9ea38-ion-and-changes-no-schedule-vp-1440x900/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: e2e/.evidence/test-output/supervisor-approvals-shift-9ea38-ion-and-changes-no-schedule-vp-1440x900/error-context.md
+
+  7 failed
+    [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:96:7 › Manager top-nav navigation + landing › not-yet rows inside a dropdown are inert, never a live link 
+    [vp-1440x900] › e2e/manager-shell/navigation-and-landing.spec.ts:121:7 › Manager top-nav navigation + landing › foundation pages state the boundary instead of showing fabricated data 
+    [vp-1440x900] › e2e/supervisor-approvals/discount-approve-reject.spec.ts:7:7 › Approvals — discount decisions › approve a pending discount → toast + terminal state 
+    [vp-1440x900] › e2e/supervisor-approvals/discount-approve-reject.spec.ts:28:7 › Approvals — discount decisions › reject a pending discount requires a reason → toast 
+    [vp-1440x900] › e2e/supervisor-approvals/discount-self-approval.spec.ts:7:7 › Approvals — discount self-approval › a self-requested discount shows a truthful self-approval notice 
+    [vp-1440x900] › e2e/supervisor-approvals/leave-approve-reject.spec.ts:33:7 › Approvals — leave decisions › reject a pending leave request → toast 
+    [vp-1440x900] › e2e/supervisor-approvals/shift-swap-reject.spec.ts:27:7 › Approvals — shift-swap (Outcome C) › rejecting a shift-swap records the decision and changes no schedule 
+  3 skipped
+  151 passed (5.0m)
+EXIT 1

@@ -35,8 +35,8 @@ export function Segmented({ label, options, value, onChange, fill = false, demo 
             disabled={o.disabled}
             onClick={() => onChange?.(o.key)}
             className={[
-              "flex h-kit-seg items-center justify-center gap-kit-8 whitespace-nowrap rounded-kit-seg-button px-kit-18 text-kit-seg font-kit",
-              fill ? "flex-1 min-w-0" : "",
+              "flex h-kit-seg items-center justify-center gap-kit-8 whitespace-nowrap rounded-kit-seg-button text-kit-seg font-kit",
+              fill ? "flex-1 min-w-0 px-kit-8" : "px-kit-18",
               o.disabled
                 ? "text-kit-muted cursor-not-allowed opacity-kit-second-line"
                 : on

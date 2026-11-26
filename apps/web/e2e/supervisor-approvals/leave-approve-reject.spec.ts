@@ -1,51 +1,43 @@
 import { test, expect } from "@playwright/test";
 
 import { uiLogin } from "../supervisor-prompt3/fixtures";
-import { gotoApprovals, queueRows } from "./approvals-fixtures";
+import { apiCreatePendingLeave, domainRows, gotoApprovals } from "./approvals-fixtures";
 
 /**
  * Leave decisions run against seeded pending leave on the disposable branch.
  * (Leave cannot be created for others via the self-scoped create API, so the
  * QA branch seeds PENDING leave rows — see the QA record register.)
  */
+
+// T1 (26 Nov 2026): Approvals rebuilt to the drawing Supervisor-Approvals (Waiting / Done today /
+// History, one list, a side panel). Same routes and decisions; selectors updated.
+
 test.describe("Approvals — leave decisions", () => {
-  test("approve a pending leave request → toast + row leaves the queue", async ({ page }) => {
+  test("approve a pending leave request → it leaves Waiting", async ({ page }) => {
+    await apiCreatePendingLeave("QA leave to approve");
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
-    await page.getByRole("button", { name: /^leave$/i }).click();
-    await page.waitForLoadState("networkidle").catch(() => {});
-
-    const countBefore = await queueRows(page).count();
-    test.skip(countBefore === 0, "No pending leave on this branch");
-    await queueRows(page).first().click();
-
-    // Detail is truthful: no payroll / roster claim.
-    await expect(page.getByText(/does not (change|adjust) payroll/i)).toBeVisible();
-
-    await page.getByRole("button", { name: /approve leave/i }).click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: /approve leave/i }).click();
-
-    await expect(page.getByText(/leave approved/i)).toBeVisible();
+    const rows = domainRows(page, /^leave$/i);
+    test.skip((await rows.count()) === 0, "No pending leave on this branch");
+    await rows.first().click();
+    const panel = page.locator("[data-approval]");
+    await expect(panel.getByText(/does not change payroll/i)).toBeVisible();
+    await panel.getByRole("button", { name: /approve the leave/i }).click();
+    await expect(panel.getByText(/leave approved/i)).toBeVisible();
   });
 
-  test("reject a pending leave request → toast", async ({ page }) => {
+  test("decline a pending leave request", async ({ page }) => {
+    await apiCreatePendingLeave("QA leave to decline");
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
-    await page.getByRole("button", { name: /^leave$/i }).click();
-    await page.waitForLoadState("networkidle").catch(() => {});
-
-    const countBefore = await queueRows(page).count();
-    test.skip(countBefore === 0, "No pending leave on this branch");
-    await queueRows(page).first().click();
-
-    await page.getByRole("button", { name: /^reject$/i }).click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole("textbox").fill("QA rejection");
-    await dialog.getByRole("button", { name: /reject leave/i }).click();
-
-    await expect(page.getByText(/leave rejected/i)).toBeVisible();
+    const rows = domainRows(page, /^leave$/i);
+    test.skip((await rows.count()) === 0, "No pending leave on this branch");
+    await rows.first().click();
+    const panel = page.locator("[data-approval]");
+    await panel.getByRole("button", { name: /^decline$/i }).click();
+    const dialog = page.getByRole("dialog", { name: "Decline the leave" });
+    await dialog.getByLabel(/^why/i).fill("QA rejection");
+    await dialog.getByRole("button", { name: /^decline$/i }).click();
+    await expect(panel.getByText(/leave declined/i)).toBeVisible();
   });
 });

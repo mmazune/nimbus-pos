@@ -1,30 +1,30 @@
 import { test, expect } from "@playwright/test";
 
 import { uiLogin } from "../supervisor-prompt3/fixtures";
-import { gotoApprovals } from "./approvals-fixtures";
+import { gotoApprovals, queueRows } from "./approvals-fixtures";
+
+// T1 (26 Nov 2026): Approvals rebuilt to the drawing Supervisor-Approvals (Waiting / Done today /
+// History, one list, a side panel). Same routes and decisions; selectors updated.
 
 test.describe("Approvals — resolved & history", () => {
-  test("Resolved scope loads terminal decisions or a truthful empty state", async ({ page }) => {
+  test("Done today loads today's decisions or a truthful empty state", async ({ page }) => {
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
-    await page.getByRole("tab", { name: /resolved/i }).click();
-    await expect(page).toHaveURL(/scope=resolved/);
-
-    // Either rows or the recent-decisions empty copy — never a crash / raw error.
-    const rows = page.getByRole("list", { name: /approval queue/i }).getByRole("button");
-    const empty = page.getByText(/no recent decisions/i);
+    await page.getByRole("tab", { name: /^Done today/ }).click();
+    await expect(page).toHaveURL(/view=done/);
+    const rows = queueRows(page);
+    const empty = page.getByText(/nothing decided today yet/i);
     await expect(async () => {
       expect((await rows.count()) > 0 || (await empty.count()) > 0).toBe(true);
     }).toPass();
   });
 
-  test("History scope is lazy and paginated with an empty state", async ({ page }) => {
+  test("History is lazy and paged, with an empty state", async ({ page }) => {
     await uiLogin(page, "supervisor");
-    await page.goto("/supervisor/approvals?scope=history&domain=leave");
-    await expect(page.getByRole("tab", { name: /history/i })).toHaveAttribute("aria-selected", "true");
-
-    const rows = page.getByRole("list", { name: /approval queue/i }).getByRole("button");
-    const empty = page.getByText(/no approval history matches/i);
+    await page.goto("/supervisor/approvals?view=history");
+    await expect(page.getByRole("tab", { name: /^History$/ })).toHaveAttribute("aria-selected", "true");
+    const rows = queueRows(page);
+    const empty = page.getByText(/no decisions on this page/i);
     await expect(async () => {
       expect((await rows.count()) > 0 || (await empty.count()) > 0).toBe(true);
     }).toPass();

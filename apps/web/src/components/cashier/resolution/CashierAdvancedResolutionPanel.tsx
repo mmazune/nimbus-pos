@@ -40,7 +40,7 @@ export function CashierAdvancedResolutionPanel({
             </h4>
           </div>
           <p className="mt-1 text-sm font-medium text-text-secondary">
-            Merge, move, and transfer actions are available only where backend-safe targets are loaded.
+            Merge, move and transfer show only when there is a bill or table to move to.
           </p>
         </div>
         <Button

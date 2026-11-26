@@ -1,30 +1,21 @@
 import { ReactNode } from "react";
 
-import { OperationalShell } from "@/components/pos-shell/OperationalShell";
-import { CashierBottomNav } from "@/components/cashier/shell/CashierBottomNav";
-import { CashierHeader } from "@/components/cashier/shell/CashierHeader";
+import { TouchLegacyBody, TouchShell } from "@/components/pos-shell/TouchShell";
 import { CashierIdleLogoutHandler } from "@/components/cashier/shell/CashierIdleLogoutHandler";
-import { CashierReadinessStrip } from "@/components/cashier/shell/CashierReadinessStrip";
 import { CashierSessionGuard } from "@/components/cashier/shell/CashierSessionGuard";
-import { useCashierReadiness } from "@/lib/cashier/readiness";
 
 type CashierShellProps = {
   children: ReactNode;
+  /** The screen is a kit screen that lays itself out; otherwise the old body gutters. */
+  bare?: boolean;
 };
 
-export function CashierShell({ children }: CashierShellProps) {
-  const readiness = useCashierReadiness();
-
+export function CashierShell({ children, bare = false }: CashierShellProps) {
   return (
     <CashierSessionGuard>
-      <OperationalShell
-        header={<CashierHeader />}
-        readiness={<CashierReadinessStrip items={readiness.items} />}
-        bottomNavigation={<CashierBottomNav />}
-        idleHandler={<CashierIdleLogoutHandler />}
-      >
-        {children}
-      </OperationalShell>
+      <TouchShell role="cashier" idleHandler={<CashierIdleLogoutHandler />}>
+        {bare ? children : <TouchLegacyBody>{children}</TouchLegacyBody>}
+      </TouchShell>
     </CashierSessionGuard>
   );
 }

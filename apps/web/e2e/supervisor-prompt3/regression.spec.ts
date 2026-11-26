@@ -17,11 +17,11 @@ test.describe("Cross-role regression (shared shell/Floor not broken by Prompt 3)
   test("Cashier surfaces load: Floor (default) + Till nav, Queue/Receipts by direct URL", async ({ page }) => {
     await uiLogin(page, "cashier");
     await page.waitForURL(/\/cashier\/floor/, { timeout: 30_000 });
-    for (const label of ["Floor", "Till", "Me"]) {
+    // T1 (26 Nov 2026, decision R9): Receipts is a bar section again; Queue stays a hidden route.
+    for (const label of ["Floor", "Receipts", "Till", "Me"]) {
       await expect(page.getByRole("link", { name: new RegExp(`^${label}$`, "i") }).first()).toBeVisible();
     }
     await expect(page.getByRole("link", { name: /^queue$/i })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /^receipts$/i })).toHaveCount(0);
     // Compatibility routes still load directly without regression.
     for (const path of ["/cashier/queue", "/cashier/receipts", "/cashier/till"]) {
       await page.goto(path);

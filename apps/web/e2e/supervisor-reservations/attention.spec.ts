@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { apiCreateReservation, apiLoginRole, gotoReservations, uiLogin } from "./fixtures";
+import { apiCreateReservation, apiLoginRole, gotoReservations, uiLogin, shownName } from "./fixtures";
 
 test.describe.serial("Supervisor Reservations — attention", () => {
   let token: string;
@@ -20,10 +20,11 @@ test.describe.serial("Supervisor Reservations — attention", () => {
     await gotoReservations(page);
     await page.getByRole("tab", { name: /attention/i }).click();
 
-    const row = page.getByRole("button", { name: new RegExp(res.customerName, "i") });
+    // T1 (26 Nov 2026): the Reservations screen was rebuilt to the drawing Reservations-Supervisor; same endpoints and transitions.
+    const row = page.getByRole("button", { name: new RegExp(shownName(res.customerName), "i") });
     await expect(row).toBeVisible();
     // Operational copy, never implementation copy.
-    await expect(row).toContainText(/overdue/i);
+    await expect(row).toContainText(/late/i);
     await expect(page.getByText(/prompt 4a|backend|reconciliation/i)).toHaveCount(0);
 
     // No bulk resolution controls exist.
@@ -31,6 +32,6 @@ test.describe.serial("Supervisor Reservations — attention", () => {
 
     // The individual reservation still exposes a real decision (No-show / Cancel).
     await row.click();
-    await expect(page.getByRole("button", { name: /mark no-show/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^no-show$/i })).toBeVisible();
   });
 });

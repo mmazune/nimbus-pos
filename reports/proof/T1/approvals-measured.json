@@ -1,0 +1,67 @@
+{
+  "approvals-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Approve the discount"
+    ],
+    "checkedText": 37,
+    "checkedTargets": 16
+  },
+  "panel-width-1280": 420,
+  "decline-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Decline"
+    ],
+    "checkedText": 42,
+    "checkedTargets": 20
+  },
+  "approvals-done-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 37,
+    "checkedTargets": 14
+  },
+  "approvals-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 16,
+    "checkedTargets": 9
+  },
+  "approvals-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 38,
+    "checkedTargets": 13
+  }
+}

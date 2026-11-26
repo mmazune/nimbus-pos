@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next";
 
-import { SupervisorMeScreen } from "@/components/supervisor/me";
 import { SupervisorShell } from "@/components/supervisor/shell";
+import { MeScreen } from "@/screens/me/MeScreen";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
@@ -9,8 +9,8 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function SupervisorMePage() {
   return (
-    <SupervisorShell>
-      <SupervisorMeScreen />
+    <SupervisorShell bare>
+      <MeScreen role="supervisor" />
     </SupervisorShell>
   );
 }

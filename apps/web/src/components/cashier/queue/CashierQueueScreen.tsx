@@ -144,7 +144,7 @@ export function CashierQueueScreen() {
   );
 
   const queueError = ordersQuery.error
-    ? errorMessage(ordersQuery.error, "Try again when the cashier API is reachable.")
+    ? errorMessage(ordersQuery.error, "The orders could not be read. Try again.")
     : undefined;
   const detailError = detailQuery.error
     ? errorMessage(detailQuery.error, "Could not load order detail.")
@@ -185,13 +185,10 @@ export function CashierQueueScreen() {
         </div>
       }
     >
-      <StatusMessage tone="info" title="Bill-requested gap">
-        Bill-requested is audit-derived. Until a dedicated filter exists, Queue shows active payable branch orders.
-      </StatusMessage>
 
       {!branchId ? (
-        <StatusMessage tone="warning" title="Branch context unavailable">
-          A branch context is required before cashier queue reads can run.
+        <StatusMessage tone="warning" title="No branch is set for this account">
+          Ask a manager to add you to a branch, then sign in again.
         </StatusMessage>
       ) : null}
 
@@ -241,10 +238,7 @@ export function CashierQueueScreen() {
 
           <div className="flex items-start gap-3 rounded-lg bg-surface-muted p-4 text-sm text-text-secondary">
             <Info size={22} weight="bold" className="shrink-0 text-status-info" aria-hidden />
-            <p>
-              Queue reads only <span className="font-semibold">GET /api/pos/orders</span>, order detail, and order
-              payment summary endpoints. NEW, CLOSED, and VOIDED orders are excluded from the default read.
-            </p>
+            <p>Orders that can be paid show here. Paid, voided and not-yet-sent orders do not.</p>
           </div>
         </div>
 

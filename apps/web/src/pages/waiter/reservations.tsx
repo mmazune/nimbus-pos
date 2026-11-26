@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next";
 
-import { WaiterReservationsScreen } from "@/components/waiter/reservations";
 import { WaiterShell } from "@/components/waiter/shell";
+import { ReservationsScreen } from "@/screens/reservations/ReservationsScreen";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
@@ -9,8 +9,8 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function WaiterReservationsPage() {
   return (
-    <WaiterShell>
-      <WaiterReservationsScreen />
+    <WaiterShell bare>
+      <ReservationsScreen role="waiter" />
     </WaiterShell>
   );
 }

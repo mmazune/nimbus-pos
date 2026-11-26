@@ -1,36 +1,33 @@
 import { test, expect } from "@playwright/test";
 
 import { uiLogin } from "../supervisor-prompt3/fixtures";
-import { gotoApprovals, queueRows } from "./approvals-fixtures";
+import { domainRows, gotoApprovals, queueRows } from "./approvals-fixtures";
+
+// T1 (26 Nov 2026): Approvals rebuilt to the drawing Supervisor-Approvals (Waiting / Done today /
+// History, one list, a side panel). Same routes and decisions; selectors updated.
 
 test.describe("Approvals — consolidated four-domain closure", () => {
-  test("all four domains filter cleanly across Needs action", async ({ page }) => {
+  test("all four kinds show in one Waiting list, or a truthful empty state", async ({ page }) => {
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
-
+    const rows = queueRows(page);
+    const empty = page.getByText(/nothing is waiting for you/i);
+    await expect(async () => {
+      expect((await rows.count()) > 0 || (await empty.count()) > 0).toBe(true);
+    }).toPass();
     for (const name of [/^discounts$/i, /^leave$/i, /^shift swaps$/i, /^anomalies$/i]) {
-      await page.getByRole("button", { name }).click();
-      await page.waitForLoadState("networkidle").catch(() => {});
-      // Either rows or a truthful empty state — never a crash.
-      const rows = queueRows(page);
-      const empty = page.getByText(/no approvals need action|no .* need action/i);
-      await expect(async () => {
-        expect((await rows.count()) > 0 || (await empty.count()) > 0).toBe(true);
-      }).toPass();
+      for (const t of await domainRows(page, name).allInnerTexts()) expect(t).not.toMatch(/undefined|\[object/i);
     }
-
-    // Back to All, four-tab nav intact, no Orders.
-    await page.getByRole("button", { name: /^all$/i }).click();
     expect(await page.getByRole("link", { name: /^orders$/i }).count()).toBe(0);
   });
 
-  test("Resolved omits discounts but supports leave / shift-swap / anomaly", async ({ page }) => {
+  test("Done today and History hold leave / shift-swap / alert decisions, never discounts", async ({ page }) => {
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
-    await page.getByRole("tab", { name: /resolved/i }).click();
-    await expect(page.getByRole("button", { name: /^discounts$/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^leave$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^shift swaps$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^anomalies$/i })).toBeVisible();
+    for (const tab of [/^Done today/, /^History$/]) {
+      await page.getByRole("tab", { name: tab }).click();
+      await expect(page.locator("section[aria-label='Done today'], section[aria-label='History']")).toBeVisible();
+      await expect(domainRows(page, /^discounts$/i)).toHaveCount(0);
+    }
   });
 });

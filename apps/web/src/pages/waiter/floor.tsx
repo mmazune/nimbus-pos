@@ -9,7 +9,7 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function WaiterFloorPage() {
   return (
-    <WaiterShell>
+    <WaiterShell bare>
       <WaiterFloorScreen />
     </WaiterShell>
   );

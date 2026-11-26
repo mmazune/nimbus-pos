@@ -1,0 +1,181 @@
+{
+  "receipts-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 29,
+    "checkedTargets": 11
+  },
+  "refund-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Ask for the refund"
+    ],
+    "checkedText": 40,
+    "checkedTargets": 17
+  },
+  "till-drawer-lines": [
+    "Float at the start\n\n250,000",
+    "Cash payments in the branch, less refunds\n\n+ 10,916,500",
+    "Should be in the drawer\n\nUGX 11,166,500"
+  ],
+  "till-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Count and close"
+    ],
+    "checkedText": 20,
+    "checkedTargets": 9
+  },
+  "safe-drop-sheet-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Record the drop"
+    ],
+    "checkedText": 28,
+    "checkedTargets": 14
+  },
+  "close-confirm-1280": {
+    "viewport": "1280x800",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Close the till"
+    ],
+    "checkedText": 32,
+    "checkedTargets": 12
+  },
+  "receipts-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 614,
+    "checkedTargets": 209
+  },
+  "receipts-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 13,
+    "checkedTargets": 9
+  },
+  "refund-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Ask for the refund"
+    ],
+    "checkedText": 22,
+    "checkedTargets": 14
+  },
+  "receipts-earlier-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 12,
+    "checkedTargets": 9
+  },
+  "till-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Count and close"
+    ],
+    "checkedText": 18,
+    "checkedTargets": 7
+  },
+  "safe-drop-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Record the drop"
+    ],
+    "checkedText": 26,
+    "checkedTargets": 12
+  },
+  "till-variance-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Count and close"
+    ],
+    "checkedText": 21,
+    "checkedTargets": 8
+  },
+  "close-confirm-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Close the till"
+    ],
+    "checkedText": 31,
+    "checkedTargets": 11
+  }
+}

@@ -8,14 +8,15 @@ import { uiLogin } from "../supervisor-prompt3/fixtures";
  * guest/payment data and no Cashier-only Find/settlement control in C1.
  */
 test.describe("Cashier shared Floor parity", () => {
-  test("shared toolbar (search + status filters) and table grid render", async ({ page }) => {
+  // T1 (26 Nov 2026, drawing Main / R11): the status filter chips are replaced by area chips
+  // and the header's "Find a table" search; the grid is the shared kit Floor.
+  test("shared Floor (area chips + header search) and table grid render", async ({ page }) => {
     await uiLogin(page, "cashier");
     await page.waitForURL(/\/cashier\/floor/);
 
-    await expect(page.getByRole("searchbox").or(page.getByPlaceholder(/search/i)).first()).toBeVisible();
-    for (const filter of ["Available", "Occupied", "Reserved"]) {
-      await expect(page.getByRole("button", { name: new RegExp(filter, "i") }).first()).toBeVisible();
-    }
+    await expect(page.getByRole("button", { name: /find a table/i }).first()).toBeVisible();
+    await expect(page.getByRole("group", { name: "Areas" })).toBeVisible();
+    await expect(page.locator("[data-floor-grid]")).toBeVisible();
     await expect(page.getByRole("heading", { name: /^floor$/i }).first()).toBeVisible();
     await expect(page.locator("body")).not.toContainText(/Cannot reach Nimbus API/i);
   });

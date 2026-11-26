@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next";
 
-import { WaiterMeScreen } from "@/components/waiter/me";
 import { WaiterShell } from "@/components/waiter/shell";
+import { MeScreen } from "@/screens/me/MeScreen";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
@@ -9,8 +9,8 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function WaiterMePage() {
   return (
-    <WaiterShell>
-      <WaiterMeScreen />
+    <WaiterShell bare>
+      <MeScreen role="waiter" />
     </WaiterShell>
   );
 }

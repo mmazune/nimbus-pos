@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next";
 
-import { CashierMeScreen } from "@/components/cashier/me";
 import { CashierShell } from "@/components/cashier/shell";
+import { MeScreen } from "@/screens/me/MeScreen";
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   props: {},
@@ -9,8 +9,8 @@ export const getServerSideProps: GetServerSideProps = async () => ({
 
 export default function CashierMePage() {
   return (
-    <CashierShell>
-      <CashierMeScreen />
+    <CashierShell bare>
+      <MeScreen role="cashier" />
     </CashierShell>
   );
 }
