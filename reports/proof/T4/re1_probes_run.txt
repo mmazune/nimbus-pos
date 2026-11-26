@@ -21,9 +21,11 @@
     ✕ P22 the item-edit route (pos:orders:write, which waiters hold) cannot lower a sent line
     ✓ P23 a line void on an open order that already has a part payment is refused
     ✕ P24 a reservation linked to a different order is not completed by this close
+    ✕ N2 two cash rows whose last is smaller than the change still settle (75,000 + 5,000 on 74,000)
     ✕ P25 cash beyond the column limit is a 400, never a 500
     ✓ P21 a send with every line voided or removed answers 409 and makes no ticket
     ✓ W1 only the close door writes CLOSED on an order (quick-sale, born closed, is the one disclosed exception)
+    ✕ S6 money arrives as a string decimal, never a JS number, on the payment DTOs
     ✕ W2 only the close door frees a table to AVAILABLE (the audited manual floor action aside)
 Test Suites: 2 failed, 2 total
-Tests:       11 failed, 16 passed, 27 total
+Tests:       13 failed, 16 passed, 29 total

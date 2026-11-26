@@ -40,6 +40,20 @@ describe('R-E1 writers probe (static)', () => {
     expect(outside).toEqual([]);
   });
 
+  it('S6 money arrives as a string decimal, never a JS number, on the payment DTOs', () => {
+    const dtoDir = join(SRC, 'modules', 'payments', 'dto');
+    const offenders: string[] = [];
+    for (const file of readdirSync(dtoDir).filter((f) => f.endsWith('.dto.ts'))) {
+      const text = readFileSync(join(dtoDir, file), 'utf8');
+      for (const m of text.matchAll(/\b(amount|tendered)!?\??:\s*number/g)) {
+        const line = text.slice(0, m.index).split('\n').length;
+        offenders.push(`src/modules/payments/dto/${file}:${line}`);
+      }
+    }
+    // Correct: none. A JS number is a float from the request onwards (E1 part c).
+    expect(offenders).toEqual([]);
+  });
+
   it('W2 only the close door frees a table to AVAILABLE (the audited manual floor action aside)', () => {
     const hits = writers(
       /\.table\.(?:update|updateMany)\(\{[\s\S]{0,300}?status:\s*(?:TableStatus\.AVAILABLE|'AVAILABLE')/g,

@@ -554,9 +554,17 @@ describe('R-E1 probes (e2e)', () => {
       .set(as(owner))
       .send({ quantity: 1 });
     const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
-    // Correct: refused (409), the bill stays 12,000 and the line still says 2.
+    const line = await prisma.orderItem.findUniqueOrThrow({ where: { id: lineId } });
+    const ticketLines = await prisma.kdsTicketItem.count({ where: { orderItemId: lineId } });
+    // Correct: the line still says 2 and the bill stays 12,000, and the edit is refused (409).
+    // The status is checked last so the values above are observed even when it is red.
+    expect({ qty: line.quantity, total: order.total.toString(), voided: line.voidedAt }).toEqual({
+      qty: 2,
+      total: '12000',
+      voided: null,
+    });
+    expect(ticketLines).toBe(1);
     expect(r.status).toBe(409);
-    expect(order.total.toString()).toBe('12000');
   });
 
   it('P23 a line void on an open order that already has a part payment is refused', async () => {
@@ -587,6 +595,17 @@ describe('R-E1 probes (e2e)', () => {
       select: { status: true },
     });
     expect(done.map((d) => d.status)).toEqual(['COMPLETED', 'COMPLETED']);
+  });
+
+  it('N2 two cash rows whose last is smaller than the change still settle (75,000 + 5,000 on 74,000)', async () => {
+    const { orderId } = await seatedOrder([{ price: 74000 }]);
+    const r = await pay(orderId, [
+      { method: 'CASH', amount: 75000 },
+      { method: 'CASH', amount: 5000 },
+    ]);
+    // Correct: 80,000 handed over, 6,000 change, the bill paid.
+    expect(r.status).toBe(200);
+    expect(r.body.change).toBe('6000.00');
   });
 
   it('P25 cash beyond the column limit is a 400, never a 500', async () => {
