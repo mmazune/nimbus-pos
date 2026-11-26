@@ -109,11 +109,10 @@ function mapTicket(t: ApiTicket): KitchenTicket {
 
 /** One page of tickets for the stations, oldest first (the drawing's order; the API ranks red first). */
 export async function loadTickets(ctx: Ctx, stations: readonly string[], status?: "READY"): Promise<KitchenTicket[]> {
-  const all: KitchenTicket[] = [];
-  for (const station of stations) {
-    const res = await apiRequest<{ data?: ApiTicket[] }>(`/api/kds/queue?station=${station}${status ? `&status=${status}` : ""}&pageSize=100`, ctx);
-    all.push(...(res.data ?? []).map(mapTicket));
-  }
+  const pages = await Promise.all(
+    stations.map((station) => apiRequest<{ data?: ApiTicket[] }>(`/api/kds/queue?station=${station}${status ? `&status=${status}` : ""}&pageSize=100`, ctx)),
+  );
+  const all = pages.flatMap((res) => (res.data ?? []).map(mapTicket));
   return all.sort((a, b) => a.startedAt.localeCompare(b.startedAt) || a.id.localeCompare(b.id));
 }
 

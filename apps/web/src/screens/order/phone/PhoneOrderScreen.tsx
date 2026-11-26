@@ -34,6 +34,8 @@ type Props = {
   mixer: MixerOffer | null;
   onMixer: (optionId: string) => void;
   onLine: (line: OrderLineModel) => void;
+  /** Fire the held lines (starters now, mains later). */
+  onFire?: () => void;
   onBack: () => void;
   onSend: () => void;
   onPrintBill: () => void;
@@ -105,8 +107,10 @@ export function PhoneOrderScreen(p: Props) {
       : [];
 
   // A line not sent whose item has since sold out is red, with Remove (T5).
+  // Held on the server (saved, waiting to be fired) or fired and inside the undo window.
+  const held = session.lines.filter((l) => l.state === "unsent" && l.serverId && (l.held || l.fireAt));
   const unsent = session.lines
-    .filter((l) => l.state === "unsent")
+    .filter((l) => l.state === "unsent" && !(l.serverId && (l.held || l.fireAt)))
     .map((l) => (l.unsendable || p.menu?.items[l.menuItemId]?.availability.state === "soldOut" ? { ...l, unsendable: true } : l));
   const rounds = sentRounds(session.lines);
   const status = session.order?.status;
@@ -230,6 +234,19 @@ export function PhoneOrderScreen(p: Props) {
           }
         >
           <div className="flex flex-col" data-order-lines>
+            {held.length ? (
+              <section aria-label="Held for later" data-order-held>
+                <div className="flex items-center justify-between pb-kit-4 pt-kit-4">
+                  <Text variant="cap" tone="muted">{held.some((l) => l.fireAt) ? "Going to the kitchen" : "Held for later"}</Text>
+                  {p.onFire && held.some((l) => l.held && !l.fireAt) ? (
+                    <Button tone="tonal" disabled={session.busy !== null} onClick={p.onFire}>{session.busy === "fire" ? "Firing…" : "Fire now"}</Button>
+                  ) : null}
+                </div>
+                {held.map((l) => (
+                  <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText({ ...l, held: false }) || undefined} price={groupShillings(l.lineMinor)} state="notSent" />
+                ))}
+              </section>
+            ) : null}
             {unsent.length ? (
               <section aria-label="Not sent">
                 <div className="pb-kit-4 pt-kit-4"><Text variant="cap" tone="muted">Not sent · tap a line to change it</Text></div>

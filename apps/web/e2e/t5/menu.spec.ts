@@ -4,7 +4,7 @@ import { api, apiRaw, as, ensureLambChops, openTable, pinSignIn, recordApi, rule
 
 /**
  * T5 phase 2 — the menu knows what is left, on the demo venue, on terminals open at once.
- *   Terminal A: waiter1 (Sanyu) on M05.   Terminal B: waiter2 (Brian) on T03.   Terminal C: waiter3 on V06.
+ *   Terminal A: waiter1 (Sanyu) on M14.   Terminal B: waiter2 (Brian) on T03.   Terminal C: waiter3 on V06.
  * The chef sets a number and marks sold out through T2's routes (the kitchen screen is phase 5;
  * the chain in phase 6 does the same from that screen).
  */
@@ -34,7 +34,7 @@ test("one menu call; 2 left, then sold out, on three terminals within 10 seconds
   await pinSignIn(A.page, "waiter1");
   await pinSignIn(B.page, "waiter2");
   await pinSignIn(C.page, "waiter3");
-  await openTable(A.page, "waiter", (await tableByLabel("M05")).id);
+  await openTable(A.page, "waiter", (await tableByLabel("M14")).id);
   await openTable(B.page, "waiter", (await tableByLabel("T03")).id);
   await openTable(C.page, "waiter", (await tableByLabel("V06")).id);
   for (const t of [A, B, C]) await toGrill(t.page);
@@ -78,7 +78,7 @@ test("one menu call; 2 left, then sold out, on three terminals within 10 seconds
   await api(chef.token, "POST", `/menu/items/${lambId}/sold-out`, {});
   for (const t of [A, B, C]) {
     if (t === A) {
-      await openTable(A.page, "waiter", (await tableByLabel("M06")).id);
+      await openTable(A.page, "waiter", (await tableByLabel("M03")).id);
       await toGrill(A.page);
     }
     await expect(lamb(t.page)).toHaveAttribute("aria-label", /Sold out since \d\d:\d\d/, { timeout: 10_000 });

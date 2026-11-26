@@ -608,6 +608,7 @@ export function OrderScreen(props: OrderScreenProps) {
         mixer={mixer}
         onMixer={chooseMixer}
         onLine={openLine}
+        onFire={readOnly || !rights.canOrder ? undefined : () => void doFire()}
         onBack={back}
         onSend={doSend}
         onPrintBill={printBill}
