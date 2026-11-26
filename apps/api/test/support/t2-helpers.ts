@@ -2,6 +2,8 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/common/prisma';
 
@@ -10,7 +12,6 @@ export const DEMO = {
   manager: ['manager@demo.local', 'Manager#123'],
   supervisor: ['supervisor@demo.local', 'Supervisor#123'],
   waiter: ['waiter@demo.local', 'Waiter#123'],
-  cashier: ['cashier@demo.local', 'Cashier#123'],
   chef: ['chef@demo.local', 'Chef#123'],
 } as const;
 
@@ -21,7 +22,7 @@ export interface T2World {
   orgId: string;
   categoryId: string;
   run: string;
-  tokens: Record<keyof typeof DEMO, string>;
+  tokens: Record<keyof typeof DEMO | 'cashier', string>;
   http: () => request.SuperTest<request.Test>;
   as: (token: string) => Record<string, string>;
 }
@@ -37,7 +38,7 @@ export async function bootWorld(): Promise<T2World> {
   const prisma = app.get(PrismaService);
   const http = () => request(app.getHttpServer()) as unknown as request.SuperTest<request.Test>;
 
-  const tokens = {} as Record<keyof typeof DEMO, string>;
+  const tokens = {} as Record<keyof typeof DEMO | 'cashier', string>;
   for (const [k, [email, password]] of Object.entries(DEMO)) {
     const r = await http().post('/api/auth/login').send({ email, password });
     if (r.status !== 201) throw new Error(`login ${k} gave ${r.status}`);
@@ -50,7 +51,7 @@ export async function bootWorld(): Promise<T2World> {
     select: { organizationId: true },
   });
   const cat = await prisma.category.findFirstOrThrow({ where: { branchId } });
-  return {
+  const w: T2World = {
     app,
     prisma,
     branchId,
@@ -61,6 +62,42 @@ export async function bootWorld(): Promise<T2World> {
     http,
     as: (token: string) => ({ Authorization: `Bearer ${token}`, 'X-Branch-Id': branchId }),
   };
+  // The demo cashier's password is changed by bg1-onboarding's reset flow (T4 finding C2),
+  // so the T2 specs bring their own cashier instead of depending on the order of files.
+  tokens.cashier = (await makeStaff(w, 'Cashier', 'Cashier')).token;
+  return w;
+}
+
+let staffSeq = 0;
+/**
+ * A throwaway staff member for this run: user, role, membership in the test branch, and a
+ * random password made here and never written anywhere. Fictional names only.
+ */
+export async function makeStaff(w: T2World, roleName: string, firstName: string) {
+  const password = `T2-${randomBytes(12).toString('base64url')}#1a`;
+  const email = `t2.${roleName.toLowerCase()}.${w.run}.${++staffSeq}@example.test`;
+  const role = await w.prisma.role.findUniqueOrThrow({ where: { name: roleName } });
+  const user = await w.prisma.user.create({
+    data: {
+      email,
+      passwordHash: await bcrypt.hash(password, 4),
+      firstName,
+      lastName: `T2 ${staffSeq}`,
+    },
+  });
+  await w.prisma.userRole.create({ data: { userId: user.id, roleId: role.id } });
+  await w.prisma.membership.create({
+    data: {
+      userId: user.id,
+      organizationId: w.orgId,
+      branchId: w.branchId,
+      roleId: role.id,
+      isDefaultBranch: true,
+    },
+  });
+  const r = await w.http().post('/api/auth/login').send({ email, password });
+  if (r.status !== 201) throw new Error(`login ${roleName} gave ${r.status}`);
+  return { id: user.id, token: r.body.accessToken as string, firstName };
 }
 
 export async function makeItem(
