@@ -885,8 +885,17 @@ model Table {
     orders       Order[]
     reservations Reservation[]
     events       Event[]
+    // T2 phase 2 (E3) — areas, tabs, put away, joined tables
+    areaId          String?   @map("area_id")
+    isTab           Boolean   @default(false) @map("is_tab")
+    tabNumber       Int?      @map("tab_number")
+    tabNote         String?   @map("tab_note")
+    putAwayAt       DateTime? @map("put_away_at")
+    joinedToTableId String?   @map("joined_to_table_id")
+    area            Area?     @relation(fields: [areaId], references: [id], onDelete: SetNull)
 
     @@unique([branchId, label])
+    @@index([areaId])
     @@index([orgId])
     @@index([branchId])
     @@index([floorPlanId])
@@ -1407,6 +1416,8 @@ model OrderItem {
     voidReason        OrderItemVoidReason?   @map("void_reason")
     voidNote          String?                @map("void_note")
     wasMade           Boolean?               @map("was_made")
+    // T2 phase 2 (E3) — which guest at the table, for a split by guest
+    guest             Int?
     // T2 phase 1 (E2) — an offer line keeps the normal unit price beside it
     normalPrice       Decimal?               @map("normal_price") @db.Decimal(10, 2)
     offerBasePrice    Decimal?               @map("offer_base_price") @db.Decimal(10, 2)
@@ -7314,4 +7325,58 @@ model MenuAvailabilityLog {
     @@index([menuItemId, createdAt])
     @@index([batchId])
     @@map("menu_availability_logs")
+}
+
+// ── T2 phase 2 (E3): areas, tabs, hand-over ──
+
+enum AreaKind {
+    TABLES
+    TABS
+}
+
+/// A part of the floor, shown one at a time (R11). A TABS area holds tabs for standing guests.
+model Area {
+    id        String    @id @default(cuid())
+    orgId     String    @map("org_id")
+    branchId  String    @map("branch_id")
+    name      String
+    kind      AreaKind  @default(TABLES)
+    sortOrder Int       @default(0) @map("sort_order")
+    isActive  Boolean   @default(true) @map("is_active")
+    putAwayAt DateTime? @map("put_away_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    tables Table[]
+
+    @@unique([branchId, name])
+    @@index([orgId])
+    @@index([branchId])
+    @@map("areas")
+}
+
+enum TableHandoverStatus {
+    PENDING
+    ACCEPTED
+    DECLINED
+    CANCELLED
+}
+
+/// A waiter offers one table or all their tables to a named colleague, who accepts or declines.
+model TableHandover {
+    id         String              @id @default(cuid())
+    orgId      String              @map("org_id")
+    branchId   String              @map("branch_id")
+    fromUserId String              @map("from_user_id")
+    toUserId   String              @map("to_user_id")
+    tableIds   String[]            @map("table_ids")
+    status     TableHandoverStatus @default(PENDING)
+    note       String?
+    answeredAt DateTime?           @map("answered_at")
+    createdAt  DateTime            @default(now()) @map("created_at")
+    updatedAt  DateTime            @updatedAt @map("updated_at")
+
+    @@index([branchId, toUserId, status])
+    @@index([branchId, fromUserId, status])
+    @@map("table_handovers")
 }
