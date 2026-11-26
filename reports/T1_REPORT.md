@@ -27,6 +27,23 @@ All six phases are done. Ten screens are built to their drawings and all pass th
 2. **Reservations** [live] `e2e/t1/reservations.spec.ts`. The waiter seats a booking that is late, at another free table that fits (`Reservations-Waiter-seated-1280x800.png`). The supervisor creates, confirms, moves (change table), cancels with a reason, and completes a booking (`Reservations-Supervisor-new-`, `-cancel-`, `-1280x800.png`). Drawing beside build: `reports/proof/T1/compare/Reservations-{Waiter,Supervisor}-vs-built.png`.
 3. **Me, Receipts, Till, Approvals match their drawings** — beside builds in `reports/proof/T1/compare/`; screens driven in `me.spec.ts`, `receipts-till.spec.ts` (a real bill of 5 × 42,000, a pending refund of 160,000 above the 150,000 demo limit, a safe drop, a count that is short, closing and reopening the till) and `approvals.spec.ts` (discount declined with a reason, leave approved, swap declined, alert resolved; who and when shown). Left-out parts are listed below.
 4. **No permission key, route or endpoint on any reachable screen** [live] `e2e/t1/sweep.spec.ts`. It covers every section of the three roles, the hidden cashier Queue, and the "not your role" guards, at 1280 × 800 and 390 × 844, with a wider ban list: API, v1, stub, endpoint, backend, MVP, adapter, build-step names, broken values, raw status codes. One sentence is listed, not fixed. It contains "backend", is beyond Done-when 4's three items, and lives in `lib/cashier/payment-validation.ts`, outside T1's paths: "Cash close is available only when the backend order status is Served." It shows on the hidden Queue.
+**The A2 list** (`docs/direction/research/A2_frontend_as_built.md` §6, the developer wording found on screen):
+- **Gone with the old screens:**
+  - shell: role codes in the header ("WAITER"), the readiness strips with "Provider mode: Manual/stub only", "Session context ready" and "Floor check pending", and "Branch context unavailable";
+  - Floor: the "No active operational tables…" empty state, "Assigned waiter unavailable" on a tile, and abbreviated table labels (now shown in full, prefix small);
+  - the old Waiter, Cashier and Supervisor Me, Reservations, Receipts and Till screens and their lines ("Confirm the backend is running…", "…refreshed from the backend", "This closes the active till if accepted by the backend", "Deferred" cash movements, the role-boundary rows);
+  - the guards' "frontend MVP" and "authenticated session context" text;
+  - the hidden Queue's "audit-derived" line, and two cashier checkout/resolution lines it shows.
+- **Inside an open table, outside T1 (T3 and the table workspaces):**
+  - the waiter order builder lines;
+  - the supervisor table workspace and its dialogs;
+  - the cashier checkout, split and settlement panels;
+  - `lib/waiter/reservation-model.ts:179`, used only by the waiter table workspace.
+- **Outside T1's paths, left as they are:**
+  - `pages/login.tsx` (the "API" chip, the raw branch id, the branch-context lines);
+  - `lib/api/client.ts`'s raw network messages (T1 screens show plain words instead, through `screens/shared/words.ts`);
+  - `lib/cashier/payment-validation.ts` lines, shown on the hidden Queue and in the cashier table workspace;
+  - the constant "Terminal 01" (`pos-shell/station.ts` reads a station label if one is set; no route sets one).
 5. **Rule 10 at 1280 × 800 and 390 × 844** [live] every `rules(...)` call in e2e/t1 checks: no sideways page scroll, no element past the screen edge, no money broken across lines, no cut text, no target under 44 px, no text under 12 px, at most one filled button. The sheets are measured open. All counts are 0 in `*-measured.json`.
 6. **`verify:web` and the web build green; no baseline-passing spec fails except the updated, listed ones** — see Gates.
 7. **Diff inside T1's paths** — see Gates.

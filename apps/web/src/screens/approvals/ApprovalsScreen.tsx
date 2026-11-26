@@ -469,8 +469,9 @@ export function ApprovalsScreen() {
       value={view}
       onChange={(k) => go({ view: k as View, id: null })}
       options={[
-        { key: "waiting", label: `Waiting · ${waiting.length}` },
-        { key: "done", label: `Done today · ${done.length}` },
+        // a count shows only once every list is read, so "0" never means "not read yet"
+        { key: "waiting", label: waitingQs.every((q) => q.data) ? `Waiting · ${waiting.length}` : "Waiting" },
+        { key: "done", label: doneQs.every((q) => q.data) ? `Done today · ${done.length}` : "Done today" },
         { key: "history", label: "History" },
       ]}
     />

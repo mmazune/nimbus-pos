@@ -81,6 +81,24 @@ export async function apiCreatePendingDiscount(): Promise<{ discountId: string; 
 }
 
 /** First seeded (P5B2-QA) anomaly id currently in the given status, or null. */
+/**
+ * A pending leave request from the waiter, so the leave specs never depend on demo rows
+ * that an earlier spec in this folder has already decided. Dates are far ahead and vary
+ * per call so two requests never overlap.
+ */
+export async function apiCreatePendingLeave(reason: string): Promise<void> {
+  const token = await apiLogin("waiter");
+  const me = await fetch(`${CFG.api}/api/auth/me`, { headers: h(token) }).then((r) => r.json());
+  const offset = 400 + Math.floor(Math.random() * 3000);
+  const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+  const res = await fetch(`${CFG.api}/api/hr/leave`, {
+    method: "POST",
+    headers: h(token),
+    body: JSON.stringify({ employeeId: me?.employee?.id, leaveType: "ANNUAL", startsAt: `${day(offset)}T00:00:00.000Z`, endsAt: `${day(offset)}T23:59:00.000Z`, reason }),
+  });
+  if (!res.ok) throw new Error(`leave request not created: ${res.status}`);
+}
+
 export async function apiFirstAnomalyId(status: "OPEN" | "ACKNOWLEDGED"): Promise<string | null> {
   const token = await apiLogin("supervisor");
   const res = await fetch(`${CFG.api}/api/analytics/anomalies?status=${status}&limit=50`, { headers: h(token) }).then(
@@ -102,8 +120,8 @@ export async function openApprovalDetail(page: Page, domain: string, id: string)
 export async function gotoApprovals(page: Page) {
   await page.goto("/supervisor/approvals");
   await expect(page).toHaveURL(/\/supervisor\/approvals/);
-  await expect(page.getByRole("tab", { name: /^Waiting/ })).toBeVisible();
-  await page.waitForLoadState("networkidle").catch(() => {});
+  // the count in the tab appears once every list has been read, so a row count after it is real
+  await expect(page.getByRole("tab", { name: /^Waiting · \d+/ })).toBeVisible({ timeout: 30_000 });
 }
 
 const WORD: Record<string, string> = { discounts: "Discount", leave: "Leave", "shift swaps": "Shift swap", anomalies: "Alert" };
@@ -130,14 +148,15 @@ export async function selectRowWithAction(page: Page, action: RegExp, max = 8, r
   const n = Math.min(await rows.count(), max);
   for (let i = 0; i < n; i += 1) {
     await rows.nth(i).click();
-    const btn = page.locator("[data-approval]").getByRole("button", { name: action });
-    if (await btn.count()) {
-      try {
-        await btn.first().waitFor({ state: "visible", timeout: 4000 });
-        return true;
-      } catch {
-        /* keep scanning */
-      }
+    // wait for the panel to draw before asking whether it has the action (count() does not wait)
+    const panel = page.locator("[data-approval]");
+    await panel.first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+    const btn = panel.getByRole("button", { name: action });
+    try {
+      await btn.first().waitFor({ state: "visible", timeout: 4000 });
+      return true;
+    } catch {
+      /* keep scanning */
     }
   }
   return false;

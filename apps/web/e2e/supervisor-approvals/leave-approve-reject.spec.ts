@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { uiLogin } from "../supervisor-prompt3/fixtures";
-import { domainRows, gotoApprovals } from "./approvals-fixtures";
+import { apiCreatePendingLeave, domainRows, gotoApprovals } from "./approvals-fixtures";
 
 /**
  * Leave decisions run against seeded pending leave on the disposable branch.
@@ -14,6 +14,7 @@ import { domainRows, gotoApprovals } from "./approvals-fixtures";
 
 test.describe("Approvals — leave decisions", () => {
   test("approve a pending leave request → it leaves Waiting", async ({ page }) => {
+    await apiCreatePendingLeave("QA leave to approve");
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
     const rows = domainRows(page, /^leave$/i);
@@ -26,6 +27,7 @@ test.describe("Approvals — leave decisions", () => {
   });
 
   test("decline a pending leave request", async ({ page }) => {
+    await apiCreatePendingLeave("QA leave to decline");
     await uiLogin(page, "supervisor");
     await gotoApprovals(page);
     const rows = domainRows(page, /^leave$/i);
