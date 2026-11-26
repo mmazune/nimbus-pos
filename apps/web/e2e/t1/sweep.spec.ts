@@ -37,7 +37,7 @@ const LISTED: string[] = [
 ];
 
 const ROUTES: Record<Exclude<Person, "manager">, string[]> = {
-  waiter: ["/waiter/floor", "/waiter/reservations", "/waiter/me", "/supervisor/floor", "/cashier/floor"],
+  waiter: ["/waiter/floor", "/waiter/reservations", "/waiter/ready", "/waiter/me", "/supervisor/floor", "/cashier/floor"],
   cashier: ["/cashier/floor", "/cashier/receipts", "/cashier/till", "/cashier/me", "/cashier/queue", "/supervisor/approvals"],
   supervisor: ["/supervisor/floor", "/supervisor/reservations", "/supervisor/approvals", "/supervisor/me", "/waiter/floor"],
 };

@@ -12,6 +12,7 @@ import { Button, Card, Field, OptionTile, Pill, Row, RowGroup, Segmented, Sheet,
 import { useStations } from "@/components/kitchen/KitchenShell";
 import { useTouchHeader } from "@/components/pos-shell/TouchShell";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { isBartender } from "@/lib/auth/role";
 import { loadMenu, soldSince, type MenuItem } from "@/screens/order/data/menu";
 
 import { useWide } from "../floor/useWide";
@@ -22,7 +23,7 @@ import { kitchenMenuKey } from "./TicketsScreen";
 const QUICK = [5, 10, 12, 20];
 
 export function SoldOutScreen() {
-  const { accessToken, branchId } = useAuth();
+  const { accessToken, branchId, user } = useAuth();
   const qc = useQueryClient();
   const wide = useWide();
   const stations = useStations();
@@ -47,7 +48,7 @@ export function SoldOutScreen() {
     .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, view === "all" && !needle ? 60 : 200);
 
-  useTouchHeader({ title: "Sold out", summary: q.data ? `Sold out and low · ${outOrLow.length}` : undefined, asAt: q.dataUpdatedAt || undefined });
+  useTouchHeader({ title: isBartender(user) ? "Bar" : "Kitchen", summary: q.data ? `Sold out and low · ${outOrLow.length}` : undefined, asAt: q.dataUpdatedAt || undefined });
 
   async function act(id: string, fn: () => Promise<unknown>) {
     setBusy(id);

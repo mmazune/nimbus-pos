@@ -68,7 +68,8 @@ test("waiter asks for leave, clocks in, and End my shift asks first (1280 × 800
   await sheet.getByRole("button", { name: "Send the request" }).click();
   await expect(sheet.getByText(/Write the first day/)).toBeVisible();
   // a day no earlier run has asked for (the API refuses an overlapping request)
-  const d = new Date(Date.now() + (30 + (Math.floor(Date.now() / 1000) % 600)) * 86_400_000);
+  // (T5: far from the approvals spec's leave, which uses the same waiter on the demo venue)
+  const d = new Date(Date.now() + (800 + (Math.floor(Date.now() / 1000) % 600)) * 86_400_000);
   const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   await sheet.getByLabel(/^first day/i).fill(day);
   await sheet.getByLabel(/^last day/i).fill(day);

@@ -28,7 +28,7 @@ test("waiter on a phone: food, then drinks, two sends", async ({ page }) => {
 
   // Food: Grills → burger (the item sheet), Sides → chips ×2, Grills → wings.
   await page.getByRole("button", { name: "Popular", exact: true }).tap();
-  await page.getByRole("button", { name: /^Beef burger,/ }).tap();
+  await page.getByRole("button", { name: /^Beef burger, 28,000/ }).tap();
   const sheet = page.locator("[data-order-item-sheet]");
   await expect(sheet).toBeVisible();
   await sheet.getByRole("button", { name: "Medium", exact: true }).tap();

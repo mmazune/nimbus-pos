@@ -79,7 +79,8 @@ test("waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling", a
   expect(f.visibleWithoutScrolling).toBe(32);
   if (onVenue()) {
     // The demo venue's service has tickets at the pass and in the kitchen: Ready and Late come from the server (T5).
-    expect(f.states).toEqual(expect.arrayContaining(["cleaning", "free", "notSent", "open", "reserved"]));
+    expect(f.states).toEqual(expect.arrayContaining(["cleaning", "free", "reserved"]));
+    expect(f.states.some((st) => ["open", "notSent", "ready", "late"].includes(st ?? ""))).toBe(true);
     for (const st of f.states) expect(["cleaning", "free", "notSent", "open", "reserved", "ready", "late"]).toContain(st);
   } else {
     expect(f.states).toEqual(["cleaning", "free", "notSent", "open", "reserved"]);
@@ -160,7 +161,10 @@ test("tapping a table opens what it opened before, for each role", async ({ page
   for (const who of ["waiter", "cashier", "supervisor"] as const) {
     await openMainHall(page, who);
     const state = who === "waiter" ? "free" : "open";
-    const tile = page.locator(`[data-floor-tile="${state}"]`).first();
+    // An occupied table: "open", or on the demo venue the server's Ready, Late or Not sent (T5).
+    const tile = (state === "open"
+      ? page.locator('[data-floor-tile="open"], [data-floor-tile="ready"], [data-floor-tile="late"], [data-floor-tile="notSent"]')
+      : page.locator(`[data-floor-tile="${state}"]`)).first();
     const tableId = await tile.getAttribute("data-floor-table-id");
     await tile.locator("button").click();
     await expect(page.locator("[data-order-screen]")).toBeVisible();

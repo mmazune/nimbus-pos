@@ -56,7 +56,7 @@ test("tap counts from the Floor", async ({ page }) => {
       await tap(page.locator("[data-order-mixer]").getByRole("button", { name: "Cola", exact: true }));
     }, /Blended Scotch, Double · Cola/),
     await task("a burger with choices: table, Beef burger (Food › Popular food), Medium, Add", async () => {
-      await tap(page.getByRole("button", { name: /^Beef burger,/ }));
+      await tap(page.getByRole("button", { name: /^Beef burger, 28,000/ }));
       await tap(page.locator("[data-order-item-sheet]").getByRole("button", { name: "Medium", exact: true }));
       await tap(page.getByRole("button", { name: "Add · UGX 28,000" }));
     }, /Beef burger, Medium/),

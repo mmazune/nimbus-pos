@@ -12,13 +12,14 @@ import { Button, Card, Pill, Row, RowGroup, Segmented, Sheet, Text } from "@/com
 import { useStations } from "@/components/kitchen/KitchenShell";
 import { useTouchHeader } from "@/components/pos-shell/TouchShell";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { isBartender } from "@/lib/auth/role";
 
 import { useWide } from "../floor/useWide";
 import { errorWords } from "../shared/words";
 import { bringBack, hhmm, loadTickets, tableWord, type KitchenTicket } from "./kitchen-data";
 
 export function DoneScreen() {
-  const { accessToken, branchId } = useAuth();
+  const { accessToken, branchId, user } = useAuth();
   const qc = useQueryClient();
   const wide = useWide();
   const stations = useStations();
@@ -38,7 +39,7 @@ export function DoneScreen() {
     .filter((t) => t.readyAt && new Date(t.readyAt).getTime() >= since)
     .sort((a, b) => String(b.readyAt).localeCompare(String(a.readyAt)));
   useTouchHeader({
-    title: "Done",
+    title: isBartender(user) ? "Bar" : "Kitchen",
     summary: q.data ? `${span === "hour" ? "Done in the last hour" : "Done today"} · ${done.length === 1 ? "1 ticket" : `${done.length} tickets`}` : undefined,
     asAt: q.dataUpdatedAt || undefined,
   });

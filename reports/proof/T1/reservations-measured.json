@@ -8,10 +8,10 @@
     "small": [],
     "tinyText": [],
     "filled": [
-      "Seat at table 1"
+      "Seat at table 12"
     ],
-    "checkedText": 71,
-    "checkedTargets": 23
+    "checkedText": 53,
+    "checkedTargets": 19
   },
   "supervisor-create-1280": {
     "viewport": "1280x800",
@@ -24,8 +24,8 @@
     "filled": [
       "Create booking"
     ],
-    "checkedText": 70,
-    "checkedTargets": 33
+    "checkedText": 50,
+    "checkedTargets": 28
   },
   "supervisor-1280": {
     "viewport": "1280x800",
@@ -36,10 +36,10 @@
     "small": [],
     "tinyText": [],
     "filled": [
-      "Seat at table 1"
+      "Seat at table 12"
     ],
-    "checkedText": 78,
-    "checkedTargets": 32
+    "checkedText": 58,
+    "checkedTargets": 27
   },
   "waiter-390": {
     "viewport": "390x844",
@@ -50,8 +50,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 47,
-    "checkedTargets": 15
+    "checkedText": 28,
+    "checkedTargets": 11
   },
   "supervisor-390": {
     "viewport": "390x844",
@@ -62,8 +62,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 52,
-    "checkedTargets": 22
+    "checkedText": 31,
+    "checkedTargets": 17
   },
   "supervisor-history-390": {
     "viewport": "390x844",
@@ -74,8 +74,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 67,
-    "checkedTargets": 23
+    "checkedText": 31,
+    "checkedTargets": 14
   },
   "waiter-detail-sheet-390": {
     "viewport": "390x844",
@@ -86,10 +86,10 @@
     "small": [],
     "tinyText": [],
     "filled": [
-      "Seat at table 4"
+      "Seat at B01"
     ],
-    "checkedText": 66,
-    "checkedTargets": 22
+    "checkedText": 48,
+    "checkedTargets": 18
   },
   "supervisor-create-sheet-390": {
     "viewport": "390x844",
@@ -102,8 +102,8 @@
     "filled": [
       "Create booking"
     ],
-    "checkedText": 66,
-    "checkedTargets": 31
+    "checkedText": 46,
+    "checkedTargets": 26
   },
   "supervisor-cancel-sheet-390": {
     "viewport": "390x844",
@@ -116,7 +116,7 @@
     "filled": [
       "Cancel booking"
     ],
-    "checkedText": 63,
-    "checkedTargets": 27
+    "checkedText": 43,
+    "checkedTargets": 22
   }
 }

@@ -40,6 +40,8 @@ export type OrderLineModel = {
   priceKnown?: boolean;
   /** Not sent, and its item is sold out: it cannot go (T2 `unsendable`). */
   unsendable?: boolean;
+  /** "19:40": when its item sold out, for the red line's words. */
+  soldOutAt?: string;
   /** Held back (starters now, mains later): Send skips it until it is fired. */
   held?: boolean;
   /** Fired and inside its 3-second undo window: goes to the kitchen at `fireAt`. */

@@ -10,6 +10,8 @@ export type OrderLineProps = {
   /** Grouped shillings. */
   price: string;
   state: OrderLineState;
+  /** soldOut: the line under the name (drawing Order-Line-Sold-Out). */
+  note?: string;
   /** Inside a sheet: no side padding, so the line lines up with the sheet's own edge. */
   flush?: boolean;
   onClick?: () => void;
@@ -22,7 +24,7 @@ const WORD: Record<OrderLineState, string> = { notSent: "not sent", sent: "sent"
  * One line of an order: not sent, sent (quieter), voided (struck through, never deleted — R6),
  * or not sent with its item sold out (red, T5): it cannot go, and the screen offers Remove beside it.
  */
-export function OrderLine({ quantity, name, choices, price, state, flush = false, onClick, demo }: OrderLineProps) {
+export function OrderLine({ quantity, name, choices, price, state, note, flush = false, onClick, demo }: OrderLineProps) {
   const sentish = state === "sent" || state === "voided";
   return (
     <button
@@ -63,7 +65,7 @@ export function OrderLine({ quantity, name, choices, price, state, flush = false
           {name}
         </span>
         {choices ? <span className="text-kit-small text-kit-muted">{choices}</span> : null}
-        {state === "soldOut" ? <span className="text-kit-small text-kit-red">Sold out, it cannot be sent</span> : null}
+        {state === "soldOut" ? <span className="text-kit-small text-kit-red">{note ?? "Sold out. It will not send and is not on the bill."}</span> : null}
       </span>
       <span className={["whitespace-nowrap text-kit-price", state === "voided" ? "text-kit-muted line-through" : state === "soldOut" ? "text-kit-red" : "text-kit-text"].join(" ")}>
         {price}

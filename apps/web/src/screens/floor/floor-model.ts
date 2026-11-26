@@ -292,6 +292,19 @@ export function buildFloorTiles(source: FloorSource, viewer: FloorViewer, now: D
   return tiles.sort((a, b) => compareLabels(a.label, b.label));
 }
 
+/** A tab's note as the tile shows it: whole words up to what a tile holds (the full note is on the tab). */
+export function shortNote(note: string, max = 16): string {
+  if (note.length <= max) return note;
+  const words = note.split(/\s+/);
+  let out = "";
+  for (const w of words) {
+    const next = out ? `${out} ${w}` : w;
+    if (next.length > max) break;
+    out = next;
+  }
+  return (out || note.slice(0, max)).replace(/[,;:.]+$/, "");
+}
+
 /** The tile's words for each density, as `TableTile` takes them. */
 export function tileWords(t: FloorTile) {
   const seats = t.seats ? `${t.seats} seats` : undefined;
@@ -299,7 +312,7 @@ export function tileWords(t: FloorTile) {
   const booked = [t.bookedAt, t.party ? `${t.party} guests` : undefined].filter(Boolean).join(" · ") || undefined;
   if (t.isTab && t.tabNote && (t.state === "free" || t.state === "open" || t.state === "notSent")) {
     // A tab is found by its note ("Red cap at the bar"), not by seats.
-    return { detail: t.tabNote, short: t.minutes ?? t.tabNote };
+    return { detail: shortNote(t.tabNote), short: t.minutes };
   }
   switch (t.state) {
     case "joined":

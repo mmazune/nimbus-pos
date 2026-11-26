@@ -24,6 +24,9 @@ export function touchSections(role: TouchRole): readonly KitSection[] {
 
 /** The section a path belongs to: `/cashier/floor?tableId=x` → "floor". */
 export function touchSectionKey(role: TouchRole, pathname: string): string {
-  const match = touchSections(role).find((s) => pathname === s.href || pathname.startsWith(`${s.href}/`));
+  // The longest href that matches: /kitchen/done is Done, not Tickets (/kitchen).
+  const match = touchSections(role)
+    .filter((s) => pathname === s.href || pathname.startsWith(`${s.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0];
   return match?.key ?? "";
 }

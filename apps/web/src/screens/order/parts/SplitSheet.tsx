@@ -58,10 +58,10 @@ export function SplitSheet({ placement, title, ctx, orderId, totalMinor, lines, 
             <section key={g} aria-label={`Guest ${g}`}>
               <div className="flex items-baseline justify-between">
                 <Text variant="row">{`Guest ${g}`}</Text>
-                <Text variant="sup" tone="muted">{formatMoney(mine.reduce((s, l) => s + l.lineMinor, 0))}</Text>
+                <Text variant="row">{formatMoney(mine.reduce((s, l) => s + l.lineMinor, 0))}</Text>
               </div>
               {mine.map((l) => (
-                <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="sent" />
+                <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText({ ...l, guest: null }) || undefined} price={groupShillings(l.lineMinor)} state="sent" />
               ))}
             </section>
           );
@@ -102,9 +102,9 @@ export function SplitSheet({ placement, title, ctx, orderId, totalMinor, lines, 
       ));
     body = (
       <div className="flex flex-col gap-kit-12" data-split-item>
-        <div className="flex items-baseline justify-between"><Text variant="row">{`Bill 1, stays on ${title}`}</Text><Text variant="sup" tone="muted">{formatMoney(sum(first))}</Text></div>
+        <div className="flex items-baseline justify-between"><Text variant="row">{`Bill 1, stays on ${title}`}</Text><Text variant="row">{formatMoney(sum(first))}</Text></div>
         {list(first)}
-        <div className="flex items-baseline justify-between"><Text variant="row">Bill 2, new</Text><Text variant="sup" tone="muted">{formatMoney(sum(second))}</Text></div>
+        <div className="flex items-baseline justify-between"><Text variant="row">Bill 2, new</Text><Text variant="row">{formatMoney(sum(second))}</Text></div>
         {second.length ? list(second) : <Text variant="sup" tone="muted">Tap a line to move it to the other bill.</Text>}
         <Text variant="sup" tone="muted">Each bill is paid on its own; the table frees when both are paid.</Text>
       </div>
@@ -130,7 +130,7 @@ export function SplitSheet({ placement, title, ctx, orderId, totalMinor, lines, 
           ))}
           <OptionTile label="Half" current={typed === Math.round(totalMinor / 200) * 100} onClick={() => setAmount(String(Math.round(totalMinor / 200)))} />
         </div>
-        <div className="flex items-baseline justify-between"><Text variant="row">{`Bill 2, left on ${title}`}</Text><Text variant="sup" tone="muted">{ok ? formatMoney(totalMinor - typed) : "—"}</Text></div>
+        <div className="flex items-baseline justify-between"><Text variant="row">{`Bill 2, left on ${title}`}</Text><Text variant="row">{ok ? formatMoney(totalMinor - typed) : "Type bill 1"}</Text></div>
         <Text variant="sup" tone="muted">Bill 1 is a sum, not items. The lines stay on the table until the last shilling is paid; the cashier sees the two shares.</Text>
       </div>
     );
@@ -149,7 +149,8 @@ export function SplitSheet({ placement, title, ctx, orderId, totalMinor, lines, 
         </div>
         {count ? (
           <>
-            <Text variant="row">{`Each pays ${formatMoney(shares[shares.length - 1])}`}</Text>
+            <Text variant="sup" tone="muted">Each pays</Text>
+            <Text variant="big">{formatMoney(shares[shares.length - 1])}</Text>
             {shares[0] !== shares[shares.length - 1] ? (
               <Text variant="sup" tone="muted">{`${groupShillings(totalMinor)} does not divide by ${count}, so the first bill takes the extra ${groupShillings(shares[0] - shares[1])} shillings: ${shares.map(groupShillings).join(", ")}.`}</Text>
             ) : null}

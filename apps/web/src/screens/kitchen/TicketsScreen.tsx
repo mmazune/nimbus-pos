@@ -23,29 +23,30 @@ import { ageOf, hhmm, loadTickets, markReady, tableWord, toMakeNow, type Kitchen
 
 export const kitchenMenuKey = (branchId: string | null | undefined) => ["kitchen", "menu", branchId] as const;
 
-function TicketCard({ t, now, busy, onReady }: { t: KitchenTicket; now: number; busy: boolean; onReady: () => void }) {
+function TicketCard({ t, now, busy, onReady, showStation }: { t: KitchenTicket; now: number; busy: boolean; onReady: () => void; showStation: boolean }) {
   const age = ageOf(t, now);
   const flags = [...new Set([...t.allergies.map((a) => `${a} allergy`), ...t.lines.filter((l) => l.allergy && !l.voided).map((l) => `${l.allergy} allergy`)])].map((a) => a.charAt(0).toUpperCase() + a.slice(1));
   const takeaway = t.lines.some((l) => l.takeaway && !l.voided);
   return (
+    <div className="flex [&>section]:flex [&>section]:flex-1 [&>section]:flex-col">
     <Card padding="regular" label={`${tableWord(t.table, t.serviceType)}, ${age.minutes} min`}>
-      <div className="flex flex-col gap-kit-8" data-kitchen-ticket={t.id} data-age={age.tone}>
+      <div className="flex flex-1 flex-col gap-kit-8" data-kitchen-ticket={t.id} data-age={age.tone}>
         <div className="flex items-center gap-kit-8">
           <Text variant="h">{tableWord(t.table, t.serviceType)}</Text>
           <span className="flex-1" />
           <Pill tone={age.tone}>{`${age.minutes} min`}</Pill>
         </div>
-        <Text variant="sup" tone="muted">{`${stationWord(t.station)} · sent ${hhmm(t.startedAt)}${t.recalledAt ? " · brought back" : ""}`}</Text>
+        <Text variant="sup" tone="muted">{`${showStation ? `${stationWord(t.station)} · ` : ""}sent ${hhmm(t.startedAt)}${t.recalledAt ? " · brought back" : ""}`}</Text>
         {flags.length || takeaway ? (
           <div className="flex flex-wrap gap-kit-6" data-kitchen-flags>
             {flags.map((f) => <Pill key={f} tone="red">{f}</Pill>)}
             {takeaway ? <Pill tone="neutral">Takeaway</Pill> : null}
           </div>
         ) : null}
-        <div className="flex flex-col gap-kit-4">
+        <div className="flex flex-1 flex-col gap-kit-4">
           {t.lines.map((l) => (
             <div key={l.id} className="flex flex-col" data-kitchen-line={l.voided ? "voided" : "live"}>
-              <span className={["text-kit-body", l.voided ? "text-kit-muted line-through" : "text-kit-text"].join(" ")}>
+              <span className={["text-kit-row", l.voided ? "text-kit-muted line-through" : "text-kit-text"].join(" ")}>
                 <strong>{l.quantity}</strong> {l.name}
               </span>
               {[l.serving, l.notes, l.allergy && !l.voided ? `${l.allergy} allergy` : null].filter(Boolean).length ? (
@@ -64,6 +65,7 @@ function TicketCard({ t, now, busy, onReady }: { t: KitchenTicket; now: number; 
         </div>
       </div>
     </Card>
+    </div>
   );
 }
 
@@ -148,7 +150,7 @@ export function TicketsScreen() {
           </Card>
         ) : (
           <div className="grid min-h-0 grid-cols-1 content-start gap-kit-12 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4" data-kitchen-tickets>
-            {shown.map((t) => <TicketCard key={t.id} t={t} now={now} busy={busy === t.id} onReady={() => void ready(t)} />)}
+            {shown.map((t) => <TicketCard key={t.id} t={t} now={now} busy={busy === t.id} onReady={() => void ready(t)} showStation={stations.length > 1 && station === null} />)}
           </div>
         )}
       </div>

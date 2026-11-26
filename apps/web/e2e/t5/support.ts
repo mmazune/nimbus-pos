@@ -96,7 +96,7 @@ export async function pinSignIn(page: Page, key: VenueKey | string) {
 
 /** A second (third…) terminal: its own browser context, so its sign-in is its own. */
 export async function terminal(browser: Browser, size: { width: number; height: number } = { width: 1280, height: 800 }): Promise<{ ctx: BrowserContext; page: Page }> {
-  const ctx = await browser.newContext({ viewport: size });
+  const ctx = await browser.newContext({ viewport: size, timezoneId: "Africa/Kampala" });
   return { ctx, page: await ctx.newPage() };
 }
 

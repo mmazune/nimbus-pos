@@ -104,6 +104,8 @@ for (const size of SIZES) {
     await K.page.getByRole("dialog").getByRole("button", { name: "Set 2 left" }).click();
     await expect(row).toContainText("2 left", { timeout: 10_000 });
 
+    // The three waiters who order are on shift (an earlier case may have ended one; they start again).
+    for (const w of ["waiter1", "waiter2", "waiter3"]) await api((await as(w)).token, "POST", "/shifts/open", {}, [200, 201, 409]);
     const [A, B, C, D] = await Promise.all([0, 1, 2, 3].map(() => terminal(browser, size.vp)));
     await Promise.all([pinSignIn(A.page, "waiter1"), pinSignIn(B.page, "waiter2"), pinSignIn(C.page, "waiter3"), pinSignIn(D.page, "waiter4")]);
     const [ta, tb, tc] = await Promise.all(tables.map((l) => tableByLabel(l)));

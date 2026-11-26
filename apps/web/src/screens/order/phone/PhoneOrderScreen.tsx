@@ -254,9 +254,9 @@ export function PhoneOrderScreen(p: Props) {
                   l.unsendable ? (
                     <div key={l.key} className="flex items-center gap-kit-8" data-order-line-soldout>
                       <div className="min-w-0 flex-1">
-                        <OrderLine flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="soldOut" />
+                        <OrderLine flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price="" state="soldOut" note={`Sold out${l.soldOutAt ? ` at ${l.soldOutAt}` : ""}, after you added it. It will not send and is not on the bill.`} />
                       </div>
-                      <Button tone="text" onClick={() => session.remove(l.key)}>Remove</Button>
+                      <Button tone="danger" onClick={() => session.remove(l.key)}>Remove</Button>
                     </div>
                   ) : (
                     <OrderLine key={l.key} flush quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={groupShillings(l.lineMinor)} state="notSent" onClick={() => { setOrderOpen(false); p.onLine(l); }} />

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActionTile, Banner, Button, Card, KitIcon, OrderHeader, Pill, Sheet, SquareAction, Text } from "@/components/kit";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
-import { loadItemChoices, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
+import { loadItemChoices, soldSince, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
 import { useMenu } from "./data/useMenu";
 import { formatMoney } from "./data/money";
 import { hasOpenTill, sentRounds, takeOverWithSupervisorPin, type LineChoice, type OrderLineModel } from "./data/order";
@@ -432,6 +432,7 @@ export function OrderScreen(props: OrderScreenProps) {
           onVoidItem={(line) => setSheet({ kind: "void", line })}
           lines={session.lines}
           userId={user?.id ?? null}
+          waiterId={order?.waiterId ?? null}
           hasPayment={session.paidMinor > 0 || !session.paidKnown}
           initialStep={sheet.step}
           onDone={async (outcome) => {
@@ -577,7 +578,9 @@ export function OrderScreen(props: OrderScreenProps) {
   const shownLines = useMemo(
     () =>
       pricedLines.map((l) =>
-        l.state === "unsent" && (l.unsendable || menu?.items[l.menuItemId]?.availability.state === "soldOut") ? { ...l, unsendable: true } : l,
+        l.state === "unsent" && (l.unsendable || menu?.items[l.menuItemId]?.availability.state === "soldOut")
+          ? { ...l, unsendable: true, soldOutAt: menu?.items[l.menuItemId] ? soldSince(menu.items[l.menuItemId]) : undefined }
+          : l,
       ),
     [menu, pricedLines],
   );  // What Send can actually send, and the total without lines that cannot go.

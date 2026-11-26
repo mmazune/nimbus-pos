@@ -47,7 +47,7 @@ export function Sheet({ placement, title, summary, onClose, footer, children }: 
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={["absolute flex max-h-full flex-col gap-kit-16 bg-kit-card shadow-kit-up font-kit", PLACE[placement]].join(" ")}
+        className={["absolute flex max-h-kit-sheet-max flex-col gap-kit-16 bg-kit-card shadow-kit-up font-kit", PLACE[placement]].join(" ")}
       >
         {placement === "side" ? null : (
           <span className="h-kit-grab-h w-kit-grab-w self-center rounded-kit-grab bg-kit-line" aria-hidden="true" />

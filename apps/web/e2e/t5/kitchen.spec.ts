@@ -106,6 +106,11 @@ test("Sold out: mark, back on and set a number; the waiter's menu follows", asyn
   await K.page.getByRole("tab", { name: /^All \d+ items/ }).click();
   await K.page.getByLabel("Find an item").fill("Lamb chops");
   const row = K.page.locator('[data-soldout-row="Lamb chops"]');
+  // Another case may have left it sold out on this venue: put it back on first, as a chef would.
+  if (await row.getByRole("button", { name: "Back on" }).count()) {
+    await row.getByRole("button", { name: "Back on" }).click();
+    await expect(row.getByRole("button", { name: "Mark sold out" })).toBeVisible({ timeout: 10_000 });
+  }
   await row.getByRole("button", { name: "Mark sold out" }).click();
   await expect(row).toContainText("Sold out", { timeout: 10_000 });
   const w = (await as("waiter1")).token;
@@ -129,14 +134,17 @@ test("a bartender signs in with a PIN and lands on the bar screen, bar tickets o
   await pinSignIn(B.page, "bartender1");
   await expect(B.page).toHaveURL(/\/kitchen$/);
   await expect(B.page.locator("[data-touch-shell]")).toContainText("Bar");
-  const stations = await B.page.locator("[data-kitchen-ticket]").evaluateAll((els) => els.map((e) => e.closest("section")?.textContent ?? ""));
-  log.barTickets = stations.length;
-  for (const s of stations) expect(s).toContain("Bar ·");
+  // Every ticket on the bartender's screen is a bar ticket (checked against the server's queue).
+  const ids = await B.page.locator("[data-kitchen-ticket]").evaluateAll((els) => els.map((e) => e.getAttribute("data-kitchen-ticket")));
+  const bar = (await api<{ data: Json[] }>((await as("manager1")).token, "GET", "/kds/queue?station=BAR&pageSize=100")).data.map((t) => t.id);
+  log.barTickets = ids.length;
+  expect(ids.length).toBeGreaterThan(0);
+  for (const id of ids) expect(bar).toContain(id);
   await rule10(B.page, "bar-1280", log);
   await shot(B.page, "phase5-bar-1280x800.png");
   // Chef and bartender bars: Tickets, Done, Sold out (Store waits for its engine).
-  const bar = await B.page.locator("[data-touch-bar='terminal'] nav a, [data-touch-bar='terminal'] nav button").allTextContents();
-  log.kitchenBar = bar;
-  expect(bar.map((t) => t.replace(/\d+$/, "").trim())).toEqual(["Tickets", "Done", "Sold out"]);
+  const nav = await B.page.locator("[data-touch-bar='terminal'] nav a, [data-touch-bar='terminal'] nav button").allTextContents();
+  log.kitchenBar = nav;
+  expect(nav.map((t) => t.replace(/\d+$/, "").trim())).toEqual(["Tickets", "Done", "Sold out"]);
   await B.ctx.close();
 });

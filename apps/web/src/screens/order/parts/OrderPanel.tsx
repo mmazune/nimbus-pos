@@ -109,10 +109,10 @@ export function OrderPanel(props: Props) {
               l.unsendable ? (
                 <div key={l.key} className="flex items-center gap-kit-8 pr-kit-16" data-order-line-soldout>
                   <div className="min-w-0 flex-1">
-                    <OrderLine quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price={l.priceKnown === false ? "" : groupShillings(l.lineMinor)} state="soldOut" />
+                    <OrderLine quantity={l.quantity} name={l.name} choices={choicesText(l) || undefined} price="" state="soldOut" note={`Sold out${l.soldOutAt ? ` at ${l.soldOutAt}` : ""}, after you added it. It will not send and is not on the bill.`} />
                   </div>
                   {onRemove ? (
-                    <Button tone="text" size="laptop" onClick={() => onRemove(l)}>
+                    <Button tone="danger" size="laptop" onClick={() => onRemove(l)}>
                       Remove
                     </Button>
                   ) : null}

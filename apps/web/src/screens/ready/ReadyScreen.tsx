@@ -122,18 +122,20 @@ export function ReadyScreen() {
       ) : (
         <div className="grid grid-cols-1 gap-kit-14 md:grid-cols-2 xl:grid-cols-3" data-ready-list>
           {tickets.map((t) => {
+            const waited = t.readyAt ? Math.max(0, Math.floor((now - new Date(t.readyAt).getTime()) / 60000)) : 0;
             const mins = t.readyAt ? formatMinutes(Math.max(0, Math.floor((now - new Date(t.readyAt).getTime()) / 60000))) : null;
             return (
-              <Card key={t.id} padding="roomy" label={`${tableWord(t.tableLabel)} ready`}>
-                <div className="flex flex-col gap-kit-12" data-ready-ticket={t.id}>
+              <div key={t.id} className="flex [&>section]:flex [&>section]:flex-1 [&>section]:flex-col">
+              <Card padding="roomy" label={`${tableWord(t.tableLabel)} ready`}>
+                <div className="flex flex-1 flex-col gap-kit-12" data-ready-ticket={t.id}>
                   <div className="flex items-center gap-kit-8">
                     <Text variant="h">{tableWord(t.tableLabel)}</Text>
-                    <Pill tone="green">Ready</Pill>
                     <span className="flex-1" />
-                    {mins ? <Text variant="sup" tone="muted">{mins}</Text> : null}
+                    {/* Waiting at the pass: green while fresh, amber after 5 minutes, red after 10. */}
+                    <Pill tone={waited < 5 ? "green" : waited < 10 ? "amber" : "red"}>{mins ? `Ready ${mins}` : "Ready"}</Pill>
                   </div>
                   <Text variant="sup" tone="muted">{`${stationWord(t.station)} · on the pass`}</Text>
-                  <div className="flex flex-col gap-kit-4">
+                  <div className="flex flex-1 flex-col gap-kit-4">
                     {t.items.map((it, i) => (
                       <Text key={`${it.name}-${i}`} variant="body">
                         {`${it.quantity} ${it.name}`}
@@ -149,6 +151,7 @@ export function ReadyScreen() {
                   </div>
                 </div>
               </Card>
+              </div>
             );
           })}
         </div>

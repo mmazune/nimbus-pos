@@ -52,7 +52,7 @@ test("Table 12's evening", async ({ browser }) => {
   // A burger with choices: Grills → Beef burger → Medium → Add.
   await home();
   await waiter.getByRole("button", { name: "Popular", exact: true }).click();
-  await waiter.getByRole("button", { name: /^Beef burger,/ }).click();
+  await waiter.getByRole("button", { name: /^Beef burger, 28,000/ }).click();
   await waiter.locator("[data-order-item-sheet]").getByRole("button", { name: "Medium", exact: true }).click();
   await waiter.locator("[data-order-item-sheet]").getByRole("button", { name: "Onions", exact: true }).click(); // an extra choice, beyond the count
   await waiter.getByRole("button", { name: "Add · UGX 28,000" }).click();

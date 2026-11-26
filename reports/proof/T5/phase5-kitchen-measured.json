@@ -1,9 +1,9 @@
 {
-  "openChefTickets": 9,
+  "openChefTickets": 26,
   "at1920": {
-    "cards": 9,
-    "fullyVisible": 9,
-    "gridScrolls": false,
+    "cards": 26,
+    "fullyVisible": 12,
+    "gridScrolls": true,
     "pageScrolls": false
   },
   "kitchen-1920": {
@@ -15,8 +15,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 99,
-    "checkedTargets": 17
+    "checkedText": 222,
+    "checkedTargets": 34
   },
   "kitchen-1280": {
     "viewport": "1280x800",
@@ -27,8 +27,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 99,
-    "checkedTargets": 17
+    "checkedText": 222,
+    "checkedTargets": 34
   },
   "done-sheet-1280": {
     "viewport": "1280x800",
@@ -41,8 +41,8 @@
     "filled": [
       "Bring back to Tickets"
     ],
-    "checkedText": 27,
-    "checkedTargets": 13
+    "checkedText": 33,
+    "checkedTargets": 15
   },
   "soldout-1280": {
     "viewport": "1280x800",
@@ -70,7 +70,7 @@
     "checkedText": 27,
     "checkedTargets": 18
   },
-  "barTickets": 0,
+  "barTickets": 13,
   "bar-1280": {
     "viewport": "1280x800",
     "sideways": 0,
@@ -80,11 +80,11 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 86,
-    "checkedTargets": 13
+    "checkedText": 127,
+    "checkedTargets": 18
   },
   "kitchenBar": [
-    "Tickets8",
+    "Tickets13",
     "Done",
     "Sold out"
   ]

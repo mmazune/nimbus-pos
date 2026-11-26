@@ -59,7 +59,7 @@ test("the Floor reads areas from the server; the Tabs area and New tab open a na
   await W.page.getByRole("button", { name: "New tab" }).click();
   const sheet = W.page.getByRole("dialog");
   await expect(sheet).toContainText(/Tab \d+ is the next free number/);
-  await sheet.getByLabel("Note").fill("Red cap at the bar");
+  await sheet.getByLabel("Note").fill("Red cap by bar");
   await rule10(W.page, "new-tab-sheet-1280", log);
   await shot(W.page, "phase3-new-tab-1280x800.png");
   await sheet.getByRole("button", { name: /^Open Tab \d+$/ }).click();
@@ -69,11 +69,11 @@ test("the Floor reads areas from the server; the Tabs area and New tab open a na
   await W.page.getByRole("button", { name: "Floor", exact: true }).first().click();
   await W.page.getByRole("tab", { name: "All tables" }).click();
   await W.page.getByRole("button", { name: /^Tabs/ }).click();
-  await expect(W.page.locator("[data-floor-tile]").filter({ hasText: "Red cap at the bar" })).toHaveCount(1);
+  await expect(W.page.locator("[data-floor-tile]").filter({ hasText: "Red cap by bar" })).toHaveCount(1);
   await rule10(W.page, "tabs-area-1280", log);
   await shot(W.page, "phase3-tabs-area-1280x800.png");
   const { areas } = await api<{ areas: Json[] }>((await as("manager1")).token, "GET", "/areas");
-  const tab = (areas.find((a) => a.kind === "TABS") as Json).tables.find((t: Json) => t.tabNote === "Red cap at the bar");
+  const tab = (areas.find((a) => a.kind === "TABS") as Json).tables.find((t: Json) => t.tabNote === "Red cap by bar");
   log.tab = { label: tab?.label, isTab: tab?.isTab };
   expect(tab?.isTab).toBe(true);
   await W.ctx.close();
@@ -220,7 +220,7 @@ test("split the bill four ways from the table actions sheet", async ({ browser }
       await S.page.getByRole("dialog").getByRole("button", { name: /^Make 2 bills · / }).click();
     } else {
       await S.page.getByRole("dialog").getByRole("button", { name: "3", exact: true }).click();
-      await expect(S.page.getByRole("dialog")).toContainText(/Each pays UGX/);
+      await expect(S.page.getByRole("dialog")).toContainText(/Each pays\s*UGX/);
       await shot(S.page, "phase3-split-even-1280x800.png");
       await S.page.getByRole("dialog").getByRole("button", { name: "Make 3 bills" }).click();
     }

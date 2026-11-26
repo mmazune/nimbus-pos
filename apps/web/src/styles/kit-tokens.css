@@ -126,6 +126,7 @@
   --kit-size-sheet-wide-gap: 372px; /* the wide sheet stops short of the order column */
   --kit-size-sheet-side: 440px;
   --kit-size-sheet-mid: 760px;
+  --kit-size-sheet-max: calc(100% - 32px); /* a sheet always leaves 32 px of the screen above it (T5 look review) */
 
   /* ── Spacing (gaps and padding, px) ───────────────────────────── */
   --kit-space-0: 0px;

@@ -26,9 +26,9 @@
     "checkedTargets": 17
   },
   "till-drawer-lines": [
-    "Float at the start\n\n250,000",
-    "Cash payments in the branch, less refunds\n\n+ 10,916,500",
-    "Should be in the drawer\n\nUGX 11,166,500"
+    "Float at the start\n\n200,000",
+    "Cash payments in the branch, less refunds\n\n+ 567,000",
+    "Should be in the drawer\n\nUGX 767,000"
   ],
   "till-1280": {
     "viewport": "1280x800",
@@ -81,8 +81,8 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 614,
-    "checkedTargets": 209
+    "checkedText": 32,
+    "checkedTargets": 15
   },
   "receipts-sheet-390": {
     "viewport": "390x844",

@@ -118,7 +118,7 @@ export function IncomingHandover({ ctx, phone, onAnswered }: { ctx: Ctx; phone: 
     <Sheet
       placement={phone ? "bottom" : "middle"}
       title={`${h.fromName} offers you ${n === 1 ? "1 table" : `${n} tables`}`}
-      summary={`${h.fromName} is ending the shift. The tables become yours when you accept.`}
+      summary={`${h.fromName} is ending the shift. ${n === 1 ? "It becomes yours" : "They become yours"} when you accept.`}
       onClose={() => setHidden(h.id)}
       footer={
         <>

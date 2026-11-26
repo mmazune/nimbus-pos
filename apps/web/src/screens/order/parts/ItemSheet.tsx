@@ -79,25 +79,43 @@ export function ItemSheet({ placement, item, groups, initial, mode, onDone, onRe
     return base;
   }, [item, serving]);
 
-  const footer = (
-    <>
-      <Stepper
-        value={String(quantity)}
-        noun="items"
-        onDecrease={() => setQuantity((q) => Math.max(1, q - 1))}
-        onIncrease={() => setQuantity((q) => Math.min(99, q + 1))}
-      />
-      <span className="flex-1" />
-      {mode === "edit" && onRemove ? (
-        <Button tone="danger" onClick={onRemove}>
-          Remove
-        </Button>
-      ) : null}
-      <Button tone="filled" disabled={missing.length > 0} onClick={() => onDone(result())}>
-        {`${mode === "add" ? "Add" : "Save"} · ${formatMoney(unit * quantity)}`}
-      </Button>
-    </>
+  const stepper = (
+    <Stepper
+      value={String(quantity)}
+      noun="items"
+      onDecrease={() => setQuantity((q) => Math.max(1, q - 1))}
+      onIncrease={() => setQuantity((q) => Math.min(99, q + 1))}
+    />
   );
+  const remove = mode === "edit" && onRemove ? (
+    <Button tone="danger" onClick={onRemove}>
+      Remove
+    </Button>
+  ) : null;
+  const save = (
+    <Button tone="filled" fill={placement === "bottom"} disabled={missing.length > 0} onClick={() => onDone(result())}>
+      {`${mode === "add" ? "Add" : "Save"} · ${formatMoney(unit * quantity)}`}
+    </Button>
+  );
+  // On a phone the filled button has a row of its own, so it is never cut at 390 (T5 look review).
+  const footer =
+    placement === "bottom" ? (
+      <div className="flex w-full flex-col gap-kit-12">
+        <div className="flex items-center gap-kit-12">
+          {stepper}
+          <span className="flex-1" />
+          {remove}
+        </div>
+        <div className="flex">{save}</div>
+      </div>
+    ) : (
+      <>
+        {stepper}
+        <span className="flex-1" />
+        {remove}
+        {save}
+      </>
+    );
 
   return (
     <Sheet placement={placement} title={item.name} summary={summary} onClose={onClose} footer={footer}>

@@ -7,7 +7,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { ActionTile, Button, Field, OptionTile, OrderLine, Sheet, Text, type SheetPlacement } from "@/components/kit";
+import { ActionTile, Button, Chip, Field, OptionTile, OrderLine, Row, RowGroup, Sheet, Text, type SheetPlacement } from "@/components/kit";
 
 import { groupShillings } from "../data/money";
 import { formatMoney } from "../data/money";
@@ -53,6 +53,8 @@ type Props = {
   lines: OrderLineModel[];
   /** The signed-in person (a hand-over is to someone else). */
   userId: string | null;
+  /** The order's waiter now ("Has it now" on Change waiter). */
+  waiterId?: string | null;
   /** A payment is posted: Discount and Cancel the order are hidden (the API does not check; the old screen did). */
   hasPayment: boolean;
   /** Open straight on one action (the laptop bar's Move table, Split bill, Discount). */
@@ -65,7 +67,7 @@ type Props = {
 const PERCENTS = [5, 10, 15, 20, 50];
 const DISCOUNT_REASONS = ["Regular guest", "Slow service", "Kitchen error", "Manager’s offer"];
 
-export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, totalMinor, canSameAgain, onSameAgain, sentLines, onVoidItem, lines, userId, hasPayment, initialStep = "menu", onDone, onClose }: Props) {
+export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, totalMinor, canSameAgain, onSameAgain, sentLines, onVoidItem, lines, userId, waiterId = null, hasPayment, initialStep = "menu", onDone, onClose }: Props) {
   const [step, setStep] = useState<Step>(initialStep);
   const [target, setTarget] = useState<string | null>(null);
   const [percent, setPercent] = useState<number | null>(null);
@@ -90,13 +92,14 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
   // The branch's tables by area (T2): what is joined to this table, and where a line can go.
   const areasQ = useQuery({
     queryKey: ["order-screen", "areas", ctx?.branchId],
-    enabled: Boolean(ctx && (step === "unjoin" || step === "lineTo" || step === "menu")),
+    enabled: Boolean(ctx && (step === "unjoin" || step === "lineTo" || step === "menu" || step === "move")),
     queryFn: () => loadAreas((ctx as Ctx).token, (ctx as Ctx).branchId),
     // Read fresh each time the sheet opens: a join made a moment ago must show "Split tables again".
     staleTime: 0,
     refetchOnMount: "always",
   });
-  const allTables = (areasQ.data ?? []).flatMap((a) => (a.tables ?? []).map((t) => ({ ...t, areaName: a.name })));
+  const allTables = (areasQ.data ?? []).flatMap((a) => (a.tables ?? []).map((t) => ({ ...t, areaName: a.name, areaId: a.id })));
+  const areaOfTable = (id: string) => allTables.find((t) => t.id === id)?.areaId ?? null;
   const joinedHere = allTables.filter((t) => t.joinedToTableId && t.joinedToTableId === tableId);
   const colleaguesQ = useQuery({
     queryKey: ["order-screen", "colleagues", ctx?.branchId],
@@ -105,6 +108,17 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     staleTime: 5_000,
   });
   const [line, setLine] = useState<OrderLineModel | null>(null);
+  // One area at a time in Move table and Move a line (T5 look review: no wall of every table).
+  const hereArea = (areasQ.data ?? []).find((a) => (a.tables ?? []).some((t) => t.id === tableId))?.id ?? null;
+  const [areaPick, setAreaPick] = useState<string | null>(null);
+  const areaId = areaPick ?? hereArea ?? areasQ.data?.[0]?.id ?? null;
+  const areaChips = (counts: (id: string) => number) => (
+    <div className="flex flex-wrap gap-kit-8" role="group" aria-label="Areas">
+      {(areasQ.data ?? []).filter((a) => counts(a.id) > 0).map((a) => (
+        <Chip key={a.id} label={a.name} count={counts(a.id)} current={areaId === a.id} onClick={() => { setAreaPick(a.id); setTarget(null); }} />
+      ))}
+    </div>
+  );
   const tablesQ = useQuery({
     queryKey: ["order-screen", "free-tables", ctx?.branchId, tableId],
     enabled: Boolean(ctx && step === "move"),
@@ -138,8 +152,9 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     return (
       <Sheet placement={placement} title={`Move ${title}`} summary={`${formatMoney(totalMinor)} · pick a free table. The order, the bill and the waiter go with it.`} onClose={onClose}
         footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => moveTable(ctx as Ctx, tableId as string, target as string), { leave: true, message: `Moved to ${chosen?.label}. The order, the bill and the waiter went with it.` })}>{chosen ? `Move to ${chosen.label}` : "Choose a table"}</Button></>}>
+        {areaChips((id) => (tablesQ.data ?? []).filter((t) => areaOfTable(t.id) === id).length)}
         <div className="grid grid-cols-3 gap-kit-8 md:grid-cols-5" data-order-move>
-          {(tablesQ.data ?? []).map((t) => (
+          {(tablesQ.data ?? []).filter((t) => !areaId || areaOfTable(t.id) === areaId).map((t) => (
             <OptionTile key={t.id} label={t.label} second={t.seats ? `${t.seats} seats` : undefined} current={target === t.id} onClick={() => setTarget(t.id)} />
           ))}
         </div>
@@ -178,7 +193,13 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
             <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterName, groupShillings(o.totalMinor)].filter(Boolean).join(" · ")} current={target === o.tableId} onClick={() => setTarget(o.tableId)} />
           ))}
         </div>
-        {chosen ? <Text variant="sup" tone="muted">{`One bill on ${title}, ${formatMoney(sum)}. ${chosen.tableLabel} shows “Joined to ${title}” until the bill is paid. You can split them again at any time.`}</Text> : null}
+        {chosen ? (
+          <RowGroup>
+            <Row size="settings" title={title} trailing={<Text variant="sup">{formatMoney(totalMinor)}</Text>} />
+            <Row size="settings" title={chosen.tableLabel} trailing={<Text variant="sup">{formatMoney(chosen.totalMinor)}</Text>} />
+            <Row size="settings" title={`One bill on ${title}`} line={`${chosen.tableLabel} shows “Joined to ${title}” until paid; split them again any time`} trailing={<Text variant="row">{formatMoney(sum)}</Text>} />
+          </RowGroup>
+        ) : null}
         {othersQ.data && othersQ.data.length === 0 ? <Text variant="sup" tone="muted">No other table has an open order.</Text> : null}
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
       </Sheet>
@@ -218,8 +239,9 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     return (
       <Sheet placement={placement} title={`Move ${line.name}`} summary={`${line.sentAt ? "Sent" : "Not sent"} · ${formatMoney(line.lineMinor)} · to which table`} onClose={onClose}
         footer={<><Button tone="text" onClick={() => { setStep("linePick"); setError(null); }}>Back</Button><span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => moveLine(ctx as Ctx, orderId as string, line.serverId as string, target as string), { leave: false, message: `${line.name} moved to ${chosen?.label}` })}>{chosen ? `Move to ${chosen.label}` : "Choose a table"}</Button></>}>
+        {areaChips((id) => others.filter((t) => t.areaId === id).length)}
         <div className="grid grid-cols-3 gap-kit-8 md:grid-cols-6" data-order-line-to>
-          {others.map((t) => <OptionTile key={t.id} label={t.label ?? "Table"} second={t.areaName} current={target === t.id} onClick={() => setTarget(t.id)} />)}
+          {others.filter((t) => !areaId || t.areaId === areaId).map((t) => <OptionTile key={t.id} label={t.label ?? "Table"} current={target === t.id} onClick={() => setTarget(t.id)} />)}
         </div>
         <Text variant="sup" tone="muted">Nothing is voided and no stock moves. A free table gets a bill of its own.</Text>
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}
@@ -250,7 +272,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
         footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => (tableId ? changeWaiterAt(ctx as Ctx, tableId, target as string) : changeWaiter(ctx as Ctx, orderId as string, target as string)), { leave: false, message: `${chosen?.name} has this table now; both are told` })}>{chosen ? `Give it to ${chosen.name}` : "Choose who"}</Button></>}>
         <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-4" data-order-waiters>
           {(staffQ.data ?? []).map((m) => (
-            <OptionTile key={m.userId} label={m.name} current={target === m.userId} onClick={() => setTarget(m.userId)} />
+            <OptionTile key={m.userId} label={m.name} second={m.userId === waiterId ? "Has it now" : undefined} disabled={m.userId === waiterId} current={target === m.userId} onClick={() => setTarget(m.userId)} />
           ))}
         </div>
         {error ? <Text variant="sup" tone="red">{error}</Text> : null}

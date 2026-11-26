@@ -2,6 +2,7 @@
   "areaChips": [
     "Bar",
     "Main hall",
+    "Tables",
     "Terrace",
     "VIP",
     "Tabs"
@@ -9,6 +10,7 @@
   "serverAreas": [
     "Bar",
     "Main hall",
+    "Tables",
     "Terrace",
     "VIP",
     "Tabs"
@@ -22,10 +24,10 @@
     "small": [],
     "tinyText": [],
     "filled": [
-      "Open Tab 1"
+      "Open Tab 9"
     ],
-    "checkedText": 34,
-    "checkedTargets": 23
+    "checkedText": 62,
+    "checkedTargets": 32
   },
   "tabs-area-1280": {
     "viewport": "1280x800",
@@ -38,11 +40,11 @@
     "filled": [
       "New tab"
     ],
-    "checkedText": 27,
-    "checkedTargets": 16
+    "checkedText": 55,
+    "checkedTargets": 25
   },
   "tab": {
-    "label": "Tab 1",
+    "label": "Tab 9",
     "isTab": true
   },
   "actions-sheet-1280": {
@@ -72,48 +74,5 @@
       "height": 800
     }
   },
-  "splitItemFrom": "cmwxtqerl023bupitkf8accl7",
-  "t02Splits": 404,
-  "handover-accept-1280": {
-    "viewport": "1280x800",
-    "sideways": 0,
-    "offEdge": [],
-    "wrappedMoney": [],
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "Accept 1 table"
-    ],
-    "checkedText": 69,
-    "checkedTargets": 24
-  },
-  "handover-offer-1280": {
-    "viewport": "1280x800",
-    "sideways": 0,
-    "offEdge": [],
-    "wrappedMoney": [],
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "Offer 4 tables to Brian O."
-    ],
-    "checkedText": 49,
-    "checkedTargets": 16
-  },
-  "phone-tabs-390": {
-    "viewport": "390x844",
-    "sideways": 0,
-    "offEdge": [],
-    "wrappedMoney": [],
-    "clipped": [],
-    "small": [],
-    "tinyText": [],
-    "filled": [
-      "New tab"
-    ],
-    "checkedText": 16,
-    "checkedTargets": 12
-  }
+  "splitItemFrom": "cmwxv9oat023bnhna7y2rpmsn"
 }
