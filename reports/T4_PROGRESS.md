@@ -24,7 +24,7 @@ Branch `t4/review-and-data`, cut from `origin/e1/order-truth` (`19e1eee`). Push 
 - The probe specs log in with the seeded demo passwords as literals, as every existing e2e spec does (rule 15 note; no new credential was created in a file).
 
 ## Left out, and why
-- A live pre-E1 run producing a duplicate ticket line (B5): emulated by SQL instead; base code read cited.
+- (none yet)
 
 ## Next
 1. Phase 2: classify each of the 92 red tests (container or real fault), fix the container kind in `apps/api/test/` helpers/config, write `docs/reviews/e2e-baseline.md`.

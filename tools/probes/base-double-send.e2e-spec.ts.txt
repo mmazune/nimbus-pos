@@ -1,0 +1,35 @@
+// T4 probe for origin/rebuild/main (pre-E1). Copy into apps/api/test/ of a worktree at that commit and run
+// against a throwaway nimbus_event_* database: it sends 30 orders twice at once and counts lines on two tickets.
+// Result on 26 Nov 2026 in the T4 container: 27 of 30. Not run on E1 (E1 refuses the second send).
+import { Test } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import request from 'supertest';
+import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/common/prisma';
+// T4 scratch probe at origin/rebuild/main: can two sends fired together ticket one line twice?
+describe('base dup ticket', () => {
+  let app: INestApplication; let prisma: PrismaService; let tok: string; let branchId: string;
+  beforeAll(async () => {
+    const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = mod.createNestApplication(); app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true })); await app.init();
+    prisma = app.get(PrismaService);
+    tok = (await request(app.getHttpServer()).post('/api/auth/login').send({ email: 'owner@demo.local', password: 'Owner#123' })).body.accessToken;
+    branchId = (await prisma.branch.findFirstOrThrow({ where: { name: 'Main Branch' } })).id;
+  }, 120000);
+  afterAll(async () => app?.close());
+  it('tries 30 orders, each sent twice at once', async () => {
+    const h = { Authorization: `Bearer ${tok}`, 'X-Branch-Id': branchId };
+    const mi = await prisma.menuItem.findFirstOrThrow({ where: { branchId, station: 'KITCHEN', isActive: true } });
+    let dupOrders = 0;
+    for (let i = 0; i < 30; i++) {
+      const o = await request(app.getHttpServer()).post('/api/pos/orders').set(h).send({ serviceType: 'TAKEAWAY' });
+      await request(app.getHttpServer()).post(`/api/pos/orders/${o.body.id}/items`).set(h).send({ menuItemId: mi.id });
+      await Promise.all([1, 2].map(() => request(app.getHttpServer()).post(`/api/pos/orders/${o.body.id}/send`).set(h).send({}).then((r) => r)));
+      await new Promise((r) => setTimeout(r, 300));
+      const rows = await prisma.$queryRaw<{ n: bigint }[]>`SELECT count(*)::bigint n FROM kds_ticket_items ti JOIN order_items oi ON oi.id = ti.order_item_id WHERE oi.order_id = ${o.body.id}`;
+      if (Number(rows[0].n) > 1) dupOrders++;
+    }
+    console.log(`DUP_RESULT orders with a line on two tickets: ${dupOrders} of 30`);
+  });
+});
