@@ -242,8 +242,17 @@ test("hand over a table and all tables: the colleague accepts on their screen; a
   const w2 = await as("waiter2");
   await B.page.goto("/waiter/floor");
 
-  // One table: V02 from Gloria (waiter3) to Brian (waiter2).
-  await openTable(A.page, "waiter", (await tableByLabel("V02")).id);
+  // One table: Gloria (waiter3) starts her shift and sends a dish on B10 (her own table, whatever
+  // earlier cases did with her others), then hands B10 to Brian (waiter2).
+  const g = (await as("waiter3")).token;
+  await api(g, "POST", "/shifts/open", {}, [200, 201, 409]);
+  const b10 = await tableByLabel("B10");
+  const menu = await api<Json>(g, "GET", "/menu/workspace");
+  const dish = (menu.items as Json[]).find((i) => i.station === "BAR" && !(i.servings?.length > 1) && !(i.choiceGroups ?? []).length && i.availability?.state !== "SOLD_OUT") as Json;
+  const o = await api<Json>(g, "POST", "/pos/orders", { serviceType: "DINE_IN", tableId: b10.id });
+  await api(g, "POST", `/pos/orders/${o.id}/items`, { menuItemId: dish.id, quantity: 1 });
+  await api(g, "POST", `/pos/orders/${o.id}/send`, {});
+  await openTable(A.page, "waiter", b10.id);
   await A.page.getByRole("button", { name: "More for this table" }).click();
   await pick(A.page, /^Hand over this table/);
   await A.page.getByRole("dialog").getByRole("button", { name: /^Brian O/ }).first().click();
@@ -253,7 +262,7 @@ test("hand over a table and all tables: the colleague accepts on their screen; a
   await rule10(B.page, "handover-accept-1280", log);
   await shot(B.page, "phase3-handover-accept-1280x800.png");
   await incoming.getByRole("button", { name: "Accept 1 table" }).click();
-  await expect.poll(async () => (await openOrderOn("V02"))?.userId, { timeout: 10_000 }).toBe(w2.userId);
+  await expect.poll(async () => (await openOrderOn("B10"))?.userId, { timeout: 10_000 }).toBe(w2.userId);
 
   // End of shift with tables still open: refused, with "Hand over your tables".
   await A.page.goto("/waiter/me");

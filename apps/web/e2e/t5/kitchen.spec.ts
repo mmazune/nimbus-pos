@@ -100,6 +100,8 @@ test("Ready reaches the waiter; Done lists it and brings it back", async ({ brow
 
 test("Sold out: mark, back on and set a number; the waiter's menu follows", async ({ browser }) => {
   const lambId = await ensureLambChops();
+  // Start from "on": another case on this venue may have left it sold out or counted down.
+  await api((await as("chef1")).token, "POST", `/menu/items/${lambId}/available`, {});
   const K = await terminal(browser);
   await pinSignIn(K.page, "chef1");
   await K.page.goto("/kitchen/sold-out");
