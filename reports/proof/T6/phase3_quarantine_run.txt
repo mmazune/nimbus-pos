@@ -1,0 +1,5 @@
+suites 4 tests 85 passed 26 failed 59 pending 0
+   17 bg7-hms-integration.e2e-spec.ts
+   17 billing.e2e-spec.ts
+   12 franchise-analytics.e2e-spec.ts
+   13 franchise.e2e-spec.ts

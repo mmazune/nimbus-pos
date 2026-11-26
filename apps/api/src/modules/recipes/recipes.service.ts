@@ -1,6 +1,10 @@
+import { recipeRowsForLine } from '../stock/line-ingredients';
+import { recipeLineBase, unitInfo } from '../stock/units';
+import { Prisma } from '@prisma/client';
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
@@ -165,6 +169,21 @@ export class RecipesService {
       throw new NotFoundException(`Inventory items not found: ${missing.join(', ')}`);
     }
 
+    // T6 (03 section 3): a recipe line is an amount in the item's own kind; mixing kinds is
+    // refused at save. Each line also keeps its amount in whole base units, waste included.
+    const kindOf = new Map(inventoryItems.map((i) => [i.id, i.stockKind]));
+    for (const ing of dto.ingredients) {
+      const kind = kindOf.get(ing.inventoryItemId) ?? null;
+      const u = unitInfo(ing.unit);
+      if (kind && (!u || u.kind !== kind)) {
+        throw new BadRequestException({
+          code: 'UNIT_KIND_MISMATCH',
+          message: `"${ing.unit}" does not measure an item counted by ${kind.toLowerCase()}`,
+          inventoryItemId: ing.inventoryItemId,
+        });
+      }
+    }
+
     // Validate serving IDs if provided
     const servingIds = dto.ingredients
       .map((i) => i.menuItemServingId)
@@ -216,6 +235,12 @@ export class RecipesService {
               qtyPerUnit: ing.qtyPerUnit,
               wastePct: ing.wastePct ?? '0',
               unit: ing.unit,
+              amountBase: recipeLineBase(
+                ing.qtyPerUnit,
+                ing.unit,
+                ing.wastePct ?? '0',
+                kindOf.get(ing.inventoryItemId) ?? null,
+              ),
               notes: ing.notes ?? null,
             },
             include: { inventoryItem: true },
@@ -404,11 +429,25 @@ export class RecipesService {
       return { ...row, _extendedCost: extendedCost };
     });
 
-    // Total theoretical COGS
-    const totalCogs = costRows.reduce(
-      (sum, r) => sum.add(r._extendedCost as Decimal),
-      new Decimal(0),
+    // Total theoretical COGS. T6 (servings fault): only the rows that make ONE of this serving
+    // count — that serving's own rows when it has any, else the base rows. Extras (choices) are
+    // listed but not added: each guest's choice costs its own row on the order line.
+    const servingForCost = servingId ?? menuItem.servings.find((sv) => sv.isDefault)?.id ?? null;
+    const counted = new Set(
+      (
+        await recipeRowsForLine(
+          this.prisma as unknown as Prisma.TransactionClient,
+          ctx.branchId,
+          menuItemId,
+          servingForCost,
+          [],
+        )
+      ).map((r) => r.id),
     );
+    for (const r of costRows as any[]) r.inTotal = counted.has(r.recipeIngredientId);
+    const totalCogs = costRows
+      .filter((r: any) => counted.has(r.recipeIngredientId))
+      .reduce((sum, r) => sum.add(r._extendedCost as Decimal), new Decimal(0));
 
     // Build response
     const costBreakdown: Record<string, unknown> = {

@@ -1,3 +1,4 @@
+import { recipeRowsForLine } from '../stock/line-ingredients';
 import { allowedActions } from './allowed-actions';
 import {
   Injectable,
@@ -439,48 +440,35 @@ export class OrdersService {
     let marginTotal: Decimal | null = null;
     let marginPct: Decimal | null = null;
 
-    const recipeIngredients = await db.recipeIngredient.findMany({
-      where: {
-        menuItemId,
-        branchId: ctx.branchId,
-        modifierOptionId: null,
-        menuItemServingId: null,
-      },
-      include: { inventoryItem: { select: { theoreticalUnitCost: true } } },
-    });
+    // T6 (servings fault): a serving with its own recipe rows (a double) costs those rows; only
+    // a serving without rows falls back to the base rows. Chosen extras add theirs.
+    const selectedModifierIds =
+      modifierMeta && Array.isArray((modifierMeta as any).selectedModifiers)
+        ? ((modifierMeta as any).selectedModifiers as { modifierOptionId: string }[])
+            .map((m) => m.modifierOptionId)
+            .filter(Boolean)
+        : [];
+    const recipeIngredients = await recipeRowsForLine(
+      db as Prisma.TransactionClient,
+      ctx.branchId,
+      menuItemId,
+      menuItemServingId ?? null,
+      selectedModifierIds,
+    );
 
     if (recipeIngredients.length > 0) {
       let baseCost = new Decimal(0);
       for (const ri of recipeIngredients) {
+        // T6: an item with a stock kind is costed like the ledger (whole base units x the
+        // average cost of one), so the line's cost and its stock rows agree.
+        if (ri.amountBase != null && ri.inventoryItem.stockKind) {
+          baseCost = baseCost.add(new Decimal(ri.inventoryItem.costPerBase).mul(ri.amountBase));
+          continue;
+        }
         const effectiveQty = new Decimal(ri.qtyPerUnit).mul(
           new Decimal(1).add(new Decimal(ri.wastePct).div(100)),
         );
-        const extCost = effectiveQty.mul(ri.inventoryItem.theoreticalUnitCost);
-        baseCost = baseCost.add(extCost);
-      }
-
-      // Add modifier-linked ingredient costs
-      if (modifierMeta && Array.isArray((modifierMeta as any).selectedModifiers)) {
-        const selectedModifiers = (modifierMeta as any).selectedModifiers as {
-          modifierOptionId: string;
-        }[];
-        const modOptionIds = selectedModifiers.map((m) => m.modifierOptionId);
-        if (modOptionIds.length > 0) {
-          const modRecipes = await db.recipeIngredient.findMany({
-            where: {
-              menuItemId,
-              branchId: ctx.branchId,
-              modifierOptionId: { in: modOptionIds },
-            },
-            include: { inventoryItem: { select: { theoreticalUnitCost: true } } },
-          });
-          for (const mr of modRecipes) {
-            const effectiveQty = new Decimal(mr.qtyPerUnit).mul(
-              new Decimal(1).add(new Decimal(mr.wastePct).div(100)),
-            );
-            baseCost = baseCost.add(effectiveQty.mul(mr.inventoryItem.theoreticalUnitCost));
-          }
-        }
+        baseCost = baseCost.add(effectiveQty.mul(ri.inventoryItem.theoreticalUnitCost));
       }
 
       costUnit = baseCost.toDecimalPlaces(2);

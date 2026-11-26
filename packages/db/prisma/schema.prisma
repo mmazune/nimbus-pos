@@ -813,6 +813,8 @@ model OrgSettings {
     approvalClimbMinutes      Int      @default(3) @map("approval_climb_minutes")
     tillVarianceLimit         Decimal  @default(10000) @map("till_variance_limit") @db.Decimal(12, 2)
     businessDayEndsHour       Int      @default(5) @map("business_day_ends_hour")
+    // T6 — taking out of stock above this value needs a supervisor's PIN (01-decisions waiting point 6).
+    wasteValueLimit           Decimal  @default(50000) @map("waste_value_limit") @db.Decimal(12, 2)
     createdAt                 DateTime @default(now()) @map("created_at")
     updatedAt                 DateTime @updatedAt @map("updated_at")
 
@@ -983,6 +985,10 @@ model MenuItem {
     price            Decimal      @db.Decimal(10, 2)
     itemType         MenuItemType @map("item_type")
     station          PrepStation  @default(NONE)
+    // T6 — how it is sold: as bought (one stock item, one unit), a measure (each serving its own
+    // amount of stockItemId), from a recipe, or not tracked.
+    soldAs           SoldAs       @default(NOT_TRACKED) @map("sold_as")
+    stockItemId      String?      @map("stock_item_id")
     sortOrder        Int          @default(0) @map("sort_order")
     isActive         Boolean      @default(true) @map("is_active")
     metadata         Json?
@@ -1093,6 +1099,8 @@ model MenuItemServing {
     format     ServingFormat
     label      String?
     price      Decimal       @db.Decimal(10, 2)
+    // T6 — for a measure: the whole base units this serving takes (a 30 ml tot = 30).
+    stockAmount Int?    @map("stock_amount")
     volumeText String?       @map("volume_text")
     isDefault  Boolean       @default(false) @map("is_default")
     sortOrder  Int           @default(0) @map("sort_order")
@@ -1191,6 +1199,12 @@ model InventoryItem {
     theoreticalUnitCost Decimal  @default(0) @map("theoretical_unit_cost") @db.Decimal(10, 3)
     reorderLevel        Decimal  @default(0) @map("reorder_level") @db.Decimal(10, 3)
     reorderQty          Decimal  @default(0) @map("reorder_qty") @db.Decimal(10, 3)
+    // T6 — a stock item's kind (count, weight, volume), locked after its first movement. Amounts
+    // are whole base units: thousandths of a piece, grams, millilitres. packSize is base units per
+    // pack (a crate of 24 = 24000). costPerBase is the moving average cost of one base unit.
+    stockKind           StockKind? @map("stock_kind")
+    packSize            Int?       @map("pack_size")
+    costPerBase         Decimal    @default(0) @map("cost_per_base") @db.Decimal(18, 6)
     isActive            Boolean  @default(true) @map("is_active")
     metadata            Json?
     createdAt           DateTime @default(now()) @map("created_at")
@@ -1224,6 +1238,8 @@ model RecipeIngredient {
     menuItemServingId String?  @map("menu_item_serving_id")
     modifierOptionId  String?  @map("modifier_option_id")
     qtyPerUnit        Decimal  @map("qty_per_unit") @db.Decimal(10, 3)
+    // T6 — the same amount in whole base units of the item's kind (with waste), set at save.
+    amountBase        Int?     @map("amount_base")
     wastePct          Decimal  @default(0) @map("waste_pct") @db.Decimal(5, 2)
     unit              String
     notes             String?
@@ -7494,4 +7510,112 @@ model TableHandover {
     @@index([branchId, toUserId, status])
     @@index([branchId, fromUserId, status])
     @@map("table_handovers")
+}
+
+// ── T6 phase 4: stock that moves ──
+
+enum StockKind {
+    COUNT
+    WEIGHT
+    VOLUME
+}
+
+enum SoldAs {
+    AS_BOUGHT
+    MEASURE
+    RECIPE
+    NOT_TRACKED
+}
+
+enum StoreKind {
+    MAIN
+    SECONDARY
+    POINT
+}
+
+enum StockMovementType {
+    RECEIVE
+    ISSUE_OUT
+    ISSUE_IN
+    SALE
+    SALE_REVERSAL
+    REMAKE
+    WASTE
+    STAFF_MEAL
+    ON_THE_HOUSE
+    MISSING
+    FOUND
+    COUNT_ADJUST
+    RETURN_TO_SUPPLIER
+    OPENING
+}
+
+/// T6 — a place stock is kept. One per branch for now (MAIN); the chain comes in phase 5.
+model Store {
+    id               String    @id @default(cuid())
+    orgId            String    @map("org_id")
+    branchId         String    @map("branch_id")
+    name             String
+    kind             StoreKind
+    feedsFromStoreId String?   @map("feeds_from_store_id")
+    isActive         Boolean   @default(true) @map("is_active")
+    createdAt        DateTime  @default(now()) @map("created_at")
+    updatedAt        DateTime  @updatedAt @map("updated_at")
+
+    @@index([branchId])
+    @@map("stores")
+}
+
+/// T6 — which store a station's sends take from.
+model StationStore {
+    id        String      @id @default(cuid())
+    branchId  String      @map("branch_id")
+    station   PrepStation
+    storeId   String      @map("store_id")
+    createdAt DateTime    @default(now()) @map("created_at")
+    updatedAt DateTime    @updatedAt @map("updated_at")
+
+    @@unique([branchId, station])
+    @@map("station_stores")
+}
+
+/// T6 — what a store holds of an item: onHand is the sum of the ledger, kept beside it.
+model StoreLevel {
+    id              String   @id @default(cuid())
+    storeId         String   @map("store_id")
+    inventoryItemId String   @map("inventory_item_id")
+    onHand          Int      @default(0) @map("on_hand")
+    updatedAt       DateTime @updatedAt @map("updated_at")
+
+    @@unique([storeId, inventoryItemId])
+    @@map("store_levels")
+}
+
+/// T6 — every movement of stock, append only (a trigger refuses UPDATE and DELETE). A correction
+/// is a new row. amount is signed whole base units; value = amount x unitCost, signed, exact.
+model StockMovement {
+    id              String            @id @default(cuid())
+    orgId           String            @map("org_id")
+    branchId        String            @map("branch_id")
+    storeId         String            @map("store_id")
+    inventoryItemId String            @map("inventory_item_id")
+    amount          Int
+    type            StockMovementType
+    reason          String?
+    note            String?
+    refType         String?           @map("ref_type")
+    refId           String?           @map("ref_id")
+    orderItemId     String?           @map("order_item_id")
+    userId          String?           @map("user_id")
+    approvedById    String?           @map("approved_by_id")
+    unitCost        Decimal           @map("unit_cost") @db.Decimal(18, 6)
+    value           Decimal           @db.Decimal(14, 2)
+    dedupeKey       String?           @unique @map("dedupe_key")
+    createdAt       DateTime          @default(now()) @map("created_at")
+
+    @@index([branchId, inventoryItemId])
+    @@index([storeId, inventoryItemId])
+    @@index([orderItemId])
+    @@index([refType, refId])
+    @@map("stock_movements")
 }

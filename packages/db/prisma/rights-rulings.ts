@@ -45,6 +45,24 @@ export const RIGHTS_RULINGS: Record<string, RightsRuling> = {
     why: "07 Money: a refund after the day is a manager's; a climbed request reaches managers.",
   },
 
+  // ── Phase 4: stock that moves (new keys; 03-stock-stores-availability.md section 11) ──
+  'pos:stock:read': {
+    holders: ['Owner', 'Manager', 'Supervisor', 'Chef', 'Bartender', 'Stock Manager', 'Accountant'],
+    why: '03 section 11: the store keeper, the station and the manager see their stock; the accountant sees value. Cost is masked without pos:cost:read.',
+  },
+  'pos:stock:take-out': {
+    holders: ['Owner', 'Manager', 'Supervisor', 'Chef', 'Bartender', 'Stock Manager'],
+    why: '03 section 11: take out of stock — chef, bartender, store keeper (their store), supervisor (PIN above the limit), manager. One store per branch for now, so their store is the branch store.',
+  },
+  'pos:stock:remake': {
+    holders: ['Owner', 'Manager', 'Supervisor', 'Chef', 'Bartender'],
+    why: '03 section 5: the chef remakes a dish; supervisor and manager may too.',
+  },
+  'pos:cost:write': {
+    holders: ['Owner', 'Manager', 'Accountant'],
+    why: '03 section 11: set a cost — accountant yes; manager under R14; never waiter, cashier or supervisor.',
+  },
+
   // ── Phase 2: every other key whose holders rights-matrix.json changes (generated from its
   // `proposed` holders; the 35 keys with no permission row are ruled on in DEFERRED_KEYS) ──
   'alerts:channel:write': {

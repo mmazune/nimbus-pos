@@ -1,6 +1,6 @@
-# T6 rights walk — 2026-11-26T17:07:52.852Z
+# T6 rights walk — 2026-11-26T17:22:17.669Z
 screen paths found in apps/web/src: 160
-API routes registered: 609
+API routes registered: 619
 routes walked (have a permission key, matched to a screen path): 240
 requests made (routes × 9 roles): 2160
 mismatches: 0

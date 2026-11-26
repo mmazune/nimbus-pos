@@ -7,12 +7,12 @@ moses-build-standards loaded.
 |---|---|---|
 | 1 private things | done | (this commit) |
 | 2 rights matrix | done | (this commit) |
-| 3 test run | - | - |
-| 4 stock moves | - | - |
+| 3 test run | done | 23038f0 (four runs 0 failed) |
+| 4 stock moves | done | (this commit) |
 | 5 stores | - | - |
 
 ## Next
-Phase 3: full e2e run in Jest's own order and T4's order; fix faults, update specs for replaced behaviour, quarantine group.
+Phase 5: stores chain, minimum/fill-to, requests (ask/issue/receive with PIN), deliveries + average cost, To buy, blind counts. Then final four runs, report.
 
 ## Decisions taken
 - D1 E1 migration: duplicate ticket lines are copied whole to kds_ticket_items_set_aside, then removed from the live table (prompt: remove; rule 17: nothing lost).
@@ -28,6 +28,11 @@ Phase 3: full e2e run in Jest's own order and T4's order; fix faults, update spe
 - D11 Refund: the bill's day is the payment's createdAt (orders have no close time). Manager/owner at once; supervisor at once same business day; later → PENDING + MANAGER request. Amount threshold rule replaced. Declined → new RefundStatus DECLINED.
 - D12 Till over/short above the limit: someone other than the operator with the answer right signs as they count; else RECONCILED with closedAt null until signed; declined → OPEN to count again.
 - D14 Phase 3: specs that tested replaced behaviour updated (bg3/shifts-tills chef→accountant for the no-shift-right check; refunds by day; orders pays its total; attendance acts as each employee's own user with a published roster; quick-sale.review C10 needs only its own sales; bg1-onboarding uses its own user). Quarantine: billing, franchise, franchise-analytics, bg7-hms (keys forbidden by CLAUDE.md).
+- D15 Amounts: Int base units = thousandths of the display unit (g, ml, 1/1000 piece). costPerBase Decimal(18,6) per base unit; value Decimal(14,2) rounded half up.
+- D16 Stock on send: listener on order.lines.sent after commit, one transaction per line, dedupe key SALE:<line>:<item> with ON CONFLICT DO NOTHING (double send/hear-twice safe). Void "not made" → SALE_REVERSAL on order.line.voided. soldAs defaults NOT_TRACKED, no backfill (the manager chooses).
+- D17 Ledger append-only by trigger (UPDATE/DELETE raise).
+- D18 Servings fault: one resolver (recipeRowsForLine) for line cost, recipe cost and stock: a serving with its own rows uses them, else base rows; extras add theirs. Line cost uses costPerBase x amountBase when the item has a kind.
+- D19 Waste above wasteValueLimit (50,000) by someone without the answer right needs a supervisor PIN (someone else); a supervisor alone may.
 - D13 allowedActions on GET /api/pos/orders/:id, derived from the route keys + order state; no 'ask to void' (no request kind for it yet).
 
 ## Left out

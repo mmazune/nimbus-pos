@@ -1,0 +1,10 @@
+# Phase 3: the default e2e run at 23038f0, fresh throwaway database each run, 2026-11-26
+== t4a (./test/jest-e2e.json)
+suites 63 tests 1265 passed 1259 failed 0 pending 6
+== jesta (./test/jest-e2e.jest-order.json)
+suites 63 tests 1265 passed 1259 failed 0 pending 6
+== t4b (./test/jest-e2e.json)
+suites 63 tests 1265 passed 1259 failed 0 pending 6
+== jestb (./test/jest-e2e.jest-order.json)
+suites 63 tests 1265 passed 1259 failed 0 pending 6
+ALLDONE
