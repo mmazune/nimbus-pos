@@ -425,3 +425,31 @@ describe('The servings fault: a double costs and takes what a double does (T6 ph
     expect(counted.every((r: any) => r.menuItemServingId === doubleServingId)).toBe(true);
   });
 });
+
+describe('Servings left from stock (03 section 6 item 3, started; read only)', () => {
+  it('is the smallest of on-hand over amount per serving: the cheese (none) limits the burger to 0; with cheese, the bun does', async () => {
+    const a = await http()
+      .get(`/api/stock/servings-left?menuItemId=${burgerId}`)
+      .set(w.as(waiter.token));
+    expect([a.status, a.body.left, a.body.limitedBy]).toEqual([200, 0, inv['Cheese slice']]);
+    await http()
+      .post('/api/stock/opening')
+      .set(w.as(manager.token))
+      .send({ inventoryItemId: inv['Cheese slice'], amount: '500', unit: 'piece' });
+    const b = await http()
+      .get(`/api/stock/servings-left?menuItemId=${burgerId}`)
+      .set(w.as(waiter.token));
+    const bun = await onHand('Burger bun');
+    expect(b.body.left).toBe(
+      Math.min(
+        Math.floor(bun / 1000),
+        Math.floor((await onHand('Beef mince')) / 150),
+        Math.floor((await onHand('Cheese slice')) / 1000),
+        Math.floor((await onHand('Lettuce')) / 20),
+        Math.floor((await onHand('Tomato')) / 30),
+        Math.floor((await onHand('Cooking oil')) / 10),
+        Math.floor((await onHand('Chips, frozen')) / 180),
+      ),
+    );
+  });
+});

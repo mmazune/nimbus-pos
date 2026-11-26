@@ -12,7 +12,7 @@ moses-build-standards loaded.
 | 5 stores | done | (this commit) |
 
 ## Next
-Final: four full runs on final code, rights walk, report. Optional 03 s6 item 3 not started.
+Final: four full runs on final code, rights walk, report. 03 s6 item 3 started: GET /api/stock/servings-left (read only); modes OFF/WARN/BLOCK not built.
 
 ## Decisions taken
 - D1 E1 migration: duplicate ticket lines are copied whole to kds_ticket_items_set_aside, then removed from the live table (prompt: remove; rule 17: nothing lost).

@@ -628,6 +628,55 @@ export class StockService {
     return updated;
   }
 
+  // ── Servings left from stock (03 section 6, item 3; started by T6, read only) ──
+
+  /**
+   * The smallest, over the item's stock lines, of floor(on hand in the station's store / the
+   * amount one serving takes). Read only: it does not mark anything sold out (the OFF / WARN /
+   * BLOCK modes are not built yet). null when the item is not tracked.
+   */
+  async servingsLeft(ctx: Ctx, menuItemId: string, servingId?: string) {
+    const item = await this.prisma.menuItem.findFirst({
+      where: { id: menuItemId, branchId: ctx.branchId },
+      select: { id: true, station: true, soldAs: true },
+    });
+    if (!item) throw new NotFoundException('Menu item not found');
+    const store = await this.storeForStation(this.prisma, ctx, item.station);
+    const one = await ingredientsForLine(
+      this.prisma as unknown as Prisma.TransactionClient,
+      ctx.branchId,
+      {
+        id: 'servings-left',
+        menuItemId,
+        menuItemServingId: servingId ?? null,
+        quantity: 1,
+        metadata: null,
+      },
+    );
+    if (one.length === 0)
+      return {
+        menuItemId,
+        servingId: servingId ?? null,
+        storeId: store.id,
+        left: null,
+        limitedBy: null,
+      };
+    const levels = await this.prisma.storeLevel.findMany({
+      where: { storeId: store.id, inventoryItemId: { in: one.map((i) => i.inventoryItemId) } },
+    });
+    const onHand = new Map(levels.map((l) => [l.inventoryItemId, l.onHand]));
+    let left = Number.POSITIVE_INFINITY;
+    let limitedBy: string | null = null;
+    for (const ing of one) {
+      const n = Math.max(0, Math.floor((onHand.get(ing.inventoryItemId) ?? 0) / ing.amount));
+      if (n < left) {
+        left = n;
+        limitedBy = ing.inventoryItemId;
+      }
+    }
+    return { menuItemId, servingId: servingId ?? null, storeId: store.id, left, limitedBy };
+  }
+
   // ── Reading ──
 
   private maskCost<T extends { unitCost?: unknown; value?: unknown }>(

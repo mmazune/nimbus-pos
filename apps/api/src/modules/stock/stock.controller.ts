@@ -121,6 +121,16 @@ export class StockController {
     return this.stock.levels((req as any).branchContext, { permissions: u.permissions ?? [] });
   }
 
+  @Get('stock/servings-left')
+  @Permissions('pos:menu:read')
+  servingsLeft(
+    @Query('menuItemId') menuItemId: string,
+    @Query('servingId') servingId: string,
+    @Req() req: Request,
+  ) {
+    return this.stock.servingsLeft((req as any).branchContext, menuItemId, servingId || undefined);
+  }
+
   @Get('stock/movements')
   @Permissions('pos:stock:read')
   movements(
