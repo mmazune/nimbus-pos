@@ -30,19 +30,19 @@ bigbtn = lambda t: btn(t, 'filled', 'height: 64px; font-size: 18px; width: 100%'
 
 # 1 mobile money by reference
 mm = f'''<div class="hstack g24" style="align-items: flex-start"><div class="grow vstack g16">{topay()}<div><p class="lab">How are they paying?</p>{methods("Mobile money")}</div>
-      <div class="hstack g16"><div class="grow"><p class="lab">Network</p>{seg(["MTN MoMo", "Airtel Money"], "MTN MoMo", True)}</div><div class="grow"><p class="lab">They pay to</p><div class="field">Merchant 400 112 · Tapas</div></div></div>
+      <div class="hstack g16"><div class="grow"><p class="lab">Network</p>{seg(["Network A", "Network B"], "Network A", True)}</div><div class="grow"><p class="lab">They pay to</p><div class="field">Merchant 400 112 · Tapas</div></div></div>
       <div><label class="lab">Reference from the guest’s message</label><div class="field" style="font-weight: 700; letter-spacing: .04em">QK7H 2M9P 1A</div></div></div></div>
       <span class="grow"></span>
       <div class="vstack g8"><div class="hstack g12">{btn("No message yet · wait for it", "tonal", "flex: 1 1 0; height: 64px")}{btn("Record UGX 98,000 by mobile money", "filled", "flex: 2 1 0; height: 64px; font-size: 18px")}</div>{note("Check the message names Tapas and shows 98,000. The receipt prints and table 12 becomes free.")}</div>'''
 pay('Pay-Mobile-Money', 'Take payment', 'Mobile money by reference: the cashier types the code from the guest’s message', 'U3, needs E13', mm)
 ppay('Pay-Mobile-Money', 'Take payment', 'Mobile money by reference', 'U3, needs E13',
-     f'{methods("Mobile money", 2, False)}{seg(["MTN MoMo", "Airtel Money"], "MTN MoMo", True)}<div><p class="lab">They pay to</p><div class="field">Merchant 400 112 · Tapas</div></div><div><label class="lab">Reference from their message</label><div class="field" style="font-weight: 700; letter-spacing: .04em">QK7H 2M9P 1A</div></div>{btn("No message yet · wait for it", "tonal")}',
+     f'{methods("Mobile money", 2, False)}{seg(["Network A", "Network B"], "Network A", True)}<div><p class="lab">They pay to</p><div class="field">Merchant 400 112 · Tapas</div></div><div><label class="lab">Reference from their message</label><div class="field" style="font-weight: 700; letter-spacing: .04em">QK7H 2M9P 1A</div></div>{btn("No message yet · wait for it", "tonal")}',
      btn('Record UGX 98,000', 'filled', 'flex: 1 1 0'))
 
 # 2 pending
 pend = f'''{topay()}
       <div class="card vstack g12" style="padding: 20px; background: var(--amber-t); box-shadow: none; color: var(--amber)">
-        <div class="hstack">{ic("clock", "l")}<div class="grow"><p class="t-h">Waiting for the guest’s money</p><p class="t-body">MTN MoMo · UGX 98,000 · since 20:51, 3 minutes</p></div>{pill("Pending", "p-amber")}</div>
+        <div class="hstack">{ic("clock", "l")}<div class="grow"><p class="t-h">Waiting for the guest’s money</p><p class="t-body">Network A · UGX 98,000 · since 20:51, 3 minutes</p></div>{pill("Pending", "p-amber")}</div>
         <p class="t-sup">Table 12 shows “Paying” on the floor. Nothing is counted in the till until you enter the reference. After 10 minutes the supervisor is told.</p>
       </div>
       <div><label class="lab">Reference, when their message arrives</label><div class="field ph">Type the code from the guest’s message</div></div>
@@ -50,7 +50,7 @@ pend = f'''{topay()}
       <div class="vstack g8"><div class="hstack g12">{btn("Change the method", "tonal", "flex: 1 1 0; height: 64px")}{btn("Record · type the reference first", "off", "flex: 2 1 0; height: 64px; font-size: 18px")}</div>{note("Still pending when the day closes? It is on the close list until it is settled.")}</div>'''
 pay('Pay-Mobile-Pending', 'Take payment', 'Mobile money pending: no confirmation yet, the table shows Paying', 'U3, needs E13', pend)
 ppay('Pay-Mobile-Pending', 'Paying', 'Mobile money pending', 'U3, needs E13',
-     f'<div class="card vstack g8" style="padding: 16px; background: var(--amber-t); box-shadow: none; color: var(--amber)"><div class="hstack">{ic("clock")}<p class="t-row grow">Waiting for the money</p>{pill("Pending", "p-amber")}</div><p class="t-sup">MTN MoMo · UGX 98,000 · since 20:51. Table 12 shows “Paying”. The supervisor is told after 10 minutes.</p></div><div><label class="lab">Reference, when it arrives</label><div class="field ph">Code from their message</div></div>{btn("Change the method", "tonal")}',
+     f'<div class="card vstack g8" style="padding: 16px; background: var(--amber-t); box-shadow: none; color: var(--amber)"><div class="hstack">{ic("clock")}<p class="t-row grow">Waiting for the money</p>{pill("Pending", "p-amber")}</div><p class="t-sup">Network A · UGX 98,000 · since 20:51. Table 12 shows “Paying”. The supervisor is told after 10 minutes.</p></div><div><label class="lab">Reference, when it arrives</label><div class="field ph">Code from their message</div></div>{btn("Change the method", "tonal")}',
      btn('Record · type the reference first', 'off', 'flex: 1 1 0'), sub='Table 12 · UGX 98,000 · pending')
 
 # 3 card by reference
@@ -65,7 +65,7 @@ ppay('Pay-Card', 'Take payment', 'Card by reference', 'U3',
      btn('Record UGX 98,000 by card', 'filled', 'flex: 1 1 0'))
 
 # 4 split payment, part paid
-paidrows = f'<div class="card" style="overflow: hidden">{row("Cash · 20:52", "50,000 · no change", pill("Paid", "p-green"), ic("cash"), False)}{row("Mobile money · 20:53", "10,000 · MTN MoMo · ref TR4X 8L2K", pill("Paid", "p-green"), ic("phone"), False)}</div>'
+paidrows = f'<div class="card" style="overflow: hidden">{row("Cash · 20:52", "50,000 · no change", pill("Paid", "p-green"), ic("cash"), False)}{row("Mobile money · 20:53", "10,000 · Network A · ref TR4X 8L2K", pill("Paid", "p-green"), ic("phone"), False)}</div>'
 sp = f'''<div class="hstack g24"><div class="grow">{topay("38,000", "Left to pay")}<p class="t-sup muted" style="margin-top: 4px">Bill UGX 98,000 · paid 60,000 in 2 parts</p></div><div class="bar-s" style="width: 280px; height: 8px"><i style="width: 61%"></i></div></div>
       {paidrows}
       <div><p class="lab">How do they pay the rest?</p>{methods("Card")}</div>

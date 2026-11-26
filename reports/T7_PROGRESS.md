@@ -42,10 +42,11 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 19. The count limit is the larger of 2% and UGX 20,000 per item (`03-stock-stores-availability.md` section 10), so in the count-differences report only the Scotch line is over it; the group-9 reviewer read it as the smaller.
 20. Table 12's voided wings are "made, waste" everywhere, as the approved `Supervisor-Void` shows.
 21. Empty, loading and error are drawn once each for a list (Receipts), a detail (an order) and a sheet (discount), on a terminal and a phone; every other screen follows the same three patterns (`.skel` shapes in the final places, a 72 px tinted circle with one line and one way forward, Try again).
+22. No real brand: mobile money networks are "Network A" and "Network B" in the drawings; a built screen shows the networks the venue sets up. Suppliers are made-up generic names (Green Valley Farms, City Drinks Depot, Lakeview Butchery, Sunrise Bakery).
 6. "as at 19:42" stays: the first 38 drawings use it on every count.
 
 ## Left out, and why
 (none yet)
 
 ## Next
-SCREENS-2.md, OVERVIEW.md, the report.
+Waiting for the group 10 and 11 review; then the report and the last push.

@@ -225,7 +225,7 @@
 .bar-s{height:6px;border-radius:3px;background:var(--tonal);overflow:hidden;margin-top:8px}
 .bar-s i{display:block;height:100%;background:var(--primary);border-radius:3px}
 
-/* added by T7, 26 Nov 2026: PIN dots, toast. Nothing above this line was changed. */
+/* added by T7, 26 Nov 2026: PIN dots, toast, skeleton shape. Nothing above this line was changed. */
 .pin{display:flex;gap:16px;justify-content:center}
 .pin i{width:18px;height:18px;border-radius:50%;background:var(--tonal-2);display:block}
 .pin i.on{background:var(--primary)}
