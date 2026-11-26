@@ -4,8 +4,9 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 
 | Group | State | Commit |
 |---|---|---|
-| 1 Start of a shift | drawn; review 1: 13 of 16 passed; 3 fixed, re-review pending | see git log |
-| 2 Table actions | drawn, measured, under review | see git log |
+| 1 Start of a shift | drawn; 16 of 16 pass after re-review (lowest 20) | see git log |
+| 2 Table actions | drawn; 26 of 26 pass (lowest 20); logic clashes fixed after review | see git log |
+| 3 Order screen states | drawn, measured, under review | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -24,4 +25,4 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 (none yet)
 
 ## Next
-Group 3, the order screen's other states.
+Group 4, paying.

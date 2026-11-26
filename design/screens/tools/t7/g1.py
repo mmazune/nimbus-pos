@@ -122,7 +122,7 @@ body = band('Floor', 'Main hall · 3 want the bill · as at 20:41', rbtn('search
     <div class="sw"><button class="round sm" aria-label="Previous area">{ic("back")}</button><button class="mid"><span class="t-row">Main hall</span> <span class="t-sup muted">· 17 open</span></button><button class="round sm" aria-label="Next area">{ic("chev")}</button></div>
     <p class="cap">Want the bill · UGX</p>
 {floor(bills, 3, "floor c")}
-    <p class="cap">Open · UGX</p>
+    <p class="cap">Open · UGX · 9 of 14, scroll for the rest</p>
 {floor(openp, 3, "floor c")}
   </main>
 {navbar("cashier", "Floor", True)}'''

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Order, fire with undo</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar">
+    <a class="back" href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>Floor</a>
+    <h1 class="t-h">Table 2</h1>
+    <span class="clock">4 guests · open 42 min · Amina K.</span>
+    <span class="grow"></span>
+    <span class="search" style="width: 320px"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search the whole menu</span>
+    <span class="who" title="Signed in">AK</span>
+  </header>
+  <div class="ord" style="grid-template-columns: minmax(0, 1fr) 372px">
+    <main class="menu"><div class="seg"><button style="min-width: 140px" class="on">Food</button><button style="min-width: 140px" class="">Drinks</button></div><div class="optgrid" style="grid-template-columns: repeat(8, minmax(0, 1fr))"><button class="opt on">Popular</button><button class="opt">Offers</button><button class="opt">Starters</button><button class="opt">Soups</button><button class="opt">Salads</button><button class="opt">Mains</button><button class="opt">Grills</button><button class="opt">Burgers</button><button class="opt">Pizza</button><button class="opt">Pasta</button><button class="opt">Local</button><button class="opt">Sides</button><button class="opt">Kids</button><button class="opt">Desserts</button><button class="opt">Breakfast</button><button class="opt">Extras</button></div><div class="items" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><button class="item "><b>Beef burger</b><span>28,000</span></button><button class="item "><b>Chicken wings</b><span>24,000</span></button><button class="item "><b>Chips</b><span>8,000</span></button><button class="item "><b>Goat stew</b><span>26,000</span></button><button class="item "><b>Grilled tilapia</b><span>38,000</span></button><button class="item "><b>Chicken curry</b><span>27,000</span></button><button class="item "><b>Pork ribs</b><span>35,000</span></button><button class="item "><b>Beef samosas</b><span>12,000</span></button><button class="item "><b>Margherita pizza</b><span>30,000</span></button><button class="item "><b>Club sandwich</b><span>25,000</span></button><button class="item "><b>Greek salad</b><span>20,000</span></button><button class="item "><b>Fish and chips</b><span>32,000</span></button><button class="item "><b>Rolex</b><span>9,000</span></button><button class="item "><b>Matooke and beef</b><span>22,000</span></button><button class="item "><b>Chicken luwombo</b><span>30,000</span></button><button class="item "><b>Spring rolls</b><span>12,000</span></button></div></main>
+    <aside class="check" aria-label="Order">
+      <div class="hstack" style="padding: 16px 16px 8px; justify-content: space-between"><h2 class="t-h">Order</h2><span class="t-sup muted">6 items</span></div>
+      <p class="cap" style="padding: 8px 16px 4px">Firing in 3 s</p><div class="line"><span class="q">1</span><span class="grow"><span class="nm">Grilled tilapia</span><br><span class="sub">Main · was held for later</span></span><span class="pr">38,000</span></div><div class="hr" style="margin: 8px 16px"></div><p class="cap" style="padding: 8px 16px 4px">Sent 19:58</p><button class="line sent" style="width: 100%"><span class="q">2</span><span class="grow"><span class="nm">Beef samosas</span><br><span class="sub">Starter</span></span><span class="pr">24,000</span></button><button class="line sent" style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Spring rolls</span><br><span class="sub">Starter</span></span><span class="pr">12,000</span></button><button class="line sent" style="width: 100%"><span class="q">2</span><span class="grow"><span class="nm">Lager 500 ml</span></span><span class="pr">12,000</span></button>
+      <span class="grow"></span>
+      <div class="hr"></div>
+      <div class="tot" style="padding: 14px 16px 4px"><span class="t-row">Total</span><span class="t-h">UGX 86,000</span></div>
+      <div class="hstack g8" style="padding: 12px 16px 16px"><button class="sq tonal" aria-label="Table actions"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button><button class="btn tonal" style="flex: 1 1 0; padding: 0 12px">Print bill</button></div>
+    </aside>
+  </div><div class="toast" role="status" style="left: 24px; right: 396px; bottom: 24px"><span class="grow">Grilled tilapia fired to the kitchen in 3 s</span><button class="btn sm textbtn" style="color: var(--on-primary)">Undo</button></div>
+</div>
+</x-dc>
+</body>
+</html>

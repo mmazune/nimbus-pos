@@ -156,7 +156,7 @@ def lines(groups, tag='button'):
         if cap: o += f'<p class="cap" style="padding: 8px 16px 4px">{cap}</p>'
         for q, n, sub, p in ls:
             sb = f'<br><span class="sub">{sub}</span>' if sub else ''
-            o += f'<{tag} class="line {cls}"><span class="q">{q}</span><span class="grow"><span class="nm">{n}</span>{sb}</span><span class="pr">{p}</span></{tag}>'
+            o += f'<{tag} class="line {cls}" style="width: 100%"><span class="q">{q}</span><span class="grow"><span class="nm">{n}</span>{sb}</span><span class="pr">{p}</span></{tag}>'
     return o
 def check(body, total, foot, title='Order', count='8 items', inert=False, label='Total'):
     a = ' inert' if inert else ''

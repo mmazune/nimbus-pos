@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Order, group with a sub-group filter</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1280px; height: 800px">
+  <header class="bar">
+    <a class="back" href="#"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>Floor</a>
+    <h1 class="t-h">Table 12</h1>
+    <span class="clock">3 guests · open 1 h 05 · Amina K.</span>
+    <span class="grow"></span>
+    <span class="search" style="width: 320px"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search the whole menu</span>
+    <span class="who" title="Signed in">AK</span>
+  </header>
+  <div class="ord" style="grid-template-columns: minmax(0, 1fr) 372px">
+    <main class="menu"><div class="seg"><button style="min-width: 140px" class="">Food</button><button style="min-width: 140px" class="on">Drinks</button></div><div class="optgrid" style="grid-template-columns: repeat(8, minmax(0, 1fr))"><button class="opt">Popular</button><button class="opt">Offers</button><button class="opt on">Beer</button><button class="opt">Cider</button><button class="opt">Soft drinks</button><button class="opt">Water</button><button class="opt">Juice</button><button class="opt">Wine</button><button class="opt">Whisky</button><button class="opt">Gin</button><button class="opt">Vodka</button><button class="opt">Rum</button><button class="opt">Tequila</button><button class="opt">Liqueur</button><button class="opt">Cocktails</button><button class="opt">Hot drinks</button></div><div class="hstack g8"><button class="chip">All · 14</button><button class="chip">Bottles · 8</button><button class="chip on">Draught · 3</button><button class="chip">Local · 5</button><button class="chip">Imported · 4</button></div><div class="items" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><div class="mrow"><b class="grow">Draught lager</b><button class="mbtn">Half<small>5,000</small></button><button class="mbtn">Pint<small>8,000</small></button><button class="mbtn">Jug<small>22,000</small></button></div><div class="mrow"><b class="grow">Draught stout</b><button class="mbtn">Half<small>6,000</small></button><button class="mbtn">Pint<small>9,000</small></button><button class="mbtn">Jug<small>25,000</small></button></div><div class="mrow"><b class="grow">Draught cider</b><button class="mbtn">Half<small>5,500</small></button><button class="mbtn">Pint<small>9,000</small></button><button class="mbtn">Jug<small>24,000</small></button></div></div><p class="t-sup muted">Beer has sub-groups, so a filter row shows under the groups. It is the same menu tree the manager sets.</p></main>
+    <aside class="check" aria-label="Order">
+      <div class="hstack" style="padding: 16px 16px 8px; justify-content: space-between"><h2 class="t-h">Order</h2><span class="t-sup muted">8 items</span></div>
+      <p class="cap" style="padding: 8px 16px 4px">Not sent</p><button class="line " style="width: 100%"><span class="q">2</span><span class="grow"><span class="nm">Lager 500 ml</span></span><span class="pr">12,000</span></button><button class="line " style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Blended Scotch</span><br><span class="sub">Double · Cola</span></span><span class="pr">15,000</span></button><button class="line " style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Cola 300 ml</span></span><span class="pr">3,000</span></button><div class="hr" style="margin: 8px 16px"></div><p class="cap" style="padding: 8px 16px 4px">Sent 19:42</p><button class="line sent" style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Beef burger</span><br><span class="sub">Medium · No onions</span></span><span class="pr">28,000</span></button><button class="line sent" style="width: 100%"><span class="q">2</span><span class="grow"><span class="nm">Chips</span></span><span class="pr">16,000</span></button><button class="line sent" style="width: 100%"><span class="q">1</span><span class="grow"><span class="nm">Chicken wings</span></span><span class="pr">24,000</span></button>
+      <span class="grow"></span>
+      <div class="hr"></div>
+      <div class="tot" style="padding: 14px 16px 4px"><span class="t-row">Total</span><span class="t-h">UGX 98,000</span></div>
+      <div class="hstack g8" style="padding: 12px 16px 16px"><button class="sq tonal" aria-label="Table actions"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button><button class="btn tonal" style="flex: 1 1 0; padding: 0 12px">Print bill</button><button class="btn filled" style="flex: 1.4 1 0; padding: 0 12px">Send 4 items</button></div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
