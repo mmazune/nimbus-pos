@@ -1,0 +1,15 @@
+action | waiter | cashier | supervisor | manager
+create order | 400 | 400 | 400 | 400
+add line | 400 | 400 | 400 | 400
+send | 404 | 404 | 404 | 404
+request-bill | 404 | 404 | 404 | 404
+void line | 403 | 403 | 400 | 400
+close/pay | 403 | 400 | 400 | 400
+transfer-table | 403 | 400 | 400 | 400
+transfer-server | 403 | 400 | 400 | 400
+merge | 403 | 400 | 400 | 400
+split-bill | 403 | 400 | 400 | 400
+discount | 400 | 400 | 400 | 400
+void order | 403 | 403 | 404 | 404
+read order | 404 | 404 | 404 | 404
+menu catalog | 200 | 200 | 200 | 200

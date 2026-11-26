@@ -1,10 +1,9 @@
 import { MagnifyingGlass } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { OperationalFloor } from "@/components/floor/OperationalFloor";
-import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
 import { Button, ErrorState } from "@/components/ui";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -23,9 +22,8 @@ import {
 } from "@/lib/cashier/floor-route";
 import { useCashierReadiness } from "@/lib/cashier/readiness";
 
-import { CashierBillResolutionPanel } from "./CashierBillResolutionPanel";
 import { CashierFindBillDialog } from "./CashierFindBillDialog";
-import { CashierSettlementWorkspace } from "./CashierSettlementWorkspace";
+import { OrderScreen } from "@/screens/order/OrderScreen";
 
 function getErrorCopy(error: unknown) {
   if (error instanceof ApiError) {
@@ -64,6 +62,7 @@ function getErrorCopy(error: unknown) {
  */
 export function CashierFloorScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { accessToken, branchId, clearSession, isAuthenticated, isCashier } = useAuth();
   const context = useCashierContext();
   const readiness = useCashierReadiness();
@@ -106,13 +105,6 @@ export function CashierFloorScreen() {
     [selectedTableId, tables],
   );
 
-  const floorOrder = useMemo(
-    () =>
-      requestedOrderId
-        ? floorQuery.data?.activeOrders.find((order) => order.id === requestedOrderId)
-        : undefined,
-    [floorQuery.data?.activeOrders, requestedOrderId],
-  );
 
   function handleSelectTable(table: CashierFloorTableViewModel) {
     const hasSelection = Boolean(selectedTableId || requestedOrderId);
@@ -128,38 +120,11 @@ export function CashierFloorScreen() {
 
   // Exactly one payable bill on the selected table — resolve into the workspace
   // WITHOUT a new history entry (Back from the workspace returns to Floor).
-  function handleResolveSingle(orderId: string) {
-    void router.replace(
-      {
-        pathname: CASHIER_FLOOR_ROUTE,
-        query: buildCashierBillQuery(router.query, { tableId: selectedTableId ?? null, orderId }),
-      },
-      undefined,
-      { shallow: true, scroll: false },
-    );
-  }
 
   // Explicit pick from the multiple-bill selector — pushes history so browser
   // Back returns to the selector.
-  function handleSelectBill(orderId: string) {
-    void router.push(
-      {
-        pathname: CASHIER_FLOOR_ROUTE,
-        query: buildCashierBillQuery(router.query, { tableId: selectedTableId ?? null, orderId }),
-      },
-      undefined,
-      { shallow: true, scroll: false },
-    );
-  }
 
   // "Back to bills" — deterministically return to the table's bill list.
-  function handleBackToBills() {
-    void router.replace(
-      { pathname: CASHIER_FLOOR_ROUTE, query: clearCashierBillQuery(router.query) },
-      undefined,
-      { shallow: true, scroll: false },
-    );
-  }
 
   // Find bill → open the canonical settlement workspace. Table-linked bills
   // anchor to their table; tableless/takeaway bills open with orderId only.
@@ -219,6 +184,20 @@ export function CashierFloorScreen() {
         </Button>
       </div>
 
+      {invalidSelectedTable && !requestedOrderId ? (
+        <div className="grid gap-3" data-floor-table-unavailable>
+          <ErrorState
+            title="Table unavailable"
+            description="The selected table is not accessible on this Floor. Choose another table."
+          />
+          <div>
+            <Button variant="secondary" size="compact" onClick={handleCloseWorkspace}>
+              Close
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <OperationalFloor
         branchName={context.branchName}
         readinessLabel={readiness.shift.label}
@@ -241,55 +220,19 @@ export function CashierFloorScreen() {
         />
       ) : null}
 
-      {selectedTable && !resolvingTable && accessToken && branchId ? (
-        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
-          <CashierBillResolutionPanel
-            table={selectedTable}
-            selectedOrderId={requestedOrderId}
-            token={accessToken}
-            branchId={branchId}
-            fallbackBranchName={context.branchName}
-            readiness={readiness}
-            onResolveSingle={handleResolveSingle}
-            onSelectBill={handleSelectBill}
-            onBackToBills={handleBackToBills}
-            onClose={handleCloseWorkspace}
-          />
-        </OperationalTableWorkspaceFrame>
+      {(selectedTable || directBill) && !resolvingTable ? (
+        <OrderScreen
+          key={`${selectedTable?.id ?? "none"}:${directBill ? requestedOrderId : ""}`}
+          role="cashier"
+          tableId={directBill ? null : selectedTable?.id ?? null}
+          tableLabel={directBill ? null : selectedTable?.label ?? null}
+          orderId={requestedOrderId ?? null}
+          seats={selectedTable?.capacity}
+          onClose={handleCloseWorkspace}
+          onChanged={() => void queryClient.invalidateQueries({ queryKey: cashierBillQueryKeys.floor(branchId) })}
+        />
       ) : null}
 
-      {directBill && !resolvingTable && accessToken && branchId ? (
-        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
-          <CashierSettlementWorkspace
-            orderId={requestedOrderId as string}
-            token={accessToken}
-            branchId={branchId}
-            tableId={selectedTableId ?? null}
-            fallbackBranchName={context.branchName}
-            fallbackOrder={floorOrder}
-            readiness={readiness}
-            onClose={handleCloseWorkspace}
-          />
-        </OperationalTableWorkspaceFrame>
-      ) : null}
-
-      {invalidSelectedTable && !requestedOrderId ? (
-        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
-          <div className="grid gap-5">
-            <button
-              type="button"
-              className="w-fit rounded-md px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-muted focus-visible:shadow-focus"
-              onClick={handleCloseWorkspace}
-            >
-              Back to Floor
-            </button>
-            <ErrorState
-              title="Table unavailable"
-              description="The selected table is not accessible on this Floor. Return to Floor and choose another table."
-            />
-          </div>
-        </OperationalTableWorkspaceFrame>
-      ) : null}
     </>
   );
 }

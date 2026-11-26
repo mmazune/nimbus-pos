@@ -1,10 +1,9 @@
 import { MagnifyingGlass } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { OperationalFloor } from "@/components/floor/OperationalFloor";
-import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
 import { Button, ErrorState } from "@/components/ui";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -18,7 +17,7 @@ import { firstLegacyQueryValue } from "@/lib/supervisor/legacy-orders-route";
 import { fetchSupervisorOrderDetail } from "@/lib/supervisor/orders";
 
 import { SupervisorFindOrderDialog } from "./SupervisorFindOrderDialog";
-import { SupervisorTableControlWorkspace } from "./SupervisorTableControlWorkspace";
+import { OrderScreen } from "@/screens/order/OrderScreen";
 
 function getErrorCopy(error: unknown) {
   if (error instanceof ApiError) {
@@ -42,6 +41,7 @@ function getErrorCopy(error: unknown) {
 
 export function SupervisorFloorScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { accessToken, branchId, clearSession, isAuthenticated, isSupervisor } = useAuth();
   const context = useSupervisorContext();
   const readiness = useSupervisorReadiness();
@@ -49,7 +49,6 @@ export function SupervisorFloorScreen() {
   const [findOpen, setFindOpen] = useState(false);
   const selectionPushedRef = useRef(false);
   const canQuery = Boolean(accessToken && branchId && isAuthenticated && isSupervisor);
-  const canUpdateStatus = context.permissions.includes("pos:table:write");
   const routeTableId = firstLegacyQueryValue(router.query.tableId) || undefined;
   const requestedOrderId = firstLegacyQueryValue(router.query.orderId) || undefined;
   const selectedTableId = selectionOverride === undefined ? routeTableId : selectionOverride || undefined;
@@ -120,12 +119,6 @@ export function SupervisorFloorScreen() {
     else void router.push(target, undefined, { shallow: true, scroll: false });
   }
 
-  function handleNavigateToOrder({ orderId, tableId }: { orderId: string; tableId?: string | null }) {
-    setSelectionOverride(tableId ?? null);
-    const query: Record<string, string> = { orderId };
-    if (tableId) query.tableId = tableId;
-    void router.replace({ pathname: "/supervisor/floor", query }, undefined, { shallow: true, scroll: false });
-  }
 
   // Find order → open the canonical order workspace. Table-linked orders anchor to
   // their table; tableless/takeaway orders open with orderId only (no fabricated
@@ -184,6 +177,20 @@ export function SupervisorFloorScreen() {
         </Button>
       </div>
 
+      {invalidSelectedTable ? (
+        <div className="grid gap-3" data-floor-table-unavailable>
+          <ErrorState
+            title="Table unavailable"
+            description="The selected table is not accessible on this Floor. Choose another table."
+          />
+          <div>
+            <Button variant="secondary" size="compact" onClick={handleCloseWorkspace}>
+              Close
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <OperationalFloor
         branchName={context.branchName}
         readinessLabel={readiness.shift.label}
@@ -206,35 +213,18 @@ export function SupervisorFloorScreen() {
       ) : null}
 
       {(selectedTable || requestedOrderId) && !invalidSelectedTable && !isResolvingSelectedTable ? (
-        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
-          <SupervisorTableControlWorkspace
-            table={selectedTable}
-            requestedOrderId={requestedOrderId}
-            canUpdateStatus={canUpdateStatus}
-            permissions={context.permissions}
-            onClose={handleCloseWorkspace}
-            onNavigateToOrder={handleNavigateToOrder}
-          />
-        </OperationalTableWorkspaceFrame>
+        <OrderScreen
+          key={`${selectedTable?.id ?? "none"}:${selectedTable ? "" : requestedOrderId}`}
+          role="supervisor"
+          tableId={selectedTable?.id ?? null}
+          tableLabel={selectedTable?.label ?? null}
+          orderId={requestedOrderId ?? null}
+          seats={selectedTable?.capacity}
+          onClose={handleCloseWorkspace}
+          onChanged={() => void queryClient.invalidateQueries({ queryKey: ["supervisor", "floor", branchId] })}
+        />
       ) : null}
 
-      {invalidSelectedTable ? (
-        <OperationalTableWorkspaceFrame onClose={handleCloseWorkspace}>
-          <div className="grid gap-5">
-            <button
-              type="button"
-              className="w-fit rounded-md px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-muted focus-visible:shadow-focus"
-              onClick={handleCloseWorkspace}
-            >
-              Back to Floor
-            </button>
-            <ErrorState
-              title="Table unavailable"
-              description="The selected table is not accessible on this Floor. Return to Floor and choose another table."
-            />
-          </div>
-        </OperationalTableWorkspaceFrame>
-      ) : null}
     </>
   );
 }

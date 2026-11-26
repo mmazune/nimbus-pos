@@ -1,0 +1,4 @@
+Fresh throwaway DB t3_fresh, recreated 2026-11-26T11:22:37Z: migrate deploy + db:seed + db:demo:import only; API :4112. Two runs.
+  1 passed (5.2s)
+  1 passed (4.2s)
+Grace Atim: 1; fixture tables: 12,14,15,16,17,18; fixture items: 7

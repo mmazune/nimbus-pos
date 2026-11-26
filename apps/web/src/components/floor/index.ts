@@ -4,7 +4,6 @@ export { OperationalFloorToolbar } from "./OperationalFloorToolbar";
 export { OperationalTableCard } from "./OperationalTableCard";
 export { OperationalTableGrid } from "./OperationalTableGrid";
 export { OperationalTableStatusBadge } from "./OperationalTableStatusBadge";
-export { OperationalTableWorkspaceFrame } from "./OperationalTableWorkspaceFrame";
 export {
   OPERATIONAL_TABLE_LABEL_MAX_CHARS,
   buildOperationalTableLabelMap,
