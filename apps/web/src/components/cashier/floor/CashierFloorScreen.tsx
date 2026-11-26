@@ -1,16 +1,18 @@
-import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { OperationalFloor } from "@/components/floor/OperationalFloor";
 import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
-import { Button, ErrorState } from "@/components/ui";
+import { ErrorState } from "@/components/ui";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { cashierBillQueryKeys } from "@/lib/cashier/bill-query-keys";
 import { useCashierContext } from "@/lib/cashier/context";
-import { loadCashierFloorData } from "@/lib/cashier/floor-api";
+import { listCashierOperationalReservations, type CashierFloorData } from "@/lib/cashier/floor-api";
+import type { CashierOrderApi } from "@/lib/cashier/order-types";
+import { listCashierTables } from "@/lib/cashier/resolution";
+import { FloorScreen } from "@/screens/floor/FloorScreen";
+import { loadAllActiveOrders } from "@/screens/floor/floor-data";
 import {
   normalizeCashierFloorTables,
   type CashierFloorTableViewModel,
@@ -62,6 +64,8 @@ function getErrorCopy(error: unknown) {
  * partial/split settlement, and close execute inside the settlement workspace
  * (C3). Refund, receipt, transfer, void, and discount remain out of scope.
  */
+const FLOOR_VIEWER = { ownership: "names" as const };
+
 export function CashierFloorScreen() {
   const router = useRouter();
   const { accessToken, branchId, clearSession, isAuthenticated, isCashier } = useAuth();
@@ -78,7 +82,16 @@ export function CashierFloorScreen() {
   const floorQuery = useQuery({
     queryKey: cashierBillQueryKeys.floor(branchId),
     enabled: canQuery,
-    queryFn: () => loadCashierFloorData(accessToken as string, branchId as string),
+    queryFn: async (): Promise<CashierFloorData> => {
+      const token = accessToken as string;
+      const branch = branchId as string;
+      const [tables, activeOrders, reservations] = await Promise.all([
+        listCashierTables(token, branch),
+        loadAllActiveOrders<CashierOrderApi>(token, branch),
+        listCashierOperationalReservations(token, branch),
+      ]);
+      return { tables, activeOrders, reservations };
+    },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
   });
@@ -208,27 +221,18 @@ export function CashierFloorScreen() {
 
   return (
     <>
-      {/* Cashier-only workspace control. Rendered as a sibling ABOVE the shared
-          OperationalFloor — it never forks the shared Floor presentation. */}
-      <div className="-mb-2 flex justify-end">
-        <Button variant="secondary" size="compact" onClick={() => setFindOpen(true)} disabled={!canQuery}>
-          <span className="inline-flex items-center gap-2">
-            <MagnifyingGlass size={18} weight="bold" aria-hidden />
-            Find bill
-          </span>
-        </Button>
-      </div>
-
-      <OperationalFloor
-        branchName={context.branchName}
-        readinessLabel={readiness.shift.label}
-        readinessTone={readiness.shift.tone}
-        tables={tables}
+      <FloorScreen
+        role="cashier"
+        source={floorQuery.data}
+        viewer={FLOOR_VIEWER}
         isLoading={floorQuery.isLoading}
         error={floorError}
-        selectedTableId={selectedTableId}
-        onSelectTable={handleSelectTable}
         onRetry={() => void floorQuery.refetch()}
+        onOpenTable={(tableId) => {
+          const table = tables.find((entry) => entry.id === tableId);
+          if (table) handleSelectTable(table);
+        }}
+        extraAction={canQuery ? { label: "Find bill", icon: "search", onClick: () => setFindOpen(true) } : undefined}
       />
 
       {findOpen && accessToken && branchId ? (

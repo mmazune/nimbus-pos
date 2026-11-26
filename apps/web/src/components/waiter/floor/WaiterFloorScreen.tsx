@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { OperationalFloor } from "@/components/floor/OperationalFloor";
 import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
 import { ErrorState } from "@/components/ui";
 import { WaiterTableWorkspace } from "@/components/waiter/floor/WaiterTableWorkspace";
@@ -13,7 +12,14 @@ import {
   normalizeWaiterTables,
   type WaiterTableViewModel,
 } from "@/lib/waiter/floor-model";
-import { loadWaiterFloorData, type WaiterFloorData } from "@/lib/waiter/floor-api";
+import {
+  listWaiterOperationalReservations,
+  listWaiterTables,
+  type WaiterFloorData,
+  type WaiterOrderApi as FloorWaiterOrder,
+} from "@/lib/waiter/floor-api";
+import { FloorScreen } from "@/screens/floor/FloorScreen";
+import { loadAllActiveOrders } from "@/screens/floor/floor-data";
 import { loadWaiterMenuWorkspace, type WaiterOrderApi } from "@/lib/waiter/order-api";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
 
@@ -62,7 +68,7 @@ function getErrorCopy(error: unknown) {
 export function WaiterFloorScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { accessToken, branchId, branchName, clearSession, user } = useAuth();
+  const { accessToken, branchId, clearSession, user } = useAuth();
   const activeShift = useActiveShift();
   const [selectionOverride, setSelectionOverride] = useState<string | null>();
   const selectionPushedRef = useRef(false);
@@ -70,7 +76,16 @@ export function WaiterFloorScreen() {
   const floorQuery = useQuery({
     queryKey: ["waiter", "floor", branchId],
     enabled: Boolean(accessToken && branchId),
-    queryFn: () => loadWaiterFloorData(accessToken as string, branchId as string),
+    queryFn: async (): Promise<WaiterFloorData> => {
+      const token = accessToken as string;
+      const branch = branchId as string;
+      const [tables, activeOrders, reservations] = await Promise.all([
+        listWaiterTables(token, branch),
+        loadAllActiveOrders<FloorWaiterOrder>(token, branch),
+        listWaiterOperationalReservations(token, branch),
+      ]);
+      return { tables, activeOrders, reservations };
+    },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
   });
@@ -103,6 +118,7 @@ export function WaiterFloorScreen() {
   );
 
   const shiftIsOpen = Boolean(activeShift.data);
+  const viewer = useMemo(() => ({ userId: user?.id, ownership: "waiter" as const }), [user?.id]);
   const routeTableId = typeof router.query.tableId === "string" ? router.query.tableId : undefined;
   const selectedTableId = selectionOverride === undefined ? routeTableId : selectionOverride || undefined;
   useEffect(() => {
@@ -195,16 +211,17 @@ export function WaiterFloorScreen() {
 
   return (
     <>
-      <OperationalFloor
-        branchName={branchName}
-        readinessLabel={shiftIsOpen ? "Shift open" : "Shift not started"}
-        readinessTone={shiftIsOpen ? "success" : "warning"}
-        tables={tables}
+      <FloorScreen
+        role="waiter"
+        source={floorQuery.data}
+        viewer={viewer}
         isLoading={floorQuery.isLoading}
         error={errorCopy}
-        selectedTableId={selectedTableId}
-        onSelectTable={handleSelectTable}
         onRetry={() => void floorQuery.refetch()}
+        onOpenTable={(tableId) => {
+          const table = tables.find((entry) => entry.id === tableId);
+          if (table) handleSelectTable(table);
+        }}
       />
 
       {selectedAction ? (

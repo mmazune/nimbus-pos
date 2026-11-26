@@ -34,7 +34,8 @@ export type TouchHeaderProps = {
   title: string;
   /** e.g. "Main hall · 17 of 32 tables open · as at 19:42" */
   context?: string;
-  searchLabel: string;
+  /** Where the drawing has a search box; left out otherwise. */
+  searchLabel?: string;
   searchSize?: SearchSize;
   onSearch?: () => void;
   person: { name: string; role: string; station?: string };
@@ -57,7 +58,7 @@ export function TouchHeader({ title, context, searchLabel, searchSize = "regular
       <h1 className="m-kit-0 whitespace-nowrap text-kit-h">{title}</h1>
       {context ? <span className="whitespace-nowrap text-kit-sup text-kit-on-primary-muted">{context}</span> : null}
       <span className="min-w-0 flex-1" />
-      <BarSearch label={searchLabel} size={searchSize} onClick={onSearch} />
+      {searchLabel ? <BarSearch label={searchLabel} size={searchSize} onClick={onSearch} /> : null}
       <span className="whitespace-nowrap text-kit-sup text-kit-on-primary-muted">
         <b className="font-kit-bold text-kit-on-primary">{person.name}</b> · {person.role}
         {person.station ? ` · ${person.station}` : ""}

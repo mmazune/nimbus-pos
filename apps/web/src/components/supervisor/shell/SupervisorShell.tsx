@@ -1,30 +1,21 @@
 import { ReactNode } from "react";
 
 import { OperationalIdleLogoutHandler } from "@/components/pos-shell/OperationalIdleLogoutHandler";
-import { OperationalShell } from "@/components/pos-shell/OperationalShell";
-import { SupervisorBottomNav } from "@/components/supervisor/shell/SupervisorBottomNav";
-import { SupervisorHeader } from "@/components/supervisor/shell/SupervisorHeader";
-import { SupervisorReadinessStrip } from "@/components/supervisor/shell/SupervisorReadinessStrip";
+import { TouchLegacyBody, TouchShell } from "@/components/pos-shell/TouchShell";
 import { SupervisorSessionGuard } from "@/components/supervisor/shell/SupervisorSessionGuard";
-import { useSupervisorReadiness } from "@/lib/supervisor/context";
 
 type SupervisorShellProps = {
   children: ReactNode;
+  /** The screen is a kit screen that lays itself out; otherwise the old body gutters. */
+  bare?: boolean;
 };
 
-export function SupervisorShell({ children }: SupervisorShellProps) {
-  const readiness = useSupervisorReadiness();
-
+export function SupervisorShell({ children, bare = false }: SupervisorShellProps) {
   return (
     <SupervisorSessionGuard>
-      <OperationalShell
-        header={<SupervisorHeader />}
-        readiness={<SupervisorReadinessStrip items={readiness.items} />}
-        bottomNavigation={<SupervisorBottomNav />}
-        idleHandler={<OperationalIdleLogoutHandler />}
-      >
-        {children}
-      </OperationalShell>
+      <TouchShell role="supervisor" idleHandler={<OperationalIdleLogoutHandler />}>
+        {bare ? children : <TouchLegacyBody>{children}</TouchLegacyBody>}
+      </TouchShell>
     </SupervisorSessionGuard>
   );
 }

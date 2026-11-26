@@ -1,27 +1,22 @@
 import { ReactNode } from "react";
 
-import { OperationalShell } from "@/components/pos-shell/OperationalShell";
-import { WaiterBottomNav } from "@/components/waiter/shell/WaiterBottomNav";
-import { WaiterHeader } from "@/components/waiter/shell/WaiterHeader";
+import { TouchLegacyBody, TouchShell } from "@/components/pos-shell/TouchShell";
 import { WaiterIdleLogoutHandler } from "@/components/waiter/shell/WaiterIdleLogoutHandler";
 import { WaiterSessionGuard } from "@/components/waiter/shell/WaiterSessionGuard";
-import { WaiterShiftBanner } from "@/components/waiter/shell/WaiterShiftBanner";
+import { WaiterShiftNotice } from "@/components/waiter/shell/WaiterShiftNotice";
 
 type WaiterShellProps = {
   children: ReactNode;
+  /** The screen is a kit screen that lays itself out; otherwise the old body gutters. */
+  bare?: boolean;
 };
 
-export function WaiterShell({ children }: WaiterShellProps) {
+export function WaiterShell({ children, bare = false }: WaiterShellProps) {
   return (
     <WaiterSessionGuard>
-      <OperationalShell
-        header={<WaiterHeader />}
-        readiness={<WaiterShiftBanner />}
-        bottomNavigation={<WaiterBottomNav />}
-        idleHandler={<WaiterIdleLogoutHandler />}
-      >
-        {children}
-      </OperationalShell>
+      <TouchShell role="waiter" notice={<WaiterShiftNotice />} idleHandler={<WaiterIdleLogoutHandler />}>
+        {bare ? children : <TouchLegacyBody>{children}</TouchLegacyBody>}
+      </TouchShell>
     </WaiterSessionGuard>
   );
 }

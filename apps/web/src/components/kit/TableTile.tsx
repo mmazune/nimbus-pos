@@ -43,6 +43,18 @@ export type TableTileProps = {
   demo?: KitDemo;
 };
 
+/**
+ * "Tab 3" → { prefix: "Tab", number: "3" }; "TD-01" → { prefix: "TD", number: "01" };
+ * "12" → { number: "12" }. A name with a prefix shows the prefix small above the
+ * number, so a three-across phone tile never cuts it (U0 carry-over).
+ */
+export function splitTableName(name: string): { prefix?: string; number: string } {
+  const m = /^(.*\D)(\d+)$/.exec(name.trim());
+  if (!m) return { number: name };
+  const prefix = m[1].replace(/[\s\-·.#]+$/, "").trim();
+  return prefix ? { prefix, number: m[2] } : { number: name };
+}
+
 /** The table tile — one tile for every role (Table-Tile drawing). */
 export function TableTile({ name, state, others = false, density, detail, who, amount, short, tab = false, onClick, disabled, demo }: TableTileProps) {
   const s = STATE[state];
@@ -57,7 +69,8 @@ export function TableTile({ name, state, others = false, density, detail, who, a
     : demo === "pressed"
       ? `bg-kit-canvas ${idle ? "shadow-kit-small" : "shadow-kit-raised"}`
       : `bg-kit-card active:bg-kit-canvas ${idle ? "shadow-kit-small" : "shadow-kit-raised"}`;
-  const label = [tab ? name : `Table ${name}`, s.word, detail, who, amount].filter(Boolean).join(", ");
+  const parts = splitTableName(name);
+  const label = [tab || parts.prefix ? name : `Table ${name}`, s.word, detail, who, amount].filter(Boolean).join(", ");
   return (
     <button
       type="button"
@@ -75,7 +88,14 @@ export function TableTile({ name, state, others = false, density, detail, who, a
       ].join(" ")}
     >
       <span className="flex items-start justify-between gap-kit-6">
-        <span className={["min-w-0 whitespace-nowrap", tab ? "text-kit-tab-no" : roomy ? "text-kit-tile-no" : "text-kit-tile-no-c"].join(" ")}>{name}</span>
+        {parts.prefix ? (
+          <span className="flex min-w-0 flex-col">
+            <span className="whitespace-nowrap text-kit-bar text-kit-muted">{parts.prefix}</span>
+            <span className={["whitespace-nowrap", roomy ? "text-kit-tile-no" : "text-kit-tile-no-c"].join(" ")}>{parts.number}</span>
+          </span>
+        ) : (
+          <span className={["min-w-0 whitespace-nowrap", tab ? "text-kit-tab-no" : roomy ? "text-kit-tile-no" : "text-kit-tile-no-c"].join(" ")}>{name}</span>
+        )}
         {phone ? (
           <span className="whitespace-nowrap text-kit-bar text-kit-muted">{short ?? ""}</span>
         ) : (

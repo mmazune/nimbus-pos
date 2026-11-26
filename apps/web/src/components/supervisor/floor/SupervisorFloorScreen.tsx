@@ -1,15 +1,20 @@
-import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { OperationalFloor } from "@/components/floor/OperationalFloor";
 import { OperationalTableWorkspaceFrame } from "@/components/floor/OperationalTableWorkspaceFrame";
-import { Button, ErrorState } from "@/components/ui";
+import { ErrorState } from "@/components/ui";
 import { ApiError, shouldRetryApiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { useSupervisorContext, useSupervisorReadiness } from "@/lib/supervisor/context";
-import { loadSupervisorFloorData } from "@/lib/supervisor/floor";
+import { useSupervisorContext } from "@/lib/supervisor/context";
+import {
+  fetchSupervisorFloorPlans,
+  fetchSupervisorTables,
+  type SupervisorFloorData,
+} from "@/lib/supervisor/floor";
+import { fetchSupervisorReservations } from "@/lib/supervisor/reservations";
+import { FloorScreen } from "@/screens/floor/FloorScreen";
+import { loadAllActiveOrders } from "@/screens/floor/floor-data";
 import {
   normalizeSupervisorFloorTables,
   type SupervisorFloorTableViewModel,
@@ -40,11 +45,12 @@ function getErrorCopy(error: unknown) {
   };
 }
 
+const FLOOR_VIEWER = { ownership: "names" as const };
+
 export function SupervisorFloorScreen() {
   const router = useRouter();
   const { accessToken, branchId, clearSession, isAuthenticated, isSupervisor } = useAuth();
   const context = useSupervisorContext();
-  const readiness = useSupervisorReadiness();
   const [selectionOverride, setSelectionOverride] = useState<string | null>();
   const [findOpen, setFindOpen] = useState(false);
   const selectionPushedRef = useRef(false);
@@ -57,7 +63,17 @@ export function SupervisorFloorScreen() {
   const floorQuery = useQuery({
     queryKey: ["supervisor", "floor", branchId],
     enabled: canQuery,
-    queryFn: () => loadSupervisorFloorData(accessToken as string, branchId as string),
+    queryFn: async (): Promise<SupervisorFloorData> => {
+      const token = accessToken as string;
+      const branch = branchId as string;
+      const [floorPlans, tables, activeOrders, reservations] = await Promise.all([
+        fetchSupervisorFloorPlans(token, branch),
+        fetchSupervisorTables(token, branch),
+        loadAllActiveOrders<SupervisorFloorData["activeOrders"][number]>(token, branch),
+        fetchSupervisorReservations(token, branch, { pageSize: 200 }),
+      ]);
+      return { floorPlans, tables, activeOrders, reservations: reservations.data || [] };
+    },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,
   });
@@ -168,32 +184,18 @@ export function SupervisorFloorScreen() {
 
   return (
     <>
-      {/* Supervisor-only workspace control. Rendered as a sibling ABOVE the shared
-          OperationalFloor — it never forks the shared Floor presentation. */}
-      <div className="-mb-2 flex justify-end">
-        <Button
-          variant="secondary"
-          size="compact"
-          onClick={() => setFindOpen(true)}
-          disabled={!canQuery}
-        >
-          <span className="inline-flex items-center gap-2">
-            <MagnifyingGlass size={18} weight="bold" aria-hidden />
-            Find order
-          </span>
-        </Button>
-      </div>
-
-      <OperationalFloor
-        branchName={context.branchName}
-        readinessLabel={readiness.shift.label}
-        readinessTone={readiness.shift.tone}
-        tables={tables}
+      <FloorScreen
+        role="supervisor"
+        source={floorQuery.data}
+        viewer={FLOOR_VIEWER}
         isLoading={floorQuery.isLoading}
         error={floorError}
-        selectedTableId={selectedTableId}
-        onSelectTable={handleSelectTable}
         onRetry={() => void floorQuery.refetch()}
+        onOpenTable={(tableId) => {
+          const table = tables.find((entry) => entry.id === tableId);
+          if (table) handleSelectTable(table);
+        }}
+        extraAction={canQuery ? { label: "Find order", icon: "search", onClick: () => setFindOpen(true) } : undefined}
       />
 
       {findOpen && accessToken && branchId ? (

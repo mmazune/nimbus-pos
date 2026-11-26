@@ -43,8 +43,18 @@ Waiter Floor, Reservations, Me (Ready later, E5/U4). Cashier Floor, Receipts (hi
 | Count tiles, readiness chips, shift banner | Removed from the Floor; shift not open → one line + one button |
 | Tapping a table | Unchanged: opens today's workspace (T3 owns it) |
 
-## Playwright baseline (production build, `vp-1440x900`, this DB)
-Filled in below when the run ends: passed / failed by spec folder.
+## Playwright baseline (production build of `0af95f8` in a separate worktree, `NEXT_PUBLIC_KIT_GALLERY=1`, `vp-1440x900`, this DB) [live]
+**151 passed, 7 failed, 3 skipped** (5.0 min). Full list: `reports/T1_PLAYWRIGHT_BASELINE.txt`.
+| Folder | Passed | Failed at baseline |
+|---|---|---|
+| cashier-floor (27 files) | 48 | 0 |
+| kit | 5 | 0 |
+| manager-operations/tables-and-reservations | 8 | 0 |
+| manager-shell | 32 | 2 (navigation-and-landing :96, :121) |
+| supervisor-approvals | 23 | 5 (discount-approve-reject ×2, discount-self-approval, leave-approve-reject :33, shift-swap-reject :27) |
+| supervisor-prompt3 | 16 | 0 |
+| supervisor-reservations | 19 | 0 |
+The DB was snapshotted (`nimbus_t1_pristine`) before the run; the final regression starts from the same snapshot.
 
 ## Contradictions and which won
 - `CLAUDE.md` §9 locks Cashier nav "Floor · Till · Me" and Receipts hidden; `01-decisions` R9 and U1 part a show Receipts again. R9 / the prompt win (newer, owner-approved drawings).
