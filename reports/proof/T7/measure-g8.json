@@ -1,0 +1,200 @@
+[
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Manager-Today",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Manager-Today-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Manager-Menu-List",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Manager-Menu-List-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Manager-Item-Servings",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Manager-Item-Servings-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Manager-Staff",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Manager-Staff-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Manager-Person",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Manager-Person-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Manager-Approvals",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Manager-Approvals-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Areas",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Areas-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Stations",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Stations-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Limits",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Limits-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Business-Day",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 1,
+  "hidden": [],
+  "name": "Settings-Business-Day-Phone",
+  "size": "390x844"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Day-Close",
+  "size": "1440x900"
+ },
+ {
+  "issues": [],
+  "font": "Inter",
+  "pageOverflow": false,
+  "filled": 0,
+  "hidden": [],
+  "name": "Day-Close-Phone",
+  "size": "390x844"
+ }
+]

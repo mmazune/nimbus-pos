@@ -9,8 +9,9 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 | 3 Order screen states | drawn; 16 of 16 pass after re-review (lowest 22) | see git log |
 | 4 Paying | drawn; 16 of 16 pass (lowest 21); pending Record made inactive until a reference is typed | see git log |
 | 5 Supervisor | drawn; 16 of 16 pass (lowest 20); counts and times made to agree after review | see git log |
-| 6 Kitchen and bar | drawn; 10 of 14 passed review 1; the 4 failures redrawn, re-review with group 7 | see git log |
-| 7 Stock | drawn, measured, under review | see git log |
+| 6 Kitchen and bar | drawn; 14 of 14 pass after re-review (lowest 21) | see git log |
+| 7 Stock | drawn; 9 of 14 passed review 1; 5 redrawn (sums, receive button, way back, words), re-review with group 8 | see git log |
+| 8 Manager on a laptop | drawn, measured, under review | see git log |
 
 ## How drawings are made here
 - Generator: `design/screens/tools/t7/` (`base.py` shared pieces, `g<N>.py` per group, `build.py`). Tiles and table 12's bill are copied verbatim from `Main.html`, `Floor-Phone.html`, `Order-Terminal.html`.
@@ -28,10 +29,14 @@ Branch `t7/drawings`, cut from `origin/rebuild/main` at 41772c7.
 9. A choice with several picks (tables to move or hand over) shows a check on a deeper tint, never navy, so the one filled button stays alone on the screen. Helper `picks()` in `base.py`.
 10. Reservations "Attention" holds 2 (late, table busy), as in the approved `Reservations-Supervisor`. A booking with no table joins Attention only 30 minutes before its time.
 11. The bar screen keeps the kitchen ticket; colour times are 5 and 10 minutes for drinks (a station setting, as `02-life-cycles.md` section 4 allows).
+12. Stock mode keeps "Block" beside Off and Warn: R19 and `03-stock-stores-availability.md` section 6 make it a venue choice, lifted by "We have it". The group-7 reviewer asked to remove it; the decision record wins.
+13. "We found more" stays on the take-out sheet: R21 lists it among the fixed reasons of that one action.
+14. Lamb chops sold out at 19:40 in every drawing (order screen, kitchen, manager, opening list).
+15. The manager's laptop top bar keeps the five words of the approved drawings (Floor, Menu, Stock, Staff, More); Today is the home behind the mark, and Approvals, Reports and Settings sit under More.
 6. "as at 19:42" stays: the first 38 drawings use it on every count.
 
 ## Left out, and why
 (none yet)
 
 ## Next
-Group 8, manager on a laptop.
+Group 9, reports.

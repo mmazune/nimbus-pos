@@ -40,7 +40,7 @@ RL = [('Beef mince', '10 kg', '10 kg', '18,000', '18,000', pill('Full', 'p-green
       ('Tomatoes', '20 kg', '20 kg', '4,000', '4,600', pill('Dearer by 600', 'p-red')), ('Lettuce', '5 kg', '5 kg', '5,000', '5,000', pill('Full', 'p-green')), ('Cheese slices', '200 pieces', '200 pieces', '600', '600', pill('Full', 'p-green'))]
 rt = table(['Item', '#Ordered', '#Received', '#Price ordered', '#Price on the invoice', ''], RL, 'Tomatoes', 'dt c')
 ra = aside(f'''<h2 class="t-h">Delivery check</h2><p class="t-sup muted">Order 0047 to Green Valley Farms · expected today</p>
-      <div class="card" style="box-shadow: none; background: var(--canvas); padding: 4px 16px">{kv("Lines", "5 · 3 full, 1 short, 1 dearer")}{kv("Invoice", "UGX 492,600")}{kv("Ordered for", "UGX 499,200")}</div>
+      <div class="card" style="box-shadow: none; background: var(--canvas); padding: 4px 16px">{kv("Lines", "5 · 3 full, 1 short, 1 dearer")}{kv("Invoice", "UGX 474,600")}{kv("Ordered for", "UGX 481,800")}</div>
       <div><label class="lab">Invoice number</label><div class="field">GV-2281</div></div>
       <p class="t-sup muted">The 24 short buns stay open on order 0047. The tomato price goes to the accountant’s “Cost changed” list; every dish with tomato updates its cost.</p>
       <span class="grow"></span>{btn("Receive into Main store", "filled")}''', 380)
@@ -48,7 +48,7 @@ rm = f'<div class="hstack"><div><p class="t-row">Green Valley Farms</p><p class=
 page('Store-Receive', *T, 'Receive a delivery', sscreen('Receive', 'Main store · 2 deliveries expected today · as at 10:40', rm, ra, on='Receive'),
      G, 'Store keeper', 'Receive a delivery line by line: full, short, dearer', SR + '/receive (new)', 'U6, needs E7')
 prl = '<div class="card" style="overflow: hidden">' + ''.join(row(n, f'Ordered {o} · came {r}' + (f' · {pr} a kg' if n == 'Tomatoes' else ''), p, btn=True) for n, o, r, po, pr, p in RL) + '</div>'
-page('Store-Receive-Phone', *P, 'Receive a delivery, phone', rband('Green Valley Farms', 'Order 0047 · 5 lines', more=False) + f'<main class="body">{prl}<div class="card" style="padding: 4px 16px">{kv("Invoice", "UGX 492,600")}{kv("Invoice number", "GV-2281")}</div></main><footer class="foot">{btn("Receive into Main store", "filled", "flex: 1 1 0")}</footer>',
+page('Store-Receive-Phone', *P, 'Receive a delivery, phone', rband('Green Valley Farms', 'Order 0047 · 5 lines', more=False) + f'<main class="body">{prl}<div class="card" style="padding: 4px 16px">{kv("Invoice", "UGX 474,600")}{kv("Invoice number", "GV-2281")}</div></main><footer class="foot">{btn("Receive into Main store", "filled", "flex: 1 1 0")}</footer>',
      G, 'Store keeper', 'Receive a delivery on a phone', SR + '/receive (new)', 'U6, needs E7')
 
 # 3 blind count
@@ -58,7 +58,7 @@ ca = aside(f'''<p class="cap">Tonic 300 ml · in bottles</p><div class="field" s
 cm = f'<div class="hstack"><div><p class="t-row">Bar store · spot count · 2 of 10 done</p><p class="t-sup muted">You do not see what the books say. Selling carries on; each line is compared at the minute you save it.</p></div></div>' + ct
 page('Store-Count', *T, 'Count, blind', sscreen('Count', 'Bar store · spot count started 16:05', cm, ca, on='Count'),
      G, 'Store keeper', 'Count, blind: type what is on the shelf; expected numbers stay hidden', SR + '/count (new)', 'U6, needs E7')
-page('Store-Count-Phone', *P, 'Count, phone', rband('Spot count', 'Bar store · 2 of 10 done', more=False) + f'<main class="body" style="gap: 12px"><div class="card" style="padding: 14px 16px"><p class="t-sup muted">Item 3 of 10</p><p class="t-h">Tonic 300 ml</p><p class="t-sup muted">Count the bottles on the shelf. The books stay hidden.</p></div><div class="field" style="height: 64px; justify-content: flex-end; font-size: 26px; line-height: 32px; font-weight: 700">17</div>{keypad(h=60)}</main><footer class="foot">{btn("Back", "tonal", "flex: 1 1 0")}{btn("Save 17 and next", "filled", "flex: 2 1 0")}</footer>',
+page('Store-Count-Phone', *P, 'Count, phone', rband('Spot count', 'Bar store · 2 of 10 done', more=False) + f'<main class="body" style="gap: 12px"><div class="card" style="padding: 14px 16px"><p class="t-sup muted">Item 3 of 10</p><p class="t-h">Tonic 300 ml</p><p class="t-sup muted">Count the bottles on the shelf. The books stay hidden.</p></div><div class="field" style="height: 64px; justify-content: flex-end; font-size: 26px; line-height: 32px; font-weight: 700">17</div>{keypad(h=60)}</main><footer class="foot">{btn("Previous item", "tonal", "flex: 1 1 0")}{btn("Save 17 and next", "filled", "flex: 2 1 0")}</footer>',
      G, 'Store keeper', 'Blind count on a phone, one item at a time', SR + '/count (new)', 'U6, needs E7')
 
 # 4 take out of stock (terminal)
@@ -76,7 +76,7 @@ page('Take-Out-Terminal-Phone', *P, 'Take out of stock, phone', phead('Stock', '
 # 5 a request received short (chef, kitchen terminal)
 RQ = [('Burger buns', '48 pieces', '36 pieces', pill('12 short', 'p-amber')), ('Beef mince', '4 kg', '4 kg', pill('All here', 'p-green')), ('Chips, frozen', '10 kg', '10 kg', pill('All here', 'p-green')), ('Tomatoes', '3 kg', '3 kg', pill('All here', 'p-green'))]
 rqt = table(['Item', '#Sent by the store', '#Arrived', ''], RQ, 'Burger buns', 'dt c')
-rqa = aside(f'<p class="t-row" style="text-align: center">Your PIN to receive</p>{pin(2)}{keypad(h=64)}<p class="t-sup muted" style="text-align: center">The 12 buns short stay against this trip. Joel T. and the manager are told.</p>', 340)
+rqa = aside(f'<p class="t-row" style="text-align: center">Your PIN to receive</p>{pin(4)}{keypad(h=56)}{btn("Receive 4 lines · 12 buns short", "filled")}<p class="t-sup muted" style="text-align: center">The 12 buns short stay against this trip. Joel T. and the manager are told.</p>', 340)
 rqm = f'<div><p class="t-row">Request 0112 · issued by Joel T. at 16:10</p><p class="t-sup muted">Main store to Kitchen store · tap a line if less arrived</p></div>{rqt}'
 page('Request-Received-Short', *T, 'Receive a request, short', sscreen('Store', 'Kitchen store · 1 request on its way · as at 16:24', rqm, rqa, on='Store', role='chef'),
      G, 'Chef', 'A request received short, with the receiver’s PIN; the gap is kept against the trip', '/kitchen/store#receive', 'U6, needs E7')
@@ -93,30 +93,30 @@ tba = aside(f'''<h2 class="t-h">Order to Green Valley Farms</h2><p class="t-sup 
       {kv("Expected total, at last price", "UGX 177,100")}
       <p class="t-sup muted">Prices are the last ones paid. The delivery is checked against this order when it comes.</p>
       <span class="grow"></span>{btn("Make the order · 3 lines", "filled")}''', 380)
-tbm = f'<div class="hstack">{seg(["All · 5", "Green Valley Farms · 3", "City Drinks Depot · 2"], "Green Valley Farms · 3")}</div>{tbt}<p class="t-sup muted">An item joins this list when its feeding store falls below the minimum, and leaves it when the delivery is received.</p>'
+tbm = f'<div class="hstack">{seg(["All · 5", "Green Valley Farms · 3", "City Drinks Depot · 2"], "All · 5")}</div>{tbt}<p class="t-sup muted">An item joins this list when its feeding store falls below the minimum, and leaves it when the delivery is received.</p>'
 page('To-Buy', *T, 'To buy', sscreen('To buy', 'Main store · 5 items below minimum · as at 16:30', tbm, tba, on='Stock'),
      G, 'Store keeper', 'To buy: everything below minimum, suggested to fill-to, turned into an order', SR + '/to-buy (new)', 'U7, needs E7')
 ptb = '<div class="card" style="overflow: hidden">' + ''.join(row(n, f'{s} · {oh} on hand · buy {sg}', '', btn=True) for n, s, oh, m, f, sg in TB) + '</div>'
-page('To-Buy-Phone', *P, 'To buy, phone', phead('To buy', '5 items below minimum · 16:30') + f'<main class="body">{ptb}</main><footer class="foot">{btn("Make an order", "filled", "flex: 1 1 0")}</footer>',
+page('To-Buy-Phone', *P, 'To buy, phone', rband('To buy', 'Main store · 5 below minimum · 16:30', more=False) + f'<main class="body">{seg(["All · 5", "Green Valley · 3", "City Drinks · 2"], "All · 5", True).replace("<button class=", "<button style=\"padding: 0 6px\" class=")}{ptb}</main><footer class="foot">{btn("Order from Green Valley · 3", "filled", "flex: 1 1 0")}</footer>',
      G, 'Store keeper', 'To buy on a phone', SR + '/to-buy (new)', 'U7, needs E7')
 
 # 7 stores set-up (manager, laptop)
 chain = f'''<div class="card" style="padding: 20px"><p class="cap" style="padding-bottom: 12px">How stock flows at Tapas Downtown</p>
       <div class="hstack g16" style="align-items: stretch">
-        <div class="card vstack g4" style="padding: 16px; flex: 1 1 0; background: var(--tonal); box-shadow: none"><p class="t-row">Main store</p><p class="t-sup muted">Deliveries come in here · 64 items</p></div>
+        <div class="card vstack g4" style="padding: 16px; flex: 1 1 0"><p class="t-row">Main store</p><p class="t-sup muted">Deliveries come in here · 64 items</p></div>
         <span style="display: flex; align-items: center; color: var(--muted)">{ic("move")}</span>
-        <div class="vstack g12" style="flex: 1 1 0"><div class="card vstack g4" style="padding: 16px"><p class="t-row">Kitchen store</p><p class="t-sup muted">Feeds Hot kitchen and Cold kitchen · 38 items</p></div><div class="card vstack g4" style="padding: 16px"><p class="t-row">Bar store</p><p class="t-sup muted">Feeds Bar · 41 items</p></div></div>
+        <div class="vstack g12" style="flex: 1 1 0"><div class="card vstack g4" style="padding: 16px; background: var(--tonal); box-shadow: none"><p class="t-row">Kitchen store</p><p class="t-sup muted">Feeds Hot kitchen and Cold kitchen · 38 items</p></div><div class="card vstack g4" style="padding: 16px"><p class="t-row">Bar store</p><p class="t-sup muted">Feeds Bar · 41 items</p></div></div>
       </div></div>'''
 set_side = f'''<div class="card vstack g12" style="padding: 20px"><p class="cap">Kitchen store</p>
       <div><label class="lab">Name</label><div class="field sm">Kitchen store</div></div>
-      <div><p class="lab">Kind</p>{seg(["Main", "Secondary", "Point"], "Point", True)}</div>
+      <div><p class="lab">Kind</p>{seg(["Main", "In between", "Beside a station"], "Beside a station", True)}</div>
       <div><label class="lab">Fed by</label><div class="field sm">Main store</div></div>
       <div><p class="lab">Stations that take from it</p>{picks(["Hot kitchen", "Cold kitchen", "Desserts"], 3, ("Hot kitchen", "Cold kitchen"))}</div></div>
-      <div class="card vstack g12" style="padding: 20px"><p class="cap">When stock says zero</p>{seg(["Off", "Warn", "Block"], "Warn", True)}<p class="t-sup muted">Warn: the item shows “check stock” and still sells. The chef can always mark sold out by hand.</p></div>'''
+      <div class="card vstack g12" style="padding: 20px"><p class="cap">When stock says zero</p>{seg(["Off", "Warn", "Block"], "Warn", True)}<p class="t-sup muted">Warn: the item shows “check stock” and still sells. Block: it greys out until the chef taps “We have it”. Off: only the chef’s marks count.</p></div>'''
 body = lbar('manager', 'Stock') + cp('Stock › Settings ›', 'Stores', btn('Add a store', 'tonal sm', icon='plus') + btn('Save', 'sm filled', 'min-width: 120px')) + f'''
-  <main class="page" style="flex-direction: row; gap: 20px"><section class="grow vstack g16">{chain}<div class="card" style="padding: 16px 20px"><p class="t-sup">One store is a valid set-up, and so is no stock at all. Adding a secondary store between Main and the point stores is a settings change, never a rebuild. Moving stores never changes the books: every move is a row in one ledger.</p></div></section>
+  <main class="page" style="flex-direction: row; gap: 20px"><section class="grow vstack g16">{chain}<div class="card" style="padding: 16px 20px"><p class="t-sup">One store is enough, and a venue can start with no stock at all. A store in between can be added later from here. Moving stock between stores keeps every movement, with who and when.</p></div></section>
   <aside class="vstack g16" style="width: 420px; flex: none">{set_side}</aside></main>'''
 page('Stores-Setup', *L, 'Stores set-up', body, G, 'Manager', 'Stores set-up: main, point stores, which stations take from which', '/manager/stock/stores (new)', 'U7, needs E7')
-pss = f'<div class="card" style="overflow: hidden">{row("Main store", "Main · deliveries come in here", CHEV)}{row("Kitchen store", "Point · fed by Main · Hot and Cold kitchen", CHEV)}{row("Bar store", "Point · fed by Main · Bar", CHEV)}</div><div class="card vstack g8" style="padding: 16px"><p class="cap">When stock says zero</p>{seg(["Off", "Warn", "Block"], "Warn", True)}<p class="t-sup muted">Warn: “check stock”, still sells.</p></div>{btn("Add a store", "tonal", icon="plus")}'
+pss = f'<div class="card" style="overflow: hidden">{row("Main store", "Main · deliveries come in here", CHEV)}{row("Kitchen store", "Beside the kitchen · fed by Main", CHEV)}{row("Bar store", "Beside the bar · fed by Main", CHEV)}</div><div class="card vstack g8" style="padding: 16px"><p class="cap">When stock says zero</p>{seg(["Off", "Warn", "Block"], "Warn", True)}<p class="t-sup muted">Warn: “check stock”, still sells.</p></div>{btn("Add a store", "tonal", icon="plus")}'
 page('Stores-Setup-Phone', *P, 'Stores set-up, phone', rband('Stores', 'Tapas Downtown · 3 stores', more=False) + f'<main class="body">{pss}</main>' + navbar('manager', 'More', True),
      G, 'Manager', 'Stores set-up on a phone', '/manager/stock/stores (new)', 'U7, needs E7')

@@ -70,7 +70,7 @@ page('Kitchen-Done-Phone', *P, 'Kitchen, Done, phone', band('Done', 'Last hour �
      G, 'Chef', 'Done on a phone', KR + '?view=done', 'U5, needs E5')
 
 # 3 Sold out: mark, back on, set a number
-SO = [('Lamb chops', 'Grills', 'Sold out', 'p-red', 'Marked by Ruth A. at 19:20', 'Back on'), ('Goat stew', 'Local', '12 left', 'p-amber', 'Number set by Ruth A. at 17:05', 'Change'),
+SO = [('Lamb chops', 'Grills', 'Sold out', 'p-red', 'Marked by Ruth A. at 19:40', 'Back on'), ('Goat stew', 'Local', '12 left', 'p-amber', 'Number set by Ruth A. at 17:05', 'Change'),
       ('Pepper steak', 'Grills', '3 left', 'p-amber', 'From the kitchen store: 3 servings of steak', 'Mark sold out'), ('Chicken luwombo', 'Local', 'Check stock', 'p-amber', 'Stock says 0 banana leaves; still sells', 'We have it'),
       ('Beef burger', 'Burgers', 'Available', 'p-green', '24 servings in the kitchen store', 'Sold out'), ('Grilled tilapia', 'Grills', 'Available', 'p-green', '9 servings', 'Sold out'),
       ('Chicken wings', 'Starters', 'Available', 'p-green', 'Not counted', 'Sold out'), ('Fruit platter', 'Desserts', 'Available', 'p-green', 'Not counted', 'Sold out')]
@@ -81,14 +81,14 @@ sotop = f'<div class="hstack">{seg(["Out or low · 4", "All 64 items"], "Out or 
 page('Kitchen-Sold-Out', *K, 'Kitchen, Sold out', kscreen('Hot kitchen', 'Sold out and low · as at 20:04', 'chef', sotop + sot, sside, on='Sold out'),
      G, 'Chef', 'Sold out: mark, back on, numbers left, stock warnings', KR + '?view=sold-out', 'U5, needs E2 and E10')
 pso = '<div class="card" style="overflow: hidden">' + ''.join(row(n, f'{pill(s_, pc)} {w}', btn(a, 'tonal sm', 'width: 128px'), btn=False) for n, g, s_, pc, w, a in SO[:4]) + '</div>' + btn('Set a number', 'tonal', icon='plus')
-pso = pso.replace('Marked by Ruth A. at 19:20', '19:20, Ruth A.').replace('Number set by Ruth A. at 17:05', 'set 17:05').replace('From the kitchen store: 3 servings of steak', 'from stock').replace('Stock says 0 banana leaves; still sells', 'still sells')
+pso = pso.replace('Marked by Ruth A. at 19:40', '19:40, Ruth A.').replace('Number set by Ruth A. at 17:05', 'set 17:05').replace('From the kitchen store: 3 servings of steak', 'from stock').replace('Stock says 0 banana leaves; still sells', 'still sells')
 page('Kitchen-Sold-Out-Phone', *P, 'Kitchen, Sold out, phone', band('Sold out', 'Out or low · 4 · 20:04', rbtn('search', 'Find an item')) + f'<main class="body">{seg(["Out or low · 4", "All items"], "Out or low · 4", True)}{pso}</main>' + navbar('chef', 'Sold out', True),
      G, 'Chef', 'Sold out on a phone', KR + '?view=sold-out', 'U5, needs E2 and E10')
 
 # 4 set a number
 setn = f'''<div class="hstack g24" style="align-items: flex-start"><div class="vstack g12 grow"><div class="field" style="height: 72px; justify-content: flex-end; font-size: 26px; line-height: 32px; font-weight: 700">12</div>{optgrid(["5", "10", "12", "20"], 4, "12", "opt lg")}<p class="t-sup muted">Each send of Goat stew takes one. At 3 the waiters see “3 left”; at 0 it greys out. The number clears when the day closes.</p></div>
     <div style="width: 340px; flex: none">{keypad(h=72)}</div></div>'''
-page('Kitchen-Set-Number', *K, 'Kitchen, set a number', kscreen('Hot kitchen', 'Sold out and low · as at 19:25', 'chef', sotop + sot, sside, on='Sold out', inert=True) + scrim() + sheet('How many Goat stew are left now?', 'Local · counted by hand, no stock needed · now 12 left', setn, sfoot(btn('Cancel', 'textbtn'), btn('Set 12 left', 'filled', 'min-width: 240px')), 'mid'),
+page('Kitchen-Set-Number', *K, 'Kitchen, set a number', kscreen('Hot kitchen', 'Sold out and low · as at 19:45', 'chef', sotop + sot, sside, on='Sold out', inert=True) + scrim() + sheet('How many Goat stew are left now?', 'Local · counted by hand, no stock needed · now 12 left', setn, sfoot(btn('Cancel', 'textbtn'), btn('Set 12 left', 'filled', 'min-width: 240px')), 'mid'),
      G, 'Chef', 'Set a number: “12 goat stews left”, counted down by each send', KR + '?view=sold-out#count', 'U5, needs E2')
 page('Kitchen-Set-Number-Phone', *P, 'Set a number, phone', band('Sold out', 'Out or low · 4').replace('<header class="band">', '<header inert class="band">') + '<main class="body" inert></main>' + navbar('chef', 'Sold out', True).replace('<nav class="tabbar"', '<nav inert class="tabbar"') + scrim() + sheet('Goat stew left', 'Each send takes one; at 0 it greys out', f'<div class="field" style="height: 64px; justify-content: flex-end; font-size: 26px; line-height: 32px; font-weight: 700">12</div>{keypad(h=56)}', btn('Set 12 left', 'filled'), gap=12),
      G, 'Chef', 'Set a number on a phone', KR + '?view=sold-out#count', 'U5, needs E2')
@@ -110,7 +110,7 @@ page('Kitchen-Remake-Phone', *P, 'Remake, phone', band('Tickets', '8 orders · 1
      G, 'Chef', 'Remake on a phone', KR + '#remake', 'U5, needs E6')
 
 # 7 opening list: still sold out?
-OP = [('Lamb chops', 'Marked sold out at 19:20 by Ruth A.', 'Still out'), ('Goat stew', 'Counted down to 0 at 21:40', 'Back on'), ('Fruit platter', 'Marked sold out at 20:55 by Ruth A.', 'Back on'), ('Chicken luwombo', 'Stock said 0 banana leaves', 'Back on')]
+OP = [('Lamb chops', 'Marked sold out at 19:40 by Ruth A.', 'Still out'), ('Goat stew', 'Counted down to 0 at 21:40', 'Back on'), ('Fruit platter', 'Marked sold out at 20:55 by Ruth A.', 'Back on'), ('Chicken luwombo', 'Stock said 0 banana leaves', 'Back on')]
 opl = '<div class="card" style="overflow: hidden">' + ''.join(f'<div class="row" style="min-height: 80px"><span class="grow"><span class="t-row">{n}</span><br><span class="t-sup muted">{w}</span></span><div style="width: 360px">{seg(["Still out", "Back on"], c, True)}</div></div>' for n, w, c in OP) + '</div>'
 page('Kitchen-Opening', *K, 'Kitchen, still sold out?', kscreen('Hot kitchen', 'Good morning · Fri 27 Nov · 10:02', 'chef', f'<div><h2 class="t-title">Still sold out?</h2><p class="t-body muted" style="margin-top: 4px">Yesterday closed with these 4 items off. Tell the waiters what you have today.</p></div>{opl}<div class="hstack">{btn("Not now", "textbtn")}<span class="grow"></span>{btn("Done · 1 still out", "filled", "min-width: 280px; height: 56px; font-size: 18px")}</div>', '<aside style="width: 300px; flex: none"></aside>', on='Tickets').replace('Tickets<span class="nb">8</span>', 'Tickets'),
      G, 'Chef', 'Opening: yesterday’s sold-out list, “still sold out?”, one tap each', KR + '#opening', 'U5, needs E2 and E11')

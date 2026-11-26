@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menu item with servings and choices</title>
+<link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ab" style="width: 1440px; height: 900px">
+  <header class="bar">
+    <button class="rb" aria-label="All apps"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="18" cy="6" r="1.3"/><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="12" cy="18" r="1.3"/><circle cx="18" cy="18" r="1.3"/></svg></button><span class="div"></span>
+    <a class="mark" href="#"><i></i>Nimbus POS</a>
+    <nav aria-label="Main"><a href="#">Floor</a><a class="on" aria-current="page" href="#">Menu</a><a href="#">Stock</a><a href="#">Staff</a><a href="#">More</a></nav>
+    <span class="grow"></span>
+    <span class="search"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</span>
+    <button class="rb" aria-label="Alerts"><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></button>
+    <span class="clock">Tapas Downtown</span>
+    <button class="who" aria-label="Account">PK</button>
+  </header>  <div class="cp"><span class="crumb">Menu › Drinks › Whisky ›</span><h1 class="t-row">Blended Scotch</h1><span class="pill p-green">On the menu</span><span class="grow"></span><button class="btn sm textbtn">Discard changes</button><button class="btn sm filled" style="min-width: 140px">Save item</button></div>
+  <main class="page" style="flex-direction: row; gap: 20px"><section class="card grow vstack g16" style="padding: 20px">
+      <div style="display: grid; grid-template-columns: 2fr 1.4fr 1.2fr; gap: 12px"><div><label class="lab">Name on the menu</label><div class="field">Blended Scotch</div></div><div><label class="lab">Menu and group</label><div class="field">Drinks › Whisky</div></div><div><label class="lab">Order goes to</label><div class="field">Bar</div></div></div>
+      <div><p class="lab">How is it sold?</p><div class="optgrid" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><button class="opt tall">As bought<small>A bottle, a packet</small></button><button class="opt tall on">A measure<small>Tot, glass, scoop</small></button><button class="opt tall">Made from a recipe<small>Uses ingredients</small></button><button class="opt tall">Not tracked<small>No stock is counted</small></button></div></div>
+      <div class="vstack"><div class="hstack" style="justify-content: space-between"><p class="lab" style="margin: 0">Servings · from 1 bottle of 750 ml</p><button class="btn sm textbtn"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a serving</button></div><table class="dt c"><thead><tr><th>Serving</th><th class="num">Takes from the bottle</th><th class="num">Price, UGX</th><th class="num">Cost, UGX</th><th></th></tr></thead><tbody><tr><td>Tot</td><td class="num">30 ml</td><td class="num">8,000</td><td class="num">1,350</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Tot" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Double</td><td class="num">60 ml</td><td class="num">15,000</td><td class="num">2,700</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Double" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr><tr><td>Bottle</td><td class="num">750 ml</td><td class="num">180,000</td><td class="num">33,750</td><td class="num" style="width: 60px; padding: 0 4px"><button class="round sm" aria-label="Remove Bottle" style="margin-left: auto"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td></tr></tbody></table></div>
+      <p class="t-sup muted">Each serving is a button on the item’s row for the waiter: Tot, Double, Bottle. A tot takes 30 ml from the Bar store.</p>
+    </section><aside class="vstack g16" style="width: 420px; flex: none"><div class="card" style="padding: 16px 20px"><p class="cap" style="padding-bottom: 6px">Cost and margin, a tot</p><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Sells for</span><span class="t-body b" style="text-align: right">UGX 8,000</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Costs</span><span class="t-body b" style="text-align: right">UGX 1,350</span></div><div class="hstack" style="justify-content: space-between; min-height: 40px"><span class="t-sup muted">Left over</span><span class="t-body b" style="text-align: right">UGX 6,650 · 83%</span></div><p class="t-small muted" style="padding-top: 6px">Bottle cost UGX 33,750, as at 24 Nov.</p></div><div class="card" style="overflow: hidden"><p class="cap" style="padding: 16px 20px 6px">Choices the guest can make</p><button class="row" style="width: 100%;padding: 8px 20px"><span class="grow"><span class="t-body b">Mixer</span><br><span class="t-sup muted">Pick one · Cola, Soda water, Tonic, Ginger ale, Water, Ice only · each uses stock</span></span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><button class="row" style="width: 100%;padding: 8px 20px"><span class="grow"><span class="t-body b">Ice</span><br><span class="t-sup muted">Pick one · With ice, No ice</span></span><svg class="ic " viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><div style="padding: 8px 20px 16px"><button class="btn tonal sm"><svg class="ic s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a choice group</button></div></div></aside></main>
+</div>
+</x-dc>
+</body>
+</html>
