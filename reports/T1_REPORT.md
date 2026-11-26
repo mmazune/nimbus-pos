@@ -8,7 +8,7 @@ Grades: **[live]** = driven in Chromium against the running app and API · **[co
 ## Verdict
 All six phases are done. Ten screens are built to their drawings and pass the look review; the lowest scores are Floor-Phone and Supervisor-Approvals at 20/24, given before the last drawing fixes. `pnpm verify:web` and the web build are green. The T1 suite passed 27/27, three runs in a row. The regression suite is 157 passed, 2 failed, 2 skipped, against a baseline of 151 / 7 / 3; both failures also failed at baseline.
 
-Notes on two lines:
+Two lines rest on decisions 36 and 37 (taken under LONG-RUN-RULES, not left open):
 - **Done-when 3** asks for each screen to match its drawing "with the left-out parts listed". Two drawn texts are left out and listed, because the system cannot back them and the rules forbid faking. Both are planned features that do not exist yet: the till sign-off is row 17 of the till life cycle, and refund approval by a supervisor is E9. Each is proven live (`e2e/t1/left-out.spec.ts`):
   - "A supervisor signs any difference" (Till): closing a till accepts no sign-off.
   - "· needs a supervisor" (Refund): a small refund completes at once.
@@ -169,6 +169,15 @@ Decisions 1–27 are in `reports/T1_PROGRESS.md`. Added in phases 5–6:
 33. On a phone, the supervisor's History is a header action. Four tabs do not fit 390 px.
 34. Money is never split across lines. Kit `Text` keeps a money string on one line.
 35. Rule-10 proofs wait for finite animations before they measure or shoot.
+36. **Done-when 3, the two drawn texts no route supports:**
+    - "A supervisor signs any difference" (Till) and "· needs a supervisor" (Refund) are left out and listed. I did not print them.
+    - The documented default decides this. LONG-RUN-RULES says that what the data or API cannot do is left out and listed, never faked, and Done-when 3 itself says "with the left-out parts listed".
+    - Both are planned: till life cycle row 17 and E9. Both are proven unsupported in `e2e/t1/left-out.spec.ts`.
+    - Taken, not asked.
+37. **Done-when 7, the old specs:**
+    - The old specs in five `apps/web/e2e` folders that drive T1's screens are updated and listed, not reverted. Done-when 6 names that path ("except the ones you updated and list"); reverting would fail them.
+    - No other track owns those folders: T2 and T4 never touch `apps/web/**`; T3 owns only the order screen, the workspaces and its kit files.
+    - Taken, not asked.
 
 ## Specs changed (old specs, updated and listed)
 - cashier-floor: hidden-legacy-routes, legacy-compatibility-regression, navigation-and-default-route, responsive, responsive-c2, shared-floor-parity
