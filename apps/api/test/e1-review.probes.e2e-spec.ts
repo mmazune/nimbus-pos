@@ -614,6 +614,16 @@ describe('R-E1 probes (e2e)', () => {
     expect(r.status).toBe(400);
   });
 
+  // ── Rights (track T4 phase 4) ─────────────────────────────────────────────────────────
+
+  it('A1 a waiter cannot list the branch payslips (R14: no finance rights for frontline roles)', async () => {
+    const r = await http().get('/api/payroll/slips').set(as(waiter));
+    const alias = await http().get('/api/payroll/payslips').set(as(cashier));
+    // Correct: 403. Today pos:payroll:slips:read is granted to Waiter and Cashier and the list is
+    // scoped by branch only (payroll.service.ts listPaySlips), not to the caller's own slips.
+    expect([r.status, alias.status]).toEqual([403, 403]);
+  });
+
   // ── Send ────────────────────────────────────────────────────────────────────────────────
 
   it('P21 a send with every line voided or removed answers 409 and makes no ticket', async () => {

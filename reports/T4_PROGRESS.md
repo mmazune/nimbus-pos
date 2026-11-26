@@ -4,15 +4,15 @@ Branch `t4/review-and-data`, cut from `origin/e1/order-truth` (`19e1eee`). Push 
 `git push -u origin t4/review-and-data` (the branch tracks `origin/e1/order-truth`; a bare push could hit it).
 
 ## Now
-- Phase 2 done: sequencer fixes C1 (test order) and C2 (shared cashier password); 83 red named in `docs/reviews/e2e-baseline.md`; `tools/test-env.sh` proven from a stopped Postgres. Next: phase 3 (demo venue).
+- Phase 4 done: `docs/direction/10-people-and-access.md` and `rights-matrix.json` (314 keys, 67 changes ruled; all 36 ungranted keys ruled; R14: 15 Manager gaps and frontline payroll rights, probe A1 live). Next: final gates, `reports/T4_REPORT.md`, push.
 
 ## Phases
 | phase | state | last commit |
 |---|---|---|
 | 1 Review E1 | done, pushed (`964500b`, B5 live proof after) | |
 | 2 Repair the test run | done: 92 → 72 pre-existing red + 11 probes; all named | see `git log` |
-| 3 Demo venue | not started | |
-| 4 People and access | not started | |
+| 3 Demo venue | done | see `git log` |
+| 4 People and access | done | see `git log` |
 
 ## Decisions taken
 - **The five ruling points** come from `origin/rebuild/main`'s `docs/prompts/RE1-review-order-truth.md` (the copy on the E1 branch predates them). Read with `git show`/a scratch worktree; `rebuild/main` is not merged in (that would break T4 Done-when 6).
@@ -25,8 +25,18 @@ Branch `t4/review-and-data`, cut from `origin/e1/order-truth` (`19e1eee`). Push 
 
 - **Phase 2 fix lives in config, not in other people's specs:** `test/support/e2e-sequencer.js` (no new dependency: a standalone class, since `@jest/test-sequencer` is not resolvable from `apps/api` under pnpm). The lasting fixes for `bg1-onboarding` (restore the user it changes) and the stale specs F2/F4 are for their owners.
 
+- **Demo venue built fresh in `packages/db/demo-venue/`**, not by extending `db:demo:import`: that importer and its CSVs live outside T4's folders, hold 99 items and 68 tables over four branches, use phones outside the fictional block, have no localhost guard, and keep fixed passwords in a committed credentials file.
+- **No cast existed in the repo**: the venue's 21 people are a new made-up cast in `data/people.json` (chef2 renamed from the owner's own first name).
+- **Store keeper = the seeded role "Stock Manager"** (`JobRole.STOCK_MANAGER`); there is no other store-keeper role.
+- **Areas = floor plans**: the Floor groups tables by `floorPlan.name`; the table's `metadata.area` repeats it.
+- **`db:seed` runs first** inside `run.sh` (roles and permissions are global and only the seed makes them); its own demo org comes along.
+- **No ESLint config covers `packages/db`**; the venue files pass a strict `tsc` and `prettier --check` instead.
+
+- **Phase 4 rulings take R14 literally** (every key to Manager except `pos:hr:compensation:read`), flag `pos:hr:compensation:create` for the owner, keep `ops:*` off every venue role (platform operators only), and treat `hms:read:*` and `pos:feedback:public:token:read` as non-role keys.
+
 ## Left out, and why
-- (none yet)
+- "Bill asked" is only an `ORDER_BILL_REQUESTED` audit row; no API reads it back (venue README).
+- No stock on hand in the venue (E6).
 
 ## Next
-1. Phase 3: Tapas Downtown venue under `packages/db/demo-venue/` (new; the existing `demo-data` importer is outside T4's folders, has 99 items and 68 tables over 4 branches, phones outside the fictional block, no localhost guard, and a committed credentials file).
+1. Phase 4: `docs/direction/10-people-and-access.md`, `rights-matrix.json`, the 35 ungranted keys, R14 check.
