@@ -190,7 +190,7 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     const joinPlacement: SheetPlacement = placement === "middle" ? "wide" : placement;
     return (
       <Sheet placement={joinPlacement} title={`Join ${title} with another`} summary={`${formatMoney(totalMinor)} on ${title} now`} onClose={onClose}
-        footer={<><Button tone="text" onClick={onClose}>Cancel</Button><span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinTables(ctx as Ctx, tableId as string, target as string), { leave: false, message: `${chosen?.tableLabel} joined to ${title}: one bill` })}>{chosen ? `Join 2 tables · ${formatMoney(sum)}` : "Choose a table"}</Button></>}>
+        footer={<><span className="flex-1" /><Button tone="text" onClick={onClose}>Cancel</Button><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinTables(ctx as Ctx, tableId as string, target as string), { leave: false, message: `${chosen?.tableLabel} joined to ${title}: one bill` })}>{chosen ? `Join 2 tables · ${formatMoney(sum)}` : "Choose a table"}</Button></>}>
         <Text variant="sup" strong>{`Pick the table to join to ${title}`}</Text>
         {areaChips((id) => (othersQ.data ?? []).filter((o) => o.tableId && o.tableId !== tableId && areaOfTable(o.tableId) === id).length)}
         <div className="grid max-h-kit-pick-grid shrink-0 grid-cols-2 gap-kit-8 overflow-y-auto md:grid-cols-3" data-order-join>
@@ -201,10 +201,10 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
         {pickable.length > 9 ? <Text variant="sup" tone="muted">{`${pickable.length} tables here · scroll the list for more`}</Text> : null}
         {chosen ? (
           <>
-            <div className="flex flex-col gap-kit-8 rounded-kit-control bg-kit-canvas px-kit-16 py-kit-12" data-join-summary>
+            <div className="flex flex-col gap-kit-16 rounded-kit-control bg-kit-canvas px-kit-16 py-kit-16" data-join-summary>
               <div className="flex items-baseline justify-between"><Text variant="body">{title}</Text><Text variant="row">{formatMoney(totalMinor)}</Text></div>
               <div className="flex items-baseline justify-between"><Text variant="body">{chosen.tableLabel}</Text><Text variant="row">{formatMoney(chosen.totalMinor)}</Text></div>
-              <div className="flex items-baseline justify-between shadow-kit-line-top pt-kit-8"><Text variant="row">{`One bill on ${title}`}</Text><Text variant="h">{formatMoney(sum)}</Text></div>
+              <div className="flex items-baseline justify-between shadow-kit-line-top pt-kit-16"><Text variant="row">{`One bill on ${title}`}</Text><Text variant="h">{formatMoney(sum)}</Text></div>
             </div>
             <Text variant="sup" tone="muted">{`${chosen.tableLabel} shows “Joined to ${title}” until the bill is paid. You can split them again at any time.`}</Text>
           </>
