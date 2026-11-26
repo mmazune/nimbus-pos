@@ -15,6 +15,23 @@ Grades:
 - Neon was never touched, and no `.env*` file was read or written.
 - Secrets are minted in the shell per boot. Quick PINs are reissued in memory by the test setup and never written anywhere.
 
+## Done when: all eleven proven (final state, `cd4d096` and after)
+| # | Line | Proof |
+|---|---|---|
+| 1 | One screen for all four roles; old three gone | `OrderScreen` mounted in the four floors; the old files deleted (`git show de37868 --stat`); `actions.spec.ts`, `kept.spec.ts` |
+| 2 | Free table tapped and left creates nothing | `proof/T3/free-table-network.json` (`writes: []`) |
+| 3 | Add to a sent order; second Send only new lines | `proof/T3/two-sends-network.json`; `waiter.spec.ts` |
+| 4 | Search by 3 letters and initials; quantity first; Same again | `waiter.spec.ts`, `kept.spec.ts`, `data.spec.ts` |
+| 5 | Supervisor voids one sent line with reason and "made?"; waiter cannot | `evening.spec.ts` (waiter 403); `proof/T3/rights-matrix.txt` |
+| 6 | Cashier takes 100,000; change before and after | `evening.spec.ts`; `proof/T3/evening-1-4/5-*.png` |
+| 7 | Each drawing beside the built screen | `proof/T3/compare-*.png` (11) |
+| 8 | Evening 3 runs in a row; taps none above four | `proof/T3/evening-3-runs.txt`; `proof/T3/tap-counts.json` (3, 4, 4, 4, asserted ≤ 4) |
+| 9 | Rule 10 at both sizes; check:ui, lint, typecheck, build | measurer in the specs at 1280, 1440 and 390; `proof/T3/gates.txt` |
+| 10 | Diff shows only what T3 owns | `proof/T3/diff-stat.txt` |
+| 11 | SCREENS.md rows built, with score /24 | `design/screens/SCREENS.md`: all ten order drawings "built · scored 21–24/24", from an independent review (`T3_LOOK_REVIEW_INDEPENDENT.md`, all pass) |
+
+Not open items, by the rules: merging is the owner's (rule 3 forbids me). Choices without an owner answer took the documented default and are recorded (rule 1). "Ask the waiter" has no endpoint, so it is left out and listed (rule 13).
+
 ## Phases
 | Phase | What | Commits |
 |---|---|---|
