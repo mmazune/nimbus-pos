@@ -100,7 +100,7 @@ export function MenuPane(props: Props) {
     <Field
       label="Search the whole menu"
       value={query}
-      placeholder="Name or initials, e.g. bs for Blended Scotch"
+      placeholder="Name or first letters"
       inputMode="search"
       size={density === "laptop" ? "laptop" : "touch"}
       onChange={onQuery}

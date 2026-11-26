@@ -47,7 +47,7 @@ export function Sheet({ placement, title, summary, onClose, footer, children }: 
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={["absolute flex flex-col gap-kit-16 bg-kit-card shadow-kit-up font-kit", PLACE[placement]].join(" ")}
+        className={["absolute flex max-h-full flex-col gap-kit-16 bg-kit-card shadow-kit-up font-kit", PLACE[placement]].join(" ")}
       >
         {placement === "side" ? null : (
           <span className="h-kit-grab-h w-kit-grab-w self-center rounded-kit-grab bg-kit-line" aria-hidden="true" />
@@ -65,8 +65,9 @@ export function Sheet({ placement, title, summary, onClose, footer, children }: 
           </div>
           <RoundAction icon="close" label="Close" size="small" tone="field" onClick={onClose} />
         </div>
-        {children}
-        {footer ? <div className="flex items-center gap-kit-12">{footer}</div> : null}
+        {/* A long sheet scrolls its body; the title and the footer stay in view. */}
+        {children ? <div className="flex min-h-kit-0 flex-1 flex-col gap-kit-16 overflow-y-auto">{children}</div> : null}
+        {footer ? <div className="flex flex-none items-center gap-kit-12">{footer}</div> : null}
       </section>
     </>
   );

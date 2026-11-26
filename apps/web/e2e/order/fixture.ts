@@ -172,6 +172,21 @@ export async function resetFixtureTables(token: string) {
       await api(token, "POST", `/api/pos/orders/${o.id}/void`, { reason: "T3 e2e: leftover from an earlier run" });
     }
   }
+  await freeEmptyFixtureTables(token);
+}
+
+/**
+ * Move table and Join tables (pos-handoff) leave the source table OCCUPIED with no
+ * order (an API gap, listed for T2). The fixture puts its own empty tables back.
+ */
+export async function freeEmptyFixtureTables(token: string) {
+  const tables = ((await must(token, "GET", "/api/tables")) as Json[]).filter((t) => FIXTURE_TABLES.includes(t.label));
+  const open = (await must(token, "GET", "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100")).data as Json[];
+  for (const t of tables) {
+    if (t.status !== "AVAILABLE" && !open.some((o) => o.tableId === t.id)) {
+      await must(token, "PATCH", `/api/tables/${t.id}/status`, { status: "AVAILABLE" });
+    }
+  }
 }
 
 let cached: Venue | null = null;
@@ -226,6 +241,7 @@ export async function setupVenue(): Promise<Venue> {
 
 /** A free table with no open order, its label and id. */
 export async function freeTable(token: string, avoid: string[] = [], label?: string): Promise<{ id: string; label: string }> {
+  await freeEmptyFixtureTables(token);
   const tables = ((await must(token, "GET", "/api/tables")) as Json[]).filter((t) => (label ? t.label === label : FIXTURE_TABLES.includes(t.label) && t.label !== "12"));
   const open = (await must(token, "GET", "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100")).data as Json[];
   const busy = new Set(open.map((o) => o.tableId));

@@ -26,6 +26,8 @@ type Props = {
   lines: OrderLineModel[];
   count: number;
   totalMinor: number;
+  /** Shown as its own row above the total when a discount is taken. */
+  discountMinor?: number;
   unsentCount: number;
   filled: FilledAction;
   busy: string | null;
@@ -50,7 +52,7 @@ export function sendLabel(n: number) {
 }
 
 export function OrderPanel(props: Props) {
-  const { lines, count, totalMinor, unsentCount, filled, busy, linesHidden, onLine, onSend, onPrintBill, onTakePayment, onMore, onSameAgain, canSameAgain, sentTappable, notice, billMode } = props;
+  const { lines, count, totalMinor, discountMinor = 0, unsentCount, filled, busy, linesHidden, onLine, onSend, onPrintBill, onTakePayment, onMore, onSameAgain, canSameAgain, sentTappable, notice, billMode } = props;
   const unsent = lines.filter((l) => l.state === "unsent");
   const rounds = sentRounds(lines);
   const empty = lines.length === 0 && !linesHidden;
@@ -137,6 +139,12 @@ export function OrderPanel(props: Props) {
       </div>
 
       <div className="flex flex-col gap-kit-12 px-kit-16 pb-kit-16 pt-kit-16 shadow-kit-foot" data-order-foot>
+        {discountMinor > 0 ? (
+          <div className="flex items-baseline justify-between" data-order-discount>
+            <Text variant="sup" tone="muted">Discount</Text>
+            <Text variant="sup" tone="muted">{`−${formatMoney(discountMinor)}`}</Text>
+          </div>
+        ) : null}
         <div className="flex items-baseline justify-between">
           <Text variant="row">Total</Text>
           <span className="text-kit-h text-kit-text" data-order-total>{formatMoney(totalMinor)}</span>

@@ -47,6 +47,8 @@ export type OrderModel = {
   waiterName: string | null;
   openedAt: string | null;
   totalMinor: Minor;
+  /** Discount taken off the bill (approved discounts only; the server keeps the sum). */
+  discountMinor: Minor;
   lines: OrderLineModel[];
 };
 
@@ -98,6 +100,7 @@ type ApiOrder = {
   userId?: string | null;
   user?: ApiUser;
   total?: string | number | null;
+  discount?: string | number | null;
   createdAt?: string | null;
   items?: ApiLine[] | null;
 };
@@ -166,6 +169,7 @@ export function mapOrder(raw: ApiOrder): OrderModel {
     waiterName: shortName(raw.user),
     openedAt: raw.createdAt ?? null,
     totalMinor: toMinor(raw.total) ?? 0,
+    discountMinor: toMinor(raw.discount) ?? 0,
     lines: (raw.items ?? []).map(mapLine),
   };
 }
@@ -361,4 +365,52 @@ export async function cancelOrder(ctx: Ctx, orderId: string, reason: string): Pr
 export async function paidOn(ctx: Ctx, orderId: string): Promise<Minor> {
   const res = await apiRequest<{ totalPaid?: string | number | null }>(`/api/pos/orders/${orderId}/payments`, ctx);
   return toMinor(res?.totalPaid) ?? 0;
+}
+
+export type OtherOrder = { id: string; tableLabel: string; waiterName: string | null; totalMinor: Minor };
+
+/** Other open orders on other tables in this branch: the targets for Join tables. */
+export async function listOtherOpenOrders(ctx: Ctx, exceptOrderId: string): Promise<OtherOrder[]> {
+  const res = await apiRequest<{ data?: ApiOrder[] & Array<{ table?: { label?: string | null } | null }> }>(
+    "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+    ctx,
+  );
+  return (res.data ?? [])
+    .filter((o) => o.id !== exceptOrderId && o.tableId && OPEN_STATES.includes(o.status ?? ""))
+    .map((o) => ({
+      id: o.id,
+      tableLabel: ((o as { table?: { label?: string | null } | null }).table?.label ?? "").trim() || "Table",
+      waiterName: shortName(o.user),
+      totalMinor: toMinor(o.total) ?? 0,
+    }))
+    .sort((a, b) => a.tableLabel.localeCompare(b.tableLabel, undefined, { numeric: true }));
+}
+
+/** Join tables: this order's lines move into the target order (one bill). */
+export async function joinInto(ctx: Ctx, sourceOrderId: string, targetOrderId: string): Promise<void> {
+  await apiRequest("/api/pos/orders/merge", { ...ctx, method: "POST", body: { sourceOrderId, targetOrderId } });
+}
+
+export type StaffMember = { userId: string; name: string };
+
+/** Active staff of this branch with a login: the targets for Change waiter. */
+export async function listStaff(ctx: Ctx): Promise<StaffMember[]> {
+  type Row = { userId?: string | null; firstName?: string | null; lastName?: string | null; status?: string | null; branchId?: string | null };
+  const res = await apiRequest<Row[] | { data?: Row[] }>("/api/hr/employees?take=100", ctx);
+  const rows = Array.isArray(res) ? res : res?.data ?? [];
+  const seen = new Set<string>();
+  return rows
+    .filter((e) => e.userId && (e.status ?? "ACTIVE") === "ACTIVE" && e.branchId === ctx.branchId)
+    .filter((e) => (seen.has(e.userId as string) ? false : (seen.add(e.userId as string), true)))
+    .map((e) => ({ userId: e.userId as string, name: shortName({ firstName: e.firstName, lastName: e.lastName }) ?? "Staff" }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function changeWaiter(ctx: Ctx, orderId: string, targetUserId: string): Promise<void> {
+  await apiRequest(`/api/pos/orders/${orderId}/transfer-server`, { ...ctx, method: "POST", body: { targetUserId } });
+}
+
+/** Split bill: records equal parts for the cashier (the API keeps one bill; payment still closes it in one go). */
+export async function splitEqually(ctx: Ctx, orderId: string, count: number): Promise<void> {
+  await apiRequest(`/api/pos/orders/${orderId}/split-bill`, { ...ctx, method: "POST", body: { mode: "EQUAL", count } });
 }

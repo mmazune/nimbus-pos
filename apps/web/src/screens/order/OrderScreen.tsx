@@ -7,7 +7,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Banner, Button, Card, KitIcon, OrderHeader, Sheet, Text } from "@/components/kit";
+import { Banner, Button, Card, KitIcon, OrderHeader, Sheet, SquareAction, Text } from "@/components/kit";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 import { loadItemChoices, loadMenu, type MenuChoiceGroup, type MenuItem, type MenuServing } from "./data/menu";
@@ -18,7 +18,7 @@ import { unitPriceOf, useOrderSession } from "./data/useOrderSession";
 import { ItemSheet, type ItemSheetResult } from "./parts/ItemSheet";
 import { firstNav, MenuPane, type MenuNav, type MixerOffer } from "./parts/MenuPane";
 import { OrderPanel, sendLabel } from "./parts/OrderPanel";
-import { TableActionsSheet } from "./parts/TableActionsSheet";
+import { TableActionsSheet, type Step as ActionStep } from "./parts/TableActionsSheet";
 import { VoidSheet } from "./parts/VoidSheet";
 import { PayPane } from "./parts/PayPane";
 import { PhoneOrderScreen } from "./phone/PhoneOrderScreen";
@@ -63,7 +63,7 @@ export type SheetState =
   | { kind: "item"; item: MenuItem; groups: MenuChoiceGroup[]; initial: ItemSheetResult; mode: "add" | "edit"; lineKey?: string }
   | { kind: "leave" }
   | { kind: "void"; line: OrderLineModel }
-  | { kind: "actions" }
+  | { kind: "actions"; step?: ActionStep }
   | { kind: "bill" }
   | { kind: "orders" }
   | null;
@@ -382,6 +382,7 @@ export function OrderScreen(props: OrderScreenProps) {
           ctx={ctx}
           orderId={order?.id ?? null}
           tableId={tableId}
+          totalMinor={session.totalMinor}
           canSameAgain={canSameAgain}
           onSameAgain={() => {
             sameAgain();
@@ -390,6 +391,7 @@ export function OrderScreen(props: OrderScreenProps) {
           sentLines={rights.canVoidLine ? session.lines.filter((l) => l.state === "sent" && l.serverId) : []}
           onVoidItem={(line) => setSheet({ kind: "void", line })}
           hasPayment={session.paidMinor > 0 || !session.paidKnown}
+          initialStep={sheet.step}
           onDone={async (outcome) => {
             setSheet(null);
             setToast(outcome.message);
@@ -595,6 +597,7 @@ export function OrderScreen(props: OrderScreenProps) {
       lines={session.lines}
       count={session.count}
       totalMinor={readOnly && summary ? summary.totalMinor : session.totalMinor}
+      discountMinor={order?.discountMinor ?? 0}
       unsentCount={session.unsentCount}
       filled={filled}
       busy={session.busy}
@@ -603,7 +606,7 @@ export function OrderScreen(props: OrderScreenProps) {
       onSend={doSend}
       onPrintBill={printBill}
       onTakePayment={() => setPaying(true)}
-      onMore={showActions && !readOnly && !paying ? () => setSheet({ kind: "actions" }) : undefined}
+      onMore={showActions && !readOnly && !paying && frame !== "laptop" ? () => setSheet({ kind: "actions" }) : undefined}
       onSameAgain={sameAgain}
       canSameAgain={canSameAgain && !paying}
       sentTappable={rights.canVoidLine && !paying}
@@ -627,11 +630,24 @@ export function OrderScreen(props: OrderScreenProps) {
           <Text variant="row" as="h1">{title}</Text>
           <Text variant="sup" tone="muted">{context}</Text>
           <span className="flex-1" />
-          {showActions && !readOnly ? (
-            <Button tone="tonal" size="laptop" icon="more" onClick={() => setSheet({ kind: "actions" })}>
-              Table actions
-            </Button>
+          {rights.canTableActions && order && !readOnly ? (
+            <>
+              {tableId ? (
+                <Button tone="tonal" size="laptop" onClick={() => setSheet({ kind: "actions", step: "move" })}>
+                  Move table
+                </Button>
+              ) : null}
+              <Button tone="tonal" size="laptop" onClick={() => setSheet({ kind: "actions", step: "split" })}>
+                Split bill
+              </Button>
+              {rights.canDiscount && session.paidKnown && session.paidMinor === 0 ? (
+                <Button tone="tonal" size="laptop" onClick={() => setSheet({ kind: "actions", step: "discount" })}>
+                  Discount
+                </Button>
+              ) : null}
+            </>
           ) : null}
+          {showActions && !readOnly ? <SquareAction icon="more" label="More for this table" tone="tonal" onClick={() => setSheet({ kind: "actions" })} /> : null}
         </div>
       ) : (
         <OrderHeader

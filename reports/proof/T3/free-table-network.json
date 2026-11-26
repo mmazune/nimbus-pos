@@ -13,12 +13,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/menu/navigation?activeOnly=true",
+      "path": "/api/shifts/active",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/shifts/active",
+      "path": "/api/menu/navigation?activeOnly=true",
       "status": 200
     },
     {
@@ -28,12 +28,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
+      "path": "/api/menu/catalog",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/menu/catalog",
+      "path": "/api/pos/orders?excludeStatus=CLOSED,VOIDED&pageSize=100",
       "status": 200
     },
     {

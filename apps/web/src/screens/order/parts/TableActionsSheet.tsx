@@ -10,11 +10,24 @@ import { useState } from "react";
 import { ActionTile, Button, Field, OptionTile, OrderLine, Sheet, Text, type SheetPlacement } from "@/components/kit";
 
 import { groupShillings } from "../data/money";
-import { askForDiscount, cancelOrder, choicesText, listFreeTables, moveToTable, type OrderLineModel } from "../data/order";
+import { formatMoney } from "../data/money";
+import {
+  askForDiscount,
+  cancelOrder,
+  changeWaiter,
+  choicesText,
+  joinInto,
+  listFreeTables,
+  listOtherOpenOrders,
+  listStaff,
+  moveToTable,
+  splitEqually,
+  type OrderLineModel,
+} from "../data/order";
 import type { OrderRights } from "../data/rights";
 
 type Ctx = { token: string; branchId: string };
-type Step = "menu" | "move" | "discount" | "cancel" | "voidPick";
+export type Step = "menu" | "move" | "discount" | "cancel" | "voidPick" | "join" | "waiter" | "split";
 
 type Props = {
   placement: SheetPlacement;
@@ -24,6 +37,7 @@ type Props = {
   ctx: Ctx | null;
   orderId: string | null;
   tableId: string | null;
+  totalMinor: number;
   canSameAgain: boolean;
   onSameAgain: () => void;
   /** Sent lines that may be voided; the person picks one (never preselected). */
@@ -31,6 +45,8 @@ type Props = {
   onVoidItem: (line: OrderLineModel) => void;
   /** A payment is posted: Discount and Cancel the order are hidden (the API does not check; the old screen did). */
   hasPayment: boolean;
+  /** Open straight on one action (the laptop bar's Move table, Split bill, Discount). */
+  initialStep?: Step;
   /** After a change on the server: the screen re-reads; `leave` when the table no longer holds this order. */
   onDone: (outcome: { leave: boolean; message: string }) => void;
   onClose: () => void;
@@ -39,14 +55,27 @@ type Props = {
 const PERCENTS = [5, 10, 15, 20, 50];
 const DISCOUNT_REASONS = ["Regular guest", "Slow service", "Kitchen error", "Manager’s offer"];
 
-export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, canSameAgain, onSameAgain, sentLines, onVoidItem, hasPayment, onDone, onClose }: Props) {
-  const [step, setStep] = useState<Step>("menu");
+export function TableActionsSheet({ placement, title, summary, rights, ctx, orderId, tableId, totalMinor, canSameAgain, onSameAgain, sentLines, onVoidItem, hasPayment, initialStep = "menu", onDone, onClose }: Props) {
+  const [step, setStep] = useState<Step>(initialStep);
   const [target, setTarget] = useState<string | null>(null);
   const [percent, setPercent] = useState<number | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [count, setCount] = useState<number | null>(null);
+  const othersQ = useQuery({
+    queryKey: ["order-screen", "other-orders", ctx?.branchId, orderId],
+    enabled: Boolean(ctx && orderId && step === "join"),
+    queryFn: () => listOtherOpenOrders(ctx as Ctx, orderId as string),
+    staleTime: 5_000,
+  });
+  const staffQ = useQuery({
+    queryKey: ["order-screen", "staff", ctx?.branchId],
+    enabled: Boolean(ctx && step === "waiter"),
+    queryFn: () => listStaff(ctx as Ctx),
+    staleTime: 60_000,
+  });
   const tablesQ = useQuery({
     queryKey: ["order-screen", "free-tables", ctx?.branchId, tableId],
     enabled: Boolean(ctx && step === "move"),
@@ -109,6 +138,52 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     );
   }
 
+  if (step === "join") {
+    const chosen = othersQ.data?.find((o) => o.id === target);
+    return (
+      <Sheet placement={placement} title={`Join ${title} to another table`} summary="This table's items move onto the other table's bill." onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => joinInto(ctx as Ctx, orderId as string, target as string), { leave: true, message: `Joined to ${chosen?.tableLabel}` })}>{chosen ? `Join to ${chosen.tableLabel}` : "Choose a table"}</Button></>}>
+        <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-3" data-order-join>
+          {(othersQ.data ?? []).map((o) => (
+            <OptionTile key={o.id} label={o.tableLabel} second={[o.waiterName, formatMoney(o.totalMinor)].filter(Boolean).join(" · ")} current={target === o.id} onClick={() => setTarget(o.id)} />
+          ))}
+        </div>
+        {othersQ.data && othersQ.data.length === 0 ? <Text variant="sup" tone="muted">No other table has an open order.</Text> : null}
+        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
+  if (step === "waiter") {
+    const chosen = staffQ.data?.find((m) => m.userId === target);
+    return (
+      <Sheet placement={placement} title={`Change the waiter on ${title}`} summary="The table and its order go to the person you choose." onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!chosen || busy} onClick={() => run(() => changeWaiter(ctx as Ctx, orderId as string, target as string), { leave: false, message: `${chosen?.name} has this table now` })}>{chosen ? `Give it to ${chosen.name}` : "Choose who"}</Button></>}>
+        <div className="grid grid-cols-2 gap-kit-8 md:grid-cols-4" data-order-waiters>
+          {(staffQ.data ?? []).map((m) => (
+            <OptionTile key={m.userId} label={m.name} current={target === m.userId} onClick={() => setTarget(m.userId)} />
+          ))}
+        </div>
+        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
+  if (step === "split") {
+    return (
+      <Sheet placement={placement} title={`Split the bill on ${title}`} summary="Equal parts are recorded for the cashier. Payment still settles the whole bill." onClose={onClose}
+        footer={<>{back}<span className="flex-1" /><Button tone="filled" disabled={!count || busy} onClick={() => run(() => splitEqually(ctx as Ctx, orderId as string, count as number), { leave: false, message: `Split in ${count} recorded` })}>{count ? `Split in ${count}` : "Choose how many"}</Button></>}>
+        <Text variant="sup" strong>Between how many guests</Text>
+        <div className="grid grid-cols-5 gap-kit-8" data-order-split>
+          {[2, 3, 4, 5, 6].map((n) => (
+            <OptionTile key={n} label={String(n)} second={formatMoney(Math.floor(totalMinor / n / 100) * 100)} current={count === n} onClick={() => setCount(n)} />
+          ))}
+        </div>
+        {error ? <Text variant="sup" tone="red">{error}</Text> : null}
+      </Sheet>
+    );
+  }
+
   if (step === "voidPick") {
     return (
       <Sheet placement={placement} title="Void an item" summary="Tap the line to void." onClose={onClose} footer={<>{back}</>}>
@@ -136,6 +211,9 @@ export function TableActionsSheet({ placement, title, summary, rights, ctx, orde
     <Sheet placement={placement} title={title} summary={summary} onClose={onClose}>
       <div className="grid grid-cols-1 gap-kit-8 md:grid-cols-2" data-order-actions>
         {lead && tableId ? <ActionTile icon="table" title="Move table" line="To a free table, the order goes with it" onClick={() => { setReason(""); setStep("move"); }} /> : null}
+        {lead && tableId ? <ActionTile icon="serviceArea" title="Join tables" line="Put two tables on one bill" onClick={() => { setTarget(null); setStep("join"); }} /> : null}
+        {lead ? <ActionTile icon="staff" title="Change waiter" line="Give this table to someone else" onClick={() => { setTarget(null); setStep("waiter"); }} /> : null}
+        {lead ? <ActionTile icon="count" title="Split bill" line="Equal parts, recorded for the cashier" onClick={() => { setCount(null); setStep("split"); }} /> : null}
         {lead && rights.canDiscount && !hasPayment ? <ActionTile icon="revenue" title="Discount" line="A reason is saved with your name" onClick={() => { setReason(""); setStep("discount"); }} /> : null}
         {lead && rights.canVoidLine ? <ActionTile icon="soldOut" title="Void an item" line="Pick the line, say why" onClick={() => setStep("voidPick")} /> : null}
         {canSameAgain ? <ActionTile icon="refresh" title="Same again" line="The drinks of the last round, not sent yet" onClick={onSameAgain} /> : null}
