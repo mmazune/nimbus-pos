@@ -38,7 +38,10 @@ describe('ShiftsService', () => {
       },
       order: {
         count: jest.fn(),
+        // T2 phase 2: the person closing has no open tables left
+        findMany: jest.fn().mockResolvedValue([]),
       },
+      userRole: { findMany: jest.fn().mockResolvedValue([]) },
       shiftCloseSummary: {
         create: jest.fn(),
         findFirst: jest.fn(),

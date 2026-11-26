@@ -1,0 +1,6 @@
+== run 1
+Tests:       6 passed, 6 total
+== run 2
+Tests:       6 passed, 6 total
+== run 3
+Tests:       6 passed, 6 total

@@ -1,0 +1,24 @@
+== run 1 10:47:19
+PASS test/t2-busy-friday.e2e-spec.ts (11.887 s)
+PASS test/t2-lamb-chops.e2e-spec.ts (7.287 s)
+PASS test/e1f-review-probes.e2e-spec.ts (6.882 s)
+PASS test/order-truth.e2e-spec.ts
+PASS test/e1f-fixes.e2e-spec.ts
+PASS test/e1f-review-writers.e2e-spec.ts
+Tests:       49 passed, 49 total
+== run 2 10:47:52
+PASS test/t2-busy-friday.e2e-spec.ts (11.575 s)
+PASS test/t2-lamb-chops.e2e-spec.ts (7.793 s)
+PASS test/e1f-review-probes.e2e-spec.ts (7.119 s)
+PASS test/order-truth.e2e-spec.ts
+PASS test/e1f-fixes.e2e-spec.ts
+PASS test/e1f-review-writers.e2e-spec.ts
+Tests:       49 passed, 49 total
+== run 3 10:48:25
+PASS test/t2-busy-friday.e2e-spec.ts (11.79 s)
+PASS test/t2-lamb-chops.e2e-spec.ts (8.44 s)
+PASS test/e1f-review-probes.e2e-spec.ts (7.29 s)
+PASS test/order-truth.e2e-spec.ts
+PASS test/e1f-fixes.e2e-spec.ts
+PASS test/e1f-review-writers.e2e-spec.ts
+Tests:       49 passed, 49 total

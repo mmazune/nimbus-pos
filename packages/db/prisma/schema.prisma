@@ -885,8 +885,17 @@ model Table {
     orders       Order[]
     reservations Reservation[]
     events       Event[]
+    // T2 phase 2 (E3) — areas, tabs, put away, joined tables
+    areaId          String?   @map("area_id")
+    isTab           Boolean   @default(false) @map("is_tab")
+    tabNumber       Int?      @map("tab_number")
+    tabNote         String?   @map("tab_note")
+    putAwayAt       DateTime? @map("put_away_at")
+    joinedToTableId String?   @map("joined_to_table_id")
+    area            Area?     @relation(fields: [areaId], references: [id], onDelete: SetNull)
 
     @@unique([branchId, label])
+    @@index([areaId])
     @@index([orgId])
     @@index([branchId])
     @@index([floorPlanId])
@@ -972,12 +981,18 @@ model MenuItem {
     sortOrder        Int          @default(0) @map("sort_order")
     isActive         Boolean      @default(true) @map("is_active")
     metadata         Json?
+    // T2 phase 1 (E2) — offers of the day
+    isOffer          Boolean      @default(false) @map("is_offer")
+    offerPrice       Decimal?     @map("offer_price") @db.Decimal(10, 2)
+    offerNote        String?      @map("offer_note")
     createdAt        DateTime     @default(now()) @map("created_at")
     updatedAt        DateTime     @updatedAt @map("updated_at")
 
     organization      Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
     branch            Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
     category          Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    availability      MenuItemAvailability?
+    availabilityLogs  MenuAvailabilityLog[]
     taxCategory       TaxCategory?        @relation(fields: [taxCategoryId], references: [id], onDelete: SetNull)
     browseGroup       MenuBrowseGroup?    @relation(fields: [browseGroupId], references: [id], onDelete: SetNull)
     browseSubgroup    MenuBrowseSubgroup? @relation(fields: [browseSubgroupId], references: [id], onDelete: SetNull)
@@ -1330,6 +1345,8 @@ model Order {
     // Event till quick sale (H1)
     tillCode          String?     @map("till_code")
     clientSaleId      String?     @map("client_sale_id")
+    // T2 phase 3 (E5) — allergies said at this table, shown on every later ticket
+    allergies         String[]    @default([])
     createdAt         DateTime    @default(now()) @map("created_at")
     updatedAt         DateTime    @updatedAt @map("updated_at")
 
@@ -1369,6 +1386,17 @@ model Order {
 }
 
 /// A line item on an order, with price/cost snapshot at time of sale.
+enum OrderItemVoidReason {
+    GUEST_CHANGED_MIND
+    WRONG_ITEM
+    KITCHEN_RAN_OUT
+    TOOK_TOO_LONG
+    GUEST_COMPLAINT
+    OTHER
+
+    @@map("order_item_void_reason")
+}
+
 model OrderItem {
     id                String   @id @default(cuid())
     orderId           String   @map("order_id")
@@ -1383,6 +1411,24 @@ model OrderItem {
     costTotal         Decimal? @map("cost_total") @db.Decimal(12, 2)
     marginTotal       Decimal? @map("margin_total") @db.Decimal(12, 2)
     marginPct         Decimal? @map("margin_pct") @db.Decimal(5, 2)
+    // E1 — send by line, void by line
+    sentAt            DateTime?              @map("sent_at")
+    voidedAt          DateTime?              @map("voided_at")
+    voidedById        String?                @map("voided_by_id")
+    voidReason        OrderItemVoidReason?   @map("void_reason")
+    voidNote          String?                @map("void_note")
+    wasMade           Boolean?               @map("was_made")
+    // T2 phase 2 (E3) — which guest at the table, for a split by guest
+    guest             Int?
+    // T2 phase 3 (E5) — hold and fire, allergy, takeaway
+    heldAt            DateTime?              @map("held_at")
+    fireAt            DateTime?              @map("fire_at")
+    fireId            String?                @map("fire_id")
+    allergy           String?
+    takeaway          Boolean                @default(false)
+    // T2 phase 1 (E2) — an offer line keeps the normal unit price beside it
+    normalPrice       Decimal?               @map("normal_price") @db.Decimal(10, 2)
+    offerBasePrice    Decimal?               @map("offer_base_price") @db.Decimal(10, 2)
     createdAt         DateTime @default(now()) @map("created_at")
     updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -1394,6 +1440,7 @@ model OrderItem {
     @@index([orderId])
     @@index([menuItemId])
     @@index([menuItemServingId])
+    @@index([fireAt])
     @@map("order_items")
 }
 
@@ -1423,6 +1470,10 @@ model KdsTicket {
     startedAt  DateTime        @default(now()) @map("started_at")
     readyAt    DateTime?       @map("ready_at")
     recalledAt DateTime?       @map("recalled_at")
+    // T2 phase 3 (E5) — the waiter took it from the pass
+    collectedAt   DateTime?    @map("collected_at")
+    collectedById String?      @map("collected_by_id")
+    fireId        String?      @map("fire_id")
     metadata   Json?
     createdAt  DateTime        @default(now()) @map("created_at")
     updatedAt  DateTime        @updatedAt @map("updated_at")
@@ -1446,11 +1497,17 @@ model KdsTicketItem {
     id          String   @id @default(cuid())
     ticketId    String   @map("ticket_id")
     orderItemId String   @map("order_item_id")
+    // E1 — a voided line stays on the ticket so the station sees it was cancelled
+    voidedAt    DateTime? @map("voided_at")
+    voidReason  OrderItemVoidReason? @map("void_reason")
+    wasMade     Boolean?  @map("was_made")
     createdAt   DateTime @default(now()) @map("created_at")
 
     ticket    KdsTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
     orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
+    // E1 — a line gets a ticket once; the database refuses a second.
+    @@unique([orderItemId])
     @@index([ticketId])
     @@index([orderItemId])
     @@map("kds_ticket_items")
@@ -1598,6 +1655,9 @@ model Payment {
     branchId              String                    @map("branch_id")
     orderId               String                    @map("order_id")
     amount                Decimal                   @db.Decimal(12, 2)
+    // E1 — cash handed over and change returned (null for non-cash and for old rows)
+    tendered              Decimal?                  @db.Decimal(12, 2)
+    changeGiven           Decimal?                  @map("change_given") @db.Decimal(12, 2)
     method                PaymentMethod
     status                PaymentStatus             @default(PENDING)
     captureMode           PaymentCaptureMode        @default(ONLINE_PROVIDER) @map("capture_mode")
@@ -7209,4 +7269,127 @@ model PrinterRoute {
     @@index([branchId, routeType])
     @@index([printerId])
     @@map("printer_routes")
+}
+
+// ── T2 phase 1 (E2): sold out, back on, a number left ──
+
+enum MenuAvailabilityState {
+    AVAILABLE
+    SOLD_OUT
+}
+
+enum MenuAvailabilitySource {
+    MANUAL
+    COUNT
+}
+
+enum MenuAvailabilityChange {
+    SOLD_OUT
+    AVAILABLE
+    SET_LEFT
+    TAKEN
+    LOW
+    GIVEN_BACK
+    RESET
+}
+
+/// One row per menu item (a menu item belongs to one branch): the hand-set state and the counted-down number.
+model MenuItemAvailability {
+    id         String                 @id @default(cuid())
+    orgId      String                 @map("org_id")
+    branchId   String                 @map("branch_id")
+    menuItemId String                 @unique @map("menu_item_id")
+    state      MenuAvailabilityState  @default(AVAILABLE)
+    source     MenuAvailabilitySource @default(MANUAL)
+    left       Int?
+    lowAt      Int                    @default(5) @map("low_at")
+    since      DateTime               @default(now())
+    byUserId   String?                @map("by_user_id")
+    createdAt  DateTime               @default(now()) @map("created_at")
+    updatedAt  DateTime               @updatedAt @map("updated_at")
+
+    menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+    @@index([branchId])
+    @@map("menu_item_availability")
+}
+
+/// Append-only: every change of a menu item's availability (the sold-out log).
+model MenuAvailabilityLog {
+    id          String                  @id @default(cuid())
+    orgId       String                  @map("org_id")
+    branchId    String                  @map("branch_id")
+    menuItemId  String                  @map("menu_item_id")
+    change      MenuAvailabilityChange
+    fromState   MenuAvailabilityState   @map("from_state")
+    toState     MenuAvailabilityState   @map("to_state")
+    source      MenuAvailabilitySource
+    leftBefore  Int?                    @map("left_before")
+    leftAfter   Int?                    @map("left_after")
+    byUserId    String?                 @map("by_user_id")
+    orderId     String?                 @map("order_id")
+    orderItemId String?                 @map("order_item_id")
+    batchId     String?                 @map("batch_id")
+    createdAt   DateTime                @default(now()) @map("created_at")
+
+    menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+    @@index([branchId, createdAt])
+    @@index([menuItemId, createdAt])
+    @@index([batchId])
+    @@map("menu_availability_logs")
+}
+
+// ── T2 phase 2 (E3): areas, tabs, hand-over ──
+
+enum AreaKind {
+    TABLES
+    TABS
+}
+
+/// A part of the floor, shown one at a time (R11). A TABS area holds tabs for standing guests.
+model Area {
+    id        String    @id @default(cuid())
+    orgId     String    @map("org_id")
+    branchId  String    @map("branch_id")
+    name      String
+    kind      AreaKind  @default(TABLES)
+    sortOrder Int       @default(0) @map("sort_order")
+    isActive  Boolean   @default(true) @map("is_active")
+    putAwayAt DateTime? @map("put_away_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    tables Table[]
+
+    @@unique([branchId, name])
+    @@index([orgId])
+    @@index([branchId])
+    @@map("areas")
+}
+
+enum TableHandoverStatus {
+    PENDING
+    ACCEPTED
+    DECLINED
+    CANCELLED
+}
+
+/// A waiter offers one table or all their tables to a named colleague, who accepts or declines.
+model TableHandover {
+    id         String              @id @default(cuid())
+    orgId      String              @map("org_id")
+    branchId   String              @map("branch_id")
+    fromUserId String              @map("from_user_id")
+    toUserId   String              @map("to_user_id")
+    tableIds   String[]            @map("table_ids")
+    status     TableHandoverStatus @default(PENDING)
+    note       String?
+    answeredAt DateTime?           @map("answered_at")
+    createdAt  DateTime            @default(now()) @map("created_at")
+    updatedAt  DateTime            @updatedAt @map("updated_at")
+
+    @@index([branchId, toUserId, status])
+    @@index([branchId, fromUserId, status])
+    @@map("table_handovers")
 }

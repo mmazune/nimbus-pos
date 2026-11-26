@@ -1,0 +1,5 @@
+rows orders|order_items|tables|kds_tickets|kds_ticket_items
+before: 1372|2324|2434|1485|1973
+Applying migration `20261126300000_t2_tickets`
+All migrations have been successfully applied.
+after:  1372|2324|2434|1485|1973

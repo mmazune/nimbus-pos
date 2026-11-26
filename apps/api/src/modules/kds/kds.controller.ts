@@ -14,7 +14,7 @@ import {
 import { Request } from 'express';
 import { Observable, fromEvent, map, filter } from 'rxjs';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { KdsService, KdsEvent } from './kds.service';
+import { KdsService, KdsEvent, KdsActor } from './kds.service';
 import { ListKdsQueueQueryDto, UpdateKdsSlaDto } from './dto';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
@@ -71,32 +71,30 @@ export class KdsController {
   @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
   @RequireBranchContext()
   @Permissions('pos:kds:write')
-  async markReady(
-    @Param('id') id: string,
-    @CurrentUser() user: { id: string },
-    @Req() req: Request,
-  ) {
+  async markReady(@Param('id') id: string, @CurrentUser() user: KdsActor, @Req() req: Request) {
     const ctx = (req as any).branchContext;
-    return this.kdsService.markReady(user.id, ctx, id, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.kdsService.markReady(
+      user.id,
+      ctx,
+      id,
+      { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      user,
+    );
   }
 
   @Post('kds/tickets/:id/recall')
   @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
   @RequireBranchContext()
   @Permissions('pos:kds:write')
-  async recallTicket(
-    @Param('id') id: string,
-    @CurrentUser() user: { id: string },
-    @Req() req: Request,
-  ) {
+  async recallTicket(@Param('id') id: string, @CurrentUser() user: KdsActor, @Req() req: Request) {
     const ctx = (req as any).branchContext;
-    return this.kdsService.recallTicket(user.id, ctx, id, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.kdsService.recallTicket(
+      user.id,
+      ctx,
+      id,
+      { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      user,
+    );
   }
 
   // ── SSE Stream ──

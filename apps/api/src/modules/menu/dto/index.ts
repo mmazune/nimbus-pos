@@ -18,3 +18,4 @@ export { UpdateModifierGroupDto } from './update-modifier-group.dto';
 export { CreateModifierOptionDto } from './create-modifier-option.dto';
 export { UpdateModifierOptionDto } from './update-modifier-option.dto';
 export { AssignItemModifierGroupsDto } from './assign-item-modifier-groups.dto';
+export * from './menu-availability.dto';

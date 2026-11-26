@@ -1,0 +1,15 @@
+MUTATION: removed the guard AND (left IS NULL OR left >= qty) from takeAvailabilityForSend
+    ✓ two sends racing for the last serving, 20 times: exactly one gets it, never below zero (3372 ms)
+Tests:       5 skipped, 1 passed, 6 total
+
+Reading of mutation 1: still green, because the first send sets state SOLD_OUT inside its own transaction; the second send's UPDATE waits on the row lock, re-checks state = 'AVAILABLE' after commit and matches nothing. The state condition alone guards the last portion.
+
+MUTATION 2: removed BOTH guards (state = 'AVAILABLE' and left >= qty)
+    ✕ two sends racing for the last serving, 20 times: exactly one gets it, never below zero (396 ms)
+    - Expected  - 2
+    + Received  + 2
+    -   "sentStew": 1,
+    -   "skippedStew": 1,
+    +   "sentStew": 2,
+    +   "skippedStew": 0,
+Tests:       1 failed, 5 skipped, 6 total

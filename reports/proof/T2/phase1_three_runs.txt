@@ -1,0 +1,9 @@
+== run 1 10:01:56
+      WORKSPACE_MEASURE items=266 bytes=196835 ms=37
+Tests:       11 passed, 11 total
+== run 2 10:02:18
+      WORKSPACE_MEASURE items=285 bytes=204449 ms=54
+Tests:       11 passed, 11 total
+== run 3 10:02:37
+      WORKSPACE_MEASURE items=304 bytes=212063 ms=43
+Tests:       11 passed, 11 total

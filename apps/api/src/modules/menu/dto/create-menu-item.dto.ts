@@ -60,4 +60,20 @@ export class CreateMenuItemDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;
+
+  // T2 phase 1 (E2) — offers of the day
+  @IsOptional()
+  @IsBoolean()
+  isOffer?: boolean;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Type(() => Number)
+  offerPrice?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  offerNote?: string | null;
 }

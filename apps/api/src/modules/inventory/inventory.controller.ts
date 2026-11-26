@@ -4,7 +4,7 @@ import { InventoryService } from './inventory.service';
 import { CreateStockBatchDto, CreateStockAdjustmentDto, ListInventoryLevelsQueryDto } from './dto';
 import { JwtAuthGuard, PermissionGuard, BranchContextGuard } from '../../common/guards';
 import { CurrentUser, Permissions, RequireBranchContext } from '../../common/decorators';
-import { Bg3ReliabilityService, BG3_CATEGORY } from '../bg3-reliability';
+import { Bg3ReliabilityService } from '../bg3-reliability';
 
 @Controller('inventory')
 @UseGuards(JwtAuthGuard, PermissionGuard, BranchContextGuard)
@@ -13,7 +13,7 @@ export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly bg3: Bg3ReliabilityService,
-  ) { }
+  ) {}
 
   // ── Stock Levels ──
 
@@ -61,6 +61,10 @@ export class InventoryController {
         trainingSimulator: (): any => ({
           id: `sim-adj-${Date.now()}`,
           status: 'SIMULATED',
+          // T2: the M42 training contract's fields too, so both callers read their answer (T4 F3)
+          inTraining: true,
+          simulated: true,
+          sessionId: trainingSessionId ?? null,
           requestedQuantity: (dto as any).quantity,
           reason: (dto as any).reason ?? null,
         }),
