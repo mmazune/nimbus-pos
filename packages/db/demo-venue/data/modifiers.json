@@ -1,0 +1,4 @@
+[
+  { "name": "How cooked", "min": 1, "max": 1, "required": true,
+    "options": [["Rare", 0], ["Medium rare", 0], ["Medium", 0], ["Medium well", 0], ["Well done", 0]] }
+]

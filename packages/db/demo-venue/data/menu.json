@@ -1,0 +1,22 @@
+{ "sections": [
+  { "section": "FOOD", "groups": [
+    { "name": "Grill", "subgroups": [
+      { "name": "Steaks", "station": "KITCHEN", "itemType": "FOOD", "items": [
+        { "name": "Sirloin steak 300 g", "price": 68000, "choices": ["How cooked"] }
+      ] }
+    ] },
+    { "name": "Tapas", "subgroups": [
+      { "name": "Cold tapas", "station": "COLD_KITCHEN", "itemType": "FOOD", "items": [["Marinated olives", 12000]] }
+    ] }
+  ] },
+  { "section": "DRINKS", "groups": [
+    { "name": "Spirits", "subgroups": [
+      { "name": "Whisky", "station": "BAR", "itemType": "DRINK", "items": [
+        { "name": "Blended Scotch whisky", "price": 12000, "servings": [["SINGLE", "Tot", 12000], ["DOUBLE", "Double", 21000], ["BOTTLE", "Bottle 750 ml", 260000]] }
+      ] }
+    ] },
+    { "name": "Soft drinks", "subgroups": [
+      { "name": "Sodas", "station": "BAR", "itemType": "DRINK", "items": [["Cola", 4000], ["Tonic water", 4500]] }
+    ] }
+  ] }
+] }

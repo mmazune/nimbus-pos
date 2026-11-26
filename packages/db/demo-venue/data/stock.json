@@ -1,0 +1,5 @@
+[
+  { "sku": "MEAT-SIRLOIN", "name": "Beef sirloin", "unit": "kg", "category": "Meat", "unitCost": 34000, "reorderLevel": 4, "reorderQty": 15 },
+  { "sku": "VEG-POTATO", "name": "Potatoes", "unit": "kg", "category": "Vegetables", "unitCost": 2500, "reorderLevel": 20, "reorderQty": 50 },
+  { "sku": "DAIRY-BUTTER", "name": "Butter", "unit": "kg", "category": "Dairy", "unitCost": 28000, "reorderLevel": 2, "reorderQty": 10 }
+]

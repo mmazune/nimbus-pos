@@ -1,0 +1,16 @@
+{
+  "shifts": [ { "by": "waiter1", "openedMinutesAgo": 300 }, { "by": "cashier1", "openedMinutesAgo": 290 } ],
+  "till": { "code": "TILL-1", "operator": "cashier1", "openedBy": "supervisor1", "openingFloat": 200000, "openedMinutesAgo": 285 },
+  "openTables": [
+    { "table": "M01", "waiter": "waiter1", "state": "bill-asked", "minutesAgo": 95, "seatedBooking": "b1",
+      "lines": [["Sirloin steak 300 g", 1, null, ["Medium rare"]], ["Blended Scotch whisky", 2, "Double"]] },
+    { "table": "M02", "waiter": "waiter1", "state": "not-sent", "minutesAgo": 3, "lines": [["Cola", 2]] }
+  ],
+  "paidBills": [
+    { "table": "M03", "waiter": "waiter1", "minutesAgo": 200, "lines": [["Marinated olives", 2]], "payments": [["CASH", 25000]] }
+  ],
+  "bookings": [
+    { "key": "b1", "customerName": "Hall party", "phone": "+256 700 000 201", "partySize": 2, "minutesFromNow": -100, "status": "SEATED", "table": "M01", "source": "PHONE" },
+    { "key": "b2", "customerName": "Late pair", "phone": "+256 700 000 202", "partySize": 2, "minutesFromNow": -40, "status": "CONFIRMED", "table": "M05", "source": "WHATSAPP" }
+  ]
+}

@@ -1,0 +1,23 @@
+[
+  { "key": "owner1", "firstName": "Amani", "lastName": "Kisoboka", "role": "Owner", "phone": "+256 700 000 101" },
+  { "key": "owner2", "firstName": "Rehema", "lastName": "Ochwo", "role": "Owner", "phone": "+256 700 000 102" },
+  { "key": "manager1", "firstName": "Daudi", "lastName": "Mwesigye", "role": "Manager", "phone": "+256 700 000 103" },
+  { "key": "manager2", "firstName": "Nora", "lastName": "Kaweesa", "role": "Manager", "phone": "+256 700 000 104" },
+  { "key": "supervisor1", "firstName": "Patience", "lastName": "Ayebare", "role": "Supervisor", "phone": "+256 700 000 105" },
+  { "key": "supervisor2", "firstName": "Ivan", "lastName": "Lukwago", "role": "Supervisor", "phone": "+256 700 000 106" },
+  { "key": "cashier1", "firstName": "Mirembe", "lastName": "Asiimwe", "role": "Cashier", "phone": "+256 700 000 107" },
+  { "key": "cashier2", "firstName": "Tobias", "lastName": "Nkurunziza", "role": "Cashier", "phone": "+256 700 000 108" },
+  { "key": "waiter1", "firstName": "Sanyu", "lastName": "Atwine", "role": "Waiter", "phone": "+256 700 000 109" },
+  { "key": "waiter2", "firstName": "Brian", "lastName": "Okello", "role": "Waiter", "phone": "+256 700 000 110" },
+  { "key": "waiter3", "firstName": "Gloria", "lastName": "Nabirye", "role": "Waiter", "phone": "+256 700 000 111" },
+  { "key": "waiter4", "firstName": "Felix", "lastName": "Tumwine", "role": "Waiter", "phone": "+256 700 000 112" },
+  { "key": "bartender1", "firstName": "Joan", "lastName": "Akello", "role": "Bartender", "phone": "+256 700 000 113" },
+  { "key": "bartender2", "firstName": "Kenneth", "lastName": "Ssali", "role": "Bartender", "phone": "+256 700 000 114" },
+  { "key": "chef1", "firstName": "Esther", "lastName": "Namuli", "role": "Chef", "phone": "+256 700 000 115" },
+  { "key": "chef2", "firstName": "Martin", "lastName": "Odongo", "role": "Chef", "phone": "+256 700 000 116" },
+  { "key": "chef3", "firstName": "Winnie", "lastName": "Kabasinguzi", "role": "Chef", "phone": "+256 700 000 117" },
+  { "key": "store1", "firstName": "Peter", "lastName": "Wamala", "role": "Stock Manager", "phone": "+256 700 000 118" },
+  { "key": "store2", "firstName": "Lydia", "lastName": "Achieng", "role": "Stock Manager", "phone": "+256 700 000 119" },
+  { "key": "accountant1", "firstName": "Samuel", "lastName": "Byaruhanga", "role": "Accountant", "phone": "+256 700 000 120" },
+  { "key": "accountant2", "firstName": "Faith", "lastName": "Nansubuga", "role": "Accountant", "phone": "+256 700 000 121" }
+]
