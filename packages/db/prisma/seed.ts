@@ -381,6 +381,9 @@ const PERMISSIONS_DATA = [
   { action: 'pos:payroll:runs:approve', description: 'Approve a pay run' },
   { action: 'pos:payroll:runs:pay', description: 'Mark a pay run as paid' },
   { action: 'pos:payroll:slips:read', description: 'List and view pay slips' },
+  // T6 — answer a request for approval (refund, till over/short), by PIN on the asking device or from Approvals
+  { action: 'pos:approvals:answer', description: 'Answer a request for approval at supervisor level — POST /api/approval-requests/:id/decide (and by PIN on the asking device)' },
+  { action: 'pos:approvals:answer-manager', description: 'Answer a request for approval at manager level (a refund on an earlier business day; a climbed request)' },
   // M27: Staff Insights + Awards + Promotion Suggestions
   { action: 'pos:staff:insights:read', description: 'View staff insight snapshots' },
   { action: 'pos:staff:awards:create', description: 'Create staff awards' },

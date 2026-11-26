@@ -1,3 +1,4 @@
+import { allowedActions } from './allowed-actions';
 import {
   Injectable,
   Logger,
@@ -239,8 +240,24 @@ export class OrdersService {
         })
       : [];
     const byItem = new Map(rows.map((r) => [r.menuItemId, availabilityView(r)]));
+    // T6: what this person may do to this order now (screens stop guessing).
+    const paidCount = await this.prisma.payment.count({
+      where: { orderId: order.id, status: 'COMPLETED' },
+    });
     return {
       ...order,
+      allowedActions: actor
+        ? allowedActions(
+            {
+              status: order.status,
+              userId: order.userId,
+              tableId: order.tableId,
+              items: order.items,
+              paidCount,
+            },
+            actor as any,
+          )
+        : [],
       items: order.items.map((i) => {
         const view = !i.sentAt && !i.voidedAt ? byItem.get(i.menuItemId) : undefined;
         return {

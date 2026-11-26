@@ -1,0 +1,10 @@
+# Negative controls for t6-rights-matrix (planted on throwaway copies)
+## plant 1: Waiter granted pos:payment:create
+    +   "pos:payment:create: seeded [Cashier, Manager, Owner, Waiter], matrix [Cashier, Manager, Owner]",
+Tests:       1 failed, 4 passed, 5 total
+## plant 2: Waiter granted pos:orders:close (a walked key)
+Tests:       1 failed, 4 skipped, 5 total
+mismatches: 2
+  POST /api/pos/orders/:id/close as Waiter: 400 (keys pos:orders:close)
+  POST /api/pos/quick-sale as Waiter: 400 (keys pos:orders:write+pos:orders:close)
+screen paths with no matching route (3):

@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma, RefundStatus, PaymentStatus, OrderStatus } from '@prisma/client';
@@ -13,6 +14,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { CreateRefundDto, ApproveRefundDto, PostCloseVoidDto } from './dto';
+import { ApprovalRequestsService, ANSWER_MANAGER_KEY, sameBusinessDay } from '../approval-requests';
 
 interface BranchContext {
   branchId: string;
@@ -29,13 +31,48 @@ interface RequestMeta {
 const POST_CLOSE_VOID_WINDOW_MINUTES = 15;
 
 @Injectable()
-export class RefundsService {
+export class RefundsService implements OnModuleInit {
   private readonly logger = new Logger(RefundsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly approvals: ApprovalRequestsService,
   ) {}
+
+  /** T6: what a manager's answer to a later-day refund does. */
+  onModuleInit() {
+    this.approvals.registerEffect('REFUND', {
+      approve: async (tx, req, approverId) => {
+        const done = await tx.refund.updateMany({
+          where: { id: req.subjectId, status: RefundStatus.PENDING },
+          data: { status: RefundStatus.COMPLETED, approvedById: approverId },
+        });
+        if (done.count !== 1) throw new ConflictException('Refund is no longer pending');
+        const refund = await tx.refund.findUniqueOrThrow({ where: { id: req.subjectId } });
+        await this.markPaymentRefundedIfFull(tx, refund.paymentId);
+      },
+      decline: async (tx, req) => {
+        await tx.refund.updateMany({
+          where: { id: req.subjectId, status: RefundStatus.PENDING },
+          data: { status: RefundStatus.DECLINED },
+        });
+      },
+    });
+  }
+
+  private async markPaymentRefundedIfFull(tx: Prisma.TransactionClient, paymentId: string) {
+    const payment = await tx.payment.findUnique({ where: { id: paymentId } });
+    if (!payment) return;
+    const done = await tx.refund.findMany({ where: { paymentId, status: RefundStatus.COMPLETED } });
+    const total = done.reduce((sum, r) => sum.add(new Decimal(r.amount)), new Decimal(0));
+    if (total.gte(new Decimal(payment.amount))) {
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: { status: PaymentStatus.REFUNDED },
+      });
+    }
+  }
 
   // ── Create Refund ──
 
@@ -45,6 +82,7 @@ export class RefundsService {
     orderId: string,
     dto: CreateRefundDto,
     meta: RequestMeta,
+    permissions: string[] = [],
   ) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, branchId: ctx.branchId, orgId: ctx.organizationId },
@@ -86,35 +124,54 @@ export class RefundsService {
     }
 
     // Auto-approve vs pending: use org threshold
+    // T6 (07-scenarios-and-rules.md, Money): a refund after close is a supervisor's on the
+    // same business day, a manager's after it. A manager (or owner) refunds at once on any day;
+    // a supervisor at once on the day the bill was paid; on a later day a supervisor's refund
+    // waits for a manager, by PIN on this device or from Approvals.
     const settings = await this.prisma.orgSettings.findUnique({
       where: { orgId: ctx.organizationId },
     });
-    const threshold = settings?.discountApprovalThreshold ?? new Decimal(5000);
-    const autoApprove = refundAmount.lte(threshold);
+    const endsHour = settings?.businessDayEndsHour ?? 5;
+    // The bill's day is the day this payment was taken (orders carry no close time).
+    const closedAt = payment.createdAt;
+    const isManager = permissions.includes(ANSWER_MANAGER_KEY);
+    const sameDay = sameBusinessDay(closedAt, new Date(), endsHour);
+    const autoApprove = isManager || sameDay;
     const status = autoApprove ? RefundStatus.COMPLETED : RefundStatus.PENDING;
 
-    const refund = await this.prisma.refund.create({
-      data: {
-        orgId: ctx.organizationId,
-        branchId: ctx.branchId,
-        orderId,
-        paymentId: dto.paymentId,
-        provider: dto.provider ?? payment.method,
-        amount: dto.amount,
-        reason: dto.reason,
-        status,
-        createdById: userId,
-        approvedById: autoApprove ? userId : null,
-        metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
-      },
+    const { refund, request } = await this.prisma.$transaction(async (tx) => {
+      const refund = await tx.refund.create({
+        data: {
+          orgId: ctx.organizationId,
+          branchId: ctx.branchId,
+          orderId,
+          paymentId: dto.paymentId,
+          provider: dto.provider ?? payment.method,
+          amount: dto.amount,
+          reason: dto.reason,
+          status,
+          createdById: userId,
+          approvedById: autoApprove ? userId : null,
+          metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+        },
+      });
+      if (autoApprove) {
+        await this.markPaymentRefundedIfFull(tx, dto.paymentId);
+        return { refund, request: null };
+      }
+      const request = await this.approvals.open(tx, ctx, {
+        kind: 'REFUND',
+        level: 'MANAGER',
+        subjectType: 'Refund',
+        subjectId: refund.id,
+        summary: `Refund ${refundAmount.toFixed(0)} on order ${order.orderNumber ?? order.id}, paid on an earlier day`,
+        amount: refundAmount,
+        payload: { orderId, paymentId: dto.paymentId, closedAt: closedAt.toISOString() },
+        requestedById: userId,
+      });
+      return { refund, request };
     });
 
-    // If auto-approved (COMPLETED), mark payment as REFUNDED if fully refunded
-    if (autoApprove) {
-      await this.checkAndMarkPaymentRefunded(dto.paymentId);
-    }
-
-    // Flag anomaly if above threshold
     if (!autoApprove) {
       await this.flagRefundAnomaly(orderId, refundAmount);
     }
@@ -132,75 +189,46 @@ export class RefundsService {
         amount: dto.amount.toString(),
         reason: dto.reason,
         status,
+        sameBusinessDay: sameDay,
+        approvalRequestId: request?.id ?? null,
       },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
 
-    return refund;
+    return { ...refund, approvalRequestId: request?.id ?? null, needs: request ? 'MANAGER' : null };
   }
 
   // ── Approve Refund ──
 
+  /**
+   * T6: approving a pending refund answers its request for approval, so the same rule holds
+   * whichever door is used: a refund on an earlier business day needs a manager.
+   */
   async approveRefund(
     userId: string,
     ctx: BranchContext,
     refundId: string,
-    dto: ApproveRefundDto,
-    meta: RequestMeta,
+    _dto: ApproveRefundDto,
+    _meta: RequestMeta,
+    permissions: string[] = [],
   ) {
     const refund = await this.prisma.refund.findFirst({
       where: { id: refundId, branchId: ctx.branchId, orgId: ctx.organizationId },
     });
     if (!refund) throw new NotFoundException('Refund not found');
-
     if (refund.status !== 'PENDING') {
       throw new ConflictException(`Cannot approve a refund in ${refund.status} status`);
     }
-
-    // Manager PIN verification (required for high-value refund approval)
-    if (dto.managerPin) {
-      const manager = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (!manager || !manager.quickPinHash) {
-        throw new UnauthorizedException('Invalid manager PIN');
-      }
-      const pinValid = await bcrypt.compare(dto.managerPin, manager.quickPinHash);
-      if (!pinValid) {
-        throw new UnauthorizedException('Invalid manager PIN');
-      }
+    const request = await this.prisma.approvalRequest.findFirst({
+      where: { subjectType: 'Refund', subjectId: refund.id, status: 'PENDING' },
+    });
+    if (!request) {
+      throw new ConflictException('This refund has no open request for approval');
     }
-
-    const updated = await this.prisma.refund.update({
-      where: { id: refundId },
-      data: {
-        status: RefundStatus.COMPLETED,
-        approvedById: userId,
-      },
-    });
-
-    await this.checkAndMarkPaymentRefunded(refund.paymentId);
-
-    await this.audit.log({
-      actorUserId: userId,
-      action: 'REFUND_APPROVED',
-      entityType: 'refund',
-      entityId: refundId,
-      metadata: {
-        orgId: ctx.organizationId,
-        branchId: ctx.branchId,
-        orderId: refund.orderId,
-        paymentId: refund.paymentId,
-        amount: refund.amount.toString(),
-        pinVerified: !!dto.managerPin,
-      },
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
-    });
-
-    return updated;
+    await this.approvals.decide(ctx, { id: userId, permissions }, request.id, 'APPROVE');
+    return this.prisma.refund.findUniqueOrThrow({ where: { id: refund.id } });
   }
-
-  // ── Get Refund ──
 
   async getRefund(ctx: BranchContext, refundId: string) {
     const refund = await this.prisma.refund.findFirst({
@@ -301,26 +329,6 @@ export class RefundsService {
   }
 
   // ── Helpers ──
-
-  private async checkAndMarkPaymentRefunded(paymentId: string): Promise<void> {
-    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
-    if (!payment) return;
-
-    const completedRefunds = await this.prisma.refund.findMany({
-      where: { paymentId, status: RefundStatus.COMPLETED },
-    });
-    const totalRefunded = completedRefunds.reduce(
-      (sum, r) => sum.add(new Decimal(r.amount)),
-      new Decimal(0),
-    );
-
-    if (totalRefunded.gte(new Decimal(payment.amount))) {
-      await this.prisma.payment.update({
-        where: { id: paymentId },
-        data: { status: PaymentStatus.REFUNDED },
-      });
-    }
-  }
 
   private async flagRefundAnomaly(orderId: string, amount: Decimal): Promise<void> {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });

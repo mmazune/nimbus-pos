@@ -79,6 +79,11 @@ export class SettingsService {
     if (dto.reservationHoldMinutes !== undefined)
       data.reservationHoldMinutes = dto.reservationHoldMinutes;
     if (dto.receiptFooter !== undefined) data.receiptFooter = dto.receiptFooter;
+    if (dto.approvalClimbMinutes !== undefined)
+      data.approvalClimbMinutes = dto.approvalClimbMinutes;
+    if (dto.tillVarianceLimit !== undefined)
+      data.tillVarianceLimit = new Prisma.Decimal(dto.tillVarianceLimit);
+    if (dto.businessDayEndsHour !== undefined) data.businessDayEndsHour = dto.businessDayEndsHour;
     if (dto.metadata !== undefined) data.metadata = dto.metadata as Prisma.InputJsonValue;
     if (dto.anomalyThresholds !== undefined)
       data.anomalyThresholds = dto.anomalyThresholds as Prisma.InputJsonValue;

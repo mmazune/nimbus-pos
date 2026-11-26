@@ -6,13 +6,13 @@ moses-build-standards loaded.
 | phase | state | last commit |
 |---|---|---|
 | 1 private things | done | (this commit) |
-| 2 rights matrix | - | - |
+| 2 rights matrix | done | (this commit) |
 | 3 test run | - | - |
 | 4 stock moves | - | - |
 | 5 stores | - | - |
 
 ## Next
-Phase 2: rights matrix in the seed, PIN-on-the-spot approval, climb, allowedActions, refund approval, till sign-off.
+Phase 3: full e2e run in Jest's own order and T4's order; fix faults, update specs for replaced behaviour, quarantine group.
 
 ## Decisions taken
 - D1 E1 migration: duplicate ticket lines are copied whole to kds_ticket_items_set_aside, then removed from the live table (prompt: remove; rule 17: nothing lost).
@@ -22,5 +22,11 @@ Phase 2: rights matrix in the seed, PIN-on-the-spot approval, climb, allowedActi
 - D5 Own payslips at GET /api/payroll/my-slips(/:id), no key; branch list keeps pos:payroll:slips:read (Owner, Manager, Accountant).
 - D6 Leave/attendance/swap lists: own-only without the review right; people relations use safe selects; a global interceptor strips hash fields from every answer.
 - D7 Contract salaryAmount is null without pos:hr:compensation:read.
+- D8 The 35 no-row keys: none granted (CLAUDE.md §12 B6 forbids seeding franchise/ops/dev/merchant/billing/support; prompt: grant nothing for billing, franchise, HMS). Specs behind them go to quarantine.
+- D9 ops:* stay closed instead of moving to PlatformAccessGuard: that guard admits any L5 venue Owner, so it would show every customer to every venue owner. No Nimbus-operator identity exists.
+- D10 Requests for approval: new table approval_requests; answer by PIN on the asking device (requester's session + approver PIN, 5 tries) or from Approvals; climb worked out on read (no queue); settings approvalClimbMinutes 3, tillVarianceLimit 10000, businessDayEndsHour 5 (Kampala).
+- D11 Refund: the bill's day is the payment's createdAt (orders have no close time). Manager/owner at once; supervisor at once same business day; later → PENDING + MANAGER request. Amount threshold rule replaced. Declined → new RefundStatus DECLINED.
+- D12 Till over/short above the limit: someone other than the operator with the answer right signs as they count; else RECONCILED with closedAt null until signed; declined → OPEN to count again.
+- D13 allowedActions on GET /api/pos/orders/:id, derived from the route keys + order state; no 'ask to void' (no request kind for it yet).
 
 ## Left out

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SecretScrubInterceptor } from './common/interceptors/secret-scrub.interceptor';
+import { ApprovalRequestsModule } from './modules/approval-requests/approval-requests.module';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -64,6 +65,7 @@ import { HmsIntegrationModule } from './modules/hms-integration';
 
 @Module({
   imports: [
+    ApprovalRequestsModule,
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     AuditModule,

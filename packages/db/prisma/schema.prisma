@@ -808,6 +808,11 @@ model OrgSettings {
     bookingPolicies           Json?    @map("booking_policies")
     attendance                Json?
     inventoryTolerance        Json?    @map("inventory_tolerance")
+    // T6 — the wait before a request for approval climbs to managers, the till difference a
+    // supervisor must sign above, and the hour (Africa/Kampala) a business day ends.
+    approvalClimbMinutes      Int      @default(3) @map("approval_climb_minutes")
+    tillVarianceLimit         Decimal  @default(10000) @map("till_variance_limit") @db.Decimal(12, 2)
+    businessDayEndsHour       Int      @default(5) @map("business_day_ends_hour")
     createdAt                 DateTime @default(now()) @map("created_at")
     updatedAt                 DateTime @updatedAt @map("updated_at")
 
@@ -1609,6 +1614,7 @@ enum RefundStatus {
     APPROVED
     COMPLETED
     FAILED
+    DECLINED
 }
 
 // ── Enums (M13) ──
@@ -1899,6 +1905,10 @@ model TillSession {
     countedCash    Decimal?          @map("counted_cash") @db.Decimal(10, 2)
     variance       Decimal?          @db.Decimal(10, 2)
     varianceStatus VarianceStatus?   @map("variance_status")
+    // T6 — a count over or short above the venue's limit waits for a supervisor's sign-off.
+    varianceSignOffRequired Boolean   @default(false) @map("variance_sign_off_required")
+    varianceSignedOffById   String?   @map("variance_signed_off_by_id")
+    varianceSignedOffAt     DateTime? @map("variance_signed_off_at")
     status         TillSessionStatus @default(OPEN)
     notes          String?
     metadata       Json?
@@ -7226,6 +7236,60 @@ model PinSetupToken {
 enum PinSetupPurpose {
     ONBOARDING
     RESET
+}
+
+/// T6 — a request for approval. Answered by a supervisor's PIN typed on the device that asked,
+/// or from Approvals; after the venue's wait (OrgSettings.approvalClimbMinutes) it climbs, so
+/// managers are asked too. `level` is who may answer: SUPERVISOR means a supervisor, manager or
+/// owner; MANAGER means a manager or owner (a refund on an earlier business day).
+model ApprovalRequest {
+    id            String                @id @default(cuid())
+    orgId         String                @map("org_id")
+    branchId      String                @map("branch_id")
+    kind          ApprovalKind
+    status        ApprovalRequestStatus @default(PENDING)
+    level         ApprovalLevel
+    subjectType   String                @map("subject_type")
+    subjectId     String                @map("subject_id")
+    summary       String
+    amount        Decimal?              @db.Decimal(12, 2)
+    payload       Json?
+    requestedById String                @map("requested_by_id")
+    requestedAt   DateTime              @default(now()) @map("requested_at")
+    climbsAt      DateTime?             @map("climbs_at")
+    climbedAt     DateTime?             @map("climbed_at")
+    decidedById   String?               @map("decided_by_id")
+    decidedAt     DateTime?             @map("decided_at")
+    decidedVia    ApprovalChannel?      @map("decided_via")
+    decisionNote  String?               @map("decision_note")
+    createdAt     DateTime              @default(now()) @map("created_at")
+    updatedAt     DateTime              @updatedAt @map("updated_at")
+
+    @@index([orgId, branchId, status])
+    @@index([subjectType, subjectId])
+    @@map("approval_requests")
+}
+
+enum ApprovalKind {
+    REFUND
+    TILL_VARIANCE
+}
+
+enum ApprovalRequestStatus {
+    PENDING
+    APPROVED
+    DECLINED
+    CANCELLED
+}
+
+enum ApprovalLevel {
+    SUPERVISOR
+    MANAGER
+}
+
+enum ApprovalChannel {
+    PIN_ON_DEVICE
+    APPROVALS
 }
 
 // ============================================================

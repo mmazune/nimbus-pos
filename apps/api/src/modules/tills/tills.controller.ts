@@ -23,7 +23,7 @@ export class TillsController {
   constructor(
     private readonly tillsService: TillsService,
     private readonly bg3: Bg3ReliabilityService,
-  ) { }
+  ) {}
 
   @Post('open')
   @Permissions('pos:till:open')
@@ -76,7 +76,7 @@ export class TillsController {
   async reconcileTill(
     @Param('id') id: string,
     @Body() dto: ReconcileTillDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; permissions?: string[] },
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
@@ -94,10 +94,14 @@ export class TillsController {
         branchId: ctx?.branchId ?? null,
       },
       () =>
-        this.tillsService.reconcileTill(id, user.id, ctx, dto, {
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-        }),
+        this.tillsService.reconcileTill(
+          id,
+          user.id,
+          ctx,
+          dto,
+          { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+          user.permissions ?? [],
+        ),
     );
   }
 

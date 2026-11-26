@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TillsService } from './tills.service';
+import { ApprovalRequestsService } from '../approval-requests';
 import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -9,6 +10,8 @@ describe('TillsService', () => {
   let service: TillsService;
   let prisma: any;
   let audit: any;
+  let approvals: any;
+  let lastTillWrite: any = {};
 
   const ctx = {
     branchId: 'branch-1',
@@ -27,7 +30,17 @@ describe('TillsService', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        // T6: reconcile claims the till with a conditional update inside a transaction.
+        updateMany: jest.fn(({ data }: { data: any }) => {
+          lastTillWrite = data;
+          return Promise.resolve({ count: 1 });
+        }),
+        findUniqueOrThrow: jest.fn(() => Promise.resolve({ id: 'till-1', ...lastTillWrite })),
       },
+      orgSettings: {
+        findUnique: jest.fn().mockResolvedValue({ tillVarianceLimit: new Decimal(10000) }),
+      },
+      $transaction: jest.fn((cb: any) => cb(prisma)),
       cashMovement: {
         create: jest.fn(),
         findMany: jest.fn(),
@@ -40,12 +53,14 @@ describe('TillsService', () => {
       },
     };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
+    approvals = { open: jest.fn().mockResolvedValue({ id: 'ar-1' }), registerEffect: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TillsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: ApprovalRequestsService, useValue: approvals },
       ],
     }).compile();
 
@@ -317,6 +332,79 @@ describe('TillsService', () => {
     );
 
     expect(result.varianceStatus).toBe('OVER');
+  });
+
+  // ── T6: a difference above the venue's limit waits for a supervisor's sign-off ──
+
+  const openTill = () => {
+    prisma.tillSession.findFirst.mockResolvedValue({
+      id: 'till-1',
+      status: 'OPEN',
+      openingFloat: new Decimal(50000),
+      tillCode: 'TILL-01',
+      branchId: 'branch-1',
+      orgId: 'org-1',
+      operatorUserId: 'cashier-1',
+      notes: null,
+    });
+    prisma.tillSession.findUnique.mockResolvedValue({
+      id: 'till-1',
+      openedAt: new Date('2026-03-26T08:00:00Z'),
+      closedAt: null,
+      openingFloat: new Decimal(50000),
+    });
+    prisma.payment.findMany.mockResolvedValue([]);
+    prisma.cashMovement.findMany.mockResolvedValue([]);
+    prisma.refund.findMany.mockResolvedValue([]);
+  };
+
+  it('a cashier short by more than the limit waits for a sign-off; the till is not closed', async () => {
+    openTill();
+    const r: any = await service.reconcileTill(
+      'till-1',
+      'cashier-1',
+      ctx,
+      { countedCash: 35000, varianceReason: 'counted twice' },
+      meta,
+      ['pos:till:reconcile'],
+    );
+    expect(r.signOff.required).toBe(true);
+    expect(r.signOff.approvalRequestId).toBe('ar-1');
+    expect(r.closedAt).toBeNull();
+    expect(approvals.open).toHaveBeenCalledWith(
+      expect.anything(),
+      ctx,
+      expect.objectContaining({ kind: 'TILL_VARIANCE', level: 'SUPERVISOR', subjectId: 'till-1' }),
+    );
+  });
+
+  it("a supervisor counting someone else's till signs as they count", async () => {
+    openTill();
+    const r: any = await service.reconcileTill(
+      'till-1',
+      'sup-1',
+      ctx,
+      { countedCash: 35000, varianceReason: 'counted twice' },
+      meta,
+      ['pos:till:reconcile', 'pos:approvals:answer'],
+    );
+    expect(r.signOff.required).toBe(true);
+    expect(r.signOff.signedOffById).toBe('sup-1');
+    expect(approvals.open).not.toHaveBeenCalled();
+  });
+
+  it('a small difference passes with no sign-off', async () => {
+    openTill();
+    const r: any = await service.reconcileTill(
+      'till-1',
+      'cashier-1',
+      ctx,
+      { countedCash: 45000, varianceReason: 'coins' },
+      meta,
+      ['pos:till:reconcile'],
+    );
+    expect(r.signOff.required).toBe(false);
+    expect(approvals.open).not.toHaveBeenCalled();
   });
 
   it('should require variance reason when mismatch', async () => {

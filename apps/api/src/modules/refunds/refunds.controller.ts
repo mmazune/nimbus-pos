@@ -23,14 +23,14 @@ export class RefundsController {
   constructor(
     private readonly refundsService: RefundsService,
     private readonly bg3: Bg3ReliabilityService,
-  ) { }
+  ) {}
 
   @Post('orders/:id/refunds')
   @Permissions('pos:refund:create')
   async createRefund(
     @Param('id') orderId: string,
     @Body() dto: CreateRefundDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; permissions?: string[] },
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
@@ -54,10 +54,14 @@ export class RefundsController {
         }),
       },
       () =>
-        this.refundsService.createRefund(user.id, ctx, orderId, dto, {
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-        }),
+        this.refundsService.createRefund(
+          user.id,
+          ctx,
+          orderId,
+          dto,
+          { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+          user.permissions ?? [],
+        ),
     );
   }
 
@@ -67,14 +71,18 @@ export class RefundsController {
   async approveRefund(
     @Param('id') refundId: string,
     @Body() dto: ApproveRefundDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; permissions?: string[] },
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;
-    return this.refundsService.approveRefund(user.id, ctx, refundId, dto, {
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    return this.refundsService.approveRefund(
+      user.id,
+      ctx,
+      refundId,
+      dto,
+      { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      user.permissions ?? [],
+    );
   }
 
   @Get('refunds/:id')
@@ -97,7 +105,7 @@ export class RefundsController {
   async postCloseVoid(
     @Param('id') orderId: string,
     @Body() dto: PostCloseVoidDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string; permissions?: string[] },
     @Req() req: Request,
   ) {
     const ctx = (req as any).branchContext;

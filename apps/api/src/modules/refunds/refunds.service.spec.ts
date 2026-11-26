@@ -1,3 +1,4 @@
+import { ApprovalRequestsService } from '../approval-requests';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RefundsService } from './refunds.service';
 import { PrismaService } from '../../common/prisma';
@@ -16,6 +17,7 @@ describe('RefundsService', () => {
   let service: RefundsService;
   let prisma: any;
   let audit: any;
+  let approvals: any;
 
   const ctx = {
     branchId: 'branch-1',
@@ -48,7 +50,12 @@ describe('RefundsService', () => {
       user: {
         findUnique: jest.fn(),
       },
-      $transaction: jest.fn(),
+      $transaction: jest.fn((cb: any) => cb(prisma)),
+    };
+    approvals = {
+      open: jest.fn().mockResolvedValue({ id: 'ar-1' }),
+      decide: jest.fn().mockResolvedValue({}),
+      registerEffect: jest.fn(),
     };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
 
@@ -57,112 +64,94 @@ describe('RefundsService', () => {
         RefundsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: ApprovalRequestsService, useValue: approvals },
       ],
     }).compile();
 
     service = module.get<RefundsService>(RefundsService);
   });
 
-  // ── Create Refund: Auto-complete below threshold ──
+  // ── T6: the refund rule is the business day, not an amount ──
 
-  it('should auto-complete a small refund below threshold', async () => {
-    prisma.order.findFirst.mockResolvedValue({
-      id: 'order-1',
-      status: 'CLOSED',
-      branchId: 'branch-1',
-      orgId: 'org-1',
-    });
-    prisma.payment.findFirst.mockResolvedValue({
-      id: 'pay-1',
-      orderId: 'order-1',
-      branchId: 'branch-1',
-      amount: new Decimal(50000),
-      method: 'CASH',
-      status: 'COMPLETED',
-    });
+  const closedOrder = {
+    id: 'order-1',
+    orderNumber: 'A-1',
+    branchId: 'branch-1',
+    orgId: 'org-1',
+    status: 'CLOSED',
+  };
+  const paidAt = (ago: number) => ({
+    id: 'pay-1',
+    orderId: 'order-1',
+    amount: new Decimal(50000),
+    method: 'CASH',
+    status: 'COMPLETED',
+    createdAt: new Date(Date.now() - ago),
+  });
+
+  it('a supervisor refunds at once on the day the bill was paid', async () => {
+    prisma.order.findFirst.mockResolvedValue(closedOrder);
+    prisma.payment.findFirst.mockResolvedValue(paidAt(60_000));
     prisma.refund.findMany.mockResolvedValue([]);
-    prisma.orgSettings.findUnique.mockResolvedValue({
-      discountApprovalThreshold: new Decimal(5000),
-    });
-    prisma.refund.create.mockResolvedValue({
-      id: 'ref-1',
-      status: 'COMPLETED',
-      amount: new Decimal(2000),
-    });
-    // checkAndMarkPaymentRefunded
-    prisma.payment.findUnique.mockResolvedValue({
-      id: 'pay-1',
-      amount: new Decimal(50000),
-    });
-    // refunds for that payment (after create)
-    prisma.refund.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ amount: new Decimal(2000), status: 'COMPLETED' }]);
+    prisma.orgSettings.findUnique.mockResolvedValue({ businessDayEndsHour: 5 });
+    prisma.refund.create.mockResolvedValue({ id: 'r1', status: 'COMPLETED' });
+    prisma.payment.findUnique.mockResolvedValue(paidAt(60_000));
 
-    const result = await service.createRefund(
-      'user-1',
+    const result: any = await service.createRefund(
+      'sup-1',
       ctx,
       'order-1',
-      { paymentId: 'pay-1', amount: 2000, reason: 'Wrong item' },
+      { paymentId: 'pay-1', amount: 2000, reason: 'cold' } as any,
       meta,
+      ['pos:refund:create', 'pos:approvals:answer'],
     );
-
     expect(result.status).toBe('COMPLETED');
-    expect(prisma.refund.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          status: 'COMPLETED',
-          approvedById: 'user-1',
-        }),
-      }),
+    expect(result.approvalRequestId).toBeNull();
+    expect(approvals.open).not.toHaveBeenCalled();
+  });
+
+  it('a supervisor refund on an earlier day waits for a manager', async () => {
+    prisma.order.findFirst.mockResolvedValue(closedOrder);
+    prisma.payment.findFirst.mockResolvedValue(paidAt(3 * 24 * 3600_000));
+    prisma.refund.findMany.mockResolvedValue([]);
+    prisma.orgSettings.findUnique.mockResolvedValue({ businessDayEndsHour: 5 });
+    prisma.refund.create.mockResolvedValue({ id: 'r2', status: 'PENDING' });
+    prisma.order.findUnique.mockResolvedValue({ id: 'order-1', anomalyFlags: {} });
+    prisma.order.update.mockResolvedValue({});
+
+    const result: any = await service.createRefund(
+      'sup-1',
+      ctx,
+      'order-1',
+      { paymentId: 'pay-1', amount: 2000, reason: 'cold' } as any,
+      meta,
+      ['pos:refund:create', 'pos:approvals:answer'],
     );
-    expect(audit.log).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'REFUND_AUTO_COMPLETED' }),
+    expect(result.status).toBe('PENDING');
+    expect(result.needs).toBe('MANAGER');
+    expect(approvals.open).toHaveBeenCalledWith(
+      expect.anything(),
+      ctx,
+      expect.objectContaining({ kind: 'REFUND', level: 'MANAGER', subjectId: 'r2' }),
     );
   });
 
-  // ── Create Refund: Pending above threshold ──
-
-  it('should create PENDING refund above threshold', async () => {
-    prisma.order.findFirst.mockResolvedValue({
-      id: 'order-1',
-      status: 'CLOSED',
-      branchId: 'branch-1',
-      orgId: 'org-1',
-    });
-    prisma.payment.findFirst.mockResolvedValue({
-      id: 'pay-1',
-      orderId: 'order-1',
-      branchId: 'branch-1',
-      amount: new Decimal(50000),
-      method: 'CASH',
-      status: 'COMPLETED',
-    });
+  it('a manager refunds at once on any day', async () => {
+    prisma.order.findFirst.mockResolvedValue(closedOrder);
+    prisma.payment.findFirst.mockResolvedValue(paidAt(3 * 24 * 3600_000));
     prisma.refund.findMany.mockResolvedValue([]);
-    prisma.orgSettings.findUnique.mockResolvedValue({
-      discountApprovalThreshold: new Decimal(5000),
-    });
-    prisma.refund.create.mockResolvedValue({
-      id: 'ref-2',
-      status: 'PENDING',
-      amount: new Decimal(10000),
-    });
-    prisma.order.findUnique.mockResolvedValue({
-      id: 'order-1',
-      anomalyFlags: null,
-    });
-    prisma.order.update.mockResolvedValue({});
-
-    const result = await service.createRefund(
-      'user-1',
+    prisma.orgSettings.findUnique.mockResolvedValue({ businessDayEndsHour: 5 });
+    prisma.refund.create.mockResolvedValue({ id: 'r3', status: 'COMPLETED' });
+    prisma.payment.findUnique.mockResolvedValue(paidAt(3 * 24 * 3600_000));
+    const result: any = await service.createRefund(
+      'mgr-1',
       ctx,
       'order-1',
-      { paymentId: 'pay-1', amount: 10000, reason: 'Overcharge' },
+      { paymentId: 'pay-1', amount: 2000, reason: 'cold' } as any,
       meta,
+      ['pos:refund:create', 'pos:approvals:answer-manager'],
     );
-
-    expect(result.status).toBe('PENDING');
-    expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'REFUND_REQUESTED' }));
+    expect(result.status).toBe('COMPLETED');
   });
 
   // ── Create Refund: Order not found ──
@@ -254,74 +243,30 @@ describe('RefundsService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  // ── Approve Refund: Success with PIN ──
+  // ── T6: approving answers the refund's request for approval ──
 
-  it('should approve a pending refund with valid manager PIN', async () => {
-    const pinHash = await bcrypt.hash('1234', 10);
-    prisma.refund.findFirst.mockResolvedValue({
-      id: 'ref-1',
-      status: 'PENDING',
-      branchId: 'branch-1',
-      orgId: 'org-1',
-      orderId: 'order-1',
-      paymentId: 'pay-1',
-      amount: new Decimal(10000),
-    });
-    prisma.user.findUnique.mockResolvedValue({
-      id: 'mgr-1',
-      quickPinHash: pinHash,
-    });
-    prisma.refund.update.mockResolvedValue({
-      id: 'ref-1',
-      status: 'COMPLETED',
-      approvedById: 'mgr-1',
-    });
-    // checkAndMarkPaymentRefunded
-    prisma.payment.findUnique.mockResolvedValue({
-      id: 'pay-1',
-      amount: new Decimal(10000),
-    });
-    prisma.refund.findMany.mockResolvedValue([{ amount: new Decimal(10000), status: 'COMPLETED' }]);
-    prisma.payment.update.mockResolvedValue({});
-
-    const result = await service.approveRefund('mgr-1', ctx, 'ref-1', { managerPin: '1234' }, meta);
-
-    expect(result.status).toBe('COMPLETED');
-    expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'REFUND_APPROVED' }));
+  it('approving a pending refund answers its request for approval', async () => {
+    prisma.refund.findFirst.mockResolvedValue({ id: 'r2', status: 'PENDING' });
+    prisma.approvalRequest = { findFirst: jest.fn().mockResolvedValue({ id: 'ar-1' }) };
+    prisma.refund.findUniqueOrThrow = jest
+      .fn()
+      .mockResolvedValue({ id: 'r2', status: 'COMPLETED' });
+    const r: any = await service.approveRefund('mgr-1', ctx, 'r2', {} as any, meta, [
+      'pos:approvals:answer-manager',
+    ]);
+    expect(approvals.decide).toHaveBeenCalledWith(
+      ctx,
+      { id: 'mgr-1', permissions: ['pos:approvals:answer-manager'] },
+      'ar-1',
+      'APPROVE',
+    );
+    expect(r.status).toBe('COMPLETED');
   });
-
-  // ── Approve Refund: Invalid PIN ──
-
-  it('should reject approval with invalid PIN', async () => {
-    const pinHash = await bcrypt.hash('1234', 10);
-    prisma.refund.findFirst.mockResolvedValue({
-      id: 'ref-1',
-      status: 'PENDING',
-      branchId: 'branch-1',
-      orgId: 'org-1',
-    });
-    prisma.user.findUnique.mockResolvedValue({
-      id: 'mgr-1',
-      quickPinHash: pinHash,
-    });
-
-    await expect(
-      service.approveRefund('mgr-1', ctx, 'ref-1', { managerPin: '9999' }, meta),
-    ).rejects.toThrow(UnauthorizedException);
-  });
-
-  // ── Approve Refund: Not pending ──
 
   it('should reject approval of non-PENDING refund', async () => {
-    prisma.refund.findFirst.mockResolvedValue({
-      id: 'ref-1',
-      status: 'COMPLETED',
-      branchId: 'branch-1',
-      orgId: 'org-1',
-    });
-
-    await expect(service.approveRefund('mgr-1', ctx, 'ref-1', {}, meta)).rejects.toThrow(
-      ConflictException,
+    prisma.refund.findFirst.mockResolvedValue({ id: 'r2', status: 'COMPLETED' });
+    await expect(service.approveRefund('mgr-1', ctx, 'r2', {} as any, meta, [])).rejects.toThrow(
+      'Cannot approve a refund in COMPLETED status',
     );
   });
 

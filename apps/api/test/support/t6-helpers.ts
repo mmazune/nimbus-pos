@@ -112,3 +112,69 @@ export function findSecrets(haystack: string, pins: string[]): string[] {
   }
   return hits;
 }
+
+let pinSeq = 0;
+/**
+ * Gives a staff member a PIN the real way: the owner starts a setup, the person types their
+ * own PIN with the token. Returns the PIN (test data only, never written anywhere).
+ */
+export async function givePin(w: T2World, userId: string): Promise<string> {
+  const start = await w
+    .http()
+    .post(`/api/auth/users/${userId}/issue-quick-pin`)
+    .set(w.as(w.tokens.owner))
+    .send({ branchId: w.branchId });
+  if (start.status !== 201)
+    throw new Error(`issue-quick-pin gave ${start.status} ${JSON.stringify(start.body)}`);
+  const len: number = start.body.pinLength;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const base = String(Date.now() * 31 + ++pinSeq * 104729 + attempt * 7);
+    let pin = base.slice(-len).padStart(len, '7');
+    if (/^(\d)\1+$/.test(pin)) pin = pin.slice(0, -1) + ((Number(pin.slice(-1)) + 3) % 10);
+    const r = await w
+      .http()
+      .post('/api/auth/pin-setup')
+      .send({ setupToken: start.body.pinSetup.setupToken, pin, pinConfirm: pin });
+    if (r.status === 200) return pin;
+    if (r.status !== 409 || r.body.code !== 'PIN_TAKEN') {
+      throw new Error(`pin-setup gave ${r.status} ${JSON.stringify(r.body)}`);
+    }
+  }
+  throw new Error('no free PIN after 5 tries');
+}
+
+/** An order with one sent line, paid in cash and closed by the given cashier token. */
+export async function paidOrder(
+  w: T2World,
+  waiterToken: string,
+  cashierToken: string,
+  tableId: string,
+  itemId: string,
+  price: number,
+) {
+  const o = await w
+    .http()
+    .post('/api/pos/orders')
+    .set(w.as(waiterToken))
+    .send({ serviceType: 'DINE_IN', tableId });
+  if (o.status !== 201) throw new Error(`order gave ${o.status} ${JSON.stringify(o.body)}`);
+  const id = o.body.id as string;
+  const a = await w
+    .http()
+    .post(`/api/pos/orders/${id}/items`)
+    .set(w.as(waiterToken))
+    .send({ menuItemId: itemId, quantity: 1 });
+  if (a.status !== 201) throw new Error(`add gave ${a.status} ${JSON.stringify(a.body)}`);
+  const s = await w.http().post(`/api/pos/orders/${id}/send`).set(w.as(waiterToken)).send({});
+  if (s.status >= 300) throw new Error(`send gave ${s.status} ${JSON.stringify(s.body)}`);
+  const c = await w
+    .http()
+    .post(`/api/pos/orders/${id}/close`)
+    .set(w.as(cashierToken))
+    .send({ payments: [{ method: 'CASH', amount: String(price) }] });
+  if (c.status !== 200) throw new Error(`close gave ${c.status} ${JSON.stringify(c.body)}`);
+  const payment = await w.prisma.payment.findFirstOrThrow({
+    where: { orderId: id, status: 'COMPLETED' },
+  });
+  return { orderId: id, paymentId: payment.id };
+}

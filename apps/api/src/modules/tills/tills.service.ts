@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 import {
@@ -17,6 +18,7 @@ import { PrismaService } from '../../common/prisma';
 import { AuditService } from '../../common/audit';
 import { OpenTillDto, SafeDropDto, ReconcileTillDto } from './dto';
 import { normalizeTillCode } from '../quick-sale/till-code';
+import { ApprovalRequestsService, ANSWER_KEY, ANSWER_MANAGER_KEY } from '../approval-requests';
 
 interface BranchContext {
   branchId: string;
@@ -29,12 +31,50 @@ interface RequestMeta {
 }
 
 @Injectable()
-export class TillsService {
+export class TillsService implements OnModuleInit {
   private readonly logger = new Logger(TillsService.name);
+
+  /** T6: what a supervisor's answer to a till over or short does. */
+  onModuleInit() {
+    this.approvals.registerEffect('TILL_VARIANCE', {
+      approve: async (tx, req, approverId) => {
+        const done = await tx.tillSession.updateMany({
+          where: { id: req.subjectId, varianceSignOffRequired: true, varianceSignedOffAt: null },
+          data: {
+            varianceSignedOffById: approverId,
+            varianceSignedOffAt: new Date(),
+            closedAt: new Date(),
+          },
+        });
+        if (done.count !== 1) throw new ConflictException('Till is not waiting for a sign-off');
+      },
+      // Declined: the count is not accepted; the till is open again to be counted once more.
+      // What was counted stays in the audit trail and on the request.
+      decline: async (tx, req) => {
+        await tx.tillSession.updateMany({
+          where: {
+            id: req.subjectId,
+            varianceSignedOffAt: null,
+            status: TillSessionStatus.RECONCILED,
+          },
+          data: {
+            status: TillSessionStatus.OPEN,
+            countedCash: null,
+            variance: null,
+            varianceStatus: null,
+            reconciledAt: null,
+            closedById: null,
+            varianceSignOffRequired: false,
+          },
+        });
+      },
+    });
+  }
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly approvals: ApprovalRequestsService,
   ) {}
 
   async openTill(userId: string, ctx: BranchContext, dto: OpenTillDto, meta: RequestMeta) {
@@ -189,6 +229,7 @@ export class TillsService {
     ctx: BranchContext,
     dto: ReconcileTillDto,
     meta: RequestMeta,
+    permissions: string[] = [],
   ) {
     const till = await this.prisma.tillSession.findFirst({
       where: {
@@ -231,21 +272,67 @@ export class TillsService {
       );
     }
 
-    const reconciledTill = await this.prisma.tillSession.update({
-      where: { id: till.id },
-      data: {
-        countedCash,
-        expectedCash,
-        variance,
-        varianceStatus,
-        status: TillSessionStatus.RECONCILED,
-        reconciledAt: new Date(),
-        closedById: userId,
-        closedAt: new Date(),
-        notes: dto.varianceReason
-          ? `${till.notes || ''}\nVariance reason: ${dto.varianceReason}`.trim()
-          : dto.notes || till.notes,
-      },
+    // T6 (07-scenarios-and-rules.md, Closing): a small difference passes; above the venue's
+    // limit a supervisor signs. Someone other than the till's own operator who may answer at
+    // supervisor level signs as they count; otherwise the count waits for a sign-off, by a
+    // supervisor's PIN on this device or from Approvals, and climbs to managers after the wait.
+    const settings = await this.prisma.orgSettings.findUnique({
+      where: { orgId: ctx.organizationId },
+      select: { tillVarianceLimit: true },
+    });
+    const limit = new Decimal(settings?.tillVarianceLimit ?? 10000);
+    const overLimit = absVariance.gt(limit);
+    const signsNow =
+      overLimit &&
+      userId !== till.operatorUserId &&
+      (permissions.includes(ANSWER_KEY) || permissions.includes(ANSWER_MANAGER_KEY));
+    const waits = overLimit && !signsNow;
+    const now = new Date();
+
+    const { reconciledTill, request } = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.tillSession.updateMany({
+        where: { id: till.id, status: TillSessionStatus.OPEN },
+        data: {
+          countedCash,
+          expectedCash,
+          variance,
+          varianceStatus,
+          status: TillSessionStatus.RECONCILED,
+          reconciledAt: now,
+          closedById: userId,
+          // A count that waits for a sign-off is not closed until it is signed.
+          closedAt: waits ? null : now,
+          varianceSignOffRequired: overLimit,
+          varianceSignedOffById: signsNow ? userId : null,
+          varianceSignedOffAt: signsNow ? now : null,
+          notes: dto.varianceReason
+            ? `${till.notes || ''}\nVariance reason: ${dto.varianceReason}`.trim()
+            : dto.notes || till.notes,
+        },
+      });
+      if (claimed.count !== 1) {
+        throw new ConflictException('Reconciliation only allowed on an OPEN till session');
+      }
+      const request = waits
+        ? await this.approvals.open(tx, ctx, {
+            kind: 'TILL_VARIANCE',
+            level: 'SUPERVISOR',
+            subjectType: 'TillSession',
+            subjectId: till.id,
+            summary: `Till ${till.tillCode} ${varianceStatus === VarianceStatus.SHORT ? 'short' : 'over'} by ${absVariance.toFixed(0)}`,
+            amount: variance,
+            payload: {
+              tillCode: till.tillCode,
+              expectedCash: expectedCash.toString(),
+              countedCash: countedCash.toString(),
+              limit: limit.toString(),
+              reason: dto.varianceReason ?? null,
+            },
+            requestedById: userId,
+          })
+        : null;
+      const reconciledTill = await tx.tillSession.findUniqueOrThrow({ where: { id: till.id } });
+      return { reconciledTill, request };
     });
 
     await this.audit.log({
@@ -283,7 +370,17 @@ export class TillsService {
       });
     }
 
-    return reconciledTill;
+    return {
+      ...reconciledTill,
+      signOff: overLimit
+        ? {
+            required: true,
+            limit: limit.toString(),
+            signedOffById: reconciledTill.varianceSignedOffById,
+            approvalRequestId: request?.id ?? null,
+          }
+        : { required: false },
+    };
   }
 
   async getActiveTill(userId: string, ctx: BranchContext) {
