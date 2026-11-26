@@ -3,7 +3,7 @@
 Branch `t1/screens`, cut from `rebuild/main` at `0af95f8` (U0 merged; `kit/index.ts` present).
 
 ## Now
-- Phases 1–3 committed and pushed (`718c91d` is phase 3). Phase 4 (Receipts, Till) written and green 3×, NOT committed: fixing the advisor's money points first (till remainder line, Earlier filter-then-cap, one idempotency key per attempt, pending refund test + trace on the bill, close confirm + open a new till, paid-time check, bounded reads, 390 sheets, old-screen inventory, two Floor assertions). Then regression, commit, phase 5. Scores in phase 6.
+- All six phases committed and pushed. Final report: `reports/T1_REPORT.md` (decisions 28–35, left-out list, gates, notes for other tracks). Look review: all ten built screens pass (lowest 20/24).
 
 ## Commits
 | Phase.part | Commit | What |
@@ -59,5 +59,4 @@ cashier-floor: navigation-and-default-route, hidden-legacy-routes, legacy-compat
 27. Sheets cover the bars: shell is `isolate`, bars at -z-10.
 
 ## Next
-- Phase 3 Me: shoot, spec (e2e/t1/me.spec.ts), commit.
-- Phase 4 Receipts + Till, phase 5 Approvals, phase 6 sweep + scores + report.
+- Nothing in T1. See the report for what other tracks need.

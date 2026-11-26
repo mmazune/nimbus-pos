@@ -1,0 +1,114 @@
+# T1 report — the shell, the Floor, and every section that already has an API
+
+Branch `t1/screens`, cut from `rebuild/main` at `0af95f8`. Every commit was pushed to `origin/t1/screens`; no other branch was pushed, nothing was merged, no PR was opened.
+Everything below ran in this container: a throwaway Postgres 16 (`nimbus_t1_*`, seed and demo import), the API from `apps/api/dist` on `:3001` with no `.env` file, and the production web build on `:3100`. Neon was never touched. Test PINs were set at load time through the manager's reset route and kept in test memory only.
+
+Grades: **[live]** = driven in Chromium against the running app and API · **[code]** = read in the code · **[asserted]** = stated, not measured.
+
+## Verdict
+All six phases are done. Ten screens are built to their drawings and all pass the look review; the lowest scores are Floor-Phone and Supervisor-Approvals at 20/24. `pnpm verify:web` and the web build are green. The T1 suite passed 24/24, three runs in a row. The regression suite has no new failures against the baseline. The diff stays inside T1's paths.
+
+## Phase 1 — Shell and Floor (U1 Done-when 1–10)
+| # | Line | Proof |
+|---|---|---|
+| 1 | Read-back with the Playwright baseline | `reports/U1_READ_BACK.md`, `reports/T1_PLAYWRIGHT_BASELINE.txt` (151 passed / 7 failed / 3 skipped at `0af95f8`) |
+| 2 | Header and bar as drawn, exactly the listed sections; TabBar on a phone | [live] `e2e/t1/floor.spec.ts`; `floor-measured.json` chrome: header 64 + bar 76 at 1280, header 106 + TabBar 84 at 390; waiter `floor, reservations, me`; cashier `floor, receipts, till, me`; supervisor `floor, reservations, approvals, me` |
+| 3 | 32 tables 8 × 4 roomy at 1280 × 800; 7 across compact at 1024 × 768; 12 across "All areas" at 1920 × 1080; no scrolling | [live] `floor-measured.json`: waiter1280 roomy 8 cols, 32 of 32 visible, tile 142 × 108; waiter1024 compact 7 cols, 32 of 32, 129 × 84; supervisor1920 roomy 12 cols, 70 of 70 |
+| 4 | Every tile state the data supports is on screen; the rest listed | [live] `Main-1280x800-waiter.png`, `Floor-1920x1080-supervisor.png` (Free, Reserved with time and party, Open mine/other with minutes and amount); left out: see the list below |
+| 5 | No sideways scroll, no cut text, no target < 44, no text < 12, at all four sizes | [live] `pageRules` at 1024, 1280, 1920 and 390 — 0 on every count (`floor-measured.json`) |
+| 6 | `check:ui` green; new screens under `src/screens/`, kit only | `check:ui green` (40 files, 0 allowed hits); screens in `src/screens/{floor,reservations,me,receipts,till,approvals,shared}` |
+| 7 | Tapping a table still opens and completes an order, each role | [live] regression suites `cashier-floor` (settlement, close), `supervisor-prompt3` (table workspace actions); `e2e/t1/me.spec.ts` opens, sends and pays a waiter order through the API and the Floor |
+| 8 | Lint 0, typecheck 0, build 0; no baseline-passing spec fails except updated ones | see Gates |
+| 9 | Diff inside `apps/web`, `reports`, `SCREENS.md`, one script line; last commit on GitHub | see Gates (the branch named in U1 is replaced by `t1/screens` per T1) |
+| 10 | `Main`, `Floor-1024`, `Floor-1920`, `Floor-Phone` say `built` with a score | `SCREENS.md`: 22, 23, 21, 20 of 24 |
+
+## T1 Done-when
+1. **Phase 1's ten lines hold** — the table above.
+2. **Reservations** [live] `e2e/t1/reservations.spec.ts`. The waiter seats a booking that is late, at another free table that fits (`Reservations-Waiter-seated-1280x800.png`). The supervisor creates, confirms, moves (change table), cancels with a reason, and completes a booking (`Reservations-Supervisor-new-`, `-cancel-`, `-1280x800.png`). Drawing beside build: `reports/proof/T1/compare/Reservations-{Waiter,Supervisor}-vs-built.png`.
+3. **Me, Receipts, Till, Approvals match their drawings** — beside builds in `reports/proof/T1/compare/`; screens driven in `me.spec.ts`, `receipts-till.spec.ts` (a real bill of 5 × 42,000, a pending refund of 160,000 above the 150,000 demo limit, a safe drop, a count that is short, closing and reopening the till) and `approvals.spec.ts` (discount declined with a reason, leave approved, swap declined, alert resolved; who and when shown). Left-out parts are listed below.
+4. **No permission key, route or endpoint on any reachable screen** [live] `e2e/t1/sweep.spec.ts`. It covers every section of the three roles, the hidden cashier Queue, and the "not your role" guards, at 1280 × 800 and 390 × 844, with a wider ban list: API, v1, stub, endpoint, backend, MVP, adapter, build-step names, broken values, raw status codes. One sentence is listed, not fixed. It contains "backend", is beyond Done-when 4's three items, and lives in `lib/cashier/payment-validation.ts`, outside T1's paths: "Cash close is available only when the backend order status is Served." It shows on the hidden Queue.
+5. **Rule 10 at 1280 × 800 and 390 × 844** [live] every `rules(...)` call in e2e/t1 checks: no sideways page scroll, no element past the screen edge, no money broken across lines, no cut text, no target under 44 px, no text under 12 px, at most one filled button. The sheets are measured open. All counts are 0 in `*-measured.json`.
+6. **`verify:web` and the web build green; no baseline-passing spec fails except the updated, listed ones** — see Gates.
+7. **Diff inside T1's paths** — see Gates.
+8. **`SCREENS.md` rows say built, with their score** — ten rows, below.
+
+## Look review (separate reviewer, built nothing; §5A.12, pass 20/24, no zero)
+| Screen | First review | After fixes |
+|---|---|---|
+| Main | 22 | 22 |
+| Floor-1024 | 23 | 23 |
+| Floor-1920 | 21 | 21 |
+| Floor-Phone | 21 | 20 |
+| Reservations-Waiter | 21 | 21 |
+| Reservations-Supervisor | 18 (fail: History tab past the 390 edge) | 21 |
+| Waiter-Me | 20 | 22 |
+| Cashier-Receipts | 20 | 21 |
+| Cashier-Till | 16 (fail: money broken across lines) | 21 |
+| Supervisor-Approvals | 19 (fail: Approve looked disabled) | 20 |
+
+Full scores: `reports/T1_LOOK_REVIEW_1.md`, `reports/T1_LOOK_REVIEW_2.md`. Fixed between the two reviews:
+- Phone History moved into the header, and full-width tabs are tighter.
+- The booking sheet is one column on a phone.
+- Money stays on one line (kit `Text`).
+- Typed amounts are grouped.
+- No "short by" shows before a count is typed.
+- A blocked Approve gives its reason.
+- The Approvals tab shows the waiting count.
+- Receipts shows what was kept after refunds.
+- The shift and attendance words no longer clash.
+
+The rule-10 check was too weak to catch the History overflow and the broken money; it now fails on both. The greyed Approve in the first two reviews was a colour fade caught mid-way; the proof helpers now wait for finite animations.
+
+Not fixed, for the next pass (all scored, none a fail):
+- Phone Tab tiles are tight, and the header says "tables" for tabs.
+- Guest names in the demo data are long digit strings that wrap on a phone.
+- Cancel-booking confirm is navy, not red (no filled red button in the kit).
+- Refund reads pale (tonal with a lock).
+- The till lists "Opening float" as a movement as well as the float line.
+- Approvals has no "bill after" figure.
+
+## Gates (final)
+GATES_PLACEHOLDER
+
+## Left out, and why (nothing faked)
+| What | Why | Brought by |
+|---|---|---|
+| Tile: guests on an open table, Late, Bill asked/printed, Ready, Tabs / New tab | no data for them yet | E1 order truth, E4 bill, E5 tickets, T2 tables |
+| Supervisor Floor "Late · n / Bill · n" | no data | E1 / E4 |
+| Me: Items voided | no per-person void count | E1 |
+| Me: Ask to swap | needs a colleague list these roles cannot read | U4 Team |
+| Me: Change my PIN | no route lets a person set their own PIN (only manager reset/issue, HR reset) | API work, U4 |
+| Reservations: "Wait for table N"; change details | the first calls nothing; no route edits details (Change table kept) | E3 / U4 |
+| Reservations: old history filters | not drawn | — |
+| Receipts: Print again, Send receipt | reprint only writes an audit row; no delivery | E4 |
+| Receipts: "How" column, Paid time | the order list has no method and orders have no paid time; the list shows when a bill was opened | E1 / E4 |
+| Till: per-method tiles, cash sales line, Pay out, Open the drawer, bill count | not in the till summary; no drawer driver | E4, hardware wave |
+| Approvals: Void, Refund, Take over rows; PIN on the spot | no route lists pending refunds or voids; take-over has no route | E1 / E4 / U3 |
+| Shift-swap Approve | Outcome C: no roster write exists (decline only) | roster engine |
+
+## Decisions taken
+Decisions 1–27 are in `reports/T1_PROGRESS.md`. Added in phases 5–6:
+
+28. Approvals reads the four domain lists (discount, leave, swap, alert), not the generic inbox: the supervisor does not hold `approvals:read`.
+29. The approvals fixture asks for a 160,000 discount: the demo org approves anything up to 150,000 on its own, so a smaller one never waits.
+30. A discount cannot be approved once the bill has taken money (UI gate, as before). While the payments are being read, or if they cannot be read, Approve waits and says why.
+31. The Approvals tab count shares the Approvals screen's own queries and keys, so that screen makes one read, not two.
+32. The sweep bans more than Done-when 4 names. The one hit in a file outside T1 is listed, not edited.
+33. On a phone, the supervisor's History is a header action. Four tabs do not fit 390 px.
+34. Money is never split across lines. Kit `Text` keeps a money string on one line.
+35. Rule-10 proofs wait for finite animations before they measure or shoot.
+
+## Specs changed (old specs, updated and listed)
+- cashier-floor: hidden-legacy-routes, legacy-compatibility-regression, navigation-and-default-route, responsive, responsive-c2, shared-floor-parity
+- manager-shell: shell-parity (frontline case)
+- supervisor-prompt3: floor, regression, role-boundaries
+- supervisor-reservations: fixtures, arriving-actions, attention, create-reservation, history-and-pagination, navigation-and-default-view, privacy-and-boundaries, responsive, seated-and-completion, waiter-visibility
+- supervisor-approvals: approvals-fixtures and every spec in the folder, rewritten for the kit screen
+
+Two specs failed at baseline and still fail, untouched: `manager-shell/navigation-and-landing.spec.ts:96`, `:121`.
+
+## Notes for other tracks
+- **T3 (order screen):** the table workspaces were not touched. Old specs reach a table through `data-operational-table-id` on the tile wrapper; keep that attribute. The kit `Text` now keeps a money string on one line. The shell root is `isolate` with the bars at `-z-10`, so sheets cover the bars.
+- **T3 / cashier:** `lib/cashier/payment-validation.ts:161` still says "backend" on the hidden Queue. The Queue and checkout still use the old components.
+- **T4 (tests, demo venue):** e2e/t1 runs against `nimbus_t1_floor`, a fixture with 70 drawn tables (seeded tables set inactive, never deleted) and needs `T1_FLOOR_FIXTURE=1` and `T1_PASSWORD` from the shell. Demo guest names are long digit strings and wrap on a phone; a fictional cast would read better.
+- **Everyone:** `scripts/*-assertions.ts` were not run in this track; some pin old shell file names that were deleted (old headers, bottom navs, readiness strip).

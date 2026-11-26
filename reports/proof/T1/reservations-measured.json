@@ -24,7 +24,7 @@
     "filled": [
       "Create booking"
     ],
-    "checkedText": 69,
+    "checkedText": 70,
     "checkedTargets": 33
   },
   "supervisor-1280": {
@@ -35,10 +35,8 @@
     "clipped": [],
     "small": [],
     "tinyText": [],
-    "filled": [
-      "Seat at table 1"
-    ],
-    "checkedText": 77,
+    "filled": [],
+    "checkedText": 78,
     "checkedTargets": 32
   },
   "waiter-390": {
@@ -56,15 +54,67 @@
   "supervisor-390": {
     "viewport": "390x844",
     "sideways": 0,
-    "offEdge": [
-      "BUTTON \"History\" 356..464"
-    ],
+    "offEdge": [],
     "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 13,
-    "checkedTargets": 12
+    "checkedText": 52,
+    "checkedTargets": 22
+  },
+  "supervisor-history-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [],
+    "checkedText": 67,
+    "checkedTargets": 23
+  },
+  "waiter-detail-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Seat at table 4"
+    ],
+    "checkedText": 66,
+    "checkedTargets": 22
+  },
+  "supervisor-create-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Create booking"
+    ],
+    "checkedText": 66,
+    "checkedTargets": 31
+  },
+  "supervisor-cancel-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Cancel booking"
+    ],
+    "checkedText": 63,
+    "checkedTargets": 27
   }
 }

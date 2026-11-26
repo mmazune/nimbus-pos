@@ -34,8 +34,8 @@
     "filled": [
       "Count and close"
     ],
-    "checkedText": 23,
-    "checkedTargets": 10
+    "checkedText": 20,
+    "checkedTargets": 9
   },
   "safe-drop-sheet-1280": {
     "viewport": "1280x800",
@@ -48,8 +48,8 @@
     "filled": [
       "Record the drop"
     ],
-    "checkedText": 31,
-    "checkedTargets": 15
+    "checkedText": 28,
+    "checkedTargets": 14
   },
   "close-confirm-1280": {
     "viewport": "1280x800",
@@ -117,10 +117,35 @@
     "viewport": "390x844",
     "sideways": 0,
     "offEdge": [],
-    "wrappedMoney": [
-      "P \"− 151,000\"",
-      "H2 \"UGX 149,000\""
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Count and close"
     ],
+    "checkedText": 20,
+    "checkedTargets": 7
+  },
+  "safe-drop-sheet-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Record the drop"
+    ],
+    "checkedText": 28,
+    "checkedTargets": 12
+  },
+  "till-variance-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
     "clipped": [],
     "small": [],
     "tinyText": [],
@@ -129,5 +154,19 @@
     ],
     "checkedText": 23,
     "checkedTargets": 8
+  },
+  "close-confirm-390": {
+    "viewport": "390x844",
+    "sideways": 0,
+    "offEdge": [],
+    "wrappedMoney": [],
+    "clipped": [],
+    "small": [],
+    "tinyText": [],
+    "filled": [
+      "Close the till"
+    ],
+    "checkedText": 33,
+    "checkedTargets": 11
   }
 }

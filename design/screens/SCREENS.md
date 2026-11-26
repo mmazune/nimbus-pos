@@ -4,30 +4,30 @@ One row per drawing in `html/` and `png/`. "Built in" is the milestone from `doc
 
 | Drawing | Size | Role | What it shows | Route | Built in | Status |
 |---|---|---|---|---|---|---|
-| `Main` | 1280 × 800 | Waiter | Floor · terminal 1280 × 800 · waiter | `/waiter/floor` | U1 | drawn |
-| `Floor-1024` | 1024 × 768 | Waiter | Floor · small monitor 1024 × 768 · compact tiles | `/waiter/floor` | U1 | drawn |
-| `Floor-1920` | 1920 × 1080 | Supervisor | Floor · large monitor 1920 × 1080 · supervisor · 70 tables | `/supervisor/floor` | U1 | drawn |
-| `Floor-Phone` | 390 × 844 | Waiter | Floor · phone | `/waiter/floor` | U1 | drawn |
+| `Main` | 1280 × 800 | Waiter | Floor · terminal 1280 × 800 · waiter | `/waiter/floor` | U1 | built, scored 22/24 (T1) |
+| `Floor-1024` | 1024 × 768 | Waiter | Floor · small monitor 1024 × 768 · compact tiles | `/waiter/floor` | U1 | built, scored 23/24 (T1) |
+| `Floor-1920` | 1920 × 1080 | Supervisor | Floor · large monitor 1920 × 1080 · supervisor · 70 tables | `/supervisor/floor` | U1 | built, scored 21/24 (T1) |
+| `Floor-Phone` | 390 × 844 | Waiter | Floor · phone | `/waiter/floor` | U1 | built, scored 20/24 (T1) |
 | `Table-Tile` | 1280 × 944 | All | The table tile · every state | `spec, no route` | U0 | built (kit) |
 | `Nav-Roles` | 1440 × 1010 | All | The bottom bar · role by role | `spec, no route` | U0 and U1 | built (kit) |
 | `Table-Life` | 1440 × 760 | All | The life of a table | `spec, no route` | U2 | drawn |
 | `Order-Empty` | 1280 × 800 | Waiter | Free table · the menu opens at once | `/waiter/floor?tableId=` | U2 | drawn |
 | `Order-Terminal` | 1280 × 800 | Waiter | Table with an order · add more, send | `/waiter/floor?tableId=` | U2 | drawn |
 | `Order-Other` | 1280 × 800 | Waiter | Another waiter’s table | `/waiter/floor?tableId=` | U2 | drawn |
-| `Reservations-Waiter` | 1280 × 800 | Waiter | Reservations · waiter · seat somewhere else | `/waiter/reservations` | U4 | drawn |
+| `Reservations-Waiter` | 1280 × 800 | Waiter | Reservations · waiter · seat somewhere else | `/waiter/reservations` | U4 | built, scored 21/24 (T1) |
 | `Waiter-Ready` | 1280 × 800 | Waiter | Ready · waiter | `/waiter/ready (new)` | U4, needs E5 | drawn |
-| `Waiter-Me` | 1280 × 800 | Waiter | Me · waiter | `/waiter/me` | U4 | drawn |
+| `Waiter-Me` | 1280 × 800 | Waiter | Me · waiter | `/waiter/me` | U4 | built, scored 22/24 (T1) |
 | `Order-Phone` | 390 × 844 | Waiter | Order · phone | `/waiter/floor?tableId=` | U2 | drawn |
 | `Order-Phone-Check` | 390 × 844 | Waiter | Order · phone · the order | `/waiter/floor?tableId=` | U2 | drawn |
 | `Order-Phone-Item` | 390 × 844 | Waiter | Order · phone · an item with choices | `/waiter/floor?tableId=` | U2, needs E2 | drawn |
 | `Bill-Phone` | 390 × 844 | Waiter | Bill · phone | `/waiter/floor?tableId=` | U3, needs E4 | drawn |
 | `Supervisor-Table` | 1280 × 800 | Supervisor | Supervisor · table actions | `/supervisor/floor?tableId=` | U3 | drawn |
 | `Supervisor-Void` | 1280 × 800 | Supervisor | Supervisor · void one item | `/supervisor/floor?tableId=` | U3, needs E1 | drawn |
-| `Reservations-Supervisor` | 1280 × 800 | Supervisor | Reservations · supervisor | `/supervisor/reservations` | U4 | drawn |
-| `Supervisor-Approvals` | 1280 × 800 | Supervisor | Approvals · supervisor | `/supervisor/approvals` | U4 | drawn |
+| `Reservations-Supervisor` | 1280 × 800 | Supervisor | Reservations · supervisor | `/supervisor/reservations` | U4 | built, scored 21/24 (T1) |
+| `Supervisor-Approvals` | 1280 × 800 | Supervisor | Approvals · supervisor | `/supervisor/approvals` | U4 | built, scored 20/24 (T1) |
 | `Cashier-Pay` | 1280 × 800 | Cashier | Cashier · take payment | `/cashier/floor?tableId=` | U3, needs E1 | drawn |
-| `Cashier-Receipts` | 1280 × 800 | Cashier | Cashier · receipts | `/cashier/receipts` | U3 | drawn |
-| `Cashier-Till` | 1280 × 800 | Cashier | Cashier · till | `/cashier/till` | U3 | drawn |
+| `Cashier-Receipts` | 1280 × 800 | Cashier | Cashier · receipts | `/cashier/receipts` | U3 | built, scored 21/24 (T1) |
+| `Cashier-Till` | 1280 × 800 | Cashier | Cashier · till | `/cashier/till` | U3 | built, scored 21/24 (T1) |
 | `Kitchen` | 1920 × 1080 | Chef | Kitchen screen · 1920 × 1080 | `/kitchen (new)` | U5, needs E5 | drawn |
 | `Store-Requests` | 1280 × 800 | Store keeper | Store keeper · requests | `/store/requests (new)` | U6, needs E7 | drawn |
 | `Chef-Request-Phone` | 390 × 844 | Chef | Chef · phone · ask the store | `/kitchen/store (new)` | U6, needs E7 | drawn |

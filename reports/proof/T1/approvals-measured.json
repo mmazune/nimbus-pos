@@ -8,7 +8,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 37,
+    "checkedText": 38,
     "checkedTargets": 16
   },
   "decline-sheet-1280": {
@@ -22,7 +22,7 @@
     "filled": [
       "Decline"
     ],
-    "checkedText": 42,
+    "checkedText": 43,
     "checkedTargets": 20
   },
   "approvals-done-1280": {
@@ -34,7 +34,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 37,
+    "checkedText": 38,
     "checkedTargets": 14
   },
   "approvals-390": {
@@ -46,7 +46,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 10,
+    "checkedText": 9,
     "checkedTargets": 7
   },
   "approvals-sheet-390": {
@@ -58,7 +58,7 @@
     "small": [],
     "tinyText": [],
     "filled": [],
-    "checkedText": 38,
+    "checkedText": 39,
     "checkedTargets": 13
   }
 }
