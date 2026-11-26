@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { ensureFloorFixture } from "./floor-fixture";
-import { apiCall, makePins, pinSignIn, saveJson, shot } from "./support";
+import { apiCall, makePins, pinSignIn, saveJson, shot, mainItemId } from "./support";
 
 /**
  * T1 Done-when 3: proof for the three drawn texts the screens do not print.
@@ -14,7 +14,6 @@ import { apiCall, makePins, pinSignIn, saveJson, shot } from "./support";
 test.skip(process.env.T1_FLOOR_FIXTURE !== "1", "needs the fixture database (T1_FLOOR_FIXTURE=1)");
 test.describe.configure({ mode: "serial" });
 
-const MAIN = "c3565ecbf51c58f06221d7d5"; // a seeded demo menu item, 42,000
 const proof: Record<string, unknown> = {};
 
 test.beforeAll(async () => {
@@ -59,7 +58,7 @@ test("3. a small refund is paid at once and the cashier cannot read the limit", 
   const tables = await apiCall<Array<{ id: string; floorPlan?: { name?: string } | null }>>("manager", "/tables");
   const terrace = tables.filter((t) => t.floorPlan?.name === "Terrace");
   const order = await apiCall<{ id: string }>("waiter", "/pos/orders", "POST", { serviceType: "DINE_IN", tableId: terrace[(Date.now() + 3) % terrace.length].id });
-  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: MAIN, quantity: 1 });
+  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: await mainItemId(), quantity: 1 });
   await apiCall("waiter", `/pos/orders/${order.id}/send`, "POST", {});
   for (const step of ["in-kitchen", "ready", "mark-served"]) await apiCall("supervisor", `/pos/orders/${order.id}/${step}`, "POST", {});
   const full = await apiCall<{ total: string }>("waiter", `/pos/orders/${order.id}`);

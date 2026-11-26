@@ -8,6 +8,8 @@ import { join } from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+import { tapTable } from "../t5/floor";
+
 import { api, expectRule10, freeTable, measurePage, ordersOnTable, pinToken, setupVenue, signInWithPin } from "./fixture";
 
 const PROOF = join(__dirname, "../../../../reports/proof/T3");
@@ -20,7 +22,7 @@ test("waiter on a phone: food, then drinks, two sends", async ({ page }) => {
   const v = await setupVenue();
   const table = await freeTable(v.managerToken);
   await signInWithPin(page, v.people.waiter.pin, /\/waiter\/floor/);
-  await page.locator(`[data-operational-table-id="${table.id}"]`).first().tap();
+  await tapTable(page, table.id, "tap");
   const screen = page.locator("[data-order-phone]");
   await expect(screen).toBeVisible();
 
@@ -105,7 +107,7 @@ test("supervisor and cashier on a phone: actions, void and payment fit 390", asy
   const sup = await supCtx.newPage();
   await signInWithPin(sup, v.people.supervisor.pin, /\/supervisor\//);
   await sup.goto("/supervisor/floor");
-  await sup.locator(`[data-operational-table-id="${table.id}"]`).first().tap();
+  await tapTable(sup, table.id, "tap");
   await sup.getByRole("button", { name: "More for this table" }).tap();
   await expect(sup.locator("[data-order-actions]")).toBeVisible();
   await sup.waitForTimeout(300);
@@ -126,7 +128,7 @@ test("supervisor and cashier on a phone: actions, void and payment fit 390", asy
   const cashier = await cashCtx.newPage();
   await signInWithPin(cashier, v.people.cashier.pin, /\/cashier\//);
   await cashier.goto("/cashier/floor");
-  await cashier.locator(`[data-operational-table-id="${table.id}"]`).first().tap();
+  await tapTable(cashier, table.id, "tap");
   await cashier.locator("[data-order-foot]").getByRole("button", { name: "Take payment" }).tap();
   await expect(cashier.locator("[data-order-to-pay]")).toHaveText("UGX 16,000");
   await cashier.getByRole("button", { name: "20,000", exact: true }).tap();

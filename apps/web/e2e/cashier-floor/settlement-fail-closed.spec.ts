@@ -82,7 +82,7 @@ test.describe("Cashier settlement — fail closed", () => {
     await page.goto(`/cashier/floor?tableId=${tableId}&orderId=${orderId}`);
     await expect(page.locator("[data-operational-workspace]")).toBeVisible({ timeout: 25_000 });
 
-    await expect(page.getByText(/Cash close is available only when the backend order status is Served/i)).toBeVisible({
+    await expect(page.getByText(/Cash can be taken once everything on the bill has been served/i)).toBeVisible({
       timeout: 25_000,
     });
     await expect(page.getByRole("button", { name: /close with cash payment/i })).toBeDisabled();

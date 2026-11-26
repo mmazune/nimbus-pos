@@ -19,7 +19,7 @@ import {
 } from "@/lib/waiter/floor-api";
 import { FloorScreen } from "@/screens/floor/FloorScreen";
 import { errorWords } from "@/screens/shared/words";
-import { loadAllActiveOrders } from "@/screens/floor/floor-data";
+import { loadAllActiveOrders, loadAreas } from "@/screens/floor/floor-data";
 import { loadWaiterMenuWorkspace } from "@/lib/waiter/order-api";
 import { seatReservation } from "@/lib/waiter/reservation-api";
 import { useActiveShift } from "@/lib/waiter/useActiveShift";
@@ -80,12 +80,13 @@ export function WaiterFloorScreen() {
     queryFn: async (): Promise<WaiterFloorData> => {
       const token = accessToken as string;
       const branch = branchId as string;
-      const [tables, activeOrders, reservations] = await Promise.all([
+      const [tables, activeOrders, reservations, areas] = await Promise.all([
         listWaiterTables(token, branch),
         loadAllActiveOrders<FloorWaiterOrder>(token, branch),
         listWaiterOperationalReservations(token, branch),
+        loadAreas(token, branch),
       ]);
-      return { tables, activeOrders, reservations };
+      return { tables, activeOrders, reservations, areas };
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,

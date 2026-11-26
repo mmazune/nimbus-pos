@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ensureFloorFixture } from "./floor-fixture";
-import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot } from "./support";
+import { onVenue } from "../t5/venue";
+import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot, mainItemId } from "./support";
 
 /**
  * T1 phase 5: Approvals for the supervisor, by PIN (drawing Supervisor-Approvals).
@@ -14,7 +15,6 @@ test.skip(process.env.T1_FLOOR_FIXTURE !== "1", "needs the fixture database (T1_
 test.describe.configure({ mode: "serial" });
 
 const measured: Record<string, unknown> = {};
-const MAIN = "c3565ecbf51c58f06221d7d5";
 let bill = "";
 const stamp = Date.now().toString(36).slice(-4);
 
@@ -29,7 +29,7 @@ test.beforeAll(async () => {
   const tables = await apiCall<Array<{ id: string; floorPlan?: { name?: string } | null }>>("manager", "/tables");
   const terrace = tables.filter((t) => t.floorPlan?.name === "Terrace");
   const order = await apiCall<{ id: string; orderNumber: string }>("waiter", "/pos/orders", "POST", { serviceType: "DINE_IN", tableId: terrace[Date.now() % terrace.length].id });
-  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: MAIN, quantity: 5 });
+  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: await mainItemId(), quantity: 5 });
   await apiCall("waiter", `/pos/orders/${order.id}/send`, "POST", {});
   await apiCall("manager", `/pos/orders/${order.id}/discounts`, "POST", { type: "FIXED", value: 160000, reason: `Regular guest ${stamp}` });
   bill = order.orderNumber.replace(/^ORD-/, "");
@@ -90,13 +90,16 @@ test("supervisor declines a discount, approves leave, declines a swap, resolves 
   await panel.getByRole("button", { name: "Approve the leave" }).click();
   await expect(panel.getByText("Leave approved.")).toBeVisible();
 
-  // swap: decline only
-  await page.getByRole("button", { name: /^Shift swap · / }).first().click();
-  panel = page.locator("[data-approval^='shift-swap:']");
-  await expect(panel.getByRole("button", { name: /approve/i })).toHaveCount(0);
-  await panel.getByRole("button", { name: "Decline the swap" }).click();
-  await page.getByRole("dialog", { name: "Decline the swap" }).getByRole("button", { name: "Decline the swap" }).click();
-  await expect(panel.getByText("Shift swap declined.")).toBeVisible();
+  // swap: decline only. The demo venue holds no roster and no route makes one, so no swap can
+  // exist there (T5 decision 4); the step runs wherever the data holds a pending swap.
+  if (!onVenue()) {
+    await page.getByRole("button", { name: /^Shift swap · / }).first().click();
+    panel = page.locator("[data-approval^='shift-swap:']");
+    await expect(panel.getByRole("button", { name: /approve/i })).toHaveCount(0);
+    await panel.getByRole("button", { name: "Decline the swap" }).click();
+    await page.getByRole("dialog", { name: "Decline the swap" }).getByRole("button", { name: "Decline the swap" }).click();
+    await expect(panel.getByText("Shift swap declined.")).toBeVisible();
+  }
 
   // alert: an acknowledged one is resolved with notes
   const alert = page.getByRole("button", { name: /^Alert · / }).first();

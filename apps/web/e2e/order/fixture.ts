@@ -13,9 +13,11 @@
  */
 import { expect, type Page, type Request, type Response } from "@playwright/test";
 
+import { onVenue, venuePerson } from "../t5/venue";
+
 export const API = process.env.PW_API_URL || "http://localhost:4111";
 export const BRANCH = process.env.PW_BRANCH_ID || "cb27be401a2c35dfc0d4e610";
-const MANAGER_EMAIL = process.env.PW_MANAGER_EMAIL || "manager@nimbus.demo";
+const MANAGER_EMAIL = onVenue() ? venuePerson("manager1").email : process.env.PW_MANAGER_EMAIL || "manager@nimbus.demo";
 
 type Json = Record<string, any>;
 
@@ -75,7 +77,8 @@ async function ensureMenu(token: string) {
   const list = (await must(token, "GET", "/api/menu/items")) as Json[] | Json;
   const rows: Json[] = Array.isArray(list) ? list : list.data ?? [];
   const item = async (name: string, price: number, itemType: "FOOD" | "DRINK", station: string, browseGroupId: string): Promise<Json> => {
-    let it: Json | undefined = rows.find((r) => r.name === name);
+    // The demo venue sells its own "Beef burger" at another price (T5): reuse only an item at this price.
+    let it: Json | undefined = rows.find((r) => r.name === name && Number(r.price) === price);
     if (!it) {
       it = (await must(token, "POST", "/api/menu/items", { name, price, itemType, station, categoryId: cat.id })) as Json;
       rows.push(it);
@@ -107,9 +110,15 @@ async function ensureMenu(token: string) {
   // Choice groups.
   const mgs = (await must(token, "GET", "/api/menu/modifier-groups")) as Json[];
   const mg = async (name: string, body: Json, options: Array<[string, string?]>): Promise<Json> => {
-    let g: Json | undefined = mgs.find((x) => x.name === name);
+    // Reuse a group only when it holds the fixture's own options: the demo venue has groups with the
+    // same names and other options (T5), and the evening's money depends on these exact choices.
+    let g: Json | undefined = mgs.find(
+      (x) => (x.name === name || x.name === `${name} (house)`) && (!Array.isArray(x.options) || options.every(([opt]) => x.options.some((o: Json) => o.name === opt))),
+    );
     if (!g) {
-      const made: Json = await must(token, "POST", "/api/menu/modifier-groups", { name, ...body });
+      // A name the venue already uses for other options gets its own name (names are unique per branch).
+      const free = !mgs.some((x) => x.name === name);
+      const made: Json = await must(token, "POST", "/api/menu/modifier-groups", { name: free ? name : `${name} (house)`, ...body });
       g = made;
       for (const [i, [opt, delta]] of options.entries()) {
         await must(token, "POST", `/api/menu/modifier-groups/${made.id}/options`, { name: opt, priceDelta: delta ?? "0", sortOrder: i });
@@ -136,7 +145,9 @@ async function userIdByEmail(token: string, email: string): Promise<{ id: string
 }
 
 async function loginPassword(email: string): Promise<string> {
-  const password = process.env.PW_DEMO_PASSWORD;
+  // On the T5 demo venue (e2e/t5/stack.sh) every person has their own password, made at load time.
+  const venue = onVenue() ? Array.from((await import("../t5/venue")).venuePeople().values()).find((p) => p.email === email) : undefined;
+  const password = venue?.password ?? process.env.PW_DEMO_PASSWORD;
   if (!password) throw new Error("Set PW_DEMO_PASSWORD in the shell (the demo manager's password).");
   const r = await must(null, "POST", "/api/auth/login", { email, password });
   return r.accessToken as string;
@@ -204,6 +215,23 @@ export async function freeEmptyFixtureTables(token: string) {
   }
 }
 
+/** The T5 demo venue's own people and their load-time PINs (no PIN is reset). */
+async function venueCast(managerToken: string, manager: { id: string; name: string }): Promise<Venue["people"]> {
+  const one = async (key: string) => {
+    const p = venuePerson(key);
+    const t = await loginPassword(p.email);
+    const me = await must(t, "GET", "/api/auth/me");
+    return { userId: me.id as string, name: `${me.firstName} ${me.lastName}`, pin: p.pin };
+  };
+  return {
+    waiter: await one("waiter1"),
+    waiter2: await one("waiter2"),
+    supervisor: await one("supervisor1"),
+    cashier: await one("cashier1"),
+    manager: { userId: manager.id, name: manager.name, pin: venuePerson("manager1").pin },
+  };
+}
+
 let cached: Venue | null = null;
 
 /** Builds (or finds) everything once per worker. */
@@ -221,14 +249,14 @@ export async function setupVenue(): Promise<Venue> {
     const me = await must(t, "GET", "/api/auth/me");
     return { id: me.id as string, name: `${me.firstName} ${me.lastName}` };
   };
-  const ids = {
+  const ids = onVenue() ? { waiter: manager, supervisor: manager, cashier: manager } : {
     waiter: await byEmail(process.env.PW_WAITER_EMAIL || "waiter@nimbus.demo"),
     supervisor: await byEmail(process.env.PW_SUPERVISOR_EMAIL || "supervisor@nimbus.demo"),
     cashier: await byEmail(process.env.PW_CASHIER_EMAIL || "cashier@nimbus.demo"),
   };
 
   // A second waiter for "another waiter's table" (fictional cast, fictional phone block).
-  let waiter2 = await employeeUser(managerToken, "Grace", "Atim");
+  let waiter2 = onVenue() ? manager : await employeeUser(managerToken, "Grace", "Atim");
   if (!waiter2) {
     const made = await api(managerToken, "POST", "/api/hr/frontline-staff/onboard", {
       firstName: "Grace",
@@ -243,7 +271,7 @@ export async function setupVenue(): Promise<Venue> {
     waiter2 = { id: uid, name: "Grace Atim" };
   }
 
-  const people = {
+  const people = onVenue() ? await venueCast(managerToken, manager) : {
     waiter: { userId: ids.waiter.id, name: ids.waiter.name, pin: await freshPin(managerToken, ids.waiter.id) },
     waiter2: { userId: waiter2.id, name: waiter2.name, pin: await freshPin(managerToken, waiter2.id) },
     supervisor: { userId: ids.supervisor.id, name: ids.supervisor.name, pin: await freshPin(managerToken, ids.supervisor.id) },

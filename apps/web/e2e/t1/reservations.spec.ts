@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ensureFloorFixture } from "./floor-fixture";
-import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot } from "./support";
+import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot, WAITER_OWN_TABLES } from "./support";
 
 /**
  * T1 phase 2: Reservations for the waiter and the supervisor, driven by PIN in
@@ -15,6 +15,9 @@ const measured: Record<string, unknown> = {};
 const stamp = Date.now().toString(36).slice(-4);
 
 type Table = { id: string; label: string; floorPlan?: { name?: string } | null };
+
+/** How the screen names a table: "Table 12", but a prefixed label ("M01", "Tab 3") as it is. */
+const tableWord = (label?: string | null) => (/^\d+$/.test(String(label ?? "")) ? `Table ${label}` : String(label ?? ""));
 
 async function tableId(label: string) {
   const tables = await apiCall<Table[]>("manager", "/tables");
@@ -44,7 +47,7 @@ test("waiter seats a late booking at another free table (1280 × 800)", async ({
   // (2, 6, 9, 12 or 17 in the fixture: the first one with no booking in that window).
   let made: { id: string } | undefined;
   let busyLabel = "";
-  for (const label of ["2", "6", "9", "12", "17"]) {
+  for (const label of WAITER_OWN_TABLES()) {
     try {
       made = await apiCall<{ id: string }>("supervisor", "/reservations", "POST", {
         customerName: `Late Guest ${stamp}`,
@@ -72,7 +75,7 @@ test("waiter seats a late booking at another free table (1280 × 800)", async ({
   await expect(row).toContainText(/Late/);
   await row.click();
   const panel = page.locator(`[data-res-panel="${madeId}"]`);
-  await expect(panel).toContainText(`Table ${busyLabel} is not free.`);
+  await expect(panel).toContainText(`${tableWord(busyLabel)} is not free.`);
   await expect(panel).toContainText("To change or cancel a booking, ask a supervisor.");
   await expect(panel.getByRole("button", { name: /cancel booking/i })).toHaveCount(0);
   await rules(page, "waiter-1280");
@@ -87,15 +90,17 @@ test("waiter seats a late booking at another free table (1280 × 800)", async ({
   await expect(panel).toContainText(`Seated at ${label}.`);
   const after = await apiCall<{ status: string; table?: { label?: string } }>("supervisor", `/reservations/${madeId}`);
   expect(after.status).toBe("SEATED");
-  expect(`Table ${after.table?.label}`).toBe(label);
+  expect(tableWord(after.table?.label)).toBe(label);
   await shot(page, "Reservations-Waiter-seated-1280x800.png");
   // the table the waiter just seated now shows open on the Floor
   const tables = await apiCall<Array<{ id: string; label: string }>>("manager", "/tables");
-  const seatedId = tables.find((t) => `Table ${t.label}` === label)?.id;
+  const seatedId = tables.find((t) => tableWord(t.label) === label)?.id;
   await page.goto("/waiter/floor");
   await page.getByRole("tab", { name: "All tables" }).click();
-  for (const area of ["Main hall", "Terrace", "Bar", "VIP", "Tabs"]) {
-    await page.getByRole("button", { name: new RegExp(`^${area}`) }).click();
+  // every area the floor shows (the demo venue's, and any a fixture added), until the table is on screen
+  const chips = page.getByRole("group", { name: "Areas" }).getByRole("button");
+  for (let i = 0; i < (await chips.count()); i += 1) {
+    await chips.nth(i).click();
     if (await page.locator(`[data-floor-table-id="${seatedId}"]`).count()) break;
   }
   await expect(page.locator(`[data-floor-table-id="${seatedId}"]`)).toHaveAttribute("data-floor-tile", "open");

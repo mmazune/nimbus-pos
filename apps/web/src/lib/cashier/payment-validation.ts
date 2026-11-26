@@ -158,7 +158,7 @@ export function validateCashierPaymentInput({
     reasons.push("Partial cash is deferred because cash can only be recorded through final order close.");
   }
   if (method.id === "CASH" && order.status !== "SERVED") {
-    reasons.push("Cash close is available only when the backend order status is Served.");
+    reasons.push("Cash can be taken once everything on the bill has been served.");
   }
   if (method.requiresReference && !reference.trim()) {
     reasons.push("Manual reference is required for this method.");

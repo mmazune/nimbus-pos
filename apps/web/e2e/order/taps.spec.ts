@@ -9,6 +9,8 @@ import { join } from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { tapTable } from "../t5/floor";
+
 import { freeTable, setupVenue, signInWithPin } from "./fixture";
 
 const PROOF = join(__dirname, "../../../../reports/proof/T3");
@@ -26,7 +28,7 @@ test("tap counts from the Floor", async ({ page }) => {
   };
   const task = async (name: string, steps: () => Promise<void>, expectLine: RegExp) => {
     n = 0;
-    await tap(page.locator(`[data-operational-table-id="${table.id}"]`).first());
+    await tap(page.locator(`[data-floor-table-id="${table.id}"] button`).first());
     await expect(page.locator("[data-order-menu]")).toBeVisible();
     await steps();
     await expect(page.locator("[data-order-unsent]").getByRole("button", { name: expectLine })).toBeVisible();

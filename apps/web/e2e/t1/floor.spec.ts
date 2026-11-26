@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { onVenue } from "../t5/venue";
 import { ensureFloorFixture } from "./floor-fixture";
 import { chrome, expectRules, makePins, pageRules, pinSignIn, saveJson, shot } from "./support";
 
@@ -156,12 +157,12 @@ test("tapping a table opens what it opened before, for each role", async ({ page
     const tile = page.locator(`[data-floor-tile="${state}"]`).first();
     const tableId = await tile.getAttribute("data-floor-table-id");
     await tile.locator("button").click();
-    await expect(page.locator("[data-operational-workspace]")).toBeVisible();
+    await expect(page.locator("[data-order-screen]")).toBeVisible();
     await shot(page, `tap-${who}-1280x800.png`);
     if (who === "waiter") {
       // a free table tapped and backed out of saves nothing (R2): it is still free
       await page.goBack();
-      await expect(page.locator("[data-operational-workspace]")).toHaveCount(0);
+      await expect(page.locator("[data-order-screen]")).toHaveCount(0);
       await page.reload();
       await page.getByRole("tab", { name: "All tables" }).click();
       await page.getByRole("button", { name: /^Main hall/ }).click();
@@ -191,12 +192,14 @@ test("cashier and supervisor Floor at 1280 × 800 and 390 × 844, and the search
     await page.getByRole("button", { name: /find a table/i }).first().click();
     const sheet = page.getByRole("dialog", { name: "Find a table" });
     await sheet.getByLabel(/table number/i).fill("12");
-    await expect(sheet.getByRole("button", { name: /^Table 12,/ })).toBeVisible();
+    // the drawn floor calls it "Table 12"; the demo venue's Main hall number 12 is "M12"
+    const twelve = sheet.getByRole("button", { name: onVenue() ? /^M12,/ : /^Table 12,/ });
+    await expect(twelve).toBeVisible();
     const r = await pageRules(page);
     measured[`search-${w}`] = r;
     expectRules(r);
     await shot(page, `Floor-search-${w}x${h}.png`);
-    await sheet.getByRole("button", { name: /^Table 12,/ }).click();
-    await expect(page.locator("[data-operational-workspace]")).toBeVisible();
+    await twelve.click();
+    await expect(page.locator("[data-order-screen]")).toBeVisible();
   }
 });

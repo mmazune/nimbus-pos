@@ -33,8 +33,7 @@ const BANNED: Array<[string, RegExp]> = [
  * so any new hit still fails.
  */
 const LISTED: string[] = [
-  // lib/cashier/payment-validation.ts (shared cashier rules, not a T1 path), shown on the hidden Queue
-  "Cash close is available only when the backend order status is Served.",
+  // T5 reworded the one entry that was here (lib/cashier/payment-validation.ts) into a cashier's words.
 ];
 
 const ROUTES: Record<Exclude<Person, "manager">, string[]> = {

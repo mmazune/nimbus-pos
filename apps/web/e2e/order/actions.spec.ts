@@ -9,6 +9,8 @@ import { join } from "node:path";
 
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
+import { tapTable } from "../t5/floor";
+
 import { api, expectRule10, freeTable, measurePage, pinToken, setupVenue, signInWithPin, type Venue } from "./fixture";
 
 const PROOF = join(__dirname, "../../../../reports/proof/T3");
@@ -35,7 +37,7 @@ async function sentOrder(v: Venue, tableId: string | null, lines: Array<{ item: 
 }
 
 async function openTable(page: Page, tableId: string) {
-  await page.locator(`[data-operational-table-id="${tableId}"]`).first().click();
+  await tapTable(page, tableId, "click");
   await expect(page.locator("[data-order-screen]")).toBeVisible();
 }
 

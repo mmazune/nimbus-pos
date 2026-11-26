@@ -1,0 +1,12 @@
+gates on 52a6066 2026-11-26T16:27:44Z
+✔ No ESLint warnings or errors
+check:ui green
+verify:web exit 0
+api typecheck exit 0
+api build exit 0
+Test Suites: 72 passed, 72 total
+Tests:       1318 passed, 1318 total
+api unit exit 0
+check:event green
+check:event exit 0
+web build exit 0

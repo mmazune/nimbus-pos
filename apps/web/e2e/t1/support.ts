@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
+import { onVenue, venuePerson } from "../t5/venue";
+
 /**
  * T1 shared e2e support: PIN sign-in, the rule-10 page measurements and proof files.
  *
@@ -28,7 +30,12 @@ const EMAIL: Record<Person, string> = {
   manager: process.env.T1_MANAGER_EMAIL || "manager@nimbus.demo",
 };
 
-function password(): string {
+/** On the T5 demo venue (e2e/t5/stack.sh) each person is the venue's first of that role. */
+const VENUE_KEY: Record<Person, string> = { waiter: "waiter1", cashier: "cashier1", supervisor: "supervisor1", manager: "manager1" };
+const emailOf = (who: Person) => (onVenue() ? venuePerson(VENUE_KEY[who]).email : EMAIL[who]);
+
+function password(who?: Person): string {
+  if (onVenue() && who) return venuePerson(VENUE_KEY[who]).password;
   const p = process.env.T1_PASSWORD;
   if (!p) throw new Error("T1_PASSWORD is not set in the shell (the seeded demo password).");
   return p;
@@ -56,7 +63,7 @@ const tokens = new Map<Person, { token: string; userId: string }>();
 export async function apiSession(who: Person) {
   const hit = tokens.get(who);
   if (hit) return hit;
-  const login = await api<{ accessToken: string }>("/auth/login", { method: "POST", body: { email: EMAIL[who], password: password() } });
+  const login = await api<{ accessToken: string }>("/auth/login", { method: "POST", body: { email: emailOf(who), password: password(who) } });
   const me = await api<{ id?: string; user?: { id: string } }>("/auth/me", { token: login.accessToken });
   const value = { token: login.accessToken, userId: (me.user?.id ?? me.id) as string };
   tokens.set(who, value);
@@ -68,10 +75,34 @@ export async function apiCall<T>(who: Person, path: string, method = "GET", body
   return api<T>(path, { method, token, body, headers });
 }
 
+/**
+ * A 42,000 kitchen item. The old import's seeded item on its own data; on the T5 demo venue the
+ * venue's "Steak sandwich" (42,000), found by name, so the amounts in these specs stay as written.
+ */
+let mainItem: string | null = null;
+export async function mainItemId(): Promise<string> {
+  if (!onVenue()) return "c3565ecbf51c58f06221d7d5";
+  if (mainItem) return mainItem;
+  const list = await apiCall<Array<{ id: string; name: string; price: string }> | { data: Array<{ id: string; name: string; price: string }> }>("manager", "/menu/items");
+  const rows = Array.isArray(list) ? list : list.data;
+  const hit = rows.find((r) => r.name === "Steak sandwich" && Number(r.price) === 42000);
+  if (!hit) throw new Error("the demo venue has no 42,000 Steak sandwich");
+  mainItem = hit.id;
+  return hit.id;
+}
+
+/** The waiter's own open tables: T1's fixture numbers, or the demo venue's (waiter1 holds M01…M15). */
+export const WAITER_OWN_TABLES = () => (onVenue() ? ["M01", "M04", "M07", "M09", "M12", "M15"] : ["2", "6", "9", "12", "17"]);
+
 const pins = new Map<Person, string>();
 
 /** Fresh quick PINs for the touch roles, held in memory for this run only. */
 export async function makePins(people: readonly Person[] = ["waiter", "cashier", "supervisor"]) {
+  if (onVenue()) {
+    // The venue's PINs were made at load time for their owners; use them as they are.
+    for (const who of people) pins.set(who, venuePerson(VENUE_KEY[who]).pin);
+    return;
+  }
   const manager = await apiSession("manager");
   for (const who of people) {
     if (pins.has(who)) continue;

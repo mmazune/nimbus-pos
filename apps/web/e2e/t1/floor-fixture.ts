@@ -1,3 +1,4 @@
+import { onVenue } from "../t5/venue";
 import { apiCall } from "./support";
 
 /**
@@ -61,7 +62,32 @@ async function drawnCondition() {
   if (!shift || stale) await apiCall("waiter", "/shifts/open", "POST", {});
 }
 
+/**
+ * On the T5 demo venue (64 tables in Main hall, Terrace, Bar and VIP, a service in progress), the
+ * states the venue does not already hold are made through the API as staff would: table M30 is
+ * being cleaned, M31 is booked for later today, and a real "Tabs" area (T2) holds six open tabs.
+ */
+async function venueCondition(): Promise<"made" | "present"> {
+  const { areas } = await apiCall<{ areas: Array<{ id: string; name: string; kind: string; tables: Array<{ id: string; label: string }> }> }>("manager", "/areas");
+  if (areas.some((a) => a.kind === "TABS")) return "present";
+  const main = areas.find((a) => a.name === "Main hall");
+  const id = (label: string) => main?.tables.find((t) => t.label === label)?.id as string;
+  await apiCall("supervisor", `/tables/${id("M30")}/status`, "PATCH", { status: "CLEANING" });
+  const later = new Date(Math.min(Date.now() + 90 * 60_000, new Date().setHours(23, 45, 0, 0)));
+  await apiCall("supervisor", "/reservations", "POST", {
+    customerName: "Fixture booking A",
+    partySize: 6,
+    reservationAt: later.toISOString(),
+    tableId: id("M31"),
+    source: "PHONE",
+  });
+  const tabs = await apiCall<{ id: string }>("manager", "/areas", "POST", { name: "Tabs", kind: "TABS" });
+  for (let i = 0; i < 6; i += 1) await apiCall("manager", `/areas/${tabs.id}/tabs`, "POST", {});
+  return "made";
+}
+
 export async function ensureFloorFixture(): Promise<"made" | "present"> {
+  if (onVenue()) return venueCondition();
   await drawnCondition();
   const plans = await apiCall<Plan[]>("manager", "/floor-plans");
   if (plans.some((p) => p.name === "Main hall")) return "present";

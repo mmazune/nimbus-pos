@@ -5,12 +5,14 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 
+import { tapTable } from "../t5/floor";
+
 import { api, freeTable, ordersOnTable, pinToken, setupVenue, signInWithPin } from "./fixture";
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
 async function openTable(page: Page, tableId: string) {
-  await page.locator(`[data-operational-table-id="${tableId}"]`).first().click();
+  await tapTable(page, tableId, "click");
   await expect(page.locator("[data-order-screen]")).toBeVisible();
 }
 

@@ -46,7 +46,18 @@ export type FloorReservationApi = {
   partySize?: number | null;
 };
 
+/** `GET /api/areas` (T2): the branch's areas, in the manager's order, with their tables. */
+export type FloorAreaApi = {
+  id: string;
+  name: string;
+  kind?: "TABLES" | "TABS" | string | null;
+  sortOrder?: number | null;
+  tables?: ReadonlyArray<{ id: string; isTab?: boolean | null; tabNote?: string | null; joinedToTableId?: string | null }> | null;
+};
+
 export type FloorSource = {
+  /** When present, areas come from the server; otherwise from each table's floor plan (older data). */
+  areas?: readonly FloorAreaApi[];
   tables: readonly FloorTableApi[];
   activeOrders: readonly FloorOrderApi[];
   reservations: readonly FloorReservationApi[];
@@ -60,6 +71,9 @@ export type FloorTile = {
   label: string;
   areaKey: string;
   areaName: string;
+  /** A bar tab (T2): numbered "Tab n", with an optional note. */
+  isTab?: boolean;
+  tabNote?: string;
   state: TableState;
   mine: boolean;
   /** Open on someone else's name, drawn flat grey (waiter only). */
@@ -155,16 +169,26 @@ export function buildFloorTiles(source: FloorSource, viewer: FloorViewer, now: D
     if (!prev || at < prev.at) bookingByTable.set(tableId, { at, party: r.partySize ?? undefined });
   }
 
+  // Server areas (T2): which area each table is in, and whether it is a tab.
+  const areaOf = new Map<string, { area: FloorAreaApi; isTab: boolean; tabNote?: string }>();
+  for (const a of source.areas ?? []) {
+    for (const t of a.tables ?? []) areaOf.set(t.id, { area: a, isTab: Boolean(t.isTab), tabNote: t.tabNote?.trim() || undefined });
+  }
+
   const tiles: FloorTile[] = [];
   for (const t of source.tables) {
     if (t.isActive === false || HIDDEN.has(up(t.status))) continue;
-    const areaName = t.floorPlan?.name?.trim() || "";
+    const inArea = areaOf.get(t.id);
+    // With server areas, a table the areas list does not hold is put away (or not yet in an area): not on the floor.
+    if (source.areas && !inArea) continue;
+    const areaName = inArea?.area.name.trim() || t.floorPlan?.name?.trim() || "";
     const base = {
       id: t.id,
       label: (t.label || "").trim() || "Table",
-      areaKey: t.floorPlan?.id || t.floorPlanId || NO_AREA,
+      areaKey: inArea?.area.id || t.floorPlan?.id || t.floorPlanId || NO_AREA,
       areaName: areaName || "Other",
-      seats: t.capacity ?? undefined,
+      seats: inArea?.isTab ? undefined : (t.capacity ?? undefined),
+      ...(inArea?.isTab ? { isTab: true, tabNote: inArea.tabNote } : {}),
     };
     const all = (ordersByTable.get(t.id) ?? []).slice().sort((a, b) => String(a.createdAt ?? "").localeCompare(String(b.createdAt ?? "")));
     // An order with nothing on it yet (NEW, no items) does not make a table busy — as the old
@@ -253,9 +277,19 @@ export function tileWords(t: FloorTile) {
   }
 }
 
-export type FloorArea = { key: string; name: string; count: number };
+export type FloorArea = { key: string; name: string; count: number; tabs?: boolean };
 
-export function floorAreas(tiles: readonly FloorTile[]): FloorArea[] {
+export function floorAreas(tiles: readonly FloorTile[], server?: readonly FloorAreaApi[]): FloorArea[] {
+  if (server) {
+    // The manager's order; a tabs area shows even when no tab is open, so "New tab" has a home.
+    const count = new Map<string, number>();
+    for (const t of tiles) count.set(t.areaKey, (count.get(t.areaKey) ?? 0) + 1);
+    return server
+      .map((a) => ({ key: a.id, name: a.name, count: count.get(a.id) ?? 0, tabs: up(a.kind) === "TABS", order: a.sortOrder ?? 0 }))
+      .filter((a) => a.count > 0 || a.tabs)
+      .sort((a, b) => Number(a.tabs) - Number(b.tabs) || a.order - b.order || compareLabels(a.name, b.name))
+      .map(({ order: _order, ...a }) => a);
+  }
   const map = new Map<string, FloorArea>();
   for (const t of tiles) {
     const a = map.get(t.areaKey) ?? { key: t.areaKey, name: t.areaName, count: 0 };

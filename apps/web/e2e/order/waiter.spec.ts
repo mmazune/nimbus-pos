@@ -9,6 +9,8 @@ import { join } from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { tapTable } from "../t5/floor";
+
 import { api, expectRule10, freeTable, measurePage, ordersOnTable, pinToken, recordNetwork, setupVenue, signInWithPin } from "./fixture";
 
 const PROOF = join(__dirname, "../../../../reports/proof/T3");
@@ -17,7 +19,7 @@ mkdirSync(PROOF, { recursive: true });
 test.use({ viewport: { width: 1280, height: 800 } });
 
 async function openTable(page: Page, tableId: string) {
-  await page.locator(`[data-operational-table-id="${tableId}"]`).first().click();
+  await tapTable(page, tableId, "click");
   await expect(page.locator("[data-order-screen]")).toBeVisible();
   await expect(page.locator("[data-order-menu]")).toBeVisible();
 }
@@ -200,7 +202,7 @@ test("another waiter's table: read only, as drawn", async ({ page }) => {
   await api(graceToken, "POST", `/api/pos/orders/${created.id}/send`, {});
 
   await signInWithPin(page, v.people.waiter.pin, /\/waiter\/floor/);
-  await page.locator(`[data-operational-table-id="${table.id}"]`).first().click();
+  await tapTable(page, table.id, "click");
   const other = page.locator("[data-order-other]");
   await expect(other).toBeVisible();
   await expect(other.getByText("This is Grace A.’s table")).toBeVisible();

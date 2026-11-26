@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ensureFloorFixture } from "./floor-fixture";
-import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot } from "./support";
+import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot, mainItemId } from "./support";
 
 /**
  * T1 phase 4: Receipts and Till for the cashier, by PIN (drawings
@@ -11,7 +11,6 @@ test.skip(process.env.T1_FLOOR_FIXTURE !== "1", "needs the fixture database (T1_
 test.describe.configure({ mode: "serial" });
 
 const measured: Record<string, unknown> = {};
-const MAIN = "c3565ecbf51c58f06221d7d5"; // a seeded demo menu item, 42,000
 let bill = "";
 let paidTotal = "";
 
@@ -24,7 +23,7 @@ test.beforeAll(async () => {
   const table = vip[Date.now() % vip.length];
   const order = await apiCall<{ id: string; orderNumber: string }>("waiter", "/pos/orders", "POST", { serviceType: "DINE_IN", tableId: table.id });
   // 5 × 42,000 = 210,000: room for a refund above the demo org's approval limit (UGX 150,000)
-  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: MAIN, quantity: 5 });
+  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: await mainItemId(), quantity: 5 });
   await apiCall("waiter", `/pos/orders/${order.id}/send`, "POST", {});
   for (const step of ["in-kitchen", "ready", "mark-served"]) await apiCall("supervisor", `/pos/orders/${order.id}/${step}`, "POST", {});
   const full = await apiCall<{ total: string; orderNumber: string }>("waiter", `/pos/orders/${order.id}`);

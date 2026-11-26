@@ -26,3 +26,9 @@ export async function loadOrders<T extends { id: string }>(token: string, branch
   }
   return [...byId.values()];
 }
+
+/** The branch's areas with their tables (T2 `GET /api/areas`). */
+export async function loadAreas(token: string, branchId: string) {
+  const res = await apiRequest<{ areas?: import("./floor-model").FloorAreaApi[] | null }>("/api/areas", { token, branchId });
+  return res.areas ?? [];
+}

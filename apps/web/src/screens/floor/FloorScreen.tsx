@@ -109,7 +109,7 @@ function Grid({ tiles, layout, phone, onOpen }: { tiles: readonly FloorTile[]; l
 export function FloorScreen({ role, source, readAt, viewer, isLoading, error, onRetry, onOpenTable, extraAction }: FloorScreenProps) {
   const wide = useWide();
   const tiles = useMemo(() => (source ? buildFloorTiles(source, viewer) : []), [source, viewer]);
-  const areas = useMemo(() => floorAreas(tiles), [tiles]);
+  const areas = useMemo(() => floorAreas(tiles, source?.areas), [tiles, source?.areas]);
   const mineCount = useMemo(() => tiles.filter((t) => t.mine).length, [tiles]);
   const allAreasOffered = role === "supervisor" && wide.allAreas && areas.length > 1;
 

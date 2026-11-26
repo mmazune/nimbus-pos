@@ -14,7 +14,7 @@ import {
 import { fetchSupervisorReservations } from "@/lib/supervisor/reservations";
 import { FloorScreen } from "@/screens/floor/FloorScreen";
 import { errorWords } from "@/screens/shared/words";
-import { loadAllActiveOrders } from "@/screens/floor/floor-data";
+import { loadAllActiveOrders, loadAreas } from "@/screens/floor/floor-data";
 import {
   normalizeSupervisorFloorTables,
   type SupervisorFloorTableViewModel,
@@ -66,13 +66,14 @@ export function SupervisorFloorScreen() {
     queryFn: async (): Promise<SupervisorFloorData> => {
       const token = accessToken as string;
       const branch = branchId as string;
-      const [floorPlans, tables, activeOrders, reservations] = await Promise.all([
+      const [floorPlans, tables, activeOrders, reservations, areas] = await Promise.all([
         fetchSupervisorFloorPlans(token, branch),
         fetchSupervisorTables(token, branch),
         loadAllActiveOrders<SupervisorFloorData["activeOrders"][number]>(token, branch),
         fetchSupervisorReservations(token, branch, { pageSize: 200 }),
+        loadAreas(token, branch),
       ]);
-      return { floorPlans, tables, activeOrders, reservations: reservations.data || [] };
+      return { floorPlans, tables, activeOrders, reservations: reservations.data || [], areas };
     },
     retry: shouldRetryApiRequest,
     staleTime: 15_000,

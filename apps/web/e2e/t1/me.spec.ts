@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ensureFloorFixture } from "./floor-fixture";
-import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot } from "./support";
+import { apiCall, expectRules, makePins, pageRules, pinSignIn, saveJson, shot, mainItemId } from "./support";
 
 /**
  * T1 phase 3: Me for waiter, cashier and supervisor (drawing Waiter-Me), by PIN.
@@ -11,7 +11,6 @@ test.skip(process.env.T1_FLOOR_FIXTURE !== "1", "needs the fixture database (T1_
 test.describe.configure({ mode: "serial" });
 
 const measured: Record<string, unknown> = {};
-const MAIN = "c3565ecbf51c58f06221d7d5"; // a seeded demo menu item, 42,000
 
 test.beforeAll(async () => {
   await ensureFloorFixture();
@@ -42,7 +41,7 @@ test("waiter: a real order opened, sent and paid moves My day (1280 × 800)", as
   const free = tables.find((t) => t.floorPlan?.name === "VIP");
   if (!free) throw new Error("no VIP table in the fixture");
   const order = await apiCall<{ id: string }>("waiter", "/pos/orders", "POST", { serviceType: "DINE_IN", tableId: free.id });
-  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: MAIN, quantity: 1 });
+  await apiCall("waiter", `/pos/orders/${order.id}/items`, "POST", { menuItemId: await mainItemId(), quantity: 1 });
   await apiCall("waiter", `/pos/orders/${order.id}/send`, "POST", {});
   for (const step of ["in-kitchen", "ready", "mark-served"]) await apiCall("supervisor", `/pos/orders/${order.id}/${step}`, "POST", {});
   const full = await apiCall<{ total: string }>("waiter", `/pos/orders/${order.id}`);
