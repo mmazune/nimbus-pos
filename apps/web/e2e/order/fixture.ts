@@ -179,6 +179,14 @@ export async function resetFixtureTables(token: string) {
       await api(token, "POST", `/api/pos/orders/${o.id}/void`, { reason: "T3 e2e: leftover from an earlier run" });
     }
   }
+  // Bookings an earlier run left on the fixture's tables are cancelled (with a reason, never deleted).
+  const res = await api(token, "GET", "/api/reservations?pageSize=200");
+  const rows: Json[] = Array.isArray(res.json) ? res.json : res.json?.data ?? [];
+  for (const r of rows) {
+    if (!tables.some((t) => t.id === r.tableId)) continue;
+    if (["PENDING", "CONFIRMED"].includes(r.status)) await api(token, "PATCH", `/api/reservations/${r.id}/cancel`, { reason: "T3 e2e: leftover booking" });
+    if (r.status === "SEATED") await api(token, "POST", `/api/reservations/${r.id}/complete`, {});
+  }
   await freeEmptyFixtureTables(token);
 }
 

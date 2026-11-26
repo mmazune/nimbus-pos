@@ -35,7 +35,7 @@ Grades:
   - Table status (Free, In use, Reserved, Cleaning);
   - a chooser when a table holds two orders;
   - the cash-needs-an-open-till rule.
-- Cashier Find bill opens a takeaway by id in the same screen (`actions.spec.ts`) [live]. Supervisor Find order routes the same way [code].
+- Cashier Find bill opens a takeaway by id in the same screen (`actions.spec.ts`) [live]. Supervisor Find order opens an order in the same screen (`kept.spec.ts`) [live]. The reservation card seats the booking and the menu opens; the shift banner blocks adding (`kept.spec.ts`) [live].
 
 ### 2. A free table tapped and left creates nothing on the server [live]
 `waiter.spec.ts` records each call as method, path and status only. In `reports/proof/T3/free-table-network.json`, `writes` is an empty list, and the table's order count is unchanged.
@@ -52,7 +52,7 @@ The order's lines carry two distinct `sentAt` values (`two-sends-network.json`).
 - "col" finds Cola 300 ml, and "bs" finds Blended Scotch (also covered by the unit tests in `data.spec.ts`).
 - Quantity first: "How many 2", then the item, adds two.
 - Same again re-adds the drinks of the last round as unsent lines (UGX 98,000 becomes 128,000).
-- Digit keys also arm the quantity [code]; no test drives them.
+- A keyboard digit arms the quantity too: "3", then Chips, adds three (`kept.spec.ts`) [live].
 
 ### 5. A supervisor voids one sent line with a reason and "was it made?"; a waiter cannot [live]
 - In `evening.spec.ts`, the supervisor chooses "Made, it is waste" and "Guest complaint"; the bill goes from 98,000 to 74,000.
@@ -119,12 +119,12 @@ Saved in `reports/proof/T3/gates.txt`, run on the final code after the last chan
 | `next build` | exit 0 (the build every final proof ran on) |
 | `check:ui` | green |
 | `check:event` | green |
-| `e2e/order` on that build | **26 passed** |
+| `e2e/order` on that build | **30 passed** |
 | Evening, phone (390) and taps | three of three in a row |
 | Fixture on a fresh database | two of two (`fixture-fresh-db.txt`) |
 
 - The fresh-database check ran only migrations, seed and demo import, plus a second API on :4112. The fixture builds its menu, tables, people, shifts and tills through the API, and its second run is idempotent: one Grace, six tables, seven items.
-- The web package has no unit runner (its `test` script is a stub). The data layer's 11 unit tests run in `e2e/order/data.spec.ts`, inside the 26.
+- The web package has no unit runner (its `test` script is a stub). The data layer's 11 unit tests run in `e2e/order/data.spec.ts`, inside the 30.
 - The API is untouched, so its gates are E1's (`reports/E1_REPORT.md`).
 
 ## Look review [emulation, reviewer]
@@ -203,7 +203,6 @@ The review was done before the closing fixes (the till rule, Table status, the "
   - assertion scripts: `cashier-c1`, `cashier-c2`, `cashier-c3`, `floor`, `prompt3a`, `prompt3b1`, `prompt3b2`, `prompt3b3a` and `prompt3b3b`.
 - **For the sweep** [code]: now unreferenced, but left in place because they are not T3's: `CashierSelectedTablePanel` and ten `Supervisor*Dialog` files in `components/supervisor/floor/`. `CashierBillResolutionPanel` and `CashierSettlementWorkspace` are still imported by the hidden cashier queue route.
 - **T1 (floor):** the order screen is one component, `screens/order/OrderScreen.tsx`. It takes `{ role, tableId | null, tableLabel, orderId?, onClose, onChanged, reservation?, orderingBlocked?, frame }`; mount it from the new floor the same way.
-- The reservation card and the shift banner were kept from the old screens but are not driven by any test [code].
 
 ## Process slip, disclosed
 In phase 6 the first production build ran while my own dev server was still alive in the same folder, against rule 19: killing the recorded `npx` PID did not stop its `next-server` child. I stopped both PIDs and rebuilt. Every final proof in this report comes from the **last** build, made after the last code change, with no dev server running.
@@ -218,6 +217,11 @@ The advisor's closing list was worked through:
 - the fixture proven on a fresh database;
 - the three runs repeated on the final build;
 - the wording fixed (bill request; "as the till recorded it" became "as recorded on the payment").
+
+## Owner questions, answered with the default (rule 1)
+- **Where a tap count starts:** from the waiter's Floor, including the table tap (A2 §3.8). Measured that way, every task is four or under.
+- **The laptop header:** the manager keeps the shared top bar (locked decision D-MGRTOPNAV); the order screen sits under it with the drawing's breadcrumb, Open pill and Move table / Split bill / Discount / More. The drawing's simpler bar would be a shell change, which is T1's.
+Both are recorded in `T3_PROGRESS.md` "Decisions taken"; the owner can reverse either.
 
 ## Way back
 Revert the branch. There is no API, schema, seed or migration change, and the deleted web files come back with the revert.

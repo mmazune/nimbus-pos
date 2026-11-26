@@ -40,6 +40,7 @@ Track T3 — the one order screen. Branch `t3/order-screen`. Rules: `docs/prompt
 15. With two orders on one table, the signed-in person's own opens first and a banner offers the other.
 16. Proofs come from a production build (`next build` + `next start`), not the dev server.
 17. Cash needs the taker's own open till (`GET /api/tills/active`), as the old cashier screen required; card and mobile money do not.
+19. The laptop header: the manager keeps the shared top bar (D-MGRTOPNAV, shell not T3's); the order screen sits under it.
 18. Tap counts are measured from the Floor including the table tap (A2 §3.8). The fixture's Popular groups hold the lager and the house Scotch (Drinks) and the burger ("Popular food", because group names are unique per branch); a single malt stays in Whisky.
 
 ## Left out (and why)
