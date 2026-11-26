@@ -1,0 +1,3643 @@
+{
+ "version": "T4 2026-11-26",
+ "source": {
+  "current": "packages/db/prisma/seed.ts as seeded on the E1 branch (19e1eee), read from a seeded throwaway database",
+  "rules": [
+   "docs/direction/01-decisions.md R14",
+   "docs/direction/07-scenarios-and-rules.md",
+   "docs/direction/03-stock-stores-availability.md section 11"
+  ]
+ },
+ "roles": [
+  "Owner",
+  "Manager",
+  "Supervisor",
+  "Cashier",
+  "Waiter",
+  "Bartender",
+  "Chef",
+  "Stock Manager",
+  "Accountant",
+  "Procurement",
+  "Event Manager"
+ ],
+ "notes": [
+  "current = roles holding the key in the seeded database today; proposed = the ruling for a later seed; a key absent from current and present in proposed needs a new permission row",
+  "Keys for features not built yet (E2 sold out, E6 take out of stock, E7 store requests, E9 PIN approvals, E13) do not exist yet and are listed in 10-people-and-access.md, not here"
+ ],
+ "keys": {
+  "accounting:ap:bill:approve": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Approve a vendor bill for payment — POST /api/accounting/ap/bills/:id/approve"
+  },
+  "accounting:ap:bill:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read AP suppliers, vendor bills, AP payments and the AP aging report — GET /api/accounting/ap/{suppliers,suppliers/:id,bills,bills/:id,payments,aging}"
+  },
+  "accounting:ap:bill:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create AP suppliers and vendor bills — POST /api/accounting/ap/{suppliers,bills}"
+  },
+  "accounting:ap:credit-note:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read AP (supplier) credit notes — GET /api/accounting/ap/credit-notes"
+  },
+  "accounting:ap:credit-note:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Raise an AP (supplier) credit note — POST /api/accounting/ap/credit-notes"
+  },
+  "accounting:ap:payment:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Record a payment against a vendor bill — POST /api/accounting/ap/payments"
+  },
+  "accounting:ap:recurring:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read recurring vendor-bill profiles — GET /api/accounting/ap/recurring-profiles"
+  },
+  "accounting:ap:recurring:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update a recurring vendor-bill profile and generate a bill from it — POST/PATCH /api/accounting/ap/recurring-profiles*"
+  },
+  "accounting:ap:reminder:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read AP payment reminders — GET /api/accounting/ap/reminders"
+  },
+  "accounting:ap:reminder:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate or dismiss AP payment reminders — POST /api/accounting/ap/reminders/generate, POST /api/accounting/ap/reminders/:id/dismiss"
+  },
+  "accounting:ar:account:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read AR customer accounts — GET /api/accounting/ar/accounts, /api/accounting/ar/accounts/:id"
+  },
+  "accounting:ar:account:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create an AR customer account — POST /api/accounting/ar/accounts"
+  },
+  "accounting:ar:aging:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read the AR aging report — GET /api/accounting/ar/aging"
+  },
+  "accounting:ar:credit-note:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read AR (customer) credit notes — GET /api/accounting/ar/credit-notes"
+  },
+  "accounting:ar:credit-note:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Raise an AR (customer) credit note — POST /api/accounting/ar/credit-notes"
+  },
+  "accounting:ar:invoice:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read AR invoices — GET /api/accounting/ar/invoices, /api/accounting/ar/invoices/:id"
+  },
+  "accounting:ar:invoice:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Raise an AR invoice — POST /api/accounting/ar/invoices"
+  },
+  "accounting:ar:receipt:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Record a customer receipt against an AR invoice — POST /api/accounting/ar/receipts"
+  },
+  "alerts:channel:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List alert channels (EMAIL / SMS / SLACK)"
+  },
+  "alerts:channel:write": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create or update alert channels",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "alerts:delivery:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List alert delivery attempts and outcomes"
+  },
+  "alerts:delivery:retry": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Manually retry a failed alert delivery"
+  },
+  "alerts:digest:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List scheduled digests and their last run status"
+  },
+  "alerts:digest:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create, update, or run scheduled digests"
+  },
+  "alerts:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List alert rules, channels, and recent deliveries"
+  },
+  "alerts:rule:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create or update alert rules (and enable/disable)"
+  },
+  "alerts:test": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Dispatch a manual test alert through configured channels"
+  },
+  "approvals:decide": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Approve or reject items in the unified approvals inbox (delegates to underlying domain service)"
+  },
+  "approvals:read": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read the unified cross-domain approvals inbox"
+  },
+  "audit:read": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read the global audit timeline (cross-domain audit log read API)"
+  },
+  "auth:credential-reset:read": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read whether a credential-reset token is currently pending for a staff member (never the token value)"
+  },
+  "auth:credential-reset:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Trigger a one-time credential-reset token for a password-login staff member; the token is never returned to the caller"
+  },
+  "auth:quick-pin:read": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read Quick PIN status for a frontline staff member (no PIN value returned)"
+  },
+  "auth:quick-pin:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Reset / regenerate / enable / disable Quick PIN for a frontline staff member"
+  },
+  "billing:pesapal:checkout": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue's own Nimbus subscription. Owner, and Manager under R14.",
+   "endpoints": [
+    "POST /api/billing/pesapal/checkout-session",
+    "POST /api/billing/pesapal/reconcile-status"
+   ]
+  },
+  "billing:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue's own Nimbus subscription. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/billing",
+    "GET /api/billing/plans",
+    "GET /api/dev/admins"
+   ]
+  },
+  "billing:subscription:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue's own Nimbus subscription. Owner, and Manager under R14.",
+   "endpoints": [
+    "PATCH /api/billing/subscription"
+   ]
+  },
+  "dev:api-key:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Developer portal: API keys and webhooks give outside systems the venue's data. Owner, and Manager under R14. Unblocks the bg7 HMS suite, which creates its key with dev:api-key:write.",
+   "endpoints": [
+    "GET /api/dev/api-keys"
+   ]
+  },
+  "dev:api-key:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Developer portal: API keys and webhooks give outside systems the venue's data. Owner, and Manager under R14. Unblocks the bg7 HMS suite, which creates its key with dev:api-key:write.",
+   "endpoints": [
+    "POST /api/dev/api-keys",
+    "POST /api/dev/api-keys/:id/revoke"
+   ]
+  },
+  "dev:usage:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Developer portal: API keys and webhooks give outside systems the venue's data. Owner, and Manager under R14. Unblocks the bg7 HMS suite, which creates its key with dev:api-key:write.",
+   "endpoints": [
+    "GET /api/dev/usage"
+   ]
+  },
+  "dev:webhook:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Developer portal: API keys and webhooks give outside systems the venue's data. Owner, and Manager under R14. Unblocks the bg7 HMS suite, which creates its key with dev:api-key:write.",
+   "endpoints": [
+    "GET /api/dev/webhooks"
+   ]
+  },
+  "dev:webhook:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Developer portal: API keys and webhooks give outside systems the venue's data. Owner, and Manager under R14. Unblocks the bg7 HMS suite, which creates its key with dev:api-key:write.",
+   "endpoints": [
+    "POST /api/dev/webhooks",
+    "PATCH /api/dev/webhooks/:id"
+   ]
+  },
+  "devices:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read device registry (list / detail / history) and printer route configuration"
+  },
+  "devices:routes:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Upsert / disable a printer route — POST /api/devices/printers/routes"
+  },
+  "devices:status:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Change a device status (ACTIVE / INACTIVE / DISABLED / RETIRED) — PATCH /api/devices/:id/status"
+  },
+  "devices:terminals:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Pair / unpair a payment-terminal stub — POST /api/devices/terminals/pair, PATCH /api/devices/terminals/:id/unpair"
+  },
+  "devices:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Activate (register) a new operational device — POST /api/devices/activate or /api/devices/kds/register"
+  },
+  "exports:download": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Download an export artefact via the unified facade — GET /api/exports/:id/download"
+  },
+  "exports:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List/read export artefacts via the unified facade — GET /api/exports, GET /api/exports/:id"
+  },
+  "exports:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Request a new export via the unified facade — POST /api/exports (delegates to underlying domain generator)"
+  },
+  "finance:budget:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read budgets and budget-vs-actual lines — GET /api/finance/budgets, /api/finance/budgets/:id"
+  },
+  "finance:budget:update-actuals": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Recompute a budget's actuals from posted data — POST /api/finance/budgets/:id/update-actuals"
+  },
+  "finance:budget:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create a budget — POST /api/finance/budgets"
+  },
+  "finance:demand-calendar:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read demand-calendar entries — GET /api/finance/demand-calendar, /api/finance/demand-calendar/:id"
+  },
+  "finance:demand-calendar:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update/delete a demand-calendar entry — POST/PATCH/DELETE /api/finance/demand-calendar*"
+  },
+  "flags:audit:read": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read the control-plane audit trail",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "flags:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and inspect feature flags"
+  },
+  "flags:write": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create, update, enable/disable feature flags",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "franchise:analytics:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "Consolidated finance across branches: Owner, Manager (R14), and Accountant (accounting).",
+   "endpoints": [
+    "GET /api/franchise/consolidated-finance",
+    "GET /api/franchise/financial-comparison",
+    "GET /api/franchise/drilldown"
+   ]
+  },
+  "franchise:budget:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch view. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/franchise/budgets"
+   ]
+  },
+  "franchise:consolidation:generate": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "Consolidated finance across branches: Owner, Manager (R14), and Accountant (accounting).",
+   "endpoints": [
+    "POST /api/franchise/consolidated-finance/generate"
+   ]
+  },
+  "franchise:digest:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch view. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/franchise/digests"
+   ]
+  },
+  "franchise:digest:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch writes. Owner, and Manager under R14.",
+   "endpoints": [
+    "POST /api/franchise/digests",
+    "PATCH /api/franchise/digests/:id"
+   ]
+  },
+  "franchise:forecast:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read the finance forecast — GET /api/finance/forecast. Named for the franchise family but referenced ONLY by the budget controller"
+  },
+  "franchise:overview:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch view. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/franchise/overview",
+    "GET /api/franchise/procurement-pressure"
+   ]
+  },
+  "franchise:ranking:generate-deep": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch writes. Owner, and Manager under R14.",
+   "endpoints": [
+    "POST /api/franchise/rankings/generate-deep"
+   ]
+  },
+  "franchise:ranking:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch view. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/franchise/rankings",
+    "POST /api/franchise/rankings/generate"
+   ]
+  },
+  "franchise:scorecard:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch view. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/franchise/scorecards",
+    "POST /api/franchise/scorecards/generate"
+   ]
+  },
+  "franchise:transfer:approve": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch writes. Owner, and Manager under R14.",
+   "endpoints": [
+    "PATCH /api/franchise/transfers/:id/status"
+   ]
+  },
+  "franchise:transfer:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch view. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/franchise/transfers",
+    "GET /api/franchise/transfers/:id"
+   ]
+  },
+  "franchise:transfer:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch writes. Owner, and Manager under R14.",
+   "endpoints": [
+    "POST /api/franchise/transfers"
+   ]
+  },
+  "franchise:waste-benchmark:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "Multi-branch view. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/franchise/waste-benchmarks",
+    "POST /api/franchise/waste-benchmarks/generate"
+   ]
+  },
+  "hms:read:*": {
+   "current": [],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read everything via the HMS integration façade — /api/hms/* — granted automatically to any active API key",
+   "endpoints": [
+    "GET /api/hms/whoami",
+    "GET /api/hms/access-logs",
+    "GET /api/hms/organization",
+    "GET /api/hms/branches",
+    "GET /api/hms/orders",
+    "GET /api/hms/orders/:id",
+    "GET /api/hms/payments",
+    "GET /api/hms/refunds",
+    "GET /api/hms/sales/summary",
+    "GET /api/hms/reservations",
+    "GET /api/hms/events",
+    "GET /api/hms/event-bookings",
+    "GET /api/hms/menu",
+    "GET /api/hms/inventory",
+    "GET /api/hms/shifts",
+    "GET /api/hms/accounting/accounts",
+    "GET /api/hms/accounting/invoices",
+    "GET /api/hms/accounting/vendor-bills"
+   ]
+  },
+  "hr:frontline-staff:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "One-call frontline staff onboarding (User+Membership+Employee+QuickPIN)"
+  },
+  "idempotency:inspect": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Inspect idempotency key records (debug)",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "identity:access-matrix:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View access matrix / permission test"
+  },
+  "identity:access-matrix:write": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Modify access matrix",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "identity:session:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Stock Manager",
+    "Accountant",
+    "Procurement",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "View sessions"
+  },
+  "identity:session:revoke": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Revoke sessions"
+  },
+  "identity:user:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Stock Manager",
+    "Accountant",
+    "Procurement",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read user profiles"
+  },
+  "identity:user:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update users"
+  },
+  "maintenance:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and inspect maintenance windows"
+  },
+  "maintenance:write": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create, update, activate or cancel maintenance windows",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "merchant:events:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue's payment-provider link, public page and public events. Owner, and Manager under R14.",
+   "endpoints": [
+    "POST /api/merchant/events",
+    "PATCH /api/merchant/events/:id",
+    "PATCH /api/merchant/events/:id/publish",
+    "PATCH /api/merchant/events/:id/capacity",
+    "PATCH /api/merchant/events/:id/pricing"
+   ]
+  },
+  "merchant:payment:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "Which payment provider the venue is connected to: Owner, Manager, Accountant (read).",
+   "endpoints": [
+    "GET /api/merchant/payments/status"
+   ]
+  },
+  "merchant:payment:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue's payment-provider link, public page and public events. Owner, and Manager under R14.",
+   "endpoints": [
+    "POST /api/merchant/payments/connect",
+    "PATCH /api/merchant/payments/config",
+    "POST /api/merchant/payments/pesapal/connect",
+    "PATCH /api/merchant/payments/pesapal/config"
+   ]
+  },
+  "merchant:public-profile:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue's payment-provider link, public page and public events. Owner, and Manager under R14.",
+   "endpoints": [
+    "PATCH /api/merchant/public-profile",
+    "PATCH /api/merchant/public-profile/publish",
+    "PATCH /api/merchant/booking-settings"
+   ]
+  },
+  "onboarding:invitation:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Resend or revoke org invitations"
+  },
+  "onboarding:read": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read client-onboarding wizard progress/status"
+  },
+  "onboarding:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create org/branch during onboarding; update business profile/settings; create invitations"
+  },
+  "ops:customers:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "GET /api/ops/customers",
+    "GET /api/ops/customers/:orgId"
+   ]
+  },
+  "ops:merchant-payments:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "GET /api/ops/merchant-payments/status"
+   ]
+  },
+  "ops:onboarding:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "GET /api/ops/onboarding/pipeline"
+   ]
+  },
+  "ops:plans:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "GET /api/ops/plans",
+    "GET /api/ops/plans/:id/subscribers"
+   ]
+  },
+  "ops:plans:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "POST /api/ops/plans",
+    "PATCH /api/ops/plans/:id",
+    "PATCH /api/ops/plans/:id/status"
+   ]
+  },
+  "ops:subscriptions:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "GET /api/ops/subscriptions/due",
+    "GET /api/ops/subscriptions/grace-period"
+   ]
+  },
+  "ops:support:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "GET /api/ops/support/sessions"
+   ]
+  },
+  "ops:support:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [],
+   "ruling": "Nimbus's own operator portal across ALL customers. No venue role may hold it: granting it to a venue Manager would show every other customer. Remove it from the role permissions model and gate these routes by the platform-operator guard (common/guards/platform-access.guard.ts) instead (track T2).",
+   "endpoints": [
+    "POST /api/ops/support/sessions",
+    "PATCH /api/ops/support/sessions/:id/close"
+   ]
+  },
+  "owner:live:read": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read the real-time owner live operational feed",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "pos:accounting:accounts:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create new accounts in COA"
+  },
+  "pos:accounting:accounts:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view chart of accounts"
+  },
+  "pos:accounting:bank-accounts:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Register a bank account — POST /api/accounting/bank-accounts"
+  },
+  "pos:accounting:bank-accounts:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read registered bank accounts — GET /api/accounting/bank-accounts"
+  },
+  "pos:accounting:bank-entry:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Record a manual bank entry — POST /api/accounting/manual-bank-entries"
+  },
+  "pos:accounting:bank-statements:import": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Import a bank statement — POST /api/accounting/bank-statements/import"
+  },
+  "pos:accounting:bank-statements:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read imported bank statements and their lines — GET /api/accounting/bank-statements, /api/accounting/bank-statements/:id"
+  },
+  "pos:accounting:cost-centers:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create cost centers"
+  },
+  "pos:accounting:cost-centers:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view cost centers"
+  },
+  "pos:accounting:journals:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create manual journal entries"
+  },
+  "pos:accounting:journals:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view journal entries"
+  },
+  "pos:accounting:journals:reverse": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Reverse posted journal entries"
+  },
+  "pos:accounting:period-close-runs:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read period-close runs — GET /api/accounting/period-close-runs"
+  },
+  "pos:accounting:periods:close": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Close a fiscal period — PATCH /api/accounting/periods/:id/close"
+  },
+  "pos:accounting:periods:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create fiscal periods"
+  },
+  "pos:accounting:periods:lock": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Lock a closed fiscal period against further posting — PATCH /api/accounting/periods/:id/lock"
+  },
+  "pos:accounting:periods:open": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Open a draft fiscal period"
+  },
+  "pos:accounting:periods:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view fiscal periods"
+  },
+  "pos:accounting:posting-errors:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view posting errors"
+  },
+  "pos:accounting:posting-errors:resolve": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Resolve or dismiss an open posting error — PATCH /api/accounting/posting-errors/:id/{resolve,dismiss}"
+  },
+  "pos:accounting:posting-runs:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List posting runs"
+  },
+  "pos:accounting:posting-source-maps:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List posting source maps"
+  },
+  "pos:accounting:posting-source-maps:update": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update posting source maps"
+  },
+  "pos:accounting:posting:replay": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Replay posting from source documents"
+  },
+  "pos:accounting:reconciliation:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Open a bank reconciliation and complete it — POST /api/accounting/reconciliation, POST /api/accounting/reconciliation/:id/complete"
+  },
+  "pos:accounting:reconciliation:match": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Match or skip a bank statement line inside a reconciliation — PATCH /api/accounting/reconciliation/:id/{match,skip}"
+  },
+  "pos:accounting:reconciliation:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read bank reconciliations — GET /api/accounting/reconciliation, /api/accounting/reconciliation/:id"
+  },
+  "pos:accounting:tax-config:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View tax ledger configuration"
+  },
+  "pos:accounting:tax-config:update": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update tax ledger configuration"
+  },
+  "pos:analytics:anomalies:acknowledge": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Acknowledge or resolve anomaly events"
+  },
+  "pos:analytics:anomalies:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read anomaly events and history"
+  },
+  "pos:analytics:anomalies:recalculate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Trigger anomaly recalculation for a branch"
+  },
+  "pos:analytics:anomaly-rules:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create anomaly detection rules"
+  },
+  "pos:analytics:anomaly-rules:update": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update anomaly detection rules"
+  },
+  "pos:analytics:risk-dashboard:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View staff risk dashboard and snapshots"
+  },
+  "pos:analytics:thresholds:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read risk threshold configuration"
+  },
+  "pos:analytics:thresholds:update": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update risk threshold configuration"
+  },
+  "pos:cost:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read recipe cost breakdowns",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "03 section 11: set a cost, see margin: manager (see) and accountant (yes); not chef or supervisor."
+  },
+  "pos:dash:kpi:refresh": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Trigger a manual KPI snapshot refresh"
+  },
+  "pos:dash:manager:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read manager-level dashboard"
+  },
+  "pos:dash:owner:read": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read owner-level dashboard",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "pos:dash:stream:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Subscribe to live metric SSE stream"
+  },
+  "pos:dash:today-summary:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read today summary + payment mix + open orders + low stock"
+  },
+  "pos:discount:approve": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Approve or reject pending discounts"
+  },
+  "pos:discount:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read discount records"
+  },
+  "pos:discount:request": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Request a discount on an order"
+  },
+  "pos:documents:delete": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Soft-delete documents"
+  },
+  "pos:documents:download": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Download document files"
+  },
+  "pos:documents:link": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Link documents to business records"
+  },
+  "pos:documents:metadata:update": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update document metadata"
+  },
+  "pos:documents:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view documents"
+  },
+  "pos:documents:storage-config:read": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View storage provider configuration"
+  },
+  "pos:documents:storage-config:update": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update storage provider configuration",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "pos:documents:upload": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Upload documents and files"
+  },
+  "pos:event:booking:cancel": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Cancel an event booking"
+  },
+  "pos:event:booking:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create a booking for an event"
+  },
+  "pos:event:booking:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read event bookings"
+  },
+  "pos:event:checkin": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Check in a ticket at an event"
+  },
+  "pos:event:close": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Close an open event"
+  },
+  "pos:event:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create a new event"
+  },
+  "pos:event:portal:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Access event portal data"
+  },
+  "pos:event:publish": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Publish a draft event"
+  },
+  "pos:event:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read events and event details"
+  },
+  "pos:event:ticket:issue": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Issue tickets for a booking"
+  },
+  "pos:event:ticket:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Read event tickets"
+  },
+  "pos:event:update": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update event details"
+  },
+  "pos:feedback:acknowledge": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Acknowledge feedback entries"
+  },
+  "pos:feedback:analytics:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "View feedback analytics and trends"
+  },
+  "pos:feedback:nps:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View NPS summary and analytics"
+  },
+  "pos:feedback:public:token:read": {
+   "current": [],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Public: look up feedback token (no auth)",
+   "ruling": "No role: it names a public, no-auth lookup (its own description), not a right a person holds."
+  },
+  "pos:feedback:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Accountant",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view customer feedback"
+  },
+  "pos:feedback:request:cancel": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Cancel pending feedback requests"
+  },
+  "pos:feedback:request:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create feedback requests (QR / SMS / email)"
+  },
+  "pos:feedback:resolve": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Resolve feedback entries"
+  },
+  "pos:feedback:tag": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Add tags to feedback entries"
+  },
+  "pos:floor:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read floor plans"
+  },
+  "pos:floor:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update floor plans"
+  },
+  "pos:hr:attendance-policy:create": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create attendance policies",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "pos:hr:attendance-policy:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view attendance policies"
+  },
+  "pos:hr:attendance-policy:update": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update attendance policies",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "pos:hr:attendance:clock": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Clock in/out attendance"
+  },
+  "pos:hr:attendance:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view attendance records"
+  },
+  "pos:hr:compensation:create": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create compensation profiles",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read. (Owner-only today; owner to confirm, see the R14 section.)"
+  },
+  "pos:hr:compensation:read": {
+   "current": [
+    "Owner",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view compensation profiles"
+  },
+  "pos:hr:contracts:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create employment contracts"
+  },
+  "pos:hr:contracts:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view employment contracts"
+  },
+  "pos:hr:employees:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create employee records"
+  },
+  "pos:hr:employees:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view employees"
+  },
+  "pos:hr:employees:update": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update employee records"
+  },
+  "pos:hr:leave:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create leave requests"
+  },
+  "pos:hr:leave:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view leave requests"
+  },
+  "pos:hr:leave:review": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Approve or reject leave requests"
+  },
+  "pos:hr:positions:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create positions"
+  },
+  "pos:hr:positions:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view positions"
+  },
+  "pos:hr:shift-swaps:approve": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Approve or reject shift swap requests"
+  },
+  "pos:hr:shift-swaps:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create shift swap requests"
+  },
+  "pos:hr:shift-swaps:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view shift swap requests"
+  },
+  "pos:inventory:adjust": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Stock Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create stock adjustments"
+  },
+  "pos:inventory:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Stock Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read inventory levels and stock batches"
+  },
+  "pos:inventory:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Stock Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update stock batches",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Stock Manager"
+   ],
+   "ruling": "03 section 11: issue, receive, count and set minimums: store keeper and manager; not supervisor."
+  },
+  "pos:kds:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read KDS queue and tickets"
+  },
+  "pos:kds:sla:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update KDS SLA configuration"
+  },
+  "pos:kds:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Mark ready / recall KDS tickets"
+  },
+  "pos:menu:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read menu categories and items"
+  },
+  "pos:menu:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update menu categories and items"
+  },
+  "pos:order:item:void": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Void one sent line of an open POS order — POST /api/orders/:orderId/items/:itemId/void (E1)"
+  },
+  "pos:order:merge": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Merge two open POS orders — POST /api/pos/orders/merge. Source becomes VOIDED with mergedIntoOrderId pointing at the target"
+  },
+  "pos:order:move-items": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Move selected items between two open POS orders — POST /api/pos/orders/:id/move-items"
+  },
+  "pos:order:split": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Split an open POS order — covers POST /api/pos/orders/:id/split-bill (non-physical bill split) and POST /api/pos/orders/:id/split-items (physical split into a child order)"
+  },
+  "pos:order:transfer": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Transfer an open POS order to another table or server — POST /api/pos/orders/:id/transfer-table or /transfer-server"
+  },
+  "pos:orders:close": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Close orders",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
+  },
+  "pos:orders:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read orders"
+  },
+  "pos:orders:void": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Void orders"
+  },
+  "pos:orders:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update orders and items"
+  },
+  "pos:payment:cancel": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Cancel pending MOMO payment intents",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
+  },
+  "pos:payment:close": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Close orders with payment",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
+  },
+  "pos:payment:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Create payment records on orders",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
+  },
+  "pos:payment:intent": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/cancel MOMO payment intents",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
+  },
+  "pos:payment:manual-reference": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Record manual reference payments (offline fallback)",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Cashier"
+   ],
+   "ruling": "Payment is taken by cashier and manager: R5/R9 give a waiter Send and Print bill; 01-decisions waiting point 2 (a supervisor takes payment) defaults to no. Supervisor keeps pos:payment:override (07: change a payment method by supervisor PIN before the count)."
+  },
+  "pos:payment:override": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Override payment verification status"
+  },
+  "pos:payment:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read payment and intent records"
+  },
+  "pos:payroll:adjustments:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create payroll adjustments",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: payroll is finance; Supervisor never holds it."
+  },
+  "pos:payroll:adjustments:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view payroll adjustments",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "R14: payroll is finance; Supervisor never holds it."
+  },
+  "pos:payroll:components:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create pay components"
+  },
+  "pos:payroll:components:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view pay components",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "R14: payroll is finance; Supervisor never holds it."
+  },
+  "pos:payroll:runs:approve": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Approve a pay run"
+  },
+  "pos:payroll:runs:build": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Build a new pay run"
+  },
+  "pos:payroll:runs:pay": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Mark a pay run as paid",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "pos:payroll:runs:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view pay runs",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "R14: payroll is finance; Supervisor never holds it."
+  },
+  "pos:payroll:slips:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view pay slips",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "ruling": "R14 and privacy: the list is branch-wide (payroll.service.ts listPaySlips), so a waiter reads everyone's pay (probe A1, live). Frontline roles get an own-payslip route later instead (T2)."
+  },
+  "pos:receipt:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read a normalized receipt for a closed/voided order plus its print/send history"
+  },
+  "pos:receipt:reprint": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Reprint a receipt; records a RECEIPT_REPRINTED audit row"
+  },
+  "pos:receipt:send": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Send a receipt via supported delivery channels (records PENDING delivery; no live adapter yet)"
+  },
+  "pos:recipe:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read recipes and ingredient lists",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Bartender",
+    "Chef",
+    "Accountant"
+   ],
+   "ruling": "03 section 11: recipes: chef and bartender see, accountant sees, manager yes."
+  },
+  "pos:recipe:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update recipes",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "03 section 11: recipes are written by the manager only."
+  },
+  "pos:refund:approve": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Approve pending high-value refunds"
+  },
+  "pos:refund:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Request a refund on a closed order",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "ruling": "07 Money: refund after close: same day supervisor, later manager. Not waiter or cashier."
+  },
+  "pos:refund:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read refund records"
+  },
+  "pos:reports:anomaly-summary:generate": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate anomaly summary report"
+  },
+  "pos:reports:cash-movements:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate cash movements report"
+  },
+  "pos:reports:cash-variance:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate cash variance report"
+  },
+  "pos:reports:catalog:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read the report catalog (implemented / pending)"
+  },
+  "pos:reports:daily-sales:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate daily sales report"
+  },
+  "pos:reports:discounts:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate discounts summary report"
+  },
+  "pos:reports:event-summary:generate": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Generate event summary report"
+  },
+  "pos:reports:events:generate": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate events summary report (extended)"
+  },
+  "pos:reports:exports:download": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Download export artifacts"
+  },
+  "pos:reports:exports:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create export artifacts from reports"
+  },
+  "pos:reports:history:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view report run history"
+  },
+  "pos:reports:low-stock:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate low stock / reorder report"
+  },
+  "pos:reports:payment-mix:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate payment mix report"
+  },
+  "pos:reports:refunds:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate refunds summary report"
+  },
+  "pos:reports:reservation-summary:generate": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Generate reservation summary report"
+  },
+  "pos:reports:reservations:generate": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate reservations summary report (extended)"
+  },
+  "pos:reports:sales-by-category:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate sales by category / PMIX report"
+  },
+  "pos:reports:sales-by-hour:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate sales by hour / daypart report"
+  },
+  "pos:reports:shift-end:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate shift-end report"
+  },
+  "pos:reports:staff-operations:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate staff / operator operations report"
+  },
+  "pos:reports:stock-variance:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate stock variance report"
+  },
+  "pos:reports:top-items:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate top items report"
+  },
+  "pos:reports:voids:generate": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate voids summary report"
+  },
+  "pos:reports:wastage:generate": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate wastage / shrinkage report"
+  },
+  "pos:reservation:cancel": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Cancel a reservation"
+  },
+  "pos:reservation:confirm": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Confirm a pending reservation"
+  },
+  "pos:reservation:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create a new reservation"
+  },
+  "pos:reservation:deposit:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Accountant",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read deposits for a reservation"
+  },
+  "pos:reservation:deposit:record": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Record a deposit for a reservation"
+  },
+  "pos:reservation:no-show": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Mark a reservation as no-show"
+  },
+  "pos:reservation:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Accountant",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read reservations and events"
+  },
+  "pos:reservation:seat": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Seat a confirmed reservation"
+  },
+  "pos:reservation:table:assign": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Assign a table to a reservation"
+  },
+  "pos:reservation:update": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update reservation details"
+  },
+  "pos:shift:close": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Close an active shift",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Stock Manager"
+   ],
+   "ruling": "07 Opening: staff start work with PIN, then 'Start my shift'. Chef, bartender and store keeper cannot today."
+  },
+  "pos:shift:open": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Open a new shift",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Stock Manager"
+   ],
+   "ruling": "07 Opening: staff start work with PIN, then 'Start my shift'. Chef, bartender and store keeper cannot today."
+  },
+  "pos:shift:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read shift records and summaries"
+  },
+  "pos:staff:awards:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create staff awards"
+  },
+  "pos:staff:awards:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View staff awards"
+  },
+  "pos:staff:insights:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View staff insight snapshots"
+  },
+  "pos:staff:promotions:decide": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Accept or reject promotion suggestions"
+  },
+  "pos:staff:promotions:generate": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Generate promotion suggestions"
+  },
+  "pos:staff:weights:read": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "View staff insight scoring weights"
+  },
+  "pos:staff:weights:update": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Update staff insight scoring weights",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "pos:table:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read tables"
+  },
+  "pos:table:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update tables"
+  },
+  "pos:tax:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read tax categories"
+  },
+  "pos:tax:write": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update tax categories"
+  },
+  "pos:till:open": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Open a till session",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "ruling": "R5/R9: a waiter sends and prints the bill; payment, refunds and the till belong to cashier, supervisor (refund same day) and manager."
+  },
+  "pos:till:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read till sessions and summaries"
+  },
+  "pos:till:reconcile": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Reconcile and close a till session",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "ruling": "R5/R9: a waiter sends and prints the bill; payment, refunds and the till belong to cashier, supervisor (refund same day) and manager."
+  },
+  "pos:till:safe-drop": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Perform a safe drop on an open till",
+   "proposed": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier"
+   ],
+   "ruling": "R5/R9: a waiter sends and prints the bill; payment, refunds and the till belong to cashier, supervisor (refund same day) and manager."
+  },
+  "pos:void:postclose": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Void a recently-closed order (post-close void)"
+  },
+  "pos:workforce:coverage-rules:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create coverage rules"
+  },
+  "pos:workforce:coverage-rules:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view coverage rules and gaps"
+  },
+  "pos:workforce:schedules:create": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create schedules with assignments"
+  },
+  "pos:workforce:schedules:publish": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Publish or archive schedules"
+  },
+  "pos:workforce:schedules:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view schedules and roster"
+  },
+  "pos:workforce:templates:create": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create shift templates"
+  },
+  "pos:workforce:templates:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and view shift templates"
+  },
+  "procurement:advisory:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read procurement suggestions AND review (accept/reject) them — GET /api/finance/procurement-suggestions, PATCH /api/finance/procurement-suggestions/:id/review. NOTE: one string gates both a read and a write (finding PC-02)"
+  },
+  "support:session:read": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue opening or reading a Nimbus support session on its own data. Owner, and Manager under R14.",
+   "endpoints": [
+    "GET /api/support/sessions"
+   ]
+  },
+  "support:session:write": {
+   "current": [],
+   "hasPermissionRow": false,
+   "usedByGuard": true,
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "The venue opening or reading a Nimbus support session on its own data. Owner, and Manager under R14.",
+   "endpoints": [
+    "POST /api/support/sessions",
+    "PATCH /api/support/sessions/:id/close"
+   ]
+  },
+  "sync:conflicts:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List sync replay conflicts"
+  },
+  "sync:conflicts:resolve": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Resolve or dismiss sync replay conflicts"
+  },
+  "sync:jobs:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and inspect offline sync jobs"
+  },
+  "sync:jobs:retry": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Manually retry a failed offline sync job"
+  },
+  "sync:jobs:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Submit offline sync replay batches"
+  },
+  "tenancy:branch:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Cashier",
+    "Waiter",
+    "Bartender",
+    "Chef",
+    "Stock Manager",
+    "Accountant",
+    "Procurement",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": false,
+   "description": "Read branches"
+  },
+  "tenancy:branch:write": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update branches"
+  },
+  "tenancy:membership:manage": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/manage memberships"
+  },
+  "tenancy:org:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Supervisor",
+    "Stock Manager",
+    "Accountant",
+    "Procurement",
+    "Event Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Read organizations"
+  },
+  "tenancy:org:write": {
+   "current": [
+    "Owner"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update organizations",
+   "proposed": [
+    "Owner",
+    "Manager"
+   ],
+   "ruling": "R14: Manager has every right except pos:hr:compensation:read."
+  },
+  "tenancy:settings:manage": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Create/update org settings"
+  },
+  "training:session:end": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "End or cancel a training (sandbox) session"
+  },
+  "training:session:read": {
+   "current": [
+    "Owner",
+    "Manager",
+    "Accountant"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "List and inspect training sessions"
+  },
+  "training:session:start": {
+   "current": [
+    "Owner",
+    "Manager"
+   ],
+   "hasPermissionRow": true,
+   "usedByGuard": true,
+   "description": "Start a training (sandbox) session"
+  }
+ }
+}

@@ -1,0 +1,178 @@
+-- people per role
+     role      | count
+---------------+-------
+ Accountant    |     2
+ Bartender     |     2
+ Cashier       |     2
+ Chef          |     3
+ Manager       |     2
+ Owner         |     2
+ Stock Manager |     2
+ Supervisor    |     2
+ Waiter        |     4
+
+-- tables per area (floor plan)
+   area    | count
+-----------+-------
+ Main hall |    32
+ Terrace   |    16
+ Bar       |    10
+ VIP       |     6
+
+-- menu
+ section | items
+---------+-------
+ FOOD    |   132
+ DRINKS  |   110
+
+ groups | subgroups
+--------+-----------
+     13 |        36
+
+ items_with_choices
+--------------------
+                 83
+
+ spirits_with_tot_double_bottle
+--------------------------------
+                             36
+
+ wines_by_glass_and_bottle
+---------------------------
+                        16
+
+   subgroup   | count
+--------------+-------
+ Bottled beer |     6
+ Cider        |     2
+ Draught      |     3
+ Juices       |     6
+ Sodas        |    10
+ Water        |     3
+
+ non_whole_prices
+------------------
+                0
+
+-- stock and recipes
+ stock_items | units
+-------------+-------
+         149 |     4
+
+ recipes | recipe_lines
+---------+--------------
+      57 |          229
+
+-- the service in progress
+ waiter |   status   | count
+--------+------------+-------
+ Brian  | NEW        |     1
+ Brian  | SENT       |     2
+ Brian  | IN_KITCHEN |     1
+ Brian  | READY      |     1
+ Brian  | SERVED     |     1
+ Gloria | NEW        |     1
+ Gloria | SENT       |     1
+ Gloria | IN_KITCHEN |     2
+ Gloria | SERVED     |     1
+ Sanyu  | NEW        |     1
+ Sanyu  | SENT       |     2
+ Sanyu  | READY      |     1
+ Sanyu  | SERVED     |     2
+
+ open_tables | waiters
+-------------+---------
+          17 |       3
+
+ bill_asked
+------------
+          2
+
+  status   | bookings_today
+-----------+----------------
+ PENDING   |              1
+ CONFIRMED |              3
+ SEATED    |              2
+ COMPLETED |              1
+ CANCELLED |              1
+ NO_SHOW   |              1
+
+ reservation_number |  status   | label | in_the_past | table_in_use
+--------------------+-----------+-------+-------------+--------------
+ RES-000005         | CONFIRMED | V03   | t           | f
+ RES-000006         | CONFIRMED | M04   | f           | t
+ RES-000008         | CONFIRMED | V01   | f           | f
+
+ till_code | status | opening_float | expected_cash
+-----------+--------+---------------+---------------
+ TILL-1    | OPEN   |     200000.00 |     402000.00
+
+ paid_bills | payment_rows |  applied  | cash_handed_over | change_given
+------------+--------------+-----------+------------------+--------------
+          4 |            5 | 402000.00 |        210000.00 |      8000.00
+
+-- bad states in Tapas Downtown (the R-E1 review queries); each must be 0, the last 2 (two tables with lines added after the send)
+ closed_with_unsent_line
+-------------------------
+                       0
+
+ closed_paid_not_total
+-----------------------
+                     0
+
+ voided_with_payment
+---------------------
+                   0
+
+ occupied_with_no_open_order
+-----------------------------
+                           0
+
+ line_on_two_tickets
+---------------------
+                   0
+
+ sent_station_line_without_ticket
+----------------------------------
+                                0
+
+ order_total_not_live_lines
+----------------------------
+                          0
+
+ sent_order_with_unsent_lines_expected_2
+-----------------------------------------
+                                       2
+
+-- the same checks on the rest of this database (db:seed demo org; not loaded by demo-venue; see R-E1 S7)
+ closed_with_unsent_line
+-------------------------
+                       1
+
+ closed_paid_not_total
+-----------------------
+                     1
+
+ voided_with_payment
+---------------------
+                   0
+
+ occupied_with_no_open_order
+-----------------------------
+                           1
+
+ line_on_two_tickets
+---------------------
+                   0
+
+ sent_station_line_without_ticket
+----------------------------------
+                                0
+
+ order_total_not_live_lines
+----------------------------
+                          0
+
+ sent_order_with_unsent_lines
+------------------------------
+                            2
