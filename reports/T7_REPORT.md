@@ -39,7 +39,10 @@ The names of every drawing, with size, role, what it shows, route and the milest
 - `corepack pnpm@8.15.0 install --frozen-lockfile`, then `--filter @nimbus-pos/web typecheck`: exit 0.
 - `--filter @nimbus-pos/web build` (`next build`, no dev server running): exit 0.
 - `--filter @nimbus-pos/web test`: exit 0 (the script prints “No frontend tests yet”).
-- e2e and eslint on changed files: no app file changed, so there is nothing of T7’s to test or lint (decision 23).
+- `--filter @nimbus-pos/web lint` (`next lint`, no `--fix`): exit 0, “No ESLint warnings or errors”.
+- T7’s own e2e: `design/screens/tools/render-all.js` drives all 184 drawings in Playwright’s Chromium at their sizes and measures them; three runs in a row: 184 drawings, 0 failing, each run.
+- Proof screenshots: 23 Playwright contact sheets, every drawing by group, in `reports/proof/T7/sheets/` (the full-size screenshots are the PNGs in `design/screens/png/`).
+- The app’s own e2e suites need a running API and database for built screens; T7 built none (decision 23).
 - Every drawing re-rendered and measured from the final generator: 184 of 184 clean.
 
 ## How a drawing is made here (for whoever draws the next ones)
@@ -75,7 +78,7 @@ The names of every drawing, with size, role, what it shows, route and the milest
 20. Table 12's voided wings are "made, waste" everywhere, as the approved `Supervisor-Void` shows.
 21. Empty, loading and error are drawn once each for a list (Receipts), a detail (an order) and a sheet (discount), on a terminal and a phone; every other screen follows the same three patterns (`.skel` shapes in the final places, a 72 px tinted circle with one line and one way forward, Try again).
 22. No real brand: mobile money networks are "Network A" and "Network B" in the drawings; a built screen shows the networks the venue sets up. Suppliers are made-up generic names (Green Valley Farms, City Drinks Depot, Lakeview Butchery, Sunrise Bakery).
-23. Rule 12’s gates were run where they have something to check: after installing dependencies, the web typecheck, build and unit tests all exit 0 (see Gates). e2e and eslint have nothing of T7’s to check: the branch changes only `design/screens/` (drawings, kit additions, tools) and `reports/` — `git diff --name-only 41772c7 HEAD` lists nothing else. The repo checks are green too: `node tools/check-event.mjs` (scanned 1428 files, green) and `node tools/check-ui.mjs` (green, 0 new screens). Rule 10 (driving each built screen as a person through Playwright, screenshots in `reports/proof/`), rule 11 (an e2e and a race test for each engine) and rule 24 (proving on the demo venue) apply to built screens and engines; T7 builds neither, so there is no screen to drive and no engine to race. What T7 has instead: every drawing rendered in the container’s Chromium through Playwright at its own size, with the same measurements rule 10 lists (sideways scroll, clipped text, targets under 44 px, text under 12 px, filled buttons), recorded in `reports/proof/T7/MEASUREMENTS.md` and `measure-g*.json`; the screenshots are the PNGs in `design/screens/png/`.
+23. Rule 12’s gates were run where they have something to check: after installing dependencies, the web typecheck, build and unit tests all exit 0 (see Gates). e2e and eslint have nothing of T7’s to check: the branch changes only `design/screens/` (drawings, kit additions, tools) and `reports/` — `git diff --name-only 41772c7 HEAD` lists nothing else. The repo checks are green too: `node tools/check-event.mjs` (scanned 1428 files, green) and `node tools/check-ui.mjs` (green, 0 new screens). Rule 10 (driving each built screen as a person through Playwright, screenshots in `reports/proof/`), rule 11 (an e2e that passes three runs and a race test for each engine: T7 changes no engine and no action two people can do at once, so there is nothing to race) and rule 24 (proving on the demo venue) apply to built screens and engines; T7 builds neither, so there is no screen to drive and no engine to race. What T7 has instead: every drawing rendered in the container’s Chromium through Playwright at its own size, with the same measurements rule 10 lists (sideways scroll, clipped text, targets under 44 px, text under 12 px, filled buttons), recorded in `reports/proof/T7/MEASUREMENTS.md` and `measure-g*.json`; the screenshots are the PNGs in `design/screens/png/`.
 24. Every drawing was looked at by me on a contact sheet and scored by a reviewer subagent that drew nothing (rule 7 allows subagents for reviewing). Group 10 and 11 were scored together in one review.
 25. The supervisor is still drawn without a payment button (owner question 2, default no) and a waiter may seat a booking elsewhere (question 1, default yes).
 
@@ -94,7 +97,7 @@ First 38 drawings and every existing kit.css value untouched; .pin, .toast, .ske
 SCREENS-2.md (table) and OVERVIEW.md (every picture in order) list all 184.
 Three reviewer calls were overruled by the decision record (R9 cashier bar, R19 Block, the count limit).
 Placeholders: mobile money networks are "Network A/B"; the owner is a new made-up name, Esther L.
-Gates: web typecheck 0, web build 0, web tests 0 (stub), check:event and check:ui green.
+Gates: web typecheck, build, tests (stub) and lint 0; drawings e2e 3 runs green; check:event, check:ui green.
 Branch t7/drawings pushed; no pull request opened.
 You need to: scroll design/screens/OVERVIEW.md on GitHub and approve or mark each drawing, and answer decisions 15 and 18 (the manager's and owner's laptop bars).
 ```
