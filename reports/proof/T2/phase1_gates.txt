@@ -1,0 +1,5 @@
+tsc: exit 0
+build: exit 0
+unit: Test Suites 72 passed; Tests 1316 passed, 0 failed
+check:event green
+eslint: 0 errors on every new file; modified files unchanged from base except pos-handoff.service.ts (858 -> 864: 6 prettier indentation errors on 6 added lines that follow the file's own 4-space style, as E1 did)
