@@ -147,7 +147,7 @@ with no zero), screenshots beside the drawings [emulation, reviewer]:
 | Fire with undo (Order-Hold-Fire) | 19 | **22** | |
 | Table actions (Supervisor-Table) | 17 | **20** | |
 | Move table (Table-Move) | 15 | **23** | |
-| Join tables (Table-Join) | 18 | 19 | 19 → fixed after (below) |
+| Join tables (Table-Join) | 18 | 19 | 19, then 19 on the final build (decision 19) |
 | Move a line (Line-Move) | 14 | **23** | |
 | Split by guest / item / amount / evenly | 17 / 16 / 15 / 17 | **21 / 21 / 22 / 22** | |
 | Change waiter (Change-Waiter) | 15 | **22** | |
@@ -169,11 +169,11 @@ highlights the section you are on, Ready's age goes amber and red; split totals 
 with "Each pays" as the big figure; Change waiter marks who has it now; Move and Join show one area at
 a time; the tabs toggle and header say "tabs".
 
-**Join (19/24 in round 3)** — the reviewer's money and wording points were fixed after it scored (the
-three-line breakdown now sits above the grid, "You" on your own tables); it was not scored a fourth
-time, so it is recorded here at **19, under the pass mark** (decision 19). Join is a step inside the
-Supervisor-Table sheet, whose row scores 20. The drawing's "another waiter's table needs a supervisor"
-line is not shown: only supervisors and managers can open Join at all.
+**Join (19/24, under the pass mark).** Round 3 scored 19; its money and wording points were fixed
+(breakdown above the grid, "You" on your own tables) and a fourth fresh reviewer scored the final build
+**19** again — with no zero and nothing breaking use, but asking for the summary *below* the picker (the
+third had asked for it above), a tinted card for the summary, bare amounts on the tiles, bold summary
+amounts, a fade where the grid scrolls under the footer and a shorter subtitle. Settled by decision 19.
 
 SCREENS.md rows set this phase: `Waiter-Ready` built 22/24, `Kitchen` built 20/24; re-scored after
 T5's changes: `Main` and `Floor-Phone` 20/24, `Order-Terminal` 21/24, `Supervisor-Table` 20/24. The T7
@@ -246,7 +246,11 @@ check:event green
     order). Where one case changes what a later case starts from, the later case sets up its own start
     through the API as staff would (a waiter starts a shift, the chef puts a dish back on, its own table),
     never by editing the database.
-19. **Join tables** — see Done-when 8: __JOIN__.
+19. **Join tables stays at 19/24 and is recorded, not passed.** It has no SCREENS.md row (it is a step
+    of the Supervisor-Table sheet, which scores 20), so Done-when 8 holds; two fresh reviewers disagreed
+    on where its summary goes, and another rebuild would have restarted the three green runs. The next
+    pass (a T7 drawing pass or U3) takes the fourth reviewer's list: summary on a tinted card under the
+    picker, bare tile amounts, bold summary amounts, a scroll fade above the footer, a one-line subtitle.
 20. **An API defect found, not fixed (T6's code):** after a `split-items`, the next `POST /api/pos/orders`
     on the branch answers 500 every time: the child is numbered `ORD-n-S1`, and `generateOrderNumber`
     takes the newest order's number, reads `n` and proposes `ORD-(n+1)`, which already exists. The T5
