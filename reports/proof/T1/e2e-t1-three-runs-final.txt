@@ -1,6 +1,6 @@
 == run 1
 [1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
-[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:121:5 › Approvals at 390 × 844 with the request sheet open
+[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
 [3/24] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
 [4/24] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
 [5/24] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
@@ -26,7 +26,7 @@
   24 passed (1.2m)
 == run 2
 [1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
-[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:121:5 › Approvals at 390 × 844 with the request sheet open
+[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
 [3/24] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
 [4/24] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
 [5/24] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
@@ -52,7 +52,7 @@
   24 passed (1.2m)
 == run 3
 [1/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:57:5 › supervisor declines a discount, approves leave, declines a swap, resolves an alert (1280 × 800)
-[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:121:5 › Approvals at 390 × 844 with the request sheet open
+[2/24] [vp-1440x900] › e2e/t1/approvals.spec.ts:125:5 › Approvals at 390 × 844 with the request sheet open
 [3/24] [vp-1440x900] › e2e/t1/floor.spec.ts:62:5 › waiter, 1280 × 800: Main hall is 8 × 4 roomy tiles with no scrolling
 [4/24] [vp-1440x900] › e2e/t1/floor.spec.ts:84:5 › waiter, 1024 × 768: the same area is compact, 7 across, with no scrolling
 [5/24] [vp-1440x900] › e2e/t1/floor.spec.ts:104:5 › supervisor, 1920 × 1080: All areas is 12 across
@@ -75,4 +75,4 @@
 [22/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › waiter at 390 × 844: no developer wording on any section
 [23/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › cashier at 390 × 844: no developer wording on any section
 [24/24] [vp-1440x900] › e2e/t1/sweep.spec.ts:64:9 › supervisor at 390 × 844: no developer wording on any section
-  24 passed (1.2m)
+  24 passed (1.3m)
